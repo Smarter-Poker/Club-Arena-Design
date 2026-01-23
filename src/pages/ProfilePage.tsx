@@ -327,6 +327,12 @@ export default function ProfilePage() {
                 </div>
 
                 <div className={styles.headerActions}>
+                    <button
+                        className={styles.editButton}
+                        onClick={() => window.open('https://smarter.poker/hub/avatars-complete', '_blank')}
+                    >
+                        🎭 Change Avatar
+                    </button>
                     <button className={styles.editButton}>Edit Profile</button>
                 </div>
             </section>
