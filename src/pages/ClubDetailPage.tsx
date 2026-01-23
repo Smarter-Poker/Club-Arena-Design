@@ -8,7 +8,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import styles from './ClubDetailPage.module.css';
-import { isDemoMode } from '../lib/supabase';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -58,48 +57,6 @@ interface ClubTable {
     maxPlayers: number;
     status: 'waiting' | 'running' | 'paused';
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// DEMO DATA
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const DEMO_CLUB: ClubData = {
-    id: 'club-1',
-    clubId: 123456,
-    name: 'High Stakes Poker Club',
-    description: 'Premium poker club for serious players. Daily tournaments and cash games.',
-    avatarUrl: '',
-    isPublic: true,
-    requiresApproval: true,
-    memberCount: 156,
-    tableCount: 8,
-    activeTableCount: 3,
-    createdAt: '2025-01-15',
-    settings: {
-        defaultRakePercent: 5,
-        rakeCap: 3,
-        timeBankSeconds: 30,
-        allowStraddle: true,
-        allowRunItTwice: true,
-        minBuyInBB: 40,
-        maxBuyInBB: 200,
-    },
-};
-
-const DEMO_MEMBERS: ClubMember[] = [
-    { id: '1', username: 'PokerAce', role: 'owner', chipBalance: 25000, status: 'active', joinedAt: '2025-01-15' },
-    { id: '2', username: 'TableMaster', role: 'admin', chipBalance: 15000, status: 'active', joinedAt: '2025-01-18' },
-    { id: '3', username: 'CardShark99', role: 'agent', chipBalance: 8500, status: 'active', joinedAt: '2025-01-20' },
-    { id: '4', username: 'LuckyPlayer', role: 'member', chipBalance: 3200, status: 'active', joinedAt: '2025-02-01' },
-    { id: '5', username: 'NewFish', role: 'member', chipBalance: 500, status: 'pending', joinedAt: '2025-02-15' },
-];
-
-const DEMO_TABLES: ClubTable[] = [
-    { id: 't1', name: 'Main Game', gameVariant: 'NLH', stakes: '1/2', currentPlayers: 6, maxPlayers: 9, status: 'running' },
-    { id: 't2', name: 'High Stakes', gameVariant: 'NLH', stakes: '5/10', currentPlayers: 4, maxPlayers: 6, status: 'running' },
-    { id: 't3', name: 'PLO Action', gameVariant: 'PLO4', stakes: '2/5', currentPlayers: 0, maxPlayers: 6, status: 'waiting' },
-    { id: 't4', name: 'Short Deck', gameVariant: 'SD', stakes: '1/2', currentPlayers: 5, maxPlayers: 6, status: 'running' },
-];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPONENTS
@@ -169,6 +126,8 @@ const StatusBadge = ({ status }: { status: string }) => {
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
+import { supabase } from '../lib/supabase';
+
 export default function ClubDetailPage() {
     const { clubId } = useParams();
     const [activeTab, setActiveTab] = useState<'overview' | 'tables' | 'members' | 'settings'>('overview');
@@ -182,13 +141,100 @@ export default function ClubDetailPage() {
     }, [clubId]);
 
     const loadClubData = async () => {
+        if (!clubId) {
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
-        // Demo mode
-        await new Promise(r => setTimeout(r, 300));
-        setClub(DEMO_CLUB);
-        setMembers(DEMO_MEMBERS);
-        setTables(DEMO_TABLES);
-        setLoading(false);
+
+        try {
+            // Load club from Supabase
+            const { data: clubData, error: clubError } = await supabase
+                .from('clubs')
+                .select('*')
+                .eq('id', clubId)
+                .single();
+
+            if (clubError || !clubData) {
+                console.error('[ClubDetailPage] Failed to load club:', clubError);
+                setLoading(false);
+                return;
+            }
+
+            // Map to our internal format
+            const mappedClub: ClubData = {
+                id: clubData.id,
+                clubId: clubData.club_id || 0,
+                name: clubData.name,
+                description: clubData.description || '',
+                avatarUrl: clubData.avatar_url || '',
+                isPublic: clubData.is_public ?? true,
+                requiresApproval: clubData.requires_approval ?? false,
+                memberCount: clubData.member_count || 0,
+                tableCount: clubData.table_count || 0,
+                activeTableCount: 0,
+                createdAt: clubData.created_at,
+                settings: {
+                    defaultRakePercent: clubData.default_rake_percent || 5,
+                    rakeCap: clubData.rake_cap || 3,
+                    timeBankSeconds: clubData.time_bank_seconds || 30,
+                    allowStraddle: clubData.allow_straddle ?? true,
+                    allowRunItTwice: clubData.allow_run_it_twice ?? true,
+                    minBuyInBB: clubData.min_buyin_bb || 40,
+                    maxBuyInBB: clubData.max_buyin_bb || 200,
+                },
+            };
+            setClub(mappedClub);
+
+            // Load members
+            const { data: memberData } = await supabase
+                .from('club_members')
+                .select('*, profiles(username, display_name)')
+                .eq('club_id', clubId)
+                .limit(50);
+
+            if (memberData) {
+                const mappedMembers: ClubMember[] = memberData.map((m: any) => ({
+                    id: m.user_id,
+                    username: m.profiles?.display_name || m.profiles?.username || 'Unknown',
+                    role: m.role || 'member',
+                    chipBalance: m.chip_balance || 0,
+                    status: m.status || 'active',
+                    joinedAt: m.created_at,
+                    lastActive: m.last_active,
+                }));
+                setMembers(mappedMembers);
+            }
+
+            // Load tables
+            const { data: tableData } = await supabase
+                .from('tables')
+                .select('*')
+                .eq('club_id', clubId);
+
+            if (tableData) {
+                const mappedTables: ClubTable[] = tableData.map((t: any) => ({
+                    id: t.id,
+                    name: t.name || 'Table',
+                    gameVariant: t.game_type || 'NLH',
+                    stakes: t.stakes || '1/2',
+                    currentPlayers: t.current_players || 0,
+                    maxPlayers: t.max_players || 6,
+                    status: t.status || 'waiting',
+                }));
+                setTables(mappedTables);
+
+                // Count active tables
+                const activeCount = mappedTables.filter(t => t.status === 'running').length;
+                setClub(prev => prev ? { ...prev, activeTableCount: activeCount } : null);
+            }
+
+        } catch (error) {
+            console.error('[ClubDetailPage] Error loading data:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (loading) {

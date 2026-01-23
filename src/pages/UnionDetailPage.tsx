@@ -11,7 +11,6 @@ import { unionService, type Union, type UnionClub } from '../services/UnionServi
 import { tableService } from '../services/TableService';
 import { clubService } from '../services/ClubService';
 import { useUserStore } from '../stores/useUserStore';
-import { isDemoMode } from '../lib/supabase';
 import type { PokerTable, Club } from '../types/database.types';
 import styles from './UnionDetailPage.module.css';
 
@@ -39,25 +38,6 @@ interface FinancialSummary {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// DEMO DATA
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const DEMO_SETTLEMENTS: SettlementRecord[] = [
-    { id: '1', periodStart: '2025-01-01', periodEnd: '2025-01-07', clubId: 'c1', clubName: 'Ace High Club', rakeGenerated: 2500, unionShare: 250, status: 'paid', paidAt: '2025-01-09' },
-    { id: '2', periodStart: '2025-01-01', periodEnd: '2025-01-07', clubId: 'c2', clubName: 'Royal Flush', rakeGenerated: 1800, unionShare: 180, status: 'paid', paidAt: '2025-01-08' },
-    { id: '3', periodStart: '2025-01-08', periodEnd: '2025-01-14', clubId: 'c1', clubName: 'Ace High Club', rakeGenerated: 3200, unionShare: 320, status: 'pending' },
-    { id: '4', periodStart: '2025-01-08', periodEnd: '2025-01-14', clubId: 'c2', clubName: 'Royal Flush', rakeGenerated: 2100, unionShare: 210, status: 'pending' },
-    { id: '5', periodStart: '2025-01-08', periodEnd: '2025-01-14', clubId: 'c3', clubName: 'Diamond Dogs', rakeGenerated: 950, unionShare: 95, status: 'overdue' },
-];
-
-const DEMO_SUMMARY: FinancialSummary = {
-    totalRakeThisPeriod: 6250,
-    unionRevenue: 625,
-    pendingSettlements: 530,
-    overdueAmount: 95,
-};
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -71,7 +51,7 @@ export default function UnionDetailPage() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'overview' | 'clubs' | 'tables' | 'financials'>('overview');
 
-    // Financial state
+    // Financial state - starts empty, no demo data
     const [settlements, setSettlements] = useState<SettlementRecord[]>([]);
     const [financialSummary, setFinancialSummary] = useState<FinancialSummary | null>(null);
 
@@ -94,11 +74,20 @@ export default function UnionDetailPage() {
                 setClubs(clubsData);
                 setTables(tablesData);
 
-                // Demo financial data
-                setSettlements(DEMO_SETTLEMENTS);
-                setFinancialSummary(DEMO_SUMMARY);
+                // Financial data would come from SettlementService
+                // For now, we calculate a basic summary from available data
+                if (clubsData.length > 0) {
+                    // Would load from SettlementService.generateSettlements()
+                    // For now, show empty state
+                    setFinancialSummary({
+                        totalRakeThisPeriod: 0,
+                        unionRevenue: 0,
+                        pendingSettlements: 0,
+                        overdueAmount: 0,
+                    });
+                }
             } catch (err) {
-                console.error(err);
+                console.error('[UnionDetailPage] Error loading data:', err);
             } finally {
                 setLoading(false);
             }
@@ -112,7 +101,7 @@ export default function UnionDetailPage() {
 
         try {
             const myClubs = await clubService.getMyClubs(user.id);
-            const owned = myClubs.filter(c => c.owner_id === user.id || isDemoMode);
+            const owned = myClubs.filter(c => c.owner_id === user.id);
 
             if (owned.length === 0) {
                 alert("You must own a club to join a union.");

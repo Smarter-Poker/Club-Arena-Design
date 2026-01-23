@@ -41,90 +41,12 @@ interface TableState {
     dealerSeat: number;
     currentPlayerSeat: number;
     heroSeat: number;
-    players: SeatPlayer[];
+    players: (SeatPlayer | null)[];
     jackpotAmount: number;
     isHandInProgress: boolean;
+    positions: PositionBadge[];
+    lastActions: LastAction[];
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// DEMO DATA (fallback when not connected)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const DEMO_PLAYERS: SeatPlayer[] = [
-    {
-        id: 'u1',
-        name: 'soul king',
-        avatar: '',
-        stack: 4642.84,
-        status: 'active',
-        isHero: false,
-        showCards: false,
-        holeCards: [
-            { rank: 'K', suit: 's' },
-            { rank: 'Q', suit: 'h' },
-        ],
-    },
-    {
-        id: 'u2',
-        name: 'monkey88',
-        avatar: '',
-        stack: 1115,
-        status: 'active',
-        isHero: false,
-        showCards: false,
-    },
-    {
-        id: 'u3',
-        name: 'cubby2426',
-        avatar: '',
-        stack: 2475,
-        status: 'active',
-        isHero: false,
-        showCards: false,
-    },
-    {
-        id: 'u4',
-        name: 'Im gna CUM',
-        avatar: '',
-        stack: 2490,
-        status: 'active',
-        isHero: false,
-        showCards: false,
-    },
-    {
-        id: 'u5',
-        name: 'Wizurd',
-        avatar: '',
-        stack: 5998.05,
-        status: 'active',
-        isHero: false,
-        showCards: false,
-    },
-    {
-        id: 'hero',
-        name: '-KingFish-',
-        avatar: '',
-        stack: 2490,
-        status: 'active',
-        isHero: true,
-        showCards: true,
-        holeCards: [
-            { rank: 'A', suit: 'h' },
-            { rank: '4', suit: 'd' },
-        ],
-    },
-];
-
-const DEMO_POSITIONS: PositionBadge[] = ['D', null, 'SB', null, 'BB', null];
-const DEMO_LAST_ACTIONS: LastAction[] = [null, 'bet', null, null, null, null];
-
-const DEMO_COMMUNITY: Card[] = [
-    { rank: 'A', suit: 's' },
-    { rank: '5', suit: 'c' },
-    { rank: '9', suit: 'd' },
-    { rank: '5', suit: 'h' },
-    { rank: '2', suit: 'c' },
-];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // UTILITY FUNCTIONS
@@ -151,6 +73,11 @@ const SEAT_POSITIONS_9MAX = [
     { x: 95, y: 60 },  // Seat 9
 ];
 
+// Create empty player slots for a table
+const createEmptySeats = (count: 6 | 9): (SeatPlayer | null)[] => {
+    return Array(count).fill(null);
+};
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -162,6 +89,7 @@ export default function TablePage() {
     // Get current user
     const [userId, setUserId] = useState<string>('guest');
     const [username, setUsername] = useState<string>('Player');
+    const [isLoading, setIsLoading] = useState(true);
 
     // Initialize user on mount
     useEffect(() => {
@@ -176,40 +104,71 @@ export default function TablePage() {
                     .single();
                 setUsername(profile?.display_name || profile?.username || 'Player');
             }
+            setIsLoading(false);
         }
         initUser();
     }, []);
 
     // WebSocket connection for real-time game state
     const { isConnected, presence, lastEvent, sendAction, sendChat, updateSeat } = useTableWebSocket(
-        tableId || 'demo-table',
+        tableId || '',
         userId,
         username
     );
 
-    // State
+    // State - initialize with empty data (no demo data!)
     const [tableState, setTableState] = useState<TableState>({
-        tableId: tableId || 'demo-table',
-        tableName: '12-Jan 5🐘20🐘 6MAX RIT (Paradise)',
+        tableId: tableId || '',
+        tableName: 'Loading...',
         gameType: 'NLH',
-        blinds: '5/10',
+        blinds: '?/?',
         maxPlayers: 6,
-        pot: 35,
+        pot: 0,
         sidePots: [],
-        communityCards: DEMO_COMMUNITY.slice(0, 3), // Just flop
-        boardStage: 'flop',
-        dealerSeat: 1,
-        currentPlayerSeat: 6,
-        heroSeat: 6,
-        players: DEMO_PLAYERS,
-        jackpotAmount: 139381,
-        isHandInProgress: true,
+        communityCards: [],
+        boardStage: 'preflop',
+        dealerSeat: 0,
+        currentPlayerSeat: 0,
+        heroSeat: 0,
+        players: createEmptySeats(6),
+        jackpotAmount: 0,
+        isHandInProgress: false,
+        positions: [null, null, null, null, null, null],
+        lastActions: [null, null, null, null, null, null],
     });
 
     const [raiseAmount, setRaiseAmount] = useState(20);
     const [showRaiseSlider, setShowRaiseSlider] = useState(false);
     const [actionTimeRemaining, setActionTimeRemaining] = useState(15);
     const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
+
+    // Load table info from Supabase on mount
+    useEffect(() => {
+        async function loadTableInfo() {
+            if (!tableId) return;
+
+            const { data: table, error } = await supabase
+                .from('tables')
+                .select('*')
+                .eq('id', tableId)
+                .single();
+
+            if (table && !error) {
+                setTableState(prev => ({
+                    ...prev,
+                    tableId: table.id,
+                    tableName: table.name || 'Poker Table',
+                    gameType: table.game_type || 'NLH',
+                    blinds: table.stakes || '?/?',
+                    maxPlayers: table.max_players || 6,
+                    players: createEmptySeats(table.max_players || 6),
+                    positions: Array(table.max_players || 6).fill(null),
+                    lastActions: Array(table.max_players || 6).fill(null),
+                }));
+            }
+        }
+        loadTableInfo();
+    }, [tableId]);
 
     // Handle incoming game events from WebSocket
     useEffect(() => {
@@ -262,27 +221,29 @@ export default function TablePage() {
             if (p.seatNumber !== undefined) {
                 const seatIdx = p.seatNumber - 1;
                 if (seatIdx >= 0 && seatIdx < updatedPlayers.length) {
+                    const existing = updatedPlayers[seatIdx];
                     updatedPlayers[seatIdx] = {
-                        ...updatedPlayers[seatIdx],
                         id: p.oduserId,
                         name: p.username,
                         avatar: p.avatar || '',
+                        stack: existing?.stack ?? 0,
+                        status: existing?.status ?? 'active',
                         isHero: p.oduserId === userId,
+                        showCards: existing?.showCards ?? false,
                     };
                 }
             }
         });
 
         setTableState(prev => ({ ...prev, players: updatedPlayers }));
-    }, [presence, userId]);
+    }, [presence, userId, tableState.players]);
 
     // Get seat positions based on table size
     const seatPositions = tableState.maxPlayers === 9 ? SEAT_POSITIONS_9MAX : SEAT_POSITIONS_6MAX;
 
     // Find player at specific seat (1-indexed)
-    const getPlayerAtSeat = useCallback((seatNumber: number): SeatPlayer | undefined => {
-        // Map players to seats (for demo, use index)
-        return tableState.players[seatNumber - 1];
+    const getPlayerAtSeat = useCallback((seatNumber: number): SeatPlayer | null => {
+        return tableState.players[seatNumber - 1] ?? null;
     }, [tableState.players]);
 
     // Handle seat click (sit down at empty seat)
@@ -429,9 +390,9 @@ export default function TablePage() {
                             <SeatSlot
                                 seatNumber={seatNumber}
                                 player={player || null}
-                                position={DEMO_POSITIONS[idx] || null}
+                                position={tableState.positions[idx] || null}
                                 isActive={seatNumber === tableState.currentPlayerSeat}
-                                lastAction={DEMO_LAST_ACTIONS[idx] || null}
+                                lastAction={tableState.lastActions[idx] || null}
                                 timerProgress={seatNumber === tableState.currentPlayerSeat ? (actionTimeRemaining / 15) * 100 : undefined}
                                 onSit={() => handleSeatClick(seatNumber)}
                             />
