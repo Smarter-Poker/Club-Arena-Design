@@ -10,6 +10,7 @@
  * - Real-time pot and community cards
  * - Action panel with raise slider
  * - Jackpot banner
+ * - WebSocket connection for real-time game state
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -18,6 +19,9 @@ import { SeatSlot, PotDisplay, CommunityCards } from '../components/table';
 import type { SeatPlayer, Card, LastAction, PositionBadge } from '../components/table/SeatSlot';
 import type { SidePot } from '../components/table/PotDisplay';
 import type { BoardStage } from '../components/table/CommunityCards';
+import { useTableWebSocket } from '../services/TableWebSocket';
+import { supabase } from '../lib/supabase';
+import { avatarService } from '../services/AvatarService';
 import './TablePage.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -43,7 +47,7 @@ interface TableState {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// DEMO DATA
+// DEMO DATA (fallback when not connected)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const DEMO_PLAYERS: SeatPlayer[] = [
@@ -155,6 +159,34 @@ export default function TablePage() {
     const { tableId } = useParams<{ tableId: string }>();
     const navigate = useNavigate();
 
+    // Get current user
+    const [userId, setUserId] = useState<string>('guest');
+    const [username, setUsername] = useState<string>('Player');
+
+    // Initialize user on mount
+    useEffect(() => {
+        async function initUser() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                setUserId(user.id);
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('display_name, username')
+                    .eq('id', user.id)
+                    .single();
+                setUsername(profile?.display_name || profile?.username || 'Player');
+            }
+        }
+        initUser();
+    }, []);
+
+    // WebSocket connection for real-time game state
+    const { isConnected, presence, lastEvent, sendAction, sendChat, updateSeat } = useTableWebSocket(
+        tableId || 'demo-table',
+        userId,
+        username
+    );
+
     // State
     const [tableState, setTableState] = useState<TableState>({
         tableId: tableId || 'demo-table',
@@ -179,6 +211,71 @@ export default function TablePage() {
     const [actionTimeRemaining, setActionTimeRemaining] = useState(15);
     const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
 
+    // Handle incoming game events from WebSocket
+    useEffect(() => {
+        if (!lastEvent) return;
+
+        console.log('[TablePage] Game event received:', lastEvent.type, lastEvent.data);
+
+        switch (lastEvent.type) {
+            case 'DEAL_CARDS':
+                // Update community cards
+                if (lastEvent.data.communityCards) {
+                    setTableState(prev => ({
+                        ...prev,
+                        communityCards: lastEvent.data.communityCards as Card[],
+                    }));
+                }
+                break;
+            case 'PLAYER_ACTION':
+                // Update pot, player stacks, etc.
+                if (lastEvent.data.pot !== undefined) {
+                    setTableState(prev => ({
+                        ...prev,
+                        pot: lastEvent.data.pot as number,
+                    }));
+                }
+                break;
+            case 'POT_WIN':
+                // Show winner animation
+                console.log('[TablePage] Pot won by:', lastEvent.data.winnerId);
+                break;
+            case 'HAND_COMPLETE':
+                // Reset for next hand
+                setTableState(prev => ({
+                    ...prev,
+                    communityCards: [],
+                    boardStage: 'preflop',
+                    pot: 0,
+                }));
+                break;
+        }
+    }, [lastEvent]);
+
+    // Update players from presence state
+    useEffect(() => {
+        if (!presence) return;
+
+        // Merge presence data with existing players
+        const updatedPlayers = [...tableState.players];
+        presence.players.forEach(p => {
+            if (p.seatNumber !== undefined) {
+                const seatIdx = p.seatNumber - 1;
+                if (seatIdx >= 0 && seatIdx < updatedPlayers.length) {
+                    updatedPlayers[seatIdx] = {
+                        ...updatedPlayers[seatIdx],
+                        id: p.oduserId,
+                        name: p.username,
+                        avatar: p.avatar || '',
+                        isHero: p.oduserId === userId,
+                    };
+                }
+            }
+        });
+
+        setTableState(prev => ({ ...prev, players: updatedPlayers }));
+    }, [presence, userId]);
+
     // Get seat positions based on table size
     const seatPositions = tableState.maxPlayers === 9 ? SEAT_POSITIONS_9MAX : SEAT_POSITIONS_6MAX;
 
@@ -189,22 +286,26 @@ export default function TablePage() {
     }, [tableState.players]);
 
     // Handle seat click (sit down at empty seat)
-    const handleSeatClick = (seatNumber: number) => {
-        console.log('Seat clicked:', seatNumber);
-        // Would open buy-in modal
+    const handleSeatClick = async (seatNumber: number) => {
+        console.log('[TablePage] Sit request at seat:', seatNumber);
+        await updateSeat(seatNumber);
+        // Would also open buy-in modal here
     };
 
-    // Action handlers
-    const handleFold = () => {
-        console.log('Fold clicked');
+    // Action handlers - now wired to WebSocket
+    const handleFold = async () => {
+        console.log('[TablePage] Fold action');
+        await sendAction('fold', {});
     };
 
-    const handleCheck = () => {
-        console.log('Check clicked');
+    const handleCheck = async () => {
+        console.log('[TablePage] Check action');
+        await sendAction('check', {});
     };
 
-    const handleCall = () => {
-        console.log('Call clicked');
+    const handleCall = async () => {
+        console.log('[TablePage] Call action');
+        await sendAction('call', {});
     };
 
     const handleBet = () => {
@@ -215,13 +316,16 @@ export default function TablePage() {
         setShowRaiseSlider(true);
     };
 
-    const handleConfirmRaise = () => {
-        console.log('Raise confirmed:', raiseAmount);
+    const handleConfirmRaise = async () => {
+        console.log('[TablePage] Raise action:', raiseAmount);
+        await sendAction('raise', { amount: raiseAmount });
         setShowRaiseSlider(false);
     };
 
-    const handleAllIn = () => {
-        console.log('All-in clicked');
+    const handleAllIn = async () => {
+        console.log('[TablePage] All-in action');
+        const heroStack = getPlayerAtSeat(tableState.heroSeat)?.stack || 0;
+        await sendAction('allin', { amount: heroStack });
     };
 
     // Side menu toggle
