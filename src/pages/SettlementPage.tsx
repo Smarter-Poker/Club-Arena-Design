@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { SettlementService } from '../services/SettlementService';
 import styles from './SettlementPage.module.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -50,118 +51,6 @@ interface AgentPayout {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// DEMO DATA
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const DEMO_PERIODS: SettlementPeriod[] = [
-    {
-        id: 'p_current',
-        periodNumber: 3,
-        year: 2026,
-        startAt: '2026-01-13T00:00:00Z',
-        endAt: '2026-01-19T23:59:59Z',
-        status: 'open',
-        totalRake: 28450,
-        totalBBJ: 2845,
-        totalHands: 42560,
-        totalPlayers: 892,
-    },
-    {
-        id: 'p_2',
-        periodNumber: 2,
-        year: 2026,
-        startAt: '2026-01-06T00:00:00Z',
-        endAt: '2026-01-12T23:59:59Z',
-        status: 'settled',
-        totalRake: 31200,
-        totalBBJ: 3120,
-        totalHands: 48900,
-        totalPlayers: 945,
-    },
-    {
-        id: 'p_1',
-        periodNumber: 1,
-        year: 2026,
-        startAt: '2025-12-30T00:00:00Z',
-        endAt: '2026-01-05T23:59:59Z',
-        status: 'settled',
-        totalRake: 24800,
-        totalBBJ: 2480,
-        totalHands: 38500,
-        totalPlayers: 812,
-    },
-];
-
-const DEMO_CLUB_WIRES: ClubWire[] = [
-    {
-        clubId: 'c1',
-        clubName: 'Diamond Club',
-        netPlayerPL: 12500,
-        grossRake: 8200,
-        unionTax: 820,
-        agentCommissions: 3280,
-        finalWire: 16600,
-        direction: 'COLLECT_FROM_UNION',
-        status: 'pending',
-    },
-    {
-        clubId: 'c2',
-        clubName: 'High Rollers',
-        netPlayerPL: -8900,
-        grossRake: 6100,
-        unionTax: 610,
-        agentCommissions: 2440,
-        finalWire: -4010,
-        direction: 'PAY_TO_UNION',
-        status: 'pending',
-    },
-    {
-        clubId: 'c3',
-        clubName: 'Ace High',
-        netPlayerPL: 3200,
-        grossRake: 4800,
-        unionTax: 480,
-        agentCommissions: 1920,
-        finalWire: 5600,
-        direction: 'COLLECT_FROM_UNION',
-        status: 'pending',
-    },
-];
-
-const DEMO_AGENT_PAYOUTS: AgentPayout[] = [
-    {
-        agentId: 'a1',
-        agentName: 'AgentAce',
-        rakeGenerated: 4200,
-        commissionRate: 0.50,
-        grossCommission: 2100,
-        playerRakeback: 1260,
-        netPayout: 840,
-        status: 'approved',
-    },
-    {
-        agentId: 'a2',
-        agentName: 'PokerPro',
-        rakeGenerated: 2800,
-        commissionRate: 0.45,
-        grossCommission: 1260,
-        playerRakeback: 700,
-        netPayout: 560,
-        status: 'approved',
-    },
-    {
-        agentId: 'a3',
-        agentName: 'SharkAgent',
-        rakeGenerated: 650,
-        commissionRate: 0.35,
-        grossCommission: 227.50,
-        playerRakeback: 130,
-        netPayout: 97.50,
-        status: 'pending',
-    },
-];
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -171,10 +60,96 @@ export default function SettlementPage() {
     const { unionId } = useParams<{ unionId: string }>();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<TabType>('overview');
-    const [selectedPeriod, setSelectedPeriod] = useState<SettlementPeriod>(DEMO_PERIODS[0]);
-    const [clubWires, setClubWires] = useState<ClubWire[]>(DEMO_CLUB_WIRES);
-    const [agentPayouts, setAgentPayouts] = useState<AgentPayout[]>(DEMO_AGENT_PAYOUTS);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Real data from SettlementService
+    const [periods, setPeriods] = useState<SettlementPeriod[]>([]);
+    const [selectedPeriod, setSelectedPeriod] = useState<SettlementPeriod | null>(null);
+    const [clubWires, setClubWires] = useState<ClubWire[]>([]);
+    const [agentPayouts, setAgentPayouts] = useState<AgentPayout[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
+
+    // Load data from SettlementService
+    useEffect(() => {
+        async function loadSettlementData() {
+            setIsLoading(true);
+            try {
+                // Get current period
+                const currentPeriod = await SettlementService.getCurrentPeriod();
+
+                // Get period history
+                const periodHistory = await SettlementService.getPeriodHistory(12);
+
+                // Map to our internal format
+                const mappedPeriods: SettlementPeriod[] = [
+                    {
+                        id: currentPeriod.id,
+                        periodNumber: currentPeriod.periodNumber,
+                        year: currentPeriod.year,
+                        startAt: currentPeriod.startAt,
+                        endAt: currentPeriod.endAt,
+                        status: currentPeriod.status as 'open' | 'processing' | 'settled',
+                        totalRake: currentPeriod.totalRakeCollected,
+                        totalBBJ: currentPeriod.totalBBJContributions,
+                        totalHands: currentPeriod.totalHandsDealt,
+                        totalPlayers: 0, // Not in service type
+                    },
+                    ...periodHistory.map(p => ({
+                        id: p.id,
+                        periodNumber: p.periodNumber,
+                        year: p.year,
+                        startAt: p.startAt,
+                        endAt: p.endAt,
+                        status: p.status as 'open' | 'processing' | 'settled',
+                        totalRake: p.totalRakeCollected,
+                        totalBBJ: p.totalBBJContributions,
+                        totalHands: p.totalHandsDealt,
+                        totalPlayers: 0,
+                    })),
+                ];
+
+                setPeriods(mappedPeriods);
+                setSelectedPeriod(mappedPeriods[0]);
+
+                // Generate settlements for current period
+                const settlements = await SettlementService.generateSettlements(currentPeriod.id);
+
+                // Map club settlements to wires
+                const wires: ClubWire[] = settlements.clubSettlements.map(c => ({
+                    clubId: c.clubId,
+                    clubName: c.clubName,
+                    netPlayerPL: 0, // Would need to track this
+                    grossRake: c.totalRakeCollected,
+                    unionTax: c.platformFee,
+                    agentCommissions: c.agentCommissions,
+                    finalWire: c.netRevenue,
+                    direction: c.netRevenue >= 0 ? 'COLLECT_FROM_UNION' : 'PAY_TO_UNION',
+                    status: c.status === 'finalized' ? 'processed' : 'pending',
+                }));
+                setClubWires(wires);
+
+                // Map agent settlements to payouts
+                const payouts: AgentPayout[] = settlements.agentSettlements.map(a => ({
+                    agentId: a.agentId,
+                    agentName: a.agentName,
+                    rakeGenerated: a.totalRakeGenerated,
+                    commissionRate: a.commissionRate,
+                    grossCommission: a.commissionEarned,
+                    playerRakeback: 0, // Would come from rakeback system
+                    netPayout: a.netSettlement,
+                    status: a.status as 'pending' | 'approved' | 'paid',
+                }));
+                setAgentPayouts(payouts);
+
+            } catch (error) {
+                console.error('[SettlementPage] Failed to load data:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+
+        loadSettlementData();
+    }, [unionId]);
 
     // Calculate totals
     const totalToCollect = clubWires
@@ -196,13 +171,40 @@ export default function SettlementPage() {
     };
 
     const handleExecutePayouts = async () => {
+        if (!selectedPeriod) return;
+
         setIsProcessing(true);
-        // Simulate processing
-        await new Promise(r => setTimeout(r, 2000));
-        setAgentPayouts(prev => prev.map(a => ({ ...a, status: 'paid' })));
-        setClubWires(prev => prev.map(w => ({ ...w, status: 'processed' })));
-        setIsProcessing(false);
+        try {
+            // Execute real payouts via SettlementService
+            const result = await SettlementService.executeMondayPayouts(selectedPeriod.id);
+            console.log('[SettlementPage] Payout result:', result);
+
+            // Refresh data
+            setAgentPayouts(prev => prev.map(a => ({ ...a, status: 'paid' })));
+            setClubWires(prev => prev.map(w => ({ ...w, status: 'processed' })));
+        } catch (error) {
+            console.error('[SettlementPage] Payout failed:', error);
+            alert('Payout execution failed: ' + (error as Error).message);
+        } finally {
+            setIsProcessing(false);
+        }
     };
+
+    if (isLoading) {
+        return (
+            <div className={styles.page}>
+                <div className={styles.loading}>Loading settlement data...</div>
+            </div>
+        );
+    }
+
+    if (!selectedPeriod) {
+        return (
+            <div className={styles.page}>
+                <div className={styles.error}>No settlement periods found</div>
+            </div>
+        );
+    }
 
     return (
         <div className={styles.page}>
@@ -463,10 +465,10 @@ export default function SettlementPage() {
                 {activeTab === 'history' && (
                     <div className={styles.historySection}>
                         <div className={styles.periodList}>
-                            {DEMO_PERIODS.map(period => (
+                            {periods.map(period => (
                                 <div
                                     key={period.id}
-                                    className={`${styles.periodCard} ${selectedPeriod.id === period.id ? styles.selected : ''}`}
+                                    className={`${styles.periodCard} ${selectedPeriod?.id === period.id ? styles.selected : ''}`}
                                     onClick={() => setSelectedPeriod(period)}
                                 >
                                     <div className={styles.periodHeader}>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { CreditService } from '../../services/CreditService';
+import { WalletService } from '../../services/WalletService';
 
 interface AgentPortalProps {
     agentId: string;
@@ -14,6 +15,7 @@ export const AgentFinancialPortal: React.FC<AgentPortalProps> = ({ agentId }) =>
         creditLimit: 0,
         debt: 0
     });
+    const [isTransferring, setIsTransferring] = useState(false);
 
     useEffect(() => {
         fetchWalletData();
@@ -44,14 +46,24 @@ export const AgentFinancialPortal: React.FC<AgentPortalProps> = ({ agentId }) =>
     };
 
     const handleTransferToPlayer = async () => {
-        // Call WalletService.agentSelfTransfer
-        const amount = Number(prompt("Amount to transfer to Player Wallet?"));
-        if (!amount) return;
+        const amountStr = prompt("Amount to transfer to Player Wallet?");
+        const amount = Number(amountStr);
+        if (!amount || amount <= 0) return;
 
-        // Logic tied to WalletService (imported in real impl)
-        // await WalletService.agentSelfTransfer(agentId, amount);
-        alert("Transfer simulated: " + amount);
-        fetchWalletData();
+        setIsTransferring(true);
+        try {
+            const success = await WalletService.agentSelfTransfer(agentId, amount);
+            if (success) {
+                await fetchWalletData(); // Refresh wallet data
+            } else {
+                alert("Transfer failed. Please check your balance.");
+            }
+        } catch (err) {
+            console.error("Transfer error:", err);
+            alert("Transfer failed: " + (err as Error).message);
+        } finally {
+            setIsTransferring(false);
+        }
     };
 
     return (
