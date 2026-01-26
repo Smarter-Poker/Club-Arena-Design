@@ -160,7 +160,7 @@ export default function ClubsPage() {
             {showIntro && (
                 <IntroVideo
                     videoSrc="/videos/club-arena-intro.mp4"
-                    duration={3000}
+                    minDuration={3000}
                     onComplete={handleIntroComplete}
                 />
             )}
