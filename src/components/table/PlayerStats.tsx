@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 📊 PLAYER STATS POPUP — Click on Player to See Stats
+ *  PLAYER STATS POPUP — Click on Player to See Stats
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Player stats popover showing:

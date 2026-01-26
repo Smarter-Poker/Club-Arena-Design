@@ -1,0 +1,54 @@
+.online-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.indicator-dot {
+    border-radius: 50%;
+}
+
+.size-small .indicator-dot {
+    width: 8px;
+    height: 8px;
+}
+
+.size-medium .indicator-dot {
+    width: 10px;
+    height: 10px;
+}
+
+.size-large .indicator-dot {
+    width: 14px;
+    height: 14px;
+}
+
+.indicator-dot.online,
+.indicator-dot.playing {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+
+.indicator-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.size-small .indicator-label {
+    font-size: 0.7rem;
+}
+
+.size-large .indicator-label {
+    font-size: 0.9rem;
+}

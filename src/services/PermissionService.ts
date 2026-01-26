@@ -17,7 +17,7 @@
  * - Context-aware: ClubOwner in Club A cannot manage Club B
  */
 
-import { supabase, isDemoMode } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -143,37 +143,6 @@ const LEVEL_PERMISSIONS: Record<AdminLevel, Permission[]> = {
 const LEVEL_HIERARCHY: AdminLevel[] = ['PLATFORM_ADMIN', 'UNION_ADMIN', 'CLUB_OWNER', 'AGENT', 'PLAYER'];
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// DEMO DATA
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const DEMO_USER_ROLES: Map<string, UserPermissions> = new Map([
-    ['admin_1', {
-        userId: 'admin_1',
-        level: 'PLATFORM_ADMIN',
-        permissions: LEVEL_PERMISSIONS.PLATFORM_ADMIN,
-        contexts: { platformAdmin: true },
-    }],
-    ['union_owner_1', {
-        userId: 'union_owner_1',
-        level: 'UNION_ADMIN',
-        permissions: LEVEL_PERMISSIONS.UNION_ADMIN,
-        contexts: { unionIds: ['union_1', 'union_2'] },
-    }],
-    ['club_owner_1', {
-        userId: 'club_owner_1',
-        level: 'CLUB_OWNER',
-        permissions: LEVEL_PERMISSIONS.CLUB_OWNER,
-        contexts: { clubIds: ['club_1'] },
-    }],
-    ['agent_1', {
-        userId: 'agent_1',
-        level: 'AGENT',
-        permissions: LEVEL_PERMISSIONS.AGENT,
-        contexts: { agentForClubIds: ['club_1'] },
-    }],
-]);
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // SERVICE
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -186,16 +155,6 @@ export const PermissionService = {
      * Get user's permissions and contexts
      */
     async getUserPermissions(userId: string): Promise<UserPermissions> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 100));
-            return DEMO_USER_ROLES.get(userId) || {
-                userId,
-                level: 'PLAYER',
-                permissions: LEVEL_PERMISSIONS.PLAYER,
-                contexts: {},
-            };
-        }
-
         // 1. Check if platform admin
         const { data: profile } = await supabase
             .from('profiles')
@@ -315,8 +274,6 @@ export const PermissionService = {
 
         // Union admin can manage clubs in their unions
         if (userPerms.contexts.unionIds && userPerms.contexts.unionIds.length > 0) {
-            if (isDemoMode) return true; // Simplify for demo
-
             const { data } = await supabase
                 .from('union_members')
                 .select('union_id')
@@ -366,11 +323,6 @@ export const PermissionService = {
             throw new Error('Only Platform Admins can promote other admins');
         }
 
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 300));
-            return true;
-        }
-
         const { error } = await supabase
             .from('profiles')
             .update({ role: 'admin' })
@@ -387,11 +339,6 @@ export const PermissionService = {
         const adminPerms = await this.getUserPermissions(adminUserId);
         if (!adminPerms.permissions.includes('MANAGE_PLATFORM_ADMINS')) {
             throw new Error('Only Platform Admins can demote other admins');
-        }
-
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 300));
-            return true;
         }
 
         const { error } = await supabase

@@ -6,9 +6,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { tournamentService } from '../../services/TournamentService';
+import { supabase } from '../../lib/supabase';
 import type { Tournament } from '../../types/database.types';
 import { useUserStore } from '../../stores/useUserStore';
+import TournamentBracket from '../../components/tournament/TournamentBracket';
 import './TournamentDetails.css';
+import { useToast } from '../../components/common/Toast';
 
 type TabId = 'detail' | 'entries' | 'ranking' | 'unions' | 'tables' | 'rewards';
 
@@ -26,6 +29,7 @@ export default function TournamentDetails() {
     const { tournamentId } = useParams<{ tournamentId: string }>();
     const navigate = useNavigate();
     const { user } = useUserStore();
+    const toast = useToast();
 
     const [tournament, setTournament] = useState<Tournament | null>(null);
     const [activeTab, setActiveTab] = useState<TabId>('detail');
@@ -59,16 +63,38 @@ export default function TournamentDetails() {
             const data = await tournamentService.getTournament(tournamentId);
             setTournament(data);
 
-            // For demo, use mock entries
             if (data) {
-                setEntries([
-                    { id: '1', user_id: 'u1', username: 'Player1', avatar_url: null, chips: 1500, status: 'registered' },
-                    { id: '2', user_id: 'u2', username: 'Player2', avatar_url: null, chips: 1500, status: 'registered' },
-                    { id: '3', user_id: 'u3', username: 'Player3', avatar_url: null, chips: 1500, status: 'registered' },
-                ]);
-                // Check if current user is "registered"
-                if (user) {
-                    setIsRegistered(false); // Demo: not registered by default
+                // Fetch tournament entries from supabase
+                const { data: playersData, error } = await supabase
+                    .from('tournament_players')
+                    .select('id, user_id, username, avatar_url, chips, status')
+                    .eq('tournament_id', data.id)
+                    .order('created_at', { ascending: true });
+
+                if (!error && playersData) {
+                    setEntries(playersData.map((e: {
+                        id: string;
+                        user_id: string;
+                        username?: string;
+                        avatar_url?: string | null;
+                        chips?: number;
+                        status: string;
+                    }) => ({
+                        id: e.id,
+                        user_id: e.user_id,
+                        username: e.username || 'Player',
+                        avatar_url: e.avatar_url || null,
+                        chips: e.chips || data.starting_chips,
+                        status: e.status as TournamentEntry['status'],
+                    })));
+
+                    // Check if current user is registered
+                    if (user) {
+                        const isUserRegistered = playersData.some((e: { user_id: string }) => e.user_id === user.id);
+                        setIsRegistered(isUserRegistered);
+                    }
+                } else {
+                    setEntries([]);
                 }
             }
         } catch (error) {
@@ -115,7 +141,7 @@ export default function TournamentDetails() {
             loadTournament(); // Refresh entries
         } catch (error) {
             console.error('Registration failed:', error);
-            alert('Registration failed. Please try again.');
+            toast.error('Registration failed. Please try again.');
         }
     };
 
@@ -201,7 +227,7 @@ export default function TournamentDetails() {
             <div className="tournament-title">
                 <h2>{tournament.name}</h2>
                 <span className="tournament-id">ID:{tournament.id.slice(0, 8)}</span>
-                <button className="qr-btn">📷</button>
+                <button className="qr-btn"></button>
             </div>
 
             {/* Tournament Description */}
@@ -307,7 +333,7 @@ export default function TournamentDetails() {
                         entries.map((entry, idx) => (
                             <div key={entry.id} className="entry-row">
                                 <span className="entry-rank">{idx + 1}</span>
-                                <div className="entry-avatar">👤</div>
+                                <div className="entry-avatar"></div>
                                 <div className="entry-info">
                                     <span className="entry-name">{entry.username}</span>
                                     <span className="entry-chips">{entry.chips || tournament.starting_chips} chips</span>
@@ -316,6 +342,15 @@ export default function TournamentDetails() {
                             </div>
                         ))
                     )}
+                </div>
+            )}
+
+            {activeTab === 'ranking' && (
+                <div className="ranking-section">
+                    <TournamentBracket
+                        tournamentId={tournamentId || ''}
+                        totalPlayers={tournament.max_players}
+                    />
                 </div>
             )}
 

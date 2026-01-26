@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * ⏳ TIME BANK — Extra Time Component
+ *  TIME BANK — Extra Time Component
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Visual indicator and trigger for Time Bank:
@@ -36,7 +36,7 @@ export function TimeBank({
         <div className={`time-bank ${isActive ? 'time-bank--active' : ''}`}>
             {isActive ? (
                 <div className="time-bank__active-display">
-                    <span className="time-bank__icon">⏳</span>
+                    <span className="time-bank__icon"></span>
                     <div className="time-bank__progress">
                         <div
                             className="time-bank__bar"

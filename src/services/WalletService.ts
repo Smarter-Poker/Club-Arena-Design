@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 💰 WALLET SERVICE — Complete Triple-Wallet System
+ *  WALLET SERVICE — Complete Triple-Wallet System
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Core financial operations for Club Arena.
@@ -12,7 +12,7 @@
  * 75% Cheaper Law: 38 Diamonds = 100 Chips
  */
 
-import { supabase, isDemoMode } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -56,24 +56,6 @@ export interface ChipMintResult {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// DEMO DATA
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const DEMO_WALLETS: Map<string, WalletBalance[]> = new Map([
-    ['user_1', [
-        { userId: 'user_1', walletType: 'BUSINESS', balance: 50000, lockedBalance: 0, availableBalance: 50000, lastUpdated: new Date().toISOString() },
-        { userId: 'user_1', walletType: 'PLAYER', balance: 10000, lockedBalance: 2500, availableBalance: 7500, lastUpdated: new Date().toISOString() },
-        { userId: 'user_1', walletType: 'PROMO', balance: 5000, lockedBalance: 0, availableBalance: 5000, lastUpdated: new Date().toISOString() },
-    ]],
-]);
-
-const DEMO_TRANSACTIONS: TransactionRecord[] = [
-    { id: 't1', userId: 'user_1', walletType: 'PLAYER', amount: 10000, type: 'credit', category: 'mint', description: 'Initial chip purchase', createdAt: '2026-01-10T10:00:00Z' },
-    { id: 't2', userId: 'user_1', walletType: 'PLAYER', amount: 2500, type: 'debit', category: 'buyin', description: 'Table buy-in NL200', relatedEntityId: 'table_1', createdAt: '2026-01-12T14:30:00Z' },
-    { id: 't3', userId: 'user_1', walletType: 'BUSINESS', amount: 1200, type: 'credit', category: 'commission', description: 'Weekly commission payout', createdAt: '2026-01-13T00:00:00Z' },
-];
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // SERVICE
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -86,17 +68,8 @@ export const WalletService = {
      * Get all wallet balances for a user
      */
     async getBalances(userId: string): Promise<WalletBalance[]> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 200));
-            return DEMO_WALLETS.get(userId) || [
-                { userId, walletType: 'BUSINESS', balance: 0, lockedBalance: 0, availableBalance: 0, lastUpdated: new Date().toISOString() },
-                { userId, walletType: 'PLAYER', balance: 0, lockedBalance: 0, availableBalance: 0, lastUpdated: new Date().toISOString() },
-                { userId, walletType: 'PROMO', balance: 0, lockedBalance: 0, availableBalance: 0, lastUpdated: new Date().toISOString() },
-            ];
-        }
-
         const { data, error } = await supabase
-            .from('wallets')
+            .from('player_wallets')
             .select('*')
             .eq('user_id', userId);
 
@@ -141,16 +114,6 @@ export const WalletService = {
         // Calculate diamond cost
         const diamondCost = Math.ceil((chipAmount / 100) * 38);
 
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 500));
-            return {
-                success: true,
-                chipsAdded: chipAmount,
-                diamondsSpent: diamondCost,
-                newBalance: 60000 + chipAmount, // Mock
-            };
-        }
-
         const { data, error } = await supabase.rpc('mint_club_chips', {
             p_club_id: clubId,
             p_chips: chipAmount,
@@ -176,24 +139,6 @@ export const WalletService = {
     async internalTransfer(userId: string, request: TransferRequest): Promise<boolean> {
         if (request.amount <= 0) throw new Error('Transfer amount must be positive');
         if (request.fromWallet === request.toWallet) throw new Error('Cannot transfer to same wallet');
-
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 300));
-            // Update demo data
-            const wallets = DEMO_WALLETS.get(userId);
-            if (wallets) {
-                const from = wallets.find(w => w.walletType === request.fromWallet);
-                const to = wallets.find(w => w.walletType === request.toWallet);
-                if (from && to && from.availableBalance >= request.amount) {
-                    from.balance -= request.amount;
-                    from.availableBalance -= request.amount;
-                    to.balance += request.amount;
-                    to.availableBalance += request.amount;
-                    return true;
-                }
-            }
-            throw new Error('Insufficient balance');
-        }
 
         const { error } = await supabase.rpc('wallet_internal_transfer', {
             p_user_id: userId,
@@ -231,11 +176,6 @@ export const WalletService = {
     ): Promise<boolean> {
         if (amount <= 0) throw new Error('Transfer amount must be positive');
 
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 400));
-            return true;
-        }
-
         const { error } = await supabase.rpc('wallet_user_transfer', {
             p_from_user_id: fromUserId,
             p_to_user_id: toUserId,
@@ -257,11 +197,6 @@ export const WalletService = {
      */
     async distributePromo(agentId: string, playerId: string, amount: number): Promise<boolean> {
         if (amount <= 0) throw new Error('Amount must be positive');
-
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 300));
-            return true;
-        }
 
         const { error } = await supabase.rpc('distribute_promo_chips', {
             p_agent_id: agentId,
@@ -303,20 +238,6 @@ export const WalletService = {
      * Lock chips for table buy-in
      */
     async lockForBuyIn(userId: string, tableId: string, amount: number): Promise<boolean> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 200));
-            const wallets = DEMO_WALLETS.get(userId);
-            if (wallets) {
-                const player = wallets.find(w => w.walletType === 'PLAYER');
-                if (player && player.availableBalance >= amount) {
-                    player.lockedBalance += amount;
-                    player.availableBalance -= amount;
-                    return true;
-                }
-            }
-            throw new Error('Insufficient available balance');
-        }
-
         const { error } = await supabase.rpc('lock_chips_for_table', {
             p_user_id: userId,
             p_table_id: tableId,
@@ -331,20 +252,6 @@ export const WalletService = {
      * Unlock chips on cash-out from table
      */
     async unlockFromTable(userId: string, tableId: string, amount: number): Promise<boolean> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 200));
-            const wallets = DEMO_WALLETS.get(userId);
-            if (wallets) {
-                const player = wallets.find(w => w.walletType === 'PLAYER');
-                if (player) {
-                    player.lockedBalance = Math.max(0, player.lockedBalance - amount);
-                    player.availableBalance += amount;
-                    return true;
-                }
-            }
-            return false;
-        }
-
         const { error } = await supabase.rpc('unlock_chips_from_table', {
             p_user_id: userId,
             p_table_id: tableId,
@@ -371,18 +278,6 @@ export const WalletService = {
             offset?: number;
         }
     ): Promise<TransactionRecord[]> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 300));
-            let filtered = DEMO_TRANSACTIONS.filter(t => t.userId === userId);
-            if (options?.walletType) {
-                filtered = filtered.filter(t => t.walletType === options.walletType);
-            }
-            if (options?.category) {
-                filtered = filtered.filter(t => t.category === options.category);
-            }
-            return filtered.slice(options?.offset || 0, (options?.offset || 0) + (options?.limit || 50));
-        }
-
         let query = supabase
             .from('wallet_transactions')
             .select('*')
@@ -424,11 +319,6 @@ export const WalletService = {
      * Credit commission to agent's business wallet
      */
     async creditCommission(agentId: string, amount: number, periodId: string): Promise<boolean> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 300));
-            return true;
-        }
-
         const { error } = await supabase.rpc('credit_agent_commission', {
             p_agent_id: agentId,
             p_amount: amount,
@@ -443,11 +333,6 @@ export const WalletService = {
      * Process rakeback to player's wallet
      */
     async creditRakeback(playerId: string, amount: number, periodId: string): Promise<boolean> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 300));
-            return true;
-        }
-
         const { error } = await supabase.rpc('credit_player_rakeback', {
             p_player_id: playerId,
             p_amount: amount,
@@ -455,6 +340,62 @@ export const WalletService = {
         });
 
         if (error) throw error;
+        return true;
+    },
+
+    /**
+     * Process dealer tip from player's table stack
+     */
+    async processDealerTip(userId: string, tableId: string, amount: number): Promise<boolean> {
+        // Deduct from player's locked chips at table
+        const { error } = await supabase
+            .from('table_chip_locks')
+            .update({ amount: supabase.rpc('table_chip_locks.amount - $1', [amount]) })
+            .eq('user_id', userId)
+            .eq('table_id', tableId);
+
+        if (error) {
+            // Simple deduction approach
+            await supabase.rpc('deduct_table_chips', {
+                p_user_id: userId,
+                p_table_id: tableId,
+                p_amount: amount,
+            });
+        }
+
+        // Record tip transaction
+        await supabase.from('wallet_transactions').insert({
+            user_id: userId,
+            type: 'TIP',
+            amount: -amount,
+            table_id: tableId,
+            description: `Dealer tip at table`,
+        });
+
+        return true;
+    },
+
+    /**
+     * Process insurance purchase from player's table stack
+     */
+    async processInsurance(userId: string, tableId: string, handId: string, premium: number): Promise<boolean> {
+        // Deduct premium from player's table stack
+        await supabase.rpc('deduct_table_chips', {
+            p_user_id: userId,
+            p_table_id: tableId,
+            p_amount: premium,
+        });
+
+        // Record insurance transaction
+        await supabase.from('wallet_transactions').insert({
+            user_id: userId,
+            type: 'INSURANCE',
+            amount: -premium,
+            table_id: tableId,
+            hand_id: handId,
+            description: 'Insurance premium',
+        });
+
         return true;
     },
 };

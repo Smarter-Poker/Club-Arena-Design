@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 💀 ELIMINATION OVERLAY — Tournament Knockout Animation
+ *  ELIMINATION OVERLAY — Tournament Knockout Animation
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
@@ -70,7 +70,7 @@ export const EliminationOverlay: React.FC<EliminationOverlayProps> = ({
             <div className="elimination-content">
                 {/* Skull animation */}
                 <div className="elimination-icon">
-                    {isMoneyFinish ? '💰' : isBubble ? '🫧' : '💀'}
+                    {isMoneyFinish ? '' : isBubble ? '' : ''}
                 </div>
 
                 {/* Player info */}
@@ -112,7 +112,7 @@ export const EliminationOverlay: React.FC<EliminationOverlayProps> = ({
                 {/* Bounty info (for bounty tournaments) */}
                 {elimination.bountyCollectedBy && elimination.bountyAmount && (
                     <div className="elimination-bounty">
-                        <span className="elimination-bounty-icon">🎯</span>
+                        <span className="elimination-bounty-icon"></span>
                         <span className="elimination-bounty-text">
                             Bounty collected by <strong>{elimination.bountyCollectedBy}</strong>
                         </span>
@@ -125,7 +125,7 @@ export const EliminationOverlay: React.FC<EliminationOverlayProps> = ({
                 {/* Bubble boy special */}
                 {isBubble && (
                     <div className="elimination-bubble">
-                        <span>🫧 BUBBLE BOY 🫧</span>
+                        <span> BUBBLE BOY </span>
                     </div>
                 )}
 

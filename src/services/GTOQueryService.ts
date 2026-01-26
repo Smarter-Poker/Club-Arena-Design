@@ -1,5 +1,5 @@
 /**
- * 🎯 GTO Query Service
+ *  GTO Query Service
  * Fast lookup of solved scenarios for training games and horse decisions
  */
 

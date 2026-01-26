@@ -123,57 +123,57 @@ class MasterBusCore {
         try {
             const arenaState = useArenaStore.getState();
             stores.arena = arenaState !== undefined;
-            console.log(`  ├─ ArenaStore: ${stores.arena ? '✓' : '✗'}`);
+            console.log(`  ├─ ArenaStore: ${stores.arena ? '' : ''}`);
         } catch (e) {
-            console.error('  ├─ ArenaStore: ✗ (Error)', e);
+            console.error('  ├─ ArenaStore:  (Error)', e);
         }
 
         try {
             const clubState = useClubStore.getState();
             stores.club = clubState !== undefined;
-            console.log(`  ├─ ClubStore: ${stores.club ? '✓' : '✗'}`);
+            console.log(`  ├─ ClubStore: ${stores.club ? '' : ''}`);
         } catch (e) {
-            console.error('  ├─ ClubStore: ✗ (Error)', e);
+            console.error('  ├─ ClubStore:  (Error)', e);
         }
 
         try {
             const tableState = useTableStore.getState();
             stores.table = tableState !== undefined;
-            console.log(`  ├─ TableStore: ${stores.table ? '✓' : '✗'}`);
+            console.log(`  ├─ TableStore: ${stores.table ? '' : ''}`);
         } catch (e) {
-            console.error('  ├─ TableStore: ✗ (Error)', e);
+            console.error('  ├─ TableStore:  (Error)', e);
         }
 
         try {
             const unionState = useUnionStore.getState();
             stores.union = unionState !== undefined;
-            console.log(`  ├─ UnionStore: ${stores.union ? '✓' : '✗'}`);
+            console.log(`  ├─ UnionStore: ${stores.union ? '' : ''}`);
         } catch (e) {
-            console.error('  ├─ UnionStore: ✗ (Error)', e);
+            console.error('  ├─ UnionStore:  (Error)', e);
         }
 
         try {
             const walletState = useWalletStore.getState();
             stores.wallet = walletState !== undefined;
-            console.log(`  ├─ WalletStore: ${stores.wallet ? '✓' : '✗'}`);
+            console.log(`  ├─ WalletStore: ${stores.wallet ? '' : ''}`);
         } catch (e) {
-            console.error('  ├─ WalletStore: ✗ (Error)', e);
+            console.error('  ├─ WalletStore:  (Error)', e);
         }
 
         try {
             const settingsState = useSettingsStore.getState();
             stores.settings = settingsState !== undefined;
-            console.log(`  ├─ SettingsStore: ${stores.settings ? '✓' : '✗'}`);
+            console.log(`  ├─ SettingsStore: ${stores.settings ? '' : ''}`);
         } catch (e) {
-            console.error('  ├─ SettingsStore: ✗ (Error)', e);
+            console.error('  ├─ SettingsStore:  (Error)', e);
         }
 
         try {
             const userState = useUserStore.getState();
             stores.user = userState !== undefined;
-            console.log(`  └─ UserStore: ${stores.user ? '✓' : '✗'}`);
+            console.log(`  └─ UserStore: ${stores.user ? '' : ''}`);
         } catch (e) {
-            console.error('  └─ UserStore: ✗ (Error)', e);
+            console.error('  └─ UserStore:  (Error)', e);
         }
 
         // Determine overall status

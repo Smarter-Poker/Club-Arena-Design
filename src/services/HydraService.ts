@@ -1,18 +1,18 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🐴 HYDRA SERVICE — Bot Liquidity Fleet Management
+ * 🐴 HYDRA SERVICE — Horse Liquidity Fleet Management
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
- * Manages the Hydra bot fleet (300 Horses #101-#400) to ensure 24/7 table liquidity.
+ * Manages the Hydra horse fleet (300 Horses #101-#400) to ensure 24/7 table liquidity.
  * 
  * LAWS:
- * - "3 Horses to Start": Tables seed with 3 bot players
- * - "Organic Recede": When real player joins, 1 bot leaves after orbit
- * - "Fleet Size": 300 unique sovereign bot IDs (#101-#400)
+ * - "3 Horses to Start": Tables seed with 3 horse players
+ * - "Organic Recede": When real player joins, 1 horse leaves after orbit
+ * - "Fleet Size": 300 unique sovereign horse IDs (#101-#400)
  * - "Entry Variance": Random 10-90s delays for natural appearance
- * - "Invisible Fleet": Bots are indistinguishable from human players
+ * - "Invisible Fleet": Horses are indistinguishable from human players
  * 
- * BOT PROFILES:
+ * HORSE PROFILES:
  * - FISH: Loose-passive, calls too much (40% of fleet)
  * - REG: Balanced TAG play (30% of fleet)
  * - NIT: Tight-passive, fold equity (15% of fleet)
@@ -20,24 +20,24 @@
  * - MANIAC: Ultra-aggressive, high variance (5% of fleet)
  */
 
-import { supabase, isDemoMode } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export type BotProfile = 'fish' | 'reg' | 'nit' | 'lag' | 'maniac';
-export type BotStatus = 'available' | 'seated' | 'leaving' | 'disabled';
+export type HorseProfile = 'fish' | 'reg' | 'nit' | 'lag' | 'maniac';
+export type HorseStatus = 'available' | 'seated' | 'leaving' | 'disabled';
 
 export interface HorsePlayer {
     id: string;
     name: string;
     playerNumber: number;
     avatar: string;
-    profile: BotProfile;
+    profile: HorseProfile;
     stack: number;
     seatNumber: number;
-    status: BotStatus;
+    status: HorseStatus;
     tableId: string;
     joinedAt: string;
     leavingAfterOrbit: boolean;
@@ -51,20 +51,20 @@ export interface HydraConfig {
     fleetSize: number;
     entryDelayRange: [number, number]; // [min, max] in seconds
     organicRecedeEnabled: boolean;
-    seatWarmupDelay: number; // ms before bot starts playing
+    seatWarmupDelay: number; // ms before horse starts playing
     thinkTimeRange: [number, number]; // [min, max] in ms for action delay
 }
 
 export interface TableLiquidityStatus {
     tableId: string;
     realPlayers: number;
-    botPlayers: number;
+    horsePlayers: number;
     availableSeats: number;
-    needsMoreBots: boolean;
-    needsFewerBots: boolean;
+    needsMoreHorses: boolean;
+    needsFewerHorses: boolean;
 }
 
-export interface BotDecision {
+export interface HorseDecision {
     action: 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'allin';
     amount?: number;
     thinkTime: number; // ms to wait before acting
@@ -97,7 +97,7 @@ const DEFAULT_CONFIG: HydraConfig = {
 };
 
 // Profile action weights (probabilities)
-const PROFILE_WEIGHTS: Record<BotProfile, {
+const PROFILE_WEIGHTS: Record<HorseProfile, {
     fold: number;
     check: number;
     call: number;
@@ -112,7 +112,7 @@ const PROFILE_WEIGHTS: Record<BotProfile, {
 };
 
 // Stack size ranges per profile (in BB)
-const PROFILE_STACK_RANGES: Record<BotProfile, [number, number]> = {
+const PROFILE_STACK_RANGES: Record<HorseProfile, [number, number]> = {
     fish: [50, 100],
     reg: [80, 150],
     nit: [100, 100],
@@ -121,7 +121,7 @@ const PROFILE_STACK_RANGES: Record<BotProfile, [number, number]> = {
 };
 
 // Preflop hand ranges (simplified)
-const PREFLOP_RANGES: Record<BotProfile, {
+const PREFLOP_RANGES: Record<HorseProfile, {
     vpip: number; // Voluntarily Put $ In Pot percentage
     pfr: number; // Pre-Flop Raise percentage
     threeBet: number; // 3-bet percentage
@@ -134,39 +134,6 @@ const PREFLOP_RANGES: Record<BotProfile, {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// DEMO DATA (Synced with database horses #101-#400)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const DEMO_HORSES: HorsePlayer[] = [
-    {
-        id: 'horse-101', name: 'Alex R.', playerNumber: 101, avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex101',
-        profile: 'fish', stack: 1000, seatNumber: 2, status: 'seated', tableId: 'table-1',
-        joinedAt: new Date(Date.now() - 15 * 60000).toISOString(), leavingAfterOrbit: false, handsPlayed: 42, orbitsPlayed: 5,
-    },
-    {
-        id: 'horse-102', name: 'Jordan S.', playerNumber: 102, avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jordan102',
-        profile: 'reg', stack: 1200, seatNumber: 5, status: 'seated', tableId: 'table-1',
-        joinedAt: new Date(Date.now() - 8 * 60000).toISOString(), leavingAfterOrbit: false, handsPlayed: 28, orbitsPlayed: 3,
-    },
-    {
-        id: 'horse-103', name: 'Taylor K.', playerNumber: 103, avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Taylor103',
-        profile: 'lag', stack: 1500, seatNumber: 8, status: 'seated', tableId: 'table-1',
-        joinedAt: new Date(Date.now() - 22 * 60000).toISOString(), leavingAfterOrbit: true, handsPlayed: 65, orbitsPlayed: 8,
-    },
-];
-
-// Available horses pool (simulates the 300 fleet)
-const AVAILABLE_HORSE_POOL: Array<{ id: string; name: string; playerNumber: number; avatar: string; profile: BotProfile }> = Array.from(
-    { length: 50 }, (_, i) => ({
-        id: `horse-${101 + i}`,
-        name: `Player${101 + i}`,
-        playerNumber: 101 + i,
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=Horse${101 + i}`,
-        profile: (['fish', 'fish', 'reg', 'nit', 'lag'][i % 5]) as BotProfile,
-    })
-);
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // UTILITY FUNCTIONS
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -174,7 +141,7 @@ function randomInRange(min: number, max: number): number {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function getStackForProfile(profile: BotProfile, bigBlind: number): number {
+function getStackForProfile(profile: HorseProfile, bigBlind: number): number {
     const [minBB, maxBB] = PROFILE_STACK_RANGES[profile];
     const bbCount = randomInRange(minBB, maxBB);
     return bbCount * bigBlind;
@@ -205,7 +172,6 @@ export const HydraService = {
      */
     initialize(customConfig: Partial<HydraConfig> = {}): void {
         this.config = { ...DEFAULT_CONFIG, ...customConfig };
-        console.log('🐴 Hydra Service initialized', this.config);
     },
 
     // ─────────────────────────────────────────────────────────────────────────────
@@ -215,28 +181,7 @@ export const HydraService = {
     /**
      * Get available horses from the fleet (not currently seated)
      */
-    async getAvailableHorses(count: number = 3, profile?: BotProfile): Promise<HorsePlayer[]> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 200));
-            let available = AVAILABLE_HORSE_POOL.filter(h =>
-                !DEMO_HORSES.some(dh => dh.id === h.id)
-            );
-            if (profile) {
-                available = available.filter(h => h.profile === profile);
-            }
-            return available.slice(0, count).map(h => ({
-                ...h,
-                stack: 0,
-                seatNumber: 0,
-                status: 'available' as BotStatus,
-                tableId: '',
-                joinedAt: '',
-                leavingAfterOrbit: false,
-                handsPlayed: 0,
-                orbitsPlayed: 0,
-            }));
-        }
-
+    async getAvailableHorses(count: number = 3, profile?: HorseProfile): Promise<HorsePlayer[]> {
         const { data, error } = await supabase.rpc('get_available_horses', {
             p_count: count,
             p_profile: profile || null,
@@ -252,10 +197,10 @@ export const HydraService = {
             name: h.display_name,
             playerNumber: h.player_number,
             avatar: h.avatar_url,
-            profile: h.horse_profile as BotProfile,
+            profile: h.horse_profile as HorseProfile,
             stack: 0,
             seatNumber: 0,
-            status: 'available' as BotStatus,
+            status: 'available' as HorseStatus,
             tableId: '',
             joinedAt: '',
             leavingAfterOrbit: false,
@@ -268,10 +213,6 @@ export const HydraService = {
      * Get active horses at a table
      */
     async getActiveHorses(tableId: string): Promise<HorsePlayer[]> {
-        if (isDemoMode) {
-            return DEMO_HORSES.filter(h => h.tableId === tableId);
-        }
-
         const { data, error } = await supabase
             .from('seats')
             .select(`
@@ -320,18 +261,6 @@ export const HydraService = {
     async getTableLiquidityStatus(tableId: string): Promise<TableLiquidityStatus> {
         const horses = await this.getActiveHorses(tableId);
 
-        if (isDemoMode) {
-            const totalPlayers = horses.length + 2; // Assume 2 real players
-            return {
-                tableId,
-                realPlayers: 2,
-                botPlayers: horses.length,
-                availableSeats: 9 - totalPlayers,
-                needsMoreBots: horses.length < this.config.maxHorsesPerTable && totalPlayers < 5,
-                needsFewerBots: horses.length > 0 && totalPlayers >= 6,
-            };
-        }
-
         const { data: seats, error } = await supabase
             .from('seats')
             .select('user_id, profiles:user_id(is_horse)')
@@ -342,25 +271,25 @@ export const HydraService = {
             return {
                 tableId,
                 realPlayers: 0,
-                botPlayers: horses.length,
+                horsePlayers: horses.length,
                 availableSeats: 9,
-                needsMoreBots: true,
-                needsFewerBots: false,
+                needsMoreHorses: true,
+                needsFewerHorses: false,
             };
         }
 
         const totalPlayers = seats?.length || 0;
-        const botPlayers = horses.length;
-        const realPlayers = totalPlayers - botPlayers;
+        const horsePlayers = horses.length;
+        const realPlayers = totalPlayers - horsePlayers;
         const availableSeats = 9 - totalPlayers;
 
         return {
             tableId,
             realPlayers,
-            botPlayers,
+            horsePlayers,
             availableSeats,
-            needsMoreBots: botPlayers < this.config.maxHorsesPerTable && realPlayers < 3,
-            needsFewerBots: realPlayers >= 3 && botPlayers > 0,
+            needsMoreHorses: horsePlayers < this.config.maxHorsesPerTable && realPlayers < 3,
+            needsFewerHorses: realPlayers >= 3 && horsePlayers > 0,
         };
     },
 
@@ -369,18 +298,16 @@ export const HydraService = {
     // ─────────────────────────────────────────────────────────────────────────────
 
     /**
-     * Seed a table with bot players (3 Horses to Start law)
+     * Seed a table with horse players (3 Horses to Start law)
      */
     async seedTable(tableId: string, bigBlind: number = 2): Promise<HorsePlayer[]> {
         const status = await this.getTableLiquidityStatus(tableId);
-        const horsesToAdd = this.config.maxHorsesPerTable - status.botPlayers;
+        const horsesToAdd = this.config.maxHorsesPerTable - status.horsePlayers;
 
         if (horsesToAdd <= 0) {
-            console.log('🐴 Table already has enough horses');
             return [];
         }
 
-        console.log(`🐴 Seeding table with ${horsesToAdd} horses...`);
         const availableHorses = await this.getAvailableHorses(horsesToAdd);
         const seatedHorses: HorsePlayer[] = [];
 
@@ -397,7 +324,6 @@ export const HydraService = {
                     const seatedHorse = await this.seatHorse(horse.id, tableId, bigBlind);
                     if (seatedHorse) {
                         seatedHorses.push(seatedHorse);
-                        console.log(`🐴 Horse #${seatedHorse.playerNumber} (${seatedHorse.profile}) joined seat ${seatedHorse.seatNumber}`);
                     }
                 } catch (err) {
                     console.error(`Failed to seat horse ${horse.id}:`, err);
@@ -412,29 +338,6 @@ export const HydraService = {
      * Seat a specific horse at a table
      */
     async seatHorse(horseId: string, tableId: string, bigBlind: number): Promise<HorsePlayer | null> {
-        if (isDemoMode) {
-            const poolHorse = AVAILABLE_HORSE_POOL.find(h => h.id === horseId);
-            if (!poolHorse) return null;
-
-            const stack = getStackForProfile(poolHorse.profile, bigBlind);
-            const seatNumber = randomInRange(1, 9);
-
-            const horse: HorsePlayer = {
-                ...poolHorse,
-                stack,
-                seatNumber,
-                status: 'seated',
-                tableId,
-                joinedAt: new Date().toISOString(),
-                leavingAfterOrbit: false,
-                handsPlayed: 0,
-                orbitsPlayed: 0,
-            };
-
-            DEMO_HORSES.push(horse);
-            return horse;
-        }
-
         // Get horse info
         const { data: horseData } = await supabase
             .from('profiles')
@@ -445,7 +348,7 @@ export const HydraService = {
 
         if (!horseData) return null;
 
-        const stack = getStackForProfile(horseData.horse_profile as BotProfile, bigBlind);
+        const stack = getStackForProfile(horseData.horse_profile as HorseProfile, bigBlind);
 
         // Seat the horse using RPC
         const { data, error } = await supabase.rpc('seat_horse', {
@@ -465,7 +368,7 @@ export const HydraService = {
             name: horseData.display_name,
             playerNumber: horseData.player_number,
             avatar: horseData.avatar_url,
-            profile: horseData.horse_profile as BotProfile,
+            profile: horseData.horse_profile as HorseProfile,
             stack,
             seatNumber: data.seat_number,
             status: 'seated',
@@ -490,31 +393,17 @@ export const HydraService = {
         }
 
         horse.leavingAfterOrbit = true;
-        console.log(`🐴 Horse #${horse.playerNumber} scheduled to leave after current orbit`);
 
-        if (!isDemoMode) {
-            await supabase.rpc('schedule_horse_leave', {
-                p_horse_id: horseId,
-                p_triggered_by: triggeredBy || null,
-            });
-        }
+        await supabase.rpc('schedule_horse_leave', {
+            p_horse_id: horseId,
+            p_triggered_by: triggeredBy || null,
+        });
     },
 
     /**
      * Remove a horse from table (called after orbit completes)
      */
     async removeHorse(tableId: string, horseId: string): Promise<boolean> {
-        if (isDemoMode) {
-            const index = DEMO_HORSES.findIndex(h => h.id === horseId);
-            if (index !== -1) {
-                const horse = DEMO_HORSES[index];
-                DEMO_HORSES.splice(index, 1);
-                console.log(`🐴 Horse #${horse.playerNumber} left the table after ${horse.handsPlayed} hands`);
-                return true;
-            }
-            return false;
-        }
-
         const { error } = await supabase.rpc('remove_horse', {
             p_horse_id: horseId,
             p_table_id: tableId,
@@ -536,8 +425,8 @@ export const HydraService = {
 
         const status = await this.getTableLiquidityStatus(tableId);
 
-        // If we have bots and enough real players, schedule one to leave
-        if (status.needsFewerBots && status.botPlayers > 0) {
+        // If we have horses and enough real players, schedule one to leave
+        if (status.needsFewerHorses && status.horsePlayers > 0) {
             const horses = await this.getActiveHorses(tableId);
             const horseToRemove = horses.find(h => !h.leavingAfterOrbit);
 
@@ -553,7 +442,7 @@ export const HydraService = {
     async onRealPlayerLeft(tableId: string, bigBlind: number): Promise<void> {
         const status = await this.getTableLiquidityStatus(tableId);
 
-        if (status.needsMoreBots) {
+        if (status.needsMoreHorses) {
             const delay = randomInRange(
                 this.config.entryDelayRange[0] * 1000,
                 this.config.entryDelayRange[1] * 1000
@@ -566,13 +455,13 @@ export const HydraService = {
     },
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // BOT DECISION MAKING (Poker AI)
+    // HORSE DECISION MAKING (Poker AI)
     // ─────────────────────────────────────────────────────────────────────────────
 
     /**
-     * Get action decision for a bot
+     * Get action decision for a horse
      */
-    getDecision(horse: HorsePlayer, context: HandContext): BotDecision {
+    getDecision(horse: HorsePlayer, context: HandContext): HorseDecision {
         const weights = this.getAdjustedWeights(horse.profile, context);
         const baseAction = weightedRandom(weights);
 
@@ -587,7 +476,7 @@ export const HydraService = {
         if (horse.profile === 'nit') thinkTime *= 1.2; // Nits take time
 
         // Determine final action and amount
-        let action = baseAction as BotDecision['action'];
+        let action = baseAction as HorseDecision['action'];
         let amount: number | undefined;
 
         // Convert bet/raise to specific amounts
@@ -618,7 +507,7 @@ export const HydraService = {
     /**
    * Adjust action weights based on context
    */
-    getAdjustedWeights(profile: BotProfile, context: HandContext): Record<string, number> {
+    getAdjustedWeights(profile: HorseProfile, context: HandContext): Record<string, number> {
         const base: Record<string, number> = { ...PROFILE_WEIGHTS[profile] };
 
         // Positional adjustments
@@ -656,12 +545,12 @@ export const HydraService = {
     },
 
     /**
-     * Calculate bet sizing for a bot
+     * Calculate bet sizing for a horse
      */
-    getBetSize(profile: BotProfile, context: HandContext): number {
+    getBetSize(profile: HorseProfile, context: HandContext): number {
         const { pot, minRaise, maxRaise } = context;
 
-        const sizingFactors: Record<BotProfile, [number, number]> = {
+        const sizingFactors: Record<HorseProfile, [number, number]> = {
             fish: [0.3, 1.0],   // Small to pot
             reg: [0.5, 0.75],   // Standard sizing
             nit: [0.5, 0.65],   // Conservative
@@ -676,9 +565,9 @@ export const HydraService = {
     },
 
     /**
-     * Determine if bot should enter pot preflop
+     * Determine if horse should enter pot preflop
      */
-    shouldEnterPot(profile: BotProfile, position: string): boolean {
+    shouldEnterPot(profile: HorseProfile, position: string): boolean {
         const ranges = PREFLOP_RANGES[profile];
         const roll = Math.random() * 100;
 
@@ -694,7 +583,7 @@ export const HydraService = {
     /**
      * Get action weights (for external use)
      */
-    getActionWeights(profile: BotProfile): typeof PROFILE_WEIGHTS.fish {
+    getActionWeights(profile: HorseProfile): typeof PROFILE_WEIGHTS.fish {
         return PROFILE_WEIGHTS[profile];
     },
 
@@ -710,24 +599,8 @@ export const HydraService = {
         available: number;
         seated: number;
         leaving: number;
-        byProfile: Record<BotProfile, number>;
+        byProfile: Record<HorseProfile, number>;
     }> {
-        if (isDemoMode) {
-            return {
-                totalHorses: 300,
-                available: 297 - DEMO_HORSES.length,
-                seated: DEMO_HORSES.filter(h => h.status === 'seated').length,
-                leaving: DEMO_HORSES.filter(h => h.leavingAfterOrbit).length,
-                byProfile: {
-                    fish: 120,
-                    reg: 90,
-                    nit: 45,
-                    lag: 30,
-                    maniac: 15,
-                },
-            };
-        }
-
         const { data, error } = await supabase
             .from('profiles')
             .select('horse_status, horse_profile')

@@ -1,0 +1,115 @@
+.help-page {
+    min-height: 100vh;
+    background: var(--bg-primary);
+    padding-bottom: 2rem;
+}
+
+.help-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.help-header .back-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.help-header h1 {
+    font-size: 1.25rem;
+    margin: 0;
+}
+
+.help-search {
+    padding: 1rem;
+}
+
+.help-search input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.faq-list {
+    padding: 0 1rem;
+}
+
+.faq-item {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+}
+
+.faq-question {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+}
+
+.faq-toggle {
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+}
+
+.faq-answer {
+    padding: 0 1rem 1rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    border-top: 1px solid var(--border-subtle);
+    margin-top: 0;
+    padding-top: 1rem;
+}
+
+.faq-item.expanded .faq-question {
+    color: var(--accent-primary);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+}
+
+.help-footer {
+    margin: 2rem 1rem;
+    padding: 1.5rem;
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    text-align: center;
+}
+
+.help-footer h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.125rem;
+}
+
+.help-footer p {
+    margin: 0 0 1rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.help-footer .btn {
+    width: 100%;
+}

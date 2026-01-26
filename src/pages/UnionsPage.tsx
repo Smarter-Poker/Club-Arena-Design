@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import CreateUnionModal from '../components/union/CreateUnionModal';
 import { unionService, type Union } from '../services/UnionService';
+import SmarterHeader from '../components/layout/SmarterHeader';
 
 export default function UnionsPage() {
     const [unions, setUnions] = useState<Union[]>([]);
@@ -33,9 +34,9 @@ export default function UnionsPage() {
 
     return (
         <div className="unions-page">
+            <SmarterHeader title=" Unions" showBackButton={false} />
             <header className="unions-header">
                 <div>
-                    <h1>🤝 Unions</h1>
                     <p>Join club networks for more players and bigger games.</p>
                 </div>
                 <button className="btn btn-primary" onClick={() => setIsCreating(true)}>
@@ -47,7 +48,7 @@ export default function UnionsPage() {
                 {unions.map(union => (
                     <div key={union.id} className="union-card">
                         <div className="union-header">
-                            <span className="union-icon">{union.avatarUrl || '🤝'}</span>
+                            <span className="union-icon">{union.avatarUrl || ''}</span>
                             <h3>{union.name}</h3>
                         </div>
                         <p className="union-description">{union.description}</p>
@@ -61,7 +62,7 @@ export default function UnionsPage() {
                                 <span className="stat-label">Members</span>
                             </div>
                             <div className="union-stat">
-                                <span className="stat-value online">{Math.floor(union.memberCount * 0.2).toLocaleString()}</span>
+                                <span className="stat-value online">{(union.onlineCount || 0).toLocaleString()}</span>
                                 <span className="stat-label">Online</span>
                             </div>
                         </div>

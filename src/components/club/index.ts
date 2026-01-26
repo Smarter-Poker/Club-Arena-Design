@@ -41,3 +41,7 @@ export type { ClubAnnouncementsProps, Announcement } from './ClubAnnouncements';
 
 export { CurrencyStore } from './CurrencyStore';
 export type { CurrencyStoreProps, ProductItem } from './CurrencyStore';
+
+// New Components
+export { ClubSettingsPanel } from './ClubSettingsPanel';
+export { ClubAnnouncementsList } from './ClubAnnouncementsList';

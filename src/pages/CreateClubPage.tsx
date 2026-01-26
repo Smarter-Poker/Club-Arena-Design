@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ENGINE — Create Club Page
+ *  CLUB ENGINE — Create Club Page
  * Complete club creation flow with settings and preview
  * ═══════════════════════════════════════════════════════════════════════════════
  */
@@ -8,9 +8,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './CreateClubPage.module.css';
-import { supabase, isDemoMode } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import ClubPromotionRulesModal from '../components/modals/ClubPromotionRulesModal';
+import { ClubService } from '../services/ClubService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -46,13 +47,13 @@ interface ClubFormData {
 
 // Club icon options
 const CLUB_ICONS = [
-    { id: 'eagle', emoji: '🦅', name: 'Eagle' },
-    { id: 'dragon', emoji: '🐉', name: 'Dragon' },
-    { id: 'shark', emoji: '🦈', name: 'Shark' },
-    { id: 'lion', emoji: '🦁', name: 'Lion' },
-    { id: 'phoenix', emoji: '🔥', name: 'Phoenix' },
-    { id: 'diamond', emoji: '💎', name: 'Diamond' },
-    { id: 'crown', emoji: '👑', name: 'Crown' },
+    { id: 'eagle', emoji: '', name: 'Eagle' },
+    { id: 'dragon', emoji: '', name: 'Dragon' },
+    { id: 'shark', emoji: '', name: 'Shark' },
+    { id: 'lion', emoji: '', name: 'Lion' },
+    { id: 'phoenix', emoji: '', name: 'Phoenix' },
+    { id: 'diamond', emoji: '', name: 'Diamond' },
+    { id: 'crown', emoji: '', name: 'Crown' },
     { id: 'ace', emoji: '🂡', name: 'Ace' },
 ];
 
@@ -81,12 +82,12 @@ const DEFAULT_FORM: ClubFormData = {
 };
 
 const GAME_VARIANTS = [
-    { id: 'nlh', name: 'No Limit Hold\'em', icon: '♠️' },
-    { id: 'plo4', name: 'Pot Limit Omaha', icon: '♥️' },
-    { id: 'plo5', name: 'PLO 5 Card', icon: '♦️' },
-    { id: 'plo6', name: 'PLO 6 Card', icon: '♣️' },
-    { id: 'short_deck', name: 'Short Deck', icon: '🃏' },
-    { id: 'ofc', name: 'Open Face Chinese', icon: '🍍' },
+    { id: 'nlh', name: 'No Limit Hold\'em', icon: '' },
+    { id: 'plo4', name: 'Pot Limit Omaha', icon: '' },
+    { id: 'plo5', name: 'PLO 5 Card', icon: '' },
+    { id: 'plo6', name: 'PLO 6 Card', icon: '' },
+    { id: 'short_deck', name: 'Short Deck', icon: '' },
+    { id: 'ofc', name: 'Open Face Chinese', icon: '' },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -100,7 +101,7 @@ interface StepProps {
 
 const Step1Basics = ({ form, updateForm }: StepProps) => (
     <div className={styles.stepContent}>
-        <h2>🏠 Club Basics</h2>
+        <h2> Club Basics</h2>
         <p className={styles.stepDesc}>Give your club a name and description.</p>
 
         <div className={styles.formGroup}>
@@ -190,7 +191,7 @@ const Step1Basics = ({ form, updateForm }: StepProps) => (
 
 const Step2Rake = ({ form, updateForm }: StepProps) => (
     <div className={styles.stepContent}>
-        <h2>💰 Rake Settings</h2>
+        <h2> Rake Settings</h2>
         <p className={styles.stepDesc}>Configure your club's rake structure.</p>
 
         <div className={styles.settingsGrid}>
@@ -230,7 +231,7 @@ const Step2Rake = ({ form, updateForm }: StepProps) => (
         </div>
 
         <div className={styles.infoCard}>
-            <span className={styles.infoIcon}>💡</span>
+            <span className={styles.infoIcon}></span>
             <div>
                 <strong>No Flop, No Drop</strong>
                 <p>Rake is only taken when a flop is seen. This is industry standard and automatically applied.</p>
@@ -241,7 +242,7 @@ const Step2Rake = ({ form, updateForm }: StepProps) => (
 
 const Step3Tables = ({ form, updateForm }: StepProps) => (
     <div className={styles.stepContent}>
-        <h2>🎲 Table Defaults</h2>
+        <h2> Table Defaults</h2>
         <p className={styles.stepDesc}>Set default rules for tables in your club.</p>
 
         <div className={styles.settingsGrid}>
@@ -317,7 +318,7 @@ const Step3Tables = ({ form, updateForm }: StepProps) => (
 
 const Step4Games = ({ form, updateForm }: StepProps) => (
     <div className={styles.stepContent}>
-        <h2>🎮 Games Offered</h2>
+        <h2> Games Offered</h2>
         <p className={styles.stepDesc}>Choose what games your club will offer.</p>
 
         <div className={styles.gameTypes}>
@@ -327,7 +328,7 @@ const Step4Games = ({ form, updateForm }: StepProps) => (
                     checked={form.offerCash}
                     onChange={(e) => updateForm({ offerCash: e.target.checked })}
                 />
-                <span className={styles.gameTypeIcon}>💵</span>
+                <span className={styles.gameTypeIcon}></span>
                 <strong>Cash Games</strong>
                 <p>Ring games with real chip value</p>
             </label>
@@ -338,7 +339,7 @@ const Step4Games = ({ form, updateForm }: StepProps) => (
                     checked={form.offerTournaments}
                     onChange={(e) => updateForm({ offerTournaments: e.target.checked })}
                 />
-                <span className={styles.gameTypeIcon}>🏆</span>
+                <span className={styles.gameTypeIcon}></span>
                 <strong>Tournaments</strong>
                 <p>MTTs, bounties, and special events</p>
             </label>
@@ -349,7 +350,7 @@ const Step4Games = ({ form, updateForm }: StepProps) => (
                     checked={form.offerSNG}
                     onChange={(e) => updateForm({ offerSNG: e.target.checked })}
                 />
-                <span className={styles.gameTypeIcon}>🎰</span>
+                <span className={styles.gameTypeIcon}></span>
                 <strong>Sit & Go / Spins</strong>
                 <p>Quick tournaments and jackpot SNGs</p>
             </label>
@@ -392,7 +393,7 @@ const Step5Preview = ({ form, hasAgreed, setHasAgreed, onShowRules }: Step5Props
     const icon = CLUB_ICONS.find(i => i.id === form.iconId);
     return (
         <div className={styles.stepContent}>
-            <h2>✨ Preview & Create</h2>
+            <h2> Preview & Create</h2>
             <p className={styles.stepDesc}>Review your club settings before creating.</p>
 
             <div className={styles.previewCard}>
@@ -402,7 +403,7 @@ const Step5Preview = ({ form, hasAgreed, setHasAgreed, onShowRules }: Step5Props
                     </div>
                     <div>
                         <h3>{form.name || 'Unnamed Club'}</h3>
-                        <p>{form.isPublic ? '🌍 Public' : '🔒 Private'} • {form.requiresApproval ? 'Approval Required' : 'Open Join'}</p>
+                        <p>{form.isPublic ? ' Public' : ' Private'} • {form.requiresApproval ? 'Approval Required' : 'Open Join'}</p>
                     </div>
                 </div>
 
@@ -430,11 +431,11 @@ const Step5Preview = ({ form, hasAgreed, setHasAgreed, onShowRules }: Step5Props
                 </div>
 
                 <div className={styles.previewTags}>
-                    {form.offerCash && <span>💵 Cash</span>}
-                    {form.offerTournaments && <span>🏆 MTTs</span>}
-                    {form.offerSNG && <span>🎰 SNGs</span>}
-                    {form.allowStraddle && <span>Straddle ✓</span>}
-                    {form.allowRunItTwice && <span>RIT ✓</span>}
+                    {form.offerCash && <span> Cash</span>}
+                    {form.offerTournaments && <span> MTTs</span>}
+                    {form.offerSNG && <span> SNGs</span>}
+                    {form.allowStraddle && <span>Straddle </span>}
+                    {form.allowRunItTwice && <span>RIT </span>}
                 </div>
 
                 <div className={styles.previewVariants}>
@@ -448,7 +449,7 @@ const Step5Preview = ({ form, hasAgreed, setHasAgreed, onShowRules }: Step5Props
 
             {/* First-time bonus notice */}
             <div className={styles.bonusNotice}>
-                <span className={styles.bonusIcon}>🎉</span>
+                <span className={styles.bonusIcon}></span>
                 <p>If this is the first club that you are creating you will receive a bonus of <strong>10,000 club chips</strong>. Congratulations!</p>
             </div>
 
@@ -541,13 +542,6 @@ export default function CreateClubPage() {
         setError(null);
 
         try {
-            if (isDemoMode) {
-                // Demo mode - just navigate
-                await new Promise(r => setTimeout(r, 1000));
-                navigate('/clubs/demo-new-club');
-                return;
-            }
-
             // Generate 6-digit club ID
             const clubIdNumber = Math.floor(100000 + Math.random() * 900000);
 
@@ -632,7 +626,7 @@ export default function CreateClubPage() {
                             key={s}
                             className={`${styles.progressStep} ${s === step ? styles.active : ''} ${s < step ? styles.completed : ''}`}
                         >
-                            <span className={styles.progressDot}>{s < step ? '✓' : s}</span>
+                            <span className={styles.progressDot}>{s < step ? '' : s}</span>
                             <span className={styles.progressLabel}>
                                 {s === 1 && 'Basics'}
                                 {s === 2 && 'Rake'}
@@ -655,7 +649,7 @@ export default function CreateClubPage() {
                 {/* Error */}
                 {error && (
                     <div className={styles.error}>
-                        ⚠️ {error}
+                         {error}
                     </div>
                 )}
 
@@ -677,7 +671,7 @@ export default function CreateClubPage() {
                             onClick={handleCreate}
                             disabled={creating || !hasAgreed}
                         >
-                            {creating ? 'Creating...' : '🎉 Create Club'}
+                            {creating ? 'Creating...' : ' Create Club'}
                         </button>
                     )}
                 </div>

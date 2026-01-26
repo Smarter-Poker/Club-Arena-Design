@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 💰 BUY-IN MODAL — Table Buy-In Interface
+ *  BUY-IN MODAL — Table Buy-In Interface
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * PokerBros-style buy-in modal with:
@@ -116,7 +116,7 @@ export function BuyInModal({
                     <span className="buy-in-modal__min-label">{formatAmount(minBuyIn, currency)}</span>
                     <div className="buy-in-modal__current-amount">
                         <span className="buy-in-modal__amount-value">{clampedBuyIn}</span>
-                        <span className="buy-in-modal__chip-icon">🪙</span>
+                        <span className="buy-in-modal__chip-icon"></span>
                     </div>
                     <span className="buy-in-modal__max-label">{formatAmount(maxBuyIn, currency)}</span>
                 </div>
@@ -207,7 +207,7 @@ export function BuyInModal({
                 {/* Top Up Link */}
                 {!hasEnoughBalance && (
                     <button className="buy-in-modal__top-up">
-                        💎 Top Up Account
+                         Top Up Account
                     </button>
                 )}
             </div>

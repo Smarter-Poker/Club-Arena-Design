@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ENGINE — Arena Training Controller
+ *  CLUB ENGINE — Arena Training Controller
  * ═══════════════════════════════════════════════════════════════════════════════
  * Training session state machine with 85% Mastery Gate enforcement
  */
@@ -34,7 +34,7 @@ export const LEVELS: TrainingLevel[] = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🎮 SESSION MANAGEMENT
+//  SESSION MANAGEMENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface TrainingState {
@@ -85,7 +85,7 @@ export async function startTrainingSession(
         .single();
 
     if (error) {
-        console.error('🔴 Session start failed:', error);
+        console.error(' Session start failed:', error);
         throw new Error('Failed to start training session');
     }
 
@@ -107,7 +107,7 @@ export async function checkLevelAccess(
     });
 
     if (error) {
-        console.error('🔴 Level access check failed:', error);
+        console.error(' Level access check failed:', error);
         // Default to locked if check fails
         return false;
     }
@@ -152,7 +152,7 @@ export async function recordAnswer(
         .eq('id', sessionId);
 
     if (updateError) {
-        console.error('🔴 Answer record failed:', updateError);
+        console.error(' Answer record failed:', updateError);
         throw new Error('Failed to record answer');
     }
 
@@ -222,7 +222,7 @@ export async function getTrainingHistory(
         .limit(limit);
 
     if (error) {
-        console.error('🔴 History fetch failed:', error);
+        console.error(' History fetch failed:', error);
         throw new Error('Failed to fetch training history');
     }
 

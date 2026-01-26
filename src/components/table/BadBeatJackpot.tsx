@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 💰 BAD BEAT JACKPOT — Jackpot Display & Trigger
+ *  BAD BEAT JACKPOT — Jackpot Display & Trigger
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Displays the current Bad Beat Jackpot amount.

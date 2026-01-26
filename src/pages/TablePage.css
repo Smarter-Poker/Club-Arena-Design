@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ARENA — Premium Table Page Styles
+ *  CLUB ARENA — Premium Table Page Styles
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * PokerBros-style table with Facebook color scheme
@@ -16,7 +16,8 @@
     inset: 0;
     display: flex;
     flex-direction: column;
-    background: linear-gradient(180deg, #0A0A0F 0%, #0D1117 100%);
+    background: linear-gradient(180deg, #0A0A1A 0%, #0D1020 100%);
+    /* Dark navy */
     overflow: hidden;
 }
 
@@ -149,7 +150,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   TABLE CONTAINER
+   TABLE CONTAINER — Fixed viewport with CSS scaling
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .table-container {
@@ -158,90 +159,149 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 60px 20px 20px;
+    padding: 60px 10px 10px;
     overflow: hidden;
+    /* Container for scaling - centered */
 }
 
-/* Table Felt (Oval) */
+/* Table Wrapper - Scales uniformly via CSS transform */
+.table-scaler {
+    width: 100%;
+    max-width: 420px;
+    aspect-ratio: 1 / 1.4;
+    /* Vertical orientation */
+    position: relative;
+    transform-origin: center center;
+}
+
+/* Table Felt (Vertical Oval) */
 .table-felt {
     width: 100%;
-    max-width: 800px;
-    aspect-ratio: 2/1;
-    position: relative;
+    height: 100%;
+    position: absolute;
+    inset: 0;
 }
 
 .table-rail {
     width: 100%;
     height: 100%;
-    padding: 12px;
-    background: linear-gradient(180deg, #1A1A2E 0%, #0F0F1A 100%);
-    border-radius: 50%;
+    padding: 8px;
+    /* Gold/Bronze ornate rail */
+    background: linear-gradient(180deg,
+            #C9A227 0%,
+            #8B6914 15%,
+            #D4A84B 30%,
+            #8B6914 45%,
+            #C9A227 50%,
+            #8B6914 55%,
+            #D4A84B 70%,
+            #8B6914 85%,
+            #C9A227 100%);
+    border-radius: 45% / 35%;
     box-shadow:
-        0 0 0 2px rgba(24, 119, 242, 0.3),
-        0 0 40px rgba(24, 119, 242, 0.15),
+        0 0 0 3px rgba(0, 0, 0, 0.5),
+        0 0 30px rgba(201, 162, 39, 0.3),
         0 20px 60px rgba(0, 0, 0, 0.6),
-        inset 0 0 30px rgba(0, 0, 0, 0.3);
+        inset 0 0 20px rgba(0, 0, 0, 0.4);
 }
 
 .table-surface {
     width: 100%;
     height: 100%;
-    background: linear-gradient(180deg, #0D4F3C 0%, #0A3D2E 100%);
-    border-radius: 50%;
+    /* Dark green felt */
+    background: linear-gradient(180deg, #1A3D2E 0%, #0D2820 50%, #0A1F18 100%);
+    border-radius: 44% / 34%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 8px;
     position: relative;
-    box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.4);
+    box-shadow:
+        inset 0 0 80px rgba(0, 0, 0, 0.5),
+        inset 0 0 20px rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(139, 105, 20, 0.6);
 }
 
-/* Pot Area */
+/* Pot Area — PokerIQ Badge Style */
 .pot-area {
     position: absolute;
-    top: 30%;
+    top: 18%;
     left: 50%;
     transform: translate(-50%, -50%);
+    z-index: 20;
+}
+
+.pot-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.85);
+    border-radius: 20px;
+    border: 1px solid rgba(212, 168, 75, 0.3);
+}
+
+.pot-badge__label {
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #10B981;
+}
+
+.pot-badge__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10B981;
+}
+
+.pot-badge__amount {
+    font-size: 1rem;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    color: #FFFFFF;
 }
 
 /* Community Cards Area */
 .community-area {
     position: absolute;
-    top: 50%;
+    top: 45%;
     left: 50%;
     transform: translate(-50%, -50%);
 }
 
-/* Game Info */
+/* Game Info — Center of Table */
 .game-info {
     position: absolute;
-    bottom: 25%;
+    top: 55%;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translate(-50%, -50%);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
 }
 
 .game-type {
-    font-size: 1.25rem;
-    font-weight: 800;
-    color: #FFB800;
-    text-shadow: 0 2px 10px rgba(255, 184, 0, 0.4);
+    font-size: 1rem;
+    font-weight: 700;
+    color: #FFFFFF;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
 .game-variant {
     font-size: 0.625rem;
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.5);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
 }
 
 .game-blinds {
     font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(212, 168, 75, 0.8);
+    font-weight: 600;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -254,21 +314,39 @@
     z-index: 10;
 }
 
+/* Dealer Button */
+.dealer-button {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    background: #FFFFFF;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #0A0A1A;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    z-index: 15;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════════
-   ACTION PANEL
+   ACTION PANEL — 2x2 Grid Layout (PokerIQ Style)
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .action-panel {
-    padding: 12px 16px 24px;
-    background: linear-gradient(180deg, rgba(22, 27, 34, 0.95) 0%, #161B22 100%);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 16px;
+    background: linear-gradient(180deg, #0A0A1A 0%, #0D1020 100%);
+    border-top: 1px solid rgba(212, 168, 75, 0.2);
 }
 
-/* Action Buttons */
+/* 2x2 Action Button Grid */
 .action-buttons {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
     max-width: 500px;
     margin: 0 auto;
 }
@@ -291,7 +369,7 @@
 .timer-value {
     font-weight: 700;
     font-family: 'JetBrains Mono', monospace;
-    color: #FFB800;
+    color: #D4A84B;
 }
 
 .time-bank {
@@ -303,65 +381,79 @@
 }
 
 .action-btn {
-    flex: 1;
-    padding: 14px 20px;
+    padding: 16px 24px;
     font-size: 1rem;
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border: none;
-    border-radius: 12px;
+    text-transform: capitalize;
+    letter-spacing: 0.02em;
+    border: 2px solid transparent;
+    border-radius: 10px;
     cursor: pointer;
     transition: all 0.15s ease;
 }
 
+/* Fold - Blue */
 .fold-btn {
-    background: #6E7681;
+    background: #1E3A5F;
+    border-color: #2E5A8F;
     color: #FFFFFF;
 }
 
 .fold-btn:hover {
-    background: #8B949E;
+    background: #2E4A6F;
+    border-color: #4E7AAF;
 }
 
+/* Check - Blue */
 .check-btn {
-    background: #1877F2;
+    background: #1E3A5F;
+    border-color: #2E5A8F;
     color: #FFFFFF;
 }
 
 .check-btn:hover {
-    background: #166FE5;
+    background: #2E4A6F;
 }
 
+/* Call - Blue */
 .call-btn {
-    background: #1877F2;
+    background: #1E3A5F;
+    border-color: #2E5A8F;
     color: #FFFFFF;
 }
 
+.call-btn:hover {
+    background: #2E4A6F;
+}
+
+/* Raise - Amber/Gold */
 .raise-btn {
-    background: linear-gradient(135deg, #FFB800 0%, #F59E0B 100%);
-    color: #0A0A0F;
+    background: linear-gradient(180deg, #D4A84B 0%, #B8922A 100%);
+    border-color: #C9A227;
+    color: #0A0A1A;
 }
 
 .raise-btn:hover {
-    background: linear-gradient(135deg, #FFD54F 0%, #FFB800 100%);
+    background: linear-gradient(180deg, #E4B85B 0%, #D4A84B 100%);
 }
 
+/* All-In - Amber/Gold (prominent) */
 .allin-btn {
-    background: linear-gradient(135deg, #F85149 0%, #DC2626 100%);
-    color: #FFFFFF;
-    animation: allInPulse 1s ease-in-out infinite;
+    background: linear-gradient(180deg, #D4A84B 0%, #B8922A 100%);
+    border-color: #C9A227;
+    color: #0A0A1A;
+    animation: allInGlow 2s ease-in-out infinite;
 }
 
-@keyframes allInPulse {
+@keyframes allInGlow {
 
     0%,
     100% {
-        box-shadow: 0 0 0 0 rgba(248, 81, 73, 0.4);
+        box-shadow: 0 0 0 0 rgba(212, 168, 75, 0.4);
     }
 
     50% {
-        box-shadow: 0 0 0 8px rgba(248, 81, 73, 0);
+        box-shadow: 0 0 15px 5px rgba(212, 168, 75, 0.3);
     }
 }
 
@@ -417,6 +509,7 @@
 .raise-slider {
     flex: 1;
     -webkit-appearance: none;
+    appearance: none;
     height: 8px;
     background: rgba(255, 255, 255, 0.2);
     border-radius: 4px;

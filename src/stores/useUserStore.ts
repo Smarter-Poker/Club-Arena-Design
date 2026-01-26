@@ -58,6 +58,11 @@ interface UserState {
     // Chips (aggregate across clubs)
     totalChips: number;
     updateTotalChips: (chips: number) => void;
+
+    // XP & Level
+    xp: number;
+    level: number;
+    updateXP: (xp: number, level: number) => void;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -87,6 +92,8 @@ export const useUserStore = create<UserState>()(
             isLoading: false,
             currentClubId: null,
             totalChips: 0,
+            xp: 0,
+            level: 1,
 
             login: (user: UserProfile) => {
                 set({
@@ -144,7 +151,7 @@ export const useUserStore = create<UserState>()(
                     if (error) {
                         // PGRST116 = no rows returned (profile doesn't exist yet)
                         if (error.code !== 'PGRST116') {
-                            console.error('🔴 [USER STORE] Load profile error:', error.message);
+                            console.error(' [USER STORE] Load profile error:', error.message);
                         }
                         set({ isLoading: false });
                         return null;
@@ -166,10 +173,10 @@ export const useUserStore = create<UserState>()(
                         isLoading: false,
                     });
 
-                    console.log('🟢 [USER STORE] Profile loaded:', profile.username);
+                    console.log(' [USER STORE] Profile loaded:', profile.username);
                     return profile;
                 } catch (e) {
-                    console.error('🔴 [USER STORE] Unexpected error:', e);
+                    console.error(' [USER STORE] Unexpected error:', e);
                     set({ isLoading: false });
                     return null;
                 }
@@ -181,6 +188,10 @@ export const useUserStore = create<UserState>()(
 
             updateTotalChips: (chips: number) => {
                 set({ totalChips: chips });
+            },
+
+            updateXP: (xp: number, level: number) => {
+                set({ xp, level });
             },
         }),
         {

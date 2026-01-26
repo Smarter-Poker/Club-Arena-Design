@@ -1,0 +1,147 @@
+.stats-page {
+    min-height: 100vh;
+    background: var(--bg-primary);
+    padding-bottom: 2rem;
+}
+
+.stats-summary {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem;
+}
+
+.stat-card {
+    flex: 1;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+}
+
+.stat-card.profit {
+    background: linear-gradient(135deg, rgba(var(--accent-primary-rgb), 0.2), var(--bg-secondary));
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.stat-value.positive {
+    color: var(--accent-success);
+}
+
+.stat-value.negative {
+    color: var(--accent-danger);
+}
+
+.stat-label {
+    font-size: 0.625rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.stats-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    margin: 0 1rem;
+}
+
+.stats-tabs button {
+    flex: 1;
+    padding: 0.75rem;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+}
+
+.stats-tabs button.active {
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+}
+
+.stats-content {
+    padding: 1rem;
+}
+
+.stats-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+}
+
+.stat-row.highlight {
+    background: linear-gradient(90deg, rgba(var(--accent-primary-rgb), 0.1), var(--bg-secondary));
+    border-left: 3px solid var(--accent-primary);
+}
+
+.row-label {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.row-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.loading-state {
+    display: flex;
+    justify-content: center;
+    padding: 3rem;
+}
+
+/* Charts Section */
+.charts-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.chart-card {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+.chart-card h3 {
+    margin: 0 0 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.chart-container {
+    min-height: 200px;
+}
+
+.chart-container.pie-chart {
+    display: flex;
+    justify-content: center;
+}
+
+/* Recharts customizations */
+.recharts-text {
+    fill: currentColor;
+}
+
+.recharts-cartesian-axis-tick-value {
+    fill: rgba(255, 255, 255, 0.5);
+}
+
+.recharts-legend-item-text {
+    color: var(--text-secondary) !important;
+}

@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ENGINE — Create Union Page
+ *  CLUB ENGINE — Create Union Page
  * Multi-club network creation wizard
  * ═══════════════════════════════════════════════════════════════════════════════
  */
@@ -8,7 +8,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './CreateUnionPage.module.css';
-import { supabase, isDemoMode } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -62,13 +62,6 @@ export default function CreateUnionPage() {
     // Check if user owns any clubs (required to create union)
     useState(() => {
         const checkClubOwnership = async () => {
-            if (isDemoMode) {
-                // In demo mode, assume they have a club
-                setOwnsClub(true);
-                setCheckingClubs(false);
-                return;
-            }
-
             try {
                 const { count } = await supabase
                     .from('clubs')
@@ -93,7 +86,7 @@ export default function CreateUnionPage() {
             <div className={styles.page}>
                 <div className={styles.container}>
                     <div className={styles.noClubMessage}>
-                        <span className={styles.noClubIcon}>🏠</span>
+                        <span className={styles.noClubIcon}></span>
                         <h2>Create a Club First</h2>
                         <p>You need to own at least one club before you can create a union.</p>
                         <button
@@ -145,12 +138,6 @@ export default function CreateUnionPage() {
         setError(null);
 
         try {
-            if (isDemoMode) {
-                await new Promise(r => setTimeout(r, 1000));
-                navigate('/unions/demo-new-union');
-                return;
-            }
-
             const { data, error: insertError } = await supabase
                 .from('unions')
                 .insert({
@@ -196,7 +183,7 @@ export default function CreateUnionPage() {
                             key={s}
                             className={`${styles.progressStep} ${s === step ? styles.active : ''} ${s < step ? styles.completed : ''}`}
                         >
-                            <span className={styles.progressDot}>{s < step ? '✓' : s}</span>
+                            <span className={styles.progressDot}>{s < step ? '' : s}</span>
                             <span className={styles.progressLabel}>
                                 {s === 1 && 'Basics'}
                                 {s === 2 && 'Revenue'}
@@ -213,7 +200,7 @@ export default function CreateUnionPage() {
                 <div className={styles.stepContainer}>
                     {step === 1 && (
                         <div className={styles.stepContent}>
-                            <h2>🌐 Union Basics</h2>
+                            <h2> Union Basics</h2>
                             <p className={styles.stepDesc}>Create a network of clubs with shared resources.</p>
 
                             <div className={styles.formGroup}>
@@ -256,7 +243,7 @@ export default function CreateUnionPage() {
 
                     {step === 2 && (
                         <div className={styles.stepContent}>
-                            <h2>💰 Revenue & Features</h2>
+                            <h2> Revenue & Features</h2>
                             <p className={styles.stepDesc}>Configure profit sharing and shared features.</p>
 
                             <div className={styles.settingsGrid}>
@@ -337,7 +324,7 @@ export default function CreateUnionPage() {
 
                     {step === 3 && (
                         <div className={styles.stepContent}>
-                            <h2>✨ Review & Create</h2>
+                            <h2> Review & Create</h2>
                             <p className={styles.stepDesc}>Review your union settings before creating.</p>
 
                             <div className={styles.previewCard}>
@@ -347,7 +334,7 @@ export default function CreateUnionPage() {
                                     </div>
                                     <div>
                                         <h3>{form.name || 'Unnamed Union'}</h3>
-                                        <p>{form.isPublic ? '🌍 Public Union' : '🔒 Private Union'}</p>
+                                        <p>{form.isPublic ? ' Public Union' : ' Private Union'}</p>
                                     </div>
                                 </div>
 
@@ -371,8 +358,8 @@ export default function CreateUnionPage() {
                                 </div>
 
                                 <div className={styles.previewTags}>
-                                    {form.sharedPlayerPool && <span>🔗 Shared Players</span>}
-                                    {form.crossClubTournaments && <span>🏆 Cross-Club MTTs</span>}
+                                    {form.sharedPlayerPool && <span> Shared Players</span>}
+                                    {form.crossClubTournaments && <span> Cross-Club MTTs</span>}
                                 </div>
                             </div>
                         </div>
@@ -382,7 +369,7 @@ export default function CreateUnionPage() {
                 {/* Error */}
                 {error && (
                     <div className={styles.error}>
-                        ⚠️ {error}
+                         {error}
                     </div>
                 )}
 
@@ -404,7 +391,7 @@ export default function CreateUnionPage() {
                             onClick={handleCreate}
                             disabled={creating}
                         >
-                            {creating ? 'Creating...' : '🌐 Create Union'}
+                            {creating ? 'Creating...' : ' Create Union'}
                         </button>
                     )}
                 </div>

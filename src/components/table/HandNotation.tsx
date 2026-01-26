@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 📝 HAND NOTATION — Hand History Text Export
+ *  HAND NOTATION — Hand History Text Export
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Text-based hand history display and export:
@@ -231,10 +231,10 @@ export function HandNotation({
                         className={`hand-notation__btn ${copied ? 'hand-notation__btn--success' : ''}`}
                         onClick={handleCopy}
                     >
-                        {copied ? '✓ Copied' : '📋 Copy'}
+                        {copied ? ' Copied' : ' Copy'}
                     </button>
                     <button className="hand-notation__btn" onClick={handleDownload}>
-                        📥 Download
+                         Download
                     </button>
                     {onClose && (
                         <button className="hand-notation__close" onClick={onClose}>

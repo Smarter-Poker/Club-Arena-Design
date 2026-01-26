@@ -47,8 +47,10 @@ export interface SeatSlotProps {
     lastAction: LastAction;
     lastBetAmount?: number;
     timerProgress?: number; // 0-100
+    bigBlind?: number; // For BB display
     onSit?: () => void;
     onAction?: () => void;
+    onAvatarClick?: () => void; // For throwables targeting
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -78,6 +80,11 @@ function formatStack(amount: number): string {
         return (amount / 1000).toFixed(1) + 'K';
     }
     return amount.toLocaleString();
+}
+
+function formatStackAsBB(stack: number, bigBlind: number): string {
+    const bb = Math.round(stack / bigBlind);
+    return `${bb} BB`;
 }
 
 function getActionLabel(action: LastAction, amount?: number): string {
@@ -168,8 +175,10 @@ export function SeatSlot({
     lastAction,
     lastBetAmount,
     timerProgress,
+    bigBlind = 2,
     onSit,
     onAction,
+    onAvatarClick,
 }: SeatSlotProps) {
 
     // Memoize classes
@@ -228,7 +237,16 @@ export function SeatSlot({
             {/* Main Content */}
             <div className="seat-slot__content">
                 {/* Avatar */}
-                <div className="seat-slot__avatar-container">
+                <div
+                    className="seat-slot__avatar-container"
+                    onClick={(e) => {
+                        if (onAvatarClick && !player.isHero) {
+                            e.stopPropagation();
+                            onAvatarClick();
+                        }
+                    }}
+                    style={{ cursor: onAvatarClick && !player.isHero ? 'pointer' : undefined }}
+                >
                     {player.avatar ? (
                         <img
                             src={player.avatar}
@@ -250,7 +268,7 @@ export function SeatSlot({
                 {/* Player Info */}
                 <div className="seat-slot__info">
                     <span className="seat-slot__name">{player.name}</span>
-                    <span className="seat-slot__stack">{formatStack(player.stack)}</span>
+                    <span className="seat-slot__stack">{formatStackAsBB(player.stack, bigBlind)}</span>
                 </div>
 
                 {/* Position Chip */}

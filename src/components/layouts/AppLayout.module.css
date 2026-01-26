@@ -1,5 +1,5 @@
 /**
- * 🎰 CLUB ENGINE — App Layout Styles
+ *  CLUB ENGINE — App Layout Styles
  */
 
 .layout {
@@ -229,4 +229,38 @@
     .main {
         padding: var(--space-4);
     }
+}
+
+@media (max-width: 480px) {
+    .main {
+        padding: var(--space-3);
+    }
+
+    .headerContent {
+        padding: var(--space-2) var(--space-3);
+    }
+
+    .logoText {
+        font-size: var(--text-base);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   EMBEDDED MODE (When running inside World Hub iframe)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.embedded {
+    min-height: 100%;
+    background: transparent;
+}
+
+.embedded .main {
+    padding: var(--space-4);
+    max-width: 100%;
+}
+
+/* Global fallback: Hide header/footer via body class (works before React hydrates) */
+:global(body.embedded-in-iframe) .header,
+:global(body.embedded-in-iframe) .footer {
+    display: none !important;
 }

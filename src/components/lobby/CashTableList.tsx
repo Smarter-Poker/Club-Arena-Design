@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 💰 CASH TABLE LIST — Available Cash Games Display
+ *  CASH TABLE LIST — Available Cash Games Display
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Premium lobby table list with:
@@ -88,7 +88,7 @@ function TableRow({ table, onJoin, onView, onWaitList, currency }: TableRowProps
                         {table.variant}
                     </span>
                     <span className="cash-table-row__name">{table.name}</span>
-                    {table.isPrivate && <span className="cash-table-row__private">🔒</span>}
+                    {table.isPrivate && <span className="cash-table-row__private"></span>}
                 </div>
                 {table.clubName && (
                     <span className="cash-table-row__club">{table.clubName}</span>
@@ -129,7 +129,7 @@ function TableRow({ table, onJoin, onView, onWaitList, currency }: TableRowProps
             {/* Actions */}
             <div className="cash-table-row__actions">
                 <button className="cash-table-row__view-btn" onClick={onView}>
-                    👁️
+                    
                 </button>
                 {hasSeats ? (
                     <button className="cash-table-row__join-btn" onClick={onJoin}>
@@ -218,7 +218,7 @@ export function CashTableList({
         return (
             <div className="cash-table-list cash-table-list--empty">
                 <div className="cash-table-list__empty-state">
-                    <span className="cash-table-list__empty-icon">🎰</span>
+                    <span className="cash-table-list__empty-icon"></span>
                     <span className="cash-table-list__empty-text">No tables available</span>
                     <span className="cash-table-list__empty-hint">Try adjusting your filters or check back later</span>
                 </div>

@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ARENA — Premium Poker Table Page
+ *  CLUB ARENA — Premium Poker Table Page
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * PokerBros-style table interface with Facebook color scheme
@@ -13,7 +13,7 @@
  * - WebSocket connection for real-time game state
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { SeatSlot, PotDisplay, CommunityCards } from '../components/table';
 import type { SeatPlayer, Card, LastAction, PositionBadge } from '../components/table/SeatSlot';
@@ -22,6 +22,55 @@ import type { BoardStage } from '../components/table/CommunityCards';
 import { useTableWebSocket } from '../services/TableWebSocket';
 import { supabase } from '../lib/supabase';
 import { avatarService } from '../services/AvatarService';
+import PlayerNotesPanel from '../components/gameplay/PlayerNotesPanel';
+import HandReplay from '../components/replay/HandReplay';
+import { GameRulesModal } from '../components/table/GameRulesModal';
+import { ChipAnimationManager } from '../components/table/ChipAnimation';
+import SitOutModal from '../components/table/SitOutModal';
+import WaitListModal from '../components/table/WaitListModal';
+import { waitlistService } from '../services/WaitlistService';
+import { roomService, type RoomMessage } from '../services/RoomService';
+import { HydraService } from '../services/HydraService';
+import TableChat, { type ChatMessage } from '../components/table/TableChat';
+import InsuranceModal, { type InsuranceOffer } from '../components/table/InsuranceModal';
+import { RunItTwicePrompt } from '../components/table/RunItTwice';
+import BadBeatJackpot from '../components/table/BadBeatJackpot';
+import { ThrowableSelector } from '../components/table/ThrowableSelector';
+import { ThrowAnimationContainer } from '../components/table/ThrowAnimation';
+import { throwableService, type Throwable, type ThrowEvent } from '../services/ThrowableService';
+import TipDealer from '../components/table/TipDealer';
+import StraddleToggle from '../components/table/StraddleToggle';
+import TimeBank from '../components/table/TimeBank';
+import CashierModal from '../components/table/CashierModal';
+import BuyInModal from '../components/table/BuyInModal';
+import { BBJService } from '../services/BBJService';
+import RabbitHunt from '../components/table/RabbitHunt';
+import LeaderboardPanel from '../components/table/LeaderboardPanel';
+import HandNotation from '../components/table/HandNotation';
+import { soundService } from '../services/SoundService';
+import { GTOQueryService, type GTOSolution } from '../services/GTOQueryService';
+import { RakeService, type RakeCalculation } from '../services/RakeService';
+import { tableService } from '../services/TableService';
+import { WalletService } from '../services/WalletService';
+import ActionPanel from '../components/table/ActionPanel';
+import ShareHand from '../components/table/ShareHand';
+import SettingsPanel from '../components/table/SettingsPanel';
+import TableMenu from '../components/table/TableMenu';
+import PresenceIndicator from '../components/social/PresenceIndicator';
+import { useTableStore } from '../stores/useTableStore';
+import { RealtimeChannelService } from '../services/RealtimeChannelService';
+import ChipStack from '../components/table/ChipStack';
+import TimerBar from '../components/table/TimerBar';
+import PremiumCard from '../components/table/PremiumCard';
+import RealTimeResults from '../components/table/RealTimeResults';
+import PlayerCard from '../components/table/PlayerCard';
+import { Deck, evaluateHand, compareHands, calculatePots, determineWinners } from '../engine/PokerEngine';
+import { HandController } from '../engine/HandController';
+import { RakeWaterfallEngine } from '../engines/financial/RakeWaterfallEngine';
+import { OFCPineappleEngine } from '../engine/OFCPineappleEngine';
+import { handPersistenceService } from '../services/HandPersistenceService';
+import { achievementTriggerService } from '../services/AchievementTriggerService';
+import SpectatorBadge from '../components/table/SpectatorBadge';
 import './TablePage.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -51,26 +100,28 @@ interface TableState {
 // ═══════════════════════════════════════════════════════════════════════════════
 // UTILITY FUNCTIONS
 // ═══════════════════════════════════════════════════════════════════════════════
+// SEAT POSITIONS — Fixed percentages for vertical table layout (never move)
+// ═══════════════════════════════════════════════════════════════════════════════
 
 const SEAT_POSITIONS_6MAX = [
-    { x: 50, y: 88 },  // Seat 1 (Hero - bottom center)
-    { x: 12, y: 65 },  // Seat 2 (left bottom)
-    { x: 12, y: 35 },  // Seat 3 (left top)
-    { x: 50, y: 8 },   // Seat 4 (top center)
-    { x: 88, y: 35 },  // Seat 5 (right top)
-    { x: 88, y: 65 },  // Seat 6 (right bottom)
+    { x: 50, y: 95 },  // Seat 1 (Hero - bottom center)
+    { x: 8, y: 75 },   // Seat 2 (left middle-bottom)
+    { x: 8, y: 35 },   // Seat 3 (left middle-top)
+    { x: 50, y: 5 },   // Seat 4 (top center)
+    { x: 92, y: 35 },  // Seat 5 (right middle-top)
+    { x: 92, y: 75 },  // Seat 6 (right middle-bottom)
 ];
 
 const SEAT_POSITIONS_9MAX = [
-    { x: 50, y: 90 },  // Seat 1 (Hero)
-    { x: 20, y: 82 },  // Seat 2
-    { x: 5, y: 60 },   // Seat 3
-    { x: 5, y: 38 },   // Seat 4
-    { x: 25, y: 10 },  // Seat 5
-    { x: 50, y: 5 },   // Seat 6
-    { x: 75, y: 10 },  // Seat 7
-    { x: 95, y: 38 },  // Seat 8
-    { x: 95, y: 60 },  // Seat 9
+    { x: 50, y: 97 },  // Seat 1 (Hero - bottom center)
+    { x: 15, y: 88 },  // Seat 2 (left bottom)
+    { x: 3, y: 65 },   // Seat 3 (left middle)
+    { x: 3, y: 40 },   // Seat 4 (left upper)
+    { x: 20, y: 12 },  // Seat 5 (top left)
+    { x: 50, y: 3 },   // Seat 6 (top center)
+    { x: 80, y: 12 },  // Seat 7 (top right)
+    { x: 97, y: 40 },  // Seat 8 (right upper)
+    { x: 97, y: 65 },  // Seat 9 (right middle)
 ];
 
 // Create empty player slots for a table
@@ -141,6 +192,405 @@ export default function TablePage() {
     const [showRaiseSlider, setShowRaiseSlider] = useState(false);
     const [actionTimeRemaining, setActionTimeRemaining] = useState(15);
     const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
+    const [showBuyInModal, setShowBuyInModal] = useState(false);
+    const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
+    const [showPlayerNotes, setShowPlayerNotes] = useState(false);
+    const [selectedPlayerForNotes, setSelectedPlayerForNotes] = useState<{ id: string; name: string } | null>(null);
+    const [showHandReplay, setShowHandReplay] = useState(false);
+    const [lastHandId, setLastHandId] = useState<string | null>(null);
+    const [showGameRules, setShowGameRules] = useState(false);
+    const [chipAnimations, setChipAnimations] = useState<Array<{
+        id: string;
+        from: { x: number; y: number };
+        to: { x: number; y: number };
+        amount: number;
+        chipColor?: 'red' | 'green' | 'blue' | 'black' | 'gold';
+    }>>([]);
+    const [showSitOut, setShowSitOut] = useState(false);
+    const [sitOutTimeRemaining, setSitOutTimeRemaining] = useState(300); // 5 min default
+    const [showWaitList, setShowWaitList] = useState(false);
+    const [waitListPlayers, setWaitListPlayers] = useState<Array<{
+        playerId: string;
+        playerName: string;
+        avatar?: string;
+        position: number;
+        joinedAt: Date;
+    }>>([]);
+
+    // Chat state
+    const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+    const [isChatCollapsed, setIsChatCollapsed] = useState(false);
+
+    // Send chat message via RoomService
+    const handleSendChatMessage = (message: string) => {
+        if (!tableId || !userId) return;
+
+        roomService.sendChat(tableId, userId, message);
+
+        // Optimistically add to local state
+        setChatMessages(prev => [...prev, {
+            id: `msg_${Date.now()}`,
+            type: 'PLAYER' as const,
+            playerId: userId,
+            playerName: tableState.players[tableState.heroSeat]?.name || 'You',
+            content: message,
+            timestamp: new Date()
+        }]);
+    };
+
+    // Insurance Modal state
+    const [showInsurance, setShowInsurance] = useState(false);
+    const [insuranceOffer, setInsuranceOffer] = useState<InsuranceOffer | null>(null);
+
+    // Run It Twice state
+    const [showRIT, setShowRIT] = useState(false);
+    const [ritTimer, setRitTimer] = useState(10);
+    const [ritOpponent, setRitOpponent] = useState('Opponent');
+
+    // Bad Beat Jackpot state
+    const [showBBJ, setShowBBJ] = useState(false);
+    const [bbjAmount, setBbjAmount] = useState(0);
+
+    // Handle insurance offer (triggered by game engine)
+    const handleInsuranceAccept = async (coverageAmount: number) => {
+        if (userId && tableId) {
+            try {
+                // Process insurance payment via WalletService
+                const premium = coverageAmount * 0.1; // 10% premium
+                await WalletService.processInsurance(userId, tableId, `hand-${Date.now()}`, premium);
+            } catch (error) {
+                console.error('Insurance processing failed:', error);
+            }
+        }
+        setShowInsurance(false);
+    };
+
+    const handleInsuranceDecline = () => {
+        setShowInsurance(false);
+        // After insurance decision, show RIT prompt if set up
+        if (ritOpponent !== 'Opponent') {
+            setShowRIT(true);
+        }
+    };
+
+    // Run It Twice handlers
+    const handleRITAccept = () => {
+        setShowRIT(false);
+        // Broadcast RIT acceptance to WebSocket
+        sendAction('rit_accept', { seat: tableState.heroSeat });
+    };
+
+    const handleRITDecline = () => {
+        setShowRIT(false);
+        sendAction('rit_decline', { seat: tableState.heroSeat });
+    };
+
+    // Throwable Panel state
+    const [showThrowableSelector, setShowThrowableSelector] = useState(false);
+    const [throwTargetSeat, setThrowTargetSeat] = useState<number | null>(null);
+    const [activeThrows, setActiveThrows] = useState<ThrowEvent[]>([]);
+
+    // Tip Dealer state
+    const [showTipDealer, setShowTipDealer] = useState(false);
+
+    // Straddle state
+    const [isStraddleEnabled, setIsStraddleEnabled] = useState(false);
+    const [straddleAmount] = useState(4); // 2x big blind
+    const [isStraddleAvailable] = useState(true); // Set based on position
+
+    // Handle throwable selection
+    const handleThrowableSelect = async (throwable: Throwable) => {
+        if (!tableId || !userId || throwTargetSeat === null) return;
+
+        // Create throw event
+        const event = throwableService.createThrowEvent(
+            tableState.heroSeat,
+            throwTargetSeat,
+            throwable.id
+        );
+
+        if (event) {
+            // Add to active throws for animation
+            setActiveThrows(prev => [...prev, event]);
+
+            // Broadcast via room service
+            roomService.sendChat(tableId, userId, `[THROW:${throwable.id}:${throwTargetSeat}]`);
+        }
+
+        setShowThrowableSelector(false);
+        setThrowTargetSeat(null);
+    };
+
+    // Remove completed throw animations
+    const handleThrowComplete = (eventId: string) => {
+        setActiveThrows(prev => prev.filter(e => e.id !== eventId));
+    };
+
+    // Get seat positions for throw animation targeting
+    const getSeatPositions = (): Map<number, { x: number; y: number }> => {
+        const positions = new Map<number, { x: number; y: number }>();
+        // Default 6-max positions (center of table as reference)
+        const centerX = 400;
+        const centerY = 250;
+        const radiusX = 300;
+        const radiusY = 150;
+
+        for (let i = 0; i < 6; i++) {
+            const angle = (i * 60 - 90) * (Math.PI / 180);
+            positions.set(i, {
+                x: centerX + radiusX * Math.cos(angle),
+                y: centerY + radiusY * Math.sin(angle),
+            });
+        }
+        return positions;
+    };
+
+    // Handle dealer tip
+    const handleTipDealer = async (amount: number) => {
+        if (userId && tableId) {
+            try {
+                await WalletService.processDealerTip(userId, tableId, amount);
+            } catch (error) {
+                console.error('Tip processing failed:', error);
+            }
+        }
+        setShowTipDealer(false);
+    };
+
+    // Time Bank state
+    const [showTimeBank, setShowTimeBank] = useState(false);
+    const [timeBankActive, setTimeBankActive] = useState(false);
+    const [timeBanksRemaining, setTimeBanksRemaining] = useState(3);
+    const [timeBankTimeRemaining, setTimeBankTimeRemaining] = useState(0);
+
+    // Cashier state
+    const [showCashier, setShowCashier] = useState(false);
+    const [accountBalance, setAccountBalance] = useState(10000); // From wallet
+
+    // Handle Time Bank activation
+    const handleActivateTimeBank = () => {
+        if (timeBanksRemaining > 0) {
+            setTimeBankActive(true);
+            setTimeBanksRemaining(prev => prev - 1);
+            setTimeBankTimeRemaining(30);
+        }
+    };
+
+    // Handle cashier add chips
+    const handleAddChips = async (amount: number) => {
+        if (!userId || userId === 'guest' || !tableId) {
+            console.error('Cannot add chips: not authenticated');
+            return;
+        }
+        try {
+            await WalletService.lockForBuyIn(userId, tableId, amount);
+            setAccountBalance(prev => prev + amount);
+        } catch (error) {
+            console.error('Failed to add chips:', error);
+        }
+    };
+
+    // Handle cashier withdraw
+    const handleWithdrawChips = async (amount: number) => {
+        if (!userId || userId === 'guest' || !tableId) {
+            console.error('Cannot withdraw: not authenticated');
+            return;
+        }
+        try {
+            await WalletService.unlockFromTable(userId, tableId, amount);
+            setAccountBalance(prev => Math.max(0, prev - amount));
+        } catch (error) {
+            console.error('Failed to withdraw chips:', error);
+        }
+    };
+
+    // Load BBJ pool data
+    useEffect(() => {
+        const loadBBJPool = async () => {
+            if (!tableId) return;
+
+            try {
+                // Get BBJ pool for this table's club/union
+                const pool = await BBJService.getPool({ clubId: tableId });
+                if (pool) {
+                    setBbjAmount(pool.main_balance);
+                }
+            } catch (error) {
+                console.error('Error loading BBJ pool:', error);
+            }
+        };
+
+        loadBBJPool();
+    }, [tableId]);
+
+    // Rabbit Hunt state
+    const [isRabbitAvailable, setIsRabbitAvailable] = useState(false);
+    const [currentBoard, setCurrentBoard] = useState<Array<{ rank: string; suit: 'h' | 'd' | 'c' | 's' }>>([]);
+
+    // Handle rabbit hunt reveal
+    const handleRabbitReveal = async (): Promise<Array<{ rank: string; suit: 'h' | 'd' | 'c' | 's' }>> => {
+        // Generate random cards from remaining deck for rabbit hunt display
+        // In production, this would query the game engine for actual remaining deck
+        const suits: Array<'h' | 'd' | 'c' | 's'> = ['h', 'd', 'c', 's'];
+        const ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+        const cardsNeeded = 5 - currentBoard.length;
+        const remainingCards: Array<{ rank: string; suit: 'h' | 'd' | 'c' | 's' }> = [];
+        for (let i = 0; i < cardsNeeded; i++) {
+            remainingCards.push({
+                rank: ranks[Math.floor(Math.random() * ranks.length)],
+                suit: suits[Math.floor(Math.random() * suits.length)]
+            });
+        }
+        return remainingCards;
+    };
+
+    // Leaderboard state
+    const [showLeaderboard, setShowLeaderboard] = useState(false);
+    const [leaderboardPeriod, setLeaderboardPeriod] = useState<'session' | 'day' | 'week' | 'month' | 'allTime'>('session');
+    const [leaderboardPlayers, setLeaderboardPlayers] = useState<Array<{
+        rank: number;
+        playerId: string;
+        playerName: string;
+        avatar?: string;
+        amount: number;
+        isPositive: boolean;
+        isCurrentUser?: boolean;
+    }>>([]);
+
+    // Sound settings state
+    const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+
+    // Play turn alert when it's hero's turn
+    const playTurnAlert = () => {
+        if (isSoundEnabled) {
+            soundService.playTurnAlert();
+        }
+    };
+
+    // Play win sound on hand win
+    const playWinSound = () => {
+        if (isSoundEnabled) {
+            soundService.playWin();
+        }
+    };
+
+    // GTO advisor state
+    const [gtoSolution, setGtoSolution] = useState<GTOSolution | null>(null);
+    const [isGtoLoading, setIsGtoLoading] = useState(false);
+    const [showGtoAdvisor, setShowGtoAdvisor] = useState(false);
+
+    // Fetch GTO advice for current situation
+    const fetchGtoAdvice = async (position: string, street: string, board: string[] | null = null) => {
+        setIsGtoLoading(true);
+        try {
+            const solution = await GTOQueryService.getGTOAction(
+                position,
+                'SRP', // Single Raised Pot
+                street,
+                board,
+                'check',
+                100
+            );
+            setGtoSolution(solution);
+        } catch (error) {
+            console.error('Error fetching GTO advice:', error);
+        }
+        setIsGtoLoading(false);
+    };
+
+    // Rake state
+    const [currentRake, setCurrentRake] = useState<RakeCalculation | null>(null);
+    const [sessionRake, setSessionRake] = useState(0);
+
+    // Handle hand complete - calculate rake, execute waterfall, and record BBJ contribution
+    const handleHandComplete = async (
+        handId: string,
+        potSize: number,
+        wentToFlop: boolean,
+        players: Array<{ userId: string; clubId: string; agentId?: string }>
+    ) => {
+        // Parse big blind from string (e.g., "1/2" -> 2)
+        const blindParts = tableState.blinds.split('/');
+        const bigBlind = parseFloat(blindParts[1]) || 2;
+
+        // Calculate rake
+        const rakeCalc = RakeService.calculateRake(potSize, bigBlind, wentToFlop);
+        setCurrentRake(rakeCalc);
+        setSessionRake(prev => prev + rakeCalc.cappedRake);
+
+        // Execute waterfall (distribute rake to all parties)
+        if (tableId && players.length > 0) {
+            const clubId = players[0]?.clubId || tableId;
+            await RakeService.executeWaterfall({
+                handId,
+                tableId,
+                clubId,
+                potSize,
+                bigBlind,
+                wentToFlop,
+                players: players.map(p => ({
+                    ...p,
+                    isSittingOut: false,
+                    hasCards: true,
+                    wentToFlop
+                }))
+            });
+
+            // Record BBJ contribution (0.5x BB per hand that sees flop)
+            if (wentToFlop && bbjAmount > 0) {
+                try {
+                    const pool = await BBJService.getPool({ clubId });
+                    if (pool) {
+                        await BBJService.recordContribution({
+                            poolId: pool.id,
+                            handId,
+                            tableId,
+                            bigBlind,
+                            currentMainBalance: pool.main_balance,
+                        });
+                        // Update local BBJ display
+                        setBbjAmount(prev => prev + BBJService.calculateContribution(bigBlind));
+                    }
+                } catch (error) {
+                    console.error('[BBJ] Contribution failed:', error);
+                }
+            }
+        }
+    };
+
+    // Handle leave table - cleans up and returns chips
+    const handleLeaveTable = async () => {
+        if (!tableId || !userId) return;
+
+        const result = await tableService.leaveTable(tableId, tableState.heroSeat, userId);
+        if (result.success) {
+            // Navigate back to lobby
+            navigate('/lobby');
+        }
+    };
+
+    // Subscribe to table updates using TableService
+    useEffect(() => {
+        if (!tableId) return;
+
+        const unsubscribe = tableService.subscribeToTable(tableId, (updatedTable) => {
+            // Update local state from table updates
+            setTableState(prev => ({
+                ...prev,
+                tableName: updatedTable.name,
+                gameType: updatedTable.game_variant as any,
+                blinds: `${updatedTable.small_blind}/${updatedTable.big_blind}`,
+            }));
+        });
+
+        return () => unsubscribe();
+    }, [tableId]);
+
+    // Component visibility states
+    const [showSettings, setShowSettings] = useState(false);
+    const [showShareHand, setShowShareHand] = useState(false);
+    const [showTableMenu, setShowTableMenu] = useState(false);
+    const [sharedHandData, setSharedHandData] = useState<any>(null);
 
     // Load table info from Supabase on mount
     useEffect(() => {
@@ -170,11 +620,382 @@ export default function TablePage() {
         loadTableInfo();
     }, [tableId]);
 
+    // Join/leave multiplayer room
+    useEffect(() => {
+        if (!tableId || !userId) return;
+
+        // Join the room
+        roomService.joinRoom(
+            tableId,
+            userId,
+            tableState.players[tableState.heroSeat]?.name || 'Player',
+            tableState.heroSeat,
+            tableState.players[tableState.heroSeat]?.stack || 10000
+        );
+
+        // Subscribe to room messages
+        const unsubscribe = roomService.onMessage(tableId, (msg: RoomMessage) => {
+
+            switch (msg.type) {
+                case 'PLAYER_JOINED':
+                    // Handle player joining
+                    break;
+                case 'PLAYER_LEFT':
+                    // Handle player leaving
+                    break;
+                case 'PLAYER_ACTION':
+                    // Handle player action broadcast with sound effects
+                    const action = (msg.payload as any)?.action?.toLowerCase() || '';
+                    if (action === 'bet' || action === 'raise' || action === 'call' || action === 'allin') {
+                        soundService.playChips();
+                    } else if (action === 'check') {
+                        soundService.playCheck();
+                    } else if (action === 'fold') {
+                        soundService.playFold();
+                    }
+                    break;
+                case 'CHAT':
+                    // Handle chat message
+                    break;
+            }
+        });
+
+        return () => {
+            unsubscribe();
+            roomService.leaveRoom(tableId);
+        };
+    }, [tableId, userId, tableState.heroSeat]);
+
+    // Initialize Hydra horse fleet for table liquidity
+    useEffect(() => {
+        if (!tableId) return;
+
+        // Initialize Hydra and seed table with horses if needed
+        HydraService.initialize();
+
+        const seedTableWithHorses = async () => {
+            const status = await HydraService.getTableLiquidityStatus(tableId);
+
+            if (status.needsMoreHorses) {
+                // Extract big blind from stakes string (e.g., "1/2" → 2)
+                const bbMatch = tableState.blinds.match(/\/(\d+)/);
+                const bigBlind = bbMatch ? parseInt(bbMatch[1]) : 2;
+
+                await HydraService.seedTable(tableId, bigBlind);
+            }
+        };
+
+        seedTableWithHorses();
+    }, [tableId, tableState.blinds]);
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // HAND CONTROLLER — Manages poker game loop for ALL tables
+    // ═══════════════════════════════════════════════════════════════════════════
+    const [handController, setHandController] = useState<HandController | null>(null);
+    const [handNumber, setHandNumber] = useState(1);
+    const handControllerRef = useRef<HandController | null>(null);
+
+    // Wire HandController for ALL tables (production + demo)
+    useEffect(() => {
+        // Count seated players with chips
+        const seatedPlayers = tableState.players.filter(p => p && p.stack > 0);
+
+        // Need 2+ players to start a hand
+        if (seatedPlayers.length < 2 || tableState.isHandInProgress || handControllerRef.current) {
+            return;
+        }
+
+        // Parse table settings from blinds string (e.g., "1/2" -> SB=1, BB=2)
+        const blindParts = tableState.blinds.split('/');
+        const smallBlind = parseFloat(blindParts[0]) || 1;
+        const bigBlind = parseFloat(blindParts[1]) || 2;
+
+        // Map game type to variant
+        const variantMap: Record<string, 'nlh' | 'plo4' | 'plo5' | 'plo6' | 'short_deck'> = {
+            'NLH': 'nlh', 'PLO4': 'plo4', 'PLO5': 'plo5', 'PLO6': 'plo6',
+            'SHORT': 'short_deck', 'nlh': 'nlh', 'plo4': 'plo4', 'plo5': 'plo5'
+        };
+        const gameVariant = variantMap[tableState.gameType] || 'nlh';
+
+        // Convert to SeatPlayer format for HandController
+        const hcPlayers: import('../types/database.types').SeatPlayer[] = seatedPlayers.map((p, idx) => ({
+            seat: p ? tableState.players.indexOf(p) + 1 : idx + 1,
+            user_id: p!.id,
+            username: p!.name,
+            stack: p!.stack,
+            bet: 0,
+            cards: [],
+            is_folded: false,
+            is_all_in: false,
+            is_sitting_out: false,
+        }));
+
+        // Configure hand with table settings
+        const config = {
+            tableId: tableId || 'anonymous',
+            handNumber: handNumber,
+            gameVariant: gameVariant,
+            smallBlind: smallBlind,
+            bigBlind: bigBlind,
+            rakeConfig: {
+                percent: 5,
+                cap: Math.max(3, bigBlind * 15), // Rake cap scales with stakes
+                noFlop: true
+            },
+        };
+
+        // Find dealer seat (rotate through seated players)
+        const dealerSeatIndex = (handNumber - 1) % seatedPlayers.length;
+        const dealerSeat = hcPlayers[dealerSeatIndex]?.seat || 1;
+
+        const hand = new HandController(config, hcPlayers, dealerSeat);
+        handControllerRef.current = hand;
+
+        // Wire persistence service for hand history
+        const clubId = tableId || 'demo'; // In production, get from table record
+        handPersistenceService.wireToHandController(hand, {
+            tableId: tableId || 'anonymous',
+            clubId: clubId,
+            stakes: tableState.blinds,
+            gameVariant: gameVariant as 'nlh' | 'plo4' | 'plo5' | 'plo6',
+        });
+
+        // Subscribe to events and update UI
+        hand.onEvent((event) => {
+            switch (event.type) {
+                case 'HAND_START':
+                    setTableState(prev => ({
+                        ...prev,
+                        isHandInProgress: true,
+                        pot: 0,
+                        lastActions: Array(prev.maxPlayers).fill(null), // Clear action labels
+                    }));
+                    // Play deal/chips sound
+                    soundService.playChips();
+                    break;
+
+                case 'CARDS_DEALT':
+                    // Convert HandController Card format to UI format
+                    const suitMapDeal: Record<string, 'h' | 'd' | 'c' | 's'> = {
+                        'hearts': 'h', 'diamonds': 'd', 'clubs': 'c', 'spades': 's'
+                    };
+                    const holeCards: Card[] = event.cards.map(c => ({
+                        rank: c.rank,
+                        suit: suitMapDeal[c.suit] || (c.suit as 'h' | 'd' | 'c' | 's'),
+                    }));
+
+                    setTableState(prev => {
+                        const updatedPlayers = [...prev.players];
+                        const seatIndex = event.seat - 1;
+                        if (seatIndex >= 0 && seatIndex < updatedPlayers.length && updatedPlayers[seatIndex]) {
+                            updatedPlayers[seatIndex] = {
+                                ...updatedPlayers[seatIndex]!,
+                                holeCards,
+                                showCards: updatedPlayers[seatIndex]!.isHero,
+                            };
+                        }
+                        return { ...prev, players: updatedPlayers };
+                    });
+                    break;
+
+                case 'COMMUNITY_CARDS':
+                    const suitMap: Record<string, 'h' | 'd' | 'c' | 's'> = {
+                        'hearts': 'h', 'diamonds': 'd', 'clubs': 'c', 'spades': 's'
+                    };
+                    const uiCards: Card[] = event.cards.map(c => ({
+                        rank: c.rank,
+                        suit: suitMap[c.suit] || (c.suit as 'h' | 'd' | 'c' | 's'),
+                    }));
+                    setTableState(prev => ({
+                        ...prev,
+                        communityCards: [...prev.communityCards, ...uiCards],
+                        boardStage: event.stage as any,
+                        lastActions: Array(prev.maxPlayers).fill(null), // Clear for new betting round
+                    }));
+                    break;
+
+                case 'POT_UPDATE':
+                    setTableState(prev => ({ ...prev, pot: event.pot }));
+                    break;
+
+                case 'PLAYER_ACTION':
+                    // Update last actions display and player status
+                    setTableState(prev => {
+                        const newLastActions = [...prev.lastActions];
+                        const seatIndex = event.seat - 1;
+
+                        // Map action to display label
+                        const actionLabel = event.action.toUpperCase() as any;
+                        newLastActions[seatIndex] = actionLabel;
+
+                        // Update player fold status if folded
+                        const updatedPlayers = [...prev.players];
+                        if (event.action === 'fold' && updatedPlayers[seatIndex]) {
+                            updatedPlayers[seatIndex] = {
+                                ...updatedPlayers[seatIndex]!,
+                                status: 'folded',
+                            };
+                        }
+
+                        return {
+                            ...prev,
+                            lastActions: newLastActions,
+                            players: updatedPlayers,
+                        };
+                    });
+                    break;
+
+                case 'TURN_CHANGE':
+                    setTableState(prev => ({ ...prev, currentPlayerSeat: event.seat }));
+                    // Play turn alert and reset timer if it's hero's turn
+                    if (event.seat === tableState.heroSeat) {
+                        playTurnAlert();
+                        setActionTimeRemaining(15); // Reset action timer
+                    }
+
+                    // Auto-action for horses (check extended player properties)
+                    const actingPlayer = tableState.players[event.seat - 1] as any;
+                    if (actingPlayer?.isHorse && handControllerRef.current) {
+                        const bigBlind = parseFloat(tableState.blinds.split('/')[1]) || 2;
+                        const activePlayers = tableState.players.filter(p => p && p.status === 'active').length;
+
+                        const context: import('../services/HydraService').HandContext = {
+                            pot: tableState.pot,
+                            toCall: bigBlind,
+                            minRaise: bigBlind * 2,
+                            maxRaise: actingPlayer.stack,
+                            position: event.seat <= 3 ? 'early' : event.seat <= 5 ? 'middle' : 'late',
+                            street: (tableState.boardStage || 'preflop') as 'preflop' | 'flop' | 'turn' | 'river',
+                            playersInHand: activePlayers,
+                            stackToPotRatio: tableState.pot > 0 ? actingPlayer.stack / tableState.pot : 100,
+                            isHeadsUp: activePlayers === 2,
+                        };
+
+                        const horseProfile = actingPlayer.horseProfile || 'reg';
+                        const decision = HydraService.getDecision(
+                            { ...actingPlayer, profile: horseProfile } as import('../services/HydraService').HorsePlayer,
+                            context
+                        );
+
+                        // Execute after think time
+                        setTimeout(() => {
+                            if (handControllerRef.current) {
+                                const amount = decision.action === 'call' ? context.toCall : decision.amount;
+                                handControllerRef.current.performAction(event.seat, decision.action as any, amount);
+                            }
+                        }, decision.thinkTime);
+                    }
+                    break;
+
+                case 'SHOWDOWN':
+                    // Reveal all cards for showdown
+                    setTableState(prev => {
+                        const updatedPlayers = [...prev.players];
+                        for (const result of event.results) {
+                            const playerIdx = updatedPlayers.findIndex(p => p?.id === result.userId);
+                            if (playerIdx >= 0 && updatedPlayers[playerIdx]) {
+                                // Convert card format and show cards
+                                const suitMapShowdown: Record<string, 'h' | 'd' | 'c' | 's'> = {
+                                    'hearts': 'h', 'diamonds': 'd', 'clubs': 'c', 'spades': 's'
+                                };
+                                const showdownCards = result.cards.map(c => ({
+                                    rank: c.rank as Card['rank'],
+                                    suit: (suitMapShowdown[c.suit] || c.suit) as 'h' | 'd' | 'c' | 's',
+                                }));
+                                updatedPlayers[playerIdx] = {
+                                    ...updatedPlayers[playerIdx]!,
+                                    holeCards: showdownCards,
+                                    showCards: true, // Reveal all cards at showdown
+                                };
+                            }
+                        }
+                        return { ...prev, players: updatedPlayers };
+                    });
+                    break;
+
+                case 'WINNERS':
+                    // Update player stacks with winnings
+                    setTableState(prev => {
+                        const updatedPlayers = [...prev.players];
+                        for (const winner of event.winners) {
+                            const playerIdx = updatedPlayers.findIndex(p => p?.id === winner.userId);
+                            if (playerIdx >= 0 && updatedPlayers[playerIdx]) {
+                                updatedPlayers[playerIdx] = {
+                                    ...updatedPlayers[playerIdx]!,
+                                    stack: updatedPlayers[playerIdx]!.stack + winner.amount,
+                                };
+                            }
+                        }
+                        return { ...prev, players: updatedPlayers };
+                    });
+                    playWinSound();
+
+                    // Trigger achievements for winners
+                    for (const winner of event.winners) {
+                        achievementTriggerService.onHandComplete(winner.userId, {
+                            won: true,
+                            potSize: winner.amount,
+                            handRank: winner.hand?.name, // e.g. 'Royal Flush', 'Full House'
+                            showdown: true,
+                        }).catch(err => console.error('[Achievements] Trigger failed:', err));
+                    }
+                    break;
+
+                case 'HAND_COMPLETE':
+                    // First, keep cards visible for 3 seconds so players can see showdown
+                    setTableState(prev => ({
+                        ...prev,
+                        isHandInProgress: false,
+                    }));
+                    setLastHandId(`hand-${event.handNumber}`);
+
+                    // Delayed cleanup: clear board and cards after 3 seconds
+                    setTimeout(() => {
+                        setHandNumber(prev => prev + 1);
+                        handControllerRef.current = null;
+                        setTableState(prev => {
+                            // Clear all players' hole cards
+                            const clearedPlayers = prev.players.map(p =>
+                                p ? { ...p, holeCards: undefined, showCards: false } : null
+                            );
+                            return {
+                                ...prev,
+                                communityCards: [],
+                                boardStage: 'preflop',
+                                pot: 0,
+                                players: clearedPlayers,
+                            };
+                        });
+                    }, 3000);
+
+                    // Execute rake waterfall
+                    const players = seatedPlayers.map(p => ({
+                        userId: p!.id,
+                        clubId: clubId,
+                        agentId: undefined,
+                    }));
+                    handleHandComplete(
+                        `hand-${event.handNumber}`,
+                        event.rake > 0 ? tableState.pot : 0,
+                        true,
+                        players
+                    );
+                    break;
+            }
+        });
+
+        setHandController(hand);
+        hand.start();
+
+        return () => {
+            handControllerRef.current = null;
+        };
+    }, [tableId, tableState.players, tableState.isHandInProgress, tableState.blinds, tableState.gameType, handNumber]);
+
     // Handle incoming game events from WebSocket
     useEffect(() => {
         if (!lastEvent) return;
 
-        console.log('[TablePage] Game event received:', lastEvent.type, lastEvent.data);
 
         switch (lastEvent.type) {
             case 'DEAL_CARDS':
@@ -197,7 +1018,6 @@ export default function TablePage() {
                 break;
             case 'POT_WIN':
                 // Show winner animation
-                console.log('[TablePage] Pot won by:', lastEvent.data.winnerId);
                 break;
             case 'HAND_COMPLETE':
                 // Reset for next hand
@@ -215,28 +1035,37 @@ export default function TablePage() {
     useEffect(() => {
         if (!presence) return;
 
-        // Merge presence data with existing players
-        const updatedPlayers = [...tableState.players];
-        presence.players.forEach(p => {
-            if (p.seatNumber !== undefined) {
-                const seatIdx = p.seatNumber - 1;
-                if (seatIdx >= 0 && seatIdx < updatedPlayers.length) {
-                    const existing = updatedPlayers[seatIdx];
-                    updatedPlayers[seatIdx] = {
-                        id: p.oduserId,
-                        name: p.username,
-                        avatar: p.avatar || '',
-                        stack: existing?.stack ?? 0,
-                        status: existing?.status ?? 'active',
-                        isHero: p.oduserId === userId,
-                        showCards: existing?.showCards ?? false,
-                    };
-                }
-            }
-        });
+        // Merge presence data with existing players (use callback to avoid stale state)
+        setTableState(prev => {
+            const updatedPlayers = [...prev.players];
+            let hasChanges = false;
 
-        setTableState(prev => ({ ...prev, players: updatedPlayers }));
-    }, [presence, userId, tableState.players]);
+            presence.players.forEach(p => {
+                if (p.seatNumber !== undefined) {
+                    const seatIdx = p.seatNumber - 1;
+                    if (seatIdx >= 0 && seatIdx < updatedPlayers.length) {
+                        const existing = updatedPlayers[seatIdx];
+                        // Only update if actually different to prevent loops
+                        if (!existing || existing.id !== p.oduserId) {
+                            updatedPlayers[seatIdx] = {
+                                id: p.oduserId,
+                                name: p.username,
+                                avatar: p.avatar || '',
+                                stack: existing?.stack ?? 0,
+                                status: existing?.status ?? 'active',
+                                isHero: p.oduserId === userId,
+                                showCards: existing?.showCards ?? false,
+                            };
+                            hasChanges = true;
+                        }
+                    }
+                }
+            });
+
+            // Only update state if there were actual changes
+            return hasChanges ? { ...prev, players: updatedPlayers } : prev;
+        });
+    }, [presence, userId]);
 
     // Get seat positions based on table size
     const seatPositions = tableState.maxPlayers === 9 ? SEAT_POSITIONS_9MAX : SEAT_POSITIONS_6MAX;
@@ -248,25 +1077,39 @@ export default function TablePage() {
 
     // Handle seat click (sit down at empty seat)
     const handleSeatClick = async (seatNumber: number) => {
-        console.log('[TablePage] Sit request at seat:', seatNumber);
+        setSelectedSeat(seatNumber);
+        setShowBuyInModal(true);
         await updateSeat(seatNumber);
-        // Would also open buy-in modal here
     };
 
-    // Action handlers - now wired to WebSocket
+    // Action handlers - wired to HandController + WebSocket for sync
     const handleFold = async () => {
-        console.log('[TablePage] Fold action');
-        await sendAction('fold', {});
+        const heroSeat = tableState.heroSeat;
+        // Execute action through HandController for local game loop
+        if (handControllerRef.current) {
+            handControllerRef.current.performAction(heroSeat, 'fold');
+        }
+        // Broadcast to other players via WebSocket
+        await sendAction('fold', { seat: heroSeat });
+        soundService.playFold();
     };
 
     const handleCheck = async () => {
-        console.log('[TablePage] Check action');
-        await sendAction('check', {});
+        const heroSeat = tableState.heroSeat;
+        if (handControllerRef.current) {
+            handControllerRef.current.performAction(heroSeat, 'check');
+        }
+        await sendAction('check', { seat: heroSeat });
+        soundService.playCheck();
     };
 
     const handleCall = async () => {
-        console.log('[TablePage] Call action');
-        await sendAction('call', {});
+        const heroSeat = tableState.heroSeat;
+        if (handControllerRef.current) {
+            handControllerRef.current.performAction(heroSeat, 'call');
+        }
+        await sendAction('call', { seat: heroSeat });
+        soundService.playChips();
     };
 
     const handleBet = () => {
@@ -278,15 +1121,70 @@ export default function TablePage() {
     };
 
     const handleConfirmRaise = async () => {
-        console.log('[TablePage] Raise action:', raiseAmount);
-        await sendAction('raise', { amount: raiseAmount });
+        const heroSeat = tableState.heroSeat;
+        if (handControllerRef.current) {
+            handControllerRef.current.performAction(heroSeat, 'raise', raiseAmount);
+        }
+        await sendAction('raise', { seat: heroSeat, amount: raiseAmount });
+        soundService.playChips();
         setShowRaiseSlider(false);
     };
 
     const handleAllIn = async () => {
-        console.log('[TablePage] All-in action');
-        const heroStack = getPlayerAtSeat(tableState.heroSeat)?.stack || 0;
-        await sendAction('allin', { amount: heroStack });
+        const heroSeat = tableState.heroSeat;
+        const hero = getPlayerAtSeat(heroSeat);
+        const heroStack = hero?.stack || 0;
+        if (handControllerRef.current) {
+            handControllerRef.current.performAction(heroSeat, 'all_in');
+        }
+        await sendAction('allin', { seat: heroSeat, amount: heroStack });
+        soundService.playChips();
+
+        // Check for all-in scenario triggers (after slight delay to let state update)
+        setTimeout(() => {
+            const activePlayers = tableState.players.filter(
+                p => p && p.status === 'active' && p.stack > 0
+            );
+            const allInPlayers = tableState.players.filter(
+                p => p && p.status === 'all_in'
+            );
+
+            // If heads-up all-in (2 players all-in), trigger insurance
+            if (activePlayers.length === 0 && allInPlayers.length >= 2) {
+                const opponent = allInPlayers.find(p => p?.id !== hero?.id);
+                const potSize = tableState.pot;
+                const maxCoverage = Math.floor(potSize * 0.8); // 80% of pot coverage
+
+                // Convert board cards to proper format
+                const boardCards = tableState.communityCards.map(c => ({
+                    rank: c.rank,
+                    suit: c.suit as 'h' | 'd' | 'c' | 's',
+                }));
+
+                // Hero's hole cards
+                const heroCards = hero?.holeCards?.map(c => ({
+                    rank: c.rank,
+                    suit: c.suit as 'h' | 'd' | 'c' | 's',
+                })) || [];
+
+                setInsuranceOffer({
+                    maxCoverage,
+                    equityPercent: 65, // Would come from hand evaluator in production
+                    premiumRate: 0.1, // 10% premium rate
+                    potAmount: potSize,
+                    yourStack: heroStack,
+                    opponentStack: opponent?.stack || 0,
+                    yourCards: heroCards,
+                    board: boardCards,
+                });
+                setShowInsurance(true);
+
+                // Also trigger Run It Twice prompt after insurance decision
+                setRitOpponent(opponent?.name || 'Opponent');
+                setRitTimer(10);
+                // RIT prompt will show after insurance modal closes
+            }
+        }, 500);
     };
 
     // Side menu toggle
@@ -294,15 +1192,72 @@ export default function TablePage() {
         setIsSideMenuOpen(!isSideMenuOpen);
     };
 
-    // Timer countdown (demo)
+    // Chip animation helpers
+    const triggerChipAnimation = useCallback((
+        fromSeat: number,
+        toPot: boolean,
+        amount: number,
+        chipColor: 'red' | 'green' | 'blue' | 'black' | 'gold' = 'gold'
+    ) => {
+        const seatPositions = tableState.maxPlayers === 9 ? SEAT_POSITIONS_9MAX : SEAT_POSITIONS_6MAX;
+        const fromPos = seatPositions[fromSeat] || { x: 50, y: 50 };
+        const toPos = toPot ? { x: 50, y: 45 } : fromPos; // Pot is center of table
+
+        const animId = `chip_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        setChipAnimations(prev => [...prev, {
+            id: animId,
+            from: { x: (fromPos.x / 100) * window.innerWidth, y: (fromPos.y / 100) * window.innerHeight },
+            to: { x: (toPos.x / 100) * window.innerWidth, y: (toPos.y / 100) * window.innerHeight },
+            amount,
+            chipColor
+        }]);
+    }, [tableState.maxPlayers]);
+
+    const handleAnimationComplete = useCallback((id: string) => {
+        setChipAnimations(prev => prev.filter(a => a.id !== id));
+    }, []);
+
+    // Load waitlist data
+    const loadWaitlist = useCallback(async () => {
+        if (!tableId) return;
+        try {
+            const entries = await waitlistService.getTableWaitlist(tableId);
+            setWaitListPlayers(entries.map(e => ({
+                playerId: e.userId,
+                playerName: `Player ${e.position}`, // Would come from profile join
+                position: e.position,
+                joinedAt: new Date(e.joinedAt)
+            })));
+        } catch (error) {
+            console.error('Failed to load waitlist:', error);
+        }
+    }, [tableId]);
+
+    // Handle opening waitlist modal and loading data
+    const handleOpenWaitlist = useCallback(() => {
+        loadWaitlist();
+        setShowWaitList(true);
+    }, [loadWaitlist]);
+
+    // Timer countdown with auto-fold on timeout
     useEffect(() => {
         if (tableState.currentPlayerSeat === tableState.heroSeat && actionTimeRemaining > 0) {
             const timer = setInterval(() => {
-                setActionTimeRemaining(prev => Math.max(0, prev - 1));
+                setActionTimeRemaining(prev => {
+                    const newValue = prev - 1;
+                    // Auto-fold when timer expires
+                    if (newValue <= 0 && handControllerRef.current) {
+                        console.log('[TablePage] Auto-folding on timeout');
+                        handControllerRef.current.performAction(tableState.heroSeat, 'fold');
+                        sendAction('fold', { seat: tableState.heroSeat, autoFold: true });
+                        soundService.playFold();
+                    }
+                    return Math.max(0, newValue);
+                });
             }, 1000);
             return () => clearInterval(timer);
         }
-    }, [tableState.currentPlayerSeat, tableState.heroSeat, actionTimeRemaining]);
+    }, [tableState.currentPlayerSeat, tableState.heroSeat, actionTimeRemaining, tableState.heroSeat]);
 
     return (
         <div className="table-page">
@@ -317,12 +1272,12 @@ export default function TablePage() {
                 <div className="jackpot-banner">
                     <span className="jackpot-label">JACKPOT</span>
                     <span className="jackpot-amount">{tableState.jackpotAmount.toLocaleString()}</span>
-                    <span className="jackpot-diamond">💎</span>
+                    <span className="jackpot-diamond"></span>
                 </div>
 
                 <div className="header-actions">
                     <button className="header-btn" title="Help">?</button>
-                    <button className="header-btn" title="Info">📋</button>
+                    <button className="header-btn" title="Info"></button>
                     <button className="header-btn table-id" title="Table ID">
                         {tableState.tableId.slice(0, 8)}
                     </button>
@@ -365,8 +1320,12 @@ export default function TablePage() {
                             {/* Game Info */}
                             <div className="game-info">
                                 <span className="game-type">{tableState.gameType}</span>
-                                <span className="game-variant">CLASSIC HOLD'EM 🏆 (4)</span>
+                                <span className="game-variant">CLASSIC HOLD'EM  (4)</span>
                                 <span className="game-blinds">Blinds: {tableState.blinds}</span>
+                                {/* Spectator Badge */}
+                                {presence?.observers && presence.observers.length > 0 && (
+                                    <SpectatorBadge observers={presence.observers} />
+                                )}
                             </div>
 
                         </div>
@@ -394,7 +1353,13 @@ export default function TablePage() {
                                 isActive={seatNumber === tableState.currentPlayerSeat}
                                 lastAction={tableState.lastActions[idx] || null}
                                 timerProgress={seatNumber === tableState.currentPlayerSeat ? (actionTimeRemaining / 15) * 100 : undefined}
+                                bigBlind={parseFloat(tableState.blinds.split('/')[1]) || 2}
                                 onSit={() => handleSeatClick(seatNumber)}
+                                onAvatarClick={() => {
+                                    // Open throwable selector targeting this seat
+                                    setThrowTargetSeat(seatNumber);
+                                    setShowThrowableSelector(true);
+                                }}
                             />
                         </div>
                     );
@@ -405,7 +1370,23 @@ export default function TablePage() {
           ACTION PANEL
           ═══════════════════════════════════════════════════════════════════════ */}
             <div className="action-panel">
-                {showRaiseSlider ? (
+                {/* Spectator Mode - Show when user is not seated */}
+                {!tableState.players[tableState.heroSeat] ? (
+                    <div className="spectator-mode" style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '12px',
+                        padding: '16px 24px',
+                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                        borderRadius: '12px',
+                        color: '#888',
+                        fontSize: '14px',
+                    }}>
+                        <span style={{ fontSize: '18px' }}></span>
+                        <span>You are watching — Click a seat to join</span>
+                    </div>
+                ) : showRaiseSlider ? (
                     /* Raise Slider Mode */
                     <div className="raise-slider-panel">
                         <div className="raise-display">
@@ -444,7 +1425,7 @@ export default function TablePage() {
                     /* Normal Action Buttons */
                     <div className="action-buttons">
                         <div className="timer-display">
-                            <span className="timer-icon">⏱</span>
+                            <span className="timer-icon"></span>
                             <span className="timer-value">{actionTimeRemaining}</span>
                             <span className="time-bank">20s</span>
                         </div>
@@ -474,37 +1455,57 @@ export default function TablePage() {
                             <span className="menu-item-arrow">›</span>
                         </button>
                         <button className="menu-item">
-                            <span className="menu-item-icon">💎</span>
+                            <span className="menu-item-icon"></span>
                             <span className="menu-item-label">Top Up</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
-                        <button className="menu-item">
-                            <span className="menu-item-icon">⚙️</span>
-                            <span className="menu-item-label">Table Settings</span>
+                        <button className="menu-item" onClick={() => { setShowGameRules(true); setIsSideMenuOpen(false); }}>
+                            <span className="menu-item-icon"></span>
+                            <span className="menu-item-label">Table Rules</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
                         <button className="menu-item">
-                            <span className="menu-item-icon">🔊</span>
+                            <span className="menu-item-icon"></span>
                             <span className="menu-item-label">Sounds</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
                         <button className="menu-item">
-                            <span className="menu-item-icon">📳</span>
+                            <span className="menu-item-icon"></span>
                             <span className="menu-item-label">Vibrations</span>
                             <span className="menu-item-toggle on">ON</span>
                         </button>
                         <button className="menu-item">
-                            <span className="menu-item-icon">📤</span>
+                            <span className="menu-item-icon"></span>
                             <span className="menu-item-label">Share</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
                         <button className="menu-item">
-                            <span className="menu-item-icon">👑</span>
+                            <span className="menu-item-icon"></span>
                             <span className="menu-item-label">VIP</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
+                        <button className="menu-item" onClick={() => { setShowPlayerNotes(true); setIsSideMenuOpen(false); }}>
+                            <span className="menu-item-icon"></span>
+                            <span className="menu-item-label">Player Notes</span>
+                            <span className="menu-item-arrow">›</span>
+                        </button>
+                        <button className="menu-item" onClick={() => { setShowHandReplay(true); setIsSideMenuOpen(false); }}>
+                            <span className="menu-item-icon"></span>
+                            <span className="menu-item-label">Hand History</span>
+                            <span className="menu-item-arrow">›</span>
+                        </button>
+                        <button className="menu-item" onClick={() => { setShowSitOut(true); setIsSideMenuOpen(false); }}>
+                            <span className="menu-item-icon">🚶</span>
+                            <span className="menu-item-label">Sit Out</span>
+                            <span className="menu-item-arrow">›</span>
+                        </button>
+                        <button className="menu-item" onClick={() => { handleOpenWaitlist(); setIsSideMenuOpen(false); }}>
+                            <span className="menu-item-icon"></span>
+                            <span className="menu-item-label">Wait List</span>
+                            <span className="menu-item-arrow">›</span>
+                        </button>
                         <button className="menu-item exit" onClick={() => navigate('/')}>
-                            <span className="menu-item-icon">🚪</span>
+                            <span className="menu-item-icon"></span>
                             <span className="menu-item-label">Exit</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
@@ -521,6 +1522,328 @@ export default function TablePage() {
                     <span className="eye-icon">👁</span>
                     <span>Observing</span>
                 </div>
+            )}
+
+            {/* Table Chat */}
+            <TableChat
+                messages={chatMessages}
+                onSendMessage={handleSendChatMessage}
+                myPlayerId={userId}
+                isCollapsed={isChatCollapsed}
+                onToggleCollapse={() => setIsChatCollapsed(!isChatCollapsed)}
+                placeholder="Say something..."
+            />
+
+            {/* Player Notes Modal */}
+            {showPlayerNotes && (
+                <div className="player-notes-overlay" onClick={() => setShowPlayerNotes(false)}>
+                    <div className="player-notes-modal" onClick={(e) => e.stopPropagation()}>
+                        <button className="modal-close" onClick={() => setShowPlayerNotes(false)}>✕</button>
+                        <PlayerNotesPanel
+                            targetUserId={selectedPlayerForNotes?.id}
+                            targetName={selectedPlayerForNotes?.name}
+                            onClose={() => setShowPlayerNotes(false)}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* Hand Replay Modal */}
+            {showHandReplay && (
+                <div className="player-notes-overlay" onClick={() => setShowHandReplay(false)}>
+                    <div className="player-notes-modal hand-replay-modal" onClick={(e) => e.stopPropagation()}>
+                        <button className="modal-close" onClick={() => setShowHandReplay(false)}>✕</button>
+                        {lastHandId ? (
+                            <HandReplay
+                                handId={lastHandId}
+                                onClose={() => setShowHandReplay(false)}
+                            />
+                        ) : (
+                            <div className="no-hand-history">
+                                <span className="empty-icon"></span>
+                                <p>No recent hand to replay</p>
+                                <p className="hint">Complete a hand to view its replay</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Game Rules Modal */}
+            <GameRulesModal
+                isOpen={showGameRules}
+                onClose={() => setShowGameRules(false)}
+                variant="No Limit Hold'em"
+                stakes="$1/$2"
+                minBuyIn={100}
+                maxBuyIn={500}
+                rakePercentage={5}
+                rakeCap={3}
+                isStraddleEnabled={true}
+                isRunItTwiceEnabled={true}
+            />
+
+            {/* Chip Animations */}
+            <ChipAnimationManager
+                animations={chipAnimations}
+                onAnimationComplete={handleAnimationComplete}
+            />
+
+            {/* Sit Out Modal */}
+            <SitOutModal
+                isOpen={showSitOut}
+                onClose={() => setShowSitOut(false)}
+                onReturn={() => setShowSitOut(false)}
+                onLeaveTable={() => navigate('/')}
+                timeRemaining={sitOutTimeRemaining}
+                maxSitOutTime={300}
+                tableName={tableState.tableName}
+            />
+
+            {/* Wait List Modal */}
+            <WaitListModal
+                isOpen={showWaitList}
+                onClose={() => setShowWaitList(false)}
+                tableName={tableState.tableName}
+                blinds={tableState.blinds}
+                players={waitListPlayers}
+                myPlayerId={userId}
+                onLeaveWaitList={() => setShowWaitList(false)}
+            />
+
+            {/* Insurance Modal */}
+            {insuranceOffer && (
+                <InsuranceModal
+                    isOpen={showInsurance}
+                    onClose={() => setShowInsurance(false)}
+                    onAccept={handleInsuranceAccept}
+                    onDecline={handleInsuranceDecline}
+                    offer={insuranceOffer}
+                    timeRemaining={15}
+                />
+            )}
+
+            {/* Run It Twice Prompt */}
+            <RunItTwicePrompt
+                isOpen={showRIT}
+                onAccept={handleRITAccept}
+                onDecline={handleRITDecline}
+                timeRemaining={ritTimer}
+                opponentName={ritOpponent}
+            />
+
+            {/* Bad Beat Jackpot Display */}
+            <BadBeatJackpot
+                amount={bbjAmount}
+                qualifyingHand="Quad 8s or better"
+                isHit={showBBJ}
+            />
+
+            {/* Throwable Selector */}
+            {showThrowableSelector && userId && (
+                <div className="throwable-selector-overlay" onClick={() => setShowThrowableSelector(false)}>
+                    <ThrowableSelector
+                        userId={userId}
+                        onSelect={handleThrowableSelect}
+                        onClose={() => setShowThrowableSelector(false)}
+                    />
+                </div>
+            )}
+
+            {/* Throw Animations */}
+            <ThrowAnimationContainer
+                events={activeThrows}
+                seatPositions={getSeatPositions()}
+                onEventComplete={handleThrowComplete}
+            />
+
+            {/* Tip Dealer Modal */}
+            <TipDealer
+                isOpen={showTipDealer}
+                onClose={() => setShowTipDealer(false)}
+                onTip={handleTipDealer}
+                balance={tableState.players[tableState.heroSeat]?.stack || 0}
+            />
+
+            {/* Straddle Toggle (UTG only) */}
+            <StraddleToggle
+                isEnabled={isStraddleEnabled}
+                onToggle={setIsStraddleEnabled}
+                amount={straddleAmount}
+                isAvailable={isStraddleAvailable}
+            />
+
+            {/* Time Bank */}
+            <TimeBank
+                isVisible={showTimeBank}
+                isActive={timeBankActive}
+                banksRemaining={timeBanksRemaining}
+                totalTime={30}
+                timeRemaining={timeBankTimeRemaining}
+                onActivate={handleActivateTimeBank}
+            />
+
+            {/* Cashier Modal */}
+            <CashierModal
+                isOpen={showCashier}
+                onClose={() => setShowCashier(false)}
+                onAddChips={handleAddChips}
+                onWithdrawChips={handleWithdrawChips}
+                currentStack={tableState.players[tableState.heroSeat]?.stack || 0}
+                accountBalance={accountBalance}
+                minBuyIn={100}
+                maxBuyIn={500}
+                maxStack={1000}
+            />
+
+            {/* Buy-In Modal */}
+            <BuyInModal
+                isOpen={showBuyInModal}
+                onClose={() => setShowBuyInModal(false)}
+                onConfirm={async (amount, autoRebuy) => {
+
+                    // Demo mode bypass - skip wallet RPC for demo tables
+                    const isDemoTable = tableId === 'demo' || !tableId?.match(/^[0-9a-f-]{36}$/i);
+
+                    if (isDemoTable) {
+                        // Directly set chips for demo mode
+                        setAccountBalance(amount);
+                        const newPlayers = [...tableState.players];
+                        if (selectedSeat && selectedSeat > 0 && selectedSeat <= newPlayers.length) {
+                            newPlayers[selectedSeat - 1] = {
+                                id: userId || 'demo-player',
+                                name: 'You',
+                                avatar: '',
+                                stack: amount,
+                                status: 'active',
+                                isHero: true,
+                                showCards: false,
+                            };
+                            setTableState(prev => ({ ...prev, players: newPlayers, heroSeat: selectedSeat }));
+                        }
+                    } else if (userId && userId !== 'guest' && tableId && selectedSeat) {
+                        try {
+                            // Lock chips in escrow for table buy-in
+                            await WalletService.lockForBuyIn(userId, tableId, amount);
+                            setAccountBalance(prev => prev + amount);
+
+                            // Add player to local table state
+                            const newPlayers = [...tableState.players];
+                            newPlayers[selectedSeat - 1] = {
+                                id: userId,
+                                name: 'You', // Will be updated from profile
+                                avatar: '',
+                                stack: amount,
+                                status: 'active',
+                                isHero: true,
+                                showCards: false,
+                            };
+                            setTableState(prev => ({ ...prev, players: newPlayers, heroSeat: selectedSeat }));
+
+                            // Notify Hydra service that a real player joined (triggers horse recede)
+                            HydraService.onRealPlayerJoined(tableId, userId);
+
+                            // Broadcast seat update to other clients
+                            await sendAction('player_seated', {
+                                seat: selectedSeat,
+                                userId,
+                                stack: amount,
+                                autoRebuy,
+                            });
+
+                            console.log(`[TablePage] Player ${userId} seated at seat ${selectedSeat} with ${amount} chips`);
+                        } catch (error) {
+                            console.error('Buy-in failed:', error);
+                        }
+                    }
+                    setShowBuyInModal(false);
+                }}
+                tableName={tableState.tableName}
+                minBuyIn={100}
+                maxBuyIn={500}
+                accountBalance={(tableId === 'demo' || !tableId?.match(/^[0-9a-f-]{36}$/i)) ? 10000 : accountBalance}
+                bigBlind={10}
+            />
+
+            {/* Rabbit Hunt (post-hand card reveal) */}
+            <RabbitHunt
+                isAvailable={isRabbitAvailable}
+                onReveal={handleRabbitReveal}
+                currentBoard={currentBoard}
+            />
+
+            {/* Leaderboard Panel */}
+            <LeaderboardPanel
+                isOpen={showLeaderboard}
+                onClose={() => setShowLeaderboard(false)}
+                title="Session Leaderboard"
+                players={leaderboardPlayers}
+                period={leaderboardPeriod}
+                onPeriodChange={setLeaderboardPeriod}
+            />
+
+            {/* Table Menu */}
+            <TableMenu
+                isOpen={showTableMenu}
+                onClose={() => setShowTableMenu(false)}
+                onToggle={() => setShowTableMenu(!showTableMenu)}
+                sections={[
+                    {
+                        title: 'Quick Actions',
+                        actions: [
+                            { id: 'sitout', label: 'Sit Out', icon: '⏸️', onClick: () => { } },
+                            { id: 'rebuy', label: 'Add Chips', icon: '', onClick: () => setShowCashier(true) },
+                        ]
+                    },
+                    {
+                        title: 'Table Info',
+                        actions: [
+                            { id: 'leaderboard', label: 'Leaderboard', icon: '', onClick: () => setShowLeaderboard(true) },
+                            { id: 'settings', label: 'Settings', icon: '', onClick: () => setShowSettings(true) },
+                        ]
+                    },
+                    {
+                        actions: [
+                            { id: 'leave', label: 'Leave Table', icon: '', onClick: handleLeaveTable, danger: true },
+                        ]
+                    }
+                ]}
+                tableName={tableState.tableName}
+            />
+
+            {/* Settings Panel */}
+            <SettingsPanel
+                isOpen={showSettings}
+                onClose={() => setShowSettings(false)}
+                settings={{
+                    autoMuckLosers: true,
+                    autoMuckWinners: false,
+                    autoPostBlinds: true,
+                    soundEnabled: isSoundEnabled,
+                    soundVolume: 70,
+                    showHandStrength: true,
+                    showPotOdds: false,
+                    animationSpeed: 'normal',
+                    fourColorDeck: false,
+                    showStackInBB: false,
+                    showBetSizePresets: true,
+                    confirmAllIn: true,
+                    sitOutNextHand: false,
+                }}
+                onSettingsChange={(settings) => {
+                    if (settings.soundEnabled !== undefined) {
+                        setIsSoundEnabled(settings.soundEnabled);
+                    }
+                }}
+            />
+
+            {/* Share Hand */}
+            {showShareHand && sharedHandData && (
+                <ShareHand
+                    isOpen={showShareHand}
+                    onClose={() => setShowShareHand(false)}
+                    hand={sharedHandData}
+                />
             )}
         </div>
     );

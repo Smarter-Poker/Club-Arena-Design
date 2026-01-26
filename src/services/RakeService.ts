@@ -1,9 +1,9 @@
-import { supabase, isDemoMode } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { BBJService } from './BBJService';
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 💰 RAKE WATERFALL ENGINE
+ *  RAKE WATERFALL ENGINE
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * Complete rake management implementing the financial laws:
@@ -219,14 +219,6 @@ export const RakeService = {
         rakeAmount: number;
         bbjAmount: number;
     }): Promise<boolean> {
-        if (isDemoMode) {
-            console.log('💰 Pot Drops (Demo):', {
-                rake: params.rakeAmount.toFixed(2),
-                bbj: params.bbjAmount.toFixed(2),
-            });
-            return true;
-        }
-
         const { error } = await supabase.rpc('execute_pot_drops', {
             p_hand_id: params.handId,
             p_table_id: params.tableId,
@@ -274,15 +266,6 @@ export const RakeService = {
             timestamp,
         }));
 
-        if (isDemoMode) {
-            console.log('💰 Rake Attribution (Demo):', {
-                totalRake: totalRake.toFixed(2),
-                players: activePlayers.length,
-                perPlayer: creditPerPlayer.toFixed(2),
-            });
-            return attributions;
-        }
-
         // Persist attributions to database
         const { error } = await supabase.from('rake_credits').insert(
             attributions.map(a => ({
@@ -311,14 +294,6 @@ export const RakeService = {
         rakeAmount: number;
         players: DealtInPlayer[];
     }): Promise<boolean> {
-        if (isDemoMode) {
-            console.log('💰 Commission Queue (Demo):', {
-                handId: params.handId,
-                amount: params.rakeAmount.toFixed(2),
-            });
-            return true;
-        }
-
         // Group players by agent for commission attribution
         const byAgent = new Map<string, number>();
         const perPlayer = params.rakeAmount / params.players.length;

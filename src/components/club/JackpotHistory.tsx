@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 💰 JACKPOT HISTORY — Big Wins
+ *  JACKPOT HISTORY — Big Wins
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * List of recent Bad Beat Jackpot hits.
@@ -36,7 +36,7 @@ export function JackpotHistory({
     isOpen,
     onClose,
     hits,
-    currency = '💎',
+    currency = '',
     onReplay,
 }: JackpotHistoryProps) {
     if (!isOpen) return null;
@@ -47,7 +47,7 @@ export function JackpotHistory({
                 {/* Header */}
                 <div className="jackpot-header">
                     <div className="jackpot-title-group">
-                        <span className="jackpot-icon">🎰</span>
+                        <span className="jackpot-icon"></span>
                         <h2 className="jackpot-title">Jackpot History</h2>
                     </div>
                     <button className="jackpot-close" onClick={onClose}>×</button>

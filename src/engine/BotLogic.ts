@@ -40,9 +40,11 @@ export class BotLogic {
         // 2. Calculate Pot Odds
         const potOdds = toCall / (pot + toCall);
 
-        // 3. Determine aggression factor (random variance + player style)
-        // For now, consistent aggression based on strength deviation
-        const aggression = Math.random() * 0.2; // +/- 20% variance
+        // 3. Determine aggression factor based on player style and variance
+        // Player styles could be: 'tight-passive', 'tight-aggressive', 'loose-passive', 'loose-aggressive'
+        const playerStyle = (player as any).botStyle || 'balanced';
+        const baseAggression = this.getAggressionForStyle(playerStyle);
+        const aggression = baseAggression + (Math.random() * 0.15 - 0.075); // +/- 7.5% variance
 
         // 4. Make Decision
 
@@ -167,7 +169,7 @@ export class BotLogic {
         // Two Pair: 0.4 - 0.6
         // Trips+: 0.6 - 1.0
 
-        let baseScore = (myHand.ranking - 1) / 9; // 0 to 1
+        const baseScore = (myHand.ranking - 1) / 9; // 0 to 1
 
         // Adjust for Board Texture (e.g. if board is 4-flush, a pair is worth less)
         // Omitted for simplicity.
@@ -205,5 +207,18 @@ export class BotLogic {
             'T': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14
         };
         return map[rank] || 0;
+    }
+
+    private static getAggressionForStyle(style: string): number {
+        const aggressionMap: Record<string, number> = {
+            'tight-passive': 0.2,
+            'tight-aggressive': 0.5,
+            'loose-passive': 0.3,
+            'loose-aggressive': 0.7,
+            'balanced': 0.4,
+            'maniac': 0.9,
+            'nit': 0.1,
+        };
+        return aggressionMap[style] || 0.4;
     }
 }

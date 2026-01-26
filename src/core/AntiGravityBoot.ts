@@ -1,5 +1,5 @@
 /**
- * 🚀 ANTI-GRAVITY AUTO-BOOT MODULE (HARDENED)
+ *  ANTI-GRAVITY AUTO-BOOT MODULE (HARDENED)
  * ═══════════════════════════════════════════════════════════════════════════════
  * This module runs AUTOMATICALLY at app startup.
  * It verifies all required systems and fails-closed if anything is missing.
@@ -36,7 +36,7 @@ let supabaseClient: SupabaseClient | null = null;
  */
 export async function initAntiGravity(): Promise<BootStatus> {
     console.log('═══════════════════════════════════════════════════════════════');
-    console.log('🚀 [ANTIGRAVITY] BOOT SEQUENCE INITIATED');
+    console.log(' [ANTIGRAVITY] BOOT SEQUENCE INITIATED');
     console.log('═══════════════════════════════════════════════════════════════');
 
     const errors: string[] = [];

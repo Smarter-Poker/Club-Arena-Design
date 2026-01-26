@@ -2,12 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { WalletService } from '../../services/WalletService';
 import { CommissionService } from '../../services/CommissionService';
 import { supabase } from '../../lib/supabase';
+import { useUserStore } from '../../stores/useUserStore';
+import { useToast } from '../common/Toast';
 
 interface FinancialDashboardProps {
     clubId: string;
 }
 
 export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ clubId }) => {
+    const { user } = useUserStore();
+    const toast = useToast();
     const [diamondBalance, setDiamondBalance] = useState(0);
     const [mintAmount, setMintAmount] = useState(1000);
     const [loading, setLoading] = useState(false);
@@ -18,10 +22,33 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
 
     useEffect(() => {
         fetchDiamondBalance();
+
+        // Subscribe to realtime updates for diamond wallet
+        const channel = supabase
+            .channel(`club_wallet:${clubId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'club_diamond_wallets',
+                    filter: `club_id=eq.${clubId}`,
+                },
+                (payload) => {
+                    if (payload.new && 'balance' in payload.new) {
+                        setDiamondBalance((payload.new as { balance: number }).balance);
+                    }
+                }
+            )
+            .subscribe();
+
+        // Cleanup subscription on unmount
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [clubId]);
 
     const fetchDiamondBalance = async () => {
-        // In a real app, this would be a reactive subscription
         const { data, error } = await supabase
             .from('club_diamond_wallets')
             .select('balance')
@@ -35,22 +62,25 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
         setLoading(true);
         try {
             await WalletService.mintChips(clubId, mintAmount);
-            alert(`Successfully minted ${mintAmount} chips!`);
+            toast.success(`Successfully minted ${mintAmount} chips!`);
             fetchDiamondBalance(); // Refresh
         } catch (error) {
-            alert('Minting failed: ' + (error as Error).message);
+            toast.error('Minting failed: ' + (error as Error).message);
         } finally {
             setLoading(false);
         }
     };
 
     const handleSetCommission = async () => {
+        if (!user?.id) {
+            toast.error('You must be logged in to set commission rates');
+            return;
+        }
         try {
-            // TODO: Get actual current user ID from auth context
-            await CommissionService.setRate(clubId, agentId, 'AGENT', commissionRate, 'current_user');
-            alert('Commission Limit set successfully');
+            await CommissionService.setRate(clubId, agentId, 'AGENT', commissionRate, user.id);
+            toast.success('Commission Limit set successfully');
         } catch (error) {
-            alert('Error: ' + (error as Error).message);
+            toast.error('Error: ' + (error as Error).message);
         }
     };
 
@@ -59,12 +89,12 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
 
     return (
         <div className="p-6 bg-gray-900 text-white rounded-lg shadow-xl">
-            <h1 className="text-2xl font-bold mb-6 text-yellow-400">🏦 Club Financial Command</h1>
+            <h1 className="text-2xl font-bold mb-6 text-yellow-400"> Club Financial Command</h1>
 
             {/* DIAMOND WALLET SECTION */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div className="bg-gray-800 p-6 rounded-lg border border-yellow-500/30">
-                    <h2 className="text-gray-400 text-sm uppercase tracking-wide mb-2">💎 Diamond Vault</h2>
+                    <h2 className="text-gray-400 text-sm uppercase tracking-wide mb-2"> Diamond Vault</h2>
                     <div className="text-4xl font-mono text-blue-400">{diamondBalance.toLocaleString()} <span className="text-lg">D</span></div>
                     <div className="mt-2 text-xs text-gray-500">Peg: 1 Diamond = $0.01</div>
                 </div>
@@ -97,11 +127,11 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
                                 : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                                 }`}
                         >
-                            {loading ? 'Minting...' : '🔥 BURN DIAMONDS & MINT'}
+                            {loading ? 'Minting...' : ' BURN DIAMONDS & MINT'}
                         </button>
 
                         <div className="text-xs text-green-400 text-center">
-                            ⚡ 75% Cheaper than Industry Standard
+                             75% Cheaper than Industry Standard
                         </div>
                     </div>
                 </div>
@@ -109,7 +139,7 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
 
             {/* COMMISSION SETTINGS */}
             <div className="bg-gray-800 p-6 rounded-lg border border-purple-500/30">
-                <h2 className="text-gray-400 text-sm uppercase tracking-wide mb-4">📊 Commission Hierarchy</h2>
+                <h2 className="text-gray-400 text-sm uppercase tracking-wide mb-4"> Commission Hierarchy</h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                     <div>

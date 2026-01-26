@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🏆 LEADERBOARD SERVICE — Player Rankings & Stats
+ *  LEADERBOARD SERVICE — Player Rankings & Stats
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * Manages club and union leaderboards with:
@@ -9,7 +9,7 @@
  * - XP integration for progression rewards
  */
 
-import { supabase, isDemoMode } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -68,39 +68,6 @@ const LEADERBOARD_XP_REWARDS: Record<LeaderboardPeriod, number[]> = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// DEMO DATA
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const DEMO_LEADERBOARD: LeaderboardEntry[] = [
-    { rank: 1, userId: 'u1', username: 'PokerPro99', value: 12450, metric: 'profit', change: 0, avatar: undefined },
-    { rank: 2, userId: 'u2', username: 'RiverKing', value: 9820, metric: 'profit', change: 2, avatar: undefined },
-    { rank: 3, userId: 'u3', username: 'BluffMaster', value: 8340, metric: 'profit', change: -1, avatar: undefined },
-    { rank: 4, userId: 'u4', username: 'AceHunter', value: 6780, metric: 'profit', change: 1, avatar: undefined },
-    { rank: 5, userId: 'u5', username: 'NightOwl', value: 5230, metric: 'profit', change: -2, avatar: undefined },
-    { rank: 6, userId: 'u6', username: 'ChipStacker', value: 4150, metric: 'profit', change: 0, avatar: undefined },
-    { rank: 7, userId: 'u7', username: 'CardShark', value: 3820, metric: 'profit', change: 3, avatar: undefined },
-    { rank: 8, userId: 'u8', username: 'FeltGrinder', value: 2940, metric: 'profit', change: -1, avatar: undefined },
-    { rank: 9, userId: 'u9', username: 'PotBuilder', value: 2100, metric: 'profit', change: 0, avatar: undefined },
-    { rank: 10, userId: 'u10', username: 'StackAttack', value: 1850, metric: 'profit', change: 2, avatar: undefined },
-];
-
-const DEMO_PLAYER_STATS: PlayerStats = {
-    userId: 'demo-user',
-    handsPlayed: 2847,
-    profit: 3250,
-    vpip: 24.5,
-    pfr: 18.2,
-    threeBet: 7.8,
-    wtsd: 31.2,
-    wsd: 52.4,
-    aggFactor: 2.8,
-    roi: 15.3,
-    tournamentsPlayed: 42,
-    tournamentsWon: 5,
-    lastUpdated: new Date().toISOString(),
-};
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // SERVICE
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -114,14 +81,6 @@ export const LeaderboardService = {
         period: LeaderboardPeriod = 'weekly',
         limit: number = 10
     ): Promise<LeaderboardEntry[]> {
-        if (isDemoMode) {
-            return DEMO_LEADERBOARD.slice(0, limit).map(entry => ({
-                ...entry,
-                metric,
-                xpEarned: LEADERBOARD_XP_REWARDS[period][entry.rank - 1] || 0,
-            }));
-        }
-
         const { data, error } = await supabase.rpc('get_club_leaderboard', {
             p_club_id: clubId,
             p_metric: metric,
@@ -155,14 +114,6 @@ export const LeaderboardService = {
         period: LeaderboardPeriod = 'weekly',
         limit: number = 20
     ): Promise<LeaderboardEntry[]> {
-        if (isDemoMode) {
-            return DEMO_LEADERBOARD.slice(0, limit).map(entry => ({
-                ...entry,
-                metric,
-                xpEarned: LEADERBOARD_XP_REWARDS[period][entry.rank - 1] || 0,
-            }));
-        }
-
         const { data, error } = await supabase.rpc('get_union_leaderboard', {
             p_union_id: unionId,
             p_metric: metric,
@@ -191,10 +142,6 @@ export const LeaderboardService = {
      * Get player's detailed stats
      */
     async getPlayerStats(userId: string, clubId?: string): Promise<PlayerStats | null> {
-        if (isDemoMode) {
-            return { ...DEMO_PLAYER_STATS, userId };
-        }
-
         let query = supabase
             .from('player_stats')
             .select('*')
@@ -232,12 +179,7 @@ export const LeaderboardService = {
      * Update player stats after a completed hand
      * Called by HandController after each hand
      */
-    async updateHandStats(result: HandResultForStats): Promise<void> {
-        if (isDemoMode) {
-            console.log('LeaderboardService: Updating stats for', result.userId);
-            return;
-        }
-
+    async updateHandStats(result: HandResultForStats & { clubId?: string; clubName?: string }): Promise<void> {
         // Use upsert to atomically update stat counters
         const { error } = await supabase.rpc('update_player_hand_stats', {
             p_user_id: result.userId,
@@ -251,6 +193,21 @@ export const LeaderboardService = {
         if (error) {
             console.error('LeaderboardService.updateHandStats error:', error);
         }
+
+        // Track for POY batched submission (cash games)
+        if (result.clubId) {
+            try {
+                const { POYService } = await import('./POYService');
+                POYService.trackHandResult({
+                    userId: result.userId,
+                    clubId: result.clubId,
+                    clubName: result.clubName,
+                    profit: result.profit,
+                });
+            } catch (e) {
+                // Silent fail for POY tracking
+            }
+        }
     },
 
     /**
@@ -262,10 +219,6 @@ export const LeaderboardService = {
         metric: LeaderboardMetric = 'profit',
         period: LeaderboardPeriod = 'weekly'
     ): Promise<{ rank: number; total: number } | null> {
-        if (isDemoMode) {
-            return { rank: 7, total: 45 };
-        }
-
         const { data, error } = await supabase.rpc('get_user_leaderboard_rank', {
             p_user_id: userId,
             p_club_id: clubId,
@@ -318,7 +271,6 @@ export const LeaderboardService = {
             }
         }
 
-        console.log(`Leaderboard rewards: ${awarded} players awarded ${totalXP} total XP`);
         return { awarded, totalXP };
     },
 

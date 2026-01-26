@@ -126,7 +126,7 @@ export function SitOutModal({
                 {/* Warning */}
                 {isUrgent && (
                     <div className="sitout-modal__warning">
-                        ⚠️ You will be removed from the table if you don't return
+                         You will be removed from the table if you don't return
                     </div>
                 )}
 

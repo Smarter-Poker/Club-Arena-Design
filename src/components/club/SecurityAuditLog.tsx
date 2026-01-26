@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🛡️ SECURITY AUDIT LOG — Fair Play & Monitoring
+ *  SECURITY AUDIT LOG — Fair Play & Monitoring
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Security logs for detecting collusion, chip dumping, and suspicious activity.
@@ -50,7 +50,7 @@ export function SecurityAuditLog({
                 {/* Header */}
                 <div className="audit-modal__header">
                     <div className="audit-modal__title-group">
-                        <span className="audit-modal__icon">🛡️</span>
+                        <span className="audit-modal__icon"></span>
                         <h2 className="audit-modal__title">Security Audit Log</h2>
                     </div>
                     <button className="audit-modal__close" onClick={onClose}>×</button>

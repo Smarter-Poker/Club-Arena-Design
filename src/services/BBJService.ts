@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 💰 BBJ SERVICE — Bad Beat Jackpot Management
+ *  BBJ SERVICE — Bad Beat Jackpot Management
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * Manages the Triple-Bank BBJ system:
@@ -10,10 +10,10 @@
  * 
  * TRIGGER LAW:
  * - NLH/PLO4/PLO5: Quad 2s or better beaten
- * - PLO6: ❌ HARD LOCK - No BBJ for PLO6 variants
+ * - PLO6:  HARD LOCK - No BBJ for PLO6 variants
  */
 
-import { supabase, isDemoMode } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import type { EvaluatedHand } from '../engine/PokerEngine';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -113,24 +113,6 @@ const BBJ_MINIMUM_RANKING = 8; // FOUR_OF_A_KIND
 const BBJ_EXCLUDED_VARIANTS: GameVariant[] = ['plo6', 'ofc'];
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// DEMO DATA
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const DEMO_POOL: BBJPool = {
-    id: 'bbj-pool-1',
-    union_id: 'union-1',
-    club_id: null,
-    main_balance: 45250.00,
-    backup_balance: 12300.00,
-    promo_balance: 8750.00,
-    total_contributed: 156800.00,
-    last_hit_at: '2026-01-05T14:32:00Z',
-    last_hit_amount: 89500.00,
-    created_at: '2025-06-01T00:00:00Z',
-    updated_at: new Date().toISOString(),
-};
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // SERVICE
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -139,10 +121,6 @@ export const BBJService = {
      * Get BBJ pool balances for a union or independent club
      */
     async getPool(options: { unionId?: string; clubId?: string }): Promise<BBJPool | null> {
-        if (isDemoMode) {
-            return DEMO_POOL;
-        }
-
         const { unionId, clubId } = options;
 
         let query = supabase.from('bbj_pools').select('*');
@@ -194,23 +172,6 @@ export const BBJService = {
         bigBlind: number;
         currentMainBalance: number;
     }): Promise<BBJContribution | null> {
-        if (isDemoMode) {
-            const contribution = this.calculateContribution(params.bigBlind);
-            const ratios = this.getAllocationRatios(params.currentMainBalance);
-
-            return {
-                id: `contrib-${Date.now()}`,
-                pool_id: params.poolId,
-                hand_id: params.handId,
-                table_id: params.tableId,
-                amount: contribution,
-                main_portion: contribution * ratios.MAIN,
-                backup_portion: contribution * ratios.BACKUP,
-                promo_portion: contribution * ratios.PROMO,
-                created_at: new Date().toISOString(),
-            };
-        }
-
         const contribution = this.calculateContribution(params.bigBlind);
         const ratios = this.getAllocationRatios(params.currentMainBalance);
 
@@ -332,28 +293,6 @@ export const BBJService = {
         const tableShare = totalAmount * PAYOUT_SHARES.TABLE;
         const perPlayerShare = tableShare / params.dealtInPlayerIds.length;
 
-        if (isDemoMode) {
-            console.log('🎰 BBJ TRIGGERED! (Demo Mode)');
-            console.log(`Total Jackpot: $${totalAmount.toLocaleString()}`);
-            console.log(`Winner (beaten hand): $${winnerShare.toLocaleString()}`);
-            console.log(`Loser (winning hand): $${loserShare.toLocaleString()}`);
-            console.log(`Table Share: $${tableShare.toLocaleString()} ($${perPlayerShare.toLocaleString()} each)`);
-
-            return {
-                id: `payout-${Date.now()}`,
-                pool_id: params.poolId,
-                hand_id: params.handId,
-                winner_user_id: params.winnerUserId,
-                loser_user_id: params.loserUserId,
-                table_players_share: params.dealtInPlayerIds.length,
-                winner_share: winnerShare,
-                loser_share: loserShare,
-                table_share: tableShare,
-                total_amount: totalAmount,
-                created_at: new Date().toISOString(),
-            };
-        }
-
         // Call RPC to atomically:
         // 1. Transfer funds from pool to users
         // 2. Reset main balance (seed from backup)
@@ -381,10 +320,6 @@ export const BBJService = {
      * Get BBJ history for a pool
      */
     async getPayoutHistory(poolId: string, limit: number = 10): Promise<BBJPayout[]> {
-        if (isDemoMode) {
-            return [];
-        }
-
         const { data, error } = await supabase
             .from('bbj_payouts')
             .select('*')
@@ -410,14 +345,6 @@ export const BBJService = {
         recipientUserIds: string[];
         reason: string;
     }): Promise<boolean> {
-        if (isDemoMode) {
-            console.log('🌧️ PROMO PAYOUT (Demo Mode)');
-            console.log(`Amount: $${params.amount.toLocaleString()}`);
-            console.log(`Recipients: ${params.recipientUserIds.length} players`);
-            console.log(`Reason: ${params.reason}`);
-            return true;
-        }
-
         const { error } = await supabase.rpc('bbj_promo_payout', {
             p_pool_id: params.poolId,
             p_amount: params.amount,

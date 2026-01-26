@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ENGINE — Profile Page
+ *  CLUB ENGINE — Profile Page
  * User profile with XP progression, DNA, and achievements
  * 
  * NO HARDCODED DATA - All data comes from Supabase
@@ -8,9 +8,15 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import { LoadingState } from '../components/common/EmptyState';
+import SmarterHeader from '../components/layout/SmarterHeader';
+import DailyBonusWheel from '../components/bonus/DailyBonusWheel';
+import FriendListPanel from '../components/social/FriendListPanel';
+import { profileService } from '../services/ProfileService';
+import { bonusService } from '../services/BonusService';
 import styles from './ProfilePage.module.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -146,7 +152,7 @@ const XPProgressBar = ({ xp }: { xp: XPStats }) => {
             </div>
             {xp.streakDays > 0 && (
                 <div className={styles.streakInfo}>
-                    <span className={styles.streakIcon}>🔥</span>
+                    <span className={styles.streakIcon}></span>
                     <span>{xp.streakDays} Day Streak</span>
                     <span className={styles.streakMultiplier}>×{xp.streakMultiplier} XP</span>
                 </div>
@@ -182,7 +188,7 @@ const AchievementCard = ({ achievement }: { achievement: Achievement }) => {
                 )}
             </div>
             {isUnlocked && !isComplete && <span className={styles.achievementDate}>{new Date(achievement.unlockedAt!).toLocaleDateString()}</span>}
-            {isComplete && <span className={styles.achievementComplete}>✓</span>}
+            {isComplete && <span className={styles.achievementComplete}></span>}
         </div>
     );
 };
@@ -192,9 +198,11 @@ const AchievementCard = ({ achievement }: { achievement: Achievement }) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export default function ProfilePage() {
+    const navigate = useNavigate();
     const { user: storeUser } = useUserStore();
-    const [activeTab, setActiveTab] = useState<'stats' | 'achievements' | 'history'>('stats');
+    const [activeTab, setActiveTab] = useState<'stats' | 'achievements' | 'history' | 'social'>('stats');
     const [isLoading, setIsLoading] = useState(true);
+    const [showBonusWheel, setShowBonusWheel] = useState(false);
 
     // Real data from database
     const [user, setUser] = useState<UserProfile | null>(null);
@@ -269,7 +277,7 @@ export default function ProfilePage() {
                             id: ua.achievement?.id || ua.id,
                             name: ua.achievement?.name || 'Achievement',
                             description: ua.achievement?.description || '',
-                            icon: ua.achievement?.icon || '🏆',
+                            icon: ua.achievement?.icon || '',
                             unlockedAt: ua.unlocked_at,
                             progress: ua.progress,
                             maxProgress: ua.achievement?.max_progress,
@@ -280,7 +288,7 @@ export default function ProfilePage() {
                     setAchievements([]);
                 }
             } catch (err) {
-                console.error('🔴 [PROFILE] Load failed:', err);
+                console.error(' [PROFILE] Load failed:', err);
             } finally {
                 setIsLoading(false);
             }
@@ -296,7 +304,7 @@ export default function ProfilePage() {
         return (
             <div className={styles.page}>
                 <div className={styles.emptyProfile}>
-                    <span style={{ fontSize: '3rem' }}>👤</span>
+                    <span style={{ fontSize: '3rem' }}></span>
                     <p>Profile not found</p>
                 </div>
             </div>
@@ -305,6 +313,7 @@ export default function ProfilePage() {
 
     return (
         <div className={styles.page}>
+            <SmarterHeader title=" Profile" showBackButton={false} />
             {/* Profile Header */}
             <section className={styles.profileHeader}>
                 <div className={styles.avatarContainer}>
@@ -331,27 +340,36 @@ export default function ProfilePage() {
                         className={styles.editButton}
                         onClick={() => window.open('https://smarter.poker/hub/avatars-complete', '_blank')}
                     >
-                        🎭 Change Avatar
+                         Change Avatar
                     </button>
-                    <button className={styles.editButton}>Edit Profile</button>
+                    <button className={styles.editButton} onClick={() => navigate('/settings')}>✏️ Edit Profile</button>
                 </div>
             </section>
 
             {/* XP Progress */}
             <section className={styles.xpSection}>
                 <XPProgressBar xp={xp} />
+                <button
+                    className={styles.bonusButton}
+                    onClick={() => setShowBonusWheel(true)}
+                >
+                     Daily Bonus
+                </button>
             </section>
 
             {/* Tab Navigation */}
             <nav className={styles.tabNav}>
                 <button className={`${styles.tab} ${activeTab === 'stats' ? styles.activeTab : ''}`} onClick={() => setActiveTab('stats')}>
-                    📊 Stats
+                     Stats
                 </button>
                 <button className={`${styles.tab} ${activeTab === 'achievements' ? styles.activeTab : ''}`} onClick={() => setActiveTab('achievements')}>
-                    🏆 Achievements
+                     Achievements
                 </button>
                 <button className={`${styles.tab} ${activeTab === 'history' ? styles.activeTab : ''}`} onClick={() => setActiveTab('history')}>
-                    📜 History
+                     History
+                </button>
+                <button className={`${styles.tab} ${activeTab === 'social' ? styles.activeTab : ''}`} onClick={() => setActiveTab('social')}>
+                     Friends
                 </button>
             </nav>
 
@@ -408,7 +426,7 @@ export default function ProfilePage() {
                             </>
                         ) : (
                             <div className={styles.emptyAchievements}>
-                                <span style={{ fontSize: '3rem' }}>🏆</span>
+                                <span style={{ fontSize: '3rem' }}></span>
                                 <p>No achievements yet. Start playing to unlock achievements!</p>
                             </div>
                         )}
@@ -418,13 +436,31 @@ export default function ProfilePage() {
                 {activeTab === 'history' && (
                     <div className={styles.historyContainer}>
                         <div className={styles.emptyHistory}>
-                            <span className={styles.emptyIcon}>🃏</span>
+                            <span className={styles.emptyIcon}></span>
                             <p>No recent hands to display.</p>
-                            <button className={styles.playButton}>Start Playing</button>
+                            <button className={styles.playButton} onClick={() => navigate('/lobby')}>Start Playing</button>
                         </div>
                     </div>
                 )}
+
+                {activeTab === 'social' && (
+                    <div className={styles.socialContainer}>
+                        <FriendListPanel />
+                    </div>
+                )}
             </section>
+
+            {/* Daily Bonus Wheel Modal */}
+            {showBonusWheel && (
+                <div className={styles.bonusWheelOverlay} onClick={() => setShowBonusWheel(false)}>
+                    <div className={styles.bonusWheelModal} onClick={(e) => e.stopPropagation()}>
+                        <button className={styles.modalClose} onClick={() => setShowBonusWheel(false)}>✕</button>
+                        <DailyBonusWheel onSpin={async (segment) => {
+                            setShowBonusWheel(false);
+                        }} />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

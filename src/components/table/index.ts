@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 TABLE COMPONENTS — Index Exports
+ *  TABLE COMPONENTS — Index Exports
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
@@ -133,3 +133,23 @@ export type { StraddleToggleProps } from './StraddleToggle';
 // Bad Beat Jackpot
 export { BadBeatJackpot } from './BadBeatJackpot';
 export type { BadBeatJackpotProps } from './BadBeatJackpot';
+
+// VIP Table Settings (extends SettingsPanel with VIP gating)
+export { TableSettings as VIPTableSettings } from './TableSettings';
+export type { TableSettingsState as VIPTableSettingsState } from './TableSettings';
+
+// Theme Selector
+export { ThemeSelector } from './ThemeSelector';
+
+// Time Bank Display
+export { TimeBankDisplay } from './TimeBankDisplay';
+
+// Emoji Picker
+export { EmojiPicker } from './EmojiPicker';
+
+// Session Stats Tracker
+export { SessionStatsTracker } from './SessionStatsTracker';
+
+// Quick Action Bar
+export { QuickActionBar } from './QuickActionBar';
+

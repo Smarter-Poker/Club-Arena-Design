@@ -12,11 +12,34 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
+import { ClubsService } from '../services/ClubsService';
+import { WalletService } from '../services/WalletService';
+import { useToast } from '../components/common/Toast';
+import NotificationCenter from '../components/social/NotificationCenter';
+import ClubArenaWelcomeModal from '../components/modals/ClubArenaWelcomeModal';
+import NotificationDropdown from '../components/navigation/NotificationDropdown';
 import styles from './HomePage.module.css';
 
 export default function HomePage() {
     const navigate = useNavigate();
     const { user } = useUserStore();
+
+    // Detect if running inside iframe (World Hub embedding)
+    const [isInIframe, setIsInIframe] = useState(false);
+
+    useEffect(() => {
+        const inIframe = window.parent !== window;
+        console.log('[HomePage] useEffect - Setting isInIframe:', inIframe);
+        setIsInIframe(inIframe);
+
+        // Add body class for CSS fallback
+        if (inIframe) {
+            document.body.classList.add('embedded-in-iframe');
+        }
+        return () => {
+            document.body.classList.remove('embedded-in-iframe');
+        };
+    }, []);
 
     // Real data states
     const [diamonds, setDiamonds] = useState(0);
@@ -24,6 +47,7 @@ export default function HomePage() {
     const [level, setLevel] = useState(1);
     const [currentIndex, setCurrentIndex] = useState(2); // Start on Club Arena (center)
     const [isLoading, setIsLoading] = useState(true);
+    const toast = useToast();
 
     // Fetch user stats from Supabase
     useEffect(() => {
@@ -32,23 +56,23 @@ export default function HomePage() {
             try {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (user) {
-                    // Fetch diamonds from wallet/economy
+                    // Fetch diamonds from wallet/economy (use maybeSingle to avoid 404 for new users)
                     const { data: walletData } = await supabase
                         .from('diamond_wallets')
                         .select('balance')
                         .eq('user_id', user.id)
-                        .single();
+                        .maybeSingle();
 
                     if (walletData) {
                         setDiamonds(walletData.balance || 0);
                     }
 
-                    // Fetch XP from profile
+                    // Fetch XP from profile (use maybeSingle to avoid 400 for missing profile)
                     const { data: profileData } = await supabase
                         .from('profiles')
                         .select('xp, level')
                         .eq('id', user.id)
-                        .single();
+                        .maybeSingle();
 
                     if (profileData) {
                         setXp(profileData.xp || 0);
@@ -57,6 +81,7 @@ export default function HomePage() {
                 }
             } catch (err) {
                 console.error('Error fetching user stats:', err);
+                toast.error('Failed to load user stats');
             } finally {
                 setIsLoading(false);
             }
@@ -83,7 +108,7 @@ export default function HomePage() {
             title: 'SOCIAL MEDIA',
             subtitle: 'CONNECT WITH FRIENDS',
             description: 'SHARE WHAT MATTERS\nSTAY CONNECTED TO THE POKER WORLD',
-            icon: '👥',
+            icon: '',
             color: '#00d4ff',
             action: () => navigate('/social'),
         },
@@ -92,7 +117,7 @@ export default function HomePage() {
             title: 'CLUB ARENA',
             subtitle: 'HIGH-STAKES SHOWDOWN',
             description: 'PLAY AGAINST OTHER PLAYERS\nIN CLUBS AROUND THE WORLD',
-            icon: '🦁',
+            icon: '',
             color: '#00d4ff',
             action: () => navigate('/clubs'),
         },
@@ -110,7 +135,7 @@ export default function HomePage() {
             title: 'DIAMOND ARENA',
             subtitle: 'PLAY LIVE POKER',
             description: 'WITH DIAMONDS',
-            icon: '💎',
+            icon: '',
             color: '#00d4ff',
             action: () => window.location.href = 'https://diamond.smarter.poker',
         },
@@ -135,51 +160,53 @@ export default function HomePage() {
                 <div className={styles.glowOrb3}></div>
             </div>
 
-            {/* TOP FLOATING ICON BAR */}
-            <div className={styles.topBar}>
-                {/* Left: Logo */}
-                <div className={styles.logoSection}>
-                    <span className={styles.logoIcon}>♠</span>
-                    <span className={styles.logoText}>SMARTER POKER</span>
-                </div>
-
-                {/* Center: Stats */}
-                <div className={styles.statsSection}>
-                    <div className={styles.statBadge}>
-                        <span className={styles.statIcon}>💎</span>
-                        <span className={styles.statValue}>{diamonds}</span>
-                        <button className={styles.addButton}>+</button>
+            {/* TOP FLOATING ICON BAR - Hide when embedded in iframe */}
+            {!isInIframe && (
+                <div className={styles.topBar}>
+                    {/* Left: Logo */}
+                    <div className={styles.logoSection}>
+                        <span className={styles.logoIcon}>♠</span>
+                        <span className={styles.logoText}>SMARTER POKER</span>
                     </div>
-                    <div className={styles.statBadge}>
-                        <span className={styles.statLabel}>XP</span>
-                        <span className={styles.statValue}>{xp}</span>
-                        <span className={styles.levelBadge}>LV {level}</span>
+
+                    {/* Center: Stats */}
+                    <div className={styles.statsSection}>
+                        <div className={styles.statBadge}>
+                            <span className={styles.statIcon}></span>
+                            <span className={styles.statValue}>{diamonds}</span>
+                            <button className={styles.addButton}>+</button>
+                        </div>
+                        <div className={styles.statBadge}>
+                            <span className={styles.statLabel}>XP</span>
+                            <span className={styles.statValue}>{xp}</span>
+                            <span className={styles.levelBadge}>LV {level}</span>
+                        </div>
+                    </div>
+
+                    {/* Right: Icons */}
+                    <div className={styles.iconsSection}>
+                        <button className={styles.iconButton} onClick={() => navigate('/messages')}>
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" /></svg>
+                        </button>
+                        <button className={styles.iconButton} onClick={() => navigate('/notifications')}>
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" /></svg>
+                        </button>
+                        <button className={styles.profileButton} onClick={() => navigate('/profile')}>
+                            {user?.avatar_url ? (
+                                <img src={user.avatar_url} alt="Profile" className={styles.profileAvatar} />
+                            ) : (
+                                <span></span>
+                            )}
+                        </button>
+                        <button className={styles.iconButton} onClick={() => navigate('/search')}>
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" /></svg>
+                        </button>
+                        <button className={styles.helpButton} onClick={() => navigate('/help')}>
+                            HELP
+                        </button>
                     </div>
                 </div>
-
-                {/* Right: Icons */}
-                <div className={styles.iconsSection}>
-                    <button className={styles.iconButton} onClick={() => navigate('/messages')}>
-                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" /></svg>
-                    </button>
-                    <button className={styles.iconButton} onClick={() => navigate('/notifications')}>
-                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" /></svg>
-                    </button>
-                    <button className={styles.profileButton} onClick={() => navigate('/profile')}>
-                        {user?.avatar_url ? (
-                            <img src={user.avatar_url} alt="Profile" className={styles.profileAvatar} />
-                        ) : (
-                            <span>👤</span>
-                        )}
-                    </button>
-                    <button className={styles.iconButton} onClick={() => navigate('/search')}>
-                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" /></svg>
-                    </button>
-                    <button className={styles.helpButton} onClick={() => navigate('/help')}>
-                        HELP
-                    </button>
-                </div>
-            </div>
+            )}
 
             {/* Welcome Message */}
             <div className={styles.welcomeMessage}>

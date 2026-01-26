@@ -7,6 +7,9 @@ import { create } from 'zustand';
 import { tableService } from '../services/TableService';
 import type { PokerTable, HandState, SeatPlayer, ActionType, Card } from '../types/database.types';
 
+// WebSocket send function type
+type SendActionFn = (action: string, data: Record<string, unknown>) => Promise<boolean>;
+
 interface TableState {
     // Current table
     currentTable: PokerTable | null;
@@ -28,13 +31,20 @@ interface TableState {
     // All players
     seats: (SeatPlayer | null)[];
 
+    // WebSocket connection
+    wsConnected: boolean;
+    wsSendAction: SendActionFn | null;
+
     // Actions
     loadTable: (tableId: string) => Promise<void>;
-    joinTable: (tableId: string, seat: number, buyIn: number) => Promise<void>;
+    joinTable: (tableId: string, seat: number, buyIn: number, userId: string, username: string) => Promise<void>;
     leaveTable: () => void;
 
     // Game actions
     performAction: (action: ActionType, amount?: number) => Promise<void>;
+
+    // WebSocket integration
+    setWebSocketConnection: (connected: boolean, sendAction: SendActionFn | null) => void;
 
     // Real-time
     subscribeToUpdates: () => () => void;
@@ -58,6 +68,8 @@ const initialState = {
     myStack: 0,
     isMyTurn: false,
     seats: EMPTY_SEATS,
+    wsConnected: false,
+    wsSendAction: null,
 };
 
 export const useTableStore = create<TableState>((set, get) => ({
@@ -81,15 +93,15 @@ export const useTableStore = create<TableState>((set, get) => ({
         }
     },
 
-    joinTable: async (tableId: string, seat: number, buyIn: number) => {
+    joinTable: async (tableId: string, seat: number, buyIn: number, userId: string, username: string) => {
         const { currentTable, seats } = get();
         if (!currentTable) return;
 
-        // In real app, would call tableService.joinTable
+        // Create seat player from actual user data
         const newSeat: SeatPlayer = {
             seat,
-            user_id: 'demo-user',
-            username: 'Player123',
+            user_id: userId,
+            username: username,
             stack: buyIn,
             bet: 0,
             cards: [],
@@ -136,7 +148,7 @@ export const useTableStore = create<TableState>((set, get) => ({
     },
 
     performAction: async (action: ActionType, amount?: number) => {
-        const { mySeat, myStack, pot, currentBet } = get();
+        const { mySeat, myStack, pot, currentBet, wsSendAction, wsConnected } = get();
         if (mySeat === null) return;
 
         // Update local state immediately (optimistic)
@@ -154,7 +166,7 @@ export const useTableStore = create<TableState>((set, get) => ({
                 set({ isMyTurn: false });
                 break;
 
-            case 'call':
+            case 'call': {
                 const callAmount = currentBet - (get().seats[mySeat - 1]?.bet || 0);
                 set((state) => {
                     const newSeats = [...state.seats];
@@ -171,6 +183,7 @@ export const useTableStore = create<TableState>((set, get) => ({
                     };
                 });
                 break;
+            }
 
             case 'bet':
             case 'raise':
@@ -211,8 +224,22 @@ export const useTableStore = create<TableState>((set, get) => ({
                 break;
         }
 
-        // In real app, would send to server via WebSocket
-        console.log(`Action: ${action}${amount ? ` $${amount}` : ''}`);
+        // Send action via WebSocket if connected
+        if (wsConnected && wsSendAction) {
+            const success = await wsSendAction(action, {
+                amount: amount || 0,
+                seat: mySeat,
+            });
+            if (!success) {
+                console.warn('[TableStore] Failed to send action via WebSocket');
+            }
+        } else {
+            console.log(`[TableStore] Action: ${action}${amount ? ` $${amount}` : ''} (offline mode)`);
+        }
+    },
+
+    setWebSocketConnection: (connected: boolean, sendAction: SendActionFn | null) => {
+        set({ wsConnected: connected, wsSendAction: sendAction });
     },
 
     subscribeToUpdates: () => {

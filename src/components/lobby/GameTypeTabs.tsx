@@ -1,5 +1,5 @@
 /**
- * 🎰 CLUB ENGINE — Game Type Tabs
+ *  CLUB ENGINE — Game Type Tabs
  * Filter tabs for different poker variants
  */
 
@@ -13,11 +13,11 @@ interface GameTypeTabsProps {
 }
 
 const TABS: { id: GameFilter; label: string; icon: string }[] = [
-    { id: 'all', label: 'All Games', icon: '🎰' },
+    { id: 'all', label: 'All Games', icon: '' },
     { id: 'nlh', label: "Hold'em", icon: '♠' },
-    { id: 'plo', label: 'Omaha', icon: '🃏' },
-    { id: 'ofc', label: 'OFC', icon: '🀄' },
-    { id: 'tournaments', label: 'Tournaments', icon: '🏆' },
+    { id: 'plo', label: 'Omaha', icon: '' },
+    { id: 'ofc', label: 'OFC', icon: '' },
+    { id: 'tournaments', label: 'Tournaments', icon: '' },
 ];
 
 export default function GameTypeTabs({ activeFilter, onFilterChange }: GameTypeTabsProps) {

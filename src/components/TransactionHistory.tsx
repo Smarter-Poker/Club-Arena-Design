@@ -28,11 +28,29 @@ export default function TransactionHistory({
         async function loadTransactions() {
             setIsLoading(true);
             try {
-                // Transaction history will be added to a TransactionService
-                // For now, return empty array
-                setTransactions([]);
+                if (userId) {
+                    // Fetch real transaction history from WalletService
+                    const { WalletService } = await import('../services/WalletService');
+                    const txHistory = await WalletService.getTransactionHistory(userId, {
+                        limit,
+                    });
+
+                    // Map to ChipTransaction format
+                    setTransactions(txHistory.map(tx => ({
+                        id: tx.id,
+                        type: tx.category as any,
+                        amount: tx.amount,
+                        from_user_id: tx.type === 'debit' ? userId : null,
+                        to_user_id: tx.type === 'credit' ? userId : null,
+                        notes: tx.description,
+                        created_at: tx.createdAt,
+                    })) as ChipTransaction[]);
+                } else {
+                    setTransactions([]);
+                }
             } catch (error) {
                 console.error('Failed to load transactions:', error);
+                setTransactions([]);
             }
             setIsLoading(false);
         }
@@ -46,7 +64,7 @@ export default function TransactionHistory({
     if (transactions.length === 0) {
         return (
             <div className="tx-empty">
-                <span className="tx-empty-icon">📋</span>
+                <span className="tx-empty-icon"></span>
                 <p>No transactions yet</p>
             </div>
         );
@@ -98,13 +116,13 @@ export default function TransactionHistory({
 
 function getTypeIcon(type: string): string {
     const icons: Record<string, string> = {
-        deposit: '📥',
-        withdrawal: '📤',
-        buy_in: '🎰',
-        cash_out: '💵',
+        deposit: '',
+        withdrawal: '',
+        buy_in: '',
+        cash_out: '',
         agent_transfer: '👔',
-        rake: '🏦',
-        bonus: '🎁',
+        rake: '',
+        bonus: '',
         refund: '↩️',
     };
     return icons[type] || '💳';

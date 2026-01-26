@@ -3,7 +3,7 @@
  * Real-time WebSocket synchronization for poker tables
  */
 
-import { supabase, isDemoMode } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { SeatPlayer, Card, ActionType, HandStage } from '../types/database.types';
 
@@ -63,11 +63,6 @@ class RoomService {
         seat: number,
         stack: number
     ): Promise<void> {
-        if (isDemoMode) {
-            console.log(`[Demo] Joined room ${tableId}`);
-            return;
-        }
-
         // Create or get channel
         let channel = this.channels.get(tableId);
 
@@ -93,7 +88,6 @@ class RoomService {
 
             // Handle joins
             channel.on('presence', { event: 'join' }, ({ key, newPresences }) => {
-                console.log(`Player joined:`, key, newPresences);
                 this.notifyHandlers(tableId, {
                     type: 'PLAYER_JOINED',
                     payload: { userId: key, presences: newPresences },
@@ -104,7 +98,6 @@ class RoomService {
 
             // Handle leaves
             channel.on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-                console.log(`Player left:`, key, leftPresences);
                 this.notifyHandlers(tableId, {
                     type: 'PLAYER_LEFT',
                     payload: { userId: key, presences: leftPresences },
@@ -163,11 +156,6 @@ class RoomService {
      * Broadcast a game event to all players at the table
      */
     async broadcast(tableId: string, message: Omit<RoomMessage, 'timestamp'>): Promise<void> {
-        if (isDemoMode) {
-            console.log(`[Demo] Broadcast:`, message);
-            return;
-        }
-
         const channel = this.channels.get(tableId);
         if (!channel) {
             console.error('Not connected to room:', tableId);

@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 📊 COMMISSION SERVICE — Hierarchical Commission System
+ *  COMMISSION SERVICE — Hierarchical Commission System
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Handles cascading commission calculations across the agent hierarchy.
@@ -18,7 +18,7 @@
  * 5. Net margins queued for Monday settlement
  */
 
-import { supabase, isDemoMode } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -80,15 +80,6 @@ const RATE_CAPS: Record<CommissionTargetRole, number> = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// DEMO DATA
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const DEMO_RATES: CommissionRate[] = [
-    { id: 'cr1', clubId: 'club_1', agentId: 'agent_1', targetRole: 'AGENT', rate: 0.50, effectiveDate: '2026-01-01', createdBy: 'owner_1' },
-    { id: 'cr2', clubId: 'club_1', agentId: 'agent_1', targetRole: 'PLAYER', rate: 0.25, effectiveDate: '2026-01-01', createdBy: 'agent_1' },
-];
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // SERVICE
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -114,21 +105,6 @@ export const CommissionService = {
         }
         if (rate < 0) {
             throw new Error('Rate cannot be negative');
-        }
-
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 300));
-            const newRate: CommissionRate = {
-                id: `cr_${Date.now()}`,
-                clubId,
-                agentId,
-                targetRole,
-                rate,
-                effectiveDate: new Date().toISOString(),
-                createdBy: setBy,
-            };
-            DEMO_RATES.push(newRate);
-            return newRate;
         }
 
         const { data, error } = await supabase
@@ -160,11 +136,6 @@ export const CommissionService = {
      * Get all rates for an agent
      */
     async getRates(agentId: string): Promise<CommissionRate[]> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 200));
-            return DEMO_RATES.filter(r => r.agentId === agentId);
-        }
-
         const { data, error } = await supabase
             .from('commission_structures')
             .select('*')
@@ -200,21 +171,6 @@ export const CommissionService = {
      * Shows gross, payouts, and net margin
      */
     async calculateSpread(agentId: string, periodId?: string): Promise<CommissionSpread> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 400));
-            return {
-                agentId,
-                grossCommissionRate: 0.50,
-                payoutToDownlines: 0.25,
-                netMargin: 0.25,
-                downlineBreakdown: [
-                    { entityId: 'player_1', entityType: 'player', name: 'Player One', rate: 0.25, rakeGenerated: 1000, commissionPaid: 250 },
-                    { entityId: 'player_2', entityType: 'player', name: 'Player Two', rate: 0.25, rakeGenerated: 800, commissionPaid: 200 },
-                    { entityId: 'sub_agent_1', entityType: 'agent', name: 'Sub Agent', rate: 0.30, rakeGenerated: 2000, commissionPaid: 600 },
-                ],
-            };
-        }
-
         const { data, error } = await supabase.rpc('calculate_agent_spread', {
             p_agent_id: agentId,
             p_period_id: periodId || null,
@@ -233,11 +189,6 @@ export const CommissionService = {
      * Called by RakeService after pot drops
      */
     async attributeRake(handId: string, attributions: RakeAttribution[]): Promise<void> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 200));
-            return;
-        }
-
         const records = attributions.map(a => ({
             hand_id: handId,
             player_id: a.playerId,
@@ -257,11 +208,6 @@ export const CommissionService = {
      * Get player's total rake contribution
      */
     async getPlayerRakeTotal(playerId: string, periodId?: string): Promise<number> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 200));
-            return 1250.50; // Mock
-        }
-
         const { data, error } = await supabase.rpc('get_player_rake_total', {
             p_player_id: playerId,
             p_period_id: periodId || null,
@@ -283,15 +229,6 @@ export const CommissionService = {
         rakeAmount: number,
         playerId: string
     ): Promise<Array<{ agentId: string; amount: number; level: number }>> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 300));
-            // Mock cascade: Player → Agent → Club
-            return [
-                { agentId: 'agent_1', amount: rakeAmount * 0.25, level: 1 },
-                { agentId: 'owner_1', amount: rakeAmount * 0.25, level: 2 },
-            ];
-        }
-
         const { data, error } = await supabase.rpc('calculate_cascading_commission', {
             p_rake_amount: rakeAmount,
             p_player_id: playerId,
@@ -309,14 +246,6 @@ export const CommissionService = {
      * Generate commission payouts for a settlement period
      */
     async generatePeriodPayouts(periodId: string): Promise<CommissionPayout[]> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 500));
-            return [
-                { agentId: 'agent_1', periodId, grossRake: 5000, commissionEarned: 2500, paidToDownlines: 1250, netPayout: 1250, status: 'pending' },
-                { agentId: 'agent_2', periodId, grossRake: 3000, commissionEarned: 1500, paidToDownlines: 750, netPayout: 750, status: 'pending' },
-            ];
-        }
-
         const { data, error } = await supabase.rpc('generate_period_commissions', {
             p_period_id: periodId,
         });
@@ -329,11 +258,6 @@ export const CommissionService = {
      * Approve commission payout
      */
     async approvePayout(payoutId: string, approvedBy: string): Promise<boolean> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 300));
-            return true;
-        }
-
         const { error } = await supabase
             .from('commission_payouts')
             .update({
@@ -351,11 +275,6 @@ export const CommissionService = {
      * Execute commission payout (credit to wallet)
      */
     async executePayout(payoutId: string): Promise<boolean> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 500));
-            return true;
-        }
-
         const { error } = await supabase.rpc('execute_commission_payout', {
             p_payout_id: payoutId,
         });
@@ -375,14 +294,6 @@ export const CommissionService = {
         agentId: string,
         limit: number = 10
     ): Promise<CommissionPayout[]> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 300));
-            return [
-                { agentId, periodId: 'period_1', grossRake: 5000, commissionEarned: 2500, paidToDownlines: 1250, netPayout: 1250, status: 'paid' },
-                { agentId, periodId: 'period_2', grossRake: 4500, commissionEarned: 2250, paidToDownlines: 1125, netPayout: 1125, status: 'paid' },
-            ];
-        }
-
         const { data, error } = await supabase
             .from('commission_payouts')
             .select('*')

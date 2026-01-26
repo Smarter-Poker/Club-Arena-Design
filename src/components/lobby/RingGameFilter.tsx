@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎮 RING GAME FILTER — Stakes/Variant Filter Component
+ *  RING GAME FILTER — Stakes/Variant Filter Component
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * PokerBros-style filter bar for cash games:
@@ -126,7 +126,7 @@ export function RingGameFilter({
             <div className="ring-filter__bar">
                 {/* Search Input */}
                 <div className="ring-filter__search">
-                    <span className="ring-filter__search-icon">🔍</span>
+                    <span className="ring-filter__search-icon"></span>
                     <input
                         type="text"
                         className="ring-filter__search-input"

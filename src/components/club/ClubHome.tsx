@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🏠 CLUB HOME — Management Dashboard
+ *  CLUB HOME — Management Dashboard
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * The main dashboard for a specific club.
@@ -60,7 +60,7 @@ export function ClubHome({
     onManageMembers,
     onClubSettings,
     onCashier,
-    currency = '💎',
+    currency = '',
 }: ClubHomeProps) {
     return (
         <div className="club-home">
@@ -82,7 +82,7 @@ export function ClubHome({
                         + New Table
                     </button>
                     <button className="club-home__btn" onClick={onClubSettings}>
-                        ⚙️ Settings
+                         Settings
                     </button>
                 </div>
             </div>
@@ -115,19 +115,19 @@ export function ClubHome({
                     <h3 className="club-home__section-title">Management</h3>
                     <div className="club-menu-grid">
                         <button className="club-menu-item" onClick={onManageMembers}>
-                            <span className="club-menu-item__icon">👥</span>
+                            <span className="club-menu-item__icon"></span>
                             <span className="club-menu-item__label">Members</span>
                         </button>
                         <button className="club-menu-item" onClick={onCashier}>
-                            <span className="club-menu-item__icon">💰</span>
+                            <span className="club-menu-item__icon"></span>
                             <span className="club-menu-item__label">Cashier</span>
                         </button>
                         <button className="club-menu-item">
-                            <span className="club-menu-item__icon">📊</span>
+                            <span className="club-menu-item__icon"></span>
                             <span className="club-menu-item__label">Reports</span>
                         </button>
                         <button className="club-menu-item">
-                            <span className="club-menu-item__icon">📩</span>
+                            <span className="club-menu-item__icon"></span>
                             <span className="club-menu-item__label">Mail</span>
                         </button>
                     </div>
@@ -141,10 +141,10 @@ export function ClubHome({
                             activities.map((activity) => (
                                 <div key={activity.id} className="club-activity-item">
                                     <div className={`club-activity-icon club-activity-icon--${activity.type}`}>
-                                        {activity.type === 'game_start' && '🎮'}
-                                        {activity.type === 'game_end' && '🏁'}
-                                        {activity.type === 'member_join' && '👋'}
-                                        {activity.type === 'jackpot_hit' && '💰'}
+                                        {activity.type === 'game_start' && ''}
+                                        {activity.type === 'game_end' && ''}
+                                        {activity.type === 'member_join' && ''}
+                                        {activity.type === 'jackpot_hit' && ''}
                                     </div>
                                     <div className="club-activity-text">
                                         <p className="club-activity-msg">{activity.message}</p>

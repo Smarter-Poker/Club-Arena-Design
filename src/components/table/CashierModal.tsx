@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 💵 CASHIER MODAL — Add/Withdraw Chips at Table
+ *  CASHIER MODAL — Add/Withdraw Chips at Table
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Premium cashier modal for:

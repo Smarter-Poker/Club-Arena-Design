@@ -77,12 +77,12 @@ export default function ClubLobby() {
                 <div className="header-left">
                     <Link to="/clubs" className="back-btn">‹‹</Link>
                     <div className="header-icons">
-                        <button className="icon-btn">🎪</button>
-                        <button className="icon-btn">🎰</button>
+                        <button className="icon-btn"></button>
+                        <button className="icon-btn"></button>
                     </div>
                 </div>
                 <div className="header-center">
-                    <span className="vip-badge">👑 VIP</span>
+                    <span className="vip-badge"> VIP</span>
                 </div>
                 <div className="header-right">
                     <div className="jackpot-display">
@@ -101,17 +101,17 @@ export default function ClubLobby() {
                     <h2 className="club-name">{club.name}</h2>
                     <div className="club-meta">
                         <span className="club-id">ID: {club.club_id}</span>
-                        <span className="member-count">👤 {(club as any).member_count || 0}</span>
+                        <span className="member-count"> {(club as any).member_count || 0}</span>
                     </div>
                 </div>
                 <div className="club-balances">
                     <div className="balance-row">
-                        <span className="chip-icon gold">💰</span>
+                        <span className="chip-icon gold"></span>
                         <span className="balance-amount">8,992.92</span>
                         <button className="add-btn">+</button>
                     </div>
                     <div className="balance-row">
-                        <span className="chip-icon diamond">💎</span>
+                        <span className="chip-icon diamond"></span>
                         <span className="balance-amount">0.00</span>
                     </div>
                 </div>
@@ -121,7 +121,7 @@ export default function ClubLobby() {
             <div className="contact-banner">
                 <span>Questions or concerns? Contact @Johnnyd44 on telegram</span>
                 <div className="union-badge">
-                    <span>🌐 UNION</span>
+                    <span> UNION</span>
                 </div>
             </div>
 
@@ -151,7 +151,7 @@ export default function ClubLobby() {
                     ))
                 ) : (
                     <div className="empty-state">
-                        <span className="empty-icon">🎰</span>
+                        <span className="empty-icon"></span>
                         <p>No games available</p>
                         <p className="empty-hint">Check back later for new tables!</p>
                     </div>
@@ -161,10 +161,10 @@ export default function ClubLobby() {
             {/* Bottom Navigation */}
             <nav className="bottom-nav">
                 <NavItem icon="✉️" label="Messages" />
-                <NavItem icon="👥" label="Players" />
-                <NavItem icon="💰" label="Cashier" active />
-                <NavItem icon="📊" label="Data" />
-                <NavItem icon="⚙️" label="Admin" />
+                <NavItem icon="" label="Players" />
+                <NavItem icon="" label="Cashier" active />
+                <NavItem icon="" label="Data" />
+                <NavItem icon="" label="Admin" />
                 <button className="nav-item close">✕</button>
             </nav>
         </div>
@@ -194,7 +194,7 @@ function TournamentCard({ tournament, clubId }: { tournament: Tournament; clubId
     return (
         <Link to={`/club/${clubId}/tournament/${tournament.id}`} className="tournament-card">
             <div className="card-header">
-                <div className="trophy-icon">🏆</div>
+                <div className="trophy-icon"></div>
                 <div className="seats-badge">9 Max</div>
             </div>
             <div className="card-body">
@@ -203,7 +203,7 @@ function TournamentCard({ tournament, clubId }: { tournament: Tournament; clubId
                     <span className="buyin-amount">{tournament.buy_in}</span>
                 </div>
                 <div className="timer-row">
-                    <span className="timer-icon">⏱️</span>
+                    <span className="timer-icon"></span>
                     <span className="timer-value">10min</span>
                 </div>
             </div>
@@ -212,7 +212,7 @@ function TournamentCard({ tournament, clubId }: { tournament: Tournament; clubId
                 <span className="variant-badge">NLH</span>
             </div>
             <div className="card-name">
-                <span className="prize-icon">💰</span>
+                <span className="prize-icon"></span>
                 <span className="tournament-name">{tournament.name}</span>
             </div>
             <div className="card-date">{formatDate(tournament.start_time ?? null)}</div>
@@ -225,7 +225,7 @@ function TableCard({ table, clubId }: { table: PokerTable; clubId: string }) {
     return (
         <Link to={`/club/${clubId}/table/${table.id}`} className="table-card">
             <div className="card-header">
-                <div className="table-icon">🎴</div>
+                <div className="table-icon"></div>
                 <div className="seats-badge">{table.max_players} Max</div>
             </div>
             <div className="card-body">

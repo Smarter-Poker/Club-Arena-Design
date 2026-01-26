@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🏆 TOURNAMENT DETAIL — Lobby View
+ *  TOURNAMENT DETAIL — Lobby View
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Detailed view of a specific tournament.
@@ -49,7 +49,7 @@ export function TournamentDetail({
     onClose,
     tournament,
     players,
-    currency = '💎',
+    currency = '',
     isRegistered,
     onRegister,
     onUnregister,

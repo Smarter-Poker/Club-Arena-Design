@@ -445,3 +445,8 @@
     padding: var(--space-10);
     color: var(--text-muted);
 }
+/* Mobile Responsive */
+@media (max-width: 640px) {
+    .details-grid { grid-template-columns: 1fr; }
+    .prizes-grid { grid-template-columns: 1fr 1fr; }
+}

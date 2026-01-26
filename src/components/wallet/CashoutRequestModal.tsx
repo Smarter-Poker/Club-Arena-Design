@@ -1,0 +1,225 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  CASHOUT REQUEST MODAL — Player Chip Cashout UI
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * Modal for players to request chip cashouts from their agent
+ */
+
+import { useState, useEffect } from 'react';
+import { cashoutService, CashoutRequest } from '../../services/CashoutService';
+import { supabase } from '../../lib/supabase';
+import './CashoutRequestModal.css';
+
+interface CashoutRequestModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    playerId: string;
+    clubId: string;
+    currentBalance: number;
+    onComplete?: () => void;
+}
+
+export default function CashoutRequestModal({
+    isOpen,
+    onClose,
+    playerId,
+    clubId,
+    currentBalance,
+    onComplete
+}: CashoutRequestModalProps) {
+    const [amount, setAmount] = useState('');
+    const [note, setNote] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState(false);
+    const [pendingCashouts, setPendingCashouts] = useState<CashoutRequest[]>([]);
+    const [loadingPending, setLoadingPending] = useState(true);
+
+    // Load pending cashouts
+    useEffect(() => {
+        if (isOpen && playerId && clubId) {
+            loadPendingCashouts();
+        }
+    }, [isOpen, playerId, clubId]);
+
+    const loadPendingCashouts = async () => {
+        setLoadingPending(true);
+        try {
+            const cashouts = await cashoutService.getPlayerCashouts(playerId, clubId);
+            setPendingCashouts(cashouts.filter(c => c.status === 'pending'));
+        } catch (err) {
+            console.error('Failed to load pending cashouts:', err);
+        }
+        setLoadingPending(false);
+    };
+
+    const handleSubmit = async () => {
+        const cashoutAmount = parseFloat(amount);
+
+        if (isNaN(cashoutAmount) || cashoutAmount <= 0) {
+            setError('Please enter a valid amount');
+            return;
+        }
+
+        if (cashoutAmount > currentBalance) {
+            setError('Insufficient balance');
+            return;
+        }
+
+        setIsSubmitting(true);
+        setError(null);
+
+        try {
+            await cashoutService.requestCashout(playerId, clubId, cashoutAmount, note || undefined);
+            setSuccess(true);
+            setAmount('');
+            setNote('');
+            loadPendingCashouts();
+            onComplete?.();
+
+            // Auto-close after 2 seconds
+            setTimeout(() => {
+                setSuccess(false);
+                onClose();
+            }, 2000);
+        } catch (err: any) {
+            setError(err.message || 'Failed to request cashout');
+        }
+        setIsSubmitting(false);
+    };
+
+    const handleCancel = async (cashoutId: string) => {
+        try {
+            await cashoutService.cancelCashout(cashoutId, playerId);
+            loadPendingCashouts();
+            onComplete?.();
+        } catch (err: any) {
+            setError(err.message || 'Failed to cancel cashout');
+        }
+    };
+
+    const formatTime = (dateStr: string) => {
+        const date = new Date(dateStr);
+        return date.toLocaleString();
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="cashout-modal" onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                    <h2> Request Cashout</h2>
+                    <button className="close-btn" onClick={onClose}>×</button>
+                </div>
+
+                <div className="modal-body">
+                    {/* Current Balance */}
+                    <div className="balance-display">
+                        <span className="label">Available Balance</span>
+                        <span className="value">{currentBalance.toLocaleString()} chips</span>
+                    </div>
+
+                    {/* Pending Cashouts */}
+                    {pendingCashouts.length > 0 && (
+                        <div className="pending-section">
+                            <h3> Pending Requests</h3>
+                            <div className="pending-list">
+                                {pendingCashouts.map(cashout => (
+                                    <div key={cashout.id} className="pending-item">
+                                        <div className="pending-info">
+                                            <span className="pending-amount">
+                                                {cashout.amount.toLocaleString()} chips
+                                            </span>
+                                            <span className="pending-time">
+                                                {formatTime(cashout.createdAt)}
+                                            </span>
+                                            <span className="pending-status"> Awaiting agent</span>
+                                        </div>
+                                        <button
+                                            className="cancel-btn"
+                                            onClick={() => handleCancel(cashout.id)}
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="pending-note">
+                                 These chips are locked until your agent processes the request or you cancel.
+                            </div>
+                        </div>
+                    )}
+
+                    {/* New Request Form */}
+                    {success ? (
+                        <div className="success-message">
+                             Cashout request submitted! Your agent has been notified.
+                        </div>
+                    ) : (
+                        <div className="cashout-form">
+                            <div className="form-group">
+                                <label>Amount</label>
+                                <div className="amount-input-wrapper">
+                                    <input
+                                        type="number"
+                                        placeholder="0"
+                                        value={amount}
+                                        onChange={e => setAmount(e.target.value)}
+                                        max={currentBalance}
+                                        min={1}
+                                    />
+                                    <span className="chip-label">chips</span>
+                                </div>
+                                <div className="quick-amounts">
+                                    {[25, 50, 100].map(pct => (
+                                        <button
+                                            key={pct}
+                                            className="quick-btn"
+                                            onClick={() => setAmount(Math.floor(currentBalance * pct / 100).toString())}
+                                        >
+                                            {pct}%
+                                        </button>
+                                    ))}
+                                    <button
+                                        className="quick-btn"
+                                        onClick={() => setAmount(currentBalance.toString())}
+                                    >
+                                        Max
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Note (optional)</label>
+                                <textarea
+                                    placeholder="Any message for your agent..."
+                                    value={note}
+                                    onChange={e => setNote(e.target.value)}
+                                    rows={2}
+                                />
+                            </div>
+
+                            {error && (
+                                <div className="error-message">{error}</div>
+                            )}
+
+                            <button
+                                className="submit-btn"
+                                onClick={handleSubmit}
+                                disabled={isSubmitting || !amount}
+                            >
+                                {isSubmitting ? 'Submitting...' : ' Request Cashout'}
+                            </button>
+
+                            <div className="info-note">
+                                 Your chips will be locked until your agent approves the cashout.
+                                You can cancel anytime before approval.
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}

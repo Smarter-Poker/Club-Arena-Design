@@ -1,0 +1,132 @@
+.heatmap-calendar {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    padding: 16px;
+    overflow-x: auto;
+}
+
+.month-labels {
+    display: grid;
+    grid-template-columns: 20px repeat(53, 12px);
+    gap: 3px;
+    margin-bottom: 4px;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.calendar-grid {
+    display: flex;
+    gap: 4px;
+}
+
+.day-labels {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.day-labels span {
+    height: 12px;
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.4);
+    line-height: 12px;
+}
+
+.weeks-grid {
+    display: flex;
+    gap: 3px;
+}
+
+.week-column {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.day-cell {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.day-cell:hover {
+    transform: scale(1.3);
+}
+
+.day-cell.outside {
+    background: transparent;
+    pointer-events: none;
+}
+
+.day-cell.intensity-1 {
+    background: rgba(74, 222, 128, 0.2);
+}
+
+.day-cell.intensity-2 {
+    background: rgba(74, 222, 128, 0.4);
+}
+
+.day-cell.intensity-3 {
+    background: rgba(74, 222, 128, 0.6);
+}
+
+.day-cell.intensity-4 {
+    background: rgba(74, 222, 128, 0.9);
+}
+
+.day-cell.loss.intensity-1 {
+    background: rgba(248, 113, 113, 0.2);
+}
+
+.day-cell.loss.intensity-2 {
+    background: rgba(248, 113, 113, 0.4);
+}
+
+.day-cell.loss.intensity-3 {
+    background: rgba(248, 113, 113, 0.6);
+}
+
+.day-cell.loss.intensity-4 {
+    background: rgba(248, 113, 113, 0.9);
+}
+
+.legend {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.legend-squares {
+    display: flex;
+    gap: 3px;
+}
+
+.legend-square {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.legend-square.intensity-1 {
+    background: rgba(74, 222, 128, 0.2);
+}
+
+.legend-square.intensity-2 {
+    background: rgba(74, 222, 128, 0.4);
+}
+
+.legend-square.intensity-3 {
+    background: rgba(74, 222, 128, 0.6);
+}
+
+.legend-square.intensity-4 {
+    background: rgba(74, 222, 128, 0.9);
+}

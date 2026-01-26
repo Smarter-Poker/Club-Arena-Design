@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * ⚙️ CLUB SETTINGS — Customization & Management
+ *  CLUB SETTINGS — Customization & Management
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Comprehensive settings panel for club owners:

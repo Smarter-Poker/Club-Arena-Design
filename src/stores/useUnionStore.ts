@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ENGINE — Union Store (Zustand)
+ *  CLUB ENGINE — Union Store (Zustand)
  * ═══════════════════════════════════════════════════════════════════════════════
  * Global state management for unions, member clubs, and settlement
  */
@@ -100,7 +100,7 @@ export const useUnionStore = create<UnionState>()(
                     const unions = await UnionService.getUnions();
                     set({ unions });
                 } catch (error) {
-                    console.error('🔴 Load unions failed:', error);
+                    console.error(' Load unions failed:', error);
                 } finally {
                     set({ isLoadingUnions: false });
                 }
@@ -114,7 +114,7 @@ export const useUnionStore = create<UnionState>()(
                     // Also load member clubs
                     await get().loadUnionClubs(unionId);
                 } catch (error) {
-                    console.error('🔴 Load union failed:', error);
+                    console.error(' Load union failed:', error);
                 } finally {
                     set({ isLoadingUnion: false });
                 }
@@ -125,7 +125,7 @@ export const useUnionStore = create<UnionState>()(
                     const clubs = await UnionService.getUnionClubs(unionId);
                     set({ activeUnionClubs: clubs });
                 } catch (error) {
-                    console.error('🔴 Load union clubs failed:', error);
+                    console.error(' Load union clubs failed:', error);
                 }
             },
 
@@ -138,7 +138,7 @@ export const useUnionStore = create<UnionState>()(
                     }
                     return union;
                 } catch (error) {
-                    console.error('🔴 Create union failed:', error);
+                    console.error(' Create union failed:', error);
                     throw error;
                 }
             },
@@ -151,7 +151,7 @@ export const useUnionStore = create<UnionState>()(
                     }
                     return success;
                 } catch (error) {
-                    console.error('🔴 Join union failed:', error);
+                    console.error(' Join union failed:', error);
                     throw error;
                 }
             },
@@ -164,7 +164,7 @@ export const useUnionStore = create<UnionState>()(
                     }
                     return success;
                 } catch (error) {
-                    console.error('🔴 Leave union failed:', error);
+                    console.error(' Leave union failed:', error);
                     throw error;
                 }
             },
@@ -178,7 +178,7 @@ export const useUnionStore = create<UnionState>()(
                     }
                     return success;
                 } catch (error) {
-                    console.error('🔴 Approve club failed:', error);
+                    console.error(' Approve club failed:', error);
                     throw error;
                 }
             },
@@ -193,7 +193,7 @@ export const useUnionStore = create<UnionState>()(
                     const period = await SettlementService.getCurrentPeriod();
                     set({ currentPeriod: period });
                 } catch (error) {
-                    console.error('🔴 Load current period failed:', error);
+                    console.error(' Load current period failed:', error);
                 } finally {
                     set({ isLoadingSettlement: false });
                 }
@@ -204,7 +204,7 @@ export const useUnionStore = create<UnionState>()(
                     const history = await SettlementService.getPeriodHistory(limit);
                     set({ periodHistory: history });
                 } catch (error) {
-                    console.error('🔴 Load period history failed:', error);
+                    console.error(' Load period history failed:', error);
                 }
             },
 
@@ -218,7 +218,7 @@ export const useUnionStore = create<UnionState>()(
                         agentSettlements: summary.agentSettlements,
                     });
                 } catch (error) {
-                    console.error('🔴 Load settlement summary failed:', error);
+                    console.error(' Load settlement summary failed:', error);
                 } finally {
                     set({ isLoadingSettlement: false });
                 }
@@ -230,7 +230,7 @@ export const useUnionStore = create<UnionState>()(
                     const report = await UnionService.getSettlementReport(unionId, periodId);
                     set({ consolidatedReport: report });
                 } catch (error) {
-                    console.error('🔴 Load consolidated report failed:', error);
+                    console.error(' Load consolidated report failed:', error);
                 } finally {
                     set({ isLoadingSettlement: false });
                 }
@@ -241,7 +241,7 @@ export const useUnionStore = create<UnionState>()(
                     const summary = await SettlementService.generateSettlements(periodId);
                     set({ clubSettlements: summary.clubSettlements });
                 } catch (error) {
-                    console.error('🔴 Load club settlements failed:', error);
+                    console.error(' Load club settlements failed:', error);
                 }
             },
 
@@ -250,7 +250,7 @@ export const useUnionStore = create<UnionState>()(
                     const summary = await SettlementService.generateSettlements(periodId);
                     set({ agentSettlements: summary.agentSettlements });
                 } catch (error) {
-                    console.error('🔴 Load agent settlements failed:', error);
+                    console.error(' Load agent settlements failed:', error);
                 }
             },
 
@@ -263,7 +263,7 @@ export const useUnionStore = create<UnionState>()(
                     }
                     return success;
                 } catch (error) {
-                    console.error('🔴 Close period failed:', error);
+                    console.error(' Close period failed:', error);
                     throw error;
                 }
             },
@@ -275,7 +275,7 @@ export const useUnionStore = create<UnionState>()(
                     await get().loadCurrentPeriod();
                     return result;
                 } catch (error) {
-                    console.error('🔴 Execute payouts failed:', error);
+                    console.error(' Execute payouts failed:', error);
                     throw error;
                 }
             },

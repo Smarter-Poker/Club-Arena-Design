@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ENGINE — Agent Management Page
+ *  CLUB ENGINE — Agent Management Page
  * ═══════════════════════════════════════════════════════════════════════════════
  * Admin dashboard for managing agents, commissions, and credit lines
  * Real Supabase integration — no demo data
@@ -12,17 +12,30 @@ import styles from './AgentManagementPage.module.css';
 import { AgentService, type Agent } from '@/services/AgentService';
 import { MembershipService, type ClubMembership } from '@/services/MembershipService';
 import { useUserStore } from '@/stores/useUserStore';
+import ChipTransferModal from '@/components/agent/ChipTransferModal';
+import AgentTree from '@/components/agent/AgentTree';
+import CommissionHistoryModal from '@/components/agent/CommissionHistoryModal';
+import PlayerInviteModal from '@/components/agent/PlayerInviteModal';
+import { CreditService } from '@/services/CreditService';
+import AgentManager from '@/components/club/AgentManager';
+import AdminReports from '@/components/club/AdminReports';
+import SecurityAuditLog from '@/components/club/SecurityAuditLog';
+import { PermissionService } from '@/services/PermissionService';
+import { AgentFinancialPortal } from '@/components/dashboard/AgentFinancialPortal';
+import { useToast } from '@/components/common/Toast';
+import AgentCashoutPanel from '@/components/agent/AgentCashoutPanel';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
-type TabType = 'agents' | 'credit-limits' | 'commissions' | 'payouts';
+type TabType = 'agents' | 'hierarchy' | 'credit-limits' | 'commissions' | 'payouts';
 
 export default function AgentManagementPage() {
     const { clubId } = useParams<{ clubId: string }>();
     const navigate = useNavigate();
     const { user } = useUserStore();
+    const toast = useToast();
     const [activeTab, setActiveTab] = useState<TabType>('agents');
     const [agents, setAgents] = useState<Agent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -31,6 +44,13 @@ export default function AgentManagementPage() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingLimit, setEditingLimit] = useState<string | null>(null);
     const [newLimit, setNewLimit] = useState<number>(0);
+    const [showTransferModal, setShowTransferModal] = useState(false);
+    const [transferAgentId, setTransferAgentId] = useState<string | null>(null);
+    const [showCommissionModal, setShowCommissionModal] = useState(false);
+    const [commissionAgentId, setCommissionAgentId] = useState<string | null>(null);
+    const [commissionAgentName, setCommissionAgentName] = useState<string>('');
+    const [showPlayerInviteModal, setShowPlayerInviteModal] = useState(false);
+    const [playerInviteAgentId, setPlayerInviteAgentId] = useState<string | null>(null);
 
     // Create Agent Form State
     const [availableMembers, setAvailableMembers] = useState<ClubMembership[]>([]);
@@ -126,21 +146,35 @@ export default function AgentManagementPage() {
         }
     };
 
+    // Promote agent to super_agent (real Supabase call)
+    const handlePromoteAgent = async (agentId: string, currentRole: string) => {
+        const newRole = currentRole === 'agent' ? 'super_agent' : 'agent';
+        const action = currentRole === 'agent' ? 'Promote to Super Agent' : 'Demote to Agent';
+        if (!confirm(`${action}? This will change their permissions and hierarchy level.`)) return;
+
+        const success = await AgentService.updateAgentRole(agentId, newRole);
+        if (success) {
+            setAgents(prev => prev.map(a =>
+                a.id === agentId ? { ...a, role: newRole as any } : a
+            ));
+        }
+    };
+
     // Create new agent (real Supabase call)
     const handleCreateAgent = async () => {
         if (!clubId || !newAgentForm.userId) return;
 
         // Validate mandatory fields
         if (newAgentForm.creditLimit <= 0) {
-            alert('Credit Limit is required and must be greater than 0');
+            toast.error('Credit Limit is required and must be greater than 0');
             return;
         }
         if (newAgentForm.commissionRate <= 0 || newAgentForm.commissionRate > 70) {
-            alert('Commission Rate must be between 1% and 70%');
+            toast.error('Commission Rate must be between 1% and 70%');
             return;
         }
         if (newAgentForm.playerRakebackRate < 0 || newAgentForm.playerRakebackRate > 50) {
-            alert('Rakeback Rate must be between 0% and 50%');
+            toast.error('Rakeback Rate must be between 0% and 50%');
             return;
         }
 
@@ -167,7 +201,7 @@ export default function AgentManagementPage() {
                 creditLimit: 0,
             });
         } catch (err: any) {
-            alert('Failed to create agent: ' + err.message);
+            toast.error('Failed to create agent: ' + err.message);
         } finally {
             setIsCreating(false);
         }
@@ -185,6 +219,24 @@ export default function AgentManagementPage() {
             creditLimit: 0,
         });
     };
+
+    // No club selected
+    if (!clubId) {
+        return (
+            <div className={styles.page}>
+                <div className={styles.error}>
+                    <h2>No Club Selected</h2>
+                    <p>Please select a club to manage agents.</p>
+                    <button
+                        className={styles.addButton}
+                        onClick={() => navigate('/clubs')}
+                    >
+                        Go to Clubs
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     // Loading state
     if (isLoading) {
@@ -223,21 +275,21 @@ export default function AgentManagementPage() {
             {/* Summary Cards */}
             <div className={styles.summaryGrid}>
                 <div className={styles.summaryCard}>
-                    <span className={styles.summaryIcon}>👥</span>
+                    <span className={styles.summaryIcon}></span>
                     <div>
                         <span className={styles.summaryValue}>{activeAgents}/{totalAgents}</span>
                         <span className={styles.summaryLabel}>Active Agents</span>
                     </div>
                 </div>
                 <div className={styles.summaryCard}>
-                    <span className={styles.summaryIcon}>🎮</span>
+                    <span className={styles.summaryIcon}></span>
                     <div>
                         <span className={styles.summaryValue}>{totalPlayers}</span>
                         <span className={styles.summaryLabel}>Total Players</span>
                     </div>
                 </div>
                 <div className={styles.summaryCard}>
-                    <span className={styles.summaryIcon}>💰</span>
+                    <span className={styles.summaryIcon}></span>
                     <div>
                         <span className={styles.summaryValue}>${formatMoney(weeklyRake)}</span>
                         <span className={styles.summaryLabel}>Weekly Rake</span>
@@ -254,16 +306,17 @@ export default function AgentManagementPage() {
 
             {/* Tab Navigation */}
             <nav className={styles.tabNav}>
-                {(['agents', 'credit-limits', 'commissions', 'payouts'] as TabType[]).map(tab => (
+                {(['agents', 'hierarchy', 'credit-limits', 'commissions', 'payouts'] as TabType[]).map(tab => (
                     <button
                         key={tab}
                         className={`${styles.tabButton} ${activeTab === tab ? styles.active : ''}`}
                         onClick={() => setActiveTab(tab)}
                     >
-                        {tab === 'agents' && '👥 Agents'}
+                        {tab === 'agents' && ' Agents'}
+                        {tab === 'hierarchy' && '🌳 Hierarchy'}
                         {tab === 'credit-limits' && '💳 Credit Limits'}
-                        {tab === 'commissions' && '💵 Commissions'}
-                        {tab === 'payouts' && '📤 Payouts'}
+                        {tab === 'commissions' && ' Commissions'}
+                        {tab === 'payouts' && ' Payouts'}
                     </button>
                 ))}
             </nav>
@@ -302,12 +355,58 @@ export default function AgentManagementPage() {
                                     </div>
                                     <div className={styles.agentActions}>
                                         {agent.status === 'active' ? (
-                                            <button
-                                                className={styles.actionBtn}
-                                                onClick={() => handleSuspendAgent(agent.id)}
-                                            >
-                                                ⏸️ Suspend
-                                            </button>
+                                            <>
+                                                <button
+                                                    className={styles.actionBtn}
+                                                    onClick={() => handleSuspendAgent(agent.id)}
+                                                >
+                                                    ⏸️ Suspend
+                                                </button>
+                                                <button
+                                                    className={`${styles.actionBtn} ${styles.transfer}`}
+                                                    onClick={() => {
+                                                        setTransferAgentId(agent.userId);
+                                                        setShowTransferModal(true);
+                                                    }}
+                                                >
+                                                     Transfer
+                                                </button>
+                                                {agent.role === 'agent' && (
+                                                    <button
+                                                        className={`${styles.actionBtn} ${styles.promote}`}
+                                                        onClick={() => handlePromoteAgent(agent.id, agent.role)}
+                                                    >
+                                                         Promote
+                                                    </button>
+                                                )}
+                                                {agent.role === 'super_agent' && (
+                                                    <button
+                                                        className={`${styles.actionBtn} ${styles.demote}`}
+                                                        onClick={() => handlePromoteAgent(agent.id, agent.role)}
+                                                    >
+                                                         Demote
+                                                    </button>
+                                                )}
+                                                <button
+                                                    className={`${styles.actionBtn}`}
+                                                    onClick={() => {
+                                                        setPlayerInviteAgentId(agent.id);
+                                                        setShowPlayerInviteModal(true);
+                                                    }}
+                                                >
+                                                     Add Player
+                                                </button>
+                                                <button
+                                                    className={`${styles.actionBtn}`}
+                                                    onClick={() => {
+                                                        setCommissionAgentId(agent.id);
+                                                        setCommissionAgentName(agent.displayName || 'Agent');
+                                                        setShowCommissionModal(true);
+                                                    }}
+                                                >
+                                                     History
+                                                </button>
+                                            </>
                                         ) : (
                                             <button
                                                 className={`${styles.actionBtn} ${styles.primary}`}
@@ -344,11 +443,11 @@ export default function AgentManagementPage() {
                                         <span>${formatMoney(agent.businessBalance)}</span>
                                     </div>
                                     <div className={styles.walletItem}>
-                                        <span className={styles.walletIcon}>🎮</span>
+                                        <span className={styles.walletIcon}></span>
                                         <span>${formatMoney(agent.playerBalance)}</span>
                                     </div>
                                     <div className={styles.walletItem}>
-                                        <span className={styles.walletIcon}>🎁</span>
+                                        <span className={styles.walletIcon}></span>
                                         <span>${formatMoney(agent.promoBalance)}</span>
                                     </div>
                                 </div>
@@ -372,6 +471,24 @@ export default function AgentManagementPage() {
                             </div>
                         ))}
                     </div>
+                )}
+
+                {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                {/* HIERARCHY TAB — Visual Tree View */}
+                {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                {activeTab === 'hierarchy' && clubId && (
+                    <AgentTree
+                        clubId={clubId}
+                        onAgentClick={(agent) => {
+                            setCommissionAgentId(agent.id);
+                            setCommissionAgentName(agent.displayName || 'Agent');
+                            setShowCommissionModal(true);
+                        }}
+                        onTransferClick={(agent) => {
+                            setTransferAgentId(agent.id);
+                            setShowTransferModal(true);
+                        }}
+                    />
                 )}
 
                 {/* ═══════════════════════════════════════════════════════════════════════════════ */}
@@ -406,7 +523,7 @@ export default function AgentManagementPage() {
                                             </span>
                                         </td>
                                         <td className={styles.assignedBy}>
-                                            {agent.role === 'agent' ? '🏛️ Club' : `👤 ${agent.parentAgentName || 'Agent'}`}
+                                            {agent.role === 'agent' ? ' Club' : ` ${agent.parentAgentName || 'Agent'}`}
                                         </td>
                                         <td>
                                             {editingLimit === agent.id ? (
@@ -434,13 +551,13 @@ export default function AgentManagementPage() {
                                                         className={`${styles.actionBtn} ${styles.approve}`}
                                                         onClick={() => handleSetCreditLimit(agent.id, newLimit)}
                                                     >
-                                                        ✓ Save
+                                                         Save
                                                     </button>
                                                     <button
                                                         className={styles.actionBtn}
                                                         onClick={() => setEditingLimit(null)}
                                                     >
-                                                        ✗
+                                                        
                                                     </button>
                                                 </div>
                                             ) : (
@@ -461,7 +578,7 @@ export default function AgentManagementPage() {
                         </table>
 
                         <div className={styles.creditNote}>
-                            <h3>📋 Credit Assignment Rules</h3>
+                            <h3> Credit Assignment Rules</h3>
                             <ul>
                                 <li><strong>Club → Agent:</strong> Club Owner assigns credit limits when creating an agent</li>
                                 <li><strong>Agent → Sub-Agent:</strong> Agents assign limits to their sub-agents (cannot exceed their own limit)</li>
@@ -498,7 +615,7 @@ export default function AgentManagementPage() {
                         </div>
 
                         <div className={styles.spreadExample}>
-                            <h3>💡 Example Spread Calculation</h3>
+                            <h3> Example Spread Calculation</h3>
                             <p>
                                 Agent receives <strong>50%</strong> from club, gives <strong>30%</strong> to players.
                                 <br />
@@ -513,6 +630,9 @@ export default function AgentManagementPage() {
                 {/* ═══════════════════════════════════════════════════════════════════════════════ */}
                 {activeTab === 'payouts' && (
                     <div className={styles.payoutsSection}>
+                        {/* Player Cashout Requests (wired to CashoutService) */}
+                        <AgentCashoutPanel clubId={clubId} />
+
                         <div className={styles.payoutSchedule}>
                             <h2>Settlement Schedule</h2>
                             <div className={styles.scheduleGrid}>
@@ -524,14 +644,14 @@ export default function AgentManagementPage() {
                                     </div>
                                 </div>
                                 <div className={styles.scheduleItem}>
-                                    <span className={styles.scheduleIcon}>💸</span>
+                                    <span className={styles.scheduleIcon}></span>
                                     <div>
                                         <strong>Monday 4:00 AM PST</strong>
                                         <p>Payout Execution</p>
                                     </div>
                                 </div>
                                 <div className={styles.scheduleItem}>
-                                    <span className={styles.scheduleIcon}>⏰</span>
+                                    <span className={styles.scheduleIcon}></span>
                                     <div>
                                         <strong>Tuesday 11:59 PM PST</strong>
                                         <p>48-Hour Grace Period Ends</p>
@@ -620,7 +740,7 @@ export default function AgentManagementPage() {
                                         className={`${styles.roleOption} ${newAgentForm.role === 'super_agent' ? styles.selected : ''}`}
                                         onClick={() => setNewAgentForm({ ...newAgentForm, role: 'super_agent', parentAgentId: '' })}
                                     >
-                                        <span className={styles.roleIcon}>👑</span>
+                                        <span className={styles.roleIcon}></span>
                                         <span className={styles.roleLabel}>Super Agent</span>
                                         <span className={styles.roleDesc}>Can have agents under them</span>
                                     </button>
@@ -719,7 +839,7 @@ export default function AgentManagementPage() {
 
                             {/* Summary */}
                             <div className={styles.formSummary}>
-                                <h4>📋 Agent Summary</h4>
+                                <h4> Agent Summary</h4>
                                 <div className={styles.summaryGrid}>
                                     <div>Role: <strong>{newAgentForm.role.replace('_', ' ')}</strong></div>
                                     <div>Commission: <strong>{newAgentForm.commissionRate}%</strong></div>
@@ -738,12 +858,59 @@ export default function AgentManagementPage() {
                                 onClick={handleCreateAgent}
                                 disabled={isCreating || !newAgentForm.userId || newAgentForm.creditLimit <= 0}
                             >
-                                {isCreating ? 'Creating...' : '✅ Create Agent'}
+                                {isCreating ? 'Creating...' : ' Create Agent'}
                             </button>
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* Chip Transfer Modal */}
+            <ChipTransferModal
+                isOpen={showTransferModal}
+                onClose={() => {
+                    setShowTransferModal(false);
+                    setTransferAgentId(null);
+                }}
+                clubId={clubId || ''}
+                recipientId={transferAgentId || undefined}
+                recipientType="agent"
+                onTransferComplete={() => {
+                    // Refresh agents
+                    if (clubId) {
+                        AgentService.getAgents(clubId).then(setAgents);
+                    }
+                }}
+            />
+
+            {/* Commission History Modal */}
+            <CommissionHistoryModal
+                isOpen={showCommissionModal}
+                onClose={() => {
+                    setShowCommissionModal(false);
+                    setCommissionAgentId(null);
+                    setCommissionAgentName('');
+                }}
+                agentId={commissionAgentId || ''}
+                agentName={commissionAgentName}
+            />
+
+            {/* Player Invite Modal */}
+            <PlayerInviteModal
+                isOpen={showPlayerInviteModal}
+                onClose={() => {
+                    setShowPlayerInviteModal(false);
+                    setPlayerInviteAgentId(null);
+                }}
+                agentId={playerInviteAgentId || ''}
+                clubId={clubId || ''}
+                onPlayerAdded={() => {
+                    // Refresh agents
+                    if (clubId) {
+                        AgentService.getAgents(clubId).then(setAgents);
+                    }
+                }}
+            />
         </div>
     );
 }

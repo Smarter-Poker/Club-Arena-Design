@@ -1,0 +1,123 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * ⚡ QUICK ACTIONS BAR — Premium Dark Theme CSS
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+.container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+/* Toggle Button */
+.toggleBtn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(251, 191, 36, 0.4);
+    transition: all 0.3s ease;
+}
+
+.toggleBtn:hover {
+    transform: scale(1.1);
+}
+
+.container.expanded .toggleBtn {
+    background: rgba(239, 68, 68, 0.9);
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+}
+
+/* Actions */
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.actionBtn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: rgba(26, 26, 46, 0.95);
+    border: 1px solid var(--action-color, rgba(255, 255, 255, 0.2));
+    border-radius: 28px;
+    cursor: pointer;
+    animation: slideIn 0.3s ease both;
+    animation-delay: var(--animation-delay, 0ms);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.actionBtn:hover {
+    background: var(--action-color, rgba(255, 255, 255, 0.1));
+    transform: scale(1.02);
+}
+
+.icon {
+    font-size: 20px;
+}
+
+.label {
+    font-size: 14px;
+    font-weight: 500;
+    color: white;
+    white-space: nowrap;
+}
+
+.badge {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: #ef4444;
+    border-radius: 9px;
+    font-size: 11px;
+    font-weight: 600;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+    .container {
+        bottom: 16px;
+        right: 16px;
+    }
+
+    .toggleBtn {
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
+    }
+
+    .actionBtn {
+        padding: 10px 14px;
+    }
+}

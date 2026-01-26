@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🛡️ INSURANCE MODAL — Styles
+ *  INSURANCE MODAL — Styles
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
@@ -36,6 +36,9 @@
 .insurance-modal {
     width: 95%;
     max-width: 400px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
     background: linear-gradient(180deg, #1C2128 0%, #161B22 100%);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 20px;

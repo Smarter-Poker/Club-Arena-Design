@@ -1,12 +1,12 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 💬 PRIVATE CHAT — Direct Messaging
+ *  PRIVATE CHAT — Direct Messaging
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * 1-on-1 messaging interface between players.
  * - Real-time message list
  * - Typing indicators
- * - Media attachments (placeholder)
+ * - Text-based messaging (media attachments planned for future)
  * - Online status header
  */
 
@@ -89,7 +89,7 @@ export function PrivateChat({
                                     <span className="message-time">{msg.timestamp}</span>
                                     {msg.isSelf && (
                                         <span className={`message-tick ${msg.status}`}>
-                                            {msg.status === 'read' ? '✓✓' : '✓'}
+                                            {msg.status === 'read' ? '' : ''}
                                         </span>
                                     )}
                                 </div>
@@ -98,7 +98,7 @@ export function PrivateChat({
                     ))
                 ) : (
                     <div className="chat-empty">
-                        <span className="empty-emoji">👋</span>
+                        <span className="empty-emoji"></span>
                         <p>Say hello to {friendName}!</p>
                     </div>
                 )}

@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 📋 WAIT LIST MODAL — Queue Management Component
+ *  WAIT LIST MODAL — Queue Management Component
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Modal for managing wait list position:

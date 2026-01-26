@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ENGINE — Clubs Service
+ *  CLUB ENGINE — Clubs Service
  * ═══════════════════════════════════════════════════════════════════════════════
  * Primary service layer for club management, discovery, and membership
  */
@@ -16,7 +16,7 @@ import type {
 } from '@/types/club.types';
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🔍 CLUB DISCOVERY (PostGIS)
+//  CLUB DISCOVERY (PostGIS)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
@@ -36,7 +36,7 @@ export async function discoverNearbyClubs(
     });
 
     if (error) {
-        console.error('🔴 Club discovery failed:', error);
+        console.error(' Club discovery failed:', error);
         throw new Error('Failed to discover nearby clubs');
     }
 
@@ -56,7 +56,7 @@ export async function searchClubs(query: string): Promise<Club[]> {
         .limit(20);
 
     if (error) {
-        console.error('🔴 Club search failed:', error);
+        console.error(' Club search failed:', error);
         throw new Error('Failed to search clubs');
     }
 
@@ -78,7 +78,7 @@ export async function getClub(identifier: string): Promise<Club | null> {
 
     if (error) {
         if (error.code === 'PGRST116') return null; // Not found
-        console.error('🔴 Get club failed:', error);
+        console.error(' Get club failed:', error);
         throw new Error('Failed to get club');
     }
 
@@ -86,7 +86,7 @@ export async function getClub(identifier: string): Promise<Club | null> {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🏛️ CLUB MANAGEMENT
+//  CLUB MANAGEMENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
@@ -127,7 +127,7 @@ export async function createClub(clubData: {
         .single();
 
     if (error) {
-        console.error('🔴 Club creation failed:', error);
+        console.error(' Club creation failed:', error);
         throw new Error('Failed to create club');
     }
 
@@ -138,7 +138,7 @@ export async function createClub(clubData: {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 👥 MEMBERSHIP MANAGEMENT
+//  MEMBERSHIP MANAGEMENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
@@ -170,7 +170,7 @@ export async function joinClub(
         .single();
 
     if (error) {
-        console.error('🔴 Join club failed:', error);
+        console.error(' Join club failed:', error);
         throw new Error('Failed to join club');
     }
 
@@ -191,7 +191,7 @@ export async function leaveClub(clubId: string): Promise<void> {
         .eq('user_id', user.user.id);
 
     if (error) {
-        console.error('🔴 Leave club failed:', error);
+        console.error(' Leave club failed:', error);
         throw new Error('Failed to leave club');
     }
 }
@@ -212,7 +212,7 @@ export async function getUserMemberships(): Promise<(ClubMember & { club: Club }
         .eq('user_id', user.user.id);
 
     if (error) {
-        console.error('🔴 Get memberships failed:', error);
+        console.error(' Get memberships failed:', error);
         throw new Error('Failed to get memberships');
     }
 
@@ -233,7 +233,7 @@ export async function getClubMembers(clubId: string): Promise<ClubMember[]> {
         .order('xp', { ascending: false });
 
     if (error) {
-        console.error('🔴 Get club members failed:', error);
+        console.error(' Get club members failed:', error);
         throw new Error('Failed to get club members');
     }
 
@@ -241,7 +241,7 @@ export async function getClubMembers(clubId: string): Promise<ClubMember[]> {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🏆 CHALLENGES
+//  CHALLENGES
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
@@ -256,7 +256,7 @@ export async function getClubChallenges(clubId: string): Promise<ClubChallenge[]
         .order('ends_at', { ascending: true });
 
     if (error) {
-        console.error('🔴 Get challenges failed:', error);
+        console.error(' Get challenges failed:', error);
         throw new Error('Failed to get challenges');
     }
 
@@ -264,7 +264,7 @@ export async function getClubChallenges(clubId: string): Promise<ClubChallenge[]
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 📊 STATS & LEADERBOARDS
+//  STATS & LEADERBOARDS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
@@ -285,11 +285,194 @@ export async function getClubLeaderboard(
         .limit(50);
 
     if (error) {
-        console.error('🔴 Get leaderboard failed:', error);
+        console.error(' Get leaderboard failed:', error);
         throw new Error('Failed to get leaderboard');
     }
 
     return data || [];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ️ CLUB DELETION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Delete a club (owner only)
+ * Removes all members first, then deletes the club
+ */
+export async function deleteClub(clubId: string): Promise<void> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error('Authentication required');
+
+    // Verify ownership
+    const { data: club, error: clubError } = await supabase
+        .from('clubs')
+        .select('owner_id')
+        .eq('id', clubId)
+        .single();
+
+    if (clubError || !club) {
+        throw new Error('Club not found');
+    }
+
+    if (club.owner_id !== user.user.id) {
+        throw new Error('Only the owner can delete this club');
+    }
+
+    // Delete all members first (cascade should handle this, but explicit is safer)
+    await supabase
+        .from('club_members')
+        .delete()
+        .eq('club_id', clubId);
+
+    // Delete the club
+    const { error } = await supabase
+        .from('clubs')
+        .delete()
+        .eq('id', clubId);
+
+    if (error) {
+        console.error(' Delete club failed:', error);
+        throw new Error('Failed to delete club');
+    }
+
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ✏️ CLUB UPDATE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Update club settings
+ */
+export async function updateClub(clubId: string, updates: Record<string, any>): Promise<Club> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error('Authentication required');
+
+    const { data, error } = await supabase
+        .from('clubs')
+        .update(updates)
+        .eq('id', clubId)
+        .select()
+        .single();
+
+    if (error) {
+        console.error(' Update club failed:', error);
+        throw new Error('Failed to update club');
+    }
+
+    return data;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🖼️ LOGO UPLOAD
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Upload club logo to Supabase Storage
+ * @param clubId Club ID to update
+ * @param file File to upload (from input or drag-drop)
+ * @returns URL of the uploaded logo
+ */
+export async function uploadClubLogo(clubId: string, file: File): Promise<string> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error('Authentication required');
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+        throw new Error('Invalid file type. Please upload JPEG, PNG, GIF, or WebP');
+    }
+
+    // Validate file size (max 2MB)
+    const maxSize = 2 * 1024 * 1024;
+    if (file.size > maxSize) {
+        throw new Error('File too large. Maximum size is 2MB');
+    }
+
+    // Generate unique filename
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${clubId}/logo-${Date.now()}.${fileExt}`;
+
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+        .from('club-assets')
+        .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: true,
+        });
+
+    if (error) {
+        console.error(' Logo upload failed:', error);
+        throw new Error('Failed to upload logo');
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+        .from('club-assets')
+        .getPublicUrl(data.path);
+
+    const logoUrl = urlData.publicUrl;
+
+    // Update club record with new logo URL
+    await supabase
+        .from('clubs')
+        .update({ logo_url: logoUrl })
+        .eq('id', clubId);
+
+    return logoUrl;
+}
+
+/**
+ * Upload club banner/cover image
+ */
+export async function uploadClubBanner(clubId: string, file: File): Promise<string> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error('Authentication required');
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+        throw new Error('Invalid file type. Please upload JPEG, PNG, or WebP');
+    }
+
+    // Validate file size (max 5MB for banners)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+        throw new Error('File too large. Maximum size is 5MB');
+    }
+
+    // Generate unique filename
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${clubId}/banner-${Date.now()}.${fileExt}`;
+
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+        .from('club-assets')
+        .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: true,
+        });
+
+    if (error) {
+        console.error(' Banner upload failed:', error);
+        throw new Error('Failed to upload banner');
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+        .from('club-assets')
+        .getPublicUrl(data.path);
+
+    const bannerUrl = urlData.publicUrl;
+
+    // Update club record with new banner URL
+    await supabase
+        .from('clubs')
+        .update({ banner_url: bannerUrl })
+        .eq('id', clubId);
+
+    return bannerUrl;
 }
 
 // Export service object for cleaner imports
@@ -298,10 +481,15 @@ export const ClubsService = {
     search: searchClubs,
     get: getClub,
     create: createClub,
+    update: updateClub,
     join: joinClub,
     leave: leaveClub,
+    delete: deleteClub,
     getUserMemberships,
     getMembers: getClubMembers,
     getChallenges: getClubChallenges,
     getLeaderboard: getClubLeaderboard,
+    uploadLogo: uploadClubLogo,
+    uploadBanner: uploadClubBanner,
+    updateClub,
 };

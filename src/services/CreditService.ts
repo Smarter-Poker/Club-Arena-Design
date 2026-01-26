@@ -18,7 +18,7 @@
  * - Monday 4:00 AM PST → Process payments
  */
 
-import { supabase, isDemoMode } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -86,32 +86,6 @@ export interface CreditLimitRequest {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// DEMO DATA
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const DEMO_CREDIT_ACCOUNTS: CreditAccount[] = [
-    {
-        agentId: 'agent_1', agentName: 'Agent Smith', creditLimit: 10000, currentBalance: 7500,
-        isPrepaid: false, status: 'good_standing', utilizationPercent: 25,
-        lastSettlementDate: '2026-01-06T00:00:00Z', nextSettlementDate: '2026-01-13T00:00:00Z',
-    },
-    {
-        agentId: 'agent_2', agentName: 'Agent Jones', creditLimit: 5000, currentBalance: 1000,
-        isPrepaid: false, status: 'warning', utilizationPercent: 80,
-        lastSettlementDate: '2026-01-06T00:00:00Z', nextSettlementDate: '2026-01-13T00:00:00Z',
-    },
-];
-
-const DEMO_INVOICES: CreditInvoice[] = [
-    {
-        id: 'inv_1', agentId: 'agent_1', agentName: 'Agent Smith',
-        periodStart: '2025-12-30T00:00:00Z', periodEnd: '2026-01-05T23:59:59Z',
-        debtOwed: 2500, amountPaid: 2500, amountRemaining: 0, status: 'paid',
-        dueDate: '2026-01-07T00:00:00Z', createdAt: '2026-01-06T00:00:00Z', paidAt: '2026-01-06T08:00:00Z',
-    },
-];
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // SERVICE
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -124,11 +98,6 @@ export const CreditService = {
      * Get credit account for an agent
      */
     async getCreditAccount(agentId: string): Promise<CreditAccount | null> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 200));
-            return DEMO_CREDIT_ACCOUNTS.find(a => a.agentId === agentId) || null;
-        }
-
         const { data: agent, error } = await supabase
             .from('agents')
             .select('id, user_id, credit_limit, agent_wallet_balance, is_prepaid, status, profiles:user_id(display_name)')
@@ -157,16 +126,6 @@ export const CreditService = {
      * Set credit line for an agent
      */
     async setCreditLine(agentId: string, limit: number, isPrepaid: boolean): Promise<boolean> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 300));
-            const account = DEMO_CREDIT_ACCOUNTS.find(a => a.agentId === agentId);
-            if (account) {
-                account.creditLimit = limit;
-                account.isPrepaid = isPrepaid;
-            }
-            return true;
-        }
-
         const { error } = await supabase
             .from('agents')
             .update({
@@ -190,19 +149,6 @@ export const CreditService = {
     ): Promise<CreditLimitRequest> {
         const account = await this.getCreditAccount(agentId);
         if (!account) throw new Error('Agent not found');
-
-        if (isDemoMode) {
-            return {
-                id: `req_${Date.now()}`,
-                agentId,
-                agentName: account.agentName,
-                currentLimit: account.creditLimit,
-                requestedLimit,
-                reason,
-                status: 'pending',
-                createdAt: new Date().toISOString(),
-            };
-        }
 
         const { data, error } = await supabase
             .from('credit_limit_requests')
@@ -228,10 +174,6 @@ export const CreditService = {
         approved: boolean,
         reviewerId: string
     ): Promise<boolean> {
-        if (isDemoMode) {
-            return true;
-        }
-
         const status = approved ? 'approved' : 'denied';
 
         const { data: request, error: fetchError } = await supabase
@@ -271,22 +213,6 @@ export const CreditService = {
      * Calculate current debt for an agent
      */
     async calculateDebt(agentId: string): Promise<DebtCalculation> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 150));
-            const account = DEMO_CREDIT_ACCOUNTS.find(a => a.agentId === agentId);
-            if (!account) throw new Error('Agent not found');
-
-            const debt = account.creditLimit - account.currentBalance;
-            return {
-                agentId,
-                creditLimit: account.creditLimit,
-                currentBalance: account.currentBalance,
-                debtOwed: Math.max(0, debt),
-                isPrepaid: account.isPrepaid,
-                gracePeriodRemaining: 48, // 48 hours grace period
-            };
-        }
-
         const { data: agent, error } = await supabase
             .from('agents')
             .select('credit_limit, agent_wallet_balance, is_prepaid')
@@ -322,18 +248,6 @@ export const CreditService = {
      * Calculate debt for all agents in a club
      */
     async calculateClubDebt(clubId: string): Promise<DebtCalculation[]> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 300));
-            return DEMO_CREDIT_ACCOUNTS.map(a => ({
-                agentId: a.agentId,
-                creditLimit: a.creditLimit,
-                currentBalance: a.currentBalance,
-                debtOwed: Math.max(0, a.creditLimit - a.currentBalance),
-                isPrepaid: a.isPrepaid,
-                gracePeriodRemaining: 48,
-            }));
-        }
-
         const { data: agents, error } = await supabase
             .from('agents')
             .select('id, credit_limit, agent_wallet_balance, is_prepaid')
@@ -371,22 +285,6 @@ export const CreditService = {
         const periodStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         const dueDate = new Date(now.getTime() + 48 * 60 * 60 * 1000); // 48 hour grace
 
-        if (isDemoMode) {
-            return {
-                id: `inv_${Date.now()}`,
-                agentId,
-                agentName: account.agentName,
-                periodStart: periodStart.toISOString(),
-                periodEnd: periodEnd.toISOString(),
-                debtOwed: debt.debtOwed,
-                amountPaid: 0,
-                amountRemaining: debt.debtOwed,
-                status: 'pending',
-                dueDate: dueDate.toISOString(),
-                createdAt: now.toISOString(),
-            };
-        }
-
         const { data, error } = await supabase
             .from('credit_invoices')
             .insert({
@@ -410,11 +308,6 @@ export const CreditService = {
      * Get invoices for an agent
      */
     async getAgentInvoices(agentId: string): Promise<CreditInvoice[]> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 200));
-            return DEMO_INVOICES.filter(i => i.agentId === agentId);
-        }
-
         const { data, error } = await supabase
             .from('credit_invoices')
             .select('*, agents:agent_id(profiles:user_id(display_name))')
@@ -433,17 +326,6 @@ export const CreditService = {
         amount: number,
         method: 'wallet' | 'diamonds' | 'external'
     ): Promise<CreditPayment> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 300));
-            return {
-                id: `pay_${Date.now()}`,
-                invoiceId,
-                amount,
-                paymentMethod: method,
-                createdAt: new Date().toISOString(),
-            };
-        }
-
         // Get current invoice
         const { data: invoice, error: fetchError } = await supabase
             .from('credit_invoices')
@@ -528,8 +410,6 @@ export const CreditService = {
      * Suspend agent for overdue debt
      */
     async suspendAgent(agentId: string, reason: string): Promise<boolean> {
-        if (isDemoMode) return true;
-
         await supabase
             .from('agents')
             .update({
@@ -553,8 +433,6 @@ export const CreditService = {
         if (hasOverdue) {
             throw new Error('Cannot reinstate: overdue invoices exist');
         }
-
-        if (isDemoMode) return true;
 
         await supabase
             .from('agents')

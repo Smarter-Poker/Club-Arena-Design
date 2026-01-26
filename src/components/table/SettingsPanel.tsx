@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * ⚙️ SETTINGS PANEL — Table Preferences
+ *  SETTINGS PANEL — Table Preferences
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Slide-out settings panel for:
@@ -27,6 +27,7 @@ export interface TableSettings {
     showPotOdds: boolean;
     animationSpeed: 'slow' | 'normal' | 'fast';
     fourColorDeck: boolean;
+    showStackInBB: boolean;
     showBetSizePresets: boolean;
     confirmAllIn: boolean;
     sitOutNextHand: boolean;
@@ -53,6 +54,7 @@ export const DEFAULT_TABLE_SETTINGS: TableSettings = {
     showPotOdds: false,
     animationSpeed: 'normal',
     fourColorDeck: false,
+    showStackInBB: false,
     showBetSizePresets: true,
     confirmAllIn: true,
     sitOutNextHand: false,
@@ -170,9 +172,16 @@ export function SettingsPanel({
 
                         <SettingToggle
                             label="Four-color deck"
-                            description="Use different colors for each suit"
+                            description="Hearts (Red), Diamonds (Blue), Clubs (Green), Spades (Black)"
                             checked={settings.fourColorDeck}
                             onChange={() => handleToggle('fourColorDeck')}
+                        />
+
+                        <SettingToggle
+                            label="Show stack in BBs"
+                            description="Display chip counts as big blinds"
+                            checked={settings.showStackInBB}
+                            onChange={() => handleToggle('showStackInBB')}
                         />
 
                         <SettingToggle

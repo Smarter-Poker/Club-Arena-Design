@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 💬 TABLE CHAT — In-Game Chat Component
+ *  TABLE CHAT — In-Game Chat Component
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Premium table chat featuring:
@@ -54,7 +54,7 @@ function formatTime(date: Date): string {
 }
 
 // Quick emoji buttons
-const QUICK_EMOJIS = ['👍', '👎', 'nh', 'ty', 'gg', '😂', '🔥', '💰'];
+const QUICK_EMOJIS = ['', '', 'nh', 'ty', 'gg', '😂', '', ''];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SUB-COMPONENTS
@@ -77,7 +77,7 @@ function MessageRow({ message, isOwnMessage }: MessageRowProps) {
     if (message.type === 'DEALER') {
         return (
             <div className="chat-message chat-message--dealer">
-                <span className="chat-message__dealer-icon">🃏</span>
+                <span className="chat-message__dealer-icon"></span>
                 <span className="chat-message__dealer-text">{message.content}</span>
             </div>
         );
@@ -167,7 +167,7 @@ export function TableChat({
     if (isCollapsed) {
         return (
             <button className="chat-collapsed" onClick={onToggleCollapse}>
-                <span className="chat-collapsed__icon">💬</span>
+                <span className="chat-collapsed__icon"></span>
                 <span className="chat-collapsed__badge">{messages.length}</span>
             </button>
         );
@@ -192,7 +192,7 @@ export function TableChat({
                 {displayMessages.length === 0 ? (
                     <div className="table-chat__empty">
                         <span>No messages yet</span>
-                        <span>Be the first to say hello! 👋</span>
+                        <span>Be the first to say hello! </span>
                     </div>
                 ) : (
                     displayMessages.map((msg) => (
@@ -227,7 +227,7 @@ export function TableChat({
                     className={`table-chat__emoji-toggle ${showEmojis ? 'table-chat__emoji-toggle--active' : ''}`}
                     onClick={() => setShowEmojis(!showEmojis)}
                 >
-                    😊
+                    
                 </button>
                 <input
                     ref={inputRef}

@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ENGINE — Clubs Page
+ *  CLUB ENGINE — Clubs Page
  * ═══════════════════════════════════════════════════════════════════════════════
  * Browse, join, and manage clubs
  * 
@@ -12,6 +12,9 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ClubsService } from '../services/ClubsService';
 import { LoadingState, NoClubsEmpty } from '../components/common/EmptyState';
+import { CardSkeleton } from '../components/skeletons/CardSkeleton';
+import { useToast } from '../components/common/Toast';
+import SmarterHeader from '../components/layout/SmarterHeader';
 import styles from './ClubsPage.module.css';
 
 type Tab = 'discover' | 'my-clubs' | 'create';
@@ -35,6 +38,7 @@ interface Membership {
 
 export default function ClubsPage() {
     const navigate = useNavigate();
+    const toast = useToast();
     const [activeTab, setActiveTab] = useState<Tab>('my-clubs');
     const [joinClubId, setJoinClubId] = useState('');
     const [isJoining, setIsJoining] = useState(false);
@@ -60,7 +64,8 @@ export default function ClubsPage() {
                 const memberships = await ClubsService.getUserMemberships();
                 setMyClubs(memberships);
             } catch (err) {
-                console.error('🔴 [CLUBS] Failed to load memberships:', err);
+                console.error('[CLUBS] Failed to load memberships:', err);
+                toast.error('Failed to load your clubs');
                 setMyClubs([]);
             } finally {
                 setIsLoading(false);
@@ -97,7 +102,8 @@ export default function ClubsPage() {
             setJoinClubId('');
             setActiveTab('my-clubs');
         } catch (err: any) {
-            console.error('🔴 [CLUBS] Join failed:', err);
+            console.error('[CLUBS] Join failed:', err);
+            toast.error(err.message || 'Failed to join club');
             setJoinError(err.message || 'Failed to join club');
         } finally {
             setIsJoining(false);
@@ -124,7 +130,8 @@ export default function ClubsPage() {
             // Navigate to the new club
             navigate(`/clubs/${club.id}`);
         } catch (err: any) {
-            console.error('🔴 [CLUBS] Create failed:', err);
+            console.error('[CLUBS] Create failed:', err);
+            toast.error(err.message || 'Failed to create club');
             setCreateError(err.message || 'Failed to create club');
         } finally {
             setIsCreating(false);
@@ -133,11 +140,11 @@ export default function ClubsPage() {
 
     return (
         <div className={styles.page}>
+            <SmarterHeader title=" Clubs" showBackButton={false} />
             {/* Header */}
-            <header className={styles.header}>
-                <h1 className={styles.title}>🏛️ Clubs</h1>
+            <div className={styles.pageIntro}>
                 <p className={styles.subtitle}>Join private poker communities or create your own.</p>
-            </header>
+            </div>
 
             {/* Tabs */}
             <div className={styles.tabs}>
@@ -145,13 +152,13 @@ export default function ClubsPage() {
                     className={`${styles.tab} ${activeTab === 'discover' ? styles.active : ''}`}
                     onClick={() => setActiveTab('discover')}
                 >
-                    🔍 Discover
+                     Discover
                 </button>
                 <button
                     className={`${styles.tab} ${activeTab === 'my-clubs' ? styles.active : ''}`}
                     onClick={() => setActiveTab('my-clubs')}
                 >
-                    🏛️ My Clubs
+                     My Clubs
                 </button>
                 <button
                     className={`${styles.tab} ${activeTab === 'create' ? styles.active : ''}`}
@@ -202,13 +209,17 @@ export default function ClubsPage() {
                 {activeTab === 'my-clubs' && (
                     <div className={styles.myClubsTab}>
                         {isLoading ? (
-                            <LoadingState message="Loading your clubs..." />
+                            <div className={styles.clubsGrid}>
+                                {[1, 2, 3].map(i => (
+                                    <CardSkeleton key={i} hasImage={false} lines={3} />
+                                ))}
+                            </div>
                         ) : myClubs.length > 0 ? (
                             <div className={styles.clubsGrid}>
                                 {myClubs.map(membership => (
                                     <div key={membership.id} className={styles.clubCard}>
                                         <div className={styles.clubHeader}>
-                                            <div className={styles.clubAvatar}>🏛️</div>
+                                            <div className={styles.clubAvatar}></div>
                                             <div className={styles.clubInfo}>
                                                 <h3 className={styles.clubName}>{membership.club.name}</h3>
                                                 <span className={styles.clubId}>ID: {membership.club.club_id}</span>

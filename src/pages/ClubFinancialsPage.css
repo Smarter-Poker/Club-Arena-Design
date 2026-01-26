@@ -1,0 +1,148 @@
+.financials-page {
+    min-height: 100vh;
+    background: var(--bg-primary);
+    padding-bottom: 2rem;
+}
+
+.period-selector {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem;
+}
+
+.period-selector button {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.period-selector button.active {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+}
+
+.summary-cards {
+    padding: 0 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.summary-card {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+}
+
+.summary-card.revenue {
+    background: linear-gradient(135deg, rgba(var(--accent-success-rgb), 0.2), var(--bg-secondary));
+}
+
+.summary-card.net {
+    background: linear-gradient(135deg, rgba(var(--accent-primary-rgb), 0.2), var(--bg-secondary));
+}
+
+.summary-row {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.summary-row .summary-card {
+    flex: 1;
+}
+
+.card-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.card-value.expense {
+    color: var(--accent-danger);
+    font-size: 1.25rem;
+}
+
+.card-value.positive {
+    color: var(--accent-success);
+}
+
+.card-value.negative {
+    color: var(--accent-danger);
+}
+
+.card-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.transactions-section {
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.transactions-section h3 {
+    margin: 0 0 1rem;
+    font-size: 1rem;
+}
+
+.transactions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.transaction-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+}
+
+.tx-icon {
+    font-size: 1.25rem;
+}
+
+.tx-info {
+    flex: 1;
+}
+
+.tx-desc {
+    display: block;
+    font-weight: 500;
+    color: var(--text-primary);
+    text-transform: capitalize;
+}
+
+.tx-date {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.tx-amount {
+    font-weight: 600;
+}
+
+.tx-amount.positive {
+    color: var(--accent-success);
+}
+
+.tx-amount.negative {
+    color: var(--accent-danger);
+}
+
+.loading-state,
+.empty-state {
+    display: flex;
+    justify-content: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+}

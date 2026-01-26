@@ -11,6 +11,12 @@ import CreateTournamentModal from '../components/club/CreateTournamentModal';
 import './TournamentPage.css';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
+import EliminationOverlay from '../components/tournament/EliminationOverlay';
+import HandReplayViewer from '../components/gameplay/HandReplayViewer';
+import { tableService } from '../services/TableService';
+import TournamentBreakScreen from '../components/table/TournamentBreakScreen';
+import { WalletService } from '../services/WalletService';
+import { useToast } from '../components/common/Toast';
 
 // Default fallback for unauthed (shouldn't happen in real app)
 const GUEST_USER = { id: 'guest', username: 'Guest' };
@@ -19,15 +25,42 @@ export default function TournamentPage() {
     const { clubId, tournamentId } = useParams();
     const navigate = useNavigate();
     const { user } = useUserStore();
+    const toast = useToast();
     const currentUser = user || GUEST_USER;
-    const isOwner = true; // TODO: Check actual club ownership
-
 
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [isRegistered, setIsRegistered] = useState(false);
+    const [isOwner, setIsOwner] = useState(false);
+    const [canRebuyNow, setCanRebuyNow] = useState(false);
+    const [canAddOnNow, setCanAddOnNow] = useState(false);
+    const [isProcessingRebuy, setIsProcessingRebuy] = useState(false);
+
+    // Check club ownership
+    useEffect(() => {
+        async function checkOwnership() {
+            if (!clubId || !currentUser.id || currentUser.id === 'guest') {
+                setIsOwner(false);
+                return;
+            }
+            try {
+                const { data, error } = await supabase
+                    .from('club_members')
+                    .select('role')
+                    .eq('club_id', clubId)
+                    .eq('user_id', currentUser.id)
+                    .single();
+
+                // Owner or admin can manage tournaments
+                setIsOwner(data?.role === 'owner' || data?.role === 'admin');
+            } catch {
+                setIsOwner(false);
+            }
+        }
+        checkOwnership();
+    }, [clubId, currentUser.id]);
 
     // Load tournaments
     useEffect(() => {
@@ -55,6 +88,13 @@ export default function TournamentPage() {
     const handleRegister = async () => {
         if (!selectedTournament) return;
         try {
+            // Deduct buy-in from wallet first
+            await WalletService.lockForBuyIn(
+                currentUser.id,
+                selectedTournament.id,
+                selectedTournament.buy_in
+            );
+
             await tournamentService.registerPlayer(
                 selectedTournament.id,
                 currentUser.id,
@@ -73,8 +113,10 @@ export default function TournamentPage() {
                 current_players: prev.current_players + 1,
                 prize_pool: prev.prize_pool + prev.buy_in,
             } : null);
+
+            toast.success(`Registered! ${selectedTournament.buy_in} chips deducted.`);
         } catch (error) {
-            alert('Registration failed: ' + (error as Error).message);
+            toast.error('Registration failed: ' + (error as Error).message);
         }
     };
 
@@ -88,7 +130,7 @@ export default function TournamentPage() {
             const updated = data.find(t => t.id === selectedTournament.id);
             if (updated) setSelectedTournament(updated);
         } catch (error) {
-            alert('Failed to start: ' + (error as Error).message);
+            toast.error('Failed to start: ' + (error as Error).message);
         }
     };
 
@@ -97,7 +139,7 @@ export default function TournamentPage() {
         try {
             const { data: tables } = await supabase.from('tables').select('id').eq('tournament_id', selectedTournament.id);
             if (!tables?.length) {
-                alert('No tables found for this tournament');
+                toast.warning('No tables found for this tournament');
                 return;
             }
 
@@ -111,7 +153,7 @@ export default function TournamentPage() {
             if (seat) {
                 navigate(`/clubs/${clubId}/table/${seat.table_id}`);
             } else {
-                alert('You are registered but not seated. Please wait for the tournament to start fully.');
+                toast.warning('You are registered but not seated. Please wait for the tournament to start fully.');
             }
         } catch (e) { console.error(e); }
     };
@@ -134,8 +176,73 @@ export default function TournamentPage() {
                 prize_pool: prev.prize_pool - prev.buy_in,
             } : null);
         } catch (error) {
-            alert('Unregister failed: ' + (error as Error).message);
+            toast.error('Unregister failed: ' + (error as Error).message);
         }
+    };
+
+    // Check rebuy/add-on eligibility when tournament changes
+    useEffect(() => {
+        async function checkRebuyAddOn() {
+            if (!selectedTournament || !currentUser.id || currentUser.id === 'guest') {
+                setCanRebuyNow(false);
+                setCanAddOnNow(false);
+                return;
+            }
+            if (selectedTournament.status === 'running') {
+                const [rebuyCheck, addOnCheck] = await Promise.all([
+                    tournamentService.canRebuy(selectedTournament.id, currentUser.id),
+                    tournamentService.canAddOn(selectedTournament.id),
+                ]);
+                setCanRebuyNow(rebuyCheck.allowed);
+                setCanAddOnNow(addOnCheck.allowed);
+            } else {
+                setCanRebuyNow(false);
+                setCanAddOnNow(false);
+            }
+        }
+        checkRebuyAddOn();
+    }, [selectedTournament, currentUser.id]);
+
+    // Handle Rebuy
+    const handleRebuy = async () => {
+        if (!selectedTournament) return;
+        setIsProcessingRebuy(true);
+        try {
+            const result = await tournamentService.processRebuy(selectedTournament.id, currentUser.id);
+            if (result.success) {
+                toast.success(`Rebuy successful! New stack: ${result.newStack?.toLocaleString()}`);
+                setCanRebuyNow(false);
+                // Refresh tournament
+                const updated = await tournamentService.getTournament(selectedTournament.id);
+                if (updated) setSelectedTournament(updated);
+            } else {
+                toast.error('Rebuy failed');
+            }
+        } catch (error) {
+            toast.error('Rebuy failed: ' + (error as Error).message);
+        }
+        setIsProcessingRebuy(false);
+    };
+
+    // Handle Add-On
+    const handleAddOn = async () => {
+        if (!selectedTournament) return;
+        setIsProcessingRebuy(true);
+        try {
+            const result = await tournamentService.processAddOn(selectedTournament.id, currentUser.id);
+            if (result.success) {
+                toast.success(`Add-on successful! New stack: ${result.newStack?.toLocaleString()}`);
+                setCanAddOnNow(false);
+                // Refresh tournament
+                const updated = await tournamentService.getTournament(selectedTournament.id);
+                if (updated) setSelectedTournament(updated);
+            } else {
+                toast.error('Add-on failed');
+            }
+        } catch (error) {
+            toast.error('Add-on failed: ' + (error as Error).message);
+        }
+        setIsProcessingRebuy(false);
     };
 
     if (isLoading) {
@@ -152,7 +259,7 @@ export default function TournamentPage() {
             <div className="tournament-header">
                 <div className="header-left">
                     <Link to={`/clubs/${clubId}`} className="back-link">← Back to Club</Link>
-                    <h1>🏆 Tournaments</h1>
+                    <h1> Tournaments</h1>
                 </div>
                 <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
                     + Create Tournament
@@ -177,8 +284,8 @@ export default function TournamentPage() {
                                 <div className="tourn-header">
                                     <span className="tourn-name">{tourn.name}</span>
                                     <span className={`tourn-status ${tourn.status}`}>
-                                        {tourn.status === 'registering' ? '🟢 Open' :
-                                            tourn.status === 'running' ? '🔴 Running' : '⏳ Soon'}
+                                        {tourn.status === 'registering' ? ' Open' :
+                                            tourn.status === 'running' ? ' Running' : ' Soon'}
                                     </span>
                                 </div>
                                 <div className="tourn-info">
@@ -186,8 +293,8 @@ export default function TournamentPage() {
                                     <span className="tourn-buyin">${tourn.buy_in} + ${tourn.rake}</span>
                                 </div>
                                 <div className="tourn-meta">
-                                    <span>👥 {tourn.current_players}/{tourn.max_players}</span>
-                                    <span>💰 ${tourn.prize_pool}</span>
+                                    <span> {tourn.current_players}/{tourn.max_players}</span>
+                                    <span> ${tourn.prize_pool}</span>
                                 </div>
                             </div>
                         ))
@@ -261,7 +368,7 @@ export default function TournamentPage() {
                                     {selectedTournament.payout_structure.slice(0, 5).map((payout, i) => (
                                         <div key={i} className="payout-item">
                                             <span className="payout-place">
-                                                {payout.place === 1 ? '🥇' : payout.place === 2 ? '🥈' : payout.place === 3 ? '🥉' : `${payout.place}th`}
+                                                {payout.place === 1 ? '' : payout.place === 2 ? '' : payout.place === 3 ? '' : `${payout.place}th`}
                                             </span>
                                             <span className="payout-percent">{payout.percentage}%</span>
                                             <span className="payout-amount">
@@ -285,13 +392,39 @@ export default function TournamentPage() {
                                         </button>
                                     )
                                 ) : selectedTournament.status === 'running' ? (
-                                    <button
-                                        className="btn btn-primary btn-block"
-                                        disabled={!isRegistered}
-                                        onClick={handleJoinTable}
-                                    >
-                                        {isRegistered ? 'Go to Table' : 'Tournament in Progress'}
-                                    </button>
+                                    <>
+                                        <button
+                                            className="btn btn-primary btn-block"
+                                            disabled={!isRegistered}
+                                            onClick={handleJoinTable}
+                                        >
+                                            {isRegistered ? 'Go to Table' : 'Tournament in Progress'}
+                                        </button>
+
+                                        {/* Rebuy Button */}
+                                        {canRebuyNow && (
+                                            <button
+                                                className="btn btn-warning btn-block"
+                                                style={{ marginTop: '0.5rem' }}
+                                                onClick={handleRebuy}
+                                                disabled={isProcessingRebuy}
+                                            >
+                                                {isProcessingRebuy ? ' Processing...' : ` Rebuy ($${selectedTournament.buy_in})`}
+                                            </button>
+                                        )}
+
+                                        {/* Add-On Button */}
+                                        {canAddOnNow && (
+                                            <button
+                                                className="btn btn-success btn-block"
+                                                style={{ marginTop: '0.5rem' }}
+                                                onClick={handleAddOn}
+                                                disabled={isProcessingRebuy}
+                                            >
+                                                {isProcessingRebuy ? ' Processing...' : `➕ Add-On ($${selectedTournament.buy_in})`}
+                                            </button>
+                                        )}
+                                    </>
                                 ) : null}
 
                                 {isOwner && (selectedTournament.status === 'registering' || selectedTournament.status === 'scheduled') && (
@@ -308,7 +441,7 @@ export default function TournamentPage() {
                         </>
                     ) : (
                         <div className="empty-detail">
-                            <div className="empty-icon">🏆</div>
+                            <div className="empty-icon"></div>
                             <h3>Select a Tournament</h3>
                             <p>Click on a tournament to view details and register.</p>
                         </div>

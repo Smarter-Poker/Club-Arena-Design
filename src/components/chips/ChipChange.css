@@ -1,0 +1,19 @@
+.chip-change {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.chip-change.positive {
+    color: #22c55e;
+}
+
+.chip-change.negative {
+    color: #ef4444;
+}
+
+.change-icon {
+    font-size: 0.7em;
+}

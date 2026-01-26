@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🏆 POT DISPLAY — Main Pot & Side Pots Visualization
+ *  POT DISPLAY — Main Pot & Side Pots Visualization
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * Displays the current pot amount(s) at the center of the poker table with:

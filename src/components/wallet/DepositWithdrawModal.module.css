@@ -1,0 +1,443 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 💳 DEPOSIT/WITHDRAW MODAL — Premium Dark Theme CSS
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.modal {
+    width: 100%;
+    max-width: 420px;
+    max-height: 90vh;
+    background: linear-gradient(180deg, #1a1a2e 0%, #16162a 100%);
+    border: 1px solid rgba(251, 191, 36, 0.2);
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6);
+}
+
+/* Header */
+.header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.header h2 {
+    margin: 0;
+    font-size: 20px;
+    color: white;
+    flex: 1;
+}
+
+.backBtn {
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.closeBtn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.closeBtn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+/* Balance Bar */
+.balanceBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 24px;
+    background: rgba(255, 255, 255, 0.03);
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.balanceValue {
+    font-weight: 700;
+    color: white;
+}
+
+/* Error */
+.error {
+    margin: 16px 24px 0;
+    padding: 12px;
+    background: rgba(239, 68, 68, 0.15);
+    border-radius: 8px;
+    color: #ef4444;
+    font-size: 14px;
+    text-align: center;
+}
+
+/* Method Grid */
+.methodGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 20px 24px;
+    overflow-y: auto;
+}
+
+.methodCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 20px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.methodCard:hover {
+    background: rgba(251, 191, 36, 0.1);
+    border-color: rgba(251, 191, 36, 0.3);
+    transform: translateY(-2px);
+}
+
+.methodIcon {
+    font-size: 28px;
+}
+
+.methodLabel {
+    font-weight: 600;
+    color: white;
+    font-size: 14px;
+}
+
+.methodDesc {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+}
+
+.methodFee {
+    font-size: 11px;
+    color: #10b981;
+    padding: 2px 8px;
+    background: rgba(16, 185, 129, 0.15);
+    border-radius: 10px;
+    margin-top: 4px;
+}
+
+/* Amount Section */
+.amountSection {
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.selectedMethod {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(251, 191, 36, 0.1);
+    border-radius: 10px;
+    color: #fbbf24;
+    font-weight: 500;
+}
+
+.processingTime {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.amountInput {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 14px;
+}
+
+.currency {
+    font-size: 32px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.amountInput input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 32px;
+    font-weight: 700;
+    outline: none;
+}
+
+.amountInput input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.quickAmounts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.quickAmounts button {
+    flex: 1;
+    min-width: 60px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.quickAmounts button:hover,
+.quickAmounts button.active {
+    background: rgba(251, 191, 36, 0.2);
+    border-color: #fbbf24;
+    color: #fbbf24;
+}
+
+.limits {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.addressInput {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.addressInput label {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.addressInput input {
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    color: white;
+    font-size: 15px;
+}
+
+.continueBtn {
+    padding: 16px;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    border: none;
+    border-radius: 12px;
+    color: #1a1a2e;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.continueBtn:hover:not(:disabled) {
+    transform: scale(1.02);
+}
+
+.continueBtn:disabled {
+    opacity: 0.5;
+}
+
+/* Confirm Section */
+.confirmSection {
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.summary {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+}
+
+.summaryRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.summaryRow.total {
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-weight: 700;
+    color: white;
+    font-size: 18px;
+}
+
+.methodInfo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.instructions {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.6;
+}
+
+.instructions ol {
+    margin: 8px 0 0 20px;
+    padding: 0;
+}
+
+.instructions li {
+    margin-bottom: 6px;
+}
+
+.confirmBtn {
+    padding: 16px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.confirmBtn:disabled {
+    opacity: 0.7;
+}
+
+/* Success Section */
+.successSection {
+    padding: 40px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+}
+
+.successIcon {
+    font-size: 64px;
+}
+
+.successSection h3 {
+    margin: 0;
+    font-size: 22px;
+    color: white;
+}
+
+.successSection p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 15px;
+}
+
+.paymentDetails {
+    padding: 16px 24px;
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: 12px;
+}
+
+.destination {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fbbf24;
+}
+
+.referenceBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 16px 24px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+}
+
+.refLabel {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+}
+
+.refValue {
+    font-size: 24px;
+    font-weight: 700;
+    color: white;
+    font-family: monospace;
+    letter-spacing: 2px;
+}
+
+.hint {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.doneBtn {
+    width: 100%;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+}
+
+.doneBtn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}

@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🚀 ANTI-GRAVITY BOOT — Fail-Closed System Initialization
+ *  ANTI-GRAVITY BOOT — Fail-Closed System Initialization
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * This module ensures the application fails gracefully when required
@@ -15,7 +15,7 @@
  */
 
 import React, { useEffect, useState, useCallback, ReactNode } from 'react';
-import { supabase, isDemoMode } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -29,7 +29,6 @@ export interface BootStatus {
         timestamp: number;
     };
     errors: string[];
-    isDemoMode: boolean;
 }
 
 interface AntiGravityBootProps {
@@ -106,7 +105,7 @@ function SystemOffline({ status, onRetry }: SystemOfflineProps) {
             <div style={styles.innerContainer}>
                 {/* Logo/Icon */}
                 <div style={styles.iconContainer}>
-                    <span style={styles.icon}>⚠️</span>
+                    <span style={styles.icon}></span>
                 </div>
 
                 {/* Title */}
@@ -121,7 +120,7 @@ function SystemOffline({ status, onRetry }: SystemOfflineProps) {
                     <ul style={styles.errorList}>
                         {status.errors.map((error, i) => (
                             <li key={i} style={styles.errorItem}>
-                                <span style={styles.errorBullet}>✗</span>
+                                <span style={styles.errorBullet}></span>
                                 {error}
                             </li>
                         ))}
@@ -132,13 +131,13 @@ function SystemOffline({ status, onRetry }: SystemOfflineProps) {
                 <div style={styles.statusGrid}>
                     <div style={styles.statusItem}>
                         <span style={status.checks.envVars ? styles.checkPass : styles.checkFail}>
-                            {status.checks.envVars ? '✓' : '✗'}
+                            {status.checks.envVars ? '' : ''}
                         </span>
                         <span>Environment Variables</span>
                     </div>
                     <div style={styles.statusItem}>
                         <span style={status.checks.supabase ? styles.checkPass : styles.checkFail}>
-                            {status.checks.supabase ? '✓' : '✗'}
+                            {status.checks.supabase ? '' : ''}
                         </span>
                         <span>Database Connection</span>
                     </div>
@@ -148,13 +147,6 @@ function SystemOffline({ status, onRetry }: SystemOfflineProps) {
                 <button style={styles.retryButton} onClick={onRetry}>
                     Retry Connection
                 </button>
-
-                {/* Demo Mode Option */}
-                {!status.isDemoMode && (
-                    <p style={styles.demoHint}>
-                        Development mode available with demo data
-                    </p>
-                )}
 
                 {/* Timestamp */}
                 <p style={styles.timestamp}>
@@ -217,7 +209,6 @@ export function AntiGravityBoot({ children, onBootComplete }: AntiGravityBootPro
             timestamp: Date.now(),
         },
         errors: [],
-        isDemoMode,
     });
 
     const runBootSequence = useCallback(async () => {
@@ -234,38 +225,33 @@ export function AntiGravityBoot({ children, onBootComplete }: AntiGravityBootPro
         // STEP 1: Check environment variables
         const envCheck = checkEnvironmentVariables();
 
-        if (!envCheck.success && !isDemoMode) {
+        if (!envCheck.success) {
             envCheck.missing.forEach(v => errors.push(`Missing: ${v}`));
         }
 
         setStatus(prev => ({
             ...prev,
             stage: 'testing_connection',
-            checks: { ...prev.checks, envVars: envCheck.success || isDemoMode },
+            checks: { ...prev.checks, envVars: envCheck.success },
         }));
 
-        // STEP 2: Test Supabase connection (skip detailed check in demo mode)
-        let supabaseCheck = { success: true, error: undefined as string | undefined };
-
-        if (!isDemoMode) {
-            supabaseCheck = await testSupabaseConnection();
-            if (!supabaseCheck.success && supabaseCheck.error) {
-                errors.push(`Database: ${supabaseCheck.error}`);
-            }
+        // STEP 2: Test Supabase connection
+        const supabaseCheck = await testSupabaseConnection();
+        if (!supabaseCheck.success && supabaseCheck.error) {
+            errors.push(`Database: ${supabaseCheck.error}`);
         }
 
         // STEP 3: Determine final status
-        const isReady = (envCheck.success || isDemoMode) && supabaseCheck.success;
+        const isReady = envCheck.success && supabaseCheck.success;
 
         const finalStatus: BootStatus = {
             stage: isReady ? 'ready' : 'offline',
             checks: {
-                envVars: envCheck.success || isDemoMode,
+                envVars: envCheck.success,
                 supabase: supabaseCheck.success,
                 timestamp: Date.now(),
             },
             errors,
-            isDemoMode,
         };
 
         setStatus(finalStatus);

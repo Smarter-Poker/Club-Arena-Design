@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 📊 REAL-TIME RESULTS — Session Stats Panel
+ *  REAL-TIME RESULTS — Session Stats Panel
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * PokerBros-style real-time results panel showing:

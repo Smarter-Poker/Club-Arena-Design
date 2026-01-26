@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ENGINE — Club Promotion Rules Modal
+ *  CLUB ENGINE — Club Promotion Rules Modal
  * ═══════════════════════════════════════════════════════════════════════════════
  * Complete legal disclaimer for club owners and operators
  * MUST be acknowledged before creating a club

@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🔗 SHARE HAND — PokerBros-Style Shareable Hand Replay
+ *  SHARE HAND — PokerBros-Style Shareable Hand Replay
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Complete shareable hand replay system:
@@ -187,10 +187,59 @@ export function decodeHandFromUrl(encoded: string): ShareableHand | null {
             return player;
         });
 
-        // Parse preflop
-        const preflop: ShareableAction[] = []; // Would parse from parts[6]
+        // Parse preflop actions from parts[6]
+        const preflop: ShareableAction[] = [];
+        if (parts[6]) {
+            const actionStrings = parts[6].split(',');
+            for (const actionStr of actionStrings) {
+                if (actionStr.length >= 2) {
+                    const seat = parseInt(actionStr[0]);
+                    const actionCode = actionStr[1];
+                    const actionMap: Record<string, ShareableAction['action']> = {
+                        'F': 'FOLD', 'C': 'CALL', 'X': 'CHECK',
+                        'B': 'BET', 'R': 'RAISE', 'A': 'ALL_IN'
+                    };
+                    const action: ShareableAction = {
+                        seat,
+                        action: actionMap[actionCode] || 'CHECK',
+                    };
+                    if (actionStr.length > 2) {
+                        action.amount = parseInt(actionStr.substring(2), 36);
+                    }
+                    preflop.push(action);
+                }
+            }
+        }
 
-        // Build hand object (simplified)
+        // Parse flop if present (parts[7])
+        let flop: ShareableHand['flop'] = undefined;
+        if (parts[7] && parts[7].includes('|')) {
+            const [cardsStr, actionsStr] = parts[7].split('|');
+            const flopCards = decodeCards(cardsStr, 3);
+            const flopActions: ShareableAction[] = [];
+            // Parse flop actions similar to preflop
+            if (actionsStr) {
+                const actionStrings = actionsStr.split(',');
+                for (const actionStr of actionStrings) {
+                    if (actionStr.length >= 2) {
+                        const seat = parseInt(actionStr[0]);
+                        const actionCode = actionStr[1];
+                        const actionMap: Record<string, ShareableAction['action']> = {
+                            'F': 'FOLD', 'C': 'CALL', 'X': 'CHECK',
+                            'B': 'BET', 'R': 'RAISE', 'A': 'ALL_IN'
+                        };
+                        flopActions.push({
+                            seat,
+                            action: actionMap[actionCode] || 'CHECK',
+                            amount: actionStr.length > 2 ? parseInt(actionStr.substring(2), 36) : undefined,
+                        });
+                    }
+                }
+            }
+            flop = { cards: flopCards, actions: flopActions };
+        }
+
+        // Build hand object
         const hand: ShareableHand = {
             id: encoded.substring(0, 12),
             tableName: 'Shared Hand',
@@ -200,6 +249,7 @@ export function decodeHandFromUrl(encoded: string): ShareableHand | null {
             buttonSeat,
             players,
             preflop,
+            flop,
             potTotal: parseInt(parts[10], 36) || 0,
             winners: [],
         };
@@ -264,9 +314,9 @@ export function ShareHand({
         const potStr = `$${hand.potTotal.toLocaleString()}`;
 
         if (winner?.isHero) {
-            return `I just won a ${potStr} pot in ${hand.stakes} ${hand.variant}! 🏆\n\nWatch the replay on ${clubName}! 🎰`;
+            return `I just won a ${potStr} pot in ${hand.stakes} ${hand.variant}! \n\nWatch the replay on ${clubName}! `;
         }
-        return `Check out this ${potStr} pot hand from ${hand.stakes} ${hand.variant}!\n\nWatch the video replay on ${clubName}! 🃏`;
+        return `Check out this ${potStr} pot hand from ${hand.stakes} ${hand.variant}!\n\nWatch the video replay on ${clubName}! `;
     }, [hand, clubName]);
 
     // Copy link
@@ -322,7 +372,7 @@ export function ShareHand({
             <div className="share-hand-modal" onClick={(e) => e.stopPropagation()}>
                 {/* Header */}
                 <div className="share-hand__header">
-                    <h2 className="share-hand__title">🔗 Share Hand</h2>
+                    <h2 className="share-hand__title"> Share Hand</h2>
                     <button className="share-hand__close" onClick={onClose}>×</button>
                 </div>
 
@@ -368,19 +418,19 @@ export function ShareHand({
                         className={`share-hand__tab ${activeTab === 'link' ? 'share-hand__tab--active' : ''}`}
                         onClick={() => setActiveTab('link')}
                     >
-                        🔗 Link
+                         Link
                     </button>
                     <button
                         className={`share-hand__tab ${activeTab === 'social' ? 'share-hand__tab--active' : ''}`}
                         onClick={() => setActiveTab('social')}
                     >
-                        📱 Social
+                         Social
                     </button>
                     <button
                         className={`share-hand__tab ${activeTab === 'embed' ? 'share-hand__tab--active' : ''}`}
                         onClick={() => setActiveTab('embed')}
                     >
-                        📋 Embed
+                         Embed
                     </button>
                 </div>
 
@@ -399,13 +449,13 @@ export function ShareHand({
                                     className={`share-hand__copy-btn ${copied ? 'share-hand__copy-btn--success' : ''}`}
                                     onClick={handleCopy}
                                 >
-                                    {copied ? '✓' : '📋'}
+                                    {copied ? '' : ''}
                                 </button>
                             </div>
 
                             {'share' in navigator && (
                                 <button className="share-hand__native-share" onClick={handleNativeShare}>
-                                    📤 Share
+                                     Share
                                 </button>
                             )}
                         </div>
@@ -438,7 +488,7 @@ export function ShareHand({
                                 className="share-hand__social-btn share-hand__social-btn--whatsapp"
                                 onClick={() => handleSocialShare('whatsapp')}
                             >
-                                <span className="share-hand__social-icon">📱</span>
+                                <span className="share-hand__social-icon"></span>
                                 WhatsApp
                             </button>
                         </div>

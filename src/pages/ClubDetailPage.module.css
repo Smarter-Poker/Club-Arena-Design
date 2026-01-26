@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB DETAIL PAGE — Styles
+ *  CLUB DETAIL PAGE — Styles
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
@@ -104,12 +104,19 @@
 }
 
 .inviteButton,
-.createTableButton {
+.createTableButton,
+.financialsButton,
+.announcementsButton,
+.settingsButton {
     padding: 0.75rem 1.25rem;
     border-radius: 0.5rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
 }
 
 .inviteButton {
@@ -127,6 +134,43 @@
     background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
     border: none;
     color: #000;
+}
+
+.createTableButton:hover {
+    filter: brightness(1.1);
+}
+
+.financialsButton {
+    background: transparent;
+    border: 1px solid #10b981;
+    color: #10b981;
+}
+
+.financialsButton:hover {
+    background: #10b981;
+    color: #000;
+}
+
+.announcementsButton {
+    background: transparent;
+    border: 1px solid #f59e0b;
+    color: #f59e0b;
+}
+
+.announcementsButton:hover {
+    background: #f59e0b;
+    color: #000;
+}
+
+.settingsButton {
+    background: transparent;
+    border: 1px solid #6b7280;
+    color: #9ca3af;
+}
+
+.settingsButton:hover {
+    background: #6b7280;
+    color: #fff;
 }
 
 /* Stats Row */
@@ -552,6 +596,237 @@
     cursor: pointer;
 }
 
+/* Agents Tab */
+.agentsContainer {
+    padding: 0;
+}
+
+.agentsHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.agentsHeader h3 {
+    margin: 0;
+    color: #fff;
+}
+
+.emptyState {
+    text-align: center;
+    padding: 3rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 1rem;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.emptyState p {
+    color: var(--text-muted);
+    margin: 0 0 0.5rem;
+}
+
+.emptyHint {
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem !important;
+}
+
+.agentsList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.agentCard {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.2s ease;
+}
+
+.agentCard:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--accent);
+}
+
+.agentAvatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.agentInfo {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.agentName {
+    font-weight: 600;
+    color: #fff;
+}
+
+.agentRole {
+    font-size: 0.75rem;
+    color: #8b5cf6;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.agentStats {
+    display: flex;
+    gap: 1rem;
+}
+
+.agentStat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 0.5rem;
+}
+
+.agentStat .statLabel {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.agentStat .statValue {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+/* Member Action Menu */
+.memberMenu {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: var(--bg-dark);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    z-index: 100;
+    min-width: 140px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.memberMenu button {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background: none;
+    border: none;
+    color: #fff;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 0.25rem;
+    font-size: 0.85rem;
+}
+
+.memberMenu button:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Modal Overlay */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal {
+    background: var(--bg-dark);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    max-width: 400px;
+    width: 90%;
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.modalHeader h3 {
+    margin: 0;
+    color: #fff;
+}
+
+.modalHeader button {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.modalContent {
+    text-align: center;
+}
+
+.modalContent p {
+    color: var(--text-muted);
+    margin: 0 0 1.5rem;
+}
+
+.primaryButton {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+    border: none;
+    border-radius: 0.5rem;
+    color: #000;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.dashboardButton {
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: transparent;
+    border: 1px solid #3b82f6;
+    color: #3b82f6;
+}
+
+.dashboardButton:hover {
+    background: #3b82f6;
+    color: #fff;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .header {
@@ -570,5 +845,14 @@
     .membersTable {
         display: block;
         overflow-x: auto;
+    }
+
+    .agentCard {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .agentStats {
+        justify-content: center;
     }
 }

@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🏛️ LOBBY COMPONENTS — Index Exports
+ *  LOBBY COMPONENTS — Index Exports
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
@@ -32,3 +32,7 @@ export type { CashTableListProps, CashTable, SortField, SortDirection } from './
 // Tournament List
 export { default as TournamentList } from './TournamentList';
 export type { TournamentListProps, Tournament, TournamentStatus, TournamentType } from './TournamentList';
+
+// New Components
+export { LobbyTableList } from './LobbyTableList';
+export { WaitlistManager } from './WaitlistManager';

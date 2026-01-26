@@ -1,12 +1,12 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🏦 CASHIER MODAL — Chip Management
+ *  CASHIER MODAL — Chip Management
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Allows players to:
  * - View current chip balance
- * - Purchase chips (mock flow)
- * - Withdraw chips (mock flow)
+ * - Purchase chips (via onDeposit callback)
+ * - Withdraw chips (via onWithdraw callback)
  * - View transaction history
  */
 
@@ -35,7 +35,7 @@ export function CashierModal({
     isOpen,
     onClose,
     balance,
-    currency = '💎',
+    currency = '',
     transactions = [],
     onDeposit,
     onWithdraw,
@@ -69,7 +69,7 @@ export function CashierModal({
                 {/* Header */}
                 <div className="cashier-modal__header">
                     <div className="cashier-modal__title-group">
-                        <span className="cashier-modal__icon">🏦</span>
+                        <span className="cashier-modal__icon"></span>
                         <h2 className="cashier-modal__title">Cashier</h2>
                     </div>
                     <button className="cashier-modal__close" onClick={onClose}>×</button>

@@ -1,0 +1,218 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 👥 FRIEND LIST PANEL — Premium Dark Theme CSS
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+.panel {
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, #1a1a2e 0%, #16162a 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    overflow: hidden;
+    max-height: 400px;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: white;
+}
+
+.onlineCount {
+    font-size: 12px;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.15);
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+/* Search Bar */
+.searchBar {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.searchBar input {
+    flex: 1;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+}
+
+.searchBar input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.addBtn {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    border: none;
+    border-radius: 8px;
+    color: #1a1a2e;
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* Add Friend Row */
+.addFriendRow {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 12px;
+}
+
+.addFriendRow input {
+    flex: 1;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+}
+
+.addFriendRow button {
+    padding: 10px 16px;
+    background: #3b82f6;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.addFriendRow button:disabled {
+    opacity: 0.5;
+}
+
+/* Error */
+.error {
+    margin: 0 16px 12px;
+    padding: 8px 12px;
+    background: rgba(239, 68, 68, 0.15);
+    border-radius: 6px;
+    color: #ef4444;
+    font-size: 13px;
+}
+
+/* List */
+.list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+}
+
+.loading,
+.empty {
+    padding: 32px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Friend Row */
+.friendRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    transition: background 0.2s ease;
+}
+
+.friendRow:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* Avatar */
+.avatar {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar span:first-child {
+    font-size: 20px;
+}
+
+.statusDot {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    font-size: 10px;
+}
+
+/* Info */
+.info {
+    flex: 1;
+    min-width: 0;
+}
+
+.name {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.playing {
+    display: block;
+    font-size: 11px;
+    color: #10b981;
+    margin-top: 2px;
+}
+
+/* Actions */
+.actions {
+    display: flex;
+    gap: 4px;
+}
+
+.iconBtn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.iconBtn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}

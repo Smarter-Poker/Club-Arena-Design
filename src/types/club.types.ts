@@ -1,13 +1,13 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ENGINE — Type Definitions
+ *  CLUB ENGINE — Type Definitions
  * ═══════════════════════════════════════════════════════════════════════════════
  * PokerBros Clone — Better
  * Complete type system for clubs, tables, games, and players
  */
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🏛️ CLUBS
+//  CLUBS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface Club {
@@ -49,7 +49,7 @@ export interface ClubWithDistance extends Club {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🤝 UNIONS (Club Networks)
+//  UNIONS (Club Networks)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface Union {
@@ -71,7 +71,7 @@ export interface UnionRules {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 👥 MEMBERS & ROLES
+//  MEMBERS & ROLES
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface ClubMember {
@@ -102,7 +102,7 @@ export const ROLE_PERMISSIONS: Record<MemberRole, string[]> = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 👤 USER PROFILES
+//  USER PROFILES
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface UserProfile {
@@ -122,7 +122,7 @@ export type UserStatus = 'online' | 'offline' | 'away' | 'playing';
 export type VIPLevel = 'none' | 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🎰 TABLES
+//  TABLES
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface Table {
@@ -227,7 +227,7 @@ export type PlayerStatus =
     | 'away';      // Marked away
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🃏 CARDS & HANDS
+//  CARDS & HANDS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface Card {
@@ -297,7 +297,7 @@ export interface HandWinner {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🏆 TOURNAMENTS
+//  TOURNAMENTS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface Tournament {
@@ -363,7 +363,7 @@ export interface TournamentEntry {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 💰 ECONOMY
+//  ECONOMY
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface ChipTransaction {
@@ -403,7 +403,7 @@ export interface DiamondTransaction {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 📊 PLAYER STATISTICS
+//  PLAYER STATISTICS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface PlayerStats {
@@ -439,7 +439,7 @@ export const PLAYER_STYLES: PlayerStyleIcon[] = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🎁 IN-APP ITEMS
+//  IN-APP ITEMS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface PlayerInventory {
@@ -459,7 +459,7 @@ export interface Emoji {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🛡️ SECURITY
+//  SECURITY
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface BlacklistEntry {
@@ -493,7 +493,7 @@ export type SecurityEventType =
     | 'ip_violation';
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 🎰 JACKPOTS
+//  JACKPOTS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface BadBeatJackpot {
@@ -622,7 +622,7 @@ export const MASTERY_GATE_THRESHOLD = 0.85; // 85% accuracy to unlock next level
 export const MASTERY_MIN_QUESTIONS = 20; // Minimum questions to evaluate mastery
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 📊 ARENA STATS
+//  ARENA STATS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface ArenaStats {

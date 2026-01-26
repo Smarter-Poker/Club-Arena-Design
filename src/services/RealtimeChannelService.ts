@@ -16,7 +16,7 @@
  * - hand:{id} — Hand replay streaming
  */
 
-import { supabase, isDemoMode } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import type { RealtimeChannel, RealtimePresenceState } from '@supabase/supabase-js';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -93,20 +93,7 @@ class RealtimeChannelService {
         const channelName = `club:${clubId}`;
 
         if (this.subscriptions.has(channelName)) {
-            console.log(`Already subscribed to ${channelName}`);
             return () => this.unsubscribeFromClub(clubId);
-        }
-
-        if (isDemoMode) {
-            console.log(`[Demo] Would subscribe to ${channelName}`);
-            // Simulate some demo presence
-            setTimeout(() => {
-                callbacks.onPresenceSync?.([
-                    { ...userInfo, joinedAt: new Date().toISOString() },
-                    { id: 'demo-1', displayName: 'Demo Player', playerNumber: 1, avatarUrl: '', status: 'online', joinedAt: new Date().toISOString() },
-                ]);
-            }, 500);
-            return () => { };
         }
 
         const channel = supabase.channel(channelName, {
@@ -145,7 +132,6 @@ class RealtimeChannelService {
                     ...userInfo,
                     joinedAt: new Date().toISOString(),
                 });
-                console.log(`📡 Subscribed to ${channelName}`);
             }
         });
 
@@ -171,7 +157,6 @@ class RealtimeChannelService {
             await subscription.channel.unsubscribe();
             this.subscriptions.delete(channelName);
             this.presenceState.delete(clubId);
-            console.log(`📡 Unsubscribed from ${channelName}`);
         }
     }
 
@@ -182,7 +167,7 @@ class RealtimeChannelService {
         const channelName = `club:${clubId}`;
         const subscription = this.subscriptions.get(channelName);
 
-        if (!subscription && !isDemoMode) {
+        if (!subscription) {
             console.warn(`Not subscribed to ${channelName}`);
             return;
         }
@@ -191,11 +176,6 @@ class RealtimeChannelService {
             ...event,
             timestamp: new Date().toISOString(),
         };
-
-        if (isDemoMode) {
-            console.log(`[Demo] Would broadcast to ${channelName}:`, fullEvent);
-            return;
-        }
 
         await subscription!.channel.send({
             type: 'broadcast',
@@ -234,11 +214,6 @@ class RealtimeChannelService {
             return () => this.unsubscribeFromTournament(tournamentId);
         }
 
-        if (isDemoMode) {
-            console.log(`[Demo] Would subscribe to ${channelName}`);
-            return () => { };
-        }
-
         const channel = supabase.channel(channelName);
 
         channel.on('broadcast', { event: 'tournament_event' }, ({ payload }) => {
@@ -264,7 +239,6 @@ class RealtimeChannelService {
 
         channel.subscribe((status) => {
             if (status === 'SUBSCRIBED') {
-                console.log(`📡 Subscribed to ${channelName}`);
             }
         });
 
@@ -288,7 +262,6 @@ class RealtimeChannelService {
         if (subscription) {
             await subscription.channel.unsubscribe();
             this.subscriptions.delete(channelName);
-            console.log(`📡 Unsubscribed from ${channelName}`);
         }
     }
 
@@ -296,13 +269,8 @@ class RealtimeChannelService {
      * Broadcast tournament event
      */
     async broadcastTournamentEvent(tournamentId: string, event: Omit<TournamentEvent, 'timestamp'>): Promise<void> {
-        if (isDemoMode) {
-            console.log(`[Demo] Tournament event:`, event);
-            return;
-        }
-
         const channelName = `tournament:${tournamentId}`;
-        let subscription = this.subscriptions.get(channelName);
+        const subscription = this.subscriptions.get(channelName);
 
         // Create temporary channel if not subscribed
         if (!subscription) {
@@ -339,12 +307,7 @@ class RealtimeChannelService {
             onEvent?: (event: HandEvent) => void;
         }
     ): () => void {
-        const channelName = `hand:${handId}`;
-
-        if (isDemoMode) {
-            console.log(`[Demo] Would subscribe to ${channelName}`);
-            return () => { };
-        }
+        const channelName = `hand:${handId} `;
 
         const channel = supabase.channel(channelName);
 
@@ -354,7 +317,6 @@ class RealtimeChannelService {
 
         channel.subscribe((status) => {
             if (status === 'SUBSCRIBED') {
-                console.log(`📡 Subscribed to ${channelName}`);
             }
         });
 
@@ -372,7 +334,7 @@ class RealtimeChannelService {
      * Unsubscribe from hand channel
      */
     async unsubscribeFromHand(handId: string): Promise<void> {
-        const channelName = `hand:${handId}`;
+        const channelName = `hand:${handId} `;
         const subscription = this.subscriptions.get(channelName);
 
         if (subscription) {
@@ -385,12 +347,7 @@ class RealtimeChannelService {
      * Stream hand events for replay
      */
     async streamHandReplay(handId: string, events: HandEvent[], speedMs: number = 1000): Promise<void> {
-        if (isDemoMode) {
-            console.log(`[Demo] Would stream ${events.length} events for hand ${handId}`);
-            return;
-        }
-
-        const channel = supabase.channel(`hand:${handId}`);
+        const channel = supabase.channel(`hand:${handId} `);
         await channel.subscribe();
 
         for (const event of events) {
@@ -420,11 +377,6 @@ class RealtimeChannelService {
         }
     ): () => void {
         const channelName = 'lobby:global';
-
-        if (isDemoMode) {
-            console.log(`[Demo] Would subscribe to ${channelName}`);
-            return () => { };
-        }
 
         const channel = supabase.channel(channelName);
 
@@ -492,7 +444,6 @@ class RealtimeChannelService {
         await Promise.all(promises);
         this.subscriptions.clear();
         this.presenceState.clear();
-        console.log('📡 Unsubscribed from all channels');
     }
 }
 

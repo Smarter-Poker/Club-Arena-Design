@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 👥 FRIENDS LIST — Social Hub
+ *  FRIENDS LIST — Social Hub
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Manage friends and social connections.
@@ -167,7 +167,7 @@ function FriendItem({ friend, onChat, onRemove, onInvite }: {
 
             <div className="friend-actions">
                 <button className="action-icon-btn" onClick={() => onChat(friend.id)} title="Message">
-                    💬
+                    
                 </button>
                 <button className="action-icon-btn" onClick={() => setShowMenu(!showMenu)} title="Menu">
                     ⋮

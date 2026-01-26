@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🏛️ SETTLEMENT SERVICE — Weekly Financial Settlement Automation
+ *  SETTLEMENT SERVICE — Weekly Financial Settlement Automation
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Handles Union Cross-Club Wires and Monday Payouts.
@@ -13,9 +13,10 @@
  * Wire = (Net Player P/L) + (Gross Rake Return) - (Union Tax 10%)
  */
 
-import { supabase, isDemoMode } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { CommissionService } from './CommissionService';
 import { WalletService } from './WalletService';
+import { pushNotificationService } from './PushNotificationService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -92,24 +93,6 @@ export interface SettlementSummary {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// DEMO DATA
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const DEMO_PERIOD: SettlementPeriod = {
-    id: 'period_current',
-    periodNumber: 2,
-    year: 2026,
-    startAt: '2026-01-06T00:00:00Z',
-    endAt: '2026-01-12T23:59:59Z',
-    status: 'open',
-    totalRakeCollected: 125000,
-    totalBBJContributions: 6250,
-    totalPlayerWinnings: 450000,
-    totalPlayerLosses: 475000,
-    totalHandsDealt: 15420,
-};
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // SERVICE
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -122,32 +105,47 @@ export const SettlementService = {
      * Get or create the current settlement period
      */
     async getCurrentPeriod(): Promise<SettlementPeriod> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 200));
-            return DEMO_PERIOD;
-        }
-
         const { data, error } = await supabase.rpc('get_current_settlement_period');
         if (error) throw error;
 
-        const { data: period } = await supabase
-            .from('settlement_periods')
-            .select('*')
-            .eq('id', data)
-            .single();
+        // RPC returns table - use first row or create default period
+        if (data && data.length > 0) {
+            const period = data[0];
+            return {
+                id: period.id || 'default',
+                periodNumber: 1,
+                year: new Date().getFullYear(),
+                startAt: period.period_start,
+                endAt: period.period_end,
+                status: period.status || 'open',
+                totalRakeCollected: period.total_rake || 0,
+                totalBBJContributions: 0,
+                totalPlayerWinnings: 0,
+                totalPlayerLosses: 0,
+                totalHandsDealt: 0,
+            };
+        }
 
-        return this.mapPeriod(period);
+        // Return default empty period if none exists
+        return {
+            id: 'default',
+            periodNumber: 1,
+            year: new Date().getFullYear(),
+            startAt: new Date().toISOString(),
+            endAt: new Date().toISOString(),
+            status: 'open',
+            totalRakeCollected: 0,
+            totalBBJContributions: 0,
+            totalPlayerWinnings: 0,
+            totalPlayerLosses: 0,
+            totalHandsDealt: 0,
+        };
     },
 
     /**
      * Get historical periods
      */
     async getPeriodHistory(limit: number = 12): Promise<SettlementPeriod[]> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 300));
-            return [DEMO_PERIOD];
-        }
-
         const { data, error } = await supabase
             .from('settlement_periods')
             .select('*')
@@ -162,12 +160,6 @@ export const SettlementService = {
      * Close period and begin processing
      */
     async closePeriod(periodId: string): Promise<boolean> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 500));
-            DEMO_PERIOD.status = 'processing';
-            return true;
-        }
-
         const { error } = await supabase.rpc('close_settlement_period', {
             p_period_id: periodId,
         });
@@ -207,35 +199,6 @@ export const SettlementService = {
      * Generate all settlements for a period
      */
     async generateSettlements(periodId: string): Promise<SettlementSummary> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 800));
-            return {
-                period: DEMO_PERIOD,
-                clubSettlements: [
-                    {
-                        id: 'cs_1', periodId, clubId: 'club_1', clubName: 'Diamond Club',
-                        totalRakeCollected: 50000, totalJackpotContributions: 2500, totalPromoCosts: 1000,
-                        uniquePlayers: 145, totalHandsDealt: 5200, platformFee: 5000,
-                        agentCommissions: 15000, grossRevenue: 50000, netRevenue: 30000, status: 'pending',
-                    },
-                ],
-                agentSettlements: [
-                    {
-                        id: 'as_1', periodId, agentId: 'agent_1', agentName: 'Agent Smith',
-                        totalRakeGenerated: 25000, commissionRate: 0.50, commissionEarned: 12500,
-                        creditExtended: 5000, creditRepaid: 3000, netSettlement: 10500,
-                        activePlayers: 45, status: 'pending',
-                    },
-                ],
-                unionWires: [
-                    this.calculateUnionWire('club_1', 'Diamond Club', 25000, 50000),
-                ],
-                totalPlatformRevenue: 5000,
-                totalAgentPayouts: 12500,
-                totalPlayerRakeback: 6250,
-            };
-        }
-
         const { data, error } = await supabase.rpc('generate_period_settlements', {
             p_period_id: periodId,
         });
@@ -248,16 +211,6 @@ export const SettlementService = {
      * Calculate agent settlement for a specific agent
      */
     async calculateAgentSettlement(periodId: string, agentId: string): Promise<AgentSettlement> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 400));
-            return {
-                id: 'as_demo', periodId, agentId, agentName: 'Demo Agent',
-                totalRakeGenerated: 15000, commissionRate: 0.50, commissionEarned: 7500,
-                creditExtended: 2000, creditRepaid: 2000, netSettlement: 7500,
-                activePlayers: 25, status: 'pending',
-            };
-        }
-
         const { data, error } = await supabase.rpc('calculate_agent_settlement', {
             p_period_id: periodId,
             p_agent_id: agentId,
@@ -279,15 +232,6 @@ export const SettlementService = {
         playersWithRakeback: number;
         totalDisbursed: number;
     }> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 1000));
-            return {
-                agentsPaid: 12,
-                playersWithRakeback: 156,
-                totalDisbursed: 45000,
-            };
-        }
-
         // 1. Get all approved agent settlements
         const { data: agentSettlements } = await supabase
             .from('agent_settlements')
@@ -312,6 +256,13 @@ export const SettlementService = {
                     .update({ status: 'paid', paid_at: new Date().toISOString() })
                     .eq('id', settlement.id);
 
+                // Send push notification to agent
+                pushNotificationService.notifySettlement(
+                    settlement.agent_id,
+                    settlement.net_settlement,
+                    'Weekly Commission'
+                ).catch(err => console.warn('[Settlement] Agent push failed:', err));
+
                 agentsPaid++;
                 totalDisbursed += settlement.net_settlement;
             } catch (err) {
@@ -334,6 +285,14 @@ export const SettlementService = {
                     snapshot.rakeback_earned,
                     periodId
                 );
+
+                // Send push notification to player
+                pushNotificationService.notifySettlement(
+                    snapshot.player_id,
+                    snapshot.rakeback_earned,
+                    'Weekly Rakeback'
+                ).catch(err => console.warn('[Settlement] Player push failed:', err));
+
                 playersWithRakeback++;
                 totalDisbursed += snapshot.rakeback_earned;
             } catch (err) {
@@ -355,16 +314,6 @@ export const SettlementService = {
      * Get club settlement report
      */
     async getClubReport(clubId: string, periodId?: string): Promise<ClubSettlement | null> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 300));
-            return {
-                id: 'cs_demo', periodId: periodId || 'period_current', clubId, clubName: 'Demo Club',
-                totalRakeCollected: 35000, totalJackpotContributions: 1750, totalPromoCosts: 500,
-                uniquePlayers: 89, totalHandsDealt: 3200, platformFee: 3500,
-                agentCommissions: 10500, grossRevenue: 35000, netRevenue: 21000, status: 'pending',
-            };
-        }
-
         const { data, error } = await supabase
             .from('club_settlements')
             .select('*')
@@ -380,16 +329,6 @@ export const SettlementService = {
      * Get agent settlement report
      */
     async getAgentReport(agentId: string, periodId?: string): Promise<AgentSettlement | null> {
-        if (isDemoMode) {
-            await new Promise(r => setTimeout(r, 300));
-            return {
-                id: 'as_demo', periodId: periodId || 'period_current', agentId, agentName: 'Demo Agent',
-                totalRakeGenerated: 18000, commissionRate: 0.45, commissionEarned: 8100,
-                creditExtended: 1500, creditRepaid: 1500, netSettlement: 8100,
-                activePlayers: 32, status: 'pending',
-            };
-        }
-
         const { data, error } = await supabase
             .from('agent_settlements')
             .select('*')

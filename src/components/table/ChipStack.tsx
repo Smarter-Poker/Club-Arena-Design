@@ -1,5 +1,5 @@
 /**
- * 🎰 CHIP STACK COMPONENT
+ *  CHIP STACK COMPONENT
  * Premium visual chip stacks with denomination colors and animations
  */
 

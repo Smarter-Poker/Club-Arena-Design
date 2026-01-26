@@ -1,0 +1,250 @@
+.table-creation-page {
+    min-height: 100vh;
+    background: var(--bg-primary);
+    padding-bottom: 2rem;
+}
+
+.creation-content {
+    padding: 1rem;
+}
+
+.error-message {
+    background: rgba(var(--accent-danger-rgb), 0.15);
+    border: 1px solid var(--accent-danger);
+    color: var(--accent-danger);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.creation-section {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.creation-section h3 {
+    margin: 0 0 1rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.name-input {
+    width: 100%;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.game-types {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.game-type-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-tertiary);
+    cursor: pointer;
+}
+
+.game-type-btn.active {
+    border-color: var(--accent-primary);
+    background: rgba(var(--accent-primary-rgb), 0.1);
+}
+
+.game-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.game-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.game-type-btn.active .game-label {
+    color: var(--accent-primary);
+}
+
+.stakes-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.stake-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.stake-btn.active {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+}
+
+.custom-stakes {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.stake-input {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.stake-input label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.stake-input input {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.stake-divider {
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+}
+
+.size-options {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.size-btn {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.size-btn.active {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+}
+
+.buyin-range {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.buyin-input {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.buyin-input label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.buyin-input input {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.range-divider {
+    color: var(--text-secondary);
+}
+
+.options-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.option-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.option-row:last-child {
+    border-bottom: none;
+}
+
+.option-row span {
+    color: var(--text-primary);
+}
+
+.toggle-btn {
+    padding: 0.375rem 1rem;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    min-width: 50px;
+}
+
+.toggle-btn.on {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+}
+
+.create-btn {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.125rem;
+    margin-top: 1rem;
+}
+/* Mobile Responsive */
+@media (max-width: 480px) {
+    .creation-section {
+        padding: 0.75rem;
+    }
+
+    .stakes-presets {
+        gap: 0.375rem;
+    }
+
+    .stake-btn {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+    }
+
+    .size-options {
+        flex-wrap: wrap;
+    }
+}

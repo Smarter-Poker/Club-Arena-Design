@@ -1,13 +1,16 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ENGINE — Club Detail Page
+ *  CLUB ENGINE — Club Detail Page
  * Complete club management with tables, members, settings, and finances
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import SmarterHeader from '../components/layout/SmarterHeader';
 import styles from './ClubDetailPage.module.css';
+import ClubHome from '../components/club/ClubHome';
+import CurrencyStore from '../components/club/CurrencyStore';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -127,17 +130,93 @@ const StatusBadge = ({ status }: { status: string }) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { supabase } from '../lib/supabase';
+import { presenceService } from '../services/PresenceService';
+import ClubActivityFeed from '../components/club/ClubActivityFeed';
+import CreateTableModal from '../components/club/CreateTableModal';
+import { MembershipService } from '../services/MembershipService';
+import { ClubService } from '../services/ClubService';
+import ClubAnnouncementBanner from '../components/club/ClubAnnouncementBanner';
+import MissionPanel from '../components/club/MissionPanel';
+import ClubStatsCards from '../components/club/ClubStatsCards';
+import { useClubStore } from '../stores/useClubStore';
+import MemberList from '../components/club/MemberList';
+import AgentManager from '../components/club/AgentManager';
+import { AgentService } from '../services/AgentService';
+import type { Agent } from '../services/AgentService';
+import { useToast } from '../components/common/Toast';
+import { ClubsService } from '../services/ClubsService';
+import DailyChallengesWidget from '../components/rewards/DailyChallengesWidget';
 
 export default function ClubDetailPage() {
     const { clubId } = useParams();
-    const [activeTab, setActiveTab] = useState<'overview' | 'tables' | 'members' | 'settings'>('overview');
+    const toast = useToast();
+    const [activeTab, setActiveTab] = useState<'overview' | 'tables' | 'members' | 'agents' | 'settings'>('overview');
     const [club, setClub] = useState<ClubData | null>(null);
     const [members, setMembers] = useState<ClubMember[]>([]);
+    const [filteredMembers, setFilteredMembers] = useState<ClubMember[]>([]);
+    const [memberSearch, setMemberSearch] = useState('');
     const [tables, setTables] = useState<ClubTable[]>([]);
     const [loading, setLoading] = useState(true);
+    const [onlineCount, setOnlineCount] = useState(0);
+    const [showCreateTable, setShowCreateTable] = useState(false);
+    const [agents, setAgents] = useState<Agent[]>([]);
+    const [agentsLoading, setAgentsLoading] = useState(false);
+    const [showAgentManager, setShowAgentManager] = useState(false);
+    const [savingSettings, setSavingSettings] = useState(false);
+    const [editedSettings, setEditedSettings] = useState<Partial<ClubSettings>>({});
+    const [showMemberMenu, setShowMemberMenu] = useState<string | null>(null);
 
     useEffect(() => {
         loadClubData();
+    }, [clubId]);
+
+    // Filter members when search changes
+    useEffect(() => {
+        if (!memberSearch.trim()) {
+            setFilteredMembers(members);
+        } else {
+            const search = memberSearch.toLowerCase();
+            setFilteredMembers(members.filter(m =>
+                m.username.toLowerCase().includes(search)
+            ));
+        }
+    }, [memberSearch, members]);
+
+    // Load agents when agents tab is selected
+    useEffect(() => {
+        if (activeTab === 'agents' && clubId && agents.length === 0 && !agentsLoading) {
+            setAgentsLoading(true);
+            AgentService.getAgents(clubId)
+                .then(setAgents)
+                .catch(err => console.error('Failed to load agents:', err))
+                .finally(() => setAgentsLoading(false));
+        }
+    }, [activeTab, clubId]);
+
+    // Real-time presence tracking
+    useEffect(() => {
+        if (!clubId) return;
+
+        // Get current user ID from supabase auth
+        const setupPresence = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            await presenceService.joinClub(clubId, user.id, {
+                onSync: (state) => {
+                    setOnlineCount(Object.keys(state).length);
+                }
+            });
+
+            // Set initial count
+            setOnlineCount(presenceService.getClubOnlineCount(clubId));
+        };
+
+        setupPresence();
+
+        return () => {
+            presenceService.leave(`club:${clubId}`);
+        };
     }, [clubId]);
 
     const loadClubData = async () => {
@@ -237,6 +316,64 @@ export default function ClubDetailPage() {
         }
     };
 
+    // Save settings handler
+    const handleSaveSettings = async () => {
+        if (!clubId || !club) return;
+        setSavingSettings(true);
+        try {
+            const updates = {
+                name: (document.getElementById('clubName') as HTMLInputElement)?.value || club.name,
+                description: (document.getElementById('clubDesc') as HTMLTextAreaElement)?.value || club.description,
+                is_public: (document.getElementById('clubPublic') as HTMLInputElement)?.checked ?? club.isPublic,
+                requires_approval: (document.getElementById('clubApproval') as HTMLInputElement)?.checked ?? club.requiresApproval,
+                default_rake_percent: Number((document.getElementById('rakePercent') as HTMLInputElement)?.value) || club.settings.defaultRakePercent,
+                rake_cap: Number((document.getElementById('rakeCap') as HTMLInputElement)?.value) || club.settings.rakeCap,
+                min_buyin_bb: Number((document.getElementById('minBuyin') as HTMLInputElement)?.value) || club.settings.minBuyInBB,
+                max_buyin_bb: Number((document.getElementById('maxBuyin') as HTMLInputElement)?.value) || club.settings.maxBuyInBB,
+                time_bank_seconds: Number((document.getElementById('timeBank') as HTMLInputElement)?.value) || club.settings.timeBankSeconds,
+                allow_straddle: (document.getElementById('allowStraddle') as HTMLInputElement)?.checked ?? club.settings.allowStraddle,
+                allow_run_it_twice: (document.getElementById('allowRIT') as HTMLInputElement)?.checked ?? club.settings.allowRunItTwice,
+            };
+            await ClubsService.updateClub(clubId, updates);
+            toast.success('Settings saved successfully!');
+            loadClubData(); // Reload to get fresh data
+        } catch (error) {
+            console.error('Failed to save settings:', error);
+            toast.error('Failed to save settings');
+        } finally {
+            setSavingSettings(false);
+        }
+    };
+
+    // Member action handlers
+    const handleMemberAction = async (memberId: string, action: 'promote' | 'demote' | 'suspend' | 'remove') => {
+        if (!clubId) return;
+        setShowMemberMenu(null);
+        try {
+            switch (action) {
+                case 'promote':
+                    await MembershipService.updateRole(memberId, 'admin' as any);
+                    toast.success('Member promoted to admin');
+                    break;
+                case 'demote':
+                    await MembershipService.updateRole(memberId, 'member' as any);
+                    toast.success('Member demoted');
+                    break;
+                case 'suspend':
+                    await MembershipService.updateStatus(memberId, 'suspended' as any);
+                    toast.success('Member suspended');
+                    break;
+                case 'remove':
+                    await MembershipService.removeMember(memberId);
+                    toast.success('Member removed');
+                    break;
+            }
+            loadClubData();
+        } catch (error) {
+            toast.error(`Failed to ${action} member`);
+        }
+    };
+
     if (loading) {
         return (
             <div className={styles.loading}>
@@ -258,6 +395,7 @@ export default function ClubDetailPage() {
 
     return (
         <div className={styles.page}>
+            <SmarterHeader title={club.name} />
             {/* Club Header */}
             <header className={styles.header}>
                 <div className={styles.clubAvatar}>
@@ -273,25 +411,31 @@ export default function ClubDetailPage() {
                     <p className={styles.clubDesc}>{club.description}</p>
                 </div>
                 <div className={styles.headerActions}>
-                    <button className={styles.inviteButton}>+ Invite</button>
-                    <button className={styles.createTableButton}>🎲 Create Table</button>
+                    <Link to={`/clubs/${clubId}/dashboard`} className={styles.dashboardButton}> Dashboard</Link>
+                    <Link to={`/clubs/${clubId}/messages`} className={styles.dashboardButton}> Messages</Link>
+                    <Link to={`/invite/${clubId}`} className={styles.inviteButton}>+ Invite</Link>
+                    <Link to={`/clubs/${clubId}/create-table`} className={styles.createTableButton}> Create Table</Link>
+                    <Link to={`/clubs/${clubId}/financials`} className={styles.financialsButton}> Financials</Link>
+                    <Link to={`/clubs/${clubId}/announcements`} className={styles.announcementsButton}> Announcements</Link>
+                    <Link to={`/clubs/${clubId}/settings`} className={styles.settingsButton}> Settings</Link>
                 </div>
             </header>
 
             {/* Quick Stats */}
             <section className={styles.statsRow}>
-                <StatCard value={club.memberCount} label="Members" icon="👥" />
-                <StatCard value={club.activeTableCount} label="Active Tables" icon="🎯" />
-                <StatCard value={`${club.settings.defaultRakePercent}%`} label="Rake" icon="💰" />
-                <StatCard value={`${club.settings.timeBankSeconds}s`} label="Time Bank" icon="⏱️" />
+                <StatCard value={onlineCount} label="Online Now" icon="" />
+                <StatCard value={club.memberCount} label="Members" icon="" />
+                <StatCard value={club.activeTableCount} label="Active Tables" icon="" />
+                <StatCard value={`${club.settings.defaultRakePercent}%`} label="Rake" icon="" />
             </section>
 
             {/* Tab Navigation */}
             <nav className={styles.tabNav}>
-                <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon="📊" label="Overview" />
-                <TabButton active={activeTab === 'tables'} onClick={() => setActiveTab('tables')} icon="🎲" label="Tables" />
-                <TabButton active={activeTab === 'members'} onClick={() => setActiveTab('members')} icon="👥" label="Members" />
-                <TabButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon="⚙️" label="Settings" />
+                <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon="" label="Overview" />
+                <TabButton active={activeTab === 'tables'} onClick={() => setActiveTab('tables')} icon="" label="Tables" />
+                <TabButton active={activeTab === 'members'} onClick={() => setActiveTab('members')} icon="" label="Members" />
+                <TabButton active={activeTab === 'agents'} onClick={() => setActiveTab('agents')} icon="️" label="Agents" />
+                <TabButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon="" label="Settings" />
             </nav>
 
             {/* Tab Content */}
@@ -301,7 +445,7 @@ export default function ClubDetailPage() {
                     <div className={styles.overviewGrid}>
                         {/* Active Tables */}
                         <div className={styles.card}>
-                            <h3>🎯 Active Tables</h3>
+                            <h3> Active Tables</h3>
                             {tables.filter(t => t.status === 'running').length === 0 ? (
                                 <p className={styles.emptyText}>No active tables</p>
                             ) : (
@@ -320,7 +464,7 @@ export default function ClubDetailPage() {
 
                         {/* Recent Members */}
                         <div className={styles.card}>
-                            <h3>👥 Recent Members</h3>
+                            <h3> Recent Members</h3>
                             <div className={styles.memberList}>
                                 {members.slice(0, 5).map(member => (
                                     <div key={member.id} className={styles.memberRow}>
@@ -334,7 +478,7 @@ export default function ClubDetailPage() {
 
                         {/* Club Rules */}
                         <div className={styles.card}>
-                            <h3>📋 Club Rules</h3>
+                            <h3> Club Rules</h3>
                             <ul className={styles.rulesList}>
                                 <li>Minimum buy-in: {club.settings.minBuyInBB} BB</li>
                                 <li>Maximum buy-in: {club.settings.maxBuyInBB} BB</li>
@@ -342,6 +486,17 @@ export default function ClubDetailPage() {
                                 <li>Straddle: {club.settings.allowStraddle ? 'Allowed' : 'Not allowed'}</li>
                                 <li>Run it twice: {club.settings.allowRunItTwice ? 'Allowed' : 'Not allowed'}</li>
                             </ul>
+                        </div>
+
+                        {/* Daily Challenges */}
+                        <div className={styles.card}>
+                            <DailyChallengesWidget />
+                        </div>
+
+                        {/* Club Activity Feed */}
+                        <div className={styles.card} style={{ gridColumn: '1 / -1' }}>
+                            <h3> Recent Activity</h3>
+                            {clubId && <ClubActivityFeed clubId={clubId} limit={10} />}
                         </div>
                     </div>
                 )}
@@ -351,7 +506,7 @@ export default function ClubDetailPage() {
                     <div className={styles.tablesContainer}>
                         <div className={styles.tablesHeader}>
                             <h3>All Tables ({tables.length})</h3>
-                            <button className={styles.createButton}>+ Create Table</button>
+                            <button className={styles.createButton} onClick={() => setShowCreateTable(true)}>+ Create Table</button>
                         </div>
                         <div className={styles.tablesGrid}>
                             {tables.map(table => (
@@ -382,8 +537,14 @@ export default function ClubDetailPage() {
                 {activeTab === 'members' && (
                     <div className={styles.membersContainer}>
                         <div className={styles.membersHeader}>
-                            <h3>All Members ({members.length})</h3>
-                            <input type="search" placeholder="Search members..." className={styles.searchInput} />
+                            <h3>All Members ({filteredMembers.length})</h3>
+                            <input
+                                type="search"
+                                placeholder="Search members..."
+                                className={styles.searchInput}
+                                value={memberSearch}
+                                onChange={(e) => setMemberSearch(e.target.value)}
+                            />
                         </div>
                         <table className={styles.membersTable}>
                             <thead>
@@ -397,7 +558,7 @@ export default function ClubDetailPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {members.map(member => (
+                                {filteredMembers.map(member => (
                                     <tr key={member.id}>
                                         <td>
                                             <div className={styles.memberCell}>
@@ -409,8 +570,29 @@ export default function ClubDetailPage() {
                                         <td className={styles.balanceCell}>{member.chipBalance.toLocaleString()}</td>
                                         <td><StatusBadge status={member.status} /></td>
                                         <td className={styles.dateCell}>{new Date(member.joinedAt).toLocaleDateString()}</td>
-                                        <td>
-                                            <button className={styles.actionBtn}>⋮</button>
+                                        <td style={{ position: 'relative' }}>
+                                            <button
+                                                className={styles.actionBtn}
+                                                onClick={() => setShowMemberMenu(showMemberMenu === member.id ? null : member.id)}
+                                            >
+                                                ⋮
+                                            </button>
+                                            {showMemberMenu === member.id && (
+                                                <div className={styles.memberMenu}>
+                                                    {member.role !== 'admin' && member.role !== 'owner' && (
+                                                        <button onClick={() => handleMemberAction(member.id, 'promote')}> Promote</button>
+                                                    )}
+                                                    {member.role === 'admin' && (
+                                                        <button onClick={() => handleMemberAction(member.id, 'demote')}> Demote</button>
+                                                    )}
+                                                    {member.status === 'active' && member.role !== 'owner' && (
+                                                        <button onClick={() => handleMemberAction(member.id, 'suspend')}>⏸️ Suspend</button>
+                                                    )}
+                                                    {member.role !== 'owner' && (
+                                                        <button onClick={() => handleMemberAction(member.id, 'remove')}>️ Remove</button>
+                                                    )}
+                                                </div>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
@@ -419,69 +601,163 @@ export default function ClubDetailPage() {
                     </div>
                 )}
 
+                {/* Agents Tab */}
+                {activeTab === 'agents' && (
+                    <div className={styles.agentsContainer}>
+                        <div className={styles.agentsHeader}>
+                            <h3>️ Club Agents</h3>
+                            <button className={styles.createButton} onClick={() => setShowAgentManager(true)}>
+                                + Manage Agents
+                            </button>
+                        </div>
+                        {agentsLoading ? (
+                            <div className={styles.emptyState}>
+                                <div className={styles.spinner} />
+                                <p>Loading agents...</p>
+                            </div>
+                        ) : agents.length === 0 ? (
+                            <div className={styles.emptyState}>
+                                <p>No agents assigned to this club yet.</p>
+                                <p className={styles.emptyHint}>Agents help recruit players and earn commission on rake.</p>
+                                <button className={styles.createButton} onClick={() => setShowAgentManager(true)}>
+                                    ️ Add First Agent
+                                </button>
+                            </div>
+                        ) : (
+                            <div className={styles.agentsList}>
+                                {agents.map(agent => (
+                                    <div key={agent.id} className={styles.agentCard}>
+                                        <div className={styles.agentAvatar}>
+                                            {agent.displayName?.charAt(0) || '?'}
+                                        </div>
+                                        <div className={styles.agentInfo}>
+                                            <span className={styles.agentName}>{agent.displayName || 'Unknown'}</span>
+                                            <span className={styles.agentRole}>{agent.role}</span>
+                                        </div>
+                                        <div className={styles.agentStats}>
+                                            <div className={styles.agentStat}>
+                                                <span className={styles.statLabel}>Players</span>
+                                                <span className={styles.statValue}>{agent.totalPlayers}</span>
+                                            </div>
+                                            <div className={styles.agentStat}>
+                                                <span className={styles.statLabel}>Commission</span>
+                                                <span className={styles.statValue}>{agent.commissionRate}%</span>
+                                            </div>
+                                            <div className={styles.agentStat}>
+                                                <span className={styles.statLabel}>Lifetime</span>
+                                                <span className={styles.statValue}>${agent.lifetimeEarnings.toLocaleString()}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* Settings Tab */}
                 {activeTab === 'settings' && (
                     <div className={styles.settingsContainer}>
                         <div className={styles.settingsSection}>
-                            <h3>🏠 General</h3>
+                            <h3> General</h3>
                             <div className={styles.settingRow}>
                                 <label>Club Name</label>
-                                <input type="text" defaultValue={club.name} className={styles.textInput} />
+                                <input id="clubName" type="text" defaultValue={club.name} className={styles.textInput} />
                             </div>
                             <div className={styles.settingRow}>
                                 <label>Description</label>
-                                <textarea defaultValue={club.description} className={styles.textArea} rows={3} />
+                                <textarea id="clubDesc" defaultValue={club.description} className={styles.textArea} rows={3} />
                             </div>
                             <div className={styles.settingRow}>
                                 <label>Public Club</label>
-                                <input type="checkbox" defaultChecked={club.isPublic} />
+                                <input id="clubPublic" type="checkbox" defaultChecked={club.isPublic} />
                             </div>
                             <div className={styles.settingRow}>
                                 <label>Require Approval</label>
-                                <input type="checkbox" defaultChecked={club.requiresApproval} />
+                                <input id="clubApproval" type="checkbox" defaultChecked={club.requiresApproval} />
                             </div>
                         </div>
 
                         <div className={styles.settingsSection}>
-                            <h3>💰 Rake Settings</h3>
+                            <h3> Rake Settings</h3>
                             <div className={styles.settingRow}>
                                 <label>Default Rake %</label>
-                                <input type="number" defaultValue={club.settings.defaultRakePercent} min={0} max={10} className={styles.numberInput} />
+                                <input id="rakePercent" type="number" defaultValue={club.settings.defaultRakePercent} min={0} max={10} className={styles.numberInput} />
                             </div>
                             <div className={styles.settingRow}>
                                 <label>Rake Cap (BB)</label>
-                                <input type="number" defaultValue={club.settings.rakeCap} min={0} max={10} className={styles.numberInput} />
+                                <input id="rakeCap" type="number" defaultValue={club.settings.rakeCap} min={0} max={10} className={styles.numberInput} />
                             </div>
                         </div>
 
                         <div className={styles.settingsSection}>
-                            <h3>🎮 Table Defaults</h3>
+                            <h3> Table Defaults</h3>
                             <div className={styles.settingRow}>
                                 <label>Min Buy-in (BB)</label>
-                                <input type="number" defaultValue={club.settings.minBuyInBB} className={styles.numberInput} />
+                                <input id="minBuyin" type="number" defaultValue={club.settings.minBuyInBB} className={styles.numberInput} />
                             </div>
                             <div className={styles.settingRow}>
                                 <label>Max Buy-in (BB)</label>
-                                <input type="number" defaultValue={club.settings.maxBuyInBB} className={styles.numberInput} />
+                                <input id="maxBuyin" type="number" defaultValue={club.settings.maxBuyInBB} className={styles.numberInput} />
                             </div>
                             <div className={styles.settingRow}>
                                 <label>Time Bank (seconds)</label>
-                                <input type="number" defaultValue={club.settings.timeBankSeconds} className={styles.numberInput} />
+                                <input id="timeBank" type="number" defaultValue={club.settings.timeBankSeconds} className={styles.numberInput} />
                             </div>
                             <div className={styles.settingRow}>
                                 <label>Allow Straddle</label>
-                                <input type="checkbox" defaultChecked={club.settings.allowStraddle} />
+                                <input id="allowStraddle" type="checkbox" defaultChecked={club.settings.allowStraddle} />
                             </div>
                             <div className={styles.settingRow}>
                                 <label>Allow Run It Twice</label>
-                                <input type="checkbox" defaultChecked={club.settings.allowRunItTwice} />
+                                <input id="allowRIT" type="checkbox" defaultChecked={club.settings.allowRunItTwice} />
                             </div>
                         </div>
 
-                        <button className={styles.saveButton}>Save Changes</button>
+                        <button
+                            className={styles.saveButton}
+                            onClick={handleSaveSettings}
+                            disabled={savingSettings}
+                        >
+                            {savingSettings ? 'Saving...' : 'Save Changes'}
+                        </button>
                     </div>
                 )}
             </section>
+
+            {/* Create Table Modal */}
+            {showCreateTable && clubId && (
+                <CreateTableModal
+                    clubId={clubId}
+                    onClose={() => setShowCreateTable(false)}
+                    onSuccess={() => {
+                        setShowCreateTable(false);
+                        loadClubData();
+                    }}
+                />
+            )}
+
+            {/* Agent Manager - Navigate to dedicated page */}
+            {showAgentManager && clubId && (
+                <div className={styles.modalOverlay} onClick={() => setShowAgentManager(false)}>
+                    <div className={styles.modal} onClick={e => e.stopPropagation()}>
+                        <div className={styles.modalHeader}>
+                            <h3>️ Agent Management</h3>
+                            <button onClick={() => setShowAgentManager(false)}>×</button>
+                        </div>
+                        <div className={styles.modalContent}>
+                            <p>Manage your club's agent hierarchy, create new agents, and configure commission rates.</p>
+                            <Link
+                                to={`/clubs/${clubId}/agents`}
+                                className={styles.primaryButton}
+                                onClick={() => setShowAgentManager(false)}
+                            >
+                                Open Agent Management
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

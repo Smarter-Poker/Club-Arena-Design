@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 📊 ADMIN REPORTS — Club Analytics
+ *  ADMIN REPORTS — Club Analytics
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Detailed reports for club admins:
@@ -44,7 +44,7 @@ export function AdminReports({
     onClose,
     summary,
     agents,
-    currency = '💎',
+    currency = '',
     onDateChange,
     onExport,
 }: AdminReportsProps) {
@@ -63,7 +63,7 @@ export function AdminReports({
                 {/* Header */}
                 <div className="reports-modal__header">
                     <div className="reports-modal__title-group">
-                        <span className="reports-modal__icon">📊</span>
+                        <span className="reports-modal__icon"></span>
                         <h2 className="reports-modal__title">Club Reports</h2>
                     </div>
                     <button className="reports-modal__close" onClick={onClose}>×</button>
@@ -92,7 +92,7 @@ export function AdminReports({
                         </button>
                     </div>
                     <button className="export-btn" onClick={onExport}>
-                        📥 Export CSV
+                         Export CSV
                     </button>
                 </div>
 

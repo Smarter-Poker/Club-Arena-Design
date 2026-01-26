@@ -1,0 +1,203 @@
+.cashier-page {
+    min-height: 100vh;
+    background: var(--bg-primary);
+    padding: 0 1rem 2rem;
+}
+
+.cashier-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 0;
+}
+
+.cashier-header .back-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.cashier-header h1 {
+    font-size: 1.25rem;
+    margin: 0;
+}
+
+.balance-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.balance-card {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.balance-card.chips {
+    border-left: 4px solid #10b981;
+}
+
+.balance-card.diamonds {
+    border-left: 4px solid #8b5cf6;
+}
+
+.balance-icon {
+    font-size: 1.5rem;
+}
+
+.balance-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.balance-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.balance-amount {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.action-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.action-tabs button {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.action-tabs button.active {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+}
+
+.amount-section {
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.amount-section label {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+.amount-input {
+    display: flex;
+    align-items: center;
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0 1rem;
+    margin-bottom: 1rem;
+}
+
+.amount-input:focus-within {
+    border-color: var(--accent-primary);
+}
+
+.currency {
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    margin-right: 0.5rem;
+}
+
+.amount-input input {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 1rem 0;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    outline: none;
+}
+
+.conversion-info {
+    font-size: 0.875rem;
+    color: var(--accent-secondary);
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: rgba(var(--accent-secondary-rgb), 0.1);
+    border-radius: 8px;
+}
+
+.preset-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.preset-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.preset-btn:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.message {
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+}
+
+.message.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--accent-success);
+}
+
+.message.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--accent-danger);
+}
+
+.action-btn {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+}
+
+.table-context {
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-top: 1rem;
+}
+/* Mobile Responsive */
+@media (max-width: 480px) {
+    .balance-cards { grid-template-columns: 1fr; }
+    .amount-input input { font-size: 1.5rem; }
+}

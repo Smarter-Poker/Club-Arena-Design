@@ -1,0 +1,141 @@
+.bonus-page {
+    min-height: 100vh;
+    background: var(--bg-primary);
+    padding-bottom: 2rem;
+}
+
+.bonus-section {
+    padding: 1rem;
+}
+
+.bonus-section h3 {
+    margin: 0 0 0.25rem;
+    font-size: 1.125rem;
+    color: var(--text-primary);
+}
+
+.section-desc {
+    margin: 0 0 1rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.daily-calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.day-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border: 2px solid var(--border-color);
+    position: relative;
+}
+
+.day-card.claimed {
+    background: rgba(var(--accent-success-rgb), 0.1);
+    border-color: var(--accent-success);
+}
+
+.day-card.current {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 12px rgba(var(--accent-primary-rgb), 0.3);
+}
+
+.day-num {
+    font-size: 0.625rem;
+    color: var(--text-secondary);
+}
+
+.day-reward {
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.claimed-check {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 0.5rem;
+    color: var(--accent-success);
+}
+
+.claim-btn {
+    width: 100%;
+    padding: 1rem;
+}
+
+.special-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.special-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    border-left: 4px solid var(--accent-warning);
+}
+
+.special-card.claimed {
+    opacity: 0.5;
+    border-left-color: var(--accent-success);
+}
+
+.special-info h4 {
+    margin: 0 0 0.25rem;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.special-info p {
+    margin: 0 0 0.25rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.special-reward {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--accent-warning);
+}
+
+.special-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.special-expires {
+    font-size: 0.625rem;
+    color: var(--text-muted);
+}
+
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+}
+
+.loading-state {
+    display: flex;
+    justify-content: center;
+    padding: 3rem;
+}
+/* Mobile Responsive */
+@media (max-width: 640px) {
+    .bonus-grid { grid-template-columns: 1fr; }
+    .bonus-page { padding: 0.75rem; }
+}

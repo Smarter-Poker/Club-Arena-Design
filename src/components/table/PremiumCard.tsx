@@ -1,6 +1,7 @@
 /**
- * 🃏 PREMIUM CARD COMPONENT
+ *  PREMIUM CARD COMPONENT
  * High-end video game style playing card with 3D effects and animations
+ * Now using premium digital deck card images
  */
 
 import { useState, useEffect } from 'react';
@@ -33,22 +34,34 @@ interface PremiumCardProps {
     onClick?: () => void;
 }
 
-// Suit symbol and color mapping (handles both short and long suit names)
-function getSuitInfo(suit: string): { symbol: string; color: string } {
-    const suitMap: Record<string, { symbol: string; color: string }> = {
-        h: { symbol: '♥', color: '#ff3b5c' },
-        hearts: { symbol: '♥', color: '#ff3b5c' },
-        d: { symbol: '♦', color: '#ff6b35' },
-        diamonds: { symbol: '♦', color: '#ff6b35' },
-        c: { symbol: '♣', color: '#1a1a2e' },
-        clubs: { symbol: '♣', color: '#1a1a2e' },
-        s: { symbol: '♠', color: '#1a1a2e' },
-        spades: { symbol: '♠', color: '#1a1a2e' },
+// Get card front image path from card data
+function getCardImagePath(card: PremiumCardType): string {
+    // Map suit to full name
+    const suitMap: Record<string, string> = {
+        h: 'hearts', hearts: 'hearts',
+        d: 'diamonds', diamonds: 'diamonds',
+        c: 'clubs', clubs: 'clubs',
+        s: 'spades', spades: 'spades',
     };
-    return suitMap[suit] || { symbol: '?', color: '#333' };
+
+    // Map rank to file name format
+    const rankMap: Record<string, string> = {
+        'A': 'a', 'a': 'a',
+        '2': '2', '3': '3', '4': '4', '5': '5',
+        '6': '6', '7': '7', '8': '8', '9': '9',
+        '10': '10', 'T': '10', 't': '10',
+        'J': 'j', 'j': 'j',
+        'Q': 'q', 'q': 'q',
+        'K': 'k', 'k': 'k',
+    };
+
+    const suit = suitMap[card.suit] || 'spades';
+    const rank = rankMap[card.rank] || card.rank.toLowerCase();
+
+    return `/cards/${suit}_${rank}.png`;
 }
 
-// Card sizes
+// Card sizes (aspect ratio 5:7 matches our 750x1050 images)
 const SIZES = {
     sm: { width: 44, height: 62 },
     md: { width: 56, height: 78 },
@@ -89,8 +102,8 @@ export default function PremiumCard({
     }, [isHidden, isFlipped, isDealt]);
 
     const dimensions = SIZES[size];
-    const suit = card ? getSuitInfo(card.suit) : null;
     const theme = DECK_THEMES[deckTheme];
+    const cardImagePath = card ? getCardImagePath(card) : null;
 
     return (
         <div
@@ -103,40 +116,15 @@ export default function PremiumCard({
             onClick={onClick}
         >
             <div className={`premium-card ${isFlipped || isHidden ? 'flipped' : ''}`}>
-                {/* Card Front */}
+                {/* Card Front - Using premium digital deck images */}
                 <div className="card-front">
-                    {card && suit && (
+                    {card && cardImagePath && (
                         <>
-                            {/* Top Left Corner */}
-                            <div className="card-corner top-left">
-                                <span className="card-rank" style={{ color: suit.color }}>
-                                    {card.rank}
-                                </span>
-                                <span className="card-suit-mini" style={{ color: suit.color }}>
-                                    {suit.symbol}
-                                </span>
-                            </div>
-
-                            {/* Center Suit */}
-                            <div className="card-center">
-                                <span
-                                    className="card-suit-main"
-                                    style={{ color: suit.color }}
-                                >
-                                    {suit.symbol}
-                                </span>
-                            </div>
-
-                            {/* Bottom Right Corner (inverted) */}
-                            <div className="card-corner bottom-right">
-                                <span className="card-rank" style={{ color: suit.color }}>
-                                    {card.rank}
-                                </span>
-                                <span className="card-suit-mini" style={{ color: suit.color }}>
-                                    {suit.symbol}
-                                </span>
-                            </div>
-
+                            <img
+                                src={cardImagePath}
+                                alt={`${card.rank} of ${card.suit}`}
+                                className="card-front-image"
+                            />
                             {/* Shine Effect */}
                             <div className="card-shine" />
                         </>

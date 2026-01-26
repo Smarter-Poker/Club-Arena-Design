@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 📢 CLUB ANNOUNCEMENTS — News Feed
+ *  CLUB ANNOUNCEMENTS — News Feed
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Announcements and news for club members.
@@ -67,7 +67,7 @@ export function ClubAnnouncements({
                 {/* Header */}
                 <div className="news-header">
                     <div className="news-title-group">
-                        <span className="news-icon">📢</span>
+                        <span className="news-icon"></span>
                         <h2 className="news-title">Club News</h2>
                     </div>
                     <div className="header-controls">
@@ -115,12 +115,12 @@ export function ClubAnnouncements({
                                 <div key={post.id} className={`news-item ${post.isSticky ? 'sticky' : ''}`}>
                                     <div className="post-header">
                                         <div className="post-meta">
-                                            {post.isSticky && <span className="sticky-tag">📌 PINNED</span>}
+                                            {post.isSticky && <span className="sticky-tag"> PINNED</span>}
                                             <span className="post-date">{post.date}</span>
                                             <span className="post-author">• {post.author}</span>
                                         </div>
                                         {isAdmin && onDelete && (
-                                            <button className="delete-post-btn" onClick={() => onDelete(post.id)}>🗑️</button>
+                                            <button className="delete-post-btn" onClick={() => onDelete(post.id)}>️</button>
                                         )}
                                     </div>
                                     <h3 className="post-title">{post.title}</h3>

@@ -1,12 +1,14 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ENGINE — Wallet Store (Zustand)
+ *  CLUB ENGINE — Wallet Store (Zustand)
  * ═══════════════════════════════════════════════════════════════════════════════
  * Global state for the Triple-Wallet system (Business, Player, Promo)
  */
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { supabase } from '../lib/supabase';
+import { WalletService } from '../services/WalletService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📦 TYPES
@@ -61,10 +63,10 @@ interface WalletState {
     refreshAll: (userId: string) => Promise<void>;
 
     // Wallet operations
-    lockForBuyIn: (amount: number, tableId: string) => Promise<boolean>;
-    unlockFromTable: (amount: number, tableId: string) => Promise<boolean>;
-    internalTransfer: (fromWallet: WalletType, toWallet: WalletType, amount: number) => Promise<boolean>;
-    mintChips: (diamonds: number) => Promise<{ chips: number; success: boolean }>;
+    lockForBuyIn: (userId: string, amount: number, tableId: string) => Promise<boolean>;
+    unlockFromTable: (userId: string, amount: number, tableId: string) => Promise<boolean>;
+    internalTransfer: (userId: string, fromWallet: WalletType, toWallet: WalletType, amount: number) => Promise<boolean>;
+    mintChips: (clubId: string, chips: number) => Promise<{ chips: number; success: boolean }>;
 
     reset: () => void;
 }
@@ -72,9 +74,6 @@ interface WalletState {
 // ═══════════════════════════════════════════════════════════════════════════════
 // 📐 CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════════════
-
-// The 38/100 Diamond-to-Chip Law
-const DIAMOND_TO_CHIP_RATE = 100 / 38; // ~2.63 chips per diamond
 
 const createEmptyBalance = (type: WalletType): WalletBalance => ({
     type,
@@ -111,16 +110,29 @@ export const useWalletStore = create<WalletState>()(
             loadBalances: async (userId: string) => {
                 set({ isLoadingWallet: true });
                 try {
-                    // In production, this calls WalletService.getBalances(userId)
-                    // For demo, use mock data
-                    const mockBalances = {
-                        BUSINESS: { type: 'BUSINESS' as const, available: 5420.50, locked: 0, pending: 1200, total: 6620.50 },
-                        PLAYER: { type: 'PLAYER' as const, available: 10000, locked: 500, pending: 0, total: 10500 },
-                        PROMO: { type: 'PROMO' as const, available: 250, locked: 0, pending: 0, total: 250 },
+                    const walletBalances = await WalletService.getBalances(userId);
+                    const balances = {
+                        BUSINESS: createEmptyBalance('BUSINESS'),
+                        PLAYER: createEmptyBalance('PLAYER'),
+                        PROMO: createEmptyBalance('PROMO'),
                     };
-                    set({ balances: mockBalances });
+
+                    for (const wallet of walletBalances) {
+                        const type = wallet.walletType as WalletType;
+                        if (type in balances) {
+                            balances[type] = {
+                                type,
+                                available: wallet.availableBalance,
+                                locked: wallet.lockedBalance,
+                                pending: 0,
+                                total: wallet.balance,
+                            };
+                        }
+                    }
+
+                    set({ balances });
                 } catch (error) {
-                    console.error('🔴 Load balances failed:', error);
+                    console.error(' Load balances failed:', error);
                 } finally {
                     set({ isLoadingWallet: false });
                 }
@@ -129,10 +141,21 @@ export const useWalletStore = create<WalletState>()(
             loadDiamonds: async (userId: string) => {
                 set({ isLoadingDiamonds: true });
                 try {
-                    // Mock diamond balance
-                    set({ diamonds: 1250 });
+                    // Load diamonds from user profile
+                    const { data, error } = await supabase
+                        .from('profiles')
+                        .select('diamonds')
+                        .eq('id', userId)
+                        .single();
+
+                    if (!error && data) {
+                        set({ diamonds: data.diamonds || 0 });
+                    } else {
+                        set({ diamonds: 0 });
+                    }
                 } catch (error) {
-                    console.error('🔴 Load diamonds failed:', error);
+                    console.error(' Load diamonds failed:', error);
+                    set({ diamonds: 0 });
                 } finally {
                     set({ isLoadingDiamonds: false });
                 }
@@ -141,31 +164,20 @@ export const useWalletStore = create<WalletState>()(
             loadTransactions: async (userId: string, limit = 50) => {
                 set({ isLoadingTransactions: true });
                 try {
-                    // Mock transactions
-                    const mockTx: WalletTransaction[] = [
-                        {
-                            id: 'tx1',
-                            walletType: 'PLAYER',
-                            amount: 500,
-                            direction: 'debit',
-                            category: 'buy_in',
-                            description: 'Table Buy-in: NL100 Ring Game',
-                            timestamp: new Date().toISOString(),
-                            reference: 'table_123',
-                        },
-                        {
-                            id: 'tx2',
-                            walletType: 'BUSINESS',
-                            amount: 1200,
-                            direction: 'credit',
-                            category: 'commission',
-                            description: 'Weekly Commission Payout',
-                            timestamp: new Date(Date.now() - 86400000).toISOString(),
-                        },
-                    ];
-                    set({ transactions: mockTx });
+                    const txHistory = await WalletService.getTransactionHistory(userId, { limit });
+                    const transactions: WalletTransaction[] = txHistory.map(tx => ({
+                        id: tx.id,
+                        walletType: tx.walletType as WalletType,
+                        amount: tx.amount,
+                        direction: tx.type as 'credit' | 'debit',
+                        category: tx.category as WalletTransaction['category'],
+                        description: tx.description,
+                        timestamp: tx.createdAt,
+                        reference: tx.relatedEntityId,
+                    }));
+                    set({ transactions });
                 } catch (error) {
-                    console.error('🔴 Load transactions failed:', error);
+                    console.error(' Load transactions failed:', error);
                 } finally {
                     set({ isLoadingTransactions: false });
                 }
@@ -179,13 +191,14 @@ export const useWalletStore = create<WalletState>()(
                 ]);
             },
 
-            lockForBuyIn: async (amount: number, tableId: string) => {
+            lockForBuyIn: async (userId: string, amount: number, tableId: string) => {
                 const { balances } = get();
                 if (balances.PLAYER.available < amount) {
-                    console.error('❌ Insufficient balance for buy-in');
+                    console.error(' Insufficient balance for buy-in');
                     return false;
                 }
 
+                // Optimistic update
                 set({
                     pendingBuyIn: amount,
                     pendingTableId: tableId,
@@ -199,14 +212,25 @@ export const useWalletStore = create<WalletState>()(
                     },
                 });
 
-                // In production: await WalletService.lockForBuyIn(...)
-                return true;
+                try {
+                    await WalletService.lockForBuyIn(userId, tableId, amount);
+                    return true;
+                } catch (error) {
+                    // Revert on failure
+                    set({
+                        pendingBuyIn: null,
+                        pendingTableId: null,
+                        balances,
+                    });
+                    console.error(' Lock for buy-in failed:', error);
+                    return false;
+                }
             },
 
-            unlockFromTable: async (amount: number, tableId: string) => {
+            unlockFromTable: async (userId: string, amount: number, tableId: string) => {
                 const { balances, pendingTableId } = get();
                 if (pendingTableId !== tableId) {
-                    console.warn('⚠️ Table ID mismatch for unlock');
+                    console.warn(' Table ID mismatch for unlock');
                 }
 
                 set({
@@ -222,17 +246,24 @@ export const useWalletStore = create<WalletState>()(
                     },
                 });
 
-                // In production: await WalletService.unlockFromTable(...)
-                return true;
+                try {
+                    await WalletService.unlockFromTable(userId, tableId, amount);
+                    return true;
+                } catch (error) {
+                    console.error(' Unlock from table failed:', error);
+                    return false;
+                }
             },
 
-            internalTransfer: async (fromWallet: WalletType, toWallet: WalletType, amount: number) => {
+            internalTransfer: async (userId: string, fromWallet: WalletType, toWallet: WalletType, amount: number) => {
                 const { balances } = get();
                 if (balances[fromWallet].available < amount) {
-                    console.error('❌ Insufficient balance for transfer');
+                    console.error(' Insufficient balance for transfer');
                     return false;
                 }
 
+                // Optimistic update
+                const previousBalances = { ...balances };
                 set({
                     balances: {
                         ...balances,
@@ -249,34 +280,33 @@ export const useWalletStore = create<WalletState>()(
                     },
                 });
 
-                // In production: await WalletService.internalTransfer(...)
-                return true;
+                try {
+                    await WalletService.internalTransfer(userId, {
+                        fromWallet,
+                        toWallet,
+                        amount,
+                    });
+                    return true;
+                } catch (error) {
+                    // Revert on failure
+                    set({ balances: previousBalances });
+                    console.error(' Internal transfer failed:', error);
+                    return false;
+                }
             },
 
-            mintChips: async (diamonds: number) => {
-                const { diamonds: currentDiamonds, balances } = get();
-                if (currentDiamonds < diamonds) {
-                    console.error('❌ Insufficient diamonds for minting');
+            mintChips: async (clubId: string, chips: number) => {
+                try {
+                    const result = await WalletService.mintChips(clubId, chips);
+                    if (result.success) {
+                        // Refresh balances after minting
+                        return { chips: result.chipsAdded, success: true };
+                    }
+                    return { chips: 0, success: false };
+                } catch (error) {
+                    console.error(' Mint chips failed:', error);
                     return { chips: 0, success: false };
                 }
-
-                // Apply the 38/100 Law: 38 diamonds = 100 chips
-                const chips = Math.floor(diamonds * DIAMOND_TO_CHIP_RATE);
-
-                set({
-                    diamonds: currentDiamonds - diamonds,
-                    balances: {
-                        ...balances,
-                        PLAYER: {
-                            ...balances.PLAYER,
-                            available: balances.PLAYER.available + chips,
-                            total: balances.PLAYER.total + chips,
-                        },
-                    },
-                });
-
-                // In production: await WalletService.mintChips(...)
-                return { chips, success: true };
             },
 
             reset: () => {

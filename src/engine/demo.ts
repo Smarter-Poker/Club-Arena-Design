@@ -51,7 +51,7 @@ export function runEngineDemo(): void {
         const communityCards = test.community.map(parseCardString);
         const result = evaluateHand(holeCards, communityCards);
         const pass = result.name === test.expected;
-        console.log(`   ${pass ? '✅' : '❌'} ${cardsToString(holeCards)} | ${cardsToString(communityCards)}`);
+        console.log(`   ${pass ? '' : ''} ${cardsToString(holeCards)} | ${cardsToString(communityCards)}`);
         console.log(`      Expected: ${test.expected}, Got: ${result.name}`);
     }
 
@@ -79,24 +79,24 @@ export function runEngineDemo(): void {
     hand.onEvent((event) => {
         switch (event.type) {
             case 'HAND_START':
-                console.log(`   🎰 Hand #${event.handNumber} starting with ${event.players.length} players`);
+                console.log(`    Hand #${event.handNumber} starting with ${event.players.length} players`);
                 break;
             case 'CARDS_DEALT':
-                console.log(`   🃏 Seat ${event.seat} dealt cards`);
+                console.log(`    Seat ${event.seat} dealt cards`);
                 break;
             case 'PLAYER_ACTION':
                 console.log(`   ▶️ Seat ${event.seat}: ${event.action}${event.amount ? ` ${event.amount} chips` : ''}`);
                 break;
             case 'COMMUNITY_CARDS':
-                console.log(`   📋 ${event.stage.toUpperCase()}: ${cardsToString(event.cards)}`);
+                console.log(`    ${event.stage.toUpperCase()}: ${cardsToString(event.cards)}`);
                 break;
             case 'WINNERS':
                 for (const w of event.winners) {
-                    console.log(`   🏆 ${w.userId} wins ${w.amount} chips${w.hand ? ` (${w.hand.name})` : ''}`);
+                    console.log(`    ${w.userId} wins ${w.amount} chips${w.hand ? ` (${w.hand.name})` : ''}`);
                 }
                 break;
             case 'HAND_COMPLETE':
-                console.log(`   ✅ Hand complete, rake: ${event.rake} chips`);
+                console.log(`    Hand complete, rake: ${event.rake} chips`);
                 break;
         }
     });

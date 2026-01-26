@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🤝 REFERRAL MODAL — Social Growth
+ *  REFERRAL MODAL — Social Growth
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Popup to invite friends.
@@ -40,7 +40,7 @@ export function ReferralModal({ isOpen, onClose, referralCode, referralLink, tot
                 </div>
 
                 <div className="referral-body">
-                    <div className="referral-illustration">🤝</div>
+                    <div className="referral-illustration"></div>
                     <p className="referral-text">
                         Invite your friends to the club and earn <strong>5% of their rake forever!</strong>
                     </p>

@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 AGENT MANAGEMENT PAGE — Styles
+ *  AGENT MANAGEMENT PAGE — Styles
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
@@ -308,6 +308,24 @@
     background: rgba(239, 68, 68, 0.2);
     border-color: #ef4444;
     color: #ef4444;
+}
+
+.actionBtn.transfer {
+    background: rgba(251, 191, 36, 0.2);
+    border-color: #fbbf24;
+    color: #fbbf24;
+}
+
+.actionBtn.promote {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: #10b981;
+    color: #10b981;
+}
+
+.actionBtn.demote {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: #f87171;
+    color: #f87171;
 }
 
 /* Agent Stats */

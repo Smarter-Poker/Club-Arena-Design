@@ -1,0 +1,212 @@
+.report-review-page {
+    min-height: 100vh;
+    background: var(--bg-primary, #0a0a1a);
+    padding-bottom: 2rem;
+}
+
+/* Filter Tabs */
+.filter-tabs {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: var(--card-bg, #1a1a2e);
+    border-bottom: 1px solid var(--border-color, #333);
+}
+
+.filter-tab {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.filter-tab.active {
+    background: var(--accent-color, #4f46e5);
+    color: white;
+}
+
+/* Loading/Empty States */
+.loading-state,
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    color: var(--text-secondary);
+}
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+/* Reports List */
+.reports-list {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.report-card {
+    background: var(--card-bg, #1a1a2e);
+    border-radius: 12px;
+    padding: 1rem;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.report-card:hover,
+.report-card.selected {
+    border-color: var(--accent-color, #4f46e5);
+}
+
+.report-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.reason-icon {
+    font-size: 1.25rem;
+}
+
+.reason-label {
+    font-weight: 600;
+    text-transform: capitalize;
+    flex: 1;
+}
+
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: white;
+}
+
+.report-players {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.report-date {
+    font-size: 0.8rem;
+    color: var(--text-muted, #666);
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.modal-content {
+    background: var(--card-bg, #1a1a2e);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color, #333);
+}
+
+.modal-header h3 {
+    margin: 0;
+}
+
+.modal-header button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.modal-body {
+    padding: 1rem;
+}
+
+.detail-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.detail-row label {
+    color: var(--text-secondary);
+    min-width: 120px;
+}
+
+.detail-row.full {
+    flex-direction: column;
+}
+
+.detail-row .description {
+    background: var(--surface-secondary, #2a2a4e);
+    padding: 0.75rem;
+    border-radius: 8px;
+    margin: 0.5rem 0 0 0;
+}
+
+.modal-body textarea {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--surface-secondary, #2a2a4e);
+    border: 1px solid var(--border-color, #333);
+    border-radius: 8px;
+    color: white;
+    resize: vertical;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.action-buttons .btn {
+    flex: 1;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-danger {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-secondary {
+    background: var(--surface-secondary, #2a2a4e);
+    color: white;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

@@ -61,15 +61,15 @@ export function createDefaultMenuSections(handlers: {
             actions: [
                 { id: 'sitout', label: 'Sit Out Next Hand', icon: '⏸️', onClick: handlers.onSitOut || (() => { }) },
                 { id: 'standup', label: 'Stand Up', icon: '🚶', onClick: handlers.onStandUp || (() => { }) },
-                { id: 'rebuy', label: 'Add Chips', icon: '💰', onClick: handlers.onRebuy || (() => { }) },
+                { id: 'rebuy', label: 'Add Chips', icon: '', onClick: handlers.onRebuy || (() => { }) },
             ],
         },
         {
             title: 'Table Info',
             actions: [
-                { id: 'history', label: 'Hand History', icon: '📜', onClick: handlers.onHandHistory || (() => { }) },
-                { id: 'leaderboard', label: 'Leaderboard', icon: '🏆', onClick: handlers.onLeaderboard || (() => { }) },
-                { id: 'settings', label: 'Settings', icon: '⚙️', onClick: handlers.onSettings || (() => { }) },
+                { id: 'history', label: 'Hand History', icon: '', onClick: handlers.onHandHistory || (() => { }) },
+                { id: 'leaderboard', label: 'Leaderboard', icon: '', onClick: handlers.onLeaderboard || (() => { }) },
+                { id: 'settings', label: 'Settings', icon: '', onClick: handlers.onSettings || (() => { }) },
             ],
         },
         {
@@ -80,7 +80,7 @@ export function createDefaultMenuSections(handlers: {
         },
         {
             actions: [
-                { id: 'leave', label: 'Leave Table', icon: '🚪', onClick: handlers.onLeaveTable || (() => { }), danger: true },
+                { id: 'leave', label: 'Leave Table', icon: '', onClick: handlers.onLeaveTable || (() => { }), danger: true },
             ],
         },
     ];

@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎯 MISSION PANEL — Daily Challenges
+ *  MISSION PANEL — Daily Challenges
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Daily and Weekly missions for players.
@@ -47,7 +47,7 @@ export function MissionPanel({
                 {/* Header */}
                 <div className="mission-header">
                     <div className="mission-title-group">
-                        <span className="mission-icon">🎯</span>
+                        <span className="mission-icon"></span>
                         <div>
                             <h2 className="mission-title">Missions & Rewards</h2>
                             <span className="mission-subtitle">Complete tasks to earn bonuses!</span>
@@ -103,7 +103,7 @@ function MissionItem({ mission, onClaim }: { mission: Mission, onClaim: (id: str
             </div>
 
             <div className="mission-action">
-                <div className="reward-badge">💎 {mission.reward}</div>
+                <div className="reward-badge"> {mission.reward}</div>
                 <button
                     className={`claim-btn ${isCompleted ? 'ready' : ''} ${mission.isClaimed ? 'claimed' : ''}`}
                     disabled={!isCompleted || mission.isClaimed}

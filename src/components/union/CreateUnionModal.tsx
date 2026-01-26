@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { unionService } from '../../services/UnionService';
 import { useUserStore } from '../../stores/useUserStore';
 import styles from './CreateUnionModal.module.css';
+import { useToast } from '../common/Toast';
 
 interface CreateUnionModalProps {
     onClose: () => void;
@@ -15,6 +16,7 @@ interface CreateUnionModalProps {
 
 export default function CreateUnionModal({ onClose, onSuccess }: CreateUnionModalProps) {
     const { user } = useUserStore();
+    const toast = useToast();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [loading, setLoading] = useState(false);
@@ -22,15 +24,21 @@ export default function CreateUnionModal({ onClose, onSuccess }: CreateUnionModa
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // In a real app we'd check permissions, but for demo we assume logged in user can create
-        const ownerId = user?.id || 'demo_user';
+        if (!user?.id) {
+            toast.error('You must be logged in to create a union');
+            return;
+        }
+
+        const ownerId = user.id;
 
         setLoading(true);
         try {
             await unionService.createUnion(name, description, ownerId);
+            toast.success('Union created successfully!');
             onSuccess();
         } catch (error) {
             console.error('Failed to create union', error);
+            toast.error('Failed to create union. Please try again.');
         } finally {
             setLoading(false);
         }

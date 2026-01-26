@@ -1,0 +1,258 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  THROWABLE SELECTOR — Styles
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+.throwable-selector {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 280px;
+    background: linear-gradient(180deg, rgba(20, 20, 35, 0.98) 0%, rgba(10, 10, 26, 0.99) 100%);
+    border: 2px solid #D4A84B;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(212, 168, 75, 0.2);
+    z-index: 1000;
+    animation: selectorSlideUp 0.2s ease-out;
+}
+
+@keyframes selectorSlideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.throwable-selector--loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+
+.throwable-selector__spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(212, 168, 75, 0.3);
+    border-top-color: #D4A84B;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   HEADER
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.throwable-selector__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(212, 168, 75, 0.3);
+}
+
+.throwable-selector__title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #D4A84B;
+    margin: 0;
+}
+
+.throwable-selector__close {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    color: #FFFFFF;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.throwable-selector__close:hover {
+    background: rgba(244, 63, 94, 0.3);
+    color: #F43F5E;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CATEGORY TABS
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.throwable-selector__tabs {
+    display: flex;
+    gap: 4px;
+    padding: 8px 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.throwable-selector__tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.throwable-selector__tab {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.throwable-selector__tab:hover {
+    background: rgba(212, 168, 75, 0.1);
+    border-color: rgba(212, 168, 75, 0.3);
+}
+
+.throwable-selector__tab--active {
+    background: linear-gradient(180deg, #D4A84B 0%, #B8922A 100%);
+    border-color: #D4A84B;
+    color: #0A0A1A;
+    font-weight: 600;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   THROWABLE GRID
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.throwable-selector__grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    padding: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.throwable-selector__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.throwable-selector__item:hover {
+    background: rgba(212, 168, 75, 0.15);
+    border-color: rgba(212, 168, 75, 0.5);
+    transform: scale(1.05);
+}
+
+.throwable-selector__item--locked {
+    opacity: 0.6;
+}
+
+.throwable-selector__item--locked:hover {
+    opacity: 1;
+}
+
+.throwable-selector__icon {
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.throwable-selector__name {
+    font-size: 0.5rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.throwable-selector__price {
+    font-size: 0.5rem;
+    font-weight: 600;
+    color: #60A5FA;
+    background: rgba(96, 165, 250, 0.1);
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ALLOWANCE DISPLAY
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.throwable-selector__allowance {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.throwable-selector__free {
+    color: #D4A84B;
+}
+
+.throwable-selector__cost {
+    color: #60A5FA;
+}
+
+.throwable-selector__fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 1rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   OVERLAY (TablePage integration)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.throwable-selector-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 900;
+    animation: overlayFadeIn 0.15s ease-out;
+}
+
+@keyframes overlayFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.throwable-selector-overlay .throwable-selector {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    transform: none;
+}

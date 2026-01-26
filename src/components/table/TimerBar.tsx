@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * ⏱️ TIMER BAR — Action Clock Progress Bar
+ *  TIMER BAR — Action Clock Progress Bar
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Premium action timer featuring:

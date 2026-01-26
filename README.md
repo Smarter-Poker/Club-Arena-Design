@@ -18,7 +18,20 @@ npm install
 npm run dev
 
 # Open in browser
-http://localhost:5174
+http://localhost:5173
+```
+
+## 🧪 Testing
+
+```bash
+# Run E2E tests
+npm run test:e2e
+
+# Run E2E tests with UI
+npm run test:e2e:ui
+
+# Build for production
+npm run build
 ```
 
 ---

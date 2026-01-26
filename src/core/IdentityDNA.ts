@@ -16,6 +16,7 @@ import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { useUserStore } from '../stores/useUserStore';
 import { supabase } from '../lib/supabase';
 import { masterBus } from './MasterBus';
+import { achievementTriggerService } from '../services/AchievementTriggerService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -83,7 +84,7 @@ class IdentityDNACore {
                     ? new Date(session.expires_at * 1000).toISOString()
                     : null;
 
-                console.log(`  ├─ Session: ✓ (${userId})`);
+                console.log(`  ├─ Session:  (${userId})`);
                 console.log(`  ├─ User: ${username}`);
                 console.log(`  └─ Expires: ${sessionExpiresAt || 'Never'}`);
 
@@ -96,7 +97,7 @@ class IdentityDNACore {
                     isAuthenticated: true,
                 });
             } else {
-                console.log('  ├─ Session: ✗ (No active session)');
+                console.log('  ├─ Session:  (No active session)');
                 console.log('  └─ Mode: Guest');
             }
         } catch (e) {
@@ -144,6 +145,10 @@ class IdentityDNACore {
                                 userId: session.user.id,
                                 isAuthenticated: true,
                             });
+
+                            // Trigger login achievement (for login streaks, daily logins, etc.)
+                            achievementTriggerService.onLogin(session.user.id)
+                                .catch(err => console.warn('[Achievements] Login trigger failed:', err));
                         }
                         break;
 
@@ -175,7 +180,7 @@ class IdentityDNACore {
             }
         );
 
-        console.log('  ├─ Auth listener: ✓');
+        console.log('  ├─ Auth listener: ');
     }
 
     /**

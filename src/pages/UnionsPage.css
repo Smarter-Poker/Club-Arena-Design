@@ -118,3 +118,21 @@
     margin: 0 auto var(--space-6);
     color: var(--text-secondary);
 }
+/* Mobile Responsive */
+@media (max-width: 640px) {
+    .unions-header h1 {
+        font-size: var(--text-2xl);
+    }
+    
+    .unions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .union-card {
+        padding: var(--space-4);
+    }
+    
+    .create-union-cta {
+        padding: var(--space-6);
+    }
+}

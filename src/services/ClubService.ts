@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ENGINE — Club Service
+ *  CLUB ENGINE — Club Service
  * ═══════════════════════════════════════════════════════════════════════════════
  * Full club management with real Supabase integration
  * No demo mode — production ready

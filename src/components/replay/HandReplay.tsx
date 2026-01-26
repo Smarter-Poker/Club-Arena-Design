@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Card, CardSuit, CardRank } from '../../types/database.types';
 import './HandReplay.css';
+import { useToast } from '../common/Toast';
 
 interface PlayerAction {
     player_id: string;
@@ -86,6 +87,7 @@ export default function HandReplay({ handId: propHandId, handData: initialData, 
     const [currentStep, setCurrentStep] = useState(1);
     const [totalSteps, setTotalSteps] = useState(1);
     const [isPlaying, setIsPlaying] = useState(false);
+    const toast = useToast();
 
     const playbackRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -109,14 +111,49 @@ export default function HandReplay({ handId: propHandId, handData: initialData, 
     const loadHandData = async () => {
         setIsLoading(true);
         try {
-            // In production, fetch from API
-            // const data = await handHistoryService.getHand(handId);
-            // setHandData(data);
-
-            // Demo data for now
-            setHandData(getDemoHandData());
+            if (handId) {
+                // Fetch real hand data from API
+                const { handHistoryService } = await import('../../services/HandHistoryService');
+                const data = await handHistoryService.getHand(handId);
+                if (data) {
+                    // Map to HandData format
+                    setHandData({
+                        id: data.id,
+                        serial_number: data.serial_number,
+                        played_at: data.played_at,
+                        hand_number: data.hand_number,
+                        total_hands: data.total_hands,
+                        main_pot: data.main_pot,
+                        community_cards: data.community_cards,
+                        players: data.players.map(p => ({
+                            seat: p.seat,
+                            user_id: p.user_id,
+                            username: p.username,
+                            avatar_url: p.avatar_url,
+                            position: p.position as any,
+                            hole_cards: p.hole_cards,
+                            final_hand: p.final_hand,
+                            result: p.result,
+                            is_winner: p.is_winner,
+                        })),
+                        actions: data.actions.map(a => ({
+                            player_id: a.player_id,
+                            action: a.action,
+                            amount: a.amount,
+                            timestamp: a.timestamp,
+                        })),
+                    });
+                } else {
+                    console.warn('Hand not found, using fallback');
+                    setHandData(getFallbackHandData());
+                }
+            } else {
+                // No handId provided, use fallback for preview
+                setHandData(getFallbackHandData());
+            }
         } catch (error) {
             console.error('Failed to load hand:', error);
+            setHandData(getFallbackHandData());
         }
         setIsLoading(false);
     };
@@ -175,7 +212,7 @@ export default function HandReplay({ handId: propHandId, handData: initialData, 
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
-        alert('Link copied to clipboard!');
+        toast.success('Link copied to clipboard!');
     };
 
     const formatDate = (date: string) => {
@@ -242,7 +279,7 @@ export default function HandReplay({ handId: propHandId, handData: initialData, 
             {/* Share Button */}
             <div className="share-row">
                 <button className="share-btn" onClick={handleShare}>
-                    Share 📤
+                    Share 
                 </button>
             </div>
 
@@ -348,8 +385,8 @@ export default function HandReplay({ handId: propHandId, handData: initialData, 
     );
 }
 
-// Demo data generator
-function getDemoHandData(): HandData {
+// Fallback data when hand not found or for preview
+function getFallbackHandData(): HandData {
     return {
         id: '2049883074',
         serial_number: '2049883074',

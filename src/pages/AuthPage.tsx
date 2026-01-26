@@ -40,7 +40,6 @@ export default function AuthPage() {
             if (authError) throw authError;
 
             if (data.user) {
-                console.log('🔐 [AUTH] Login successful:', data.user.id);
                 masterBus.emit('AUTH_STATE_CHANGED', {
                     userId: data.user.id,
                     isAuthenticated: true,
@@ -113,7 +112,6 @@ export default function AuthPage() {
                     // Continue anyway - profile might already exist
                 }
 
-                console.log('🔐 [AUTH] Signup successful:', data.user.id);
 
                 // Check if email confirmation is required
                 if (data.session) {
@@ -186,7 +184,7 @@ export default function AuthPage() {
                 {/* Success Message */}
                 {success && (
                     <div className={styles.successMessage}>
-                        <span>✓</span> {success}
+                        <span></span> {success}
                     </div>
                 )}
 

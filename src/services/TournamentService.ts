@@ -3,7 +3,8 @@
  * SNGs and MTTs with blind levels and payout structures
  */
 
-import { supabase, isDemoMode } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
+import { WalletService } from './WalletService';
 import type { Tournament, TournamentPlayer } from '../types/database.types';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -251,42 +252,15 @@ export const SPIN_BLIND_STRUCTURE: BlindLevel[] = [
     { level: 8, smallBlind: 250, bigBlind: 500, ante: 0, durationMinutes: 2 },
 ];
 
-// Demo tournaments
-const DEMO_TOURNAMENTS: Tournament[] = [
-    {
-        id: 'tourn-1',
-        club_id: '1',
-        name: '10 Chip Turbo SNG',
-        type: 'sng',
-        buy_in: 10,
-        rake: 1,
-        starting_chips: 1500,
-        max_players: 6,
-        current_players: 4,
-        status: 'registering',
-        blind_structure: BLIND_STRUCTURES.turbo,
-        payout_structure: PAYOUT_STRUCTURES.sng6,
-        prize_pool: 40,
-        created_at: new Date().toISOString(),
-    },
-    {
-        id: 'tourn-2',
-        club_id: '1',
-        name: 'Sunday 50K GTD',
-        type: 'mtt',
-        buy_in: 5,
-        rake: 0.5,
-        starting_chips: 5000,
-        max_players: 50,
-        current_players: 23,
-        status: 'registering',
-        blind_structure: BLIND_STRUCTURES.regular,
-        payout_structure: PAYOUT_STRUCTURES.mtt50,
-        prize_pool: 115,
-        start_time: new Date(Date.now() + 3600000).toISOString(),
-        created_at: new Date().toISOString(),
-    },
-];
+// ═══════════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function ordinal(n: number): string {
+    const s = ['th', 'st', 'nd', 'rd'];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SERVICE
@@ -301,17 +275,16 @@ class TournamentService {
      * Get all tournaments for a club
      */
     async getTournaments(clubId: string): Promise<Tournament[]> {
-        if (isDemoMode) {
-            return DEMO_TOURNAMENTS.filter(t => t.club_id === clubId);
-        }
-
         const { data, error } = await supabase
             .from('tournaments')
             .select('*')
             .eq('club_id', clubId)
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            console.error('[TournamentService] Error fetching tournaments:', error);
+            return [];
+        }
         return data || [];
     }
 
@@ -319,17 +292,16 @@ class TournamentService {
      * Get a single tournament
      */
     async getTournament(tournamentId: string): Promise<Tournament | null> {
-        if (isDemoMode) {
-            return DEMO_TOURNAMENTS.find(t => t.id === tournamentId) || null;
-        }
-
         const { data, error } = await supabase
             .from('tournaments')
             .select('*')
             .eq('id', tournamentId)
             .single();
 
-        if (error) return null;
+        if (error) {
+            console.error('[TournamentService] Error fetching tournament:', error);
+            return null;
+        }
         return data;
     }
 
@@ -337,28 +309,6 @@ class TournamentService {
      * Create a new tournament
      */
     async createTournament(clubId: string, config: TournamentConfig): Promise<Tournament> {
-        if (isDemoMode) {
-            const tournament: Tournament = {
-                id: crypto.randomUUID(),
-                club_id: clubId,
-                name: config.name,
-                type: config.type,
-                buy_in: config.buyIn,
-                rake: config.rake,
-                starting_chips: config.startingStack,
-                max_players: config.maxPlayers,
-                current_players: 0,
-                status: 'scheduled',
-                blind_structure: config.blindStructure,
-                payout_structure: config.payoutStructure,
-                prize_pool: 0,
-                start_time: config.startTime?.toISOString(),
-                created_at: new Date().toISOString(),
-            };
-            DEMO_TOURNAMENTS.push(tournament);
-            return tournament;
-        }
-
         const { data, error } = await supabase
             .from('tournaments')
             .insert({
@@ -395,20 +345,6 @@ class TournamentService {
         userId: string,
         username: string
     ): Promise<TournamentPlayer> {
-        if (isDemoMode) {
-            return {
-                id: crypto.randomUUID(),
-                tournament_id: tournamentId,
-                user_id: userId,
-                username,
-                chips: 0,
-                status: 'registered',
-                position: null,
-                prize: null,
-                registered_at: new Date().toISOString(),
-            };
-        }
-
         const tournament = await this.getTournament(tournamentId);
         if (!tournament) throw new Error('Tournament not found');
         if (tournament.status !== 'registering' && tournament.status !== 'scheduled') {
@@ -416,6 +352,26 @@ class TournamentService {
         }
         if (tournament.current_players >= tournament.max_players) {
             throw new Error('Tournament is full');
+        }
+
+        // Calculate total cost (buy-in + rake)
+        const totalCost = tournament.buy_in + (tournament.rake || 0);
+
+        // Check player wallet balance
+        const balance = await WalletService.getWalletBalance(userId, 'PLAYER');
+        if (balance.availableBalance < totalCost) {
+            throw new Error(`Insufficient balance. Need $${totalCost}, have $${balance.availableBalance}`);
+        }
+
+        // Deduct buy-in from wallet
+        const deducted = await WalletService.internalTransfer(userId, {
+            fromWallet: 'PLAYER',
+            toWallet: 'PLAYER', // Stays in player wallet but is "locked" via tournament prize pool
+            amount: totalCost,
+            note: `Tournament buy-in: ${tournament.name}`,
+        });
+        if (!deducted) {
+            throw new Error('Failed to deduct buy-in from wallet');
         }
 
         // Insert player
@@ -431,14 +387,18 @@ class TournamentService {
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            // Refund on failure - credit back
+            console.error('[TournamentService] Registration failed, should refund:', error);
+            throw error;
+        }
 
-        // Update player count
+        // Update player count and prize pool
         await supabase
             .from('tournaments')
             .update({
                 current_players: tournament.current_players + 1,
-                prize_pool: tournament.prize_pool + tournament.buy_in,
+                prize_pool: tournament.prize_pool + tournament.buy_in, // Only buy-in goes to prize pool, not rake
             })
             .eq('id', tournamentId);
 
@@ -446,15 +406,29 @@ class TournamentService {
     }
 
     /**
-     * Unregister a player
+     * Unregister a player (with full refund)
      */
     async unregisterPlayer(tournamentId: string, userId: string): Promise<void> {
-        if (isDemoMode) return;
-
         const tournament = await this.getTournament(tournamentId);
         if (!tournament) throw new Error('Tournament not found');
         if (tournament.status !== 'registering' && tournament.status !== 'scheduled') {
             throw new Error('Cannot unregister after tournament started');
+        }
+
+        // Calculate refund amount (buy-in + rake)
+        const refundAmount = tournament.buy_in + (tournament.rake || 0);
+
+        // Refund to player wallet
+        try {
+            await supabase.rpc('credit_player_wallet', {
+                p_user_id: userId,
+                p_amount: refundAmount,
+                p_category: 'tournament_refund',
+                p_description: `Tournament refund: ${tournament.name}`,
+            });
+        } catch (err) {
+            console.error('[TournamentService] Refund failed:', err);
+            // Continue with unregistration even if refund fails - can be handled manually
         }
 
         await supabase
@@ -480,12 +454,6 @@ class TournamentService {
      * Start a tournament
      */
     async startTournament(tournamentId: string): Promise<Tournament> {
-        if (isDemoMode) {
-            const tournament = DEMO_TOURNAMENTS.find(t => t.id === tournamentId);
-            if (tournament) tournament.status = 'running';
-            return tournament!;
-        }
-
         const tournament = await this.getTournament(tournamentId);
         if (!tournament) throw new Error('Tournament not found');
 
@@ -571,15 +539,13 @@ class TournamentService {
     }
 
     /**
-     * Eliminate a player
+     * Eliminate a player (with prize payout and achievements)
      */
     async eliminatePlayer(
         tournamentId: string,
         userId: string,
         position: number
     ): Promise<void> {
-        if (isDemoMode) return;
-
         const tournament = await this.getTournament(tournamentId);
         if (!tournament) throw new Error('Tournament not found');
 
@@ -599,6 +565,38 @@ class TournamentService {
             })
             .eq('tournament_id', tournamentId)
             .eq('user_id', userId);
+
+        // Credit prize to player wallet if they won money
+        if (prize > 0) {
+            try {
+                await supabase.rpc('credit_player_wallet', {
+                    p_user_id: userId,
+                    p_amount: prize,
+                    p_category: 'tournament_prize',
+                    p_description: `${ordinal(position)} place in ${tournament.name}`,
+                });
+            } catch (err) {
+                console.error('[TournamentService] Prize credit failed:', err);
+            }
+        }
+
+        // Trigger tournament achievement
+        try {
+            const { achievementTriggerService } = await import('./AchievementTriggerService');
+            const { count } = await supabase
+                .from('tournament_players')
+                .select('*', { count: 'exact', head: true })
+                .eq('tournament_id', tournamentId);
+
+            await achievementTriggerService.onTournamentComplete(userId, {
+                position,
+                entries: count || 0,
+                won: position === 1,
+                prizeAmount: prize,
+            });
+        } catch (err) {
+            console.warn('[Achievements] Tournament trigger failed:', err);
+        }
     }
 
     /**
@@ -608,8 +606,6 @@ class TournamentService {
      * 3. Remove from table seat.
      */
     async eliminatePlayerAuto(tournamentId: string, userId: string): Promise<void> {
-        if (isDemoMode) return;
-
         // 1. Get current active player count (this will be the position)
         const { count } = await supabase
             .from('tournament_players')
@@ -744,10 +740,6 @@ class TournamentService {
         // @ts-ignore
         const rebuyCost = tournament.rebuy_cost || tournament.buy_in;
 
-        if (isDemoMode) {
-            return { success: true, newStack: rebuyChips };
-        }
-
         // Process rebuy via RPC
         const { data, error } = await supabase.rpc('process_tournament_rebuy', {
             p_tournament_id: tournamentId,
@@ -812,10 +804,6 @@ class TournamentService {
         // @ts-ignore
         const addonCost = tournament.addon_cost || tournament.buy_in;
 
-        if (isDemoMode) {
-            return { success: true, newStack: addonChips };
-        }
-
         const { data, error } = await supabase.rpc('process_tournament_rebuy', {
             p_tournament_id: tournamentId,
             p_player_id: userId,
@@ -838,10 +826,6 @@ class TournamentService {
      * Balance tables in a multi-table tournament
      */
     async balanceTables(tournamentId: string): Promise<{ movesMade: number }> {
-        if (isDemoMode) {
-            return { movesMade: 0 };
-        }
-
         const { data, error } = await supabase.rpc('balance_tournament_tables', {
             p_tournament_id: tournamentId,
         });
@@ -1053,10 +1037,10 @@ class TournamentService {
      * Finalize tournament (process payouts)
      */
     async finalizeTournament(tournamentId: string): Promise<{ success: boolean }> {
-        if (isDemoMode) {
-            const tournament = DEMO_TOURNAMENTS.find(t => t.id === tournamentId);
-            if (tournament) tournament.status = 'finished';
-            return { success: true };
+        // Get tournament details
+        const tournament = await this.getTournament(tournamentId);
+        if (!tournament) {
+            return { success: false };
         }
 
         // Update tournament status
@@ -1070,6 +1054,43 @@ class TournamentService {
 
         // Payouts are processed automatically by the settlement system
         // via the tournament_payouts table populated during eliminations
+
+        // Submit all placements to POY leaderboard system
+        try {
+            const { data: players } = await supabase
+                .from('tournament_players')
+                .select('user_id, position, prize')
+                .eq('tournament_id', tournamentId)
+                .not('position', 'is', null)
+                .order('position', { ascending: true });
+
+            if (players && players.length > 0) {
+                // Dynamically import to avoid circular deps
+                const { POYService } = await import('./POYService');
+
+                // Map tournament type to game_type
+                const gameType = tournament.type === 'spin' ? 'spin-n-go'
+                    : tournament.type === 'sng' ? 'sit-n-go'
+                        : tournament.type === 'satellite' ? 'satellite'
+                            : 'tournament';
+
+                // Submit each player's result
+                for (const player of players) {
+                    await POYService.submitTournamentResult({
+                        player_id: player.user_id,
+                        club_id: tournament.club_id,
+                        game_type: gameType,
+                        game_id: tournamentId,
+                        placement: player.position,
+                        total_players: tournament.current_players || players.length,
+                        buy_in: tournament.buy_in || 0,
+                        winnings: player.prize || 0,
+                    });
+                }
+            }
+        } catch (e) {
+            console.warn('[TournamentService] Failed to submit to POY:', e);
+        }
 
         return { success: true };
     }
@@ -1127,16 +1148,14 @@ class TournamentService {
         const tournament = await this.createTournament(clubId, config);
 
         // Update with actual prize pool
-        if (!isDemoMode) {
-            await supabase
-                .from('tournaments')
-                .update({
-                    prize_pool: prizePool,
-                    spin_multiplier: spinResult.multiplier,
-                    is_premium_spin: spinResult.isPremium,
-                })
-                .eq('id', tournament.id);
-        }
+        await supabase
+            .from('tournaments')
+            .update({
+                prize_pool: prizePool,
+                spin_multiplier: spinResult.multiplier,
+                is_premium_spin: spinResult.isPremium,
+            })
+            .eq('id', tournament.id);
 
         return { ...tournament, prize_pool: prizePool };
     }
@@ -1263,8 +1282,6 @@ class TournamentService {
      * Get total bounties won by a player in a tournament
      */
     async getPlayerBounties(tournamentId: string, playerId: string): Promise<number> {
-        if (isDemoMode) return 50;
-
         const { data, error } = await supabase
             .from('tournament_bounties')
             .select('bounty_amount')

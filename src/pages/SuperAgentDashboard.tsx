@@ -1,0 +1,332 @@
+/**
+ * 👔 SUPER AGENT DASHBOARD — Agent Network Management with Live Updates
+ */
+
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import { AgentService } from '../services/AgentService';
+import type { Agent, AgentPlayer } from '../services/AgentService';
+import { CommissionService } from '../services/CommissionService';
+import type { CommissionSpread } from '../services/CommissionService';
+import { useUserStore } from '../stores/useUserStore';
+import { useToast } from '../components/common/Toast';
+import SmarterHeader from '../components/layout/SmarterHeader';
+import CreditRequestWidget from '../components/agent/CreditRequestWidget';
+import './SuperAgentDashboard.css';
+
+type DashboardTab = 'overview' | 'agents' | 'players' | 'commissions' | 'transfers';
+
+export default function SuperAgentDashboard() {
+    const navigate = useNavigate();
+    const { clubId } = useParams();
+    const { user } = useUserStore();
+    const toast = useToast();
+
+    const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
+    const [agent, setAgent] = useState<Agent | null>(null);
+    const [subAgents, setSubAgents] = useState<Agent[]>([]);
+    const [players, setPlayers] = useState<AgentPlayer[]>([]);
+    const [spread, setSpread] = useState<CommissionSpread | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    const [transferPlayerId, setTransferPlayerId] = useState('');
+    const [transferAmount, setTransferAmount] = useState('');
+    const [isTransferring, setIsTransferring] = useState(false);
+
+    useEffect(() => {
+        if (clubId && user?.id) {
+            loadDashboardData();
+
+            // Real-time updates for agent activity
+            const channel = supabase
+                .channel('super-agent-live')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'club_memberships',
+                        filter: `club_id=eq.${clubId}`,
+                    },
+                    () => loadDashboardData()
+                )
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'transactions',
+                    },
+                    () => loadDashboardData()
+                )
+                .subscribe();
+
+            return () => {
+                supabase.removeChannel(channel);
+            };
+        }
+    }, [clubId, user?.id]);
+
+    const loadDashboardData = async () => {
+        setLoading(true);
+        try {
+            const agents = await AgentService.getAgents(clubId!);
+            const myAgent = agents.find(a => a.userId === user?.id);
+            if (myAgent) {
+                setAgent(myAgent);
+                setSubAgents(agents.filter(a => a.parentAgentId === myAgent.id));
+                const myPlayers = await AgentService.getAgentPlayers(myAgent.id);
+                setPlayers(myPlayers);
+                const commSpread = await CommissionService.calculateSpread(myAgent.id);
+                setSpread(commSpread);
+            }
+        } catch (error) {
+            console.error('Failed to load dashboard:', error);
+            toast.error('Failed to load dashboard data');
+        }
+        setLoading(false);
+    };
+
+    const handleTransfer = async () => {
+        if (!agent || !transferPlayerId || !transferAmount) return;
+        const amount = parseFloat(transferAmount);
+        if (isNaN(amount) || amount <= 0) return;
+
+        setIsTransferring(true);
+        try {
+            await AgentService.transferToPlayer(agent.id, transferPlayerId, clubId!, amount);
+            setTransferPlayerId('');
+            toast.success(`Transferred $${amount.toLocaleString()} successfully`);
+            loadDashboardData();
+        } catch (error) {
+            console.error('Transfer failed:', error);
+            toast.error('Transfer failed');
+        }
+        setIsTransferring(false);
+    };
+
+    if (loading) {
+        return (
+            <div className="super-agent-dashboard">
+                <SmarterHeader title="👔 Agent Dashboard" />
+                <div className="loading-state"><div className="spinner" /></div>
+            </div>
+        );
+    }
+
+    if (!agent) {
+        return (
+            <div className="super-agent-dashboard">
+                <SmarterHeader title="👔 Agent Dashboard" />
+                <div className="empty-state">
+                    <span className="empty-icon">👔</span>
+                    <p>You are not an agent in this club</p>
+                    <button className="btn btn-primary" onClick={() => navigate(-1)}>Go Back</button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="super-agent-dashboard">
+            <SmarterHeader title="👔 Agent Dashboard" />
+
+            {/* Stats Grid */}
+            <div className="stats-grid">
+                <div className="stat-card">
+                    <span className="stat-icon"></span>
+                    <div className="stat-info">
+                        <span className="stat-value">{agent.totalPlayers}</span>
+                        <span className="stat-label">Total Players</span>
+                    </div>
+                </div>
+                <div className="stat-card">
+                    <span className="stat-icon"></span>
+                    <div className="stat-info">
+                        <span className="stat-value">{agent.activePlayerCount}</span>
+                        <span className="stat-label">Active Now</span>
+                    </div>
+                </div>
+                <div className="stat-card">
+                    <span className="stat-icon">👔</span>
+                    <div className="stat-info">
+                        <span className="stat-value">{agent.subAgentCount}</span>
+                        <span className="stat-label">Sub-Agents</span>
+                    </div>
+                </div>
+                <div className="stat-card highlight">
+                    <span className="stat-icon"></span>
+                    <div className="stat-info">
+                        <span className="stat-value">${agent.weeklyRakeGenerated.toLocaleString()}</span>
+                        <span className="stat-label">Weekly Rake</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="dashboard-tabs">
+                {(['overview', 'agents', 'players', 'commissions', 'transfers'] as DashboardTab[]).map(tab => (
+                    <button
+                        key={tab}
+                        className={activeTab === tab ? 'active' : ''}
+                        onClick={() => setActiveTab(tab)}
+                    >
+                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    </button>
+                ))}
+            </div>
+
+            {/* Content */}
+            <div className="dashboard-content">
+                {activeTab === 'overview' && (
+                    <div className="overview-section">
+                        <div className="balance-cards">
+                            <div className="balance-card">
+                                <span className="label">Business Balance</span>
+                                <span className="value">${agent.businessBalance.toLocaleString()}</span>
+                            </div>
+                            <div className="balance-card">
+                                <span className="label">Player Balance</span>
+                                <span className="value">${agent.playerBalance.toLocaleString()}</span>
+                            </div>
+                            <div className="balance-card">
+                                <span className="label">Credit Used</span>
+                                <span className="value">${agent.creditUsed.toLocaleString()} / ${agent.creditLimit.toLocaleString()}</span>
+                            </div>
+                        </div>
+                        <div className="rates-card">
+                            <h3>Your Rates</h3>
+                            <div className="rate-row">
+                                <span>Commission Rate</span>
+                                <span className="rate-value">{(agent.commissionRate * 100).toFixed(1)}%</span>
+                            </div>
+                            <div className="rate-row">
+                                <span>Player Rakeback</span>
+                                <span className="rate-value">{(agent.playerRakebackRate * 100).toFixed(1)}%</span>
+                            </div>
+                        </div>
+                        {/* Credit Request Widget */}
+                        <div className="credit-section">
+                            <h3>💳 Credit</h3>
+                            <CreditRequestWidget
+                                agentId={agent.id}
+                                agentName={agent.displayName || 'Agent'}
+                                parentAgentId={agent.parentAgentId}
+                                currentCreditLimit={agent.creditLimit}
+                                currentCreditUsed={agent.creditUsed}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'agents' && (
+                    <div className="agents-section">
+                        <h3>Your Sub-Agents ({subAgents.length})</h3>
+                        {subAgents.length === 0 ? (
+                            <p className="empty-text">No sub-agents yet</p>
+                        ) : (
+                            <div className="agent-list">
+                                {subAgents.map(sub => (
+                                    <div key={sub.id} className="agent-row">
+                                        <div className="agent-info">
+                                            <span className="agent-name">{sub.displayName || 'Agent'}</span>
+                                            <span className="agent-role">{sub.role}</span>
+                                        </div>
+                                        <div className="agent-stats">
+                                            <span>{sub.totalPlayers} players</span>
+                                            <span className="rake">${sub.weeklyRakeGenerated.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === 'players' && (
+                    <div className="players-section">
+                        <h3>Your Players ({players.length})</h3>
+                        <div className="player-list">
+                            {players.map(player => (
+                                <div key={player.id} className="player-row">
+                                    <div className="player-avatar">
+                                        {player.avatarUrl ? (
+                                            <img src={player.avatarUrl} alt="" />
+                                        ) : (
+                                            <span>{player.displayName[0]?.toUpperCase()}</span>
+                                        )}
+                                        {player.isOnline && <span className="online-dot" />}
+                                    </div>
+                                    <div className="player-info">
+                                        <span className="player-name">{player.displayName}</span>
+                                        <span className="player-rakeback">{(player.rakebackPercent * 100).toFixed(1)}% rakeback</span>
+                                    </div>
+                                    <div className="player-balance">
+                                        ${player.chipBalance.toLocaleString()}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'commissions' && spread && (
+                    <div className="commissions-section">
+                        <h3>Commission Breakdown</h3>
+                        <div className="commission-summary">
+                            <div className="commission-row">
+                                <span>Gross Commission Rate</span>
+                                <span className="value">{(spread.grossCommissionRate * 100).toFixed(1)}%</span>
+                            </div>
+                            <div className="commission-row">
+                                <span>Paid to Downlines</span>
+                                <span className="value negative">-${spread.payoutToDownlines.toLocaleString()}</span>
+                            </div>
+                            <div className="commission-row total">
+                                <span>Net Margin</span>
+                                <span className="value">${spread.netMargin.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'transfers' && (
+                    <div className="transfers-section">
+                        <h3>Transfer to Player</h3>
+                        <div className="transfer-form">
+                            <div className="form-row">
+                                <label>Select Player</label>
+                                <select
+                                    value={transferPlayerId}
+                                    onChange={(e) => setTransferPlayerId(e.target.value)}
+                                >
+                                    <option value="">Choose player...</option>
+                                    {players.map(p => (
+                                        <option key={p.id} value={p.userId}>{p.displayName}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="form-row">
+                                <label>Amount</label>
+                                <input
+                                    type="number"
+                                    placeholder="0.00"
+                                    value={transferAmount}
+                                    onChange={(e) => setTransferAmount(e.target.value)}
+                                />
+                            </div>
+                            <button
+                                className="btn btn-primary"
+                                onClick={handleTransfer}
+                                disabled={isTransferring || !transferPlayerId || !transferAmount}
+                            >
+                                {isTransferring ? 'Sending...' : 'Send Chips'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}

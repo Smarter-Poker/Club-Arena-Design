@@ -3,13 +3,16 @@
  * 🐰 RABBIT HUNT — See What Cards Would Have Come
  * ═══════════════════════════════════════════════════════════════════════════════
  *
- * Post-hand feature showing undealt cards:
- * - Reveal remaining board cards
+ * Post-hand feature with VIP gating:
+ * - VIP users: FREE rabbit hunting
+ * - Non-VIP: Pay diamonds per use (5)
  * - Animation for drama
- * - Diamond cost indicator
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { vipService, FEATURE_PRICING } from '../../services/VIPService';
+import { useUserStore } from '../../stores/useUserStore';
+import { useToast } from '../common/Toast';
 import './RabbitHunt.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -24,9 +27,8 @@ export interface Card {
 export interface RabbitHuntProps {
     isAvailable: boolean;
     onReveal: () => Promise<Card[]>;
-    cost?: number; // Diamond cost
     currentBoard: Card[];
-    maxCards?: number; // How many cards to reveal (5 - currentBoard.length)
+    maxCards?: number;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -47,10 +49,6 @@ const SUIT_COLORS: Record<string, string> = {
     s: '#E4E6EB',
 };
 
-function formatCard(card: Card): string {
-    return `${card.rank}${SUIT_SYMBOLS[card.suit]}`;
-}
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -58,24 +56,69 @@ function formatCard(card: Card): string {
 export function RabbitHunt({
     isAvailable,
     onReveal,
-    cost = 5,
     currentBoard,
     maxCards = 5,
 }: RabbitHuntProps) {
+    const { user } = useUserStore();
+    const toast = useToast();
+
     const [isRevealing, setIsRevealing] = useState(false);
     const [revealedCards, setRevealedCards] = useState<Card[]>([]);
     const [hasRevealed, setHasRevealed] = useState(false);
+    const [isVIP, setIsVIP] = useState(false);
+    const [isCheckingVIP, setIsCheckingVIP] = useState(true);
 
-    // Cards remaining to reveal
+    const cost = FEATURE_PRICING.rabbit_hunt.cost;
     const cardsToReveal = maxCards - currentBoard.length;
+
+    // Check VIP status on mount
+    useEffect(() => {
+        const checkVIP = async () => {
+            if (!user?.id) {
+                setIsVIP(false);
+                setIsCheckingVIP(false);
+                return;
+            }
+
+            try {
+                const access = await vipService.checkFeatureAccess(user.id, 'rabbit_hunt');
+                setIsVIP(access.hasAccess && !access.needsPurchase);
+            } catch {
+                setIsVIP(false);
+            }
+            setIsCheckingVIP(false);
+        };
+
+        checkVIP();
+    }, [user?.id]);
 
     // Handle reveal click
     const handleReveal = useCallback(async () => {
         if (isRevealing || hasRevealed || !isAvailable) return;
+        if (!user?.id) {
+            toast.error('Please log in to use Rabbit Hunt');
+            return;
+        }
 
         setIsRevealing(true);
         try {
+            // Check access and charge if needed
+            const result = await vipService.useFeature(user.id, 'rabbit_hunt');
+
+            if (!result.success) {
+                toast.error('Insufficient diamonds for Rabbit Hunt');
+                setIsRevealing(false);
+                return;
+            }
+
+            // Show charge notification if diamonds were spent
+            if (result.charged > 0) {
+                toast.info(` ${result.charged} diamonds charged`);
+            }
+
+            // Reveal the cards
             const cards = await onReveal();
+
             // Reveal cards one by one with delay
             for (let i = 0; i < cards.length; i++) {
                 await new Promise((resolve) => setTimeout(resolve, 500));
@@ -84,10 +127,11 @@ export function RabbitHunt({
             setHasRevealed(true);
         } catch (error) {
             console.error('Rabbit hunt failed:', error);
+            toast.error('Rabbit hunt failed');
         } finally {
             setIsRevealing(false);
         }
-    }, [isRevealing, hasRevealed, isAvailable, onReveal]);
+    }, [isRevealing, hasRevealed, isAvailable, onReveal, user?.id, toast]);
 
     if (!isAvailable && !hasRevealed) {
         return null;
@@ -98,17 +142,17 @@ export function RabbitHunt({
             {/* Button */}
             {!hasRevealed && (
                 <button
-                    className={`rabbit-hunt__button ${isRevealing ? 'rabbit-hunt__button--loading' : ''}`}
+                    className={`rabbit-hunt__button ${isRevealing ? 'rabbit-hunt__button--loading' : ''} ${isVIP ? 'rabbit-hunt__button--vip' : ''}`}
                     onClick={handleReveal}
-                    disabled={isRevealing}
+                    disabled={isRevealing || isCheckingVIP}
                 >
                     <span className="rabbit-hunt__icon">🐰</span>
                     <span className="rabbit-hunt__label">
                         {isRevealing ? 'Revealing...' : 'Rabbit Hunt'}
                     </span>
-                    {cost > 0 && !isRevealing && (
-                        <span className="rabbit-hunt__cost">
-                            {cost} 💎
+                    {!isRevealing && !isCheckingVIP && (
+                        <span className={`rabbit-hunt__cost ${isVIP ? 'rabbit-hunt__cost--free' : ''}`}>
+                            {isVIP ? ' FREE' : `${cost} `}
                         </span>
                     )}
                 </button>

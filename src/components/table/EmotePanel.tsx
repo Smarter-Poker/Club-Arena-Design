@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎭 EMOTE PANEL — Emoji Reactions at Table
+ *  EMOTE PANEL — Emoji Reactions at Table
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Quick emote selector for table reactions:
@@ -36,21 +36,21 @@ export interface EmotePanelProps {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const DEFAULT_EMOTES: Emote[] = [
-    { id: 'thumbsup', emoji: '👍', label: 'Nice' },
-    { id: 'thumbsdown', emoji: '👎', label: 'Bad beat' },
+    { id: 'thumbsup', emoji: '', label: 'Nice' },
+    { id: 'thumbsdown', emoji: '', label: 'Bad beat' },
     { id: 'clap', emoji: '👏', label: 'Well played' },
-    { id: 'fire', emoji: '🔥', label: 'Hot' },
+    { id: 'fire', emoji: '', label: 'Hot' },
     { id: 'thinking', emoji: '🤔', label: 'Hmm' },
     { id: 'laugh', emoji: '😂', label: 'LOL' },
     { id: 'shocked', emoji: '😱', label: 'OMG' },
-    { id: 'cool', emoji: '😎', label: 'Cool' },
+    { id: 'cool', emoji: '', label: 'Cool' },
     { id: 'angry', emoji: '😤', label: 'Tilted' },
     { id: 'cry', emoji: '😢', label: 'Sad' },
-    { id: 'money', emoji: '💰', label: 'Ship it' },
-    { id: 'trophy', emoji: '🏆', label: 'Winner' },
-    { id: 'rocket', emoji: '🚀', label: 'To the moon' },
-    { id: 'skull', emoji: '💀', label: 'Dead' },
-    { id: 'wave', emoji: '👋', label: 'Hi/Bye' },
+    { id: 'money', emoji: '', label: 'Ship it' },
+    { id: 'trophy', emoji: '', label: 'Winner' },
+    { id: 'rocket', emoji: '', label: 'To the moon' },
+    { id: 'skull', emoji: '', label: 'Dead' },
+    { id: 'wave', emoji: '', label: 'Hi/Bye' },
     { id: 'heart', emoji: '❤️', label: 'Love' },
 ];
 

@@ -31,6 +31,7 @@ export default function CreateTableModal({ clubId, onClose, onSuccess }: CreateT
     const [bigBlind, setBigBlind] = useState('2');
     const [maxPlayers, setMaxPlayers] = useState('9');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     // Advanced Settings
     const [settings, setSettings] = useState<Partial<TableSettings>>({
@@ -48,6 +49,7 @@ export default function CreateTableModal({ clubId, onClose, onSuccess }: CreateT
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        setError(null);
 
         try {
             await tableService.createTable(
@@ -60,9 +62,9 @@ export default function CreateTableModal({ clubId, onClose, onSuccess }: CreateT
                 settings
             );
             onSuccess();
-        } catch (error) {
-            console.error('Failed to create table:', error);
-            // In a real app, show error toast
+        } catch (err) {
+            console.error('Failed to create table:', err);
+            setError((err as Error).message || 'Failed to create table. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -79,6 +81,11 @@ export default function CreateTableModal({ clubId, onClose, onSuccess }: CreateT
                 </header>
 
                 <form onSubmit={handleSubmit}>
+                    {error && (
+                        <div className={styles['error-toast']}>
+                             {error}
+                        </div>
+                    )}
                     <div className={styles['modal-body']}>
                         {/* Basic Info */}
                         <div className={styles['form-group']}>

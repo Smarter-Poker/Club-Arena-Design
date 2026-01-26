@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🏆 LEADERBOARD PANEL — Club/Table Rankings Display
+ *  LEADERBOARD PANEL — Club/Table Rankings Display
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Premium leaderboard panel showing:
@@ -80,9 +80,9 @@ interface PlayerRowProps {
 
 function PlayerRow({ player, currency }: PlayerRowProps) {
     const rankBadge = useMemo(() => {
-        if (player.rank === 1) return '🥇';
-        if (player.rank === 2) return '🥈';
-        if (player.rank === 3) return '🥉';
+        if (player.rank === 1) return '';
+        if (player.rank === 2) return '';
+        if (player.rank === 3) return '';
         return `#${player.rank}`;
     }, [player.rank]);
 
@@ -172,7 +172,7 @@ export function LeaderboardPanel({
                         </div>
                     ) : players.length === 0 ? (
                         <div className="leaderboard-panel__empty">
-                            <span className="leaderboard-panel__empty-icon">🏆</span>
+                            <span className="leaderboard-panel__empty-icon"></span>
                             <span className="leaderboard-panel__empty-text">No rankings yet</span>
                             <span className="leaderboard-panel__empty-hint">Play some hands to appear on the leaderboard</span>
                         </div>
@@ -193,7 +193,7 @@ export function LeaderboardPanel({
                                                     <span>{player.playerName[0]?.toUpperCase()}</span>
                                                 )}
                                                 <span className="leaderboard-podium__medal">
-                                                    {player.rank === 1 ? '🥇' : player.rank === 2 ? '🥈' : '🥉'}
+                                                    {player.rank === 1 ? '' : player.rank === 2 ? '' : ''}
                                                 </span>
                                             </div>
                                             <span className="leaderboard-podium__name">{player.playerName}</span>

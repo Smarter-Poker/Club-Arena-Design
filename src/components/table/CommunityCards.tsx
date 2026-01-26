@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🃏 COMMUNITY CARDS — Flop/Turn/River Display
+ *  COMMUNITY CARDS — Flop/Turn/River Display
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * Displays the community cards on the poker table with:
@@ -34,12 +34,24 @@ export interface CommunityCardsProps {
 // UTILITIES
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const SUIT_CONFIG: Record<string, { symbol: string; color: string; name: string }> = {
+// Classic 2-color deck (hearts/diamonds = red, clubs/spades = black)
+const SUIT_CONFIG_2COLOR: Record<string, { symbol: string; color: string; name: string }> = {
     h: { symbol: '♥', color: '#DC143C', name: 'hearts' },
     d: { symbol: '♦', color: '#DC143C', name: 'diamonds' },
     c: { symbol: '♣', color: '#1C1C1C', name: 'clubs' },
     s: { symbol: '♠', color: '#1C1C1C', name: 'spades' },
 };
+
+// 4-color deck (hearts = red, diamonds = blue, clubs = green, spades = black)
+const SUIT_CONFIG_4COLOR: Record<string, { symbol: string; color: string; name: string }> = {
+    h: { symbol: '♥', color: '#F85149', name: 'hearts' },    // Red
+    d: { symbol: '♦', color: '#1877F2', name: 'diamonds' },  // Blue  
+    c: { symbol: '♣', color: '#3FB950', name: 'clubs' },     // Green
+    s: { symbol: '♠', color: '#1C1C1C', name: 'spades' },    // Black
+};
+
+// Use 4-color by default (more readable), user setting can toggle
+const SUIT_CONFIG = SUIT_CONFIG_4COLOR;
 
 const RANK_DISPLAY: Record<string, string> = {
     '2': '2', '3': '3', '4': '4', '5': '5', '6': '6',

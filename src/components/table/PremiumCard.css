@@ -1,5 +1,5 @@
 /**
- * 🃏 PREMIUM CARD STYLES
+ *  PREMIUM CARD STYLES
  * High-end video game aesthetic with 3D effects, gradients, and animations
  */
 
@@ -81,6 +81,14 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.8);
     border: 1px solid rgba(0, 0, 0, 0.08);
     overflow: hidden;
+}
+
+/* Card front image - digital deck card faces */
+.card-front-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
 }
 
 /* Card corners */

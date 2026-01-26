@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 👥 MEMBER LIST — Club Membership Management
+ *  MEMBER LIST — Club Membership Management
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Displays list of club members with management actions.
@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './MemberList.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -51,9 +52,10 @@ export function MemberList({
     onKick,
     onBan,
     onSendChips,
-    currency = '💎',
+    currency = '',
     onClose,
 }: MemberListProps) {
+    const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [roleFilter, setRoleFilter] = useState<MemberRole | 'all'>('all');
 
@@ -119,7 +121,11 @@ export function MemberList({
                         filteredMembers.map((member) => (
                             <div key={member.id} className="member-row">
                                 {/* Name & Avatar */}
-                                <div className="member-col member-col--name">
+                                <div
+                                    className="member-col member-col--name"
+                                    onClick={() => navigate(`/profile/${member.id}`)}
+                                    style={{ cursor: 'pointer' }}
+                                >
                                     <div className="member-avatar">
                                         {member.avatar ? (
                                             <img src={member.avatar} alt="" />
@@ -159,7 +165,7 @@ export function MemberList({
                                         title="Send Chips"
                                         onClick={() => onSendChips(member.id)}
                                     >
-                                        💰
+                                        
                                     </button>
                                     {canManage(member.role) && (
                                         <>
@@ -168,14 +174,14 @@ export function MemberList({
                                                 title="Promote"
                                                 onClick={() => onPromote(member.id)}
                                             >
-                                                ⬆️
+                                                
                                             </button>
                                             <button
                                                 className="member-action-btn member-action-btn--danger"
                                                 title="Kick"
                                                 onClick={() => onKick(member.id)}
                                             >
-                                                🚫
+                                                
                                             </button>
                                         </>
                                     )}

@@ -1,0 +1,203 @@
+/**
+ *  CREDIT REQUEST WIDGET — Agent Credit Request UI
+ */
+
+import { useState, useEffect } from 'react';
+import { creditRequestService, type CreditRequest } from '../../services/CreditRequestService';
+import { useToast } from '../common/Toast';
+import './CreditRequestWidget.css';
+
+interface CreditRequestWidgetProps {
+    agentId: string;
+    agentName: string;
+    parentAgentId?: string;
+    currentCreditLimit: number;
+    currentCreditUsed: number;
+}
+
+export default function CreditRequestWidget({
+    agentId,
+    agentName,
+    parentAgentId,
+    currentCreditLimit,
+    currentCreditUsed
+}: CreditRequestWidgetProps) {
+    const toast = useToast();
+
+    const [requests, setRequests] = useState<CreditRequest[]>([]);
+    const [pendingApprovals, setPendingApprovals] = useState<CreditRequest[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [showRequestForm, setShowRequestForm] = useState(false);
+    const [requestAmount, setRequestAmount] = useState('');
+    const [requestReason, setRequestReason] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+
+    useEffect(() => {
+        loadRequests();
+    }, [agentId]);
+
+    const loadRequests = async () => {
+        setLoading(true);
+        try {
+            // Load my requests
+            const myReqs = await creditRequestService.getMyRequests(agentId);
+            setRequests(myReqs);
+
+            // Load requests I need to approve (if I'm a super agent)
+            const toApprove = await creditRequestService.getRequestsForApprover(agentId);
+            setPendingApprovals(toApprove.filter(r => r.status === 'pending'));
+        } catch (error) {
+            console.error('Failed to load credit requests:', error);
+        }
+        setLoading(false);
+    };
+
+    const handleSubmitRequest = async () => {
+        if (!parentAgentId) {
+            toast.error('No parent agent to request credit from');
+            return;
+        }
+
+        const amount = parseFloat(requestAmount);
+        if (isNaN(amount) || amount <= 0) {
+            toast.error('Please enter a valid amount');
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            await creditRequestService.submitRequest(agentId, {
+                approverId: parentAgentId,
+                requestedAmount: amount,
+                reason: requestReason || 'Credit limit increase'
+            });
+            toast.success('Credit request submitted');
+            setShowRequestForm(false);
+            setRequestAmount('');
+            setRequestReason('');
+            loadRequests();
+        } catch (error) {
+            toast.error('Failed to submit request');
+        }
+        setSubmitting(false);
+    };
+
+    const handleApprove = async (request: CreditRequest) => {
+        try {
+            await creditRequestService.approveRequest(request.id, agentId);
+            toast.success(`Approved $${request.requestedAmount.toLocaleString()} for ${request.requesterName}`);
+            loadRequests();
+        } catch (error) {
+            toast.error('Failed to approve request');
+        }
+    };
+
+    const handleDeny = async (request: CreditRequest) => {
+        try {
+            await creditRequestService.denyRequest(request.id, agentId);
+            toast.success('Request denied');
+            loadRequests();
+        } catch (error) {
+            toast.error('Failed to deny request');
+        }
+    };
+
+    const getStatusBadge = (status: string) => {
+        const colors: Record<string, string> = {
+            pending: '#f59e0b',
+            approved: '#10b981',
+            denied: '#ef4444',
+            cancelled: '#6b7280'
+        };
+        return (
+            <span className="status-badge" style={{ backgroundColor: colors[status] || '#6b7280' }}>
+                {status}
+            </span>
+        );
+    };
+
+    if (loading) {
+        return <div className="credit-request-widget loading">Loading...</div>;
+    }
+
+    return (
+        <div className="credit-request-widget">
+            {/* Current Credit Status */}
+            <div className="credit-status">
+                <div className="credit-bar">
+                    <div
+                        className="credit-used"
+                        style={{ width: `${Math.min(100, (currentCreditUsed / currentCreditLimit) * 100)}%` }}
+                    />
+                </div>
+                <div className="credit-info">
+                    <span>${currentCreditUsed.toLocaleString()} used</span>
+                    <span>of ${currentCreditLimit.toLocaleString()}</span>
+                </div>
+            </div>
+
+            {/* Request Credit Button */}
+            {parentAgentId && (
+                <button className="request-btn" onClick={() => setShowRequestForm(!showRequestForm)}>
+                    {showRequestForm ? 'Cancel' : '+ Request Credit'}
+                </button>
+            )}
+
+            {/* Request Form */}
+            {showRequestForm && (
+                <div className="request-form">
+                    <input
+                        type="number"
+                        placeholder="Amount"
+                        value={requestAmount}
+                        onChange={(e) => setRequestAmount(e.target.value)}
+                    />
+                    <textarea
+                        placeholder="Reason (optional)"
+                        value={requestReason}
+                        onChange={(e) => setRequestReason(e.target.value)}
+                    />
+                    <button onClick={handleSubmitRequest} disabled={submitting}>
+                        {submitting ? 'Submitting...' : 'Submit Request'}
+                    </button>
+                </div>
+            )}
+
+            {/* Pending Approvals (for super agents) */}
+            {pendingApprovals.length > 0 && (
+                <div className="pending-approvals">
+                    <h4> Pending Approvals ({pendingApprovals.length})</h4>
+                    {pendingApprovals.map(req => (
+                        <div key={req.id} className="approval-card">
+                            <div className="approval-info">
+                                <span className="requester">{req.requesterName}</span>
+                                <span className="amount">${req.requestedAmount.toLocaleString()}</span>
+                                <span className="reason">{req.reason}</span>
+                            </div>
+                            <div className="approval-actions">
+                                <button className="approve-btn" onClick={() => handleApprove(req)}></button>
+                                <button className="deny-btn" onClick={() => handleDeny(req)}>✕</button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* My Request History */}
+            {requests.length > 0 && (
+                <div className="request-history">
+                    <h4>My Requests</h4>
+                    {requests.slice(0, 5).map(req => (
+                        <div key={req.id} className="request-row">
+                            <span className="request-amount">${req.requestedAmount.toLocaleString()}</span>
+                            {getStatusBadge(req.status)}
+                            <span className="request-date">
+                                {new Date(req.createdAt).toLocaleDateString()}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}

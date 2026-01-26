@@ -33,10 +33,10 @@ export default function AppShell({
     // Bottom navigation items (Club Admin view)
     const navItems: NavItem[] = [
         { id: 'messages', label: 'Messages', icon: '✉️', path: `/club/${clubId}/messages` },
-        { id: 'players', label: 'Players', icon: '👥', path: `/club/${clubId}/members` },
-        { id: 'cashier', label: 'Cashier', icon: '💰', path: `/club/${clubId}/cashier` },
-        { id: 'data', label: 'Data', icon: '📊', path: `/club/${clubId}/data` },
-        { id: 'admin', label: 'Admin', icon: '⚙️', path: `/club/${clubId}/admin` },
+        { id: 'players', label: 'Players', icon: '', path: `/club/${clubId}/members` },
+        { id: 'cashier', label: 'Cashier', icon: '', path: `/club/${clubId}/cashier` },
+        { id: 'data', label: 'Data', icon: '', path: `/club/${clubId}/data` },
+        { id: 'admin', label: 'Admin', icon: '', path: `/club/${clubId}/admin` },
     ];
 
     const isActive = (path: string) => location.pathname === path;
@@ -80,27 +80,27 @@ export default function AppShell({
                         </div>
                         <div className="menu-items">
                             <Link to={`/club/${clubId}/cashier`} className="menu-item">
-                                <span className="menu-icon">⭐</span>
+                                <span className="menu-icon"></span>
                                 <span>Cashier</span>
                                 <span className="menu-chevron">›</span>
                             </Link>
                             <Link to={`/club/${clubId}/topup`} className="menu-item">
-                                <span className="menu-icon">💎</span>
+                                <span className="menu-icon"></span>
                                 <span>Top Up</span>
                                 <span className="menu-chevron">›</span>
                             </Link>
                             <Link to={`/club/${clubId}/settings`} className="menu-item">
-                                <span className="menu-icon">⚙️</span>
+                                <span className="menu-icon"></span>
                                 <span>Table Settings</span>
                                 <span className="menu-chevron">›</span>
                             </Link>
                             <button className="menu-item">
-                                <span className="menu-icon">🔊</span>
+                                <span className="menu-icon"></span>
                                 <span>Sounds</span>
                                 <span className="menu-chevron">›</span>
                             </button>
                             <button className="menu-item">
-                                <span className="menu-icon">📳</span>
+                                <span className="menu-icon"></span>
                                 <span>Vibrations</span>
                                 <label className="toggle">
                                     <input type="checkbox" defaultChecked />
@@ -108,12 +108,12 @@ export default function AppShell({
                                 </label>
                             </button>
                             <button className="menu-item">
-                                <span className="menu-icon">📤</span>
+                                <span className="menu-icon"></span>
                                 <span>Share</span>
                                 <span className="menu-chevron">›</span>
                             </button>
                             <Link to="/vip" className="menu-item">
-                                <span className="menu-icon">👑</span>
+                                <span className="menu-icon"></span>
                                 <span>VIP</span>
                                 <span className="menu-chevron">›</span>
                             </Link>

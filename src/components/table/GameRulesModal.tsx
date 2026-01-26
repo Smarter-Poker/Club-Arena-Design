@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 📜 GAME RULES MODAL — Table Rules & Info
+ *  GAME RULES MODAL — Table Rules & Info
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Displays detailed information about the current table:
@@ -68,7 +68,7 @@ export function GameRulesModal({
                 {/* Header */}
                 <div className="rules-modal__header">
                     <div className="rules-modal__title-row">
-                        <span className="rules-modal__icon">📜</span>
+                        <span className="rules-modal__icon"></span>
                         <div className="rules-modal__title-group">
                             <h2 className="rules-modal__title">Table Rules</h2>
                             <span className="rules-modal__subtitle">{variant} • {stakes}</span>
@@ -112,15 +112,15 @@ export function GameRulesModal({
                         <h3 className="rules-modal__section-title">Table Features</h3>
                         <div className="rules-modal__features">
                             <div className={`rules-modal__feature ${isStraddleEnabled ? 'rules-modal__feature--active' : ''}`}>
-                                <span className="rules-modal__feature-icon">{isStraddleEnabled ? '✅' : '❌'}</span>
+                                <span className="rules-modal__feature-icon">{isStraddleEnabled ? '' : ''}</span>
                                 <span className="rules-modal__feature-text">Straddle</span>
                             </div>
                             <div className={`rules-modal__feature ${isRunItTwiceEnabled ? 'rules-modal__feature--active' : ''}`}>
-                                <span className="rules-modal__feature-icon">{isRunItTwiceEnabled ? '✅' : '❌'}</span>
+                                <span className="rules-modal__feature-icon">{isRunItTwiceEnabled ? '' : ''}</span>
                                 <span className="rules-modal__feature-text">Run it Twice</span>
                             </div>
                             <div className={`rules-modal__feature ${isInsuranceEnabled ? 'rules-modal__feature--active' : ''}`}>
-                                <span className="rules-modal__feature-icon">{isInsuranceEnabled ? '✅' : '❌'}</span>
+                                <span className="rules-modal__feature-icon">{isInsuranceEnabled ? '' : ''}</span>
                                 <span className="rules-modal__feature-text">Insurance</span>
                             </div>
                         </div>

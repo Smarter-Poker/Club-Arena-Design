@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 📜 HAND HISTORY — Hand Detail & Replay Component
+ *  HAND HISTORY — Hand Detail & Replay Component
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * PokerBros-style hand history display showing:
@@ -148,7 +148,7 @@ function PlayerResultRow({ player, currency }: PlayerResultRowProps) {
                     {formatAmount(player.result, currency)}
                 </span>
                 {player.isWinner && (
-                    <span className="hh-winner-badge">✓ WINNER</span>
+                    <span className="hh-winner-badge"> WINNER</span>
                 )}
                 <span className="hh-pot-label">Main pot</span>
             </div>
@@ -169,7 +169,21 @@ export function HandHistory({
     currency = '',
 }: HandHistoryProps) {
     const [currentAction, setCurrentAction] = useState(1);
-    const [totalActions] = useState(1); // Would be dynamic in real implementation
+
+    // Calculate total actions dynamically based on hand data
+    const totalActions = useMemo(() => {
+        // Count betting rounds based on community cards shown
+        // Preflop: 1, Flop: 2, Turn: 3, River: 4
+        const communityCount = hand.communityCards.length;
+        let rounds = 1; // At least preflop
+        if (communityCount >= 3) rounds = 2; // Flop
+        if (communityCount >= 4) rounds = 3; // Turn
+        if (communityCount >= 5) rounds = 4; // River
+
+        // Multiply by number of active players for rough action count
+        const activePlayers = hand.players.filter(p => !p.result || p.result !== 0).length;
+        return Math.max(1, rounds * Math.max(1, activePlayers));
+    }, [hand.communityCards, hand.players]);
 
     // Sort players: winners first, then by position
     const sortedPlayers = useMemo(() => {
@@ -196,14 +210,14 @@ export function HandHistory({
                     <div className="hh-header-actions">
                         {onFavorite && (
                             <button className="hh-action-btn" onClick={onFavorite} title="Favorite">
-                                ⭐
+                                
                             </button>
                         )}
                         <button className="hh-action-btn" title="Info">
-                            ℹ️
+                            
                         </button>
                         <button className="hh-action-btn" title="Copy">
-                            📋
+                            
                         </button>
                     </div>
                 </div>
@@ -218,7 +232,7 @@ export function HandHistory({
                         <span className="hh-hand-id">SN: {hand.handId}</span>
                         {onShare && (
                             <button className="hh-share-btn" onClick={onShare}>
-                                Share 📤
+                                Share 
                             </button>
                         )}
                     </div>
@@ -263,7 +277,7 @@ export function HandHistory({
                         />
                         <button className="hh-timeline-btn" disabled={currentAction >= totalActions}>▶</button>
                     </div>
-                    <button className="hh-chat-btn" title="Chat">💬</button>
+                    <button className="hh-chat-btn" title="Chat"></button>
                 </div>
 
                 {/* Footer Tabs */}

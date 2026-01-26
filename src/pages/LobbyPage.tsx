@@ -1,65 +1,101 @@
 /**
- * 🎰 CLUB ENGINE — Lobby Page
+ *  CLUB ENGINE — Lobby Page
  * Main game lobby with tables, game types, and quick actions
+ * WITH REAL-TIME UPDATES
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './LobbyPage.module.css';
 import TableCard from '../components/lobby/TableCard';
 import GameTypeTabs from '../components/lobby/GameTypeTabs';
 import QuickActions from '../components/lobby/QuickActions';
-
-// Mock data for demo
-const MOCK_TABLES = [
-    {
-        id: '1',
-        name: 'High Stakes NLH',
-        game_variant: 'nlh' as const,
-        stakes: '5/10',
-        players: 6,
-        seats: 9,
-        waiting: 2,
-        avg_pot: 450,
-    },
-    {
-        id: '2',
-        name: 'PLO Action',
-        game_variant: 'plo4' as const,
-        stakes: '2/5',
-        players: 5,
-        seats: 6,
-        waiting: 0,
-        avg_pot: 320,
-    },
-    {
-        id: '3',
-        name: 'Beginner NLH',
-        game_variant: 'nlh' as const,
-        stakes: '0.5/1',
-        players: 4,
-        seats: 9,
-        waiting: 0,
-        avg_pot: 25,
-    },
-    {
-        id: '4',
-        name: 'Short Deck',
-        game_variant: 'short_deck' as const,
-        stakes: '1/2',
-        players: 6,
-        seats: 6,
-        waiting: 1,
-        avg_pot: 180,
-    },
-];
+import { tableService } from '../services/TableService';
+import { supabase } from '../lib/supabase';
+import type { PokerTable } from '../types/database.types';
 
 type GameFilter = 'all' | 'nlh' | 'plo' | 'ofc' | 'tournaments';
 
 export default function LobbyPage() {
     const [activeFilter, setActiveFilter] = useState<GameFilter>('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [tables, setTables] = useState<PokerTable[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [onlinePlayers, setOnlinePlayers] = useState(0);
 
-    const filteredTables = MOCK_TABLES.filter(table => {
+    // Fetch tables and subscribe to real-time updates
+    useEffect(() => {
+        const fetchTables = async () => {
+            try {
+                setLoading(true);
+                const activeTables = await tableService.getActiveTables();
+                setTables(activeTables);
+            } catch (error) {
+                console.error('Failed to fetch tables:', error);
+                setTables([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTables();
+
+        // Subscribe to real-time table changes
+        const channel = supabase
+            .channel('lobby-tables')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'tables',
+                },
+                (payload) => {
+                    if (payload.eventType === 'INSERT') {
+                        setTables(prev => [...prev, payload.new as PokerTable]);
+                    } else if (payload.eventType === 'UPDATE') {
+                        setTables(prev =>
+                            prev.map(t => t.id === payload.new.id ? payload.new as PokerTable : t)
+                        );
+                    } else if (payload.eventType === 'DELETE') {
+                        setTables(prev => prev.filter(t => t.id !== payload.old.id));
+                    }
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'table_seats',
+                },
+                () => {
+                    // Refetch to get accurate player counts
+                    tableService.getActiveTables().then(setTables);
+                }
+            )
+            .subscribe();
+
+        // Get online player count
+        const presenceChannel = supabase.channel('online-users');
+        presenceChannel
+            .on('presence', { event: 'sync' }, () => {
+                const presenceState = presenceChannel.presenceState();
+                setOnlinePlayers(Object.keys(presenceState).length);
+            })
+            .subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') {
+                    await presenceChannel.track({ online: true });
+                }
+            });
+
+        // Cleanup
+        return () => {
+            supabase.removeChannel(channel);
+            supabase.removeChannel(presenceChannel);
+        };
+    }, []);
+
+    const filteredTables = tables.filter(table => {
         if (activeFilter !== 'all') {
             if (activeFilter === 'nlh' && !['nlh', 'short_deck'].includes(table.game_variant)) return false;
             if (activeFilter === 'plo' && !table.game_variant.startsWith('plo')) return false;
@@ -67,6 +103,8 @@ export default function LobbyPage() {
         if (searchQuery && !table.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
         return true;
     });
+
+    const totalPlaying = tables.reduce((sum, t) => sum + (t.current_players || 0), 0);
 
     return (
         <div className={styles.lobby}>
@@ -80,6 +118,14 @@ export default function LobbyPage() {
                     <p className={styles.heroSubtitle}>
                         Private poker clubs, better than ever.
                     </p>
+                    <div className={styles.liveStats}>
+                        <span className={styles.liveDot}></span>
+                        <span>{onlinePlayers} online</span>
+                        <span className={styles.divider}>•</span>
+                        <span>{totalPlaying} playing</span>
+                        <span className={styles.divider}>•</span>
+                        <span>{tables.length} tables</span>
+                    </div>
                 </div>
                 <QuickActions />
             </section>
@@ -92,7 +138,7 @@ export default function LobbyPage() {
                 />
 
                 <div className={styles.searchBox}>
-                    <span className={styles.searchIcon}>🔍</span>
+                    <span className={styles.searchIcon}></span>
                     <input
                         type="text"
                         placeholder="Search tables..."
@@ -110,7 +156,12 @@ export default function LobbyPage() {
                     <span className={styles.tableCount}>{filteredTables.length} tables</span>
                 </div>
 
-                {filteredTables.length > 0 ? (
+                {loading ? (
+                    <div className={styles.emptyState}>
+                        <span className={styles.emptyIcon}></span>
+                        <h3>Loading tables...</h3>
+                    </div>
+                ) : filteredTables.length > 0 ? (
                     <div className={styles.tablesGrid}>
                         {filteredTables.map(table => (
                             <TableCard key={table.id} table={table} />
@@ -118,43 +169,14 @@ export default function LobbyPage() {
                     </div>
                 ) : (
                     <div className={styles.emptyState}>
-                        <span className={styles.emptyIcon}>🎰</span>
+                        <span className={styles.emptyIcon}></span>
                         <h3>No tables found</h3>
                         <p>Try adjusting your filters or create a new table.</p>
                         <button className="btn btn-primary">Create Table</button>
                     </div>
                 )}
             </section>
-
-            {/* Recent Activity */}
-            <section className={styles.activitySection}>
-                <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>Recent Activity</h2>
-                </div>
-                <div className={styles.activityList}>
-                    <div className={styles.activityItem}>
-                        <span className={styles.activityIcon}>🏆</span>
-                        <div className={styles.activityContent}>
-                            <span className={styles.activityUser}>Player123</span> won a <span className={styles.activityHighlight}>$450</span> pot
-                        </div>
-                        <span className={styles.activityTime}>2m ago</span>
-                    </div>
-                    <div className={styles.activityItem}>
-                        <span className={styles.activityIcon}>🎯</span>
-                        <div className={styles.activityContent}>
-                            <span className={styles.activityUser}>AceMaster</span> joined <span className={styles.activityHighlight}>High Stakes NLH</span>
-                        </div>
-                        <span className={styles.activityTime}>5m ago</span>
-                    </div>
-                    <div className={styles.activityItem}>
-                        <span className={styles.activityIcon}>💎</span>
-                        <div className={styles.activityContent}>
-                            <span className={styles.activityUser}>ProGrinder</span> hit the <span className={styles.activityHighlight}>Bad Beat Jackpot!</span>
-                        </div>
-                        <span className={styles.activityTime}>12m ago</span>
-                    </div>
-                </div>
-            </section>
         </div>
     );
 }
+

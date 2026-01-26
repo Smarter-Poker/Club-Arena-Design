@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ENGINE — Union Service
+ *  CLUB ENGINE — Union Service
  * ═══════════════════════════════════════════════════════════════════════════════
  * Manages unions (club networks), union admins, and consolidated settlements
  * Real Supabase integration — no demo data
@@ -20,6 +20,7 @@ export interface Union {
     avatarUrl?: string;
     isPublic: boolean;
     memberCount: number;
+    onlineCount: number;
     clubCount: number;
     totalRake: number;
     settings: UnionSettings;
@@ -335,17 +336,39 @@ class UnionServiceClass {
 
         if (error) throw error;
 
-        return (data || []).map(uc => ({
-            id: uc.id,
-            unionId: uc.union_id,
-            clubId: uc.club_id,
-            clubName: (uc.clubs as any)?.name || 'Unknown',
-            ownerId: (uc.clubs as any)?.owner_id,
-            ownerName: (uc.clubs as any)?.profiles?.display_name,
-            memberCount: 0, // Would need join to club_members
-            weeklyRake: 0,  // Would come from settlement data
-            joinedAt: uc.joined_at,
+        // Get member counts and rake data for each club
+        const enrichedClubs = await Promise.all((data || []).map(async (uc) => {
+            // Get member count
+            const { count: memberCount } = await supabase
+                .from('club_members')
+                .select('*', { count: 'exact', head: true })
+                .eq('club_id', uc.club_id)
+                .eq('status', 'active');
+
+            // Get weekly rake from settlement periods (last 7 days)
+            const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+            const { data: rakeData } = await supabase
+                .from('rake_transactions')
+                .select('amount')
+                .eq('club_id', uc.club_id)
+                .gte('created_at', oneWeekAgo);
+
+            const weeklyRake = (rakeData || []).reduce((sum, r) => sum + Number(r.amount || 0), 0);
+
+            return {
+                id: uc.id,
+                unionId: uc.union_id,
+                clubId: uc.club_id,
+                clubName: (uc.clubs as any)?.name || 'Unknown',
+                ownerId: (uc.clubs as any)?.owner_id,
+                ownerName: (uc.clubs as any)?.profiles?.display_name,
+                memberCount: memberCount || 0,
+                weeklyRake,
+                joinedAt: uc.joined_at,
+            };
         }));
+
+        return enrichedClubs;
     }
 
     /**
@@ -436,6 +459,65 @@ class UnionServiceClass {
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
+    // UNION SETTINGS (for UnionSettingsPanel)
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Get union settings for settings panel
+     */
+    async getUnionSettings(unionId: string): Promise<any> {
+        const union = await this.getUnion(unionId);
+        if (!union) throw new Error('Union not found');
+
+        return {
+            id: union.id,
+            name: union.name,
+            revenueSplit: union.settings?.revenueSharePercent || 10,
+            settlementFrequency: 'weekly',
+            autoSettlement: true,
+            minimumSettlement: 1000,
+            rakeCap: null,
+            allowMemberWithdrawal: true,
+            requireApprovalForJoin: true,
+        };
+    }
+
+    /**
+     * Update union settings from settings panel
+     */
+    async updateUnionSettings(unionId: string, settings: any): Promise<boolean> {
+        const { error } = await supabase
+            .from('unions')
+            .update({
+                settings: {
+                    revenue_share_percent: settings.revenueSplit,
+                    shared_player_pool: true,
+                    cross_club_tournaments: true,
+                },
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', unionId);
+
+        return !error;
+    }
+
+    /**
+     * Update individual club revenue splits
+     */
+    async updateClubSplits(unionId: string, splits: Record<string, number>): Promise<boolean> {
+        // Update each club's custom split in union_clubs
+        for (const [clubId, splitPercent] of Object.entries(splits)) {
+            await supabase
+                .from('union_clubs')
+                .update({ custom_split_percent: splitPercent })
+                .eq('union_id', unionId)
+                .eq('club_id', clubId);
+        }
+        return true;
+    }
+
+
+    // ─────────────────────────────────────────────────────────────────────────────
     // STATS
     // ─────────────────────────────────────────────────────────────────────────────
 
@@ -480,6 +562,7 @@ class UnionServiceClass {
             avatarUrl: u.avatar_url,
             isPublic: u.is_public ?? true,
             memberCount: u.member_count || 0,
+            onlineCount: u.online_count || 0,
             clubCount: u.club_count || 0,
             totalRake: Number(u.total_rake) || 0,
             settings: {

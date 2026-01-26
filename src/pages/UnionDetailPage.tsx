@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ENGINE — Union Detail Page
+ *  CLUB ENGINE — Union Detail Page
  * Complete union management with financials and settlements
  * ═══════════════════════════════════════════════════════════════════════════════
  */
@@ -11,8 +11,14 @@ import { unionService, type Union, type UnionClub } from '../services/UnionServi
 import { tableService } from '../services/TableService';
 import { clubService } from '../services/ClubService';
 import { useUserStore } from '../stores/useUserStore';
+import { presenceService } from '../services/PresenceService';
+import { supabase } from '../lib/supabase';
+import SmarterHeader from '../components/layout/SmarterHeader';
 import type { PokerTable, Club } from '../types/database.types';
+import { useUnionStore } from '../stores/useUnionStore';
 import styles from './UnionDetailPage.module.css';
+import { useToast } from '../components/common/Toast';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -44,21 +50,55 @@ interface FinancialSummary {
 export default function UnionDetailPage() {
     const { unionId } = useParams<{ unionId: string }>();
     const { user } = useUserStore();
+    const toast = useToast();
 
     const [union, setUnion] = useState<Union | null>(null);
     const [clubs, setClubs] = useState<UnionClub[]>([]);
     const [tables, setTables] = useState<PokerTable[]>([]);
+    const [unionTournaments, setUnionTournaments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'overview' | 'clubs' | 'tables' | 'financials'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'clubs' | 'tables' | 'tournaments' | 'financials' | 'settings'>('overview');
 
     // Financial state - starts empty, no demo data
     const [settlements, setSettlements] = useState<SettlementRecord[]>([]);
     const [financialSummary, setFinancialSummary] = useState<FinancialSummary | null>(null);
 
-    // Application state
     const [ownedClubs, setOwnedClubs] = useState<Club[]>([]);
     const [showClubSelector, setShowClubSelector] = useState(false);
     const [applying, setApplying] = useState(false);
+    const [confirmJoin, setConfirmJoin] = useState<{ show: boolean; club: Club | null }>({ show: false, club: null });
+    const [removingClubId, setRemovingClubId] = useState<string | null>(null);
+    const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+    const [settingsForm, setSettingsForm] = useState({
+        revenueSharePercent: 10,
+        sharedPlayerPool: true,
+        crossClubTournaments: false
+    });
+    const [onlineCount, setOnlineCount] = useState(0);
+
+    // Real-time presence tracking
+    useEffect(() => {
+        if (!unionId) return;
+
+        const setupPresence = async () => {
+            const { data: { user: authUser } } = await supabase.auth.getUser();
+            if (!authUser) return;
+
+            await presenceService.joinUnion(unionId, authUser.id, {
+                onSync: (state) => {
+                    setOnlineCount(Object.keys(state).length);
+                }
+            });
+
+            setOnlineCount(presenceService.getUnionOnlineCount(unionId));
+        };
+
+        setupPresence();
+
+        return () => {
+            presenceService.leave(`union:${unionId}`);
+        };
+    }, [unionId]);
 
     useEffect(() => {
         if (!unionId) return;
@@ -74,11 +114,34 @@ export default function UnionDetailPage() {
                 setClubs(clubsData);
                 setTables(tablesData);
 
-                // Financial data would come from SettlementService
-                // For now, we calculate a basic summary from available data
-                if (clubsData.length > 0) {
-                    // Would load from SettlementService.generateSettlements()
-                    // For now, show empty state
+                // Load union-wide tournaments if enabled
+                if (unionData?.settings?.crossClubTournaments) {
+                    const clubIds = clubsData.map(c => c.clubId);
+                    const { data: tournaments } = await supabase
+                        .from('tournaments')
+                        .select('*, clubs(name)')
+                        .in('club_id', clubIds)
+                        .order('scheduled_start', { ascending: true });
+                    setUnionTournaments(tournaments || []);
+                }
+
+                // Load financial summary from SettlementService
+                try {
+                    const settlementReport = await unionService.getSettlementReport(unionId);
+
+                    // Calculate overdue as sum of pending PAY_TO_UNION amounts
+                    const overdueAmount = settlementReport.clubBreakdowns
+                        .filter(c => c.wireDirection === 'PAY_TO_UNION')
+                        .reduce((sum, c) => sum + Math.abs(c.unionTaxPaid), 0);
+
+                    setFinancialSummary({
+                        totalRakeThisPeriod: settlementReport.totalRakeCollected,
+                        unionRevenue: settlementReport.netUnionRevenue,
+                        pendingSettlements: settlementReport.clubBreakdowns.filter(c => c.wireDirection === 'PAY_TO_UNION').length,
+                        overdueAmount,
+                    });
+                } catch {
+                    // Fallback if no settlement data
                     setFinancialSummary({
                         totalRakeThisPeriod: 0,
                         unionRevenue: 0,
@@ -104,21 +167,20 @@ export default function UnionDetailPage() {
             const owned = myClubs.filter(c => c.owner_id === user.id);
 
             if (owned.length === 0) {
-                alert("You must own a club to join a union.");
+                toast.error("You must own a club to join a union.");
                 return;
             }
 
             if (owned.length === 1) {
-                if (window.confirm(`Apply to join ${union?.name} with your club "${owned[0].name}"?`)) {
-                    await applyWithClub(owned[0].id);
-                }
+                // Show confirmation modal instead of window.confirm
+                setConfirmJoin({ show: true, club: owned[0] });
             } else {
                 setOwnedClubs(owned);
                 setShowClubSelector(true);
             }
         } catch (error) {
             console.error(error);
-            alert("Failed to load your clubs.");
+            toast.error("Failed to load your clubs.");
         }
     };
 
@@ -128,12 +190,12 @@ export default function UnionDetailPage() {
         try {
             const success = await unionService.addClub(unionId, clubId);
             if (success) {
-                alert("Application sent successfully!");
+                toast.success("Application sent successfully!");
                 setShowClubSelector(false);
             }
         } catch (error) {
             console.error(error);
-            alert("Failed to send application.");
+            toast.error("Failed to send application.");
         } finally {
             setApplying(false);
         }
@@ -159,9 +221,7 @@ export default function UnionDetailPage() {
 
     return (
         <div className={styles.page}>
-            <Link to="/unions" className={styles.backLink}>← Back to Unions</Link>
-
-            {/* Hero Section */}
+            <SmarterHeader title={union.name} />
             <header className={styles.header}>
                 <div className={styles.unionAvatar}>
                     {union.avatarUrl || union.name.charAt(0)}
@@ -217,7 +277,7 @@ export default function UnionDetailPage() {
                     <span className={styles.statLabel}>Total Players</span>
                 </div>
                 <div className={styles.statCard}>
-                    <span className={`${styles.statValue} ${styles.online}`}>{Math.floor(union.memberCount * 0.2).toLocaleString()}</span>
+                    <span className={`${styles.statValue} ${styles.online}`}>{onlineCount.toLocaleString()}</span>
                     <span className={styles.statLabel}>Online Now</span>
                 </div>
                 {financialSummary && (
@@ -231,17 +291,37 @@ export default function UnionDetailPage() {
             {/* Tab Navigation */}
             <nav className={styles.tabNav}>
                 <button className={`${styles.tab} ${activeTab === 'overview' ? styles.active : ''}`} onClick={() => setActiveTab('overview')}>
-                    📊 Overview
+                     Overview
                 </button>
                 <button className={`${styles.tab} ${activeTab === 'clubs' ? styles.active : ''}`} onClick={() => setActiveTab('clubs')}>
-                    🏛️ Clubs
+                     Clubs
                 </button>
                 <button className={`${styles.tab} ${activeTab === 'tables' ? styles.active : ''}`} onClick={() => setActiveTab('tables')}>
-                    🎲 Tables
+                     Tables
                 </button>
                 <button className={`${styles.tab} ${activeTab === 'financials' ? styles.active : ''}`} onClick={() => setActiveTab('financials')}>
-                    💰 Financials
+                     Financials
                 </button>
+                {union?.settings?.crossClubTournaments && (
+                    <button className={`${styles.tab} ${activeTab === 'tournaments' ? styles.active : ''}`} onClick={() => setActiveTab('tournaments')}>
+                         Tournaments
+                    </button>
+                )}
+                {union?.ownerId === user?.id && (
+                    <button className={`${styles.tab} ${activeTab === 'settings' ? styles.active : ''}`} onClick={() => {
+                        setActiveTab('settings');
+                        // Load current settings
+                        if (union?.settings) {
+                            setSettingsForm({
+                                revenueSharePercent: union.settings.revenueSharePercent,
+                                sharedPlayerPool: union.settings.sharedPlayerPool,
+                                crossClubTournaments: union.settings.crossClubTournaments
+                            });
+                        }
+                    }}>
+                         Settings
+                    </button>
+                )}
             </nav>
 
             {/* Tab Content */}
@@ -250,7 +330,7 @@ export default function UnionDetailPage() {
                 {activeTab === 'overview' && (
                     <div className={styles.overviewGrid}>
                         <div className={styles.card}>
-                            <h3>🎯 Live Tables</h3>
+                            <h3> Live Tables</h3>
                             {tables.length === 0 ? (
                                 <p className={styles.emptyText}>No active tables</p>
                             ) : (
@@ -267,11 +347,11 @@ export default function UnionDetailPage() {
                         </div>
 
                         <div className={styles.card}>
-                            <h3>🏛️ Top Clubs</h3>
+                            <h3> Top Clubs</h3>
                             <div className={styles.clubList}>
                                 {clubs.slice(0, 5).map(club => (
                                     <div key={club.clubId} className={styles.clubRow}>
-                                        <div className={styles.clubAvatar}>🏛️</div>
+                                        <div className={styles.clubAvatar}></div>
                                         <div className={styles.clubInfo}>
                                             <strong>{club.clubName}</strong>
                                             <span>{club.memberCount} members</span>
@@ -283,7 +363,7 @@ export default function UnionDetailPage() {
 
                         {financialSummary && (
                             <div className={styles.card}>
-                                <h3>💰 Quick Financials</h3>
+                                <h3> Quick Financials</h3>
                                 <div className={styles.financialQuick}>
                                     <div>
                                         <span>Total Rake</span>
@@ -314,12 +394,30 @@ export default function UnionDetailPage() {
                     <div className={styles.clubsGrid}>
                         {clubs.map(club => (
                             <div key={club.clubId} className={styles.clubCard}>
-                                <div className={styles.clubCardAvatar}>🏛️</div>
+                                <div className={styles.clubCardAvatar}></div>
                                 <div className={styles.clubCardInfo}>
                                     <h4>{club.clubName}</h4>
                                     <p>Owner: {club.ownerName || 'Unknown'}</p>
                                     <span>{club.memberCount} members</span>
                                 </div>
+                                {union?.ownerId === user?.id && (
+                                    <button
+                                        className={styles.removeClubBtn}
+                                        onClick={async () => {
+                                            if (!unionId || removingClubId) return;
+                                            if (!confirm(`Remove ${club.clubName} from this union?`)) return;
+                                            setRemovingClubId(club.clubId);
+                                            const success = await unionService.removeClub(unionId, club.clubId);
+                                            if (success) {
+                                                setClubs(prev => prev.filter(c => c.clubId !== club.clubId));
+                                            }
+                                            setRemovingClubId(null);
+                                        }}
+                                        disabled={removingClubId === club.clubId}
+                                    >
+                                        {removingClubId === club.clubId ? 'Removing...' : '✕ Remove'}
+                                    </button>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -351,27 +449,64 @@ export default function UnionDetailPage() {
                     </div>
                 )}
 
+                {/* Tournaments Tab */}
+                {activeTab === 'tournaments' && union?.settings?.crossClubTournaments && (
+                    <div className={styles.tournamentsContainer || styles.tablesGrid}>
+                        <div className={styles.sectionHeader || styles.card}>
+                            <h3> Union Tournaments</h3>
+                            <p>Tournaments open to all member clubs</p>
+                        </div>
+                        {unionTournaments.length === 0 ? (
+                            <div className={styles.emptyState || styles.emptyText}>
+                                <span></span>
+                                <p>No union-wide tournaments scheduled</p>
+                                <p style={{ fontSize: '0.85rem', opacity: 0.7 }}>Create a tournament from any member club and it will appear here</p>
+                            </div>
+                        ) : (
+                            <div className={styles.tablesGrid}>
+                                {unionTournaments.map(t => (
+                                    <div key={t.id} className={styles.tableCard}>
+                                        <div className={styles.tableCardHeader}>
+                                            <h4>{t.name}</h4>
+                                            <span className={`${styles.statusBadge} ${styles[t.status]}`}>{t.status}</span>
+                                        </div>
+                                        <div className={styles.tableCardDetails}>
+                                            <span> {t.clubs?.name || 'Club'}</span>
+                                            <span> ${t.buy_in?.toLocaleString() || 0}</span>
+                                            <span> {t.current_players || 0}/{t.max_players || 100}</span>
+                                            <span> {new Date(t.scheduled_start).toLocaleDateString()}</span>
+                                        </div>
+                                        <Link to={`/tournaments/${t.id}`} className={styles.joinButton}>
+                                            View Details
+                                        </Link>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* Financials Tab */}
                 {activeTab === 'financials' && financialSummary && (
                     <div className={styles.financialsContainer}>
                         {/* Summary Cards */}
                         <div className={styles.financialCards}>
                             <div className={styles.financialCard}>
-                                <span className={styles.financialIcon}>📈</span>
+                                <span className={styles.financialIcon}></span>
                                 <div>
                                     <span className={styles.financialValue}>${financialSummary.totalRakeThisPeriod.toLocaleString()}</span>
                                     <span className={styles.financialLabel}>Total Rake This Period</span>
                                 </div>
                             </div>
                             <div className={styles.financialCard}>
-                                <span className={styles.financialIcon}>💵</span>
+                                <span className={styles.financialIcon}></span>
                                 <div>
                                     <span className={`${styles.financialValue} ${styles.positive}`}>${financialSummary.unionRevenue.toLocaleString()}</span>
                                     <span className={styles.financialLabel}>Union Revenue (10%)</span>
                                 </div>
                             </div>
                             <div className={styles.financialCard}>
-                                <span className={styles.financialIcon}>⏳</span>
+                                <span className={styles.financialIcon}></span>
                                 <div>
                                     <span className={styles.financialValue}>${financialSummary.pendingSettlements.toLocaleString()}</span>
                                     <span className={styles.financialLabel}>Pending Settlements</span>
@@ -379,7 +514,7 @@ export default function UnionDetailPage() {
                             </div>
                             {financialSummary.overdueAmount > 0 && (
                                 <div className={`${styles.financialCard} ${styles.overdue}`}>
-                                    <span className={styles.financialIcon}>⚠️</span>
+                                    <span className={styles.financialIcon}></span>
                                     <div>
                                         <span className={`${styles.financialValue} ${styles.negative}`}>${financialSummary.overdueAmount.toLocaleString()}</span>
                                         <span className={styles.financialLabel}>Overdue</span>
@@ -390,7 +525,7 @@ export default function UnionDetailPage() {
 
                         {/* Settlement History */}
                         <div className={styles.settlementSection}>
-                            <h3>📋 Settlement History</h3>
+                            <h3> Settlement History</h3>
                             <table className={styles.settlementTable}>
                                 <thead>
                                     <tr>
@@ -420,7 +555,93 @@ export default function UnionDetailPage() {
                         </div>
                     </div>
                 )}
+
+                {/* Settings Tab - Owner Only */}
+                {activeTab === 'settings' && union?.ownerId === user?.id && (
+                    <div className={styles.settingsContainer}>
+                        <div className={styles.settingsCard}>
+                            <h3> Revenue Configuration</h3>
+                            <p className={styles.settingsDesc}>Configure how revenue is split between the union and clubs</p>
+
+                            <div className={styles.settingRow}>
+                                <label>Revenue Share %</label>
+                                <div className={styles.sliderRow}>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="30"
+                                        value={settingsForm.revenueSharePercent}
+                                        onChange={(e) => setSettingsForm(prev => ({ ...prev, revenueSharePercent: Number(e.target.value) }))}
+                                        className={styles.slider}
+                                    />
+                                    <span className={styles.sliderValue}>{settingsForm.revenueSharePercent}%</span>
+                                </div>
+                                <p className={styles.settingHint}>Percentage of club rake that goes to the union</p>
+                            </div>
+
+                            <div className={styles.settingRow}>
+                                <label className={styles.toggleLabel}>
+                                    <input
+                                        type="checkbox"
+                                        checked={settingsForm.sharedPlayerPool}
+                                        onChange={(e) => setSettingsForm(prev => ({ ...prev, sharedPlayerPool: e.target.checked }))}
+                                    />
+                                    Shared Player Pool
+                                </label>
+                                <p className={styles.settingHint}>Allow players to sit at any club’s tables</p>
+                            </div>
+
+                            <div className={styles.settingRow}>
+                                <label className={styles.toggleLabel}>
+                                    <input
+                                        type="checkbox"
+                                        checked={settingsForm.crossClubTournaments}
+                                        onChange={(e) => setSettingsForm(prev => ({ ...prev, crossClubTournaments: e.target.checked }))}
+                                    />
+                                    Cross-Club Tournaments
+                                </label>
+                                <p className={styles.settingHint}>Enable union-wide tournament scheduling</p>
+                            </div>
+
+                            <button
+                                className={styles.saveButton}
+                                onClick={async () => {
+                                    if (!unionId || isUpdatingSettings) return;
+                                    setIsUpdatingSettings(true);
+                                    const updated = await unionService.updateUnion(unionId, {
+                                        settings: settingsForm
+                                    });
+                                    if (updated) {
+                                        setUnion(updated);
+                                        toast.success('Settings saved successfully!');
+                                    }
+                                    setIsUpdatingSettings(false);
+                                }}
+                                disabled={isUpdatingSettings}
+                            >
+                                {isUpdatingSettings ? 'Saving...' : 'Save Settings'}
+                            </button>
+                        </div>
+                    </div>
+                )}
             </section>
+
+            {/* Join Confirmation Modal */}
+            <ConfirmModal
+                isOpen={confirmJoin.show}
+                title="Join Union"
+                message={`Apply to join ${union?.name} with your club "${confirmJoin.club?.name}"?`}
+                confirmText="Apply"
+                cancelText="Cancel"
+                onConfirm={async () => {
+                    if (confirmJoin.club) {
+                        await applyWithClub(confirmJoin.club.id);
+                    }
+                    setConfirmJoin({ show: false, club: null });
+                }}
+                onCancel={() => setConfirmJoin({ show: false, club: null })}
+                loading={applying}
+            />
         </div>
     );
 }

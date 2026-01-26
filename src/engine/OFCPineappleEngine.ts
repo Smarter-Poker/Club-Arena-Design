@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🍍 OFC PINEAPPLE ENGINE — Open Face Chinese Poker
+ *  OFC PINEAPPLE ENGINE — Open Face Chinese Poker
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Implements Open Face Chinese Pineapple variant:

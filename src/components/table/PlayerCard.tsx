@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🃏 PLAYER CARD — Hole Card Display with Animations
+ *  PLAYER CARD — Hole Card Display with Animations
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Premium hole card component featuring:

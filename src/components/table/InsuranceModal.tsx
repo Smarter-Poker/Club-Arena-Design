@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🛡️ INSURANCE MODAL — All-In Insurance Options
+ *  INSURANCE MODAL — All-In Insurance Options
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * All-in insurance system:
@@ -107,7 +107,7 @@ export function InsuranceModal({
                 {/* Header */}
                 <div className="insurance-modal__header">
                     <div className="insurance-modal__title-row">
-                        <span className="insurance-modal__icon">🛡️</span>
+                        <span className="insurance-modal__icon"></span>
                         <h2 className="insurance-modal__title">Insurance</h2>
                     </div>
                     {timeRemaining !== undefined && (

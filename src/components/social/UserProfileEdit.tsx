@@ -1,10 +1,10 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 👤 USER PROFILE EDIT — Customization
+ *  USER PROFILE EDIT — Customization
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Deep profile customization.
- * - Change Avatar (Mock selection)
+ * - Change Avatar (uses dicebear.com API for avatars)
  * - Update Display Name
  * - Edit Bio / About Me
  * - Manage Player Tags (e.g., "Aggressive", "Grinder")

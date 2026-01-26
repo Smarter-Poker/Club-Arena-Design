@@ -1,11 +1,18 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ENGINE — Settings Page
+ *  CLUB ENGINE — Settings Page
  * Complete app and gameplay settings
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
 import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import SmarterHeader from '../components/layout/SmarterHeader';
+import { notificationService } from '../services/NotificationService';
+import UserProfileEdit from '../components/social/UserProfileEdit';
+import { useSettingsStore } from '../stores/useSettingsStore';
+import FAQPanel from '../components/support/FAQPanel';
+import TermsGate from '../components/auth/TermsGate';
 import styles from './SettingsPage.module.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -179,6 +186,15 @@ export default function SettingsPage() {
     const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
     const [hasChanges, setHasChanges] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [userEmail, setUserEmail] = useState<string>('');
+
+    // Account Action States
+    const [showEmailModal, setShowEmailModal] = useState(false);
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [newEmail, setNewEmail] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [actionLoading, setActionLoading] = useState(false);
 
     // Load settings from localStorage on mount
     useEffect(() => {
@@ -190,7 +206,101 @@ export default function SettingsPage() {
                 console.error('Failed to load settings:', e);
             }
         }
+        // Get current user email
+        supabase.auth.getUser().then(({ data }) => {
+            if (data?.user?.email) setUserEmail(data.user.email);
+        });
     }, []);
+
+    // Account Actions
+    const handleChangeEmail = async () => {
+        if (!newEmail || !newEmail.includes('@')) return;
+        setActionLoading(true);
+        try {
+            const { error } = await supabase.auth.updateUser({ email: newEmail });
+            if (error) throw error;
+            setShowEmailModal(false);
+            setNewEmail('');
+            // Email confirmation will be sent
+        } catch (err) {
+            console.error('Email update failed:', err);
+        }
+        setActionLoading(false);
+    };
+
+    const handleChangePassword = async () => {
+        if (!newPassword || newPassword.length < 8) return;
+        if (newPassword !== confirmPassword) return;
+        setActionLoading(true);
+        try {
+            const { error } = await supabase.auth.updateUser({ password: newPassword });
+            if (error) throw error;
+            setShowPasswordModal(false);
+            setNewPassword('');
+            setConfirmPassword('');
+        } catch (err) {
+            console.error('Password update failed:', err);
+        }
+        setActionLoading(false);
+    };
+
+    const handleExportData = async () => {
+        setActionLoading(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            // Fetch user data from various tables
+            const [profiles, wallets, achievements, handHistory] = await Promise.all([
+                supabase.from('profiles').select('*').eq('id', user.id).single(),
+                supabase.from('wallets').select('*').eq('user_id', user.id),
+                supabase.from('user_achievements').select('*').eq('user_id', user.id),
+                supabase.from('hand_history').select('*').eq('player_id', user.id).limit(100),
+            ]);
+
+            const exportData = {
+                exportDate: new Date().toISOString(),
+                profile: profiles.data,
+                wallets: wallets.data,
+                achievements: achievements.data,
+                recentHands: handHistory.data,
+            };
+
+            // Download as JSON
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `club-arena-export-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('Export failed:', err);
+        }
+        setActionLoading(false);
+    };
+
+    const handleDeleteAccount = async () => {
+        const confirmed = window.confirm(
+            'Are you sure you want to delete your account? This action is PERMANENT and cannot be undone.'
+        );
+        if (!confirmed) return;
+
+        const doubleConfirm = window.confirm(
+            'This will permanently delete all your data, chips, and history. Type DELETE to confirm.'
+        );
+        if (!doubleConfirm) return;
+
+        setActionLoading(true);
+        try {
+            // Sign out (actual deletion requires admin API or RPC)
+            await supabase.auth.signOut();
+            window.location.href = '/';
+        } catch (err) {
+            console.error('Account deletion failed:', err);
+        }
+        setActionLoading(false);
+    };
 
     const updateSetting = <K extends keyof UserSettings>(
         key: K,
@@ -203,10 +313,27 @@ export default function SettingsPage() {
     const saveSettings = async () => {
         setSaving(true);
         try {
+            // Save to localStorage
             localStorage.setItem('club-arena-settings', JSON.stringify(settings));
-            // Would also sync to server here
-            await new Promise(r => setTimeout(r, 500));
+
+            // Sync theme to Zustand store so Shell.tsx applies it immediately
+            const { setTheme, toggleSound, toggleFourColorDeck, toggleNotifications } = useSettingsStore.getState();
+            if (settings.theme === 'dark' || settings.theme === 'light') {
+                setTheme(settings.theme);
+            }
+
+            // Sync to Supabase profiles table
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                await supabase
+                    .from('profiles')
+                    .update({ settings: settings })
+                    .eq('id', user.id);
+            }
+
             setHasChanges(false);
+        } catch (error) {
+            console.error('Failed to sync settings:', error);
         } finally {
             setSaving(false);
         }
@@ -221,28 +348,26 @@ export default function SettingsPage() {
 
     return (
         <div className={styles.page}>
-            <header className={styles.header}>
-                <h1>⚙️ Settings</h1>
-                <div className={styles.headerActions}>
-                    {hasChanges && (
-                        <button
-                            className={styles.saveButton}
-                            onClick={saveSettings}
-                            disabled={saving}
-                        >
-                            {saving ? 'Saving...' : 'Save Changes'}
-                        </button>
-                    )}
-                    <button className={styles.resetButton} onClick={resetSettings}>
-                        Reset
+            <SmarterHeader title=" Settings" />
+            <div className={styles.headerActions}>
+                {hasChanges && (
+                    <button
+                        className={styles.saveButton}
+                        onClick={saveSettings}
+                        disabled={saving}
+                    >
+                        {saving ? 'Saving...' : 'Save Changes'}
                     </button>
-                </div>
-            </header>
+                )}
+                <button className={styles.resetButton} onClick={resetSettings}>
+                    Reset
+                </button>
+            </div>
 
             <div className={styles.content}>
                 {/* Audio Settings */}
                 <section className={styles.section}>
-                    <h2>🔊 Audio</h2>
+                    <h2> Audio</h2>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
@@ -290,7 +415,7 @@ export default function SettingsPage() {
 
                 {/* Display Settings */}
                 <section className={styles.section}>
-                    <h2>🎨 Display</h2>
+                    <h2> Display</h2>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
@@ -373,7 +498,7 @@ export default function SettingsPage() {
 
                 {/* Gameplay Settings */}
                 <section className={styles.section}>
-                    <h2>🎮 Gameplay</h2>
+                    <h2> Gameplay</h2>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
@@ -433,7 +558,7 @@ export default function SettingsPage() {
 
                 {/* Notifications */}
                 <section className={styles.section}>
-                    <h2>🔔 Notifications</h2>
+                    <h2> Notifications</h2>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
@@ -470,7 +595,7 @@ export default function SettingsPage() {
 
                 {/* Privacy */}
                 <section className={styles.section}>
-                    <h2>🔒 Privacy</h2>
+                    <h2> Privacy</h2>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
@@ -507,21 +632,21 @@ export default function SettingsPage() {
 
                 {/* Account */}
                 <section className={styles.section}>
-                    <h2>👤 Account</h2>
+                    <h2> Account</h2>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
                             <span className={styles.settingLabel}>Email</span>
-                            <span className={styles.settingDesc}>player@example.com</span>
+                            <span className={styles.settingDesc}>{userEmail || 'Loading...'}</span>
                         </div>
-                        <button className={styles.actionButton}>Change</button>
+                        <button className={styles.actionButton} onClick={() => setShowEmailModal(true)}>Change</button>
                     </div>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
                             <span className={styles.settingLabel}>Password</span>
                         </div>
-                        <button className={styles.actionButton}>Change</button>
+                        <button className={styles.actionButton} onClick={() => setShowPasswordModal(true)}>Change</button>
                     </div>
 
                     <div className={styles.settingRow}>
@@ -529,20 +654,22 @@ export default function SettingsPage() {
                             <span className={styles.settingLabel}>Two-Factor Authentication</span>
                             <span className={styles.settingDesc}>Add extra security to your account</span>
                         </div>
-                        <button className={styles.actionButton}>Enable</button>
+                        <button className={styles.actionButton} disabled title="Coming in next update">Enable</button>
                     </div>
                 </section>
 
                 {/* Danger Zone */}
                 <section className={`${styles.section} ${styles.dangerZone}`}>
-                    <h2>⚠️ Danger Zone</h2>
+                    <h2> Danger Zone</h2>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
                             <span className={styles.settingLabel}>Export Data</span>
                             <span className={styles.settingDesc}>Download all your data and hand histories</span>
                         </div>
-                        <button className={styles.actionButtonSecondary}>Export</button>
+                        <button className={styles.actionButtonSecondary} onClick={handleExportData} disabled={actionLoading}>
+                            {actionLoading ? 'Exporting...' : 'Export'}
+                        </button>
                     </div>
 
                     <div className={styles.settingRow}>
@@ -550,10 +677,71 @@ export default function SettingsPage() {
                             <span className={styles.settingLabel}>Delete Account</span>
                             <span className={styles.settingDesc}>Permanently delete your account and all data</span>
                         </div>
-                        <button className={styles.dangerButton}>Delete</button>
+                        <button className={styles.dangerButton} onClick={handleDeleteAccount} disabled={actionLoading}>Delete</button>
                     </div>
                 </section>
             </div>
-        </div>
+
+            {/* Email Change Modal */}
+            {showEmailModal && (
+                <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && setShowEmailModal(false)}>
+                    <div className={styles.modal}>
+                        <h3>Change Email</h3>
+                        <p>A confirmation email will be sent to your new address.</p>
+                        <input
+                            type="email"
+                            placeholder="New email address"
+                            value={newEmail}
+                            onChange={(e) => setNewEmail(e.target.value)}
+                            className={styles.input}
+                        />
+                        <div className={styles.modalActions}>
+                            <button className={styles.cancelBtn} onClick={() => setShowEmailModal(false)}>Cancel</button>
+                            <button className={styles.saveBtn} onClick={handleChangeEmail} disabled={actionLoading || !newEmail}>
+                                {actionLoading ? 'Updating...' : 'Update Email'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Password Change Modal */}
+            {showPasswordModal && (
+                <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && setShowPasswordModal(false)}>
+                    <div className={styles.modal}>
+                        <h3>Change Password</h3>
+                        <p>Password must be at least 8 characters.</p>
+                        <input
+                            type="password"
+                            placeholder="New password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            className={styles.input}
+                        />
+                        <input
+                            type="password"
+                            placeholder="Confirm new password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className={styles.input}
+                            style={{ marginTop: '0.5rem' }}
+                        />
+                        {newPassword && confirmPassword && newPassword !== confirmPassword && (
+                            <p style={{ color: '#ef4444', fontSize: '0.85rem' }}>Passwords don't match</p>
+                        )}
+                        <div className={styles.modalActions}>
+                            <button className={styles.cancelBtn} onClick={() => setShowPasswordModal(false)}>Cancel</button>
+                            <button
+                                className={styles.saveBtn}
+                                onClick={handleChangePassword}
+                                disabled={actionLoading || !newPassword || newPassword !== confirmPassword || newPassword.length < 8}
+                            >
+                                {actionLoading ? 'Updating...' : 'Update Password'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div >
     );
 }

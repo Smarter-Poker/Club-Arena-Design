@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ENGINE — Agent Service
+ *  CLUB ENGINE — Agent Service
  * ═══════════════════════════════════════════════════════════════════════════════
  * Full agent management with hierarchy, credit, and commission tracking
  * 
@@ -272,6 +272,38 @@ class AgentServiceClass {
         return !error;
     }
 
+    /**
+     * Update agent role (promote/demote)
+     */
+    async updateAgentRole(agentId: string, newRole: AgentRole): Promise<boolean> {
+        // Get current agent info
+        const { data: agent } = await supabase
+            .from('agents')
+            .select('role, membership_id')
+            .eq('id', agentId)
+            .single();
+
+        if (!agent) return false;
+
+        // Update agent role
+        const { error } = await supabase
+            .from('agents')
+            .update({ role: newRole })
+            .eq('id', agentId);
+
+        if (error) return false;
+
+        // Also update membership role if exists
+        if (agent.membership_id) {
+            await supabase
+                .from('club_members')
+                .update({ role: newRole })
+                .eq('id', agent.membership_id);
+        }
+
+        return true;
+    }
+
     // ─────────────────────────────────────────────────────────────────────────────
     // CREDIT MANAGEMENT
     // ─────────────────────────────────────────────────────────────────────────────
@@ -485,6 +517,202 @@ class AgentServiceClass {
         ]);
 
         return !agentResult.error && !memberResult.error;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // HIERARCHY (for AgentHierarchyTree)
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Get agent hierarchy tree for a club
+     */
+    async getAgentHierarchy(clubId: string): Promise<any[]> {
+        const agents = await this.getAgents(clubId);
+
+        // Build tree structure
+        const agentMap = new Map<string, any>();
+        const rootAgents: any[] = [];
+
+        // First pass: create nodes
+        for (const agent of agents) {
+            agentMap.set(agent.id, {
+                ...agent,
+                children: [],
+            });
+        }
+
+        // Second pass: build tree
+        for (const agent of agents) {
+            const node = agentMap.get(agent.id)!;
+            if (agent.parentAgentId && agentMap.has(agent.parentAgentId)) {
+                agentMap.get(agent.parentAgentId)!.children.push(node);
+            } else {
+                rootAgents.push(node);
+            }
+        }
+
+        return rootAgents;
+    }
+
+    /**
+     * Distribute chips from agent to sub-agents or players
+     */
+    async distributeChips(
+        fromAgentId: string,
+        distributions: Array<{ toId: string; type: 'agent' | 'player'; amount: number }>
+    ): Promise<boolean> {
+        const agent = await this.getAgent(fromAgentId);
+        if (!agent) throw new Error('Agent not found');
+
+        const totalAmount = distributions.reduce((sum, d) => sum + d.amount, 0);
+        if (agent.businessBalance < totalAmount) {
+            throw new Error('Insufficient balance for distribution');
+        }
+
+        // Process each distribution
+        for (const dist of distributions) {
+            if (dist.type === 'agent') {
+                // Transfer to sub-agent
+                const subAgent = await this.getAgent(dist.toId);
+                if (!subAgent) continue;
+
+                await supabase.from('agents').update({
+                    business_balance: subAgent.businessBalance + dist.amount,
+                }).eq('id', dist.toId);
+            } else {
+                // Transfer to player
+                await this.transferToPlayer(fromAgentId, dist.toId, agent.clubId, dist.amount);
+            }
+        }
+
+        // Deduct from source agent
+        await supabase.from('agents').update({
+            business_balance: agent.businessBalance - totalAmount,
+        }).eq('id', fromAgentId);
+
+        return true;
+    }
+
+    /**
+     * Transfer chips from one agent to another (horizontal peer transfer)
+     * Unlike distributeChips which is parent→child, this allows any agent-to-agent transfer
+     * within the same club hierarchy.
+     */
+    async transferToAgent(
+        fromAgentId: string,
+        toAgentId: string,
+        amount: number,
+        reason?: string
+    ): Promise<{ success: boolean; transactionId?: string }> {
+        // 1. Validate both agents exist and are in the same club
+        const fromAgent = await this.getAgent(fromAgentId);
+        const toAgent = await this.getAgent(toAgentId);
+
+        if (!fromAgent) throw new Error('Source agent not found');
+        if (!toAgent) throw new Error('Destination agent not found');
+        if (fromAgent.clubId !== toAgent.clubId) {
+            throw new Error('Agents must be in the same club');
+        }
+
+        // 2. Validate sufficient balance
+        if (fromAgent.businessBalance < amount) {
+            throw new Error('Insufficient balance for transfer');
+        }
+
+        // 3. Validate amount is positive
+        if (amount <= 0) {
+            throw new Error('Transfer amount must be positive');
+        }
+
+        // 4. Execute the transfer atomically
+        const { error: fromError } = await supabase
+            .from('agents')
+            .update({
+                business_balance: fromAgent.businessBalance - amount,
+            })
+            .eq('id', fromAgentId);
+
+        if (fromError) throw fromError;
+
+        const { error: toError } = await supabase
+            .from('agents')
+            .update({
+                business_balance: toAgent.businessBalance + amount,
+            })
+            .eq('id', toAgentId);
+
+        if (toError) {
+            // Rollback the deduction
+            await supabase
+                .from('agents')
+                .update({
+                    business_balance: fromAgent.businessBalance,
+                })
+                .eq('id', fromAgentId);
+            throw toError;
+        }
+
+        // 5. Log the transaction
+        const { data: transaction } = await supabase
+            .from('chip_transactions')
+            .insert({
+                club_id: fromAgent.clubId,
+                from_user_id: fromAgent.userId,
+                to_user_id: toAgent.userId,
+                amount,
+                type: 'agent_transfer',
+                notes: reason || `Agent transfer: ${fromAgent.displayName || fromAgentId} → ${toAgent.displayName || toAgentId}`,
+            })
+            .select('id')
+            .single();
+
+        return {
+            success: true,
+            transactionId: transaction?.id,
+        };
+    }
+
+    /**
+     * Get transfer history between agents
+     */
+    async getAgentTransferHistory(agentId: string, limit = 50): Promise<{
+        id: string;
+        fromAgentName: string;
+        toAgentName: string;
+        amount: number;
+        notes: string;
+        createdAt: string;
+    }[]> {
+        const agent = await this.getAgent(agentId);
+        if (!agent) return [];
+
+        const { data, error } = await supabase
+            .from('chip_transactions')
+            .select('id, from_user_id, to_user_id, amount, notes, created_at')
+            .eq('type', 'agent_transfer')
+            .or(`from_user_id.eq.${agent.userId},to_user_id.eq.${agent.userId}`)
+            .order('created_at', { ascending: false })
+            .limit(limit);
+
+        if (error || !data) return [];
+
+        // Fetch user display names
+        const userIds = [...new Set(data.flatMap(t => [t.from_user_id, t.to_user_id]))];
+        const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, display_name')
+            .in('id', userIds);
+
+        const nameMap = new Map(profiles?.map(p => [p.id, p.display_name]) || []);
+
+        return data.map(t => ({
+            id: t.id,
+            fromAgentName: nameMap.get(t.from_user_id) || 'Unknown',
+            toAgentName: nameMap.get(t.to_user_id) || 'Unknown',
+            amount: t.amount,
+            notes: t.notes || '',
+            createdAt: t.created_at,
+        }));
     }
 }
 

@@ -1,0 +1,291 @@
+/**
+ *  PLAYER WALLET PAGE STYLES
+ */
+
+.wallet-page {
+    min-height: 100vh;
+    background: var(--bg-primary);
+    padding-bottom: 2rem;
+}
+
+.wallet-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.wallet-header .back-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 0.5rem;
+}
+
+.wallet-header h1 {
+    font-size: 1.25rem;
+    margin: 0;
+}
+
+/* Total Balance Card */
+.total-balance-card {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    margin: 1rem;
+    padding: 1.5rem;
+    border-radius: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    color: white;
+}
+
+.balance-actions {
+    width: 100%;
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.balance-actions .action-btn {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.balance-actions .action-btn.deposit {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+
+.balance-actions .action-btn.withdraw {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.balance-actions .action-btn:hover {
+    transform: scale(1.02);
+}
+
+.balance-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.balance-label {
+    font-size: 0.875rem;
+    opacity: 0.8;
+}
+
+.balance-value {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.diamonds-section {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+}
+
+.diamond-icon {
+    font-size: 1.25rem;
+}
+
+.diamond-count {
+    font-weight: 600;
+}
+
+/* Tabs */
+.wallet-tabs {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 0.75rem;
+    border: none;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab-btn.active {
+    background: var(--accent-primary);
+    color: white;
+}
+
+/* Content */
+.wallet-content {
+    padding: 1rem;
+}
+
+/* Wallets Grid */
+.wallets-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.wallet-card {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+}
+
+.wallet-card.wallet-business {
+    border-left: 4px solid #3b82f6;
+}
+
+.wallet-card.wallet-player {
+    border-left: 4px solid #10b981;
+}
+
+.wallet-card.wallet-promo {
+    border-left: 4px solid #f59e0b;
+}
+
+.wallet-icon {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+}
+
+.wallet-details {
+    margin-bottom: 1rem;
+}
+
+.wallet-label {
+    display: block;
+    font-weight: 600;
+    font-size: 1.125rem;
+    color: var(--text-primary);
+}
+
+.wallet-description {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.wallet-balances {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.balance-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.balance-row .amount {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.balance-row .amount.locked {
+    color: var(--accent-warning);
+}
+
+.balance-row.total {
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-subtle);
+    font-weight: 600;
+}
+
+.balance-row.total span,
+.balance-row.total .amount {
+    color: var(--text-primary);
+}
+
+/* Transfer Section */
+.transfer-section {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.transfer-section h3 {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.125rem;
+}
+
+.transfer-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-row label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.form-row select,
+.form-row input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.transfer-arrow {
+    text-align: center;
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+}
+
+.transfer-btn {
+    margin-top: 1rem;
+    padding: 1rem;
+    font-size: 1rem;
+}
+
+.message {
+    padding: 0.75rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+}
+
+.message.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--accent-success);
+    border: 1px solid var(--accent-success);
+}
+
+.message.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--accent-danger);
+    border: 1px solid var(--accent-danger);
+}

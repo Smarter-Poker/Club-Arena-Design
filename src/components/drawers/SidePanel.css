@@ -1,0 +1,14 @@
+.side-panel {
+    background: rgba(255, 255, 255, 0.02);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    height: 100%;
+    overflow-y: auto;
+    transition: transform 0.3s, opacity 0.3s;
+    transform: translateX(-100%);
+    opacity: 0;
+}
+
+.side-panel.open {
+    transform: translateX(0);
+    opacity: 1;
+}

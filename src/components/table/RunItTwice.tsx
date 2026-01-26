@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎲 RUN IT TWICE — Deal Remaining Cards Twice
+ *  RUN IT TWICE — Deal Remaining Cards Twice
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * All-in feature to run board twice:
@@ -79,7 +79,7 @@ export function RunItTwicePrompt({
     return (
         <div className="rit-overlay">
             <div className="rit-prompt">
-                <div className="rit-prompt__icon">🎲</div>
+                <div className="rit-prompt__icon"></div>
                 <h3 className="rit-prompt__title">Run it Twice?</h3>
                 <p className="rit-prompt__text">
                     {opponentName} wants to run the remaining cards twice.
@@ -146,7 +146,7 @@ export function RunItTwiceBoard({
     return (
         <div className="rit-board">
             <div className="rit-board__header">
-                <span className="rit-board__badge">🎲 Run it Twice</span>
+                <span className="rit-board__badge"> Run it Twice</span>
                 <span className="rit-board__pot">Pot: {currency}{potAmount.toLocaleString()}</span>
             </div>
 
@@ -168,7 +168,7 @@ export function RunItTwiceBoard({
                     ))}
                 </div>
                 <span className="rit-board__run-result">
-                    {run1Winner === 'player' && `✓ ${playerName} wins`}
+                    {run1Winner === 'player' && ` ${playerName} wins`}
                     {run1Winner === 'opponent' && `${opponentName} wins`}
                     {run1Winner === 'split' && 'Split pot'}
                 </span>
@@ -192,7 +192,7 @@ export function RunItTwiceBoard({
                     ))}
                 </div>
                 <span className="rit-board__run-result">
-                    {run2Winner === 'player' && `✓ ${playerName} wins`}
+                    {run2Winner === 'player' && ` ${playerName} wins`}
                     {run2Winner === 'opponent' && `${opponentName} wins`}
                     {run2Winner === 'split' && 'Split pot'}
                 </span>

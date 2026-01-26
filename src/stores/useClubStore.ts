@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ENGINE — Club Store (Zustand)
+ *  CLUB ENGINE — Club Store (Zustand)
  * ═══════════════════════════════════════════════════════════════════════════════
  * Global state management for clubs, memberships, and discovery
  */
@@ -85,7 +85,7 @@ export const useClubStore = create<ClubState>()(
             discoverNearby: async (radiusKm = 50) => {
                 const { userLocation } = get();
                 if (!userLocation) {
-                    console.warn('⚠️ User location not set for discovery');
+                    console.warn(' User location not set for discovery');
                     return;
                 }
 
@@ -94,7 +94,7 @@ export const useClubStore = create<ClubState>()(
                     const clubs = await ClubsService.discoverNearby(userLocation, radiusKm);
                     set({ nearbyClubs: clubs });
                 } catch (error) {
-                    console.error('🔴 Discovery failed:', error);
+                    console.error(' Discovery failed:', error);
                 } finally {
                     set({ isDiscovering: false });
                 }
@@ -111,7 +111,7 @@ export const useClubStore = create<ClubState>()(
                     const results = await ClubsService.search(query);
                     set({ searchResults: results });
                 } catch (error) {
-                    console.error('🔴 Search failed:', error);
+                    console.error(' Search failed:', error);
                 } finally {
                     set({ isSearching: false });
                 }
@@ -123,7 +123,7 @@ export const useClubStore = create<ClubState>()(
                     const memberships = await ClubsService.getUserMemberships();
                     set({ memberships });
                 } catch (error) {
-                    console.error('🔴 Load memberships failed:', error);
+                    console.error(' Load memberships failed:', error);
                 } finally {
                     set({ isLoadingMemberships: false });
                 }
@@ -135,7 +135,7 @@ export const useClubStore = create<ClubState>()(
                     const club = await ClubsService.get(identifier);
                     set({ activeClub: club });
                 } catch (error) {
-                    console.error('🔴 Load club failed:', error);
+                    console.error(' Load club failed:', error);
                 } finally {
                     set({ isLoadingClub: false });
                 }
@@ -146,7 +146,7 @@ export const useClubStore = create<ClubState>()(
                     const members = await ClubsService.getMembers(clubId);
                     set({ activeClubMembers: members });
                 } catch (error) {
-                    console.error('🔴 Load members failed:', error);
+                    console.error(' Load members failed:', error);
                 }
             },
 
@@ -156,7 +156,7 @@ export const useClubStore = create<ClubState>()(
                     // Refresh memberships
                     await get().loadMemberships();
                 } catch (error) {
-                    console.error('🔴 Join failed:', error);
+                    console.error(' Join failed:', error);
                     throw error;
                 }
             },
@@ -167,7 +167,7 @@ export const useClubStore = create<ClubState>()(
                     // Refresh memberships
                     await get().loadMemberships();
                 } catch (error) {
-                    console.error('🔴 Leave failed:', error);
+                    console.error(' Leave failed:', error);
                     throw error;
                 }
             },
@@ -179,7 +179,7 @@ export const useClubStore = create<ClubState>()(
                     await get().loadMemberships();
                     return club;
                 } catch (error) {
-                    console.error('🔴 Create failed:', error);
+                    console.error(' Create failed:', error);
                     throw error;
                 }
             },

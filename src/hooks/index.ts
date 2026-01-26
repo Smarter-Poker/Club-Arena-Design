@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ENGINE — Hooks Index
+ *  CLUB ENGINE — Hooks Index
  * ═══════════════════════════════════════════════════════════════════════════════
  * Custom React hooks for Club Arena functionality
  */
@@ -424,3 +424,6 @@ export default {
     useDurationFormatter,
     useCountdown,
 };
+
+// Re-export responsive hooks
+export * from './useResponsive';

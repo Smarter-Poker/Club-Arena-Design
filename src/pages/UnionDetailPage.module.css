@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 UNION DETAIL PAGE — Styles
+ *  UNION DETAIL PAGE — Styles
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
@@ -631,4 +631,143 @@
         display: block;
         overflow-x: auto;
     }
+}
+
+/* Remove Club Button */
+.removeClubBtn {
+    padding: 0.5rem 0.75rem;
+    background: transparent;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    border-radius: 0.5rem;
+    color: #ef4444;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.removeClubBtn:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+.removeClubBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Settings Tab */
+.settingsContainer {
+    max-width: 600px;
+}
+
+.settingsCard {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 2rem;
+}
+
+.settingsCard h3 {
+    margin: 0 0 0.5rem;
+    color: #fff;
+    font-size: 1.25rem;
+}
+
+.settingsDesc {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin: 0 0 2rem;
+}
+
+.settingRow {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.settingRow:last-of-type {
+    border-bottom: none;
+}
+
+.settingRow>label {
+    display: block;
+    color: #fff;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.sliderRow {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.slider {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.sliderValue {
+    min-width: 50px;
+    text-align: right;
+    color: #8b5cf6;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.toggleLabel {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.toggleLabel input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: #8b5cf6;
+}
+
+.settingHint {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin: 0.5rem 0 0;
+}
+
+.saveButton {
+    width: 100%;
+    margin-top: 1rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+    border: none;
+    border-radius: 0.75rem;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.saveButton:hover:not(:disabled) {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+.saveButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }

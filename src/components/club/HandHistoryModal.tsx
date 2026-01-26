@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 📜 HAND HISTORY MODAL — Detailed Hand Viewer
+ *  HAND HISTORY MODAL — Detailed Hand Viewer
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Detailed history of played hands:
@@ -55,7 +55,7 @@ export function HandHistoryModal({
                 {/* Header */}
                 <div className="history-modal__header">
                     <div className="history-modal__title-group">
-                        <span className="history-modal__icon">📜</span>
+                        <span className="history-modal__icon"></span>
                         <h2 className="history-modal__title">Hand History</h2>
                     </div>
                     <button className="history-modal__close" onClick={onClose}>×</button>
@@ -106,7 +106,7 @@ export function HandHistoryModal({
                                             ▶️ Replay
                                         </button>
                                         <button className="action-btn" onClick={() => onShare(selectedHand.id)}>
-                                            🔗 Share
+                                             Share
                                         </button>
                                     </div>
                                 </div>

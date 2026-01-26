@@ -110,6 +110,7 @@ export default function PokerTable({
                                 isDealer={isDealer}
                                 dealerSeat={dealerSeat}
                                 seatNum={seatNum}
+                                maxPlayers={maxPlayers}
                             />
                         ) : (
                             <EmptySeat onClick={() => onSeatClick?.(seatNum)} />
@@ -138,6 +139,7 @@ function PlayerSeat({
     isDealer,
     dealerSeat,
     seatNum,
+    maxPlayers,
 }: {
     player: SeatPlayer;
     isHero: boolean;
@@ -145,15 +147,15 @@ function PlayerSeat({
     isDealer: boolean;
     dealerSeat: number;
     seatNum: number;
+    maxPlayers: number;
 }) {
     // Determine position badge
     const getPositionBadge = () => {
         if (isDealer) return <span className="position-badge dealer">D</span>;
 
-        // Calculate SB/BB based on dealer
-        const totalSeats = 6; // TODO: pass this in
-        const sbSeat = (dealerSeat % totalSeats) + 1;
-        const bbSeat = (sbSeat % totalSeats) + 1;
+        // Calculate SB/BB based on dealer and total seats
+        const sbSeat = (dealerSeat % maxPlayers) + 1;
+        const bbSeat = (sbSeat % maxPlayers) + 1;
 
         if (seatNum === sbSeat) return <span className="position-badge sb">SB</span>;
         if (seatNum === bbSeat) return <span className="position-badge bb">BB</span>;
@@ -167,7 +169,7 @@ function PlayerSeat({
 
             {/* Avatar */}
             <div className="player-avatar">
-                <span className="avatar-emoji">👤</span>
+                <span className="avatar-emoji"></span>
                 {player.is_folded && <div className="folded-overlay">FOLD</div>}
             </div>
 
@@ -180,7 +182,7 @@ function PlayerSeat({
             {/* Bet Amount */}
             {player.bet > 0 && (
                 <div className="player-bet">
-                    <div className="bet-chips">💰</div>
+                    <div className="bet-chips"></div>
                     <span className="bet-amount">{player.bet}</span>
                 </div>
             )}

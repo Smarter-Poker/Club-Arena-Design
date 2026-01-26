@@ -1,5 +1,5 @@
 /**
- * 🎰 CLUB ENGINE — Lobby Page Styles
+ *  CLUB ENGINE — Lobby Page Styles
  */
 
 .lobby {
@@ -61,6 +61,40 @@
     font-size: var(--text-xl);
     color: var(--text-secondary);
     margin: 0;
+}
+
+.liveStats {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.liveDot {
+    width: 8px;
+    height: 8px;
+    background: #22c55e;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #22c55e;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.divider {
+    opacity: 0.4;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════

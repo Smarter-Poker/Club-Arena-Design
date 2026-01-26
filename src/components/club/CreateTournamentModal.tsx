@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { tournamentService, BLIND_STRUCTURES, PAYOUT_STRUCTURES } from '../../services/TournamentService';
 import styles from './CreateTournamentModal.module.css';
+import { useToast } from '../common/Toast';
 
 interface Props {
     clubId: string;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function CreateTournamentModal({ clubId, onClose, onSuccess }: Props) {
+    const toast = useToast();
     const [name, setName] = useState('');
     const [type, setType] = useState<'sng' | 'mtt'>('sng');
     const [buyIn, setBuyIn] = useState('10');
@@ -40,7 +42,7 @@ export default function CreateTournamentModal({ clubId, onClose, onSuccess }: Pr
             onSuccess();
         } catch (error) {
             console.error('Failed to create tournament:', error);
-            alert('Failed to create tournament');
+            toast.error('Failed to create tournament');
         } finally {
             setIsSubmitting(false);
         }

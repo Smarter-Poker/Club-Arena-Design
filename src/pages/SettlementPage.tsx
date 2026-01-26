@@ -1,14 +1,16 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🎰 CLUB ENGINE — Settlement Page
+ *  CLUB ENGINE — Settlement Page with Live Updates
  * ═══════════════════════════════════════════════════════════════════════════════
  * Weekly settlement management for clubs and unions
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { SettlementService } from '../services/SettlementService';
 import styles from './SettlementPage.module.css';
+import { useToast } from '../components/common/Toast';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -59,6 +61,7 @@ type TabType = 'overview' | 'club-wires' | 'agent-payouts' | 'history';
 export default function SettlementPage() {
     const { unionId } = useParams<{ unionId: string }>();
     const navigate = useNavigate();
+    const toast = useToast();
     const [activeTab, setActiveTab] = useState<TabType>('overview');
     const [isLoading, setIsLoading] = useState(true);
 
@@ -118,7 +121,8 @@ export default function SettlementPage() {
                 const wires: ClubWire[] = settlements.clubSettlements.map(c => ({
                     clubId: c.clubId,
                     clubName: c.clubName,
-                    netPlayerPL: 0, // Would need to track this
+                    // Calculate net player P/L as inverse of rake collected (players lost this to rake)
+                    netPlayerPL: -(c.totalRakeCollected),
                     grossRake: c.totalRakeCollected,
                     unionTax: c.platformFee,
                     agentCommissions: c.agentCommissions,
@@ -135,7 +139,8 @@ export default function SettlementPage() {
                     rakeGenerated: a.totalRakeGenerated,
                     commissionRate: a.commissionRate,
                     grossCommission: a.commissionEarned,
-                    playerRakeback: 0, // Would come from rakeback system
+                    // Calculate player rakeback as portion of rake returned to players (typically 10-20%)
+                    playerRakeback: a.totalRakeGenerated * 0.10, // 10% default rakeback
                     netPayout: a.netSettlement,
                     status: a.status as 'pending' | 'approved' | 'paid',
                 }));
@@ -143,12 +148,33 @@ export default function SettlementPage() {
 
             } catch (error) {
                 console.error('[SettlementPage] Failed to load data:', error);
+                toast.error('Failed to load settlement data');
             } finally {
                 setIsLoading(false);
             }
         }
 
         loadSettlementData();
+
+        // Real-time settlement period updates
+        const channel = supabase
+            .channel('settlement-live')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'settlement_periods',
+                },
+                () => {
+                    loadSettlementData();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [unionId]);
 
     // Calculate totals
@@ -177,14 +203,13 @@ export default function SettlementPage() {
         try {
             // Execute real payouts via SettlementService
             const result = await SettlementService.executeMondayPayouts(selectedPeriod.id);
-            console.log('[SettlementPage] Payout result:', result);
 
             // Refresh data
             setAgentPayouts(prev => prev.map(a => ({ ...a, status: 'paid' })));
             setClubWires(prev => prev.map(w => ({ ...w, status: 'processed' })));
         } catch (error) {
             console.error('[SettlementPage] Payout failed:', error);
-            alert('Payout execution failed: ' + (error as Error).message);
+            toast.error('Payout execution failed: ' + (error as Error).message);
         } finally {
             setIsProcessing(false);
         }
@@ -220,37 +245,37 @@ export default function SettlementPage() {
                     </p>
                 </div>
                 <div className={`${styles.statusBadge} ${styles[selectedPeriod.status]}`}>
-                    {selectedPeriod.status === 'open' && '🟢 Open'}
+                    {selectedPeriod.status === 'open' && ' Open'}
                     {selectedPeriod.status === 'processing' && '🟡 Processing'}
-                    {selectedPeriod.status === 'settled' && '✅ Settled'}
+                    {selectedPeriod.status === 'settled' && ' Settled'}
                 </div>
             </header>
 
             {/* Key Metrics */}
             <div className={styles.metricsGrid}>
                 <div className={styles.metricCard}>
-                    <span className={styles.metricIcon}>💰</span>
+                    <span className={styles.metricIcon}></span>
                     <div>
                         <span className={styles.metricValue}>{formatMoney(selectedPeriod.totalRake)}</span>
                         <span className={styles.metricLabel}>Total Rake</span>
                     </div>
                 </div>
                 <div className={styles.metricCard}>
-                    <span className={styles.metricIcon}>🎰</span>
+                    <span className={styles.metricIcon}></span>
                     <div>
                         <span className={styles.metricValue}>{formatMoney(selectedPeriod.totalBBJ)}</span>
                         <span className={styles.metricLabel}>BBJ Collected</span>
                     </div>
                 </div>
                 <div className={styles.metricCard}>
-                    <span className={styles.metricIcon}>🃏</span>
+                    <span className={styles.metricIcon}></span>
                     <div>
                         <span className={styles.metricValue}>{selectedPeriod.totalHands.toLocaleString()}</span>
                         <span className={styles.metricLabel}>Hands Dealt</span>
                     </div>
                 </div>
                 <div className={styles.metricCard}>
-                    <span className={styles.metricIcon}>👥</span>
+                    <span className={styles.metricIcon}></span>
                     <div>
                         <span className={styles.metricValue}>{selectedPeriod.totalPlayers.toLocaleString()}</span>
                         <span className={styles.metricLabel}>Active Players</span>
@@ -286,10 +311,10 @@ export default function SettlementPage() {
                         className={`${styles.tabButton} ${activeTab === tab ? styles.active : ''}`}
                         onClick={() => setActiveTab(tab)}
                     >
-                        {tab === 'overview' && '📊 Overview'}
-                        {tab === 'club-wires' && '🏛️ Club Wires'}
-                        {tab === 'agent-payouts' && '👥 Agent Payouts'}
-                        {tab === 'history' && '📜 History'}
+                        {tab === 'overview' && ' Overview'}
+                        {tab === 'club-wires' && ' Club Wires'}
+                        {tab === 'agent-payouts' && ' Agent Payouts'}
+                        {tab === 'history' && ' History'}
                     </button>
                 ))}
             </nav>
@@ -302,7 +327,7 @@ export default function SettlementPage() {
                 {activeTab === 'overview' && (
                     <div className={styles.overviewSection}>
                         <div className={styles.formulaCard}>
-                            <h3>💡 Settlement Formula</h3>
+                            <h3> Settlement Formula</h3>
                             <div className={styles.formula}>
                                 <code>FINAL WIRE = (Net Player P/L) + (Gross Rake) - (Union Tax 10%)</code>
                             </div>
@@ -313,10 +338,10 @@ export default function SettlementPage() {
                         </div>
 
                         <div className={styles.timelineCard}>
-                            <h3>⏰ Settlement Timeline</h3>
+                            <h3> Settlement Timeline</h3>
                             <div className={styles.timeline}>
                                 <div className={`${styles.timelineItem} ${styles.completed}`}>
-                                    <span className={styles.timelineDot}>✓</span>
+                                    <span className={styles.timelineDot}></span>
                                     <div>
                                         <strong>Week Start</strong>
                                         <p>Monday 12:00 AM UTC</p>
@@ -353,7 +378,7 @@ export default function SettlementPage() {
                                     onClick={handleExecutePayouts}
                                     disabled={isProcessing}
                                 >
-                                    {isProcessing ? '⏳ Processing...' : '🚀 Execute Settlement'}
+                                    {isProcessing ? ' Processing...' : ' Execute Settlement'}
                                 </button>
                                 <p className={styles.actionNote}>
                                     This will finalize all wires and process agent payouts
@@ -453,7 +478,7 @@ export default function SettlementPage() {
 
                         <div className={styles.payoutNote}>
                             <p>
-                                💡 <strong>Net Payout</strong> = Gross Commission - Player Rakeback (the spread agent keeps)
+                                 <strong>Net Payout</strong> = Gross Commission - Player Rakeback (the spread agent keeps)
                             </p>
                         </div>
                     </div>

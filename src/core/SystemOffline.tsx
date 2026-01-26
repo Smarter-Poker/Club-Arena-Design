@@ -1,5 +1,5 @@
 /**
- * 🔴 SYSTEM OFFLINE — Fail-Closed Screen
+ *  SYSTEM OFFLINE — Fail-Closed Screen
  * ═══════════════════════════════════════════════════════════════════════════════
  * This component renders when AntiGravity boot fails.
  * It displays exactly what is missing for debugging.
@@ -34,7 +34,7 @@ export default function SystemOffline({ status }: Props) {
                     marginBottom: '1.5rem',
                     animation: 'pulse 2s infinite'
                 }}>
-                    🔴
+                    
                 </div>
 
                 {/* Title */}
@@ -67,13 +67,13 @@ export default function SystemOffline({ status }: Props) {
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
                         <span>ANTIGRAVITY_OK</span>
                         <span style={{ color: status.antigravityOk ? '#2ecc71' : '#e74c3c' }}>
-                            {status.antigravityOk ? '✅ true' : '❌ false'}
+                            {status.antigravityOk ? ' true' : ' false'}
                         </span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span>SUPABASE_OK</span>
                         <span style={{ color: status.supabaseOk ? '#2ecc71' : '#e74c3c' }}>
-                            {status.supabaseOk ? '✅ true' : '❌ false'}
+                            {status.supabaseOk ? ' true' : ' false'}
                         </span>
                     </div>
                 </div>
@@ -88,7 +88,7 @@ export default function SystemOffline({ status }: Props) {
                         border: '1px solid rgba(231, 76, 60, 0.3)'
                     }}>
                         <h3 style={{ color: '#e74c3c', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                            ⚠️ MISSING CONFIGURATION
+                             MISSING CONFIGURATION
                         </h3>
                         <ul style={{ margin: 0, paddingLeft: '1.5rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>
                             {status.errors.map((err, i) => (

@@ -2,7 +2,7 @@ import { supabase } from '../../lib/supabase';
 import { CommissionService } from '../../services/CommissionService';
 import { RakeService } from '../../services/RakeService';
 
-interface HandContext {
+export interface HandContext {
     tableId: string;
     handId: string;
     clubId: string;
@@ -35,12 +35,12 @@ export class RakeWaterfallEngine {
         // LAW: 10% Rate | Cap 2.5BB | BBJ 0.5BB (LOCKED)
 
         const rakePercent = 0.10;
-        const rakeCap = ctx.bigBlind * 2.5; // 🔒 LOCKED: 2.5x Big Blind
+        const rakeCap = ctx.bigBlind * 2.5; //  LOCKED: 2.5x Big Blind
 
-        let grossRake = Math.min(ctx.totalPot * rakePercent, rakeCap);
+        const grossRake = Math.min(ctx.totalPot * rakePercent, rakeCap);
 
         // 2. BBJ DROP
-        // 🔒 LOCKED: 0.5x Big Blind
+        //  LOCKED: 0.5x Big Blind
         const bbjDrop = ctx.bigBlind * 0.5;
 
         // 3. EXECUTE POT DEDUCTION (Move Chips to Union/Club/BBJ Wallets)

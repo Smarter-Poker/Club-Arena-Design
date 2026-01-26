@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🌐 WEBSOCKET CLIENT — Real-Time Game State Sync
+ *  WEBSOCKET CLIENT — Real-Time Game State Sync
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Supabase Realtime + fallback WebSocket client for table state synchronization.
@@ -130,10 +130,8 @@ export class TableWebSocket {
                     this.handlePresenceSync();
                 })
                 .on('presence', { event: 'join' }, ({ newPresences }) => {
-                    console.log('[TableWS] Player joined:', newPresences);
                 })
                 .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-                    console.log('[TableWS] Player left:', leftPresences);
                 });
 
             // Subscribe to channel - returns the channel, callback receives status
@@ -152,7 +150,6 @@ export class TableWebSocket {
                             joinedAt: Date.now(),
                         } as PlayerPresence);
 
-                        console.log('[TableWS] Connected to table:', this.tableId);
                         resolve();
                     } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
                         reject(new Error(`Channel error: ${status}`));
@@ -181,7 +178,6 @@ export class TableWebSocket {
 
         this.isConnected = false;
         this.notifyConnection(false);
-        console.log('[TableWS] Disconnected from table:', this.tableId);
     }
 
     private scheduleReconnect(): void {
@@ -190,7 +186,6 @@ export class TableWebSocket {
         const delay = RECONNECT_DELAYS[Math.min(this.reconnectAttempt, RECONNECT_DELAYS.length - 1)];
         this.reconnectAttempt++;
 
-        console.log(`[TableWS] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempt})`);
 
         this.reconnectTimer = setTimeout(async () => {
             this.reconnectTimer = null;
@@ -342,9 +337,39 @@ export class TableWebSocket {
     }
 
     private async requestResync(): Promise<void> {
-        // Request full state from server
-        // In a real implementation, this would call an RPC to get current game state
-        console.log('[TableWS] Requesting state resync...');
+        // Request full state from server via Supabase RPC
+
+        if (!this.supabase) {
+            console.warn('[TableWS] Cannot resync: Supabase not configured');
+            return;
+        }
+
+        try {
+            // Call Supabase RPC to get current game state
+            const { data, error } = await this.supabase.rpc('get_table_state', {
+                p_table_id: this.tableId
+            });
+
+            if (error) {
+                console.error('[TableWS] Resync RPC error:', error);
+                return;
+            }
+
+            if (data) {
+                // Broadcast the synced state to all handlers
+                const syncEvent: GameEvent = {
+                    type: 'GAME_START', // Use as full state sync
+                    tableId: this.tableId,
+                    data: data,
+                    timestamp: Date.now(),
+                    sequence: data.sequence || this.lastSequence + 1,
+                };
+                this.lastSequence = syncEvent.sequence;
+                this.handleGameEvent(syncEvent);
+            }
+        } catch (err) {
+            console.error('[TableWS] Resync failed:', err);
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────────

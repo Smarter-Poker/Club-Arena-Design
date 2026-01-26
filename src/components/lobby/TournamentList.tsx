@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🏆 TOURNAMENT LIST — Scheduled Tournaments Display
+ *  TOURNAMENT LIST — Scheduled Tournaments Display
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Premium tournament lobby list with:
@@ -154,7 +154,7 @@ function TournamentRow({
                     <span className="tournament-row__name">{tournament.name}</span>
                     {tournament.isKnockout && <span className="tournament-row__badge">KO</span>}
                     {tournament.isRebuy && <span className="tournament-row__badge">R</span>}
-                    {tournament.isPrivate && <span className="tournament-row__private">🔒</span>}
+                    {tournament.isPrivate && <span className="tournament-row__private"></span>}
                 </div>
                 <div className="tournament-row__meta">
                     <span className="tournament-row__variant">{tournament.variant}</span>
@@ -268,7 +268,7 @@ export function TournamentList({
         return (
             <div className="tournament-list tournament-list--empty">
                 <div className="tournament-list__empty-state">
-                    <span className="tournament-list__empty-icon">🏆</span>
+                    <span className="tournament-list__empty-icon"></span>
                     <span className="tournament-list__empty-text">No tournaments scheduled</span>
                     <span className="tournament-list__empty-hint">Check back later for upcoming events</span>
                 </div>

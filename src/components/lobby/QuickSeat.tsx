@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * ⚡ QUICK SEAT — One-Click Buy-In Component
+ *  QUICK SEAT — One-Click Buy-In Component
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * PokerBros-style quick seat button for instant table join:

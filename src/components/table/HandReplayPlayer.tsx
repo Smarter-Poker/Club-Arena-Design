@@ -376,7 +376,7 @@ export function HandReplayPlayer({
 
                                 {/* Winner Badge */}
                                 {isWinner && (
-                                    <div className="replay-player__winner-badge">🏆</div>
+                                    <div className="replay-player__winner-badge"></div>
                                 )}
                             </div>
                         );
@@ -413,7 +413,7 @@ export function HandReplayPlayer({
                     </span>
                     {onShare && (
                         <button className="replay-player__share-btn" onClick={onShare}>
-                            🔗 Share
+                             Share
                         </button>
                     )}
                 </div>
