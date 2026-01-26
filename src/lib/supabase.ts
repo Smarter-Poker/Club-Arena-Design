@@ -16,6 +16,7 @@ const FALLBACK_URL = 'https://kuklfnapbkmacvwxktbh.supabase.co';
 const FALLBACK_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1a2xmbmFwYmttYWN2d3hrdGJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MzA4NDQsImV4cCI6MjA4MzMwNjg0NH0.ZGFrUYq7yAbkveFdudh4q_Xk0qN0AZ-jnu4FkX9YKjo';
 
 // Create the Supabase client with realtime enabled for live traffic
+// CRITICAL: storageKey MUST match Hub's 'smarter-poker-auth' for same-origin SSO
 export const supabase = createClient(
     supabaseUrl || FALLBACK_URL,
     supabaseAnonKey || FALLBACK_ANON_KEY,
@@ -24,6 +25,7 @@ export const supabase = createClient(
             autoRefreshToken: true,
             persistSession: true,
             detectSessionInUrl: true,
+            storageKey: 'smarter-poker-auth', // MUST match Hub for SSO
         },
         realtime: {
             params: {
@@ -71,74 +73,21 @@ export function subscribeToTable<T>(
 export type SupabaseClient = typeof supabase;
 
 // ══════════════════════════════════════════════════════════════════════════════
-// SSO HANDSHAKE — Receive auth token from World Hub parent frame
+// SAME-ORIGIN SSO — Club Arena shares auth with Hub via localStorage
 // ══════════════════════════════════════════════════════════════════════════════
+// Since Club Arena is now served at smarter.poker/hub/club-arena (same origin),
+// it automatically shares the 'smarter-poker-auth' localStorage key with the Hub.
+// No postMessage or iframe handshake needed - just use the same storageKey above.
 if (typeof window !== 'undefined') {
-    const isInIframe = window.parent !== window;
-    console.log('[SSO-CHILD] SSO receiver initialized, in iframe:', isInIframe);
+    console.log('[SSO] Same-origin SSO enabled via shared storageKey: smarter-poker-auth');
 
-    // Guard: Check if we already have a session - skip SSO if so
-    const checkExistingSession = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        return !!session;
-    };
-
-    // Listen for auth token from parent
-    window.addEventListener('message', async (event) => {
-        console.log('[SSO-CHILD] Received message from:', event.origin, 'type:', event.data?.type);
-
-        // Only accept from World Hub origin
-        if (event.origin !== 'https://smarter.poker') {
-            return;
-        }
-
-        if (event.data?.type === 'SMARTER_POKER_AUTH') {
-            // Guard: If we already have a session, skip
-            if (await checkExistingSession()) {
-                console.log('[SSO-CHILD] Session already exists, skipping SSO');
-                return;
-            }
-
-            const { access_token, refresh_token } = event.data.payload;
-            console.log('[SSO-CHILD] Auth tokens received:', !!access_token, !!refresh_token);
-
-            if (access_token && refresh_token) {
-                try {
-                    console.log('[SSO-CHILD] Calling setSession...');
-                    const { error } = await supabase.auth.setSession({
-                        access_token,
-                        refresh_token,
-                    });
-                    if (!error) {
-                        console.log('[SSO-CHILD]  Session set! Reloading...');
-                        window.location.reload();
-                    } else {
-                        console.error('[SSO-CHILD]  setSession error:', error);
-                    }
-                } catch (err) {
-                    console.error('[SSO-CHILD]  Exception:', err);
-                }
-            }
+    // Log session status on load for debugging
+    supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+            console.log('[SSO] ✅ Session found from Hub auth');
+        } else {
+            console.log('[SSO] ⚠️ No session - user needs to log in at Hub');
         }
     });
-
-    // Request auth token from parent only if we don't have a session
-    if (isInIframe) {
-        checkExistingSession().then(hasSession => {
-            if (hasSession) {
-                console.log('[SSO-CHILD] Already logged in, skipping CLUB_ARENA_READY');
-                return;
-            }
-
-            const sendReady = () => {
-                console.log('[SSO-CHILD] Sending CLUB_ARENA_READY to parent');
-                window.parent.postMessage({ type: 'CLUB_ARENA_READY' }, 'https://smarter.poker');
-            };
-
-            // Send immediately and retry
-            sendReady();
-            setTimeout(sendReady, 500);
-            setTimeout(sendReady, 1500);
-        });
-    }
 }
+
