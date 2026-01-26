@@ -23,9 +23,11 @@
     align-items: center;
     justify-content: flex-start;
     position: relative;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     background: #030a14;
     padding-top: 20px;
+    padding-bottom: 40px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -294,7 +296,10 @@
     gap: 20px;
     z-index: 10;
     perspective: 1500px;
-    margin-bottom: 40px;
+    margin-bottom: 60px;
+    margin-top: 20px;
+    flex-grow: 1;
+    min-height: 420px;
 }
 
 .navArrow {

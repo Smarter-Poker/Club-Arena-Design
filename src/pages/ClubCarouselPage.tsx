@@ -14,6 +14,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
+import IntroVideo from '../components/IntroVideo';
 import './ClubCarouselPage.css';
 
 interface UserClub {
@@ -39,6 +40,9 @@ interface UserProfile {
     vip_level: string;
 }
 
+// Session key for intro video
+const INTRO_SHOWN_KEY = 'club_arena_intro_shown';
+
 export default function ClubCarouselPage() {
     const navigate = useNavigate();
     const { user } = useUserStore();
@@ -48,6 +52,18 @@ export default function ClubCarouselPage() {
     const [loading, setLoading] = useState(true);
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [wallet, setWallet] = useState<UserWallet>({ gold: 0, diamonds: 0 });
+
+    // Intro video state - only show once per session
+    const [showIntro, setShowIntro] = useState(() => {
+        const shown = sessionStorage.getItem(INTRO_SHOWN_KEY);
+        return !shown; // Show intro if not shown yet
+    });
+
+    // Handle intro completion
+    const handleIntroComplete = () => {
+        sessionStorage.setItem(INTRO_SHOWN_KEY, 'true');
+        setShowIntro(false);
+    };
 
     useEffect(() => {
         loadUserData();
@@ -160,134 +176,145 @@ export default function ClubCarouselPage() {
     }
 
     return (
-        <div className="club-carousel">
-            {/* ═══════════════════════════════════════════════════════════════════
-                HEADER - Player Info + Wallet
-            ═══════════════════════════════════════════════════════════════════ */}
-            <header className="club-carousel__header">
-                <div className="header__user">
-                    <div className="user-avatar">
-                        {userProfile?.avatar_url ? (
-                            <img src={userProfile.avatar_url} alt="avatar" />
-                        ) : (
-                            <span className="avatar-placeholder">🐟</span>
-                        )}
+        <>
+            {/* Intro Video - plays on first entry while content loads in background */}
+            {showIntro && (
+                <IntroVideo
+                    videoSrc="/videos/club-arena-intro.mp4"
+                    minDuration={3000}
+                    onComplete={handleIntroComplete}
+                />
+            )}
+
+            <div className="club-carousel">
+                {/* ═══════════════════════════════════════════════════════════════════
+                    HEADER - Player Info + Wallet
+                ═══════════════════════════════════════════════════════════════════ */}
+                <header className="club-carousel__header">
+                    <div className="header__user">
+                        <div className="user-avatar">
+                            {userProfile?.avatar_url ? (
+                                <img src={userProfile.avatar_url} alt="avatar" />
+                            ) : (
+                                <span className="avatar-placeholder">🐟</span>
+                            )}
+                        </div>
+                        <div className="user-info">
+                            <span className="user-name">-{userProfile?.display_name || 'Player'}-</span>
+                            <span className="user-id">ID:{userProfile?.player_number?.toString().padStart(7, '0') || '0000000'}</span>
+                        </div>
                     </div>
-                    <div className="user-info">
-                        <span className="user-name">-{userProfile?.display_name || 'Player'}-</span>
-                        <span className="user-id">ID:{userProfile?.player_number?.toString().padStart(7, '0') || '0000000'}</span>
+                    <button className="header__menu">≡</button>
+                </header>
+
+                {/* Wallet Row */}
+                <div className="club-carousel__wallet">
+                    <div className="vip-badge">🔒 VIP</div>
+                    <div className="wallet-balances">
+                        <div className="balance gold">
+                            <span className="balance-icon">♠</span>
+                            <span className="balance-amount">{formatNumber(wallet.gold)}</span>
+                            <button className="balance-add">+</button>
+                        </div>
+                        <div className="balance diamond">
+                            <span className="balance-icon">◆</span>
+                            <span className="balance-amount">{wallet.diamonds.toLocaleString()}</span>
+                            <button className="balance-add">+</button>
+                        </div>
                     </div>
                 </div>
-                <button className="header__menu">≡</button>
-            </header>
 
-            {/* Wallet Row */}
-            <div className="club-carousel__wallet">
-                <div className="vip-badge">🔒 VIP</div>
-                <div className="wallet-balances">
-                    <div className="balance gold">
-                        <span className="balance-icon">♠</span>
-                        <span className="balance-amount">{formatNumber(wallet.gold)}</span>
-                        <button className="balance-add">+</button>
-                    </div>
-                    <div className="balance diamond">
-                        <span className="balance-icon">◆</span>
-                        <span className="balance-amount">{wallet.diamonds.toLocaleString()}</span>
-                        <button className="balance-add">+</button>
-                    </div>
-                </div>
-            </div>
-
-            {/* ═══════════════════════════════════════════════════════════════════
+                {/* ═══════════════════════════════════════════════════════════════════
                 ACTION BUTTONS - Create Club + Search
             ═══════════════════════════════════════════════════════════════════ */}
-            <div className="club-carousel__actions">
-                <button className="action-btn create" onClick={handleCreateClub}>
-                    <span className="action-icon">🏠+</span>
-                </button>
-                <button className="action-btn search" onClick={handleSearch}>
-                    <span className="action-icon">🔍</span>
-                </button>
-            </div>
+                <div className="club-carousel__actions">
+                    <button className="action-btn create" onClick={handleCreateClub}>
+                        <span className="action-icon">🏠+</span>
+                    </button>
+                    <button className="action-btn search" onClick={handleSearch}>
+                        <span className="action-icon">🔍</span>
+                    </button>
+                </div>
 
-            {/* ═══════════════════════════════════════════════════════════════════
+                {/* ═══════════════════════════════════════════════════════════════════
                 CLUB CAROUSEL
             ═══════════════════════════════════════════════════════════════════ */}
-            <div className="club-carousel__cards">
-                {clubs.length === 0 ? (
-                    <div className="no-clubs">
-                        <p>You haven't joined any clubs yet</p>
-                        <button className="join-btn" onClick={handleSearch}>Find Clubs</button>
-                    </div>
-                ) : (
-                    <>
-                        {/* Left Arrow */}
-                        {clubs.length > 1 && (
-                            <button className="carousel-arrow left" onClick={handlePrev}>
-                                ‹
-                            </button>
-                        )}
+                <div className="club-carousel__cards">
+                    {clubs.length === 0 ? (
+                        <div className="no-clubs">
+                            <p>You haven't joined any clubs yet</p>
+                            <button className="join-btn" onClick={handleSearch}>Find Clubs</button>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Left Arrow */}
+                            {clubs.length > 1 && (
+                                <button className="carousel-arrow left" onClick={handlePrev}>
+                                    ‹
+                                </button>
+                            )}
 
-                        {/* Club Cards */}
-                        <div className="cards-container">
-                            {clubs.map((club, index) => {
-                                const offset = index - activeIndex;
-                                const isActive = index === activeIndex;
+                            {/* Club Cards */}
+                            <div className="cards-container">
+                                {clubs.map((club, index) => {
+                                    const offset = index - activeIndex;
+                                    const isActive = index === activeIndex;
 
-                                return (
-                                    <div
-                                        key={club.id}
-                                        className={`club-card ${isActive ? 'active' : ''}`}
-                                        style={{
-                                            transform: `translateX(${offset * 120}%) scale(${isActive ? 1 : 0.8})`,
-                                            opacity: Math.abs(offset) > 1 ? 0 : (isActive ? 1 : 0.6),
-                                            zIndex: isActive ? 10 : 5 - Math.abs(offset),
-                                        }}
-                                        onClick={() => isActive && handleClubClick(club)}
-                                    >
-                                        <div className="club-card__id">ID:{club.club_id}</div>
-                                        <div className="club-card__graphic">
-                                            {club.avatar_url ? (
-                                                <img src={club.avatar_url} alt={club.name} />
-                                            ) : (
-                                                <div className="club-card__placeholder">
-                                                    <span className="chip-icon">♠</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="club-card__footer">
-                                            <div className="club-avatar">
+                                    return (
+                                        <div
+                                            key={club.id}
+                                            className={`club-card ${isActive ? 'active' : ''}`}
+                                            style={{
+                                                transform: `translateX(${offset * 120}%) scale(${isActive ? 1 : 0.8})`,
+                                                opacity: Math.abs(offset) > 1 ? 0 : (isActive ? 1 : 0.6),
+                                                zIndex: isActive ? 10 : 5 - Math.abs(offset),
+                                            }}
+                                            onClick={() => isActive && handleClubClick(club)}
+                                        >
+                                            <div className="club-card__id">ID:{club.club_id}</div>
+                                            <div className="club-card__graphic">
                                                 {club.avatar_url ? (
-                                                    <img src={club.avatar_url} alt="" />
+                                                    <img src={club.avatar_url} alt={club.name} />
                                                 ) : (
-                                                    <span>♠</span>
+                                                    <div className="club-card__placeholder">
+                                                        <span className="chip-icon">♠</span>
+                                                    </div>
                                                 )}
                                             </div>
-                                            <div className="club-info">
-                                                <span className="club-name">{club.name}</span>
-                                                <span className="club-meta">
-                                                    LVL: {club.level}
-                                                    <span className="member-count">👁 {club.member_count}</span>
-                                                </span>
+                                            <div className="club-card__footer">
+                                                <div className="club-avatar">
+                                                    {club.avatar_url ? (
+                                                        <img src={club.avatar_url} alt="" />
+                                                    ) : (
+                                                        <span>♠</span>
+                                                    )}
+                                                </div>
+                                                <div className="club-info">
+                                                    <span className="club-name">{club.name}</span>
+                                                    <span className="club-meta">
+                                                        LVL: {club.level}
+                                                        <span className="member-count">👁 {club.member_count}</span>
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                    );
+                                })}
+                            </div>
 
-                        {/* Right Arrow */}
-                        {clubs.length > 1 && (
-                            <button className="carousel-arrow right" onClick={handleNext}>
-                                ›
-                            </button>
-                        )}
-                    </>
-                )}
+                            {/* Right Arrow */}
+                            {clubs.length > 1 && (
+                                <button className="carousel-arrow right" onClick={handleNext}>
+                                    ›
+                                </button>
+                            )}
+                        </>
+                    )}
+                </div>
+
+                {/* Background */}
+                <div className="club-carousel__background"></div>
             </div>
-
-            {/* Background */}
-            <div className="club-carousel__background"></div>
-        </div>
+        </>
     );
 }
