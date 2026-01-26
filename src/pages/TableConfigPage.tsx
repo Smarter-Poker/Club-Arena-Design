@@ -26,6 +26,30 @@ type RunItMode = 'none' | 'player_choice' | 'mandatory_twice' | 'mandatory_three
 type BlindStructure = 'slow' | 'standard' | 'turbo' | 'hyper_turbo';
 type PayoutStructure = 'payout1' | 'payout2' | 'payout3' | 'winner_take_all';
 
+interface TableTemplate {
+    id: string;
+    name: string;
+    game_type: string;
+    game_mode: string;
+    config: TableConfig;
+}
+
+// SNG Player Count Options (3=Spins, 9=Single Table, then multi-table)
+const SNG_PLAYER_OPTIONS = [
+    { value: 3, label: '3 Players (Spins)', isSpins: true, tables: 1 },
+    { value: 9, label: '9 Players (Single Table)', isSpins: false, tables: 1 },
+    { value: 18, label: '18 Players (2 Tables)', isSpins: false, tables: 2 },
+    { value: 27, label: '27 Players (3 Tables)', isSpins: false, tables: 3 },
+    { value: 36, label: '36 Players (4 Tables)', isSpins: false, tables: 4 },
+    { value: 45, label: '45 Players (5 Tables)', isSpins: false, tables: 5 },
+    { value: 54, label: '54 Players (6 Tables)', isSpins: false, tables: 6 },
+    { value: 63, label: '63 Players (7 Tables)', isSpins: false, tables: 7 },
+    { value: 72, label: '72 Players (8 Tables)', isSpins: false, tables: 8 },
+    { value: 81, label: '81 Players (9 Tables)', isSpins: false, tables: 9 },
+    { value: 90, label: '90 Players (10 Tables)', isSpins: false, tables: 10 },
+    { value: 99, label: '99 Players (11 Tables)', isSpins: false, tables: 11 },
+];
+
 interface TableConfig {
     // Basic
     name: string;
@@ -86,6 +110,8 @@ interface TableConfig {
     blindStructure: BlindStructure;
     payoutStructure: PayoutStructure;
     startingChips: number;
+    sngPlayerCount: number;
+    isSpins: boolean;
     blindsUpMinutes: number;
     nextStepSatellite: boolean;
 
@@ -215,6 +241,8 @@ const DEFAULT_CONFIG: TableConfig = {
     payoutStructure: 'payout1',
     startingChips: 1000,
     blindsUpMinutes: 3,
+    sngPlayerCount: 9,
+    isSpins: false,
     nextStepSatellite: false,
 
     // MTT Specific
@@ -267,8 +295,34 @@ export default function TableConfigPage() {
     const [blindsIndex, setBlindsIndex] = useState(2); // Default 0.05/0.10
     const [saving, setSaving] = useState(false);
     const [starting, setStarting] = useState(false);
+    const [templates, setTemplates] = useState<TableTemplate[]>([]);
+    const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+    const [savingTemplate, setSavingTemplate] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
     const gameInfo = GAME_TYPE_LABELS[gameType || 'nlh'] || GAME_TYPE_LABELS.nlh;
+
+    // Fetch templates for this club on mount
+    useEffect(() => {
+        const fetchTemplates = async () => {
+            if (!clubId) return;
+            try {
+                const { data, error } = await supabase
+                    .from('table_templates')
+                    .select('*')
+                    .eq('club_id', clubId)
+                    .eq('is_deleted', false)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                setTemplates(data || []);
+            } catch (err) {
+                console.error('Failed to fetch templates:', err);
+            }
+        };
+        fetchTemplates();
+    }, [clubId]);
 
     // Generate default table name
     useEffect(() => {
@@ -281,6 +335,91 @@ export default function TableConfigPage() {
 
     const updateConfig = <K extends keyof TableConfig>(key: K, value: TableConfig[K]) => {
         setConfig(prev => ({ ...prev, [key]: value }));
+    };
+
+    // Load a template's config into the form
+    const loadTemplate = (templateId: string) => {
+        if (!templateId) {
+            setSelectedTemplateId('');
+            return;
+        }
+        const template = templates.find(t => t.id === templateId);
+        if (template) {
+            setConfig({
+                ...DEFAULT_CONFIG,
+                ...template.config,
+                name: '', // Clear name so user enters new name
+            });
+            setSelectedTemplateId(templateId);
+            toast.success(`Loaded template: ${template.name}`);
+        }
+    };
+
+    // Save current config as a template
+    const handleSaveAsTemplate = async () => {
+        if (!config.name.trim()) {
+            toast.error('Please enter a table name first');
+            return;
+        }
+
+        setSavingTemplate(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('Not authenticated');
+
+            const templateData = {
+                club_id: clubId,
+                name: config.name,
+                game_type: gameType?.toUpperCase() || 'NLH',
+                game_mode: config.gameMode,
+                config: config,
+                created_by: user.id,
+            };
+
+            const { data, error } = await supabase
+                .from('table_templates')
+                .insert(templateData)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            setTemplates(prev => [data, ...prev]);
+            toast.success('Template saved! You can now duplicate this table easily.');
+        } catch (err) {
+            console.error('Failed to save template:', err);
+            toast.error('Failed to save template');
+        } finally {
+            setSavingTemplate(false);
+        }
+    };
+
+    // Handle SNG player count change (auto-set spins mode for 3 players)
+    const handleSngPlayerChange = (playerCount: number) => {
+        const option = SNG_PLAYER_OPTIONS.find(o => o.value === playerCount);
+        setConfig(prev => ({
+            ...prev,
+            sngPlayerCount: playerCount,
+            isSpins: option?.isSpins || false,
+        }));
+    };
+
+    // Delete a table (soft delete)
+    const handleDeleteTable = async (tableId: string) => {
+        setDeleting(true);
+        try {
+            const { error } = await supabase.rpc('soft_delete_table', { table_id: tableId });
+            if (error) throw error;
+
+            toast.success('Table deleted');
+            setShowDeleteConfirm(false);
+            navigate(`/clubs/${clubId}`);
+        } catch (err) {
+            console.error('Failed to delete table:', err);
+            toast.error('Failed to delete table');
+        } finally {
+            setDeleting(false);
+        }
     };
 
     const handleBlindsChange = (index: number) => {
@@ -564,6 +703,31 @@ export default function TableConfigPage() {
                 </button>
             </div>
 
+            {/* Template Selector - At TOP for easy duplication */}
+            {templates.length > 0 && (
+                <div className="template-selector">
+                    <label className="template-label">Load Template:</label>
+                    <select
+                        className="template-dropdown"
+                        value={selectedTemplateId}
+                        onChange={(e) => loadTemplate(e.target.value)}
+                    >
+                        <option value="">-- Start Fresh --</option>
+                        {templates.map(t => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                    </select>
+                </div>
+            )}
+
+            {/* Spins Mode Indicator */}
+            {config.isSpins && config.gameMode === 'sng' && (
+                <div className="spins-indicator">
+                    <span className="spins-badge">SPINS</span>
+                    <span className="spins-text">3-Player Spins Mode Active</span>
+                </div>
+            )}
+
             {/* Table Name */}
             <div className="config-name">
                 <input
@@ -741,6 +905,27 @@ export default function TableConfigPage() {
                 {/* SNG/MTT SPECIFIC OPTIONS */}
                 {(config.gameMode === 'sng' || config.gameMode === 'mtt') && (
                     <>
+                        {/* SNG Player Count Dropdown - Only for SNG */}
+                        {config.gameMode === 'sng' && (
+                            <div className="config-toggle">
+                                <span className="toggle-label">
+                                    Players
+                                    <span className="tooltip-icon" title="Number of players in SNG">?</span>
+                                </span>
+                                <select
+                                    className="config-select sng-player-select"
+                                    value={config.sngPlayerCount}
+                                    onChange={(e) => handleSngPlayerChange(Number(e.target.value))}
+                                >
+                                    {SNG_PLAYER_OPTIONS.map(opt => (
+                                        <option key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
                         <Toggle
                             label="Next Step (Satellite)"
                             value={config.nextStepSatellite}
@@ -1065,6 +1250,13 @@ export default function TableConfigPage() {
 
             {/* Footer Buttons */}
             <footer className="config-footer">
+                <button
+                    className="btn-template"
+                    onClick={handleSaveAsTemplate}
+                    disabled={savingTemplate}
+                >
+                    {savingTemplate ? 'Saving...' : 'Save as Template'}
+                </button>
                 <button
                     className="btn-save"
                     onClick={handleSave}
