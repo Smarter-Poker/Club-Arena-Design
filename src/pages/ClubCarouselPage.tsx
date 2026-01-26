@@ -43,6 +43,22 @@ interface UserProfile {
 // Session key for intro video
 const INTRO_SHOWN_KEY = 'club_arena_intro_shown';
 
+// Frame images for club cards (randomly assigned per club)
+// Use BASE_URL for correct path resolution with Vite base path
+const FRAME_IMAGES = [
+    `${import.meta.env.BASE_URL}images/frames/frame-1.jpg`,
+    `${import.meta.env.BASE_URL}images/frames/frame-2.jpg`,
+    `${import.meta.env.BASE_URL}images/frames/frame-3.jpg`,
+    `${import.meta.env.BASE_URL}images/frames/frame-4.jpg`,
+    `${import.meta.env.BASE_URL}images/frames/frame-5.jpg`,
+];
+
+// Get consistent frame for a club based on its ID
+const getFrameForClub = (clubId: number): string => {
+    const index = clubId % FRAME_IMAGES.length;
+    return FRAME_IMAGES[index];
+};
+
 export default function ClubCarouselPage() {
     const navigate = useNavigate();
     const { user } = useUserStore();
@@ -271,30 +287,40 @@ export default function ClubCarouselPage() {
                                             }}
                                             onClick={() => isActive && handleClubClick(club)}
                                         >
-                                            <div className="club-card__id">ID:{club.club_id}</div>
-                                            <div className="club-card__graphic">
-                                                {club.avatar_url ? (
-                                                    <img src={club.avatar_url} alt={club.name} />
-                                                ) : (
-                                                    <div className="club-card__placeholder">
-                                                        <span className="chip-icon">♠</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="club-card__footer">
-                                                <div className="club-avatar">
+                                            {/* Frame overlay */}
+                                            <img
+                                                src={getFrameForClub(club.club_id)}
+                                                alt=""
+                                                className="club-card__frame"
+                                            />
+
+                                            {/* Card content (behind frame) */}
+                                            <div className="club-card__content">
+                                                <div className="club-card__id">ID:{club.club_id}</div>
+                                                <div className="club-card__graphic">
                                                     {club.avatar_url ? (
-                                                        <img src={club.avatar_url} alt="" />
+                                                        <img src={club.avatar_url} alt={club.name} />
                                                     ) : (
-                                                        <span>♠</span>
+                                                        <div className="club-card__placeholder">
+                                                            <span className="chip-icon">♠</span>
+                                                        </div>
                                                     )}
                                                 </div>
-                                                <div className="club-info">
-                                                    <span className="club-name">{club.name}</span>
-                                                    <span className="club-meta">
-                                                        LVL: {club.level}
-                                                        <span className="member-count">👁 {club.member_count}</span>
-                                                    </span>
+                                                <div className="club-card__footer">
+                                                    <div className="club-avatar">
+                                                        {club.avatar_url ? (
+                                                            <img src={club.avatar_url} alt="" />
+                                                        ) : (
+                                                            <span>♠</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="club-info">
+                                                        <span className="club-name">{club.name}</span>
+                                                        <span className="club-meta">
+                                                            LVL: {club.level}
+                                                            <span className="member-count">👁 {club.member_count}</span>
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
