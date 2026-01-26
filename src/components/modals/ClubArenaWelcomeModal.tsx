@@ -4,6 +4,8 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  * First-time entry acknowledgment popup for Club Arena
  * Users must accept before accessing club features
+ * 
+ * DESIGN: Facebook Blue color scheme (#1877F2)
  */
 
 import { useState, useEffect } from 'react';
@@ -34,14 +36,12 @@ export default function ClubArenaWelcomeModal({ isOpen, onAccept }: ClubArenaWel
 
                 <div className={styles.content}>
                     <div className={styles.heroSection}>
-                        <span className={styles.heroIcon}></span>
                         <h3>Important Notice</h3>
                     </div>
 
                     <div className={styles.disclaimer}>
                         <p>
-                            <strong>Smarter.Poker is an online social gaming platform and does not
-                                provide any real-money service.</strong>
+                            <strong>Smarter.Poker is an online social gaming platform and does not provide any real-money service.</strong>
                         </p>
                     </div>
 
@@ -49,36 +49,27 @@ export default function ClubArenaWelcomeModal({ isOpen, onAccept }: ClubArenaWel
                         <h4>By entering Club Arena, you acknowledge:</h4>
                         <ul>
                             <li>
-                                <span className={styles.bullet}></span>
-                                This is a <strong>social gaming platform</strong> for entertainment purposes only
+                                This is a <strong>social gaming platform</strong> for entertainment purposes only.
                             </li>
                             <li>
-                                <span className={styles.bullet}></span>
-                                All chips and currencies are <strong>virtual</strong> with no real-world monetary value
+                                All chips and currencies are <strong>virtual</strong> with no real-world monetary value.
                             </li>
                             <li>
-                                <span className={styles.bullet}></span>
-                                You are <strong>18 years of age or older</strong> (or the legal age in your jurisdiction)
+                                You are <strong>18 years of age or older</strong> (or the legal age in your jurisdiction).
                             </li>
                             <li>
-                                <span className={styles.bullet}></span>
-                                You will abide by all <strong>local, state, and national laws</strong>
+                                You will abide by all <strong>local, state, and national laws</strong>.
                             </li>
                             <li>
-                                <span className={styles.bullet}></span>
-                                Smarter.Poker is <strong>not responsible</strong> for any interactions or arrangements
-                                between club members
+                                Smarter.Poker is <strong>not responsible</strong> for any interactions or arrangements between club members.
                             </li>
                             <li>
-                                <span className={styles.bullet}></span>
-                                Club owners and operators are <strong>independent</strong> and not affiliated with
-                                or endorsed by Smarter.Poker
+                                Club owners and operators are <strong>independent</strong> and not affiliated with or endorsed by Smarter.Poker.
                             </li>
                         </ul>
                     </div>
 
                     <div className={styles.infoBox}>
-                        <span className={styles.infoIcon}></span>
                         <p>
                             For questions or concerns, contact us at{' '}
                             <a href="mailto:support@smarter.poker">support@smarter.poker</a>
