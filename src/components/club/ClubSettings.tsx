@@ -12,6 +12,7 @@
 
 import React, { useState } from 'react';
 import './ClubSettings.css';
+import ClubLogoSelector from '../ClubLogoSelector';
 
 export interface ClubSettingsData {
     name: string;
@@ -110,13 +111,11 @@ export function ClubSettings({
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Avatar URL</label>
-                                <input
-                                    type="text"
-                                    value={formData.avatarUrl}
-                                    onChange={(e) => handleChange('avatarUrl', e.target.value)}
-                                    className="form-input"
-                                    placeholder="https://..."
+                                <label>Club Logo</label>
+                                <ClubLogoSelector
+                                    clubId="settings"
+                                    currentLogo={formData.avatarUrl}
+                                    onLogoChange={(url) => handleChange('avatarUrl', url)}
                                 />
                             </div>
                             <div className="form-group">

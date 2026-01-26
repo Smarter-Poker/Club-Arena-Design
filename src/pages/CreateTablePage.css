@@ -134,48 +134,37 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   GAME-SPECIFIC STYLING
+   GAME CARD STYLING — Facebook Blue Theme
 ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* NLH - Red gradient with gold accent */
-.game-type-card[style*="dc2626"]::before {
+/* Subtle blue glow on all cards */
+.game-type-card::before {
     content: '';
     position: absolute;
     top: 0;
     right: 0;
     width: 40%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 184, 0, 0.2));
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08));
     pointer-events: none;
 }
 
-/* 6+ - Has diagonal stripe pattern */
-.game-type-card[style*="0d9488"]::after {
+/* Diagonal stripe pattern for visual interest */
+.game-type-card::after {
     content: '';
     position: absolute;
     inset: 0;
     background: repeating-linear-gradient(45deg,
             transparent,
             transparent 10px,
-            rgba(255, 255, 255, 0.03) 10px,
-            rgba(255, 255, 255, 0.03) 20px);
+            rgba(255, 255, 255, 0.02) 10px,
+            rgba(255, 255, 255, 0.02) 20px);
     pointer-events: none;
 }
 
-/* FLO - Warning stripes */
-.game-type-card[style*="eab308"]::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 30%;
-    height: 100%;
-    background: repeating-linear-gradient(-45deg,
-            transparent,
-            transparent 8px,
-            rgba(0, 0, 0, 0.15) 8px,
-            rgba(0, 0, 0, 0.15) 16px);
-    pointer-events: none;
+/* Hover glow effect — Facebook blue */
+.game-type-card:hover::before {
+    background: linear-gradient(90deg, transparent, rgba(24, 119, 242, 0.15));
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -230,8 +219,8 @@
     height: 40vh;
     background: linear-gradient(180deg,
             transparent 0%,
-            rgba(13, 79, 60, 0.2) 50%,
-            rgba(13, 79, 60, 0.4) 100%);
+            rgba(24, 119, 242, 0.1) 50%,
+            rgba(24, 119, 242, 0.2) 100%);
     pointer-events: none;
     z-index: 0;
 }

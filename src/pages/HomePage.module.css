@@ -526,6 +526,25 @@
     pointer-events: none;
 }
 
+/* Club Logo Image in Card */
+.clubLogo {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    border-radius: 8px;
+    filter: drop-shadow(0 0 15px rgba(0, 200, 255, 0.4));
+}
+
+/* Empty Card Placeholder */
+.emptyCard {
+    width: 280px;
+    height: 380px;
+    border-radius: 16px;
+    background: transparent;
+    opacity: 0;
+    pointer-events: none;
+}
+
 .cardFooter {
     text-align: center;
     padding-top: 16px;

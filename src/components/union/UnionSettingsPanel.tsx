@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { unionService } from '../../services';
 import { useToast } from '../common/Toast';
+import ClubLogoSelector from '../ClubLogoSelector';
 import './UnionSettingsPanel.css';
 
 interface UnionSettings {
     id: string;
     name: string;
+    logoUrl?: string;
     revenueSplit: number;
     settlementFrequency: 'daily' | 'weekly' | 'monthly';
     autoSettlement: boolean;
@@ -78,6 +80,19 @@ export const UnionSettingsPanel: React.FC<UnionSettingsPanelProps> = ({
             <div className="settings-header">
                 <h3>Union Settings</h3>
                 {!isOwner && <span className="readonly-badge">View Only</span>}
+            </div>
+
+            <div className="settings-section">
+                <h4>Union Branding</h4>
+
+                <div className="setting-row">
+                    <label>Union Logo</label>
+                    <ClubLogoSelector
+                        clubId={`union-${unionId}`}
+                        currentLogo={settings.logoUrl || ''}
+                        onLogoChange={(url: string) => updateSetting('logoUrl', url)}
+                    />
+                </div>
             </div>
 
             <div className="settings-section">

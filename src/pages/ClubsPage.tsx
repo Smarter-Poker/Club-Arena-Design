@@ -15,6 +15,7 @@ import { LoadingState, NoClubsEmpty } from '../components/common/EmptyState';
 import { CardSkeleton } from '../components/skeletons/CardSkeleton';
 import { useToast } from '../components/common/Toast';
 import SmarterHeader from '../components/layout/SmarterHeader';
+import IntroVideo from '../components/IntroVideo';
 import styles from './ClubsPage.module.css';
 
 type Tab = 'discover' | 'my-clubs' | 'create';
@@ -36,6 +37,9 @@ interface Membership {
     club: Club;
 }
 
+// Check if user has seen intro in this session
+const INTRO_SHOWN_KEY = 'club_arena_intro_shown';
+
 export default function ClubsPage() {
     const navigate = useNavigate();
     const toast = useToast();
@@ -43,6 +47,12 @@ export default function ClubsPage() {
     const [joinClubId, setJoinClubId] = useState('');
     const [isJoining, setIsJoining] = useState(false);
     const [joinError, setJoinError] = useState<string | null>(null);
+
+    // Intro video state - only show once per session
+    const [showIntro, setShowIntro] = useState(() => {
+        const shown = sessionStorage.getItem(INTRO_SHOWN_KEY);
+        return !shown; // Show intro if not shown yet
+    });
 
     // Real data states
     const [myClubs, setMyClubs] = useState<Membership[]>([]);
@@ -55,6 +65,12 @@ export default function ClubsPage() {
     const [requiresApproval, setRequiresApproval] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [createError, setCreateError] = useState<string | null>(null);
+
+    // Handle intro completion
+    const handleIntroComplete = () => {
+        sessionStorage.setItem(INTRO_SHOWN_KEY, 'true');
+        setShowIntro(false);
+    };
 
     // Load user's clubs
     useEffect(() => {
@@ -139,195 +155,206 @@ export default function ClubsPage() {
     };
 
     return (
-        <div className={styles.page}>
-            <SmarterHeader title=" Clubs" showBackButton={false} />
-            {/* Header */}
-            <div className={styles.pageIntro}>
-                <p className={styles.subtitle}>Join private poker communities or create your own.</p>
-            </div>
+        <>
+            {/* Intro Video - plays on first load while content loads in background */}
+            {showIntro && (
+                <IntroVideo
+                    videoSrc="/videos/club-arena-intro.mp4"
+                    duration={3000}
+                    onComplete={handleIntroComplete}
+                />
+            )}
 
-            {/* Tabs */}
-            <div className={styles.tabs}>
-                <button
-                    className={`${styles.tab} ${activeTab === 'discover' ? styles.active : ''}`}
-                    onClick={() => setActiveTab('discover')}
-                >
-                     Discover
-                </button>
-                <button
-                    className={`${styles.tab} ${activeTab === 'my-clubs' ? styles.active : ''}`}
-                    onClick={() => setActiveTab('my-clubs')}
-                >
-                     My Clubs
-                </button>
-                <button
-                    className={`${styles.tab} ${activeTab === 'create' ? styles.active : ''}`}
-                    onClick={() => setActiveTab('create')}
-                >
-                    ➕ Create Club
-                </button>
-            </div>
+            <div className={styles.page}>
+                <SmarterHeader title=" Clubs" showBackButton={false} />
+                {/* Header */}
+                <div className={styles.pageIntro}>
+                    <p className={styles.subtitle}>Join private poker communities or create your own.</p>
+                </div>
 
-            {/* Tab Content */}
-            <div className={styles.content}>
-                {/* Discover Tab */}
-                {activeTab === 'discover' && (
-                    <div className={styles.discoverTab}>
-                        <div className={styles.joinSection}>
-                            <h3>Join a Club</h3>
-                            <p>Enter a 6-digit Club ID to join an existing club.</p>
+                {/* Tabs */}
+                <div className={styles.tabs}>
+                    <button
+                        className={`${styles.tab} ${activeTab === 'discover' ? styles.active : ''}`}
+                        onClick={() => setActiveTab('discover')}
+                    >
+                        Discover
+                    </button>
+                    <button
+                        className={`${styles.tab} ${activeTab === 'my-clubs' ? styles.active : ''}`}
+                        onClick={() => setActiveTab('my-clubs')}
+                    >
+                        My Clubs
+                    </button>
+                    <button
+                        className={`${styles.tab} ${activeTab === 'create' ? styles.active : ''}`}
+                        onClick={() => setActiveTab('create')}
+                    >
+                        ➕ Create Club
+                    </button>
+                </div>
 
-                            {joinError && (
-                                <div className={styles.errorMessage}>{joinError}</div>
+                {/* Tab Content */}
+                <div className={styles.content}>
+                    {/* Discover Tab */}
+                    {activeTab === 'discover' && (
+                        <div className={styles.discoverTab}>
+                            <div className={styles.joinSection}>
+                                <h3>Join a Club</h3>
+                                <p>Enter a 6-digit Club ID to join an existing club.</p>
+
+                                {joinError && (
+                                    <div className={styles.errorMessage}>{joinError}</div>
+                                )}
+
+                                <div className={styles.joinForm}>
+                                    <input
+                                        type="text"
+                                        placeholder="Club ID (e.g., 123456)"
+                                        value={joinClubId}
+                                        onChange={(e) => {
+                                            setJoinClubId(e.target.value.replace(/\D/g, ''));
+                                            setJoinError(null);
+                                        }}
+                                        className={styles.joinInput}
+                                        maxLength={6}
+                                    />
+                                    <button
+                                        className="btn btn-primary"
+                                        disabled={joinClubId.length < 6 || isJoining}
+                                        onClick={handleJoinClub}
+                                    >
+                                        {isJoining ? 'Joining...' : 'Join Club'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* My Clubs Tab */}
+                    {activeTab === 'my-clubs' && (
+                        <div className={styles.myClubsTab}>
+                            {isLoading ? (
+                                <div className={styles.clubsGrid}>
+                                    {[1, 2, 3].map(i => (
+                                        <CardSkeleton key={i} hasImage={false} lines={3} />
+                                    ))}
+                                </div>
+                            ) : myClubs.length > 0 ? (
+                                <div className={styles.clubsGrid}>
+                                    {myClubs.map(membership => (
+                                        <div key={membership.id} className={styles.clubCard}>
+                                            <div className={styles.clubHeader}>
+                                                <div className={styles.clubAvatar}></div>
+                                                <div className={styles.clubInfo}>
+                                                    <h3 className={styles.clubName}>{membership.club.name}</h3>
+                                                    <span className={styles.clubId}>ID: {membership.club.club_id}</span>
+                                                </div>
+                                                {membership.role === 'owner' && (
+                                                    <span className={styles.ownerBadge}>Owner</span>
+                                                )}
+                                            </div>
+                                            <div className={styles.clubStats}>
+                                                <div className={styles.clubStat}>
+                                                    <span className={styles.statValue}>{membership.club.member_count || 0}</span>
+                                                    <span className={styles.statLabel}>Members</span>
+                                                </div>
+                                                <div className={styles.clubStat}>
+                                                    <span className={styles.statValue}>{membership.club.online_count || 0}</span>
+                                                    <span className={styles.statLabel}>Online</span>
+                                                </div>
+                                                <div className={styles.clubStat}>
+                                                    <span className={styles.statValue}>{membership.club.table_count || 0}</span>
+                                                    <span className={styles.statLabel}>Tables</span>
+                                                </div>
+                                            </div>
+                                            <button
+                                                className="btn btn-primary"
+                                                style={{ width: '100%' }}
+                                                onClick={() => navigate(`/clubs/${membership.club.id}`)}
+                                            >
+                                                Enter Club
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <NoClubsEmpty onCreate={() => setActiveTab('create')} />
                             )}
+                        </div>
+                    )}
 
-                            <div className={styles.joinForm}>
-                                <input
-                                    type="text"
-                                    placeholder="Club ID (e.g., 123456)"
-                                    value={joinClubId}
-                                    onChange={(e) => {
-                                        setJoinClubId(e.target.value.replace(/\D/g, ''));
-                                        setJoinError(null);
-                                    }}
-                                    className={styles.joinInput}
-                                    maxLength={6}
-                                />
+                    {/* Create Club Tab */}
+                    {activeTab === 'create' && (
+                        <div className={styles.createTab}>
+                            <div className={styles.createForm}>
+                                <h3>Create Your Club</h3>
+                                <p>Start your own private poker community.</p>
+
+                                {createError && (
+                                    <div className={styles.errorMessage}>{createError}</div>
+                                )}
+
+                                <div className={styles.formGroup}>
+                                    <label className={styles.label}>Club Name *</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Enter club name"
+                                        className={styles.input}
+                                        value={clubName}
+                                        onChange={(e) => {
+                                            setClubName(e.target.value);
+                                            setCreateError(null);
+                                        }}
+                                    />
+                                </div>
+
+                                <div className={styles.formGroup}>
+                                    <label className={styles.label}>Description</label>
+                                    <textarea
+                                        placeholder="Describe your club..."
+                                        className={styles.textarea}
+                                        rows={3}
+                                        value={clubDescription}
+                                        onChange={(e) => setClubDescription(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className={styles.formGroup}>
+                                    <label className={styles.label}>Settings</label>
+                                    <div className={styles.checkboxGroup}>
+                                        <label className={styles.checkbox}>
+                                            <input
+                                                type="checkbox"
+                                                checked={isPublic}
+                                                onChange={(e) => setIsPublic(e.target.checked)}
+                                            />
+                                            <span>Public (anyone can find)</span>
+                                        </label>
+                                        <label className={styles.checkbox}>
+                                            <input
+                                                type="checkbox"
+                                                checked={requiresApproval}
+                                                onChange={(e) => setRequiresApproval(e.target.checked)}
+                                            />
+                                            <span>Require approval for new members</span>
+                                        </label>
+                                    </div>
+                                </div>
+
                                 <button
-                                    className="btn btn-primary"
-                                    disabled={joinClubId.length < 6 || isJoining}
-                                    onClick={handleJoinClub}
+                                    className="btn btn-primary btn-lg"
+                                    style={{ width: '100%' }}
+                                    onClick={handleCreateClub}
+                                    disabled={isCreating || !clubName.trim()}
                                 >
-                                    {isJoining ? 'Joining...' : 'Join Club'}
+                                    {isCreating ? 'Creating...' : 'Create Club'}
                                 </button>
                             </div>
                         </div>
-                    </div>
-                )}
-
-                {/* My Clubs Tab */}
-                {activeTab === 'my-clubs' && (
-                    <div className={styles.myClubsTab}>
-                        {isLoading ? (
-                            <div className={styles.clubsGrid}>
-                                {[1, 2, 3].map(i => (
-                                    <CardSkeleton key={i} hasImage={false} lines={3} />
-                                ))}
-                            </div>
-                        ) : myClubs.length > 0 ? (
-                            <div className={styles.clubsGrid}>
-                                {myClubs.map(membership => (
-                                    <div key={membership.id} className={styles.clubCard}>
-                                        <div className={styles.clubHeader}>
-                                            <div className={styles.clubAvatar}></div>
-                                            <div className={styles.clubInfo}>
-                                                <h3 className={styles.clubName}>{membership.club.name}</h3>
-                                                <span className={styles.clubId}>ID: {membership.club.club_id}</span>
-                                            </div>
-                                            {membership.role === 'owner' && (
-                                                <span className={styles.ownerBadge}>Owner</span>
-                                            )}
-                                        </div>
-                                        <div className={styles.clubStats}>
-                                            <div className={styles.clubStat}>
-                                                <span className={styles.statValue}>{membership.club.member_count || 0}</span>
-                                                <span className={styles.statLabel}>Members</span>
-                                            </div>
-                                            <div className={styles.clubStat}>
-                                                <span className={styles.statValue}>{membership.club.online_count || 0}</span>
-                                                <span className={styles.statLabel}>Online</span>
-                                            </div>
-                                            <div className={styles.clubStat}>
-                                                <span className={styles.statValue}>{membership.club.table_count || 0}</span>
-                                                <span className={styles.statLabel}>Tables</span>
-                                            </div>
-                                        </div>
-                                        <button
-                                            className="btn btn-primary"
-                                            style={{ width: '100%' }}
-                                            onClick={() => navigate(`/clubs/${membership.club.id}`)}
-                                        >
-                                            Enter Club
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <NoClubsEmpty onCreate={() => setActiveTab('create')} />
-                        )}
-                    </div>
-                )}
-
-                {/* Create Club Tab */}
-                {activeTab === 'create' && (
-                    <div className={styles.createTab}>
-                        <div className={styles.createForm}>
-                            <h3>Create Your Club</h3>
-                            <p>Start your own private poker community.</p>
-
-                            {createError && (
-                                <div className={styles.errorMessage}>{createError}</div>
-                            )}
-
-                            <div className={styles.formGroup}>
-                                <label className={styles.label}>Club Name *</label>
-                                <input
-                                    type="text"
-                                    placeholder="Enter club name"
-                                    className={styles.input}
-                                    value={clubName}
-                                    onChange={(e) => {
-                                        setClubName(e.target.value);
-                                        setCreateError(null);
-                                    }}
-                                />
-                            </div>
-
-                            <div className={styles.formGroup}>
-                                <label className={styles.label}>Description</label>
-                                <textarea
-                                    placeholder="Describe your club..."
-                                    className={styles.textarea}
-                                    rows={3}
-                                    value={clubDescription}
-                                    onChange={(e) => setClubDescription(e.target.value)}
-                                />
-                            </div>
-
-                            <div className={styles.formGroup}>
-                                <label className={styles.label}>Settings</label>
-                                <div className={styles.checkboxGroup}>
-                                    <label className={styles.checkbox}>
-                                        <input
-                                            type="checkbox"
-                                            checked={isPublic}
-                                            onChange={(e) => setIsPublic(e.target.checked)}
-                                        />
-                                        <span>Public (anyone can find)</span>
-                                    </label>
-                                    <label className={styles.checkbox}>
-                                        <input
-                                            type="checkbox"
-                                            checked={requiresApproval}
-                                            onChange={(e) => setRequiresApproval(e.target.checked)}
-                                        />
-                                        <span>Require approval for new members</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <button
-                                className="btn btn-primary btn-lg"
-                                style={{ width: '100%' }}
-                                onClick={handleCreateClub}
-                                disabled={isCreating || !clubName.trim()}
-                            >
-                                {isCreating ? 'Creating...' : 'Create Club'}
-                            </button>
-                        </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
-        </div>
+        </>
     );
 }
