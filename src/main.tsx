@@ -69,7 +69,7 @@ async function boot() {
         root.render(
             <React.StrictMode>
                 <ErrorBoundary>
-                    <BrowserRouter>
+                    <BrowserRouter basename="/hub/club-arena">
                         <App />
                     </BrowserRouter>
                 </ErrorBoundary>
