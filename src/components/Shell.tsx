@@ -7,24 +7,76 @@ import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useSettingsStore } from '../stores/useSettingsStore';
 import { useUserStore } from '../stores/useUserStore';
+import { notificationService } from '../services/NotificationService';
+import { supabase } from '../lib/supabase';
+import { VIPProvider, useVIPStatus } from '../hooks/useVIP';
 import './Shell.css';
 
-export default function Shell() {
+// VIP Badge Component
+function VIPBadge() {
+    const { isVIP, isLoading } = useVIPStatus();
+    const navigate = useNavigate();
+
+    if (isLoading) return null;
+
+    return (
+        <button
+            className={`shell-vip-badge ${isVIP ? 'vip-active' : ''}`}
+            onClick={() => navigate('/vip')}
+            title={isVIP ? 'VIP Gold Active' : 'Get VIP Benefits'}
+        >
+            {isVIP ? ' VIP' : ''}
+        </button>
+    );
+}
+
+function ShellContent() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
 
+    // Detect if running inside iframe (World Hub embedding)
+    const isInIframe = typeof window !== 'undefined' && window.parent !== window;
+
     // Store
     const { theme } = useSettingsStore();
     const { user, totalChips } = useUserStore();
+    const [unreadCount, setUnreadCount] = useState(0);
 
     // Sync Theme
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
     }, [theme]);
 
+    // Real-time notifications
+    useEffect(() => {
+        const setupNotifications = async () => {
+            const { data: { user: authUser } } = await supabase.auth.getUser();
+            if (!authUser) return;
+
+            // Get initial count
+            const count = await notificationService.getUnreadCount(authUser.id);
+            setUnreadCount(count);
+
+            // Subscribe to real-time updates
+            await notificationService.subscribe(authUser.id, {
+                onNew: () => setUnreadCount(prev => prev + 1),
+                onUpdate: async () => {
+                    const newCount = await notificationService.getUnreadCount(authUser.id);
+                    setUnreadCount(newCount);
+                }
+            });
+        };
+
+        setupNotifications();
+
+        return () => {
+            notificationService.unsubscribe();
+        };
+    }, []);
+
     return (
-        <div className="shell">
+        <div className={`shell ${isInIframe ? 'shell--embedded' : ''}`}>
             {/* Header */}
             <header className="shell-header">
                 <div className="shell-header-content">
@@ -41,42 +93,55 @@ export default function Shell() {
                             className={({ isActive }) => `shell-nav-link ${isActive ? 'active' : ''}`}
                             end
                         >
-                            🏠 Home
+                            Home
                         </NavLink>
                         <NavLink
                             to="/play"
                             className={({ isActive }) => `shell-nav-link ${isActive ? 'active' : ''}`}
                         >
-                            🎰 Play
+                            Play
                         </NavLink>
                         <NavLink
                             to="/clubs"
                             className={({ isActive }) => `shell-nav-link ${isActive || location.pathname.startsWith('/clubs') ? 'active' : ''}`}
                         >
-                            🏛️ Clubs
+                            Clubs
                         </NavLink>
                         <NavLink
                             to="/unions"
                             className={({ isActive }) => `shell-nav-link ${isActive ? 'active' : ''}`}
                         >
-                            🤝 Unions
+                            Unions
                         </NavLink>
                         <NavLink
                             to="/profile"
                             className={({ isActive }) => `shell-nav-link ${isActive ? 'active' : ''}`}
                         >
-                            👤 Profile
+                            Profile
                         </NavLink>
                     </nav>
 
                     {/* User Info */}
                     <div className="shell-user">
+                        <VIPBadge />
+                        <button
+                            className="shell-notifications"
+                            onClick={() => navigate('/notifications')}
+                            title="Notifications"
+                        >
+
+                            {unreadCount > 0 && (
+                                <span className="notification-badge">
+                                    {unreadCount > 99 ? '99+' : unreadCount}
+                                </span>
+                            )}
+                        </button>
                         <div className="shell-chips">
-                            <span className="chip-icon">💰</span>
+                            <span className="chip-icon"></span>
                             <span className="chip-amount">{user ? totalChips.toLocaleString() : '0'}</span>
                         </div>
                         <button className="shell-avatar" onClick={() => navigate('/profile')}>
-                            {user?.avatar_url || '👤'}
+                            {user?.avatar_url || ''}
                         </button>
                     </div>
 
@@ -92,11 +157,11 @@ export default function Shell() {
                 {/* Mobile Nav */}
                 {mobileMenuOpen && (
                     <nav className="shell-mobile-nav">
-                        <NavLink to="/" onClick={() => setMobileMenuOpen(false)}>🏠 Home</NavLink>
-                        <NavLink to="/play" onClick={() => setMobileMenuOpen(false)}>🎰 Play</NavLink>
-                        <NavLink to="/clubs" onClick={() => setMobileMenuOpen(false)}>🏛️ Clubs</NavLink>
-                        <NavLink to="/unions" onClick={() => setMobileMenuOpen(false)}>🤝 Unions</NavLink>
-                        <NavLink to="/profile" onClick={() => setMobileMenuOpen(false)}>👤 Profile</NavLink>
+                        <NavLink to="/" onClick={() => setMobileMenuOpen(false)}> Home</NavLink>
+                        <NavLink to="/play" onClick={() => setMobileMenuOpen(false)}> Play</NavLink>
+                        <NavLink to="/clubs" onClick={() => setMobileMenuOpen(false)}> Clubs</NavLink>
+                        <NavLink to="/unions" onClick={() => setMobileMenuOpen(false)}>Unions</NavLink>
+                        <NavLink to="/profile" onClick={() => setMobileMenuOpen(false)}> Profile</NavLink>
                     </nav>
                 )}
             </header>
@@ -108,8 +173,18 @@ export default function Shell() {
 
             {/* Footer */}
             <footer className="shell-footer">
-                <p>♠ Club Arena © 2026 — PokerBros Clone + Better</p>
+                <p>Club Engine 2026 - Smarter.Poker</p>
             </footer>
         </div>
     );
 }
+
+// Export with VIPProvider wrapper
+export default function Shell() {
+    return (
+        <VIPProvider>
+            <ShellContent />
+        </VIPProvider>
+    );
+}
+
