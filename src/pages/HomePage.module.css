@@ -869,18 +869,20 @@
     transform: scale(1.02);
 }
 
-/* Action button images - display as-is, white text is baked in (RAT-UI-070) */
+/* Action button images - bright red text via CSS filter */
 .findPlayerImage {
     width: 100%;
     height: 100%;
     object-fit: contain;
+    filter: hue-rotate(310deg) saturate(10) brightness(1.5);
 }
 
-/* Action button images - display as-is, white text is baked in (RAT-UI-070) */
+/* Action button images - bright red text via CSS filter */
 .actionButtonImage {
     width: 100%;
     height: 100%;
     object-fit: contain;
+    filter: hue-rotate(310deg) saturate(10) brightness(1.5);
 }
 
 /* White text inside the dark blue circle */
