@@ -803,14 +803,14 @@
    ACTION BUTTONS ROW - CREATE A CLUB / FIND A PLAYER / JOIN A CLUB
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* Horizontal Action Bar - 20px below header */
+/* Horizontal Action Bar */
 .actionBarRow {
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
     z-index: 20;
-    margin: 20px 0 0 0;
+    margin: 10px 0 0 0;
     padding: 0;
 }
 
@@ -821,13 +821,13 @@
     object-fit: contain;
 }
 
-/* Center card row for Shark Club - 25px below action bar */
+/* Center card row for Shark Club */
 .centerCardRow {
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
-    margin: 25px 0 0 0;
+    margin: 10px 0 0 0;
 }
 
 /* Side buttons - 148x148px to nearly fill canvas */
