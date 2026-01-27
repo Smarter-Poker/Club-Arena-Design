@@ -1,10 +1,14 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- *  CreateClubModal Styles — Futuristic Dark Theme
+ *  CreateClubModal Styles — High-Fidelity Sci-Fi Frame
  * ═══════════════════════════════════════════════════════════════════════════════
+ * Uses the modal frame image as background with positioned transparent zones
+ * for interactive elements.
  */
 
-/* Overlay */
+/* ─────────────────────────────────────────────────────────────────────────────
+   OVERLAY
+   ───────────────────────────────────────────────────────────────────────────── */
 .overlay {
     position: fixed;
     top: 0;
@@ -12,252 +16,228 @@
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
-    backdrop-filter: blur(8px);
+    z-index: 9999;
+    padding: 20px;
 }
 
-/* Modal Container */
-.modal {
+/* ─────────────────────────────────────────────────────────────────────────────
+   MODAL CONTAINER — Uses frame image as background
+   ───────────────────────────────────────────────────────────────────────────── */
+.modalContainer {
     position: relative;
-    width: 90%;
-    max-width: 480px;
-    background: linear-gradient(145deg, #1a2744 0%, #0d1b2a 50%, #1a2744 100%);
-    border: 2px solid rgba(0, 200, 255, 0.4);
-    border-radius: 16px;
-    padding: 30px;
-    box-shadow:
-        0 0 40px rgba(0, 200, 255, 0.2),
-        inset 0 0 60px rgba(0, 0, 0, 0.5);
+    width: 100%;
+    max-width: 500px;
+    aspect-ratio: 1024 / 700;
+    /* Match frame image aspect ratio approx */
 }
 
-/* Close Button */
+.frameImage {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CLOSE BUTTON — Positioned over the X in top right
+   ───────────────────────────────────────────────────────────────────────────── */
 .closeButton {
     position: absolute;
-    top: 15px;
-    right: 15px;
-    width: 40px;
-    height: 40px;
-    background: rgba(0, 0, 0, 0.5);
-    border: 2px solid rgba(0, 200, 255, 0.4);
-    border-radius: 50%;
-    color: #fff;
-    font-size: 18px;
+    top: 2%;
+    right: 2%;
+    width: 10%;
+    height: 10%;
+    background: transparent;
+    border: none;
     cursor: pointer;
-    transition: all 0.2s ease;
+    z-index: 10;
 }
 
 .closeButton:hover {
-    background: rgba(255, 100, 100, 0.3);
-    border-color: #ff6666;
-    transform: scale(1.1);
+    opacity: 0.8;
 }
 
-/* Title */
-.title {
-    text-align: center;
-    font-size: 28px;
-    font-weight: bold;
-    color: #fff;
-    text-shadow: 0 0 15px rgba(0, 200, 255, 0.6);
-    margin: 0 0 25px 0;
-    letter-spacing: 2px;
-}
-
-/* Input Group */
-.inputGroup {
-    margin-bottom: 20px;
-}
-
-.label {
-    display: block;
-    font-size: 14px;
-    font-weight: bold;
-    color: #8899aa;
-    margin-bottom: 8px;
-    letter-spacing: 1px;
-}
-
-.input {
-    width: 100%;
-    padding: 14px 18px;
-    background: rgba(0, 0, 0, 0.4);
-    border: 2px solid rgba(0, 200, 255, 0.3);
-    border-radius: 8px;
-    color: #fff;
-    font-size: 16px;
+/* ─────────────────────────────────────────────────────────────────────────────
+   CLUB NAME INPUT — Positioned over the input field area
+   ───────────────────────────────────────────────────────────────────────────── */
+.clubNameInput {
+    position: absolute;
+    top: 18%;
+    left: 12%;
+    width: 76%;
+    height: 10%;
+    background: transparent;
+    border: none;
     outline: none;
-    transition: all 0.2s ease;
+    font-family: 'Orbitron', 'Inter', sans-serif;
+    font-size: clamp(12px, 2.5vw, 18px);
+    font-weight: 500;
+    color: #ffffff;
+    letter-spacing: 1px;
+    padding: 0 10px;
+    box-sizing: border-box;
 }
 
-.input:focus {
-    border-color: #00d4ff;
-    box-shadow: 0 0 15px rgba(0, 200, 255, 0.3);
+.clubNameInput::placeholder {
+    color: rgba(100, 180, 255, 0.4);
 }
 
-.input::placeholder {
-    color: #556677;
-}
-
-/* Logo Section */
-.logoSection {
-    margin-bottom: 20px;
-}
-
-.logoButtons {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-}
-
-.logoBtn {
+/* ─────────────────────────────────────────────────────────────────────────────
+   LOGO BUTTONS — Positioned over the two logo boxes
+   ───────────────────────────────────────────────────────────────────────────── */
+.uploadLogoBtn {
+    position: absolute;
+    top: 32%;
+    left: 12%;
+    width: 37%;
+    height: 30%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    z-index: 10;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 30px 20px;
-    background: rgba(0, 0, 0, 0.4);
-    border: 2px solid rgba(0, 200, 255, 0.3);
-    border-radius: 12px;
-    color: #fff;
+    overflow: hidden;
+}
+
+.uploadLogoBtn:hover {
+    background: rgba(0, 180, 255, 0.1);
+}
+
+.logoThumb {
+    width: 80%;
+    height: 80%;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.createLogoBtn {
+    position: absolute;
+    top: 32%;
+    right: 12%;
+    width: 37%;
+    height: 30%;
+    background: transparent;
+    border: none;
     cursor: pointer;
+    z-index: 10;
+}
+
+.createLogoBtn:hover {
+    background: rgba(0, 180, 255, 0.1);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TERMS CHECKBOX — Positioned over the checkbox area
+   ───────────────────────────────────────────────────────────────────────────── */
+.termsLabel {
+    position: absolute;
+    top: 67%;
+    left: 10%;
+    width: 8%;
+    height: 12%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.termsCheckbox {
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    position: absolute;
+}
+
+/* Visible checkbox styling - using a pseudo element approach */
+.termsLabel::before {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border: 2px solid rgba(0, 180, 255, 0.6);
+    border-radius: 4px;
+    background: rgba(0, 20, 40, 0.8);
     transition: all 0.2s ease;
 }
 
-.logoBtn:hover {
-    background: rgba(0, 200, 255, 0.1);
+.termsLabel:has(.termsCheckbox:checked)::before {
+    background: rgba(0, 180, 255, 0.3);
     border-color: #00d4ff;
-    transform: translateY(-2px);
 }
 
-.plusIcon {
-    font-size: 40px;
+.termsLabel:has(.termsCheckbox:checked)::after {
+    content: '✓';
+    position: absolute;
     color: #00d4ff;
-    margin-bottom: 10px;
-}
-
-.createIcon {
-    font-size: 36px;
-    margin-bottom: 10px;
-}
-
-.logoBtn span:last-child {
-    font-size: 12px;
+    font-size: 16px;
     font-weight: bold;
-    letter-spacing: 1px;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   CREATE BUTTON — Positioned over the CREATE button at bottom
+   ───────────────────────────────────────────────────────────────────────────── */
+.createButton {
+    position: absolute;
+    bottom: 2%;
+    left: 12%;
+    width: 76%;
+    height: 12%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.createButton:hover:not(:disabled) {
+    background: rgba(0, 180, 255, 0.15);
+}
+
+.createButton:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.spinner {
+    font-size: 24px;
+    color: #00d4ff;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   HIDDEN FILE INPUT
+   ───────────────────────────────────────────────────────────────────────────── */
 .hiddenInput {
     display: none;
 }
 
-/* Card Preview */
-.cardPreview {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-}
-
-.cardPreview img {
-    max-width: 100%;
-    max-height: 350px;
-    border-radius: 12px;
-    box-shadow: 0 0 30px rgba(0, 200, 255, 0.3);
-}
-
-.changeLogoBtn {
-    padding: 10px 20px;
-    background: rgba(255, 100, 100, 0.2);
-    border: 1px solid rgba(255, 100, 100, 0.5);
-    border-radius: 6px;
-    color: #ff8888;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.changeLogoBtn:hover {
-    background: rgba(255, 100, 100, 0.3);
-}
-
-/* Terms Checkbox */
-.termsCheckbox {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 25px;
-    cursor: pointer;
-}
-
-.termsCheckbox input {
-    display: none;
-}
-
-.checkmark {
-    flex-shrink: 0;
-    width: 22px;
-    height: 22px;
-    background: rgba(0, 0, 0, 0.4);
-    border: 2px solid rgba(0, 200, 255, 0.4);
-    border-radius: 4px;
-    position: relative;
-    transition: all 0.2s ease;
-}
-
-.termsCheckbox input:checked+.checkmark {
-    background: rgba(0, 200, 255, 0.3);
-    border-color: #00d4ff;
-}
-
-.termsCheckbox input:checked+.checkmark::after {
-    content: '✓';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: #00d4ff;
-    font-size: 14px;
-    font-weight: bold;
-}
-
-.termsText {
-    font-size: 12px;
-    color: #8899aa;
-    line-height: 1.5;
-}
-
-/* Create Button */
-.createButton {
-    width: 100%;
-    padding: 16px;
-    background: linear-gradient(135deg, #005577 0%, #003344 100%);
-    border: 2px solid rgba(0, 200, 255, 0.5);
-    border-radius: 10px;
-    color: #fff;
-    font-size: 18px;
-    font-weight: bold;
-    letter-spacing: 3px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-shadow: 0 0 10px rgba(0, 200, 255, 0.5);
-}
-
-.createButton:hover:not(:disabled) {
-    background: linear-gradient(135deg, #0077aa 0%, #005577 100%);
-    border-color: #00d4ff;
-    box-shadow: 0 0 25px rgba(0, 200, 255, 0.4);
-    transform: translateY(-2px);
-}
-
-.createButton:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* Logo Generator Modal */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LOGO GENERATOR MODAL
+   ═══════════════════════════════════════════════════════════════════════════════ */
 .logoGeneratorOverlay {
     position: fixed;
     top: 0;
@@ -268,87 +248,102 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1100;
+    z-index: 10001;
 }
 
 .logoGeneratorModal {
-    background: linear-gradient(145deg, #1a2744 0%, #0d1b2a 100%);
-    border: 2px solid rgba(0, 200, 255, 0.4);
+    background: linear-gradient(145deg, #0a1929, #0d2137);
+    border: 2px solid rgba(0, 180, 255, 0.3);
     border-radius: 16px;
-    padding: 25px;
+    padding: 24px;
+    max-width: 400px;
     width: 90%;
-    max-width: 500px;
     max-height: 80vh;
     overflow-y: auto;
+    box-shadow:
+        0 0 40px rgba(0, 180, 255, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .logoGeneratorModal h3 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: #ffffff;
     text-align: center;
-    color: #fff;
     margin: 0 0 20px 0;
-    font-size: 20px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
 }
 
 .templateGrid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 12px;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 }
 
 .templateBtn {
+    background: rgba(0, 20, 40, 0.6);
+    border: 2px solid rgba(100, 150, 200, 0.3);
+    border-radius: 12px;
+    padding: 12px 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 15px 10px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 2px solid rgba(100, 100, 100, 0.3);
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.2s ease;
+    gap: 6px;
 }
 
 .templateBtn:hover {
-    background: rgba(0, 200, 255, 0.1);
+    background: rgba(0, 100, 180, 0.2);
+    border-color: rgba(0, 180, 255, 0.6);
+    transform: translateY(-2px);
 }
 
 .templateBtn.selected {
+    background: rgba(0, 180, 255, 0.2);
     border-color: #00d4ff;
-    background: rgba(0, 200, 255, 0.15);
-    box-shadow: 0 0 15px rgba(0, 200, 255, 0.3);
+    box-shadow: 0 0 15px rgba(0, 180, 255, 0.4);
 }
 
 .templateIcon {
     font-size: 32px;
-    margin-bottom: 5px;
 }
 
 .templateName {
     font-size: 10px;
-    color: #8899aa;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .logoGeneratorActions {
     display: flex;
-    gap: 10px;
+    gap: 12px;
 }
 
 .generateBtn {
     flex: 1;
-    padding: 12px;
-    background: linear-gradient(135deg, #005577 0%, #003344 100%);
-    border: 2px solid rgba(0, 200, 255, 0.5);
+    background: linear-gradient(135deg, #00d4ff, #0088cc);
+    border: none;
     border-radius: 8px;
-    color: #fff;
-    font-weight: bold;
+    padding: 12px 20px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
     cursor: pointer;
     transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .generateBtn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #0077aa 0%, #005577 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 180, 255, 0.4);
 }
 
 .generateBtn:disabled {
@@ -357,17 +352,19 @@
 }
 
 .cancelBtn {
-    flex: 1;
-    padding: 12px;
-    background: rgba(100, 100, 100, 0.2);
-    border: 2px solid rgba(100, 100, 100, 0.4);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
-    color: #888;
-    font-weight: bold;
+    padding: 12px 20px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .cancelBtn:hover {
-    background: rgba(100, 100, 100, 0.3);
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
 }

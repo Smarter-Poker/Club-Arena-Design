@@ -1,12 +1,12 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- *  CreateClubModal — Club Creation Popup
+ *  CreateClubModal — High-Fidelity Club Creation Popup
  * ═══════════════════════════════════════════════════════════════════════════════
- * Modal for creating a new club with:
+ * Uses the sci-fi themed modal frame with:
  * - Club name input
- * - Logo upload or AI generation
+ * - Logo upload or AI generation buttons
  * - Terms acceptance checkbox
- * - Generates club card with overlaid Club ID and name
+ * - CREATE button
  */
 
 import { useState, useRef, useEffect } from 'react';
@@ -22,8 +22,24 @@ interface CreateClubModalProps {
     onSuccess?: (clubId: string) => void;
 }
 
-// Club card frame template (without logo - just the frame)
-const CARD_FRAME_URL = `${import.meta.env.BASE_URL}images/frames/club-card-frame.png`;
+// High-fidelity modal frame
+const MODAL_FRAME_URL = `${import.meta.env.BASE_URL}images/modals/create-club-modal-frame.png`;
+
+// Club level calculation based on member count
+function calculateClubLevel(memberCount: number): number {
+    const levelThresholds = [
+        25, 50, 75, 100, 150, 200, 275, 350, 425, 500,           // Levels 1-10
+        600, 750, 900, 1100, 1300, 1550, 1850, 2200, 2600, 3000, // Levels 11-20
+        3500, 4000, 4600, 5300, 6000, 7000, 8250, 9750, 11500, 13500, // Levels 21-30
+        16000, 19000, 22500, 26500, 31000, 36500, 43000, 50500, 59000, 68500, // Levels 31-40
+        79000, 91000, 105000, 121000, 140000, 165000, 195000, 235000, 285000 // Levels 41-49
+    ];
+
+    for (let i = 0; i < levelThresholds.length; i++) {
+        if (memberCount <= levelThresholds[i]) return i + 1;
+    }
+    return 50; // Max level
+}
 
 export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateClubModalProps) {
     const { user } = useUserStore();
@@ -35,53 +51,24 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
     const [hasAgreed, setHasAgreed] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [showLogoGenerator, setShowLogoGenerator] = useState(false);
-    const [generatedCardPreview, setGeneratedCardPreview] = useState<string | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    // Generate preview when logo or name changes
-    useEffect(() => {
-        if (logoPreview && clubName.trim()) {
-            generateCardPreview();
-        }
-    }, [logoPreview, clubName]);
-
-    const generateCardPreview = async () => {
-        if (!logoPreview || !clubName.trim()) return;
-
-        try {
-            // Generate a temporary club ID for preview
-            const tempClubId = Math.floor(10000 + Math.random() * 90000);
-            const cardDataUrl = await ClubCardGenerator.generateCard({
-                logoUrl: logoPreview,
-                clubId: tempClubId,
-                clubName: clubName.trim().toUpperCase(),
-            });
-            setGeneratedCardPreview(cardDataUrl);
-        } catch (err) {
-            console.error('Failed to generate preview:', err);
-        }
-    };
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Validate file type
         if (!file.type.startsWith('image/')) {
             toast.error('Please select an image file');
             return;
         }
 
-        // Validate file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
             toast.error('Image must be less than 5MB');
             return;
         }
 
         setLogoFile(file);
-
-        // Create preview URL
         const reader = new FileReader();
         reader.onload = (e) => {
             setLogoPreview(e.target?.result as string);
@@ -118,21 +105,19 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
         setIsCreating(true);
 
         try {
-            // Generate 5-digit club ID
             const clubIdNumber = Math.floor(10000 + Math.random() * 90000);
 
-            // Generate final club card image
+            // Generate club card image
             const cardDataUrl = await ClubCardGenerator.generateCard({
                 logoUrl: logoPreview,
                 clubId: clubIdNumber,
                 clubName: clubName.trim().toUpperCase(),
             });
 
-            // Convert data URL to blob for upload
+            // Upload card to storage
             const cardBlob = await fetch(cardDataUrl).then(r => r.blob());
             const cardFileName = `club-cards/${clubIdNumber}-card.png`;
 
-            // Upload card image to Supabase Storage
             const { data: uploadData, error: uploadError } = await supabase.storage
                 .from('club-assets')
                 .upload(cardFileName, cardBlob, {
@@ -142,10 +127,8 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
 
             if (uploadError) {
                 console.error('Upload error:', uploadError);
-                // Continue without card image if upload fails
             }
 
-            // Get public URL for card
             let cardUrl = null;
             if (uploadData) {
                 const { data: urlData } = supabase.storage
@@ -154,7 +137,7 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
                 cardUrl = urlData.publicUrl;
             }
 
-            // Create club in database
+            // Create club - new clubs start with 1 member = Level 1
             const { data: clubData, error: insertError } = await supabase
                 .from('clubs')
                 .insert({
@@ -164,9 +147,9 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
                     is_public: true,
                     requires_approval: true,
                     card_image_url: cardUrl,
-                    logo_url: cardUrl, // Use card as logo for now
+                    logo_url: cardUrl,
                     member_count: 1,
-                    level: 1,
+                    level: calculateClubLevel(1), // Level 1 for new clubs
                     active_players: 1,
                     settings: {
                         default_rake_percent: 5,
@@ -195,17 +178,13 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
 
             toast.success(`Club "${clubName}" created successfully!`);
 
-            // Reset form
             setClubName('');
             setLogoFile(null);
             setLogoPreview(null);
-            setGeneratedCardPreview(null);
             setHasAgreed(false);
 
             onClose();
             onSuccess?.(clubData.id);
-
-            // Reload to show new club
             window.location.reload();
 
         } catch (err: any) {
@@ -220,92 +199,74 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
 
     return (
         <div className={styles.overlay} onClick={onClose}>
-            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-                {/* Close button */}
-                <button className={styles.closeButton} onClick={onClose}>
-                    ✕
+            <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
+                {/* High-fidelity frame background */}
+                <img
+                    src={MODAL_FRAME_URL}
+                    alt=""
+                    className={styles.frameImage}
+                    draggable={false}
+                />
+
+                {/* Close button - positioned over the X in frame */}
+                <button className={styles.closeButton} onClick={onClose} aria-label="Close" />
+
+                {/* Club Name Input - positioned over the input field in frame */}
+                <input
+                    type="text"
+                    className={styles.clubNameInput}
+                    placeholder=""
+                    value={clubName}
+                    onChange={(e) => setClubName(e.target.value)}
+                    maxLength={30}
+                    autoComplete="off"
+                />
+
+                {/* Upload Logo button zone */}
+                <button
+                    className={styles.uploadLogoBtn}
+                    onClick={() => fileInputRef.current?.click()}
+                    aria-label="Upload Logo"
+                >
+                    {logoPreview && (
+                        <img src={logoPreview} alt="Logo preview" className={styles.logoThumb} />
+                    )}
                 </button>
 
-                {/* Title */}
-                <h2 className={styles.title}>CREATE A CLUB</h2>
+                {/* Create Logo button zone */}
+                <button
+                    className={styles.createLogoBtn}
+                    onClick={() => setShowLogoGenerator(true)}
+                    aria-label="Create Logo"
+                />
 
-                {/* Club Name Input */}
-                <div className={styles.inputGroup}>
-                    <label className={styles.label}>CLUB NAME:</label>
-                    <input
-                        type="text"
-                        className={styles.input}
-                        placeholder="Enter club name..."
-                        value={clubName}
-                        onChange={(e) => setClubName(e.target.value)}
-                        maxLength={30}
-                    />
-                </div>
+                {/* Hidden file input */}
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className={styles.hiddenInput}
+                    onChange={handleFileSelect}
+                />
 
-                {/* Logo Section */}
-                <div className={styles.logoSection}>
-                    {generatedCardPreview ? (
-                        <div className={styles.cardPreview}>
-                            <img src={generatedCardPreview} alt="Club Card Preview" />
-                            <button
-                                className={styles.changeLogoBtn}
-                                onClick={() => {
-                                    setLogoPreview(null);
-                                    setGeneratedCardPreview(null);
-                                }}
-                            >
-                                Change Logo
-                            </button>
-                        </div>
-                    ) : (
-                        <div className={styles.logoButtons}>
-                            <button
-                                className={styles.logoBtn}
-                                onClick={() => fileInputRef.current?.click()}
-                            >
-                                <span className={styles.plusIcon}>+</span>
-                                <span>UPLOAD LOGO</span>
-                            </button>
-                            <button
-                                className={styles.logoBtn}
-                                onClick={() => setShowLogoGenerator(true)}
-                            >
-                                <span className={styles.createIcon}>🎨</span>
-                                <span>CREATE LOGO</span>
-                            </button>
-                        </div>
-                    )}
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        className={styles.hiddenInput}
-                        onChange={handleFileSelect}
-                    />
-                </div>
-
-                {/* Terms Checkbox */}
-                <label className={styles.termsCheckbox}>
+                {/* Terms checkbox - positioned over the checkbox area */}
+                <label className={styles.termsLabel}>
                     <input
                         type="checkbox"
                         checked={hasAgreed}
                         onChange={(e) => setHasAgreed(e.target.checked)}
+                        className={styles.termsCheckbox}
                     />
-                    <span className={styles.checkmark}></span>
-                    <span className={styles.termsText}>
-                        By clicking "CREATE" you confirm you are 18+ years old
-                        and that you understand and accept Smarter Poker's
-                        club promotion rules.
-                    </span>
                 </label>
 
-                {/* Create Button */}
+                {/* CREATE button zone */}
                 <button
                     className={styles.createButton}
                     onClick={handleCreate}
                     disabled={isCreating || !hasAgreed || !clubName.trim() || !logoPreview}
+                    aria-label="Create Club"
                 >
-                    {isCreating ? 'CREATING...' : 'CREATE'}
+                    {isCreating && <span className={styles.spinner}>⟳</span>}
                 </button>
 
                 {/* Logo Generator Modal */}
@@ -357,7 +318,6 @@ function LogoGeneratorModal({ onSelect, onClose }: LogoGeneratorModalProps) {
             const template = LOGO_TEMPLATES.find(t => t.id === selectedTemplate);
             if (!template) return;
 
-            // Generate logo using canvas
             const canvas = document.createElement('canvas');
             canvas.width = 400;
             canvas.height = 400;
