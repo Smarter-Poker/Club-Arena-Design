@@ -7,7 +7,10 @@
  */
 
 import { Routes, Route } from 'react-router-dom';
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useState, useEffect } from 'react';
+
+// Intro Video for first-time load
+import IntroVideo from './components/IntroVideo';
 
 // Layouts
 import AppLayout from './components/layouts/AppLayout';
@@ -81,9 +84,34 @@ function LoadingSpinner() {
     );
 }
 
+const INTRO_SHOWN_KEY = 'club_arena_intro_shown';
+
 export default function App() {
+    // Check if intro video has been shown this session
+    const [showIntro, setShowIntro] = useState(() => {
+        // Only show intro if not viewed this session and not in iframe
+        const alreadyShown = sessionStorage.getItem(INTRO_SHOWN_KEY);
+        const inIframe = window.parent !== window;
+        return !alreadyShown && !inIframe;
+    });
+
+    const handleIntroComplete = () => {
+        sessionStorage.setItem(INTRO_SHOWN_KEY, 'true');
+        setShowIntro(false);
+    };
+
     return (
         <ToastProvider>
+            {/* Intro video overlay - app loads in background while video plays */}
+            {showIntro && (
+                <IntroVideo
+                    videoSrc="/videos/club-arena-intro.mp4"
+                    minDuration={3000}
+                    maxDuration={10000}
+                    onComplete={handleIntroComplete}
+                />
+            )}
+
             <TOSGuard>
                 <Suspense fallback={<LoadingSpinner />}>
                     <Routes>
@@ -397,6 +425,22 @@ export default function App() {
                                 element={
                                     <AuthGuard>
                                         <CashierPage />
+                                    </AuthGuard>
+                                }
+                            />
+                            <Route
+                                path="clubs/:clubId/cashier"
+                                element={
+                                    <AuthGuard>
+                                        <CashierPage />
+                                    </AuthGuard>
+                                }
+                            />
+                            <Route
+                                path="hands"
+                                element={
+                                    <AuthGuard>
+                                        <HandHistoryPage />
                                     </AuthGuard>
                                 }
                             />
