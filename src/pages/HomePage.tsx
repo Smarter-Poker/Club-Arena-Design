@@ -387,10 +387,31 @@ export default function HomePage() {
             >
 
                 {/* ═══════════════════════════════════════════════════════════════════════
-                    HORIZONTAL ACTION BAR - Below Header
+                    HORIZONTAL ACTION BAR - Below Header (with clickable zones)
                 ═══════════════════════════════════════════════════════════════════════ */}
                 <div className={styles.actionBarRow}>
-                    <img src={ACTION_BAR_HORIZONTAL} alt="Action Bar" className={styles.actionBarImage} />
+                    <div className={styles.actionBarWrapper}>
+                        <img src={ACTION_BAR_HORIZONTAL} alt="Action Bar" className={styles.actionBarImage} />
+                        {/* Clickable zones positioned over the image */}
+                        <button
+                            className={styles.actionZoneLeft}
+                            onClick={() => navigate('/clubs/create')}
+                            aria-label="Create a Club"
+                        />
+                        <button
+                            className={styles.actionZoneCenter}
+                            onClick={() => navigate('/find-player')}
+                            aria-label="Find a Player"
+                        />
+                        <button
+                            className={styles.actionZoneRight}
+                            onClick={() => {
+                                setShowJoinModal(true);
+                                setTimeout(() => joinInputRef.current?.focus(), 100);
+                            }}
+                            aria-label="Join a Club"
+                        />
+                    </div>
                 </div>
 
                 {/* ═══════════════════════════════════════════════════════════════════════

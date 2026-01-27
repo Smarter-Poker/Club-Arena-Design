@@ -810,15 +810,48 @@
     align-items: center;
     width: 100%;
     z-index: 20;
-    margin: 10px 0 0 0;
+    margin: 0;
     padding: 0;
+}
+
+.actionBarWrapper {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
 }
 
 .actionBarImage {
     width: 100%;
-    max-width: 600px;
     height: auto;
     object-fit: contain;
+    display: block;
+}
+
+/* Clickable zones overlaid on action bar */
+.actionZoneLeft,
+.actionZoneCenter,
+.actionZoneRight {
+    position: absolute;
+    top: 15%;
+    height: 70%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.actionZoneLeft {
+    left: 0;
+    width: 25%;
+}
+
+.actionZoneCenter {
+    left: 25%;
+    width: 50%;
+}
+
+.actionZoneRight {
+    right: 0;
+    width: 25%;
 }
 
 /* Center card row for Shark Club */
@@ -827,7 +860,7 @@
     justify-content: center;
     align-items: center;
     width: 100%;
-    margin: -80px 0 0 0;
+    margin: -120px 0 0 0;
 }
 
 /* Side buttons - 148x148px to nearly fill canvas */
