@@ -150,6 +150,8 @@
 
 /* ─────────────────────────────────────────────────────────────────────────────
    TERMS CHECKBOX — Positioned over the checkbox area
+   The frame image has an embedded checkmark that we need to hide.
+   We overlay a dark box and show our own checkmark when checked.
    ───────────────────────────────────────────────────────────────────────────── */
 .termsLabel {
     position: absolute;
@@ -164,12 +166,44 @@
     z-index: 10;
 }
 
+/* Dark overlay to hide the embedded checkmark in the frame image */
+.termsLabel::before {
+    content: '';
+    position: absolute;
+    width: 60%;
+    height: 60%;
+    background: linear-gradient(145deg, #0a1929, #0d2137);
+    border: 2px solid rgba(100, 150, 200, 0.5);
+    border-radius: 4px;
+    z-index: 1;
+}
+
+/* Custom checkmark that only appears when checked */
+.termsLabel::after {
+    content: '';
+    position: absolute;
+    width: 20%;
+    height: 35%;
+    border: solid #00d4ff;
+    border-width: 0 3px 3px 0;
+    transform: rotate(45deg) translateY(-10%);
+    opacity: 0;
+    z-index: 2;
+    transition: opacity 0.15s ease;
+}
+
+/* Show the checkmark when checkbox is checked */
+.termsLabel:has(.termsCheckbox:checked)::after {
+    opacity: 1;
+}
+
 .termsCheckbox {
     width: 100%;
     height: 100%;
     opacity: 0;
     cursor: pointer;
     position: absolute;
+    z-index: 3;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
