@@ -1,16 +1,15 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * ♠ CLUB ARENA — Home Page (Dynamic Card Layout)
+ * ♠ CLUB ARENA — Home Page (Carousel Layout v2)
  * ═══════════════════════════════════════════════════════════════════════════════
  * Layout Structure:
- * - Main Card (Center): "EXPLORE CLUB ARENA" - Create/Join clubs, explore Midway
- * - Club Cards (Left/Right): User's clubs - only shown if user has clubs
- * - Social & Training: Only shown if user has clubs
- * - Bottom 5 Cards: Quick links to features INSIDE clubs
- * - Default opened card: Last club/place user left (stored in localStorage)
+ * - Top Row: CREATE A CLUB (left) | FEATURED CLUB (center) | JOIN A CLUB (right)
+ * - Carousel: User's clubs (unlimited clubs supported)
+ * - Bottom 5 tiles: Player Stats, Leaderboards, Cashier, Diamond Store, Hand History
+ * - Shark Club = Featured Club (always first)
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
@@ -27,14 +26,35 @@ interface ClubCard {
     icon: string;
     color: string;
     logoUrl?: string;
+    frameImage: string;
+    fullCardImage?: string;
+    isFeatured?: boolean;
     action: () => void;
 }
 
 const LAST_VISITED_KEY = 'club_arena_last_visited';
+const LAST_CLUB_KEY = 'club_arena_last_club'; // For Cashier routing
+
+// Custom frame images for cards
+const getFrameImage = (index: number) => `${import.meta.env.BASE_URL}images/frames/frame-${(index % 5) + 1}.jpg`;
+
+// Action button images
+const ACTION_BAR_HORIZONTAL = `${import.meta.env.BASE_URL}images/icons/action-bar-horizontal.png`;
+
+// Shark Club Card Image (baked-in full card)
+const SHARK_CLUB_CARD = `${import.meta.env.BASE_URL}images/shark-club-card.jpg`;
+
+// Bottom Row Tile Images (baked cards)
+const TILE_PLAYER_STATS = `${import.meta.env.BASE_URL}images/tiles/player-stats.jpg`;
+const TILE_LEADERBOARDS = `${import.meta.env.BASE_URL}images/tiles/leaderboards.jpg`;
+const TILE_CASHIER = `${import.meta.env.BASE_URL}images/tiles/cashier.jpg`;
+const TILE_MARKETPLACE = `${import.meta.env.BASE_URL}images/tiles/marketplace.jpg`;
+const TILE_HAND_HISTORIES = `${import.meta.env.BASE_URL}images/tiles/hand-histories.jpg`;
 
 export default function HomePage() {
     const navigate = useNavigate();
     const { user } = useUserStore();
+    const toast = useToast();
 
     // Detect if running inside iframe (World Hub embedding)
     const [isInIframe, setIsInIframe] = useState(false);
@@ -57,7 +77,33 @@ export default function HomePage() {
     const [isLoading, setIsLoading] = useState(true);
     const [userClubs, setUserClubs] = useState<any[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const toast = useToast();
+
+    // JOIN A CLUB modal state
+    const [showJoinModal, setShowJoinModal] = useState(false);
+    const [clubCode, setClubCode] = useState('');
+    const [isValidatingCode, setIsValidatingCode] = useState(false);
+    const [showReferralPrompt, setShowReferralPrompt] = useState(false);
+    const [validClubId, setValidClubId] = useState<string | null>(null);
+    const [referralCode, setReferralCode] = useState('');
+    const joinInputRef = useRef<HTMLInputElement>(null);
+
+    // FIXED CANVAS SCALING - Lock at 600px, scale uniformly on smaller viewports
+    const canvasRef = useRef<HTMLDivElement>(null);
+    const [canvasScale, setCanvasScale] = useState(1);
+
+    useEffect(() => {
+        const calculateScale = () => {
+            const CANVAS_WIDTH = 600;
+            const viewportWidth = window.innerWidth;
+            // Only scale down if viewport is smaller than canvas
+            const scale = viewportWidth < CANVAS_WIDTH ? viewportWidth / CANVAS_WIDTH : 1;
+            setCanvasScale(scale);
+        };
+
+        calculateScale();
+        window.addEventListener('resize', calculateScale);
+        return () => window.removeEventListener('resize', calculateScale);
+    }, []);
 
     // Fetch user stats and clubs from Supabase
     useEffect(() => {
@@ -80,16 +126,17 @@ export default function HomePage() {
                     // Fetch XP from profile
                     const { data: profileData } = await supabase
                         .from('profiles')
-                        .select('xp, level')
+                        .select('xp_total')
                         .eq('id', authUser.id)
                         .maybeSingle();
 
                     if (profileData) {
-                        setXp(profileData.xp || 0);
-                        setLevel(profileData.level || 1);
+                        const totalXp = profileData.xp_total || 0;
+                        setXp(totalXp);
+                        setLevel(Math.max(1, Math.floor(Math.sqrt(totalXp / 100)) + 1));
                     }
 
-                    // Fetch user's clubs
+                    // Fetch user's clubs (unlimited)
                     const memberships = await ClubsService.getUserMemberships();
                     const clubs = memberships?.map((m: any) => ({
                         ...m.club,
@@ -104,8 +151,7 @@ export default function HomePage() {
                     if (lastVisited && clubs && clubs.length > 0) {
                         const idx = clubs.findIndex((c: any) => c.id === lastVisited);
                         if (idx !== -1) {
-                            // +1 because index 0 is the Explore card
-                            setCurrentIndex(idx + 1);
+                            setCurrentIndex(idx);
                         }
                     }
                 }
@@ -119,69 +165,122 @@ export default function HomePage() {
         fetchUserData();
     }, []);
 
-    // Build the dynamic card array
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // JOIN A CLUB LOGIC
+    // ═══════════════════════════════════════════════════════════════════════════════
+    const handleJoinClubSubmit = async () => {
+        if (!clubCode.trim()) {
+            toast.error('Please enter a club code');
+            return;
+        }
+
+        // Validate that it's a 5-digit number
+        const numericCode = parseInt(clubCode.trim(), 10);
+        if (isNaN(numericCode) || numericCode < 10000 || numericCode > 99999) {
+            toast.error('Club code must be a 5-digit number');
+            return;
+        }
+
+        setIsValidatingCode(true);
+        try {
+            // Validate club code exists by club_id (5-digit integer)
+            const { data: club, error } = await supabase
+                .from('clubs')
+                .select('id, name, club_id')
+                .eq('club_id', numericCode)
+                .maybeSingle();
+
+            if (error || !club) {
+                toast.error('Invalid club code. Please check and try again.');
+                setIsValidatingCode(false);
+                return;
+            }
+
+            // Valid club found - show referral prompt
+            setValidClubId(club.id);
+            setShowReferralPrompt(true);
+        } catch (err) {
+            console.error('Error validating club code:', err);
+            toast.error('Failed to validate club code');
+        } finally {
+            setIsValidatingCode(false);
+        }
+    };
+
+    const handleJoinWithReferral = async () => {
+        if (!validClubId) return;
+
+        try {
+            // Store referral code for future tracking/attribution
+            if (referralCode) {
+                localStorage.setItem(`referral_${validClubId}`, referralCode);
+            }
+            await ClubsService.join(validClubId);
+            toast.success('Successfully joined the club!');
+            setShowJoinModal(false);
+            setShowReferralPrompt(false);
+            setClubCode('');
+            setReferralCode('');
+            setValidClubId(null);
+            // Refresh clubs
+            window.location.reload();
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to join club');
+        }
+    };
+
+    const handleJoinWithoutReferral = async () => {
+        if (!validClubId) return;
+
+        try {
+            await ClubsService.join(validClubId);
+            toast.success('Successfully joined the club!');
+            setShowJoinModal(false);
+            setShowReferralPrompt(false);
+            setClubCode('');
+            setValidClubId(null);
+            // Refresh clubs
+            window.location.reload();
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to join club');
+        }
+    };
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // BUILD CAROUSEL CARDS
+    // ═══════════════════════════════════════════════════════════════════════════════
     const buildCarouselCards = (): ClubCard[] => {
         const cards: ClubCard[] = [];
 
-        // ═══════════════════════════════════════════════════════════════════════
-        // MAIN CARD: Explore Club Arena (always first/center)
-        // ═══════════════════════════════════════════════════════════════════════
-        cards.push({
-            id: 'explore',
-            title: 'EXPLORE CLUB ARENA',
-            subtitle: 'JOIN OR CREATE A CLUB',
-            description: 'CREATE A CLUB • JOIN A CLUB\nEXPLORE MIDWAY • OPEN CLUBS',
-            icon: '♠',
-            color: '#1877F2',
-            action: () => navigate('/clubs'),
+        // Add all user clubs to carousel (unlimited)
+        userClubs.forEach((club, idx) => {
+            // Check if this is Shark Club (Featured)
+            const isSharkClub = club.name?.toLowerCase().includes('shark');
+
+            cards.push({
+                id: club.id,
+                title: club.name?.toUpperCase() || 'MY CLUB',
+                subtitle: club.is_owner ? 'CLUB OWNER' : 'MEMBER',
+                description: `${club.member_count || 0} MEMBERS\n${club.active_tables || 0} ACTIVE TABLES`,
+                icon: club.logo_url ? '' : '♣',
+                logoUrl: club.logo_url,
+                color: '#00d4ff',
+                frameImage: getFrameImage(idx),
+                isFeatured: isSharkClub,
+                action: () => {
+                    localStorage.setItem(LAST_VISITED_KEY, club.id);
+                    localStorage.setItem(LAST_CLUB_KEY, club.id);
+                    navigate(`/clubs/${club.id}`);
+                },
+            });
         });
 
-        // ═══════════════════════════════════════════════════════════════════════
-        // USER'S CLUB CARDS (only if they have clubs)
-        // ═══════════════════════════════════════════════════════════════════════
-        if (userClubs.length > 0) {
-            userClubs.forEach((club) => {
-                cards.push({
-                    id: club.id,
-                    title: club.name?.toUpperCase() || 'MY CLUB',
-                    subtitle: club.is_owner ? 'CLUB OWNER' : 'MEMBER',
-                    description: `${club.member_count || 0} MEMBERS\n${club.active_tables || 0} ACTIVE TABLES`,
-                    icon: club.logo_url ? '' : '♣',
-                    logoUrl: club.logo_url,
-                    color: '#00d4ff',
-                    action: () => {
-                        localStorage.setItem(LAST_VISITED_KEY, club.id);
-                        navigate(`/clubs/${club.id}`);
-                    },
-                });
-            });
-
-            // ═══════════════════════════════════════════════════════════════════
-            // SOCIAL MEDIA (only if user has clubs)
-            // ═══════════════════════════════════════════════════════════════════
-            cards.push({
-                id: 'social',
-                title: 'SOCIAL MEDIA',
-                subtitle: 'CONNECT WITH FRIENDS',
-                description: 'SHARE WHAT MATTERS\nSTAY CONNECTED',
-                icon: '📱',
-                color: '#00d4ff',
-                action: () => navigate('/social'),
-            });
-
-            // ═══════════════════════════════════════════════════════════════════
-            // TRAINING GAMES (only if user has clubs)
-            // ═══════════════════════════════════════════════════════════════════
-            cards.push({
-                id: 'training',
-                title: 'TRAINING GAMES',
-                subtitle: 'SHARPEN YOUR SKILLS',
-                description: 'MASTER THE GAME\nPRACTICE OFFLINE',
-                icon: '🧠',
-                color: '#00d4ff',
-                action: () => navigate('/training'),
-            });
-        }
+        // Sort so Shark Club (Featured) is always first
+        cards.sort((a, b) => {
+            if (a.isFeatured && !b.isFeatured) return -1;
+            if (!a.isFeatured && b.isFeatured) return 1;
+            return 0;
+        });
 
         return cards;
     };
@@ -190,13 +289,22 @@ export default function HomePage() {
     const hasClubs = userClubs.length > 0;
 
     // Navigation functions
-    const nextCard = () => setCurrentIndex((prev) => (prev + 1) % carouselCards.length);
-    const prevCard = () => setCurrentIndex((prev) => (prev - 1 + carouselCards.length) % carouselCards.length);
+    const canNavigate = carouselCards.length >= 3;
+    const nextCard = () => {
+        if (canNavigate) {
+            setCurrentIndex((prev) => (prev + 1) % carouselCards.length);
+        }
+    };
+    const prevCard = () => {
+        if (canNavigate) {
+            setCurrentIndex((prev) => (prev - 1 + carouselCards.length) % carouselCards.length);
+        }
+    };
 
-    // Get visible cards (3 at a time centered on currentIndex)
+    // Get visible cards
     const getVisibleCards = () => {
         if (carouselCards.length === 0) return [];
-        if (carouselCards.length === 1) return [null, carouselCards[0], null];
+        if (carouselCards.length <= 2) return carouselCards;
 
         const prev = (currentIndex - 1 + carouselCards.length) % carouselCards.length;
         const next = (currentIndex + 1) % carouselCards.length;
@@ -205,36 +313,47 @@ export default function HomePage() {
 
     const visibleCards = getVisibleCards();
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // BOTTOM 5 QUICK LINKS - Direct links to club features
-    // ═══════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // BOTTOM 5 QUICK LINKS (New Order)
+    // ═══════════════════════════════════════════════════════════════════════════════
     const quickLinks = [
         {
-            id: 'create-table',
-            title: 'CREATE TABLE',
-            icon: '🎲',
-            subtitle: 'Start a game',
+            id: 'player-stats',
+            title: 'PLAYER STATS',
+            icon: '📊',
+            subtitle: 'Your Profile',
+            action: () => navigate('/profile'),
+        },
+        {
+            id: 'leaderboard',
+            title: 'LEADERBOARDS',
+            icon: '🏆',
+            subtitle: 'Rankings',
+            action: () => navigate('/leaderboard'),
+        },
+        {
+            id: 'cashier',
+            title: 'CASHIER',
+            icon: '💵',
+            subtitle: 'Chips & Cash',
             action: () => {
-                if (userClubs.length > 0) {
-                    navigate(`/clubs/${userClubs[0].id}/create-table`);
+                // Route to last club's cashier if multi-club, else first club
+                const lastClub = localStorage.getItem(LAST_CLUB_KEY);
+                if (lastClub) {
+                    navigate(`/clubs/${lastClub}/cashier`);
+                } else if (userClubs.length > 0) {
+                    navigate(`/clubs/${userClubs[0].id}/cashier`);
                 } else {
-                    toast.info('Join a club first to create tables');
+                    toast.info('Join a club first to access the cashier');
                 }
             },
         },
         {
-            id: 'active-tables',
-            title: 'ACTIVE TABLES',
-            icon: '♠',
-            subtitle: 'Jump in',
-            action: () => navigate('/tables'),
-        },
-        {
-            id: 'leaderboard',
-            title: 'LEADERBOARD',
-            icon: '🏆',
-            subtitle: 'Rankings',
-            action: () => navigate('/leaderboard'),
+            id: 'diamond-store',
+            title: 'DIAMOND STORE',
+            icon: '💎',
+            subtitle: 'Purchase',
+            action: () => navigate('/store'),
         },
         {
             id: 'hand-history',
@@ -242,13 +361,6 @@ export default function HomePage() {
             icon: '📜',
             subtitle: 'Review hands',
             action: () => navigate('/hand-history'),
-        },
-        {
-            id: 'wallet',
-            title: 'WALLET',
-            icon: '💰',
-            subtitle: 'Chip balance',
-            action: () => navigate('/wallet'),
         },
     ];
 
@@ -265,108 +377,205 @@ export default function HomePage() {
             {/* GLOBAL HEADER - Hub-style, hide when embedded in iframe */}
             {!isInIframe && <GlobalHeader />}
 
-            {/* Welcome Message */}
-            <div className={styles.welcomeMessage}>
-                Welcome Back, {user?.username || 'Player'}
-            </div>
+            {/* ═══════════════════════════════════════════════════════════════════════
+                FIXED CANVAS - All content scales uniformly (locked at 600px)
+            ═══════════════════════════════════════════════════════════════════════ */}
+            <div
+                ref={canvasRef}
+                className={styles.fixedCanvas}
+                style={{ transform: `scale(${canvasScale})` }}
+            >
 
-            {/* Main 3D Carousel - Dynamic Cards */}
-            <div className={styles.carouselContainer}>
-                {/* Left Arrow */}
-                {carouselCards.length > 1 && (
-                    <button className={styles.navArrow} onClick={prevCard}>
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-                        </svg>
-                    </button>
-                )}
-
-                {/* 3 Floating Cards */}
-                <div className={styles.cardsRow}>
-                    {visibleCards.map((card, index) => {
-                        if (!card) return <div key={`empty-${index}`} className={styles.emptyCard}></div>;
-
-                        return (
-                            <div
-                                key={card.id}
-                                className={`${styles.floatingCard} ${index === 1 ? styles.centerCard : styles.sideCard
-                                    } ${index === 0 ? styles.leftCard : ''} ${index === 2 ? styles.rightCard : ''}`}
-                                onClick={card.action}
-                            >
-                                {/* Neon border glow */}
-                                <div className={styles.cardBorderGlow}></div>
-
-                                {/* Card inner content */}
-                                <div className={styles.cardInner}>
-                                    {/* Title area */}
-                                    <div className={styles.cardHeader}>
-                                        <h2 className={styles.cardTitle}>{card.title}</h2>
-                                        <span className={styles.cardSubtitle}>{card.subtitle}</span>
-                                    </div>
-
-                                    {/* Holographic icon area */}
-                                    <div className={styles.holoArea}>
-                                        <div className={styles.holoCircle}>
-                                            {card.logoUrl ? (
-                                                <img src={card.logoUrl} alt="" className={styles.clubLogo} />
-                                            ) : (
-                                                <span className={styles.holoIcon}>{card.icon}</span>
-                                            )}
-                                        </div>
-                                        <div className={styles.techLines}></div>
-                                    </div>
-
-                                    {/* Footer description */}
-                                    <div className={styles.cardFooter}>
-                                        <p className={styles.cardDescription}>
-                                            {card.description.split('\n').map((line, i) => (
-                                                <span key={i}>{line}<br /></span>
-                                            ))}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Reflection */}
-                                <div className={styles.cardReflection}></div>
-                            </div>
-                        );
-                    })}
+                {/* ═══════════════════════════════════════════════════════════════════════
+                    HORIZONTAL ACTION BAR - Below Header
+                ═══════════════════════════════════════════════════════════════════════ */}
+                <div className={styles.actionBarRow}>
+                    <img src={ACTION_BAR_HORIZONTAL} alt="Action Bar" className={styles.actionBarImage} />
                 </div>
 
-                {/* Right Arrow */}
-                {carouselCards.length > 1 && (
-                    <button className={styles.navArrow} onClick={nextCard}>
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z" />
-                        </svg>
-                    </button>
+                {/* ═══════════════════════════════════════════════════════════════════════
+                    SHARK CLUB CARD - Center, original position
+                ═══════════════════════════════════════════════════════════════════════ */}
+                <div className={styles.centerCardRow}>
+                    <div
+                        className={styles.sharkClubCard}
+                        onClick={() => navigate('/clubs/shark-club')}
+                    >
+                        <img src={SHARK_CLUB_CARD} alt="Shark Club" className={styles.sharkClubImage} />
+                    </div>
+                </div>
+
+                {/* Club Cards Carousel - Hidden for now, replaced by Shark Club card */}
+                {hasClubs && carouselCards.length > 1 && (
+                    <div className={styles.carouselContainer}>
+                        <div className={styles.cardsRow}>
+                            {canNavigate && (
+                                <button className={styles.navArrow} onClick={prevCard}>
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+                                    </svg>
+                                </button>
+                            )}
+
+                            {visibleCards.map((card, index) => {
+                                if (!card) return <div key={`empty-${index}`} className={styles.emptyCard}></div>;
+
+                                const isCenter = carouselCards.length >= 3 && index === 1;
+
+                                return (
+                                    <div
+                                        key={card.id}
+                                        className={`${styles.floatingCard} ${isCenter ? styles.centerCard : styles.flatCard}`}
+                                        onClick={card.action}
+                                    >
+                                        <img src={card.frameImage} alt="" className={styles.cardFrame} />
+                                        <div className={styles.cardInner}>
+                                            <div className={styles.cardHeader}>
+                                                <h2 className={styles.cardTitle}>{card.title}</h2>
+                                                <span className={styles.cardSubtitle}>{card.subtitle}</span>
+                                            </div>
+                                            <div className={styles.holoArea}>
+                                                <div className={styles.holoCircle}>
+                                                    {card.logoUrl ? (
+                                                        <img src={card.logoUrl} alt="" className={styles.clubLogo} />
+                                                    ) : (
+                                                        <span className={styles.holoIcon}>{card.icon}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className={styles.cardFooter}>
+                                                <p className={styles.cardDescription}>
+                                                    {card.description.split('\n').map((line, i) => (
+                                                        <span key={i}>{line}<br /></span>
+                                                    ))}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+                            {canNavigate && (
+                                <button className={styles.navArrow} onClick={nextCard}>
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z" />
+                                    </svg>
+                                </button>
+                            )}
+                        </div>
+                    </div>
                 )}
+
+                {/* Bottom Row - 5 Baked Tile Cards */}
+                <div className={styles.bottomRow}>
+                    <button className={styles.tileCard} onClick={() => navigate('/stats')}>
+                        <img src={TILE_PLAYER_STATS} alt="Player Stats" className={styles.tileImage} />
+                    </button>
+                    <button className={styles.tileCard} onClick={() => navigate('/leaderboard')}>
+                        <img src={TILE_LEADERBOARDS} alt="Leaderboards" className={styles.tileImage} />
+                    </button>
+                    <button className={styles.tileCard} onClick={() => navigate('/cashier')}>
+                        <img src={TILE_CASHIER} alt="Cashier" className={styles.tileImage} />
+                    </button>
+                    <button className={styles.tileCard} onClick={() => navigate('/marketplace')}>
+                        <img src={TILE_MARKETPLACE} alt="Marketplace" className={styles.tileImage} />
+                    </button>
+                    <button className={styles.tileCard} onClick={() => navigate('/hands')}>
+                        <img src={TILE_HAND_HISTORIES} alt="Hand Histories" className={styles.tileImage} />
+                    </button>
+                </div>
             </div>
 
-            {/* Bottom Row - 5 Quick Link Tiles */}
-            <div className={styles.bottomRow}>
-                {quickLinks.map((link) => (
-                    <button
-                        key={link.id}
-                        className={styles.tileCard}
-                        onClick={link.action}
-                    >
-                        <div className={styles.tileBorder}></div>
-                        <div className={styles.tileContent}>
-                            <span className={styles.tileIcon}>{link.icon}</span>
-                            <span className={styles.tileTitle}>{link.title}</span>
-                            <span className={styles.tileSubtitle}>{link.subtitle}</span>
+            {/* ═══════════════════════════════════════════════════════════════════════
+                JOIN A CLUB MODAL
+            ═══════════════════════════════════════════════════════════════════════ */}
+            {
+                showJoinModal && (
+                    <div className={styles.modalOverlay} onClick={() => {
+                        setShowJoinModal(false);
+                        setShowReferralPrompt(false);
+                        setClubCode('');
+                        setReferralCode('');
+                        setValidClubId(null);
+                    }}>
+                        <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+                            {!showReferralPrompt ? (
+                                <>
+                                    <h2 className={styles.modalTitle}>Join a Club</h2>
+                                    <div className={styles.inputGroup}>
+                                        <input
+                                            ref={joinInputRef}
+                                            type="tel"
+                                            inputMode="numeric"
+                                            pattern="[0-9]{5}"
+                                            maxLength={5}
+                                            className={styles.clubCodeInput}
+                                            placeholder="Enter 5-Digit Club Code"
+                                            value={clubCode}
+                                            onChange={(e) => setClubCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleJoinClubSubmit()}
+                                        />
+                                    </div>
+                                    <div className={styles.modalButtons}>
+                                        <button
+                                            className={styles.modalButtonPrimary}
+                                            onClick={handleJoinClubSubmit}
+                                            disabled={isValidatingCode}
+                                        >
+                                            {isValidatingCode ? 'Validating...' : 'Continue'}
+                                        </button>
+                                        <button
+                                            className={styles.modalButtonSecondary}
+                                            onClick={() => setShowJoinModal(false)}
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <h2 className={styles.modalTitle}>Referral Code</h2>
+                                    <p className={styles.modalSubtitle}>
+                                        Enter a referral code or join without one
+                                    </p>
+                                    <div className={styles.inputGroup}>
+                                        <input
+                                            type="text"
+                                            className={styles.clubCodeInput}
+                                            placeholder="Referral Code (Optional)"
+                                            value={referralCode}
+                                            onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                                        />
+                                    </div>
+                                    <div className={styles.modalButtons}>
+                                        <button
+                                            className={styles.modalButtonPrimary}
+                                            onClick={handleJoinWithReferral}
+                                        >
+                                            Join with Referral
+                                        </button>
+                                        <button
+                                            className={styles.modalButtonSecondary}
+                                            onClick={handleJoinWithoutReferral}
+                                        >
+                                            Join Without Referral
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                         </div>
-                    </button>
-                ))}
-            </div>
+                    </div>
+                )
+            }
 
             {/* Loading indicator */}
-            {isLoading && (
-                <div className={styles.loadingOverlay}>
-                    <div className={styles.spinner}></div>
-                </div>
-            )}
-        </div>
+            {
+                isLoading && (
+                    <div className={styles.loadingOverlay}>
+                        <div className={styles.spinner}></div>
+                    </div>
+                )
+            }
+        </div >
     );
 }
