@@ -4,7 +4,27 @@
     "framework": null,
     "rewrites": [
         {
-            "source": "/((?!assets/|images/).*)",
+            "source": "/hub/club-arena/assets/:path*",
+            "destination": "/assets/:path*"
+        },
+        {
+            "source": "/hub/club-arena/images/:path*",
+            "destination": "/images/:path*"
+        },
+        {
+            "source": "/hub/club-arena/videos/:path*",
+            "destination": "/videos/:path*"
+        },
+        {
+            "source": "/hub/club-arena/:path*",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/hub/club-arena",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/((?!assets/|images/|videos/).*)",
             "destination": "/index.html"
         }
     ],
