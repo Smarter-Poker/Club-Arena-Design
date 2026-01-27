@@ -101,14 +101,28 @@ export async function createClub(clubData: {
     city?: string;
     country?: string;
 }): Promise<Club> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error('Authentication required');
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ENFORCE 4-CLUB LIMIT
+    // ═══════════════════════════════════════════════════════════════════════
+    const { count, error: countError } = await supabase
+        .from('club_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.user.id);
+
+    if (countError) {
+        console.error('⚠ Failed to check club membership count:', countError);
+    } else if (count && count >= 4) {
+        throw new Error('You can only be a member of up to 4 clubs. Leave a club to create a new one.');
+    }
+
     // Generate URL-friendly slug
     const slug = clubData.name
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '');
-
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('Authentication required');
 
     const { data, error } = await supabase
         .from('clubs')
@@ -150,6 +164,22 @@ export async function joinClub(
 ): Promise<ClubMember> {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('Authentication required');
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ENFORCE 4-CLUB LIMIT (skip for owner role - already checked in createClub)
+    // ═══════════════════════════════════════════════════════════════════════
+    if (role !== 'owner') {
+        const { count, error: countError } = await supabase
+            .from('club_members')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.user.id);
+
+        if (countError) {
+            console.error('⚠ Failed to check club membership count:', countError);
+        } else if (count && count >= 4) {
+            throw new Error('You can only be a member of up to 4 clubs. Leave a club to join a new one.');
+        }
+    }
 
     const { data, error } = await supabase
         .from('club_members')
@@ -475,6 +505,38 @@ export async function uploadClubBanner(clubId: string, file: File): Promise<stri
     return bannerUrl;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🔢 CLUB LIMIT CHECK
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Check if user can join/create more clubs (max 4 clubs per user)
+ * @returns Object with canJoin boolean and current club count
+ */
+export async function canJoinMoreClubs(): Promise<{ canJoin: boolean; currentCount: number; maxClubs: number }> {
+    const MAX_CLUBS = 4;
+
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) return { canJoin: false, currentCount: 0, maxClubs: MAX_CLUBS };
+
+    const { count, error } = await supabase
+        .from('club_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.user.id);
+
+    if (error) {
+        console.error('⚠ Failed to check club membership count:', error);
+        return { canJoin: true, currentCount: 0, maxClubs: MAX_CLUBS }; // Allow on error
+    }
+
+    const currentCount = count || 0;
+    return {
+        canJoin: currentCount < MAX_CLUBS,
+        currentCount,
+        maxClubs: MAX_CLUBS
+    };
+}
+
 // Export service object for cleaner imports
 export const ClubsService = {
     discoverNearby: discoverNearbyClubs,
@@ -492,4 +554,5 @@ export const ClubsService = {
     uploadLogo: uploadClubLogo,
     uploadBanner: uploadClubBanner,
     updateClub,
+    canJoinMoreClubs,
 };

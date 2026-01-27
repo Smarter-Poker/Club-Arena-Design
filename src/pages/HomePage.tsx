@@ -16,6 +16,7 @@ import { useUserStore } from '../stores/useUserStore';
 import { ClubsService } from '../services/ClubsService';
 import { useToast } from '../components/common/Toast';
 import GlobalHeader from '../components/navigation/GlobalHeader';
+import CreateClubModal from '../components/modals/CreateClubModal';
 import styles from './HomePage.module.css';
 
 interface ClubCard {
@@ -80,6 +81,7 @@ export default function HomePage() {
 
     // JOIN A CLUB modal state
     const [showJoinModal, setShowJoinModal] = useState(false);
+    const [showCreateClubModal, setShowCreateClubModal] = useState(false);
     const [clubCode, setClubCode] = useState('');
     const [isValidatingCode, setIsValidatingCode] = useState(false);
     const [showReferralPrompt, setShowReferralPrompt] = useState(false);
@@ -395,7 +397,7 @@ export default function HomePage() {
                         {/* Clickable zones positioned over the image */}
                         <button
                             className={styles.actionZoneLeft}
-                            onClick={() => navigate('/clubs/create')}
+                            onClick={() => setShowCreateClubModal(true)}
                             aria-label="Create a Club"
                         />
                         <button
@@ -607,6 +609,16 @@ export default function HomePage() {
                     </div>
                 )
             }
+
+            {/* CREATE A CLUB MODAL */}
+            <CreateClubModal
+                isOpen={showCreateClubModal}
+                onClose={() => setShowCreateClubModal(false)}
+                onSuccess={(clubId) => {
+                    setShowCreateClubModal(false);
+                    navigate(`/clubs/${clubId}`);
+                }}
+            />
 
             {/* Loading indicator */}
             {

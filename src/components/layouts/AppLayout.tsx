@@ -9,16 +9,14 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import { Outlet, NavLink } from 'react-router-dom';
-import { useState } from 'react';
+import { Outlet } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import styles from './AppLayout.module.css';
 import ClubArenaWelcomeModal, { useClubArenaWelcome } from '../modals/ClubArenaWelcomeModal';
 import QuickActionsBar from '../navigation/QuickActionsBar';
-import NotificationDropdown from '../navigation/NotificationDropdown';
 import ClubAnnouncementBanner from '../club/ClubAnnouncementBanner';
+import GlobalHeader from '../navigation/GlobalHeader';
 import { useUserStore } from '../../stores/useUserStore';
-import { useWalletStore, useTotalBalance } from '../../stores/useWalletStore';
-import { useEffect } from 'react';
 
 export default function AppLayout() {
     // Detect if running inside iframe (World Hub embedding)
@@ -39,18 +37,8 @@ export default function AppLayout() {
         };
     }, []);
 
-    // Auto-load wallet balances when user is available
+    // User store for FAB conditional rendering
     const { user } = useUserStore();
-    const totalBalance = useTotalBalance();
-    const { loadBalances, loadDiamonds, isLoadingWallet } = useWalletStore();
-
-    useEffect(() => {
-        if (user?.id) {
-            loadBalances(user.id);
-            loadDiamonds(user.id);
-        }
-    }, [user?.id, loadBalances, loadDiamonds]);
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const { showWelcome, isReady, acceptWelcome } = useClubArenaWelcome();
 
     return (
@@ -63,99 +51,8 @@ export default function AppLayout() {
                 />
             )}
 
-            {/* Header - Hide when in iframe */}
-            {!isInIframe && (
-                <header className={styles.header}>
-                    <div className={styles.headerContent}>
-                        {/* Logo */}
-                        <NavLink to="/" className={styles.logo}>
-                            <span className={styles.logoIcon}>♠</span>
-                            <span className={styles.logoText}>ClubEngine</span>
-                        </NavLink>
-
-                        {/* Desktop Navigation */}
-                        <nav className={styles.nav}>
-                            <NavLink
-                                to="/"
-                                className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
-                            >
-                                Lobby
-                            </NavLink>
-                            <NavLink
-                                to="/clubs"
-                                className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
-                            >
-                                Clubs
-                            </NavLink>
-                            <NavLink
-                                to="/profile"
-                                className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
-                            >
-                                Profile
-                            </NavLink>
-                        </nav>
-
-                        {/* User Actions */}
-                        <div className={styles.userActions}>
-                            {/* Notification Bell with Dropdown */}
-                            {user && <NotificationDropdown />}
-
-                            <div className={styles.chipBalance}>
-                                <span className={styles.chipIcon}></span>
-                                <span className={styles.chipAmount}>
-                                    {isLoadingWallet ? '...' : totalBalance.toLocaleString()}
-                                </span>
-                            </div>
-
-                            <NavLink to="/settings" className={styles.settingsButton}>
-
-                            </NavLink>
-                        </div>
-
-                        {/* Mobile Menu Toggle */}
-                        <button
-                            className={styles.mobileMenuToggle}
-                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                        >
-                            {isMobileMenuOpen ? '✕' : '☰'}
-                        </button>
-                    </div>
-
-                    {/* Mobile Navigation */}
-                    {isMobileMenuOpen && (
-                        <nav className={styles.mobileNav}>
-                            <NavLink
-                                to="/"
-                                className={styles.mobileNavLink}
-                                onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                                Lobby
-                            </NavLink>
-                            <NavLink
-                                to="/clubs"
-                                className={styles.mobileNavLink}
-                                onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                                Clubs
-                            </NavLink>
-                            <NavLink
-                                to="/profile"
-                                className={styles.mobileNavLink}
-                                onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                                Profile
-                            </NavLink>
-                            <NavLink
-                                to="/settings"
-                                className={styles.mobileNavLink}
-                                onClick={() => setIsMobileMenuOpen(false)}
-                            >
-                                Settings
-                            </NavLink>
-                        </nav>
-                    )}
-                </header>
-            )}
+            {/* Global Header - Hide when in iframe */}
+            {!isInIframe && <GlobalHeader pageDepth={2} />}
 
             {/* Global Announcement Banner (shows club announcements when in a club context) */}
             <ClubAnnouncementBanner />

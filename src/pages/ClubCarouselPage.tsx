@@ -94,62 +94,71 @@ export default function ClubCarouselPage() {
                 return;
             }
 
-            // Load user profile
-            const { data: profileData } = await supabase
-                .from('profiles')
-                .select('id, display_name, avatar_url, player_number, vip_level')
-                .eq('id', authUser.id)
-                .single();
+            // Load user profile (use only columns that exist in profiles table)
+            try {
+                const { data: profileData, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('id, display_name, avatar_url, diamonds')
+                    .eq('id', authUser.id)
+                    .single();
 
-            if (profileData) {
-                setUserProfile(profileData as UserProfile);
+                if (profileError) {
+                    console.warn('[ClubCarousel] Profile query error:', profileError.message);
+                } else if (profileData) {
+                    setUserProfile({
+                        id: profileData.id,
+                        display_name: profileData.display_name || 'Player',
+                        avatar_url: profileData.avatar_url,
+                        player_number: 0,  // Not available in profiles table
+                        vip_level: 'bronze', // Default, not in profiles table
+                    });
+                    // Get diamonds from profiles table
+                    setWallet(prev => ({ ...prev, diamonds: profileData.diamonds || 0 }));
+                }
+            } catch (err) {
+                console.warn('[ClubCarousel] Error loading profile:', err);
             }
 
             // Load user's clubs (where they are a member)
-            const { data: memberData } = await supabase
-                .from('club_members')
-                .select(`
-                    club_id,
-                    role,
-                    chip_balance,
-                    clubs (
-                        id,
+            try {
+                const { data: memberData, error: memberError } = await supabase
+                    .from('club_members')
+                    .select(`
                         club_id,
-                        name,
-                        avatar_url,
-                        member_count
-                    )
-                `)
-                .eq('user_id', authUser.id);
+                        role,
+                        chip_balance,
+                        clubs (
+                            id,
+                            club_id,
+                            name,
+                            avatar_url,
+                            member_count
+                        )
+                    `)
+                    .eq('user_id', authUser.id);
 
-            if (memberData) {
-                const userClubs: UserClub[] = memberData
-                    .filter((m: any) => m.clubs)
-                    .map((m: any) => ({
-                        id: m.clubs.id,
-                        club_id: m.clubs.club_id,
-                        name: m.clubs.name,
-                        avatar_url: m.clubs.avatar_url,
-                        level: 0, // Club level from settings
-                        member_count: m.clubs.member_count || 0,
-                        role: m.role,
-                    }));
-                setClubs(userClubs);
+                if (memberError) {
+                    console.warn('[ClubCarousel] Memberships query error:', memberError.message);
+                } else if (memberData) {
+                    const userClubs: UserClub[] = memberData
+                        .filter((m: any) => m.clubs)
+                        .map((m: any) => ({
+                            id: m.clubs.id,
+                            club_id: m.clubs.club_id,
+                            name: m.clubs.name,
+                            avatar_url: m.clubs.avatar_url,
+                            level: 0, // Club level from settings
+                            member_count: m.clubs.member_count || 0,
+                            role: m.role,
+                        }));
+                    setClubs(userClubs);
 
-                // Calculate total gold from all clubs
-                const totalGold = memberData.reduce((sum: number, m: any) => sum + (m.chip_balance || 0), 0);
-                setWallet(prev => ({ ...prev, gold: totalGold }));
-            }
-
-            // Load universal diamond balance
-            const { data: walletData } = await supabase
-                .from('user_wallets')
-                .select('diamonds')
-                .eq('user_id', authUser.id)
-                .single();
-
-            if (walletData) {
-                setWallet(prev => ({ ...prev, diamonds: walletData.diamonds || 0 }));
+                    // Calculate total gold from all clubs
+                    const totalGold = memberData.reduce((sum: number, m: any) => sum + (m.chip_balance || 0), 0);
+                    setWallet(prev => ({ ...prev, gold: totalGold }));
+                }
+            } catch (err) {
+                console.warn('[ClubCarousel] Error loading memberships:', err);
             }
 
         } catch (error) {

@@ -20,7 +20,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
-import { useWalletStore, useTotalBalance } from '../../stores/useWalletStore';
+import { useWalletStore } from '../../stores/useWalletStore';
 import styles from './GlobalHeader.module.css';
 
 // Format numbers compactly: 1.1k, 10.1k, 100.1k, 1.1M
@@ -45,8 +45,7 @@ export default function GlobalHeader({
 }: GlobalHeaderProps) {
     const navigate = useNavigate();
     const { user } = useUserStore();
-    const totalBalance = useTotalBalance();
-    const { loadBalances, loadDiamonds, isLoadingWallet } = useWalletStore();
+    const { loadBalances, loadDiamonds, isLoadingWallet, diamonds, isLoadingDiamonds } = useWalletStore();
 
     const [stats, setStats] = useState({ xp: 0, diamonds: 0, level: 1 });
     const [isLoading, setIsLoading] = useState(true);
@@ -57,35 +56,42 @@ export default function GlobalHeader({
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
     useEffect(() => {
-        if (user?.id) {
-            loadBalances(user.id);
-            loadDiamonds(user.id);
-        }
-    }, [user?.id, loadBalances, loadDiamonds]);
-
-    useEffect(() => {
         let mounted = true;
 
         const loadUserData = async () => {
-            if (!user?.id) {
-                setIsLoading(false);
-                return;
-            }
-
             try {
-                // Fetch profile data
-                const { data: profile } = await supabase
+                // Get authenticated user directly from Supabase Auth (like HomePage.tsx)
+                const { data: { user: authUser } } = await supabase.auth.getUser();
+
+                if (!authUser?.id) {
+                    setIsLoading(false);
+                    return;
+                }
+
+                // Load wallet data
+                loadBalances(authUser.id);
+                loadDiamonds(authUser.id);
+
+                // Fetch profile data - using xp_total (not 'xp' which doesn't exist)
+                const { data: profile, error: profileError } = await supabase
                     .from('profiles')
-                    .select('avatar_url, xp_total, level')
-                    .eq('id', user.id)
+                    .select('avatar_url, xp_total')
+                    .eq('id', authUser.id)
                     .maybeSingle();
+
+                if (profileError) {
+                    console.error('[GlobalHeader] Profile query error:', profileError);
+                }
 
                 if (profile && mounted) {
                     setAvatarUrl(profile.avatar_url);
+                    const totalXp = profile.xp_total || 0;
+                    // Calculate level from XP: level = floor(sqrt(xp / 100)) + 1
+                    const calculatedLevel = Math.max(1, Math.floor(Math.sqrt(totalXp / 100)) + 1);
                     setStats({
-                        xp: profile.xp_total || 0,
-                        diamonds: 0, // Will be loaded from wallet store
-                        level: profile.level || Math.max(1, Math.floor(Math.sqrt((profile.xp_total || 0) / 231)))
+                        xp: totalXp,
+                        diamonds: 0, // Loaded from wallet store
+                        level: calculatedLevel
                     });
                 }
 
@@ -93,7 +99,7 @@ export default function GlobalHeader({
                 const { count: notifCount } = await supabase
                     .from('notifications')
                     .select('*', { count: 'exact', head: true })
-                    .eq('user_id', user.id)
+                    .eq('user_id', authUser.id)
                     .eq('read', false);
                 if (mounted) setNotificationCount(notifCount || 0);
 
@@ -101,7 +107,7 @@ export default function GlobalHeader({
                 const { count: msgCount } = await supabase
                     .from('messages')
                     .select('*', { count: 'exact', head: true })
-                    .eq('recipient_id', user.id)
+                    .eq('recipient_id', authUser.id)
                     .eq('read', false);
                 if (mounted) setUnreadMessages(msgCount || 0);
 
@@ -114,7 +120,7 @@ export default function GlobalHeader({
 
         loadUserData();
         return () => { mounted = false; };
-    }, [user?.id]);
+    }, [loadBalances, loadDiamonds]);
 
     const handleBack = () => {
         if (window.history.length > 1) {
@@ -150,15 +156,15 @@ export default function GlobalHeader({
                     href="https://smarter.poker/hub/diamond-store"
                     className={styles.diamondWallet}
                     onClick={(e) => {
-                        if (totalBalance >= 1000) {
+                        if (diamonds >= 1000) {
                             e.preventDefault();
                             setShowFullDiamonds(!showFullDiamonds);
                         }
                     }}
                 >
                     <span>💎</span>
-                    <span className={styles.statValue} title={totalBalance.toLocaleString() + ' diamonds'}>
-                        {isLoadingWallet ? '...' : showFullDiamonds ? totalBalance.toLocaleString() : formatCompact(totalBalance)}
+                    <span className={styles.statValue} title={diamonds.toLocaleString() + ' diamonds'}>
+                        {isLoadingDiamonds ? '...' : showFullDiamonds ? diamonds.toLocaleString() : formatCompact(diamonds)}
                     </span>
                     <span className={styles.addBtn}>+</span>
                 </a>
