@@ -851,9 +851,9 @@
     transform: scale(0.95);
 }
 
-/* Find A Player button - uniform 148x148 to match side buttons */
+/* Find A Player button - 296x148px pill shape (user's reference design) */
 .findPlayerButton {
-    width: 148px;
+    width: 296px;
     height: 148px;
     border: none;
     background: transparent;
