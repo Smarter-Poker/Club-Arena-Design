@@ -238,7 +238,9 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
                     className={styles.createLogoBtn}
                     onClick={() => setShowLogoGenerator(true)}
                     aria-label="Create Logo"
-                />
+                >
+                    {!logoPreview && <span className={styles.plusIcon}>+</span>}
+                </button>
 
                 {/* Hidden file input */}
                 <input
@@ -318,23 +320,30 @@ function LogoGeneratorModal({ onSelect, onClose }: LogoGeneratorModalProps) {
             const template = LOGO_TEMPLATES.find(t => t.id === selectedTemplate);
             if (!template) return;
 
+            // Logo size matching ClubCardGenerator logo area (340x300)
+            // Use 340x340 square for best fit in the card template
+            const LOGO_SIZE = 340;
             const canvas = document.createElement('canvas');
-            canvas.width = 400;
-            canvas.height = 400;
+            canvas.width = LOGO_SIZE;
+            canvas.height = LOGO_SIZE;
             const ctx = canvas.getContext('2d')!;
 
-            // Background gradient
-            const gradient = ctx.createRadialGradient(200, 200, 0, 200, 200, 200);
+            // Background gradient - dark metallic theme matching Shark Club
+            const gradient = ctx.createRadialGradient(
+                LOGO_SIZE / 2, LOGO_SIZE / 2, 0,
+                LOGO_SIZE / 2, LOGO_SIZE / 2, LOGO_SIZE / 2
+            );
             gradient.addColorStop(0, template.color);
-            gradient.addColorStop(1, '#0a1929');
+            gradient.addColorStop(0.7, '#1a2744');
+            gradient.addColorStop(1, '#0d1b2a');
             ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, 400, 400);
+            ctx.fillRect(0, 0, LOGO_SIZE, LOGO_SIZE);
 
-            // Draw icon
-            ctx.font = '180px serif';
+            // Draw icon - scaled to match logo area
+            ctx.font = `${Math.floor(LOGO_SIZE * 0.5)}px serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(template.icon, 200, 200);
+            ctx.fillText(template.icon, LOGO_SIZE / 2, LOGO_SIZE / 2);
 
             const logoDataUrl = canvas.toDataURL('image/png');
             onSelect(logoDataUrl);

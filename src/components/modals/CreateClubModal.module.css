@@ -136,6 +136,14 @@
     background: rgba(0, 180, 255, 0.1);
 }
 
+.plusIcon {
+    font-size: clamp(32px, 8vw, 48px);
+    font-weight: 300;
+    color: rgba(0, 200, 255, 0.9);
+    text-shadow: 0 0 20px rgba(0, 200, 255, 0.6);
+    pointer-events: none;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────
    TERMS CHECKBOX — Positioned over the checkbox area
    ───────────────────────────────────────────────────────────────────────────── */
