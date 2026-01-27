@@ -869,20 +869,18 @@
     transform: scale(1.02);
 }
 
-/* BRIGHT WHITE text via max brightness filter (RAT-UI-070) */
+/* Action button images - display as-is, white text is baked in (RAT-UI-070) */
 .findPlayerImage {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    filter: brightness(5.0) contrast(1.5);
 }
 
-/* BRIGHT WHITE text via max brightness filter (RAT-UI-070) */
+/* Action button images - display as-is, white text is baked in (RAT-UI-070) */
 .actionButtonImage {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    filter: brightness(5.0) contrast(1.5);
 }
 
 /* White text inside the dark blue circle */
