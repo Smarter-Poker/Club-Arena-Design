@@ -95,10 +95,10 @@
    ───────────────────────────────────────────────────────────────────────────── */
 .uploadLogoBtn {
     position: absolute;
-    top: 32%;
-    left: 12%;
-    width: 37%;
-    height: 30%;
+    top: 33%;
+    left: 10%;
+    width: 38%;
+    height: 28%;
     background: transparent;
     border: none;
     cursor: pointer;
@@ -122,10 +122,10 @@
 
 .createLogoBtn {
     position: absolute;
-    top: 32%;
-    right: 12%;
-    width: 37%;
-    height: 30%;
+    top: 33%;
+    right: 10%;
+    width: 38%;
+    height: 28%;
     background: transparent;
     border: none;
     cursor: pointer;
