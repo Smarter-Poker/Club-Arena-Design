@@ -130,6 +130,9 @@
     border: none;
     cursor: pointer;
     z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .createLogoBtn:hover {
@@ -137,11 +140,12 @@
 }
 
 .plusIcon {
-    font-size: clamp(32px, 8vw, 48px);
-    font-weight: 300;
-    color: rgba(0, 200, 255, 0.9);
-    text-shadow: 0 0 20px rgba(0, 200, 255, 0.6);
+    font-size: clamp(36px, 10vw, 56px);
+    font-weight: 200;
+    color: #ffffff;
+    text-shadow: 0 0 15px rgba(100, 200, 255, 0.8);
     pointer-events: none;
+    line-height: 1;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -166,31 +170,6 @@
     opacity: 0;
     cursor: pointer;
     position: absolute;
-}
-
-/* Visible checkbox styling - using a pseudo element approach */
-.termsLabel::before {
-    content: '';
-    position: absolute;
-    width: 22px;
-    height: 22px;
-    border: 2px solid rgba(0, 180, 255, 0.6);
-    border-radius: 4px;
-    background: rgba(0, 20, 40, 0.8);
-    transition: all 0.2s ease;
-}
-
-.termsLabel:has(.termsCheckbox:checked)::before {
-    background: rgba(0, 180, 255, 0.3);
-    border-color: #00d4ff;
-}
-
-.termsLabel:has(.termsCheckbox:checked)::after {
-    content: '✓';
-    position: absolute;
-    color: #00d4ff;
-    font-size: 16px;
-    font-weight: bold;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
