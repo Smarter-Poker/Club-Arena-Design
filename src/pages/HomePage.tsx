@@ -489,16 +489,35 @@ export default function HomePage() {
 
                 {/* Bottom Row - 5 Baked Tile Cards */}
                 <div className={styles.bottomRow}>
-                    <button className={styles.tileCard} onClick={() => navigate('/stats')}>
+                    <button className={styles.tileCard} onClick={() => navigate('/profile')}>
                         <img src={TILE_PLAYER_STATS} alt="Player Stats" className={styles.tileImage} />
                     </button>
                     <button className={styles.tileCard} onClick={() => navigate('/leaderboard')}>
                         <img src={TILE_LEADERBOARDS} alt="Leaderboards" className={styles.tileImage} />
                     </button>
-                    <button className={styles.tileCard} onClick={() => navigate('/cashier')}>
+                    <button className={styles.tileCard} onClick={() => {
+                        // Route to last club's cashier, or first club if no last club
+                        const lastClub = localStorage.getItem(LAST_CLUB_KEY);
+                        if (lastClub) {
+                            navigate(`/clubs/${lastClub}/cashier`);
+                        } else if (userClubs.length > 0) {
+                            navigate(`/clubs/${userClubs[0].id}/cashier`);
+                        } else {
+                            toast.info('Join a club first to access the cashier');
+                        }
+                    }}>
                         <img src={TILE_CASHIER} alt="Cashier" className={styles.tileImage} />
                     </button>
-                    <button className={styles.tileCard} onClick={() => navigate('/marketplace')}>
+                    <button className={styles.tileCard} onClick={() => {
+                        // Navigate to Hub Marketplace (parent World Hub)
+                        if (window.parent !== window) {
+                            // In iframe - use postMessage to navigate parent
+                            window.parent.postMessage({ type: 'NAVIGATE', path: '/hub/marketplace' }, '*');
+                        } else {
+                            // Standalone - redirect to Hub
+                            window.location.href = 'https://smarter.poker/hub/marketplace';
+                        }
+                    }}>
                         <img src={TILE_MARKETPLACE} alt="Marketplace" className={styles.tileImage} />
                     </button>
                     <button className={styles.tileCard} onClick={() => navigate('/hands')}>
