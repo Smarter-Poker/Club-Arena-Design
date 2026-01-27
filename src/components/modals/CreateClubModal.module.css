@@ -110,7 +110,7 @@
 }
 
 .uploadLogoBtn:hover {
-    background: rgba(0, 180, 255, 0.1);
+    /* No visible hover effect */
 }
 
 .logoThumb {
@@ -136,7 +136,7 @@
 }
 
 .createLogoBtn:hover {
-    background: rgba(0, 180, 255, 0.1);
+    /* No visible hover effect */
 }
 
 .plusIcon {
@@ -354,4 +354,43 @@
 .cancelBtn:hover {
     background: rgba(255, 255, 255, 0.15);
     color: #ffffff;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   AI LOGO GENERATOR — Preview & Error States
+   ───────────────────────────────────────────────────────────────────────────── */
+.generatorHint {
+    color: rgba(200, 220, 255, 0.7);
+    font-size: 13px;
+    text-align: center;
+    margin: 0 0 16px 0;
+    line-height: 1.4;
+}
+
+.previewContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background: rgba(0, 20, 40, 0.5);
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.previewImage {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 180, 255, 0.3);
+}
+
+.errorMessage {
+    background: rgba(255, 80, 80, 0.15);
+    border: 1px solid rgba(255, 80, 80, 0.4);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    color: #ff8888;
+    font-size: 13px;
+    text-align: center;
 }

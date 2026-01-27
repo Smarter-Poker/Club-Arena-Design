@@ -284,105 +284,151 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Logo Generator Modal (Preset Templates)
+// AI Logo Generator Modal — Powered by OpenAI DALL-E
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface LogoGeneratorModalProps {
     onSelect: (logoDataUrl: string) => void;
     onClose: () => void;
+    clubName?: string;
 }
 
-const LOGO_TEMPLATES = [
-    { id: 'eagle', icon: '🦅', name: 'Eagle', color: '#ffd700' },
-    { id: 'dragon', icon: '🐉', name: 'Dragon', color: '#ff4444' },
-    { id: 'shark', icon: '🦈', name: 'Shark', color: '#00bfff' },
-    { id: 'lion', icon: '🦁', name: 'Lion', color: '#ff8c00' },
-    { id: 'phoenix', icon: '🔥', name: 'Phoenix', color: '#ff6b35' },
-    { id: 'diamond', icon: '💎', name: 'Diamond', color: '#00ffff' },
-    { id: 'crown', icon: '👑', name: 'Crown', color: '#ffd700' },
-    { id: 'ace', icon: '🂡', name: 'Ace', color: '#ffffff' },
-    { id: 'wolf', icon: '🐺', name: 'Wolf', color: '#808080' },
-    { id: 'tiger', icon: '🐯', name: 'Tiger', color: '#ff9900' },
-    { id: 'snake', icon: '🐍', name: 'Snake', color: '#00ff00' },
-    { id: 'skull', icon: '💀', name: 'Skull', color: '#cccccc' },
+// AI Logo style presets
+const LOGO_PRESETS = [
+    { id: 'shark', icon: '🦈', name: 'Shark', theme: 'shark', style: 'aggressive' as const },
+    { id: 'dragon', icon: '🐉', name: 'Dragon', theme: 'dragon', style: 'classic' as const },
+    { id: 'eagle', icon: '🦅', name: 'Eagle', theme: 'eagle', style: 'elegant' as const },
+    { id: 'lion', icon: '🦁', name: 'Lion', theme: 'lion', style: 'aggressive' as const },
+    { id: 'phoenix', icon: '🔥', name: 'Phoenix', theme: 'phoenix', style: 'modern' as const },
+    { id: 'wolf', icon: '🐺', name: 'Wolf', theme: 'wolf', style: 'classic' as const },
+    { id: 'cards', icon: '🂡', name: 'Cards', theme: 'playing cards and poker chips', style: 'elegant' as const },
+    { id: 'crown', icon: '👑', name: 'Crown', theme: 'royal crown with poker elements', style: 'elegant' as const },
+    { id: 'diamond', icon: '💎', name: 'Diamond', theme: 'diamond gemstone', style: 'modern' as const },
+    { id: 'skull', icon: '💀', name: 'Skull', theme: 'skull with poker elements', style: 'aggressive' as const },
+    { id: 'tiger', icon: '🐯', name: 'Tiger', theme: 'tiger', style: 'playful' as const },
+    { id: 'spade', icon: '♠️', name: 'Spade', theme: 'spade suit symbol', style: 'classic' as const },
 ];
 
-function LogoGeneratorModal({ onSelect, onClose }: LogoGeneratorModalProps) {
-    const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorModalProps) {
+    const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
     const handleGenerate = async () => {
-        if (!selectedTemplate) return;
+        if (!selectedPreset) return;
 
         setIsGenerating(true);
+        setError(null);
+        setPreviewUrl(null);
 
         try {
-            const template = LOGO_TEMPLATES.find(t => t.id === selectedTemplate);
-            if (!template) return;
+            const preset = LOGO_PRESETS.find(p => p.id === selectedPreset);
+            if (!preset) return;
 
-            // Logo size matching ClubCardGenerator logo area (340x300)
-            // Use 340x340 square for best fit in the card template
-            const LOGO_SIZE = 340;
-            const canvas = document.createElement('canvas');
-            canvas.width = LOGO_SIZE;
-            canvas.height = LOGO_SIZE;
-            const ctx = canvas.getContext('2d')!;
+            // Import the service dynamically to avoid circular deps
+            const { generateClubLogo } = await import('../../services/LogoGeneratorService');
 
-            // Background gradient - dark metallic theme matching Shark Club
-            const gradient = ctx.createRadialGradient(
-                LOGO_SIZE / 2, LOGO_SIZE / 2, 0,
-                LOGO_SIZE / 2, LOGO_SIZE / 2, LOGO_SIZE / 2
-            );
-            gradient.addColorStop(0, template.color);
-            gradient.addColorStop(0.7, '#1a2744');
-            gradient.addColorStop(1, '#0d1b2a');
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, LOGO_SIZE, LOGO_SIZE);
+            const result = await generateClubLogo({
+                clubName: clubName || 'Poker Club',
+                style: preset.style,
+                theme: preset.theme,
+            });
 
-            // Draw icon - scaled to match logo area
-            ctx.font = `${Math.floor(LOGO_SIZE * 0.5)}px serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(template.icon, LOGO_SIZE / 2, LOGO_SIZE / 2);
-
-            const logoDataUrl = canvas.toDataURL('image/png');
-            onSelect(logoDataUrl);
+            if (result.success && result.logoUrl) {
+                setPreviewUrl(result.logoUrl);
+            } else {
+                setError(result.error || 'Failed to generate logo');
+            }
         } catch (err) {
             console.error('Failed to generate logo:', err);
+            setError(err instanceof Error ? err.message : 'Unknown error');
         } finally {
             setIsGenerating(false);
+        }
+    };
+
+    const handleUsePreview = () => {
+        if (previewUrl) {
+            onSelect(previewUrl);
         }
     };
 
     return (
         <div className={styles.logoGeneratorOverlay} onClick={onClose}>
             <div className={styles.logoGeneratorModal} onClick={(e) => e.stopPropagation()}>
-                <h3>Choose a Logo Template</h3>
-                <div className={styles.templateGrid}>
-                    {LOGO_TEMPLATES.map(template => (
-                        <button
-                            key={template.id}
-                            className={`${styles.templateBtn} ${selectedTemplate === template.id ? styles.selected : ''}`}
-                            onClick={() => setSelectedTemplate(template.id)}
-                            style={{ borderColor: template.color }}
-                        >
-                            <span className={styles.templateIcon}>{template.icon}</span>
-                            <span className={styles.templateName}>{template.name}</span>
-                        </button>
-                    ))}
-                </div>
-                <div className={styles.logoGeneratorActions}>
-                    <button
-                        className={styles.generateBtn}
-                        onClick={handleGenerate}
-                        disabled={!selectedTemplate || isGenerating}
-                    >
-                        {isGenerating ? 'Generating...' : 'Use This Logo'}
-                    </button>
-                    <button className={styles.cancelBtn} onClick={onClose}>
-                        Cancel
-                    </button>
-                </div>
+                <h3>🤖 AI Logo Generator</h3>
+
+                {!previewUrl ? (
+                    <>
+                        <p className={styles.generatorHint}>
+                            Select a theme and our AI will create a unique logo for your club
+                        </p>
+                        <div className={styles.templateGrid}>
+                            {LOGO_PRESETS.map(preset => (
+                                <button
+                                    key={preset.id}
+                                    className={`${styles.templateBtn} ${selectedPreset === preset.id ? styles.selected : ''}`}
+                                    onClick={() => setSelectedPreset(preset.id)}
+                                    disabled={isGenerating}
+                                >
+                                    <span className={styles.templateIcon}>{preset.icon}</span>
+                                    <span className={styles.templateName}>{preset.name}</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        {error && (
+                            <div className={styles.errorMessage}>
+                                ⚠️ {error}
+                            </div>
+                        )}
+
+                        <div className={styles.logoGeneratorActions}>
+                            <button
+                                className={styles.generateBtn}
+                                onClick={handleGenerate}
+                                disabled={!selectedPreset || isGenerating}
+                            >
+                                {isGenerating ? (
+                                    <>
+                                        <span className={styles.spinner}>⏳</span>
+                                        Generating...
+                                    </>
+                                ) : (
+                                    '🎨 Generate Logo'
+                                )}
+                            </button>
+                            <button className={styles.cancelBtn} onClick={onClose}>
+                                Cancel
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className={styles.previewContainer}>
+                            <img src={previewUrl} alt="Generated Logo" className={styles.previewImage} />
+                        </div>
+
+                        <div className={styles.logoGeneratorActions}>
+                            <button
+                                className={styles.generateBtn}
+                                onClick={handleUsePreview}
+                            >
+                                ✓ Use This Logo
+                            </button>
+                            <button
+                                className={styles.cancelBtn}
+                                onClick={() => {
+                                    setPreviewUrl(null);
+                                    setSelectedPreset(null);
+                                }}
+                            >
+                                Try Another
+                            </button>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );
