@@ -48,7 +48,7 @@ export async function generateClubLogo(options: LogoGenerationOptions): Promise<
                 prompt: prompt,
                 n: 1,
                 size: LOGO_SIZE,
-                quality: 'standard',
+                quality: 'hd', // HD quality for premium photorealistic images
                 response_format: 'b64_json', // Get base64 directly
             }),
         });
@@ -90,43 +90,46 @@ export async function generateClubLogo(options: LogoGenerationOptions): Promise<
 }
 
 /**
- * Build a detailed prompt for generating a poker club logo
+ * Build a detailed prompt for generating a PREMIUM poker club image
+ * Style: Photorealistic, cyberpunk/sci-fi, like the Shark Club card
  */
 function buildLogoPrompt(clubName: string, style: string, theme?: string, colorScheme?: string): string {
-    // Base prompt with specific requirements for club logos
-    let prompt = `Create a professional poker club logo for "${clubName}". `;
+    // Premium prompt designed to match the Shark Club card aesthetic
+    let prompt = `Create a PHOTOREALISTIC, CINEMATIC image of a ${theme || 'powerful creature'} for a premium poker club. `;
 
-    // Style-specific instructions
-    const styleInstructions: Record<string, string> = {
-        modern: 'Use clean lines, geometric shapes, and a sleek contemporary design. Minimalist but impactful.',
-        classic: 'Use traditional poker imagery like suits, chips, and cards. Vintage elegance with gold accents.',
-        aggressive: 'Bold, powerful design with sharp angles and intense imagery. Convey strength and dominance.',
-        elegant: 'Sophisticated and luxurious look with refined details. Premium feel with subtle metallic accents.',
-        playful: 'Fun and energetic design with vibrant colors and dynamic elements. Approachable but professional.',
+    // Theme-specific descriptions for photorealistic rendering
+    const themeDescriptions: Record<string, string> = {
+        'shark': 'A massive great white shark swimming through dark water, mouth slightly open showing teeth, powerful and menacing',
+        'dragon': 'A detailed dragon head with glowing eyes, scales glistening with metallic sheen, breathing subtle wisps of fire',
+        'eagle': 'A majestic bald eagle with piercing golden eyes, feathers detailed and realistic, wings spread',
+        'lion': 'A powerful male lion with a full mane, intense golden eyes, regal and commanding presence',
+        'phoenix': 'A magnificent phoenix bird engulfed in flowing flames, wings spread wide, rising from embers',
+        'wolf': 'A fierce gray wolf with piercing ice-blue eyes, detailed fur texture, howling or snarling',
+        'playing cards and poker chips': 'Luxurious poker cards (showing aces) and high-end casino chips arranged elegantly, gold and platinum',
+        'royal crown with poker elements': 'An ornate royal crown with embedded jewels, surrounded by poker card suits in gold',
+        'diamond gemstone': 'A brilliant-cut diamond gemstone catching light with rainbow refractions, set against dark velvet',
+        'skull with poker elements': 'A metallic chrome skull with glowing red eyes, surrounded by poker chips and flames',
+        'tiger': 'A powerful Bengal tiger with intense amber eyes, detailed orange and black striped fur, prowling stance',
+        'spade suit symbol': 'A 3D rendered spade symbol in polished obsidian with gold edges, floating with reflective lighting',
     };
-    prompt += styleInstructions[style] || styleInstructions.modern;
 
-    // Theme element
-    if (theme) {
-        prompt += ` Incorporate a ${theme} as the central visual element. `;
-    }
+    const themeDesc = themeDescriptions[theme || ''] || `a powerful, photorealistic ${theme}`;
+    prompt += themeDesc + '. ';
 
-    // Color scheme
-    if (colorScheme) {
-        prompt += ` Use a ${colorScheme} color palette. `;
-    }
-
-    // Technical requirements for the output
+    // Cyberpunk/sci-fi environment matching Shark Club style
     prompt += `
-        IMPORTANT REQUIREMENTS:
-        - Square format, centered composition
-        - Dark background (navy blue or black) that works well on dark UI
-        - High contrast for visibility at small sizes
-        - No text or letters in the logo (club name will be added separately)
+        CRITICAL STYLE REQUIREMENTS - MATCH THIS EXACTLY:
+        - PHOTOREALISTIC digital art, NOT cartoon, NOT illustrated, NOT anime
+        - Cyberpunk/sci-fi underwater or futuristic environment
+        - Dramatic lighting: deep blue and purple neon glow colors
+        - Dark background with atmospheric fog or particles
+        - Cinematic quality like a AAA video game or Hollywood movie
+        - The creature/subject fills 70% of the frame
+        - Add subtle metallic reflections and lens flares
         - Professional esports/gaming aesthetic
-        - Suitable for a poker club card design
-        - Icon-style logo with clean edges
-        - Glowing or metallic accents appreciated
+        - Premium, high-end, luxurious feel
+        - NO TEXT, NO LETTERS, NO WORDS anywhere in the image
+        - Ultra high detail, 8K quality rendering
     `;
 
     return prompt;
