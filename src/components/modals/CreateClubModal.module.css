@@ -29,8 +29,8 @@
    ───────────────────────────────────────────────────────────────────────────── */
 .modalContainer {
     position: relative;
-    width: 100%;
-    max-width: 500px;
+    width: 95%;
+    max-width: 600px;
     aspect-ratio: 1024 / 700;
     /* Match frame image aspect ratio approx */
 }
