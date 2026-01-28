@@ -59,8 +59,10 @@ export const ClubStatsPanel: React.FC<ClubStatsPanelProps> = ({
     return (
         <div
             ref={containerRef}
+            className="club-stats-panel-container"
             style={{
                 width: '100%',
+                height: '100%',
                 display: 'block',
                 pointerEvents: 'none',
                 position: 'relative'
@@ -69,8 +71,19 @@ export const ClubStatsPanel: React.FC<ClubStatsPanelProps> = ({
             {/* Inject the full VectorMagic SVG - text elements updated dynamically via useEffect */}
             <div
                 dangerouslySetInnerHTML={{ __html: clubStatsPanelSvgRaw }}
-                style={{ display: 'block', width: '100%' }}
+                style={{
+                    display: 'block',
+                    width: '100%',
+                    height: '100%'
+                }}
             />
+            <style>{`
+                .club-stats-panel-container svg {
+                    width: 100% !important;
+                    height: 100% !important;
+                    display: block;
+                }
+            `}</style>
         </div>
     );
 };
