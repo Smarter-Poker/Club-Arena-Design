@@ -1045,47 +1045,56 @@
     letter-spacing: 1px;
 }
 
-/* Positioned stat values inside the existing card boxes */
-/* These positions COVER the baked-in placeholder numbers on shark-club-card.jpg */
+/* ═══════════════════════════════════════════════════════════════
+   SHARK CLUB CARD STAT VALUES
+   Using exact specs from design template:
+   - Side numbers: Roboto Bold, 28px, #FFFFFF, cyan glow
+   - Center number: Roboto Bold, 54px, #E0FFFF, green-cyan glow
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Base styles for all stat values */
 .statMembersValue,
 .statLevelValue,
 .statActiveValue {
     position: absolute;
-    font-size: 24px;
-    font-weight: 800;
-    color: #00d4ff;
-    text-shadow: 0 0 15px rgba(0, 200, 255, 0.8);
+    font-family: 'Roboto', sans-serif;
+    font-weight: 700;
     text-align: center;
     pointer-events: none;
-    /* LARGE dark background to completely cover baked-in numbers */
-    background: #0a1020;
-    padding: 0;
-    border-radius: 0;
-    width: 100px;
-    height: 42px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
-/* Total Members box - left position (covers "72,850") */
-.statMembersValue {
-    bottom: 22px;
-    left: 18px;
+/* Side numbers: Total Members & Active Players */
+.statMembersValue,
+.statActiveValue {
+    font-size: 28px;
+    color: #FFFFFF;
+    text-shadow: 0px 0px 8px rgba(0, 212, 255, 0.6);
 }
 
-/* Club Level box - center position (covers "50") */
+/* Center number: Club Level - larger focal point */
 .statLevelValue {
-    bottom: 22px;
+    font-size: 54px;
+    color: #E0FFFF;
+    text-shadow: 0px 0px 15px rgba(0, 255, 170, 0.5);
+}
+
+/* Position: Total Members box - left */
+.statMembersValue {
+    bottom: 45px;
+    left: 45px;
+}
+
+/* Position: Club Level box - center */
+.statLevelValue {
+    bottom: 30px;
     left: 50%;
     transform: translateX(-50%);
-    width: 80px;
 }
 
-/* Active Players box - right position (covers "18,211") */
+/* Position: Active Players box - right */
 .statActiveValue {
-    bottom: 22px;
-    right: 18px;
+    bottom: 45px;
+    right: 45px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════

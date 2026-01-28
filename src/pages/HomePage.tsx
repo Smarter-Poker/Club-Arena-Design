@@ -483,10 +483,10 @@ export default function HomePage() {
                         }}
                     >
                         <img src={SHARK_CLUB_CARD} alt="Shark Club" className={styles.sharkClubImage} />
-                        {/* Values positioned inside the existing card's stat boxes */}
-                        <span className={styles.statMembersValue}>{sharkClubStats.totalMembers}</span>
-                        <span className={styles.statLevelValue}>Lv.{sharkClubStats.clubLevel}</span>
-                        <span className={styles.statActiveValue}>{sharkClubStats.activePlayers}</span>
+                        {/* Values positioned inside the card's stat boxes - exact design spec */}
+                        <span className={styles.statMembersValue}>{sharkClubStats.totalMembers.toLocaleString()}</span>
+                        <span className={styles.statLevelValue}>{sharkClubStats.clubLevel}</span>
+                        <span className={styles.statActiveValue}>{sharkClubStats.activePlayers.toLocaleString()}</span>
                     </div>
                 </div>
 
