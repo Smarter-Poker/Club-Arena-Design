@@ -1051,17 +1051,18 @@
 .statLevelValue,
 .statActiveValue {
     position: absolute;
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 800;
     color: #00d4ff;
     text-shadow: 0 0 15px rgba(0, 200, 255, 0.8);
     text-align: center;
     pointer-events: none;
-    /* FULL WIDTH dark background to completely cover baked-in numbers */
-    background: #0a1525;
-    padding: 6px 0;
-    border-radius: 4px;
-    width: 90px;
+    /* LARGE dark background to completely cover baked-in numbers */
+    background: #0a1020;
+    padding: 0;
+    border-radius: 0;
+    width: 100px;
+    height: 42px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1069,21 +1070,22 @@
 
 /* Total Members box - left position (covers "72,850") */
 .statMembersValue {
-    bottom: 28px;
-    left: 28px;
+    bottom: 22px;
+    left: 18px;
 }
 
 /* Club Level box - center position (covers "50") */
 .statLevelValue {
-    bottom: 28px;
+    bottom: 22px;
     left: 50%;
     transform: translateX(-50%);
+    width: 80px;
 }
 
 /* Active Players box - right position (covers "18,211") */
 .statActiveValue {
-    bottom: 28px;
-    right: 28px;
+    bottom: 22px;
+    right: 18px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
