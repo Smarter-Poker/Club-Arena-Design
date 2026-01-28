@@ -8119,8 +8119,8 @@
         }
     </style>
     <!-- Dynamic text elements updated via JavaScript -->
-    <text id="total-members" class="stat-number" x="128" y="1270" font-size="52">72,850</text>
-    <text id="club-level" class="stat-number" x="384" y="1270" font-size="52">50</text>
-    <text id="active-players" class="stat-number" x="640" y="1270" font-size="52">18,211</text>
+    <text id="total-members" class="stat-number" x="128" y="1245" font-size="52">72,850</text>
+    <text id="club-level" class="stat-number" x="384" y="1245" font-size="52">50</text>
+    <text id="active-players" class="stat-number" x="640" y="1245" font-size="52">18,211</text>
 </svg>
 
