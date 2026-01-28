@@ -1,7 +1,7 @@
 /**
- * ClubStatsPanel - Uses the VectorMagic SVG with <object> embedding
+ * ClubStatsPanel - Uses the VectorMagic SVG with Vite asset import
  * 
- * This component embeds the user's exact SVG design using the <object> tag
+ * This component embeds the user's exact SVG design using Vite's asset import
  * and updates the text elements (with IDs) via JavaScript after the SVG loads.
  * 
  * The SVG file must have these text elements with IDs:
@@ -11,6 +11,8 @@
  */
 
 import React, { useRef, useEffect } from 'react';
+// Import the SVG as a URL - Vite will bundle it properly
+import clubStatsPanelSvg from '../../../public/club-stats-panel.svg';
 
 interface ClubStatsPanelProps {
     totalMembers: number;
@@ -74,7 +76,7 @@ export const ClubStatsPanel: React.FC<ClubStatsPanelProps> = ({
         <object
             ref={objectRef}
             type="image/svg+xml"
-            data="/club-stats-panel.svg"
+            data={clubStatsPanelSvg}
             style={{
                 width: '100%',
                 display: 'block',
