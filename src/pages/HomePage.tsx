@@ -469,7 +469,7 @@ export default function HomePage() {
                 </div>
 
                 {/* ═══════════════════════════════════════════════════════════════════════
-                    SHARK CLUB CARD - Center, original position
+                    SHARK CLUB CARD - Using VectorMagic SVG with dynamic text elements
                 ═══════════════════════════════════════════════════════════════════════ */}
                 <div className={styles.centerCardRow}>
                     <div
@@ -483,15 +483,12 @@ export default function HomePage() {
                             }
                         }}
                     >
-                        <img src={SHARK_CLUB_CARD} alt="Shark Club" className={styles.sharkClubImage} />
-                        {/* SVG stats panel with dynamic values - positioned at bottom of card */}
-                        <div className={styles.statsOverlay}>
-                            <ClubStatsPanel
-                                totalMembers={sharkClubStats.totalMembers}
-                                clubLevel={sharkClubStats.clubLevel}
-                                activePlayers={sharkClubStats.activePlayers}
-                            />
-                        </div>
+                        {/* Full VectorMagic SVG - ClubStatsPanel handles dynamic text updates */}
+                        <ClubStatsPanel
+                            totalMembers={sharkClubStats.totalMembers}
+                            clubLevel={sharkClubStats.clubLevel}
+                            activePlayers={sharkClubStats.activePlayers}
+                        />
                     </div>
                 </div>
 
