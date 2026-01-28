@@ -16,6 +16,10 @@
             "destination": "/videos/:path*"
         },
         {
+            "source": "/club-stats-panel.svg",
+            "destination": "/club-stats-panel.svg"
+        },
+        {
             "source": "/hub/club-arena/:path*",
             "destination": "/index.html"
         },
