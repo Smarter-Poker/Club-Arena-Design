@@ -1046,36 +1046,40 @@
 }
 
 /* Positioned stat values inside the existing card boxes */
-/* These positions match the baked-in box locations on shark-club-card.jpg */
+/* These positions COVER the baked-in placeholder numbers on shark-club-card.jpg */
 .statMembersValue,
 .statLevelValue,
 .statActiveValue {
     position: absolute;
-    font-size: 28px;
+    font-size: 22px;
     font-weight: 800;
     color: #00d4ff;
     text-shadow: 0 0 15px rgba(0, 200, 255, 0.8);
     text-align: center;
     pointer-events: none;
+    /* Dark background to fully cover baked-in numbers */
+    background: #0a1525;
+    padding: 4px 12px;
+    border-radius: 4px;
 }
 
-/* Total Members box - left position */
+/* Total Members box - left position (covers "72,850") */
 .statMembersValue {
-    bottom: 85px;
-    left: 70px;
+    bottom: 32px;
+    left: 52px;
 }
 
-/* Club Level box - center position */
+/* Club Level box - center position (covers "50") */
 .statLevelValue {
-    bottom: 85px;
+    bottom: 32px;
     left: 50%;
     transform: translateX(-50%);
 }
 
-/* Active Players box - right position */
+/* Active Players box - right position (covers "18,211") */
 .statActiveValue {
-    bottom: 85px;
-    right: 70px;
+    bottom: 32px;
+    right: 52px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
