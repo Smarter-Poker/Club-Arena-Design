@@ -24,7 +24,7 @@
             "destination": "/index.html"
         },
         {
-            "source": "/((?!assets/|images/|videos/).*)",
+            "source": "/((?!assets/|images/|videos/|.*\\.svg$).*)",
             "destination": "/index.html"
         }
     ],
