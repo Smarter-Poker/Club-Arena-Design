@@ -14,6 +14,7 @@ import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
 import { useToast } from '../common/Toast';
 import { ClubCardGenerator } from '../../services/ClubCardGenerator';
+import haptic from '../../services/HapticService';
 import styles from './CreateClubModal.module.css';
 
 interface CreateClubModalProps {
@@ -209,7 +210,7 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
                 />
 
                 {/* Close button - positioned over the X in frame */}
-                <button className={styles.closeButton} onClick={onClose} aria-label="Close" />
+                <button className={styles.closeButton} onClick={() => { haptic.light(); onClose(); }} aria-label="Close" />
 
                 {/* Club Name Input - positioned over the input field in frame */}
                 <input
@@ -225,7 +226,7 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
                 {/* Upload Logo button zone */}
                 <button
                     className={styles.uploadLogoBtn}
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => { haptic.medium(); fileInputRef.current?.click(); }}
                     aria-label="Upload Logo"
                 >
                     {logoPreview && (
@@ -236,7 +237,7 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
                 {/* Create Logo button zone */}
                 <button
                     className={styles.createLogoBtn}
-                    onClick={() => setShowLogoGenerator(true)}
+                    onClick={() => { haptic.medium(); setShowLogoGenerator(true); }}
                     aria-label="Create Logo"
                 >
                     {!logoPreview && <span className={styles.plusIcon}>+</span>}
@@ -256,15 +257,16 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
                     <input
                         type="checkbox"
                         checked={hasAgreed}
-                        onChange={(e) => setHasAgreed(e.target.checked)}
+                        onChange={(e) => { haptic.selection(); setHasAgreed(e.target.checked); }}
                         className={styles.termsCheckbox}
                     />
+                    <span className={styles.checkboxVisual} />
                 </label>
 
                 {/* CREATE button zone */}
                 <button
                     className={styles.createButton}
-                    onClick={handleCreate}
+                    onClick={() => { haptic.success(); handleCreate(); }}
                     disabled={isCreating || !hasAgreed || !clubName.trim() || !logoPreview}
                     aria-label="Create Club"
                 >

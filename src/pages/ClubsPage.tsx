@@ -16,6 +16,7 @@ import { CardSkeleton } from '../components/skeletons/CardSkeleton';
 import { useToast } from '../components/common/Toast';
 import SmarterHeader from '../components/layout/SmarterHeader';
 import IntroVideo from '../components/IntroVideo';
+import haptic from '../services/HapticService';
 import styles from './ClubsPage.module.css';
 
 type Tab = 'discover' | 'my-clubs' | 'create';
@@ -176,19 +177,19 @@ export default function ClubsPage() {
                 <div className={styles.tabs}>
                     <button
                         className={`${styles.tab} ${activeTab === 'discover' ? styles.active : ''}`}
-                        onClick={() => setActiveTab('discover')}
+                        onClick={() => { haptic.selection(); setActiveTab('discover'); }}
                     >
                         Discover
                     </button>
                     <button
                         className={`${styles.tab} ${activeTab === 'my-clubs' ? styles.active : ''}`}
-                        onClick={() => setActiveTab('my-clubs')}
+                        onClick={() => { haptic.selection(); setActiveTab('my-clubs'); }}
                     >
                         My Clubs
                     </button>
                     <button
                         className={`${styles.tab} ${activeTab === 'create' ? styles.active : ''}`}
-                        onClick={() => setActiveTab('create')}
+                        onClick={() => { haptic.selection(); setActiveTab('create'); }}
                     >
                         ➕ Create Club
                     </button>
@@ -222,7 +223,7 @@ export default function ClubsPage() {
                                     <button
                                         className="btn btn-primary"
                                         disabled={joinClubId.length < 6 || isJoining}
-                                        onClick={handleJoinClub}
+                                        onClick={() => { haptic.medium(); handleJoinClub(); }}
                                     >
                                         {isJoining ? 'Joining...' : 'Join Club'}
                                     </button>
@@ -271,7 +272,7 @@ export default function ClubsPage() {
                                             <button
                                                 className="btn btn-primary"
                                                 style={{ width: '100%' }}
-                                                onClick={() => navigate(`/clubs/${membership.club.id}`)}
+                                                onClick={() => { haptic.success(); navigate(`/clubs/${membership.club.id}`); }}
                                             >
                                                 Enter Club
                                             </button>
@@ -327,7 +328,7 @@ export default function ClubsPage() {
                                             <input
                                                 type="checkbox"
                                                 checked={isPublic}
-                                                onChange={(e) => setIsPublic(e.target.checked)}
+                                                onChange={(e) => { haptic.selection(); setIsPublic(e.target.checked); }}
                                             />
                                             <span>Public (anyone can find)</span>
                                         </label>
@@ -335,7 +336,7 @@ export default function ClubsPage() {
                                             <input
                                                 type="checkbox"
                                                 checked={requiresApproval}
-                                                onChange={(e) => setRequiresApproval(e.target.checked)}
+                                                onChange={(e) => { haptic.selection(); setRequiresApproval(e.target.checked); }}
                                             />
                                             <span>Require approval for new members</span>
                                         </label>
@@ -345,7 +346,7 @@ export default function ClubsPage() {
                                 <button
                                     className="btn btn-primary btn-lg"
                                     style={{ width: '100%' }}
-                                    onClick={handleCreateClub}
+                                    onClick={() => { haptic.success(); handleCreateClub(); }}
                                     disabled={isCreating || !clubName.trim()}
                                 >
                                     {isCreating ? 'Creating...' : 'Create Club'}

@@ -16,6 +16,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
+import haptic from '../services/HapticService';
 import './ClubHomePage.css';
 
 // Types
@@ -245,14 +246,14 @@ export default function ClubHomePage() {
                 QUICK ACTION ICONS ROW
             ═══════════════════════════════════════════════════════════════════ */}
             <div className="club-home__actions-row">
-                <button className="club-home__back-btn" onClick={() => navigate('/clubs')}>
+                <button className="club-home__back-btn" onClick={() => { haptic.light(); navigate('/clubs'); }}>
                     ‹‹
                 </button>
                 <div className="club-home__quick-icons">
-                    <button className="quick-icon" title="Events">
+                    <button className="quick-icon" title="Events" onClick={() => haptic.selection()}>
                         <span className="icon-events"></span>
                     </button>
-                    <button className="quick-icon" title="Leaderboard">
+                    <button className="quick-icon" title="Leaderboard" onClick={() => haptic.selection()}>
                         <span className="icon-leaderboard"></span>
                     </button>
                 </div>
@@ -279,7 +280,7 @@ export default function ClubHomePage() {
                         <div className="club-card__meta">
                             <span className="club-card__id">ID: {club.club_id}</span>
                             <span className="club-card__members">{club.member_count || 0}</span>
-                            <button className="club-card__share" title="Share">
+                            <button className="club-card__share" title="Share" onClick={() => haptic.medium()}>
                                 <span className="icon-link"></span>
                             </button>
                         </div>
@@ -289,7 +290,7 @@ export default function ClubHomePage() {
                     <div className="wallet-row gold">
                         <span className="wallet-icon gold-icon"></span>
                         <span className="wallet-amount">{formatNumber(wallet.gold)}</span>
-                        <button className="wallet-add-btn">+</button>
+                        <button className="wallet-add-btn" onClick={() => haptic.medium()}>+</button>
                     </div>
                     <div className="wallet-row diamond">
                         <span className="wallet-icon diamond-icon"></span>
@@ -314,12 +315,12 @@ export default function ClubHomePage() {
                     <button
                         key={filter}
                         className={`filter-tab ${activeFilter === filter ? 'active' : ''}`}
-                        onClick={() => setActiveFilter(filter)}
+                        onClick={() => { haptic.selection(); setActiveFilter(filter); }}
                     >
                         {filter}
                     </button>
                 ))}
-                <button className="filter-more">&#9660;</button>
+                <button className="filter-more" onClick={() => haptic.light()}>▼</button>
             </div>
 
             {/* ═══════════════════════════════════════════════════════════════════
@@ -381,8 +382,8 @@ export default function ClubHomePage() {
             {/* ═══════════════════════════════════════════════════════════════════
                 FLOATING ACTION BUTTON (Bottom Right)
             ═══════════════════════════════════════════════════════════════════ */}
-            <button className="club-home__fab">
-                <span className="fab-icon">&#8801;</span>
+            <button className="club-home__fab" onClick={() => haptic.medium()}>
+                <span className="fab-icon">≡</span>
             </button>
         </div>
     );
