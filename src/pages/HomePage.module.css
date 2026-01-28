@@ -1050,6 +1050,7 @@
    Using exact specs from design template:
    - Side numbers: Roboto Bold, 28px, #FFFFFF, cyan glow
    - Center number: Roboto Bold, 54px, #E0FFFF, green-cyan glow
+   Positions calibrated to 360x604px card
    ═══════════════════════════════════════════════════════════════ */
 
 /* Base styles for all stat values */
@@ -1061,40 +1062,47 @@
     font-weight: 700;
     text-align: center;
     pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* Side numbers: Total Members & Active Players */
+/* Side numbers: Total Members & Active Players - white, 28px */
 .statMembersValue,
 .statActiveValue {
-    font-size: 28px;
+    font-size: 26px;
     color: #FFFFFF;
     text-shadow: 0px 0px 8px rgba(0, 212, 255, 0.6);
+    width: 90px;
+    height: 40px;
 }
 
-/* Center number: Club Level - larger focal point */
+/* Center number: Club Level - larger focal point, cyan tinted, 54px */
 .statLevelValue {
-    font-size: 54px;
+    font-size: 48px;
     color: #E0FFFF;
     text-shadow: 0px 0px 15px rgba(0, 255, 170, 0.5);
+    width: 100px;
+    height: 50px;
 }
 
-/* Position: Total Members box - left */
+/* Position: Total Members - left stat box */
 .statMembersValue {
-    bottom: 45px;
-    left: 45px;
+    bottom: 28px;
+    left: 22px;
 }
 
-/* Position: Club Level box - center */
+/* Position: Club Level - center stat box */
 .statLevelValue {
-    bottom: 30px;
+    bottom: 18px;
     left: 50%;
     transform: translateX(-50%);
 }
 
-/* Position: Active Players box - right */
+/* Position: Active Players - right stat box */
 .statActiveValue {
-    bottom: 45px;
-    right: 45px;
+    bottom: 28px;
+    right: 22px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
