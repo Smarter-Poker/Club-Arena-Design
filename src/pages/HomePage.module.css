@@ -1020,43 +1020,6 @@
     z-index: 5;
 }
 
-/* Stats overlay for Shark Club card */
-.sharkClubStats {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 20px;
-    padding: 12px 24px;
-    background: rgba(0, 10, 25, 0.85);
-    border: 1px solid rgba(0, 200, 255, 0.4);
-    border-radius: 12px;
-    backdrop-filter: blur(8px);
-}
-
-.statBox {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-}
-
-.statValue {
-    font-size: 18px;
-    font-weight: 800;
-    color: #00d4ff;
-    text-shadow: 0 0 10px rgba(0, 200, 255, 0.5);
-}
-
-.statLabel {
-    font-size: 9px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.7);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
 /* ═══════════════════════════════════════════════════════════════
    SHARK CLUB CARD STAT VALUES
    Using exact specs from design template:
