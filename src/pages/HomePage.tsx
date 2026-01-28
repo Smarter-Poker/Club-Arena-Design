@@ -17,6 +17,8 @@ import { ClubsService } from '../services/ClubsService';
 import { useToast } from '../components/common/Toast';
 import GlobalHeader from '../components/navigation/GlobalHeader';
 import CreateClubModal from '../components/modals/CreateClubModal';
+import FindPlayerModal from '../components/modals/FindPlayerModal';
+import haptic from '../services/HapticService';
 import styles from './HomePage.module.css';
 
 interface ClubCard {
@@ -88,6 +90,17 @@ export default function HomePage() {
     const [validClubId, setValidClubId] = useState<string | null>(null);
     const [referralCode, setReferralCode] = useState('');
     const joinInputRef = useRef<HTMLInputElement>(null);
+
+    // Find Player modal state
+    const [showFindPlayerModal, setShowFindPlayerModal] = useState(false);
+
+    // Shark Club stats state
+    const [sharkClubId, setSharkClubId] = useState<string | null>(null);
+    const [sharkClubStats, setSharkClubStats] = useState({
+        totalMembers: 0,
+        clubLevel: 1,
+        activePlayers: 0,
+    });
 
     // FIXED CANVAS SCALING - Lock at 600px, scale uniformly on smaller viewports
     const canvasRef = useRef<HTMLDivElement>(null);
@@ -165,6 +178,44 @@ export default function HomePage() {
             }
         }
         fetchUserData();
+    }, []);
+
+    // Fetch Shark Club stats
+    useEffect(() => {
+        async function fetchSharkClubStats() {
+            try {
+                // Find Shark Club by name pattern
+                const { data: club } = await supabase
+                    .from('clubs')
+                    .select('id, member_count, level')
+                    .ilike('name', '%shark%')
+                    .limit(1)
+                    .maybeSingle();
+
+                if (club) {
+                    setSharkClubId(club.id);
+                    setSharkClubStats({
+                        totalMembers: club.member_count || 0,
+                        clubLevel: club.level || 1,
+                        activePlayers: 0, // Will update with presence
+                    });
+
+                    // Get active players count from presence
+                    const { count } = await supabase
+                        .from('player_presence')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('club_id', club.id)
+                        .eq('status', 'playing');
+
+                    if (count !== null) {
+                        setSharkClubStats(prev => ({ ...prev, activePlayers: count }));
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to fetch Shark Club stats:', err);
+            }
+        }
+        fetchSharkClubStats();
     }, []);
 
     // ═══════════════════════════════════════════════════════════════════════════════
@@ -402,7 +453,7 @@ export default function HomePage() {
                         />
                         <button
                             className={styles.actionZoneCenter}
-                            onClick={() => navigate('/find-player')}
+                            onClick={() => { haptic.medium(); setShowFindPlayerModal(true); }}
                             aria-label="Find a Player"
                         />
                         <button
@@ -422,9 +473,31 @@ export default function HomePage() {
                 <div className={styles.centerCardRow}>
                     <div
                         className={styles.sharkClubCard}
-                        onClick={() => navigate('/clubs/shark-club')}
+                        onClick={() => {
+                            haptic.success();
+                            if (sharkClubId) {
+                                navigate(`/clubs/${sharkClubId}`);
+                            } else {
+                                toast.info('Shark Club not found. Join or create a club!');
+                            }
+                        }}
                     >
                         <img src={SHARK_CLUB_CARD} alt="Shark Club" className={styles.sharkClubImage} />
+                        {/* Stats overlay */}
+                        <div className={styles.sharkClubStats}>
+                            <div className={styles.statBox}>
+                                <span className={styles.statValue}>{sharkClubStats.totalMembers}</span>
+                                <span className={styles.statLabel}>Members</span>
+                            </div>
+                            <div className={styles.statBox}>
+                                <span className={styles.statValue}>Lv.{sharkClubStats.clubLevel}</span>
+                                <span className={styles.statLabel}>Level</span>
+                            </div>
+                            <div className={styles.statBox}>
+                                <span className={styles.statValue}>{sharkClubStats.activePlayers}</span>
+                                <span className={styles.statLabel}>Active</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -618,6 +691,12 @@ export default function HomePage() {
                     setShowCreateClubModal(false);
                     navigate(`/clubs/${clubId}`);
                 }}
+            />
+
+            {/* FIND A PLAYER MODAL */}
+            <FindPlayerModal
+                isOpen={showFindPlayerModal}
+                onClose={() => setShowFindPlayerModal(false)}
             />
 
             {/* Loading indicator */}
