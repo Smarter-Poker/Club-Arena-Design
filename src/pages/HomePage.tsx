@@ -185,12 +185,11 @@ export default function HomePage() {
     useEffect(() => {
         async function fetchSharkClubStats() {
             try {
-                // Find Shark Club by name pattern
+                // Find Shark Club by club_id = 25450
                 const { data: club } = await supabase
                     .from('clubs')
                     .select('id, member_count, level')
-                    .ilike('name', '%shark%')
-                    .limit(1)
+                    .eq('club_id', 25450)
                     .maybeSingle();
 
                 if (club) {
