@@ -18,6 +18,7 @@ import { useToast } from '../components/common/Toast';
 import GlobalHeader from '../components/navigation/GlobalHeader';
 import CreateClubModal from '../components/modals/CreateClubModal';
 import FindPlayerModal from '../components/modals/FindPlayerModal';
+import ClubStatsPanel from '../components/club/ClubStatsPanel';
 import haptic from '../services/HapticService';
 import styles from './HomePage.module.css';
 
@@ -483,10 +484,14 @@ export default function HomePage() {
                         }}
                     >
                         <img src={SHARK_CLUB_CARD} alt="Shark Club" className={styles.sharkClubImage} />
-                        {/* Values positioned inside the card's stat boxes - exact design spec */}
-                        <span className={styles.statMembersValue}>{sharkClubStats.totalMembers.toLocaleString()}</span>
-                        <span className={styles.statLevelValue}>{sharkClubStats.clubLevel}</span>
-                        <span className={styles.statActiveValue}>{sharkClubStats.activePlayers.toLocaleString()}</span>
+                        {/* SVG stats panel with dynamic values - positioned at bottom of card */}
+                        <div className={styles.statsOverlay}>
+                            <ClubStatsPanel
+                                totalMembers={sharkClubStats.totalMembers}
+                                clubLevel={sharkClubStats.clubLevel}
+                                activePlayers={sharkClubStats.activePlayers}
+                            />
+                        </div>
                     </div>
                 </div>
 
