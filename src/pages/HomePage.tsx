@@ -483,21 +483,10 @@ export default function HomePage() {
                         }}
                     >
                         <img src={SHARK_CLUB_CARD} alt="Shark Club" className={styles.sharkClubImage} />
-                        {/* Stats overlay */}
-                        <div className={styles.sharkClubStats}>
-                            <div className={styles.statBox}>
-                                <span className={styles.statValue}>{sharkClubStats.totalMembers}</span>
-                                <span className={styles.statLabel}>Members</span>
-                            </div>
-                            <div className={styles.statBox}>
-                                <span className={styles.statValue}>Lv.{sharkClubStats.clubLevel}</span>
-                                <span className={styles.statLabel}>Level</span>
-                            </div>
-                            <div className={styles.statBox}>
-                                <span className={styles.statValue}>{sharkClubStats.activePlayers}</span>
-                                <span className={styles.statLabel}>Active</span>
-                            </div>
-                        </div>
+                        {/* Values positioned inside the existing card's stat boxes */}
+                        <span className={styles.statMembersValue}>{sharkClubStats.totalMembers}</span>
+                        <span className={styles.statLevelValue}>Lv.{sharkClubStats.clubLevel}</span>
+                        <span className={styles.statActiveValue}>{sharkClubStats.activePlayers}</span>
                     </div>
                 </div>
 
