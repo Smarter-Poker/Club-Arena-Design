@@ -1,16 +1,12 @@
 /**
- * ClubStatsPanel - Uses the VectorMagic SVG with <object> embedding
+ * ClubStatsPanel - Inline SVG with dynamic text elements
  * 
- * This component embeds the user's exact SVG design using the <object> tag
- * and updates the text elements (with IDs) via JavaScript after the SVG loads.
- * 
- * The SVG file must have these text elements with IDs:
- * - total-members
- * - club-level
- * - active-players
+ * This component renders an inline SVG stats panel with an opaque background
+ * that covers the original card's baked-in stats. The text elements are
+ * dynamically updated via React props.
  */
 
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 
 interface ClubStatsPanelProps {
     totalMembers: number;
@@ -23,73 +19,89 @@ export const ClubStatsPanel: React.FC<ClubStatsPanelProps> = ({
     clubLevel,
     activePlayers
 }) => {
-    const objectRef = useRef<HTMLObjectElement>(null);
-
-    useEffect(() => {
-        const updateSvgText = () => {
-            if (!objectRef.current) return;
-
-            try {
-                const svgDoc = objectRef.current.getSVGDocument?.();
-                if (!svgDoc) return;
-
-                // Update total members
-                const totalMembersEl = svgDoc.getElementById('total-members');
-                if (totalMembersEl) {
-                    totalMembersEl.textContent = totalMembers.toLocaleString();
-                }
-
-                // Update club level
-                const clubLevelEl = svgDoc.getElementById('club-level');
-                if (clubLevelEl) {
-                    clubLevelEl.textContent = clubLevel.toString();
-                }
-
-                // Update active players
-                const activePlayersEl = svgDoc.getElementById('active-players');
-                if (activePlayersEl) {
-                    activePlayersEl.textContent = activePlayers.toLocaleString();
-                }
-            } catch (error) {
-                console.warn('Could not update SVG text elements:', error);
-            }
-        };
-
-        // Add load event listener
-        const objectEl = objectRef.current;
-        if (objectEl) {
-            objectEl.addEventListener('load', updateSvgText);
-            // Also try to update immediately in case it's already loaded
-            updateSvgText();
-        }
-
-        return () => {
-            if (objectEl) {
-                objectEl.removeEventListener('load', updateSvgText);
-            }
-        };
-    }, [totalMembers, clubLevel, activePlayers]);
-
     return (
-        <object
-            ref={objectRef}
-            type="image/svg+xml"
-            data="/club-stats-panel.svg"
-            style={{
-                width: '100%',
-                height: 'auto',
-                display: 'block',
-                pointerEvents: 'none'
-            }}
-            aria-label="Club Stats Panel"
+        <svg
+            width="100%"
+            viewBox="0 0 340 120"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{ maxWidth: '100%', display: 'block' }}
         >
-            {/* Fallback if SVG doesn't load */}
-            <div style={{ padding: '10px', textAlign: 'center', color: '#fff' }}>
-                <p>Members: {totalMembers.toLocaleString()}</p>
-                <p>Level: {clubLevel}</p>
-                <p>Active: {activePlayers.toLocaleString()}</p>
-            </div>
-        </object>
+            <defs>
+                <filter id="stat-glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                    <feMerge>
+                        <feMergeNode in="coloredBlur" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+                <linearGradient id="stats-bg" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style={{ stopColor: '#1a2530', stopOpacity: 1 }} />
+                    <stop offset="50%" style={{ stopColor: '#0c1218', stopOpacity: 1 }} />
+                    <stop offset="100%" style={{ stopColor: '#1a2530', stopOpacity: 1 }} />
+                </linearGradient>
+            </defs>
+
+            {/* OPAQUE background to cover the original card's baked-in stats */}
+            <rect x="0" y="0" width="340" height="120" fill="url(#stats-bg)" />
+
+            {/* Outer frame border */}
+            <rect x="2" y="2" width="336" height="116" fill="none" stroke="#2c3d4f" strokeWidth="2" rx="4" />
+            <rect x="5" y="5" width="330" height="110" fill="none" stroke="#1e2933" strokeWidth="1" rx="3" />
+
+            {/* Total Members - Left Column */}
+            <rect x="15" y="15" width="95" height="90" rx="3" fill="#0a0f14" stroke="#00d4ff" strokeWidth="1" opacity="0.7" />
+            <text x="62" y="38" textAnchor="middle" fill="#7cb3c0" fontSize="10" fontFamily="Arial, sans-serif" fontWeight="bold">
+                TOTAL MEMBERS
+            </text>
+            <text
+                x="62"
+                y="72"
+                textAnchor="middle"
+                fill="#ffffff"
+                fontSize="24"
+                fontFamily="Arial Black, sans-serif"
+                fontWeight="bold"
+                filter="url(#stat-glow)"
+            >
+                {totalMembers.toLocaleString()}
+            </text>
+
+            {/* Club Level - Center Column (prominent) */}
+            <rect x="120" y="15" width="100" height="90" rx="3" fill="#0a0f14" stroke="#00d4ff" strokeWidth="1.5" opacity="0.8" />
+            <text x="170" y="38" textAnchor="middle" fill="#7cb3c0" fontSize="10" fontFamily="Arial, sans-serif" fontWeight="bold">
+                CLUB LEVEL
+            </text>
+            <text
+                x="170"
+                y="78"
+                textAnchor="middle"
+                fill="#00d4ff"
+                fontSize="36"
+                fontFamily="Arial Black, sans-serif"
+                fontWeight="bold"
+                filter="url(#stat-glow)"
+            >
+                {clubLevel}
+            </text>
+
+            {/* Active Players - Right Column */}
+            <rect x="230" y="15" width="95" height="90" rx="3" fill="#0a0f14" stroke="#00d4ff" strokeWidth="1" opacity="0.7" />
+            <text x="277" y="38" textAnchor="middle" fill="#7cb3c0" fontSize="10" fontFamily="Arial, sans-serif" fontWeight="bold">
+                ACTIVE PLAYERS
+            </text>
+            <text
+                x="277"
+                y="72"
+                textAnchor="middle"
+                fill="#ffffff"
+                fontSize="24"
+                fontFamily="Arial Black, sans-serif"
+                fontWeight="bold"
+                filter="url(#stat-glow)"
+            >
+                {activePlayers.toLocaleString()}
+            </text>
+        </svg>
     );
 };
 
