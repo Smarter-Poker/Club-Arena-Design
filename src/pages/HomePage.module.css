@@ -1022,63 +1022,9 @@
 
 /* ═══════════════════════════════════════════════════════════════
    SHARK CLUB CARD STAT VALUES
-   Using exact specs from design template:
-   - Side numbers: Roboto Bold, 28px, #FFFFFF, cyan glow
-   - Center number: Roboto Bold, 54px, #E0FFFF, green-cyan glow
-   Positions calibrated to 360x604px card
+   All stats are now rendered directly in the SVG file.
+   No CSS overlays needed.
    ═══════════════════════════════════════════════════════════════ */
-
-/* Base styles for all stat values */
-.statMembersValue,
-.statLevelValue,
-.statActiveValue {
-    position: absolute;
-    font-family: 'Roboto', sans-serif;
-    font-weight: 700;
-    text-align: center;
-    pointer-events: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Side numbers: Total Members & Active Players - white, 28px */
-.statMembersValue,
-.statActiveValue {
-    font-size: 26px;
-    color: #FFFFFF;
-    text-shadow: 0px 0px 8px rgba(0, 212, 255, 0.6);
-    width: 90px;
-    height: 40px;
-}
-
-/* Center number: Club Level - larger focal point, cyan tinted, 54px */
-.statLevelValue {
-    font-size: 48px;
-    color: #E0FFFF;
-    text-shadow: 0px 0px 15px rgba(0, 255, 170, 0.5);
-    width: 100px;
-    height: 50px;
-}
-
-/* Position: Total Members - left stat box */
-.statMembersValue {
-    bottom: 28px;
-    left: 22px;
-}
-
-/* Position: Club Level - center stat box */
-.statLevelValue {
-    bottom: 18px;
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-/* Position: Active Players - right stat box */
-.statActiveValue {
-    bottom: 28px;
-    right: 22px;
-}
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    NO CLUBS MESSAGE
