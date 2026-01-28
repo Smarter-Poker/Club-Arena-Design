@@ -1,18 +1,21 @@
 /**
- * ClubStatsPanel - Uses the VectorMagic SVG with Vite asset import
+ * ClubStatsPanel - Uses dangerouslySetInnerHTML for exact SVG template
  * 
- * This component embeds the user's exact SVG design using Vite's asset import
- * and updates the text elements (with IDs) via JavaScript after the SVG loads.
+ * This approach:
+ * 1. Imports the VectorMagic SVG as raw text (Vite's ?raw suffix)
+ * 2. Injects it directly into the DOM via dangerouslySetInnerHTML
+ * 3. Updates the text elements by ID after render
  * 
- * The SVG file must have these text elements with IDs:
- * - total-members
- * - club-level
- * - active-players
+ * Benefits:
+ * - 100% exact look forever (no AI regeneration)
+ * - Numbers update instantly from Supabase
+ * - Scales perfectly on mobile/desktop
+ * - Small file size, fast loading
  */
 
 import React, { useRef, useEffect } from 'react';
-// Import the SVG as a URL - Vite will bundle it properly
-import clubStatsPanelSvg from '../../../public/club-stats-panel.svg';
+// Import the SVG as raw text content
+import clubStatsPanelSvgRaw from '../../assets/club-stats-panel.svg?raw';
 
 interface ClubStatsPanelProps {
     totalMembers: number;
@@ -25,72 +28,44 @@ export const ClubStatsPanel: React.FC<ClubStatsPanelProps> = ({
     clubLevel,
     activePlayers
 }) => {
-    const objectRef = useRef<HTMLObjectElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const updateSvgText = () => {
-            if (!objectRef.current) return;
+        if (!containerRef.current) return;
 
-            try {
-                const svgDoc = objectRef.current.getSVGDocument?.();
-                if (!svgDoc) return;
+        // Find the SVG element inside the container
+        const svg = containerRef.current.querySelector('svg');
+        if (!svg) return;
 
-                // Update total members
-                const totalMembersEl = svgDoc.getElementById('total-members');
-                if (totalMembersEl) {
-                    totalMembersEl.textContent = totalMembers.toLocaleString();
-                }
-
-                // Update club level
-                const clubLevelEl = svgDoc.getElementById('club-level');
-                if (clubLevelEl) {
-                    clubLevelEl.textContent = clubLevel.toString();
-                }
-
-                // Update active players
-                const activePlayersEl = svgDoc.getElementById('active-players');
-                if (activePlayersEl) {
-                    activePlayersEl.textContent = activePlayers.toLocaleString();
-                }
-            } catch (error) {
-                console.warn('Could not update SVG text elements:', error);
-            }
-        };
-
-        // Add load event listener
-        const objectEl = objectRef.current;
-        if (objectEl) {
-            objectEl.addEventListener('load', updateSvgText);
-            // Also try to update immediately in case it's already loaded
-            updateSvgText();
+        // Update total members
+        const totalMembersEl = svg.getElementById('total-members');
+        if (totalMembersEl) {
+            totalMembersEl.textContent = totalMembers.toLocaleString();
         }
 
-        return () => {
-            if (objectEl) {
-                objectEl.removeEventListener('load', updateSvgText);
-            }
-        };
+        // Update club level
+        const clubLevelEl = svg.getElementById('club-level');
+        if (clubLevelEl) {
+            clubLevelEl.textContent = clubLevel.toString();
+        }
+
+        // Update active players
+        const activePlayersEl = svg.getElementById('active-players');
+        if (activePlayersEl) {
+            activePlayersEl.textContent = activePlayers.toLocaleString();
+        }
     }, [totalMembers, clubLevel, activePlayers]);
 
     return (
-        <object
-            ref={objectRef}
-            type="image/svg+xml"
-            data={clubStatsPanelSvg}
+        <div
+            ref={containerRef}
             style={{
                 width: '100%',
                 display: 'block',
                 pointerEvents: 'none'
             }}
-            aria-label="Club Stats Panel"
-        >
-            {/* Fallback if SVG doesn't load */}
-            <div style={{ padding: '10px', textAlign: 'center', color: '#fff' }}>
-                <p>Members: {totalMembers.toLocaleString()}</p>
-                <p>Level: {clubLevel}</p>
-                <p>Active: {activePlayers.toLocaleString()}</p>
-            </div>
-        </object>
+            dangerouslySetInnerHTML={{ __html: clubStatsPanelSvgRaw }}
+        />
     );
 };
 
