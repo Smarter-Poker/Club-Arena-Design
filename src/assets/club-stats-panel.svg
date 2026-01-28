@@ -8108,30 +8108,19 @@
      d="M 726.00 1342.00 C 740.49 1342.69 753.63 1339.38 768.00 1343.05 L 768.00 1344.00 L 589.41 1344.00 C 598.85 1341.44 609.66 1344.27 619.37 1342.44 C 652.79 1341.53 692.20 1342.02 726.00 1342.00 Z"
      fill="#030305"
      id="path2019" />
-    <!-- Dynamic stats styling with glow effect -->
-    <defs>
-        <filter id="cyan-glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
-            <feMerge>
-                <feMergeNode in="blur"/>
-                <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-        </filter>
-    </defs>
+    <!-- Dynamic stats styling -->
     <style type="text/css">
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&amp;display=swap');
         .stat-number {
-            font-family: 'Bebas Neue', Impact, 'Arial Black', sans-serif;
+            font-family: 'Arial Black', 'Helvetica Neue', Impact, sans-serif;
             font-weight: bold;
-            fill: #00FFFF;
+            fill: #FFFFFF;
             text-anchor: middle;
             dominant-baseline: middle;
-            filter: url(#cyan-glow);
         }
     </style>
     <!-- Dynamic text elements updated via JavaScript -->
-    <text id="total-members" class="stat-number" x="128" y="1280" font-size="50">72,850</text>
-    <text id="club-level" class="stat-number" x="384" y="1280" font-size="50">50</text>
-    <text id="active-players" class="stat-number" x="640" y="1280" font-size="50">18,211</text>
+    <text id="total-members" class="stat-number" x="128" y="1295" font-size="56">72,850</text>
+    <text id="club-level" class="stat-number" x="384" y="1295" font-size="56">50</text>
+    <text id="active-players" class="stat-number" x="640" y="1295" font-size="56">18,211</text>
 </svg>
 
