@@ -4643,20 +4643,25 @@
 <path d="M 100.00 1022.01 C 95.59 1021.97 91.19 1022.10 86.79 1021.77 C 90.54 1020.76 96.50 1020.18 100.00 1022.01 Z" fill="#121210" />
 <path d="M 528.99 1021.07 C 553.30 1021.05 573.01 1020.44 597.00 1022.14 L 597.00 1024.00 L 469.45 1024.00 C 470.61 1023.44 471.79 1023.11 473.00 1023.02 C 481.31 1022.79 489.68 1023.31 497.97 1022.83 C 508.22 1020.76 518.63 1023.26 528.99 1021.07 Z" fill="#060705" />
 <path d="M 0.00 1021.78 C 5.33 1024.04 9.58 1021.62 15.00 1021.97 C 36.06 1021.90 57.17 1022.28 78.21 1021.77 C 81.10 1022.06 83.90 1022.06 86.79 1021.77 C 91.19 1022.10 95.59 1021.97 100.00 1022.01 C 101.33 1022.85 102.41 1023.03 103.97 1023.02 C 112.32 1023.02 120.67 1022.98 129.02 1022.98 C 130.71 1022.96 131.78 1023.20 133.26 1024.00 L 0.00 1024.00 L 0.00 1021.78 Z" fill="#050603" />
+<!-- Dynamic Text Elements for Stats - Add IDs for JavaScript targeting -->
+<style type="text/css">
+  .stat-text { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; font-weight: bold; fill: #ffffff; text-anchor: middle; }
+</style>
+<!-- Position these text elements over the existing number paths -->
+<!-- You may need to adjust X/Y positions to match exactly where the numbers appear -->
 
-<!-- Dynamic Stats - IDs for JavaScript binding -->
-<defs>
-  <style type="text/css">
-    .stat-value {
-      font-family: 'Inter', 'Segoe UI', 'Arial Black', sans-serif;
-      font-weight: 700;
-      fill: #ffffff;
-      text-anchor: middle;
-      dominant-baseline: middle;
-    }
-  </style>
-</defs>
-<text id="total-members" class="stat-value" x="139" y="886" font-size="32">0</text>
-<text id="club-level" class="stat-value" x="297" y="902" font-size="32">0</text>
-<text id="active-players" class="stat-value" x="470" y="891" font-size="32">0</text>
+    <!-- Dynamic stat text elements -->
+    <style>
+        .stat-number {
+            font-family: 'Arial Black', 'Helvetica Neue', sans-serif;
+            font-weight: bold;
+            fill: #ffffff;
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+    </style>
+    <text id="total-members" class="stat-number" x="139.1357894736842" y="886.4888157894736" font-size="48">72,850</text>
+    <text id="club-level" class="stat-number" x="296.64437499999997" y="901.514375" font-size="48">50</text>
+    <text id="active-players" class="stat-number" x="470.485625" y="890.8915625" font-size="48">18,211</text>
+
 </svg>
