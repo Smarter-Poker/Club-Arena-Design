@@ -66,97 +66,11 @@ export const ClubStatsPanel: React.FC<ClubStatsPanelProps> = ({
                 position: 'relative'
             }}
         >
-            {/* Inject the full VectorMagic SVG */}
+            {/* Inject the full VectorMagic SVG - text elements updated dynamically via useEffect */}
             <div
                 dangerouslySetInnerHTML={{ __html: clubStatsPanelSvgRaw }}
                 style={{ display: 'block', width: '100%' }}
             />
-            {/* Opaque background container to cover old baked-in static numbers */}
-            <div
-                style={{
-                    position: 'absolute',
-                    bottom: '2.5%',
-                    left: '3%',
-                    right: '3%',
-                    height: '16%',
-                    backgroundColor: '#0f151c',
-                    border: '1px solid #3a4b5c',
-                    borderRadius: '8px',
-                    display: 'flex',
-                    justifyContent: 'space-around',
-                    alignItems: 'center',
-                    padding: '8px 16px',
-                    boxSizing: 'border-box',
-                    zIndex: 10
-                }}
-            >
-                {/* Total Members */}
-                <div style={{ textAlign: 'center' }}>
-                    <div style={{
-                        color: '#FFFFFF',
-                        fontSize: '24px',
-                        fontWeight: 700,
-                        fontFamily: 'Roboto, sans-serif',
-                        textShadow: '0 0 8px rgba(0, 212, 255, 0.6)'
-                    }}>
-                        {totalMembers.toLocaleString()}
-                    </div>
-                    <div style={{
-                        color: 'rgba(255, 255, 255, 0.7)',
-                        fontSize: '10px',
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        letterSpacing: '1px',
-                        marginTop: '2px'
-                    }}>
-                        Total Members
-                    </div>
-                </div>
-                {/* Club Level - Center focal point */}
-                <div style={{ textAlign: 'center' }}>
-                    <div style={{
-                        color: '#E0FFFF',
-                        fontSize: '42px',
-                        fontWeight: 700,
-                        fontFamily: 'Roboto, sans-serif',
-                        textShadow: '0 0 15px rgba(0, 255, 170, 0.5)'
-                    }}>
-                        {clubLevel}
-                    </div>
-                    <div style={{
-                        color: 'rgba(255, 255, 255, 0.7)',
-                        fontSize: '10px',
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        letterSpacing: '1px',
-                        marginTop: '2px'
-                    }}>
-                        Club Level
-                    </div>
-                </div>
-                {/* Active Players */}
-                <div style={{ textAlign: 'center' }}>
-                    <div style={{
-                        color: '#FFFFFF',
-                        fontSize: '24px',
-                        fontWeight: 700,
-                        fontFamily: 'Roboto, sans-serif',
-                        textShadow: '0 0 8px rgba(0, 212, 255, 0.6)'
-                    }}>
-                        {activePlayers.toLocaleString()}
-                    </div>
-                    <div style={{
-                        color: 'rgba(255, 255, 255, 0.7)',
-                        fontSize: '10px',
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        letterSpacing: '1px',
-                        marginTop: '2px'
-                    }}>
-                        Active Players
-                    </div>
-                </div>
-            </div>
         </div>
     );
 };
