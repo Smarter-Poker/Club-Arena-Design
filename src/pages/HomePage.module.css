@@ -1008,14 +1008,15 @@
     border-radius: 12px;
 }
 
-/* SVG Stats Panel overlay - positioned at bottom of card */
+/* SVG Stats Panel overlay - positioned to cover the bottom stats area of card */
 .statsOverlay {
     position: absolute;
-    bottom: 15px;
+    bottom: 10px;
     left: 10px;
     right: 10px;
     width: calc(100% - 20px);
     pointer-events: none;
+    z-index: 5;
 }
 
 /* Stats overlay for Shark Club card */
