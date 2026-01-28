@@ -1,21 +1,11 @@
 /**
- * ClubStatsPanel - Uses dangerouslySetInnerHTML for exact SVG template
+ * ClubStatsPanel - Displays Shark Club card with dynamic stat numbers
  * 
- * This approach:
- * 1. Imports the VectorMagic SVG as raw text (Vite's ?raw suffix)
- * 2. Injects it directly into the DOM via dangerouslySetInnerHTML
- * 3. Updates the text elements by ID after render
- * 
- * Benefits:
- * - 100% exact look forever (no AI regeneration)
- * - Numbers update instantly from Supabase
- * - Scales perfectly on mobile/desktop
- * - Small file size, fast loading
+ * Uses shark-club-card.jpg as the base image and overlays stat numbers
+ * using CSS positioning. NO blue label bar overlay allowed.
  */
 
-import React, { useRef, useEffect } from 'react';
-// Import the SVG as raw text content
-import clubStatsPanelSvgRaw from '../../assets/club-stats-panel.svg?raw';
+import React from 'react';
 
 interface ClubStatsPanelProps {
     totalMembers: number;
@@ -28,63 +18,92 @@ export const ClubStatsPanel: React.FC<ClubStatsPanelProps> = ({
     clubLevel,
     activePlayers
 }) => {
-    const containerRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (!containerRef.current) return;
-
-        // Find the SVG element inside the container
-        const svg = containerRef.current.querySelector('svg');
-        if (!svg) return;
-
-        // Update total members
-        const totalMembersEl = svg.getElementById('total-members');
-        if (totalMembersEl) {
-            totalMembersEl.textContent = totalMembers.toLocaleString();
-        }
-
-        // Update club level
-        const clubLevelEl = svg.getElementById('club-level');
-        if (clubLevelEl) {
-            clubLevelEl.textContent = clubLevel.toString();
-        }
-
-        // Update active players
-        const activePlayersEl = svg.getElementById('active-players');
-        if (activePlayersEl) {
-            activePlayersEl.textContent = activePlayers.toLocaleString();
-        }
-    }, [totalMembers, clubLevel, activePlayers]);
-
     return (
         <div
-            ref={containerRef}
             className="club-stats-panel-container"
             style={{
+                position: 'relative',
                 width: '100%',
                 height: '100%',
-                display: 'block',
-                pointerEvents: 'none',
-                position: 'relative'
+                display: 'block'
             }}
         >
-            {/* Inject the full VectorMagic SVG - text elements updated dynamically via useEffect */}
-            <div
-                dangerouslySetInnerHTML={{ __html: clubStatsPanelSvgRaw }}
+            {/* Base Shark Club card image */}
+            <img
+                src={`${import.meta.env.BASE_URL}images/shark-club-card.jpg`}
+                alt="Shark Club"
                 style={{
-                    display: 'block',
                     width: '100%',
-                    height: '100%'
+                    height: '100%',
+                    display: 'block',
+                    objectFit: 'contain'
                 }}
             />
-            <style>{`
-                .club-stats-panel-container svg {
-                    width: 100% !important;
-                    height: 100% !important;
-                    display: block;
-                    overflow: hidden;
-                }
-            `}</style>
+
+            {/* Stat number overlays - positioned absolutely */}
+            <div
+                className="stat-numbers-overlay"
+                style={{
+                    position: 'absolute',
+                    inset: 0,
+                    pointerEvents: 'none'
+                }}
+            >
+                {/* Total Members - left box */}
+                <div
+                    style={{
+                        position: 'absolute',
+                        left: '13.5%',
+                        bottom: '7.5%',
+                        width: '20%',
+                        textAlign: 'center',
+                        fontFamily: "'Arial Black', 'Helvetica Neue', Impact, sans-serif",
+                        fontWeight: 'bold',
+                        fontSize: '3.2vw',
+                        color: '#FFFFFF',
+                        textShadow: '0 0 10px rgba(0, 200, 255, 0.6)'
+                    }}
+                >
+                    {totalMembers.toLocaleString()}
+                </div>
+
+                {/* Club Level - center box */}
+                <div
+                    style={{
+                        position: 'absolute',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        bottom: '7.5%',
+                        width: '20%',
+                        textAlign: 'center',
+                        fontFamily: "'Arial Black', 'Helvetica Neue', Impact, sans-serif",
+                        fontWeight: 'bold',
+                        fontSize: '3.2vw',
+                        color: '#FFFFFF',
+                        textShadow: '0 0 10px rgba(0, 200, 255, 0.6)'
+                    }}
+                >
+                    {clubLevel}
+                </div>
+
+                {/* Active Players - right box */}
+                <div
+                    style={{
+                        position: 'absolute',
+                        right: '13.5%',
+                        bottom: '7.5%',
+                        width: '20%',
+                        textAlign: 'center',
+                        fontFamily: "'Arial Black', 'Helvetica Neue', Impact, sans-serif",
+                        fontWeight: 'bold',
+                        fontSize: '3.2vw',
+                        color: '#FFFFFF',
+                        textShadow: '0 0 10px rgba(0, 200, 255, 0.6)'
+                    }}
+                >
+                    {activePlayers.toLocaleString()}
+                </div>
+            </div>
         </div>
     );
 };
