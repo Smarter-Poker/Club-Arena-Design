@@ -14,8 +14,8 @@
  */
 
 import React, { useRef, useEffect } from 'react';
-// Import the SVG as raw text content - v2 cache bust
-import clubStatsPanelSvgRaw from '../../assets/club-stats-panel.svg?raw&v=2';
+// Import the SVG as raw text content
+import clubStatsPanelSvgRaw from '../../assets/club-stats-panel.svg?raw';
 
 interface ClubStatsPanelProps {
     totalMembers: number;
