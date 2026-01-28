@@ -74,7 +74,7 @@ export const ClubStatsPanel: React.FC<ClubStatsPanelProps> = ({
         <object
             ref={objectRef}
             type="image/svg+xml"
-            data="/shark-card.svg"
+            data="/club-stats-panel.svg"
             style={{
                 width: '100%',
                 height: 'auto',
