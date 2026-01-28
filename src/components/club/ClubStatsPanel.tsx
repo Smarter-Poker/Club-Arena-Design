@@ -82,6 +82,7 @@ export const ClubStatsPanel: React.FC<ClubStatsPanelProps> = ({
                     width: 100% !important;
                     height: 100% !important;
                     display: block;
+                    overflow: hidden;
                 }
             `}</style>
         </div>
