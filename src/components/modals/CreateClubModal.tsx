@@ -388,31 +388,7 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
                         <div>GENERATING LOGO...</div>
                         <div style={{ fontSize: '14px', marginTop: '10px', opacity: 0.7 }}>Powered by Smarter.Poker</div>
                     </div>
-                ) : !previewUrl ? (
-                    <>
-                        {/* Textarea positioned over the grid area */}
-                        <textarea
-                            className={styles.descriptionTextarea}
-                            placeholder="e.g., A fierce shark with glowing eyes, cyberpunk style..."
-                            value={logoDescription}
-                            onChange={(e) => setLogoDescription(e.target.value)}
-                        />
-
-                        {/* Submit button positioned over SUBMIT button */}
-                        <button
-                            className={styles.submitButton}
-                            onClick={() => { haptic.success(); handleGenerate(); }}
-                            disabled={!logoDescription.trim()}
-                            aria-label="Submit"
-                        />
-
-                        {error && (
-                            <div className={styles.errorMessage}>
-                                {error}
-                            </div>
-                        )}
-                    </>
-                ) : (
+                ) : previewUrl ? (
                     <>
                         <div className={styles.previewContainer}>
                             <img src={previewUrl} alt="Generated Logo" className={styles.previewImage} />
@@ -435,6 +411,30 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
                                 Try Another
                             </button>
                         </div>
+                    </>
+                ) : (
+                    <>
+                        {/* Textarea positioned over the grid area */}
+                        <textarea
+                            className={styles.descriptionTextarea}
+                            placeholder="e.g., A fierce shark with glowing eyes, cyberpunk style..."
+                            value={logoDescription}
+                            onChange={(e) => setLogoDescription(e.target.value)}
+                        />
+
+                        {/* Submit button positioned over SUBMIT button */}
+                        <button
+                            className={styles.submitButton}
+                            onClick={() => { haptic.success(); handleGenerate(); }}
+                            disabled={!logoDescription.trim()}
+                            aria-label="Submit"
+                        />
+
+                        {error && (
+                            <div className={styles.errorMessage}>
+                                {error}
+                            </div>
+                        )}
                     </>
                 )}
             </div>
