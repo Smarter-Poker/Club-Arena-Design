@@ -50,6 +50,7 @@ export async function generateClubLogo(options: LogoGenerationOptions): Promise<
 
     try {
         console.log('[LogoGenerator] Generating with Grok 2 Image (grok-2-image-1212)...');
+        console.log('[LogoGenerator] Prompt:', prompt);
 
         const response = await fetch(XAI_API_URL, {
             method: 'POST',
@@ -105,49 +106,31 @@ export async function generateClubLogo(options: LogoGenerationOptions): Promise<
 }
 
 /**
- * Build a detailed prompt for generating a PREMIUM poker club image
- * Style: Photorealistic, cyberpunk/sci-fi, like the Shark Club card
+ * Build a prompt for generating a poker club logo
+ * Uses the user's EXACT description with minimal enhancement
  */
 function buildLogoPrompt(clubName: string, style: string, theme?: string, colorScheme?: string): string {
-    // Premium prompt designed to match the Shark Club card aesthetic
-    let prompt = `Create a PHOTOREALISTIC, CINEMATIC image of a ${theme || 'powerful creature'} for a premium poker club. `;
+    // Use the user's exact text as the primary prompt
+    const userPrompt = theme || 'poker club logo';
 
-    // Theme-specific descriptions for photorealistic rendering
-    const themeDescriptions: Record<string, string> = {
-        'shark': 'A massive great white shark swimming through dark water, mouth slightly open showing teeth, powerful and menacing',
-        'dragon': 'A detailed dragon head with glowing eyes, scales glistening with metallic sheen, breathing subtle wisps of fire',
-        'eagle': 'A majestic bald eagle with piercing golden eyes, feathers detailed and realistic, wings spread',
-        'lion': 'A powerful male lion with a full mane, intense golden eyes, regal and commanding presence',
-        'phoenix': 'A magnificent phoenix bird engulfed in flowing flames, wings spread wide, rising from embers',
-        'wolf': 'A fierce gray wolf with piercing ice-blue eyes, detailed fur texture, howling or snarling',
-        'playing cards and poker chips': 'Luxurious poker cards (showing aces) and high-end casino chips arranged elegantly, gold and platinum',
-        'royal crown with poker elements': 'An ornate royal crown with embedded jewels, surrounded by poker card suits in gold',
-        'diamond gemstone': 'A brilliant-cut diamond gemstone catching light with rainbow refractions, set against dark velvet',
-        'skull with poker elements': 'A metallic chrome skull with glowing red eyes, surrounded by poker chips and flames',
-        'tiger': 'A powerful Bengal tiger with intense amber eyes, detailed orange and black striped fur, prowling stance',
-        'spade suit symbol': 'A 3D rendered spade symbol in polished obsidian with gold edges, floating with reflective lighting',
-    };
+    // Add minimal poker club context and quality requirements
+    let prompt = `${userPrompt}. `;
 
-    const themeDesc = themeDescriptions[theme || ''] || `a powerful, photorealistic ${theme}`;
-    prompt += themeDesc + '. ';
-
-    // Cyberpunk/sci-fi environment matching Shark Club style
+    // Add quality and style requirements WITHOUT forcing a specific subject
     prompt += `
-        CRITICAL STYLE REQUIREMENTS - MATCH THIS EXACTLY:
-        - PHOTOREALISTIC digital art, NOT cartoon, NOT illustrated, NOT anime
-        - Cyberpunk/sci-fi underwater or futuristic environment
-        - Dramatic lighting: deep blue and purple neon glow colors
-        - Dark background with atmospheric fog or particles
-        - Cinematic quality like a AAA video game or Hollywood movie
-        - The creature/subject fills 70% of the frame
-        - Add subtle metallic reflections and lens flares
-        - Professional esports/gaming aesthetic
-        - Premium, high-end, luxurious feel
-        - NO TEXT, NO LETTERS, NO WORDS anywhere in the image
-        - Ultra high detail, 8K quality rendering
+        High quality, professional design.
+        Suitable for a poker club brand.
+        Clean, modern aesthetic.
+        NO TEXT, NO LETTERS, NO WORDS in the image.
+        Premium, polished look.
     `;
 
-    return prompt;
+    // Add color scheme if specified
+    if (colorScheme) {
+        prompt += `\nColor scheme: ${colorScheme}`;
+    }
+
+    return prompt.trim();
 }
 
 /**
