@@ -74,6 +74,12 @@ const ClubFinancialsPage = lazy(() => import('./pages/ClubFinancialsPage'));
 const BonusPage = lazy(() => import('./pages/BonusPage'));
 const WaitlistPage = lazy(() => import('./pages/WaitlistPage'));
 
+// Legal Pages
+const TermsOfServicePage = lazy(() => import('./pages/legal/TermsOfServicePage'));
+const ClubPromotionRulesPage = lazy(() => import('./pages/legal/PromotionsPage'));
+const FairGamingPage = lazy(() => import('./pages/legal/FairGamingPage'));
+const PrivacyPolicyPage = lazy(() => import('./pages/legal/PrivacyPolicyPage'));
+
 // Loading fallback
 function LoadingSpinner() {
     return (
@@ -617,6 +623,40 @@ export default function App() {
                                 element={
                                     <AuthGuard>
                                         <WaitlistPage />
+                                    </AuthGuard>
+                                }
+                            />
+
+                            {/* Legal Pages */}
+                            <Route
+                                path="legal/tos"
+                                element={
+                                    <AuthGuard>
+                                        <TermsOfServicePage />
+                                    </AuthGuard>
+                                }
+                            />
+                            <Route
+                                path="legal/promotions"
+                                element={
+                                    <AuthGuard>
+                                        <ClubPromotionRulesPage />
+                                    </AuthGuard>
+                                }
+                            />
+                            <Route
+                                path="legal/fair-gaming"
+                                element={
+                                    <AuthGuard>
+                                        <FairGamingPage />
+                                    </AuthGuard>
+                                }
+                            />
+                            <Route
+                                path="legal/privacy"
+                                element={
+                                    <AuthGuard>
+                                        <PrivacyPolicyPage />
                                     </AuthGuard>
                                 }
                             />
