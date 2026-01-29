@@ -201,12 +201,13 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
     return (
         <div className={styles.overlay} onClick={onClose}>
             <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
-                {/* High-fidelity frame background */}
+                {/* High-fidelity frame background - hidden when logo generator is open */}
                 <img
                     src={MODAL_FRAME_URL}
                     alt=""
                     className={styles.frameImage}
                     draggable={false}
+                    style={{ display: showLogoGenerator ? 'none' : 'block' }}
                 />
 
                 {/* Close button - positioned over the X in frame */}
