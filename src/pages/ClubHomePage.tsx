@@ -230,7 +230,7 @@ export default function ClubHomePage() {
                     </div>
                     <div className="club-home__user-info">
                         <span className="club-home__username">{userProfile?.display_name || userProfile?.username || 'Player'}</span>
-                        <span className="club-home__user-id">(ID:{playerNumber})</span>
+                        <span className="club-home__user-id">ID:{playerNumber}</span>
                     </div>
                 </div>
                 <div className="club-home__header-center">
