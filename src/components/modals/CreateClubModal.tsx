@@ -372,14 +372,13 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
                     backgroundColor: isGenerating || previewUrl ? 'rgba(10, 10, 26, 0.98)' : 'transparent'
                 }}
             >
-                {/* Show frame only when showing input form (not generating, not preview) */}
-                {!isGenerating && !previewUrl && (
-                    <img
-                        src="https://club-arena.vercel.app/images/logo-generator-frame.png"
-                        alt="Frame"
-                        className={styles.frameImage}
-                    />
-                )}
+                {/* Frame - explicitly hidden during generation/preview */}
+                <img
+                    src="https://club-arena.vercel.app/images/logo-generator-frame.png"
+                    alt="Frame"
+                    className={styles.frameImage}
+                    style={{ display: isGenerating || previewUrl ? 'none' : 'block' }}
+                />
 
                 {/* Close button positioned over X */}
                 <button className={styles.closeButton} onClick={() => { haptic.light(); onClose(); }} aria-label="Close" />
@@ -442,6 +441,7 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
                             placeholder="e.g., A fierce shark with glowing eyes, cyberpunk style..."
                             value={logoDescription}
                             onChange={(e) => setLogoDescription(e.target.value)}
+                            style={{ display: isGenerating || previewUrl ? 'none' : 'block' }}
                         />
 
                         {/* Submit button positioned over SUBMIT button */}
@@ -450,6 +450,7 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
                             onClick={() => { haptic.success(); handleGenerate(); }}
                             disabled={!logoDescription.trim()}
                             aria-label="Submit"
+                            style={{ display: isGenerating || previewUrl ? 'none' : 'flex' }}
                         />
 
                         {error && (
