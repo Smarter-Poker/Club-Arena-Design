@@ -357,7 +357,13 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
 
     return (
         <div className={styles.logoGeneratorOverlay} onClick={onClose}>
-            <div className={styles.logoGeneratorModalContainer} onClick={(e) => e.stopPropagation()}>
+            <div
+                className={styles.logoGeneratorModalContainer}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                    backgroundColor: isGenerating || previewUrl ? 'rgba(10, 10, 26, 0.98)' : 'transparent'
+                }}
+            >
                 {/* Show frame only when showing input form (not generating, not preview) */}
                 {!isGenerating && !previewUrl && (
                     <img
