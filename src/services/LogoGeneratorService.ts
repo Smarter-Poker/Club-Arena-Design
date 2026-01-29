@@ -1,17 +1,20 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- *  LogoGeneratorService — AI-Powered Club Logo Generation using OpenAI DALL-E
+ *  LogoGeneratorService — AI-Powered Club Logo Generation using Grok (xAI)
  * ═══════════════════════════════════════════════════════════════════════════════
- * Generates custom club logos using OpenAI's DALL-E image generation API.
+ * Generates custom club logos using xAI's Grok image generation API.
  * Outputs square images sized for the ClubCardGenerator (340x340 logo area).
+ * 
+ * Migrated from OpenAI DALL-E to Grok grok-2-image (Jan 2026)
+ * Deploy trigger: 1769665950
  */
 
-// OpenAI API Configuration
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
-const OPENAI_API_URL = 'https://api.openai.com/v1/images/generations';
+// xAI Grok API Configuration
+const XAI_API_KEY = import.meta.env.VITE_XAI_API_KEY || '';
+const XAI_API_URL = 'https://api.x.ai/v1/images/generations';
 
 // Logo generation settings
-const LOGO_SIZE = '1024x1024'; // DALL-E 3 supports: 1024x1024, 1792x1024, 1024x1792
+const LOGO_SIZE = '1024x1024'; // Grok supports 1024x1024
 const TARGET_LOGO_SIZE = 340; // Final size for ClubCardGenerator
 
 export interface LogoGenerationOptions {
@@ -28,34 +31,44 @@ export interface LogoGenerationResult {
 }
 
 /**
- * Generate a club logo using OpenAI's DALL-E API
+ * Generate a club logo using xAI's Grok image generation API
  */
 export async function generateClubLogo(options: LogoGenerationOptions): Promise<LogoGenerationResult> {
     const { clubName, style = 'modern', theme, colorScheme } = options;
+
+    // Check for API key
+    if (!XAI_API_KEY) {
+        console.error('[LogoGenerator] XAI_API_KEY not configured');
+        return {
+            success: false,
+            error: 'AI image generation not configured. Please contact support.',
+        };
+    }
 
     // Build a detailed prompt for poker club logo generation
     const prompt = buildLogoPrompt(clubName, style, theme, colorScheme);
 
     try {
-        const response = await fetch(OPENAI_API_URL, {
+        console.log('[LogoGenerator] Generating with Grok grok-2-image...');
+
+        const response = await fetch(XAI_API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                'Authorization': `Bearer ${XAI_API_KEY}`,
             },
             body: JSON.stringify({
-                model: 'dall-e-3',
+                model: 'grok-2-image-1212', // xAI image generation model
                 prompt: prompt,
                 n: 1,
-                size: LOGO_SIZE,
-                quality: 'hd', // HD quality for premium photorealistic images
+                // Note: Grok doesn't support 'size' parameter, uses default output size
                 response_format: 'b64_json', // Get base64 directly
             }),
         });
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            console.error('OpenAI API error:', errorData);
+            console.error('[LogoGenerator] Grok API error:', errorData);
             return {
                 success: false,
                 error: errorData.error?.message || `API error: ${response.status}`,
@@ -76,12 +89,14 @@ export async function generateClubLogo(options: LogoGenerationOptions): Promise<
         const fullSizeDataUrl = `data:image/png;base64,${base64Image}`;
         const resizedDataUrl = await resizeImage(fullSizeDataUrl, TARGET_LOGO_SIZE, TARGET_LOGO_SIZE);
 
+        console.log('[LogoGenerator] Successfully generated club logo');
+
         return {
             success: true,
             logoUrl: resizedDataUrl,
         };
     } catch (error) {
-        console.error('Logo generation failed:', error);
+        console.error('[LogoGenerator] Logo generation failed:', error);
         return {
             success: false,
             error: error instanceof Error ? error.message : 'Unknown error occurred',
