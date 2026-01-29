@@ -1,0 +1,44 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Club Arena
+        uses: actions/checkout@v3
+        with:
+          path: club-arena
+
+      - name: Deploy Club Arena to Vercel
+        run: |
+          cd club-arena
+          npx vercel --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Checkout World Hub
+        uses: actions/checkout@v3
+        with:
+          repository: Smarter-Poker/Smarter-Poker-World-Hub
+          token: ${{ secrets.GH_PAT }}
+          path: world-hub
+
+      - name: Refresh World Hub Proxy Cache
+        run: |
+          cd world-hub
+          npx vercel --prod --force --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_WORLD_HUB_PROJECT_ID }}
+
+      - name: Deployment Complete
+        run: |
+          echo "✅ Club Arena deployed and World Hub cache refreshed!"
+          echo "🌐 Live at: https://smarter.poker/hub/club-arena/"
