@@ -357,52 +357,43 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
 
     return (
         <div className={styles.logoGeneratorOverlay} onClick={onClose}>
-            <div className={styles.logoGeneratorModal} onClick={(e) => e.stopPropagation()}>
-                <h3>Create Custom Logo</h3>
+            <div className={styles.logoGeneratorModalContainer} onClick={(e) => e.stopPropagation()}>
+                {/* Frame image as background */}
+                <img
+                    src="/images/logo-generator-frame.png"
+                    alt="Frame"
+                    className={styles.frameImage}
+                />
+
+                {/* Close button positioned over X */}
+                <button className={styles.closeButton} onClick={onClose} aria-label="Close" />
 
                 {!previewUrl ? (
                     <>
-                        <p className={styles.generatorHint}>
-                            Describe your custom logo
-                        </p>
+                        {/* Textarea positioned over the grid area */}
+                        <textarea
+                            className={styles.descriptionTextarea}
+                            placeholder="e.g., A fierce shark with glowing eyes, cyberpunk style..."
+                            value={logoDescription}
+                            onChange={(e) => setLogoDescription(e.target.value)}
+                            disabled={isGenerating}
+                        />
 
-                        {/* Text input for logo description */}
-                        <div className={styles.descriptionInput}>
-                            <textarea
-                                className={styles.descriptionTextarea}
-                                placeholder="e.g., A fierce shark with glowing eyes, cyberpunk style..."
-                                value={logoDescription}
-                                onChange={(e) => setLogoDescription(e.target.value)}
-                                disabled={isGenerating}
-                                rows={4}
-                            />
-                        </div>
+                        {/* Submit button positioned over SUBMIT button */}
+                        <button
+                            className={styles.submitButton}
+                            onClick={handleGenerate}
+                            disabled={!logoDescription.trim() || isGenerating}
+                            aria-label="Submit"
+                        >
+                            {isGenerating && <span className={styles.spinner}>⏳</span>}
+                        </button>
 
                         {error && (
                             <div className={styles.errorMessage}>
-                                ⚠️ {error}
+                                {error}
                             </div>
                         )}
-
-                        <div className={styles.logoGeneratorActions}>
-                            <button
-                                className={styles.generateBtn}
-                                onClick={handleGenerate}
-                                disabled={!logoDescription.trim() || isGenerating}
-                            >
-                                {isGenerating ? (
-                                    <>
-                                        <span className={styles.spinner}>⏳</span>
-                                        Generating...
-                                    </>
-                                ) : (
-                                    'Submit'
-                                )}
-                            </button>
-                            <button className={styles.cancelBtn} onClick={onClose}>
-                                Cancel
-                            </button>
-                        </div>
                     </>
                 ) : (
                     <>

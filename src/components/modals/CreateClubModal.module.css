@@ -256,7 +256,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   LOGO GENERATOR MODAL
+   LOGO GENERATOR MODAL - Frame-based design
    ═══════════════════════════════════════════════════════════════════════════════ */
 .logoGeneratorOverlay {
     position: fixed;
@@ -271,6 +271,128 @@
     z-index: 10001;
 }
 
+.logoGeneratorModalContainer {
+    position: relative;
+    width: 95%;
+    max-width: 800px;
+    aspect-ratio: 1024 / 700;
+}
+
+.frameImage {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+}
+
+/* Close button positioned over the X in top right */
+.closeButton {
+    position: absolute;
+    top: 2%;
+    right: 2%;
+    width: 10%;
+    height: 10%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.closeButton:hover {
+    opacity: 0.8;
+}
+
+/* Textarea positioned over the grid area */
+.descriptionTextarea {
+    position: absolute;
+    top: 24%;
+    left: 12%;
+    width: 76%;
+    height: 52%;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(12px, 1.8vw, 16px);
+    font-weight: 400;
+    color: #ffffff;
+    resize: none;
+    padding: 16px;
+    box-sizing: border-box;
+    z-index: 10;
+}
+
+.descriptionTextarea::placeholder {
+    color: rgba(100, 180, 255, 0.4);
+}
+
+.descriptionTextarea:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Submit button positioned over SUBMIT button in frame */
+.submitButton {
+    position: absolute;
+    bottom: 10%;
+    left: 32%;
+    width: 36%;
+    height: 10%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.submitButton:hover:not(:disabled) {
+    background: rgba(0, 180, 255, 0.1);
+}
+
+.submitButton:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.spinner {
+    font-size: 24px;
+    color: #00d4ff;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Error message */
+.errorMessage {
+    position: absolute;
+    bottom: 2%;
+    left: 10%;
+    right: 10%;
+    background: rgba(255, 80, 80, 0.2);
+    border: 1px solid rgba(255, 80, 80, 0.5);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #ff8888;
+    font-size: 12px;
+    text-align: center;
+    z-index: 11;
+}
+
+/* Legacy styles - keep for preview mode */
 .logoGeneratorModal {
     background: linear-gradient(145deg, #0a1929, #0d2137);
     border: 2px solid rgba(0, 180, 255, 0.3);
