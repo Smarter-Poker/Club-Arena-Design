@@ -306,13 +306,13 @@
     opacity: 0.8;
 }
 
-/* Textarea positioned within interior blue grid (calibration tool verified: 24%, 11%, 78%, 51%) */
+/* Textarea shrunk 10% from calibrated size for breathing room */
 .descriptionTextarea {
     position: absolute;
-    top: 24%;
-    left: 11%;
-    width: 78%;
-    height: 51%;
+    top: 26.5%;
+    left: 15%;
+    width: 70%;
+    height: 46%;
     background: transparent;
     border: none;
     outline: none;
