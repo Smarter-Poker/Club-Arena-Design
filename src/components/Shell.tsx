@@ -7,6 +7,7 @@ import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useSettingsStore } from '../stores/useSettingsStore';
 import { useUserStore } from '../stores/useUserStore';
+import { useWalletStore } from '../stores/useWalletStore';
 import { notificationService } from '../services/NotificationService';
 import { supabase } from '../lib/supabase';
 import { VIPProvider, useVIPStatus } from '../hooks/useVIP';
@@ -22,7 +23,7 @@ function VIPBadge() {
     return (
         <button
             className={`shell-vip-badge ${isVIP ? 'vip-active' : ''}`}
-            onClick={() => navigate('/vip')}
+            onClick={() => navigate('/diamond-store/vip')}
             title={isVIP ? 'VIP Gold Active' : 'Get VIP Benefits'}
         >
             {isVIP ? ' VIP' : ''}
@@ -41,6 +42,7 @@ function ShellContent() {
     // Store
     const { theme } = useSettingsStore();
     const { user, totalChips } = useUserStore();
+    const { diamonds } = useWalletStore();
     const [unreadCount, setUnreadCount] = useState(0);
 
     // Sync Theme
@@ -123,6 +125,11 @@ function ShellContent() {
 
                     {/* User Info */}
                     <div className="shell-user">
+                        {user && (
+                            <div className="shell-player-id" title="Player ID">
+                                ID: {parseInt(user.id, 10) || user.id}
+                            </div>
+                        )}
                         <VIPBadge />
                         <button
                             className="shell-notifications"
@@ -136,6 +143,10 @@ function ShellContent() {
                                 </span>
                             )}
                         </button>
+                        <div className="shell-diamonds" onClick={() => navigate('/diamond-store')} style={{ cursor: 'pointer' }}>
+                            <span className="diamond-icon"></span>
+                            <span className="diamond-amount">{diamonds.toLocaleString()}</span>
+                        </div>
                         <div className="shell-chips">
                             <span className="chip-icon"></span>
                             <span className="chip-amount">{user ? totalChips.toLocaleString() : '0'}</span>

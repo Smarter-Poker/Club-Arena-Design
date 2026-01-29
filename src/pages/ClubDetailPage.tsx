@@ -7,7 +7,6 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import styles from './ClubDetailPage.module.css';
 import ClubHome from '../components/club/ClubHome';
 import CurrencyStore from '../components/club/CurrencyStore';
@@ -395,7 +394,6 @@ export default function ClubDetailPage() {
 
     return (
         <div className={styles.page}>
-            <SmarterHeader title={club.name} />
             {/* Club Header */}
             <header className={styles.header}>
                 <div className={styles.clubAvatar}>
