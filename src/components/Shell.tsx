@@ -79,7 +79,8 @@ function ShellContent() {
 
     // Detect if we're inside a specific club (Club Arena context)
     // Club Arena is its own business - no global header needed
-    const isInClubArena = location.pathname.match(/^\/clubs\/[^\/]+/);
+    // Routes: /hub/club-arena/clubs/[clubId]/*
+    const isInClubArena = location.pathname.includes('/club-arena/clubs/');
 
     return (
         <div className={`shell ${isInIframe ? 'shell--embedded' : ''}`}>
