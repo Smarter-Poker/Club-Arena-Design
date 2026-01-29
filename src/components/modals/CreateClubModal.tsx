@@ -360,7 +360,7 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
             <div className={styles.logoGeneratorModalContainer} onClick={(e) => e.stopPropagation()}>
                 {/* Frame image as background */}
                 <img
-                    src="images/logo-generator-frame.png"
+                    src="https://club-arena.vercel.app/images/logo-generator-frame.png"
                     alt="Frame"
                     className={styles.frameImage}
                 />
