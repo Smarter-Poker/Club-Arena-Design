@@ -317,7 +317,7 @@
     border: none;
     outline: none;
     font-family: 'Inter', sans-serif;
-    font-size: clamp(12px, 1.8vw, 16px);
+    font-size: clamp(24px, 3.6vw, 32px);
     font-weight: 400;
     color: #ffffff;
     resize: none;
