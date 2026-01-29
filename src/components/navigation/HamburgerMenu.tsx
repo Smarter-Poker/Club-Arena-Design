@@ -21,23 +21,44 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
     const [soundsEnabled, setSoundsEnabled] = useState(true);
     const [vibrationsEnabled, setVibrationsEnabled] = useState(true);
 
-    // Load settings from localStorage on mount
+    // Load settings from localStorage on mount, then sync from Supabase
     useEffect(() => {
         const sounds = localStorage.getItem('soundsEnabled');
         const vibrations = localStorage.getItem('vibrationsEnabled');
         if (sounds !== null) setSoundsEnabled(sounds === 'true');
         if (vibrations !== null) setVibrationsEnabled(vibrations === 'true');
-    }, []);
 
-    // Save settings to localStorage and Supabase
-    const updateSetting = async (key: string, value: boolean) => {
-        localStorage.setItem(key, String(value));
+        // Sync from Supabase if user is logged in
+        if (user?.id) {
+            supabase
+                .from('profiles')
+                .select('sounds_enabled, vibrations_enabled')
+                .eq('id', user.id)
+                .single()
+                .then(({ data }) => {
+                    if (data) {
+                        if (data.sounds_enabled !== null) {
+                            setSoundsEnabled(data.sounds_enabled);
+                            localStorage.setItem('soundsEnabled', String(data.sounds_enabled));
+                        }
+                        if (data.vibrations_enabled !== null) {
+                            setVibrationsEnabled(data.vibrations_enabled);
+                            localStorage.setItem('vibrationsEnabled', String(data.vibrations_enabled));
+                        }
+                    }
+                });
+        }
+    }, [user?.id]);
+
+    // Save settings to localStorage and Supabase (using snake_case for DB)
+    const updateSetting = async (localKey: string, dbKey: string, value: boolean) => {
+        localStorage.setItem(localKey, String(value));
 
         if (user?.id) {
             try {
                 await supabase
                     .from('profiles')
-                    .update({ [key]: value })
+                    .update({ [dbKey]: value })
                     .eq('id', user.id);
             } catch (error) {
                 console.error('Error updating setting:', error);
@@ -48,13 +69,13 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
     const handleSoundsToggle = () => {
         const newValue = !soundsEnabled;
         setSoundsEnabled(newValue);
-        updateSetting('soundsEnabled', newValue);
+        updateSetting('soundsEnabled', 'sounds_enabled', newValue);
     };
 
     const handleVibrationsToggle = () => {
         const newValue = !vibrationsEnabled;
         setVibrationsEnabled(newValue);
-        updateSetting('vibrationsEnabled', newValue);
+        updateSetting('vibrationsEnabled', 'vibrations_enabled', newValue);
     };
 
     const handleNavigate = (path: string) => {

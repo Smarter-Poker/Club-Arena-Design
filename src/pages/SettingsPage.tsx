@@ -5,7 +5,8 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import SmarterHeader from '../components/layout/SmarterHeader';
 import { notificationService } from '../services/NotificationService';
@@ -18,6 +19,7 @@ import styles from './SettingsPage.module.css';
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════════
+
 
 interface UserSettings {
     // Audio
@@ -183,6 +185,7 @@ const ColorPicker = ({
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export default function SettingsPage() {
+    const [searchParams] = useSearchParams();
     const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
     const [hasChanges, setHasChanges] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -196,8 +199,43 @@ export default function SettingsPage() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
 
+    // Section refs for tab navigation
+    const audioRef = useRef<HTMLElement>(null);
+    const appearanceRef = useRef<HTMLElement>(null);
+    const gameplayRef = useRef<HTMLElement>(null);
+    const notificationsRef = useRef<HTMLElement>(null);
+    const privacyRef = useRef<HTMLElement>(null);
+    const securityRef = useRef<HTMLElement>(null);
+    const dangerRef = useRef<HTMLElement>(null);
+
+    // Tab-based scroll navigation
+    useEffect(() => {
+        const tab = searchParams.get('tab');
+        if (!tab) return;
+
+        const tabToRef: Record<string, React.RefObject<HTMLElement | null>> = {
+            audio: audioRef,
+            appearance: appearanceRef,
+            display: appearanceRef,
+            gameplay: gameplayRef,
+            notifications: notificationsRef,
+            privacy: privacyRef,
+            security: securityRef,
+            account: securityRef,
+            language: appearanceRef, // Language settings would be in appearance section
+        };
+
+        const targetRef = tabToRef[tab.toLowerCase()];
+        if (targetRef?.current) {
+            setTimeout(() => {
+                targetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+    }, [searchParams]);
+
     // Load settings from localStorage on mount
     useEffect(() => {
+
         const saved = localStorage.getItem('club-arena-settings');
         if (saved) {
             try {
@@ -366,8 +404,8 @@ export default function SettingsPage() {
 
             <div className={styles.content}>
                 {/* Audio Settings */}
-                <section className={styles.section}>
-                    <h2> Audio</h2>
+                <section ref={audioRef} className={styles.section}>
+                    <h2>🔊 Audio</h2>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
@@ -414,8 +452,8 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Display Settings */}
-                <section className={styles.section}>
-                    <h2> Display</h2>
+                <section ref={appearanceRef} className={styles.section}>
+                    <h2>🎨 Display</h2>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
@@ -497,8 +535,8 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Gameplay Settings */}
-                <section className={styles.section}>
-                    <h2> Gameplay</h2>
+                <section ref={gameplayRef} className={styles.section}>
+                    <h2>🎮 Gameplay</h2>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
@@ -557,8 +595,8 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Notifications */}
-                <section className={styles.section}>
-                    <h2> Notifications</h2>
+                <section ref={notificationsRef} className={styles.section}>
+                    <h2>🔔 Notifications</h2>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
@@ -594,8 +632,8 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Privacy */}
-                <section className={styles.section}>
-                    <h2> Privacy</h2>
+                <section ref={privacyRef} className={styles.section}>
+                    <h2>🔒 Privacy</h2>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
@@ -631,8 +669,8 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Account */}
-                <section className={styles.section}>
-                    <h2> Account</h2>
+                <section ref={securityRef} className={styles.section}>
+                    <h2>👤 Account</h2>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
@@ -659,8 +697,8 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Danger Zone */}
-                <section className={`${styles.section} ${styles.dangerZone}`}>
-                    <h2> Danger Zone</h2>
+                <section ref={dangerRef} className={`${styles.section} ${styles.dangerZone}`}>
+                    <h2>⚠️ Danger Zone</h2>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
