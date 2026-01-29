@@ -309,10 +309,10 @@
 /* Textarea positioned over the grid area */
 .descriptionTextarea {
     position: absolute;
-    top: 24%;
-    left: 12%;
-    width: 76%;
-    height: 52%;
+    top: 33%;
+    left: 21%;
+    width: 58%;
+    height: 38%;
     background: transparent;
     border: none;
     outline: none;
