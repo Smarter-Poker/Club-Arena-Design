@@ -84,105 +84,111 @@ function ShellContent() {
 
     return (
         <div className={`shell ${isInIframe ? 'shell--embedded' : ''}`}>
-            {/* Header - Hidden when inside Club Arena */}
-            {!isInClubArena && (
-                <header className="shell-header">
-                    <div className="shell-header-content">
-                        {/* Logo */}
-                        <NavLink to="/" className="shell-logo">
-                            <span className="shell-logo-icon">♠</span>
-                            <span className="shell-logo-text">Club Arena</span>
-                        </NavLink>
-
-                        {/* Desktop Nav */}
-                        <nav className="shell-nav">
-                            <NavLink
-                                to="/"
-                                className={({ isActive }) => `shell-nav-link ${isActive ? 'active' : ''}`}
-                                end
-                            >
-                                Home
-                            </NavLink>
-                            <NavLink
-                                to="/play"
-                                className={({ isActive }) => `shell-nav-link ${isActive ? 'active' : ''}`}
-                            >
-                                Play
-                            </NavLink>
-                            <NavLink
-                                to="/clubs"
-                                className={({ isActive }) => `shell-nav-link ${isActive || location.pathname.startsWith('/clubs') ? 'active' : ''}`}
-                            >
-                                Clubs
-                            </NavLink>
-                            <NavLink
-                                to="/unions"
-                                className={({ isActive }) => `shell-nav-link ${isActive ? 'active' : ''}`}
-                            >
-                                Unions
-                            </NavLink>
-                            <NavLink
-                                to="/profile"
-                                className={({ isActive }) => `shell-nav-link ${isActive ? 'active' : ''}`}
-                            >
-                                Profile
-                            </NavLink>
-                        </nav>
-
-                        {/* User Info */}
-                        <div className="shell-user">
-                            {user && (
-                                <div className="shell-player-id" title="Player ID">
-                                    ID: {parseInt(user.id, 10) || user.id}
-                                </div>
-                            )}
-                            <VIPBadge />
-                            <button
-                                className="shell-notifications"
-                                onClick={() => navigate('/notifications')}
-                                title="Notifications"
-                            >
-
-                                {unreadCount > 0 && (
-                                    <span className="notification-badge">
-                                        {unreadCount > 99 ? '99+' : unreadCount}
-                                    </span>
-                                )}
-                            </button>
-                            <div className="shell-diamonds" onClick={() => navigate('/diamond-store')} style={{ cursor: 'pointer' }}>
-                                <span className="diamond-icon"></span>
-                                <span className="diamond-amount">{diamonds.toLocaleString()}</span>
-                            </div>
-                            <div className="shell-chips">
-                                <span className="chip-icon"></span>
-                                <span className="chip-amount">{user ? totalChips.toLocaleString() : '0'}</span>
-                            </div>
-                            <button className="shell-avatar" onClick={() => navigate('/profile')}>
-                                {user?.avatar_url || ''}
-                            </button>
-                        </div>
-
-                        {/* Mobile Toggle */}
+            {/* Header - Always visible with hamburger menu */}
+            <header className="shell-header">
+                <div className="shell-header-content">
+                    {/* Hamburger + Hub Logo */}
+                    <div className="shell-logo">
                         <button
-                            className="shell-mobile-toggle"
+                            className="shell-hamburger"
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            aria-label="Menu"
                         >
-                            {mobileMenuOpen ? '✕' : '☰'}
+                            ☰
+                        </button>
+                        <NavLink to="/" className="shell-logo-link">
+                            <span className="shell-logo-text">Hub</span>
+                        </NavLink>
+                    </div>
+
+                    {/* Desktop Nav */}
+                    <nav className="shell-nav">
+                        <NavLink
+                            to="/"
+                            className={({ isActive }) => `shell-nav-link ${isActive ? 'active' : ''}`}
+                            end
+                        >
+                            Home
+                        </NavLink>
+                        <NavLink
+                            to="/play"
+                            className={({ isActive }) => `shell-nav-link ${isActive ? 'active' : ''}`}
+                        >
+                            Play
+                        </NavLink>
+                        <NavLink
+                            to="/clubs"
+                            className={({ isActive }) => `shell-nav-link ${isActive || location.pathname.startsWith('/clubs') ? 'active' : ''}`}
+                        >
+                            Clubs
+                        </NavLink>
+                        <NavLink
+                            to="/unions"
+                            className={({ isActive }) => `shell-nav-link ${isActive ? 'active' : ''}`}
+                        >
+                            Unions
+                        </NavLink>
+                        <NavLink
+                            to="/profile"
+                            className={({ isActive }) => `shell-nav-link ${isActive ? 'active' : ''}`}
+                        >
+                            Profile
+                        </NavLink>
+                    </nav>
+
+                    {/* User Info */}
+                    <div className="shell-user">
+                        {user && (
+                            <div className="shell-player-id" title="Player ID">
+                                ID: {parseInt(user.id, 10) || user.id}
+                            </div>
+                        )}
+                        <VIPBadge />
+                        <button
+                            className="shell-notifications"
+                            onClick={() => navigate('/notifications')}
+                            title="Notifications"
+                        >
+
+                            {unreadCount > 0 && (
+                                <span className="notification-badge">
+                                    {unreadCount > 99 ? '99+' : unreadCount}
+                                </span>
+                            )}
+                        </button>
+                        <div className="shell-diamonds" onClick={() => navigate('/diamond-store')} style={{ cursor: 'pointer' }}>
+                            <span className="diamond-icon"></span>
+                            <span className="diamond-amount">{diamonds.toLocaleString()}</span>
+                        </div>
+                        <div className="shell-chips">
+                            <span className="chip-icon"></span>
+                            <span className="chip-amount">{user ? totalChips.toLocaleString() : '0'}</span>
+                        </div>
+                        <button className="shell-avatar" onClick={() => navigate('/profile')}>
+                            {user?.avatar_url || ''}
                         </button>
                     </div>
 
-                    {/* Mobile Nav */}
-                    {mobileMenuOpen && (
-                        <nav className="shell-mobile-nav">
-                            <NavLink to="/" onClick={() => setMobileMenuOpen(false)}> Home</NavLink>
-                            <NavLink to="/play" onClick={() => setMobileMenuOpen(false)}> Play</NavLink>
-                            <NavLink to="/clubs" onClick={() => setMobileMenuOpen(false)}> Clubs</NavLink>
-                            <NavLink to="/unions" onClick={() => setMobileMenuOpen(false)}>Unions</NavLink>
-                            <NavLink to="/profile" onClick={() => setMobileMenuOpen(false)}> Profile</NavLink>
-                        </nav>
-                    )}
-                </header>
-            )}
+                    {/* Mobile Toggle */}
+                    <button
+                        className="shell-mobile-toggle"
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    >
+                        {mobileMenuOpen ? '✕' : '☰'}
+                    </button>
+                </div>
+
+                {/* Mobile Nav */}
+                {mobileMenuOpen && (
+                    <nav className="shell-mobile-nav">
+                        <NavLink to="/" onClick={() => setMobileMenuOpen(false)}> Home</NavLink>
+                        <NavLink to="/play" onClick={() => setMobileMenuOpen(false)}> Play</NavLink>
+                        <NavLink to="/clubs" onClick={() => setMobileMenuOpen(false)}> Clubs</NavLink>
+                        <NavLink to="/unions" onClick={() => setMobileMenuOpen(false)}>Unions</NavLink>
+                        <NavLink to="/profile" onClick={() => setMobileMenuOpen(false)}> Profile</NavLink>
+                    </nav>
+                )}
+            </header>
 
             {/* Main Content */}
             <main className="shell-main">
