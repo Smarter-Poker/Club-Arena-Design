@@ -5,9 +5,8 @@
  * Generates custom club logos using xAI's Grok image generation API.
  * Outputs square images sized for the ClubCardGenerator (340x340 logo area).
  * 
- * Migrated from OpenAI DALL-E to Grok grok-2-image (Jan 2026)
- * Upgraded to Grok 3 image model (Jan 2026)
- * Deploy trigger: 1769679200
+ * Migrated from OpenAI DALL-E to Grok grok-2-image-1212 (Jan 2026)
+ * Deploy trigger: 1769680400
  */
 
 // xAI Grok API Configuration
@@ -50,7 +49,7 @@ export async function generateClubLogo(options: LogoGenerationOptions): Promise<
     const prompt = buildLogoPrompt(clubName, style, theme, colorScheme);
 
     try {
-        console.log('[LogoGenerator] Generating with Grok 2 Vision (grok-2-vision-1212)...');
+        console.log('[LogoGenerator] Generating with Grok 2 Image (grok-2-image-1212)...');
 
         const response = await fetch(XAI_API_URL, {
             method: 'POST',
@@ -59,7 +58,7 @@ export async function generateClubLogo(options: LogoGenerationOptions): Promise<
                 'Authorization': `Bearer ${XAI_API_KEY}`,
             },
             body: JSON.stringify({
-                model: 'grok-2-vision-1212', // Grok 2 Vision model for image generation
+                model: 'grok-2-image-1212', // Grok 2 image generation model
                 prompt: prompt,
                 n: 1,
                 // Note: Grok doesn't support 'size' parameter, uses default output size
