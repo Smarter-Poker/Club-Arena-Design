@@ -137,8 +137,14 @@ export default function GlobalHeader({
 
     return (
         <header className={styles.header}>
-            {/* LEFT: Hub Button + Brand */}
+            {/* LEFT: Hamburger + Hub Button + Brand */}
             <div className={styles.headerLeft}>
+                <button
+                    className={styles.hamburger}
+                    aria-label="Menu"
+                >
+                    ☰
+                </button>
                 <button
                     onClick={pageDepth > 1 ? handleBack : handleHubClick}
                     className={styles.navBtn}
