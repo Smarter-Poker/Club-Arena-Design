@@ -368,18 +368,26 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
                         <p className={styles.generatorHint}>
                             Select a theme and our AI will create a unique logo for your club
                         </p>
-                        <div className={styles.templateGrid}>
-                            {LOGO_PRESETS.map(preset => (
-                                <button
-                                    key={preset.id}
-                                    className={`${styles.templateBtn} ${selectedPreset === preset.id ? styles.selected : ''}`}
-                                    onClick={() => setSelectedPreset(preset.id)}
-                                    disabled={isGenerating}
-                                >
-                                    <span className={styles.templateIcon}>{preset.icon}</span>
-                                    <span className={styles.templateName}>{preset.name}</span>
-                                </button>
-                            ))}
+
+                        {/* Clean dropdown selector instead of emoji grid */}
+                        <div className={styles.themeSelector}>
+                            <label htmlFor="theme-select" className={styles.themeLabel}>
+                                Choose Theme:
+                            </label>
+                            <select
+                                id="theme-select"
+                                className={styles.themeDropdown}
+                                value={selectedPreset || ''}
+                                onChange={(e) => setSelectedPreset(e.target.value)}
+                                disabled={isGenerating}
+                            >
+                                <option value="">-- Select a theme --</option>
+                                {LOGO_PRESETS.map(preset => (
+                                    <option key={preset.id} value={preset.id}>
+                                        {preset.name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         {error && (

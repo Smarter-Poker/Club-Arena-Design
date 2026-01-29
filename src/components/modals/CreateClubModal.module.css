@@ -296,6 +296,66 @@
     letter-spacing: 2px;
 }
 
+.generatorHint {
+    color: rgba(200, 220, 255, 0.7);
+    font-size: 13px;
+    text-align: center;
+    margin: 0 0 16px 0;
+    line-height: 1.4;
+}
+
+/* Theme Selector Dropdown */
+.themeSelector {
+    margin-bottom: 24px;
+}
+
+.themeLabel {
+    display: block;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(100, 180, 255, 0.9);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+
+.themeDropdown {
+    width: 100%;
+    background: rgba(0, 20, 40, 0.8);
+    border: 2px solid rgba(100, 150, 200, 0.4);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.themeDropdown:hover:not(:disabled) {
+    border-color: rgba(0, 180, 255, 0.6);
+    background: rgba(0, 40, 80, 0.8);
+}
+
+.themeDropdown:focus {
+    border-color: #00d4ff;
+    box-shadow: 0 0 15px rgba(0, 180, 255, 0.3);
+}
+
+.themeDropdown:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.themeDropdown option {
+    background: #0a1929;
+    color: #ffffff;
+    padding: 8px;
+}
+
 .templateGrid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
