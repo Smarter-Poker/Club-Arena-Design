@@ -358,17 +358,37 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
     return (
         <div className={styles.logoGeneratorOverlay} onClick={onClose}>
             <div className={styles.logoGeneratorModalContainer} onClick={(e) => e.stopPropagation()}>
-                {/* Frame image as background */}
-                <img
-                    src="https://club-arena.vercel.app/images/logo-generator-frame.png"
-                    alt="Frame"
-                    className={styles.frameImage}
-                />
+                {/* Show frame only when NOT generating */}
+                {!isGenerating && (
+                    <img
+                        src="https://club-arena.vercel.app/images/logo-generator-frame.png"
+                        alt="Frame"
+                        className={styles.frameImage}
+                    />
+                )}
 
                 {/* Close button positioned over X */}
-                <button className={styles.closeButton} onClick={onClose} aria-label="Close" />
+                <button className={styles.closeButton} onClick={() => { haptic.light(); onClose(); }} aria-label="Close" />
 
-                {!previewUrl ? (
+                {isGenerating ? (
+                    <div style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        textAlign: 'center',
+                        color: '#00d4ff',
+                        fontFamily: 'Orbitron, monospace',
+                        fontSize: '24px',
+                        fontWeight: 600,
+                        textShadow: '0 0 20px rgba(0, 212, 255, 0.8)',
+                        zIndex: 20001
+                    }}>
+                        <div style={{ fontSize: '48px', marginBottom: '20px' }}>⏳</div>
+                        <div>GENERATING LOGO...</div>
+                        <div style={{ fontSize: '14px', marginTop: '10px', opacity: 0.7 }}>Powered by Grok AI</div>
+                    </div>
+                ) : !previewUrl ? (
                     <>
                         {/* Textarea positioned over the grid area */}
                         <textarea
@@ -376,18 +396,15 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
                             placeholder="e.g., A fierce shark with glowing eyes, cyberpunk style..."
                             value={logoDescription}
                             onChange={(e) => setLogoDescription(e.target.value)}
-                            disabled={isGenerating}
                         />
 
                         {/* Submit button positioned over SUBMIT button */}
                         <button
                             className={styles.submitButton}
-                            onClick={handleGenerate}
-                            disabled={!logoDescription.trim() || isGenerating}
+                            onClick={() => { haptic.success(); handleGenerate(); }}
+                            disabled={!logoDescription.trim()}
                             aria-label="Submit"
-                        >
-                            {isGenerating && <span className={styles.spinner}>⏳</span>}
-                        </button>
+                        />
 
                         {error && (
                             <div className={styles.errorMessage}>
@@ -421,6 +438,6 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
                     </>
                 )}
             </div>
-        </div>
+        </div >
     );
 }
