@@ -306,13 +306,13 @@
     opacity: 0.8;
 }
 
-/* Textarea positioned over the grid area */
+/* Textarea positioned over the interior typing canvas (1280x680px @ 1536x1024px frame) */
 .descriptionTextarea {
     position: absolute;
-    top: 30%;
-    left: 17.5%;
-    width: 64.5%;
-    height: 40.5%;
+    top: 16.6%;
+    left: 7.8%;
+    width: 83.3%;
+    height: 66.4%;
     background: transparent;
     border: none;
     outline: none;
@@ -321,7 +321,7 @@
     font-weight: 400;
     color: #ffffff;
     resize: none;
-    padding: 16px;
+    padding: 24px 32px;
     box-sizing: border-box;
     z-index: 10;
 }
