@@ -1,0 +1,72 @@
+/**
+ * 📋 ACTION LOG — Styles
+ */
+
+.action-log {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.action-log__header {
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.action-log__header h3 {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.action-log__content {
+    overflow-y: auto;
+    padding: 4px 0;
+}
+
+.action-entry {
+    display: flex;
+    gap: 8px;
+    padding: 6px 12px;
+    font-size: 11px;
+    align-items: center;
+}
+
+.action-entry:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.action-entry .time {
+    width: 60px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.action-entry .player {
+    flex: 1;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.action-entry .action {
+    font-weight: 700;
+    text-transform: uppercase;
+    min-width: 50px;
+}
+
+.action-entry .amount {
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+    min-width: 60px;
+    text-align: right;
+}
+
+.empty-state {
+    padding: 16px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 11px;
+}

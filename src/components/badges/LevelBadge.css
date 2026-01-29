@@ -1,0 +1,60 @@
+.level-badge {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--level-color), color-mix(in srgb, var(--level-color) 70%, black));
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.level-badge.size-small {
+    width: 32px;
+    height: 32px;
+}
+
+.level-badge.size-medium {
+    width: 44px;
+    height: 44px;
+}
+
+.level-badge.size-large {
+    width: 60px;
+    height: 60px;
+}
+
+.level-number {
+    color: #000;
+    font-weight: 800;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+.size-small .level-number {
+    font-size: 0.85rem;
+}
+
+.size-medium .level-number {
+    font-size: 1.1rem;
+}
+
+.size-large .level-number {
+    font-size: 1.5rem;
+}
+
+.level-label {
+    color: rgba(0, 0, 0, 0.6);
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.size-small .level-label {
+    font-size: 0.45rem;
+}
+
+.size-medium .level-label {
+    font-size: 0.55rem;
+}
+
+.size-large .level-label {
+    font-size: 0.7rem;
+}

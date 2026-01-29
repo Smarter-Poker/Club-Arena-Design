@@ -1,0 +1,148 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  PLAYER PROFILE CARD — Compact Profile Display
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
+import './PlayerProfileCard.css';
+
+interface PlayerProfileCardProps {
+    userId: string;
+    onMessage?: () => void;
+    onAddNote?: () => void;
+    onInvite?: () => void;
+    compact?: boolean;
+}
+
+interface PlayerProfile {
+    id: string;
+    username: string;
+    avatarUrl: string;
+    level: number;
+    xp: number;
+    isVIP: boolean;
+    status: 'online' | 'away' | 'offline' | 'playing';
+    stats: {
+        handsPlayed: number;
+        vpip: number;
+        pfr: number;
+        winRate: number;
+    };
+    currentTable?: string;
+}
+
+export function PlayerProfileCard({
+    userId,
+    onMessage,
+    onAddNote,
+    onInvite,
+    compact = false
+}: PlayerProfileCardProps) {
+    const [profile, setProfile] = useState<PlayerProfile | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        loadProfile();
+    }, [userId]);
+
+    const loadProfile = async () => {
+        setLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*, player_stats(*), player_presence(*)')
+                .eq('id', userId)
+                .single();
+
+            if (!error && data) {
+                const stats = Array.isArray(data.player_stats) ? data.player_stats[0] : data.player_stats;
+                const presence = Array.isArray(data.player_presence) ? data.player_presence[0] : data.player_presence;
+
+                setProfile({
+                    id: data.id,
+                    username: data.username || 'Unknown',
+                    avatarUrl: data.avatar_url || '',
+                    level: data.level || 1,
+                    xp: data.xp || 0,
+                    isVIP: data.is_vip || false,
+                    status: presence?.status || 'offline',
+                    stats: {
+                        handsPlayed: stats?.hands_played || 0,
+                        vpip: stats?.vpip || 0,
+                        pfr: stats?.pfr || 0,
+                        winRate: stats?.win_rate || 0
+                    },
+                    currentTable: presence?.table_name
+                });
+            }
+        } catch (error) {
+            console.error('Failed to load profile:', error);
+        }
+        setLoading(false);
+    };
+
+    if (loading) {
+        return <div className="player-card loading">Loading...</div>;
+    }
+
+    if (!profile) {
+        return <div className="player-card error">Player not found</div>;
+    }
+
+    return (
+        <div className={`player-card ${compact ? 'compact' : ''}`}>
+            <div className="player-card__header">
+                <div className={`status-indicator ${profile.status}`} />
+                <span className="avatar">{profile.avatarUrl}</span>
+                <div className="info">
+                    <span className="username">
+                        {profile.username}
+                        {profile.isVIP && <span className="vip-badge"></span>}
+                    </span>
+                    <span className="level">Level {profile.level}</span>
+                </div>
+            </div>
+
+            {!compact && (
+                <>
+                    <div className="player-card__stats">
+                        <div className="stat">
+                            <span className="value">{profile.stats.handsPlayed.toLocaleString()}</span>
+                            <span className="label">Hands</span>
+                        </div>
+                        <div className="stat">
+                            <span className="value">{profile.stats.vpip}%</span>
+                            <span className="label">VPIP</span>
+                        </div>
+                        <div className="stat">
+                            <span className="value">{profile.stats.pfr}%</span>
+                            <span className="label">PFR</span>
+                        </div>
+                        <div className="stat">
+                            <span className={`value ${profile.stats.winRate >= 0 ? 'positive' : 'negative'}`}>
+                                {profile.stats.winRate >= 0 ? '+' : ''}{profile.stats.winRate}
+                            </span>
+                            <span className="label">BB/100</span>
+                        </div>
+                    </div>
+
+                    {profile.currentTable && (
+                        <div className="player-card__current">
+                             Playing at <strong>{profile.currentTable}</strong>
+                        </div>
+                    )}
+
+                    <div className="player-card__actions">
+                        {onMessage && <button onClick={onMessage}> Message</button>}
+                        {onAddNote && <button onClick={onAddNote}> Note</button>}
+                        {onInvite && <button onClick={onInvite}>📨 Invite</button>}
+                    </div>
+                </>
+            )}
+        </div>
+    );
+}
+
+export default PlayerProfileCard;

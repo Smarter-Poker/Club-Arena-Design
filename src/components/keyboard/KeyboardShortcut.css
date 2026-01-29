@@ -1,0 +1,33 @@
+.keyboard-shortcut {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.keys {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+kbd {
+    display: inline-block;
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    font-family: inherit;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    color: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 2px 0 rgba(255, 255, 255, 0.1);
+}
+
+.plus {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.8rem;
+}
+
+.description {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+}

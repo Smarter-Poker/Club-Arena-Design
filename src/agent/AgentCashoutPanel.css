@@ -1,0 +1,220 @@
+/**
+ * AgentCashoutPanel Styles
+ */
+
+.agent-cashout-panel {
+    background: var(--surface, #1a1a2e);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border, #2a2a4a);
+}
+
+.panel-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #fff;
+    flex: 1;
+}
+
+.count-badge {
+    background: #ffa726;
+    color: #000;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+.refresh-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: none;
+    background: var(--surface-elevated, #2a2a4a);
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background 0.2s;
+}
+
+.refresh-btn:hover {
+    background: var(--surface-hover, #3a3a5a);
+}
+
+.loading-state,
+.empty-state {
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 12px;
+}
+
+.empty-state p {
+    color: var(--text-secondary, #8a8a9a);
+    margin: 0;
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border, #2a2a4a);
+    border-top-color: var(--primary, #667eea);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.error-banner {
+    background: rgba(239, 83, 80, 0.1);
+    border-bottom: 1px solid #ef5350;
+    color: #ef5350;
+    padding: 12px 20px;
+    font-size: 0.875rem;
+}
+
+.cashout-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.cashout-card {
+    padding: 20px;
+    border-bottom: 1px solid var(--border, #2a2a4a);
+    transition: background 0.2s;
+}
+
+.cashout-card:hover {
+    background: var(--surface-elevated, #2a2a4a);
+}
+
+.cashout-card:last-child {
+    border-bottom: none;
+}
+
+.cashout-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.player-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.player-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--surface-elevated, #2a2a4a);
+}
+
+.player-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.player-name {
+    font-weight: 600;
+    color: #fff;
+}
+
+.request-time {
+    font-size: 0.75rem;
+    color: var(--text-secondary, #8a8a9a);
+}
+
+.cashout-amount {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.amount-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #ffa726;
+}
+
+.amount-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary, #8a8a9a);
+}
+
+.player-note {
+    background: var(--surface, #1a1a2e);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.875rem;
+    color: var(--text-secondary, #8a8a9a);
+    font-style: italic;
+    margin-bottom: 12px;
+}
+
+.cashout-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.action-btn {
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.action-btn.approve {
+    background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+    color: #fff;
+}
+
+.action-btn.approve:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.action-btn.reject {
+    background: transparent;
+    border: 1px solid #ef5350;
+    color: #ef5350;
+}
+
+.action-btn.reject:hover:not(:disabled) {
+    background: #ef5350;
+    color: #fff;
+}
+
+.action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.escrow-notice {
+    margin-top: 12px;
+    font-size: 0.75rem;
+    color: var(--text-secondary, #8a8a9a);
+    text-align: center;
+}

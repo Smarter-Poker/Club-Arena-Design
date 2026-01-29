@@ -1,0 +1,35 @@
+.stopwatch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.stopwatch-display {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+}
+
+.stopwatch-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.stopwatch-controls button {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.stopwatch-controls button:hover {
+    background: rgba(255, 215, 0, 0.2);
+    border-color: #ffd700;
+}

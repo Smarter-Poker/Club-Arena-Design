@@ -1,0 +1,234 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * GLOBAL HEADER — Hub-Style Dark Theme Styles
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * Ported from Hub's UniversalHeader for consistency.
+ */
+
+.header {
+    background: #0a0e1a;
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(0, 136, 255, 0.2);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    gap: 8px;
+    flex-wrap: nowrap;
+}
+
+/* LEFT Section */
+.headerLeft {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.navBtn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, rgba(0, 136, 255, 0.2) 0%, rgba(0, 102, 204, 0.3) 100%);
+    border: 1px solid rgba(0, 136, 255, 0.4);
+    color: white;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 136, 255, 0.2);
+    transition: all 0.2s;
+}
+
+.navBtn:hover {
+    background: linear-gradient(135deg, rgba(0, 136, 255, 0.3) 0%, rgba(0, 102, 204, 0.4) 100%);
+}
+
+.brandText {
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+/* CENTER Section */
+.headerCenter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 1;
+    justify-content: center;
+}
+
+.diamondWallet {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.15) 0%, rgba(0, 100, 150, 0.2) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.4);
+    padding: 0 10px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: white;
+    width: 90px;
+    height: 40px;
+    box-sizing: border-box;
+    font-weight: 700;
+}
+
+.xpDisplay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.15) 0%, rgba(0, 100, 150, 0.2) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.4);
+    padding: 0 10px;
+    border-radius: 12px;
+    width: 90px;
+    height: 40px;
+    box-sizing: border-box;
+    line-height: 1.1;
+}
+
+.xpRow {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    color: white;
+    font-weight: 700;
+    font-size: 11px;
+}
+
+.statValue {
+    font-weight: 700;
+}
+
+.addBtn {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: rgba(0, 212, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+/* RIGHT Section */
+.headerRight {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    flex-grow: 1;
+    justify-content: flex-end;
+}
+
+.profileOrb {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 245, 255, 0.5);
+    box-shadow: 0 0 12px rgba(0, 245, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(0, 136, 255, 0.3) 0%, rgba(0, 245, 255, 0.15) 100%);
+    text-decoration: none;
+    overflow: hidden;
+}
+
+.profileImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.orbBtn {
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    transition: transform 0.1s ease, opacity 0.15s ease;
+    text-decoration: none;
+}
+
+.orbBtn:hover {
+    opacity: 0.8;
+    transform: scale(1.1);
+}
+
+.badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: #e41e3f;
+    color: white;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 18px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    border: 2px solid #0a0e1a;
+}
+
+/* Mobile Responsive */
+@media (max-width: 600px) {
+    .header {
+        padding: 6px 10px;
+        gap: 6px;
+    }
+
+    .headerLeft {
+        gap: 4px;
+    }
+
+    .brandText {
+        display: none;
+    }
+
+    .navBtn {
+        padding: 10px 14px;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .diamondWallet,
+    .xpDisplay {
+        width: 75px;
+        height: 36px;
+        padding: 0 6px;
+        font-size: 10px;
+    }
+
+    .orbBtn,
+    .profileOrb {
+        width: 32px;
+        height: 32px;
+    }
+
+    .badge {
+        top: -3px;
+        right: -3px;
+        padding: 0 3px;
+        font-size: 8px;
+        min-width: 10px;
+    }
+}

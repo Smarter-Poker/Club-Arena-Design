@@ -1,0 +1,41 @@
+.button-group {
+    display: inline-flex;
+}
+
+.button-group.horizontal {
+    flex-direction: row;
+    gap: 8px;
+}
+
+.button-group.vertical {
+    flex-direction: column;
+    gap: 8px;
+}
+
+.button-group.attached {
+    gap: 0;
+}
+
+.button-group.attached.horizontal>*:first-child {
+    border-radius: 10px 0 0 10px;
+}
+
+.button-group.attached.horizontal>*:last-child {
+    border-radius: 0 10px 10px 0;
+}
+
+.button-group.attached.horizontal>*:not(:first-child):not(:last-child) {
+    border-radius: 0;
+}
+
+.button-group.attached.vertical>*:first-child {
+    border-radius: 10px 10px 0 0;
+}
+
+.button-group.attached.vertical>*:last-child {
+    border-radius: 0 0 10px 10px;
+}
+
+.button-group.attached.vertical>*:not(:first-child):not(:last-child) {
+    border-radius: 0;
+}

@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+dist/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+*.log
+
+# Production
+build/
+
+# Misc
+.DS_Store
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Vercel
+.vercel

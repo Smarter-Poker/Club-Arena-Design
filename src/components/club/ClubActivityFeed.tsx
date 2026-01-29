@@ -1,0 +1,202 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  CLUB ACTIVITY FEED — Real-time Club Events
+ * Shows recent activity: joins, games, wins, announcements
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+import { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
+import styles from './ClubActivityFeed.module.css';
+
+export type ActivityType = 'member_join' | 'member_leave' | 'table_start' | 'table_end' |
+    'tournament_win' | 'big_hand' | 'announcement' | 'agent_action' | 'payout';
+
+interface ActivityItem {
+    id: string;
+    type: ActivityType;
+    message: string;
+    data?: Record<string, any>;
+    createdAt: string;
+    userId?: string;
+    userName?: string;
+    userAvatar?: string;
+}
+
+interface ClubActivityFeedProps {
+    clubId: string;
+    limit?: number;
+    showFilter?: boolean;
+}
+
+export default function ClubActivityFeed({
+    clubId,
+    limit = 20,
+    showFilter = false
+}: ClubActivityFeedProps) {
+    const [activities, setActivities] = useState<ActivityItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState<ActivityType | 'all'>('all');
+
+    useEffect(() => {
+        loadActivities();
+        subscribeToActivities();
+    }, [clubId]);
+
+    const loadActivities = async () => {
+        setLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('club_activity')
+                .select(`
+                    id,
+                    activity_type,
+                    message,
+                    data,
+                    created_at,
+                    user_id,
+                    profiles(display_name, avatar_url)
+                `)
+                .eq('club_id', clubId)
+                .order('created_at', { ascending: false })
+                .limit(limit);
+
+            if (error) throw error;
+
+            const items: ActivityItem[] = (data || []).map((a: any) => ({
+                id: a.id,
+                type: a.activity_type,
+                message: a.message,
+                data: a.data,
+                createdAt: a.created_at,
+                userId: a.user_id,
+                userName: a.profiles?.display_name,
+                userAvatar: a.profiles?.avatar_url
+            }));
+
+            setActivities(items);
+        } catch (error) {
+            console.error('Failed to load activities:', error);
+        }
+        setLoading(false);
+    };
+
+    const subscribeToActivities = () => {
+        const channel = supabase
+            .channel(`club_activity:${clubId}`)
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'club_activity',
+                filter: `club_id=eq.${clubId}`
+            }, async (payload) => {
+                const newActivity = payload.new as any;
+
+                // Fetch user profile
+                let userName = undefined;
+                let userAvatar = undefined;
+                if (newActivity.user_id) {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('display_name, avatar_url')
+                        .eq('id', newActivity.user_id)
+                        .single();
+                    userName = profile?.display_name;
+                    userAvatar = profile?.avatar_url;
+                }
+
+                setActivities(prev => [{
+                    id: newActivity.id,
+                    type: newActivity.activity_type,
+                    message: newActivity.message,
+                    data: newActivity.data,
+                    createdAt: newActivity.created_at,
+                    userId: newActivity.user_id,
+                    userName,
+                    userAvatar
+                }, ...prev].slice(0, limit));
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    };
+
+    const getActivityIcon = (type: ActivityType): string => {
+        switch (type) {
+            case 'member_join': return '';
+            case 'member_leave': return '';
+            case 'table_start': return '';
+            case 'table_end': return '';
+            case 'tournament_win': return '';
+            case 'big_hand': return '';
+            case 'announcement': return '';
+            case 'agent_action': return '';
+            case 'payout': return '';
+            default: return '';
+        }
+    };
+
+    const formatTime = (dateStr: string): string => {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays === 1) return 'Yesterday';
+        return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    };
+
+    const filteredActivities = filter === 'all'
+        ? activities
+        : activities.filter(a => a.type === filter);
+
+    return (
+        <div className={styles.feed}>
+            <div className={styles.header}>
+                <h3> Activity</h3>
+                {showFilter && (
+                    <select
+                        value={filter}
+                        onChange={e => setFilter(e.target.value as ActivityType | 'all')}
+                        className={styles.filterSelect}
+                    >
+                        <option value="all">All Activity</option>
+                        <option value="member_join">New Members</option>
+                        <option value="table_start">Games</option>
+                        <option value="tournament_win">Tournament Wins</option>
+                        <option value="big_hand">Big Hands</option>
+                        <option value="announcement">Announcements</option>
+                    </select>
+                )}
+            </div>
+
+            <div className={styles.list}>
+                {loading ? (
+                    <div className={styles.loading}>Loading activity...</div>
+                ) : filteredActivities.length === 0 ? (
+                    <div className={styles.empty}>No activity yet</div>
+                ) : (
+                    filteredActivities.map(activity => (
+                        <div key={activity.id} className={styles.item}>
+                            <span className={styles.icon}>{getActivityIcon(activity.type)}</span>
+                            <div className={styles.content}>
+                                {activity.userName && (
+                                    <span className={styles.userName}>{activity.userName} </span>
+                                )}
+                                <span className={styles.message}>{activity.message}</span>
+                            </div>
+                            <span className={styles.time}>{formatTime(activity.createdAt)}</span>
+                        </div>
+                    ))
+                )}
+            </div>
+        </div>
+    );
+}

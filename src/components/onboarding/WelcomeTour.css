@@ -1,0 +1,140 @@
+.welcome-tour {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+}
+
+.tour-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+}
+
+.tour-tooltip {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, rgba(30, 30, 50, 0.98), rgba(20, 20, 35, 0.98));
+    border-radius: 20px;
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    padding: 28px;
+    max-width: 400px;
+    width: 90%;
+    animation: tooltipIn 0.3s ease-out;
+}
+
+@keyframes tooltipIn {
+    from {
+        transform: translate(-50%, -50%) scale(0.9);
+        opacity: 0;
+    }
+
+    to {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+}
+
+.tour-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.tour-step-indicator {
+    background: rgba(255, 215, 0, 0.15);
+    color: #ffd700;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.tour-skip {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.tour-skip:hover {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.tour-tooltip h3 {
+    color: #fff;
+    font-size: 1.4rem;
+    margin: 0 0 12px;
+}
+
+.tour-tooltip p {
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.6;
+    margin: 0 0 20px;
+}
+
+.tour-progress {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.progress-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transition: all 0.2s;
+}
+
+.progress-dot.active {
+    width: 24px;
+    border-radius: 4px;
+    background: #ffd700;
+}
+
+.progress-dot.completed {
+    background: rgba(255, 215, 0, 0.5);
+}
+
+.tour-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.prev-btn {
+    flex: 1;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.prev-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.next-btn {
+    flex: 2;
+    padding: 12px;
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    border: none;
+    border-radius: 10px;
+    color: #000;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.next-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(255, 215, 0, 0.4);
+}

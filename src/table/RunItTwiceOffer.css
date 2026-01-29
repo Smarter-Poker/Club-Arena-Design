@@ -1,0 +1,101 @@
+/**
+ *  RUN IT TWICE — Styles
+ */
+
+.run-it-twice-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.run-it-twice {
+    background: linear-gradient(180deg, #1a1a2e 0%, #0d0d1a 100%);
+    border: 2px solid rgba(168, 85, 247, 0.4);
+    border-radius: 16px;
+    padding: 24px;
+    width: 90%;
+    max-width: 320px;
+    text-align: center;
+}
+
+.rit-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.rit-header .icon {
+    font-size: 28px;
+}
+
+.rit-header h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    color: #a855f7;
+}
+
+.description {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0 0 16px 0;
+}
+
+.countdown {
+    margin-bottom: 20px;
+}
+
+.countdown .time {
+    font-size: 32px;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    color: #fbbf24;
+}
+
+.rit-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.rit-actions button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s;
+}
+
+.rit-actions .decline {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+}
+
+.rit-actions .accept {
+    background: linear-gradient(135deg, #a855f7, #7c3aed);
+    border: none;
+    color: #fff;
+}
+
+.rit-actions button:hover {
+    transform: scale(1.02);
+}

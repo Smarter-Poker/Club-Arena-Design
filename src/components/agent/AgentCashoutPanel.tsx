@@ -1,0 +1,187 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  AGENT CASHOUT PANEL — Manage Player Cashout Requests
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * Component for agents to view and process pending cashout requests
+ */
+
+import { useState, useEffect, useCallback } from 'react';
+import { cashoutService, CashoutRequest } from '../../services/CashoutService';
+import { useUserStore } from '../../stores/useUserStore';
+import './AgentCashoutPanel.css';
+
+interface AgentCashoutPanelProps {
+    clubId?: string;
+    onCashoutProcessed?: () => void;
+}
+
+export default function AgentCashoutPanel({ clubId, onCashoutProcessed }: AgentCashoutPanelProps) {
+    const { user } = useUserStore();
+    const [cashouts, setCashouts] = useState<CashoutRequest[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [processing, setProcessing] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    // Load pending cashouts
+    const loadCashouts = useCallback(async () => {
+        if (!user?.id) return;
+
+        setLoading(true);
+        try {
+            const pending = await cashoutService.getAgentPendingCashouts(user.id, clubId);
+            setCashouts(pending);
+        } catch (err) {
+            console.error('Failed to load cashouts:', err);
+        }
+        setLoading(false);
+    }, [user?.id, clubId]);
+
+    useEffect(() => {
+        loadCashouts();
+
+        // Poll for updates every 30s
+        const interval = setInterval(loadCashouts, 30000);
+        return () => clearInterval(interval);
+    }, [loadCashouts]);
+
+    const handleApprove = async (cashout: CashoutRequest) => {
+        if (!user?.id) return;
+
+        setProcessing(cashout.id);
+        setError(null);
+
+        try {
+            await cashoutService.approveCashout(cashout.id, user.id);
+            await cashoutService.completeCashout(cashout.id, user.id);
+            loadCashouts();
+            onCashoutProcessed?.();
+        } catch (err: any) {
+            setError(err.message || 'Failed to approve cashout');
+        }
+        setProcessing(null);
+    };
+
+    const handleReject = async (cashout: CashoutRequest, reason?: string) => {
+        if (!user?.id) return;
+
+        setProcessing(cashout.id);
+        setError(null);
+
+        try {
+            await cashoutService.rejectCashout(cashout.id, user.id, reason);
+            loadCashouts();
+            onCashoutProcessed?.();
+        } catch (err: any) {
+            setError(err.message || 'Failed to reject cashout');
+        }
+        setProcessing(null);
+    };
+
+    const formatTime = (dateStr: string) => {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays < 7) return `${diffDays}d ago`;
+        return date.toLocaleDateString();
+    };
+
+    if (loading) {
+        return (
+            <div className="agent-cashout-panel">
+                <div className="panel-header">
+                    <h3> Pending Cashouts</h3>
+                </div>
+                <div className="loading-state">
+                    <div className="spinner" />
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="agent-cashout-panel">
+            <div className="panel-header">
+                <h3> Pending Cashouts</h3>
+                <span className="count-badge">{cashouts.length}</span>
+                <button className="refresh-btn" onClick={loadCashouts} title="Refresh">
+                    
+                </button>
+            </div>
+
+            {error && (
+                <div className="error-banner">{error}</div>
+            )}
+
+            {cashouts.length === 0 ? (
+                <div className="empty-state">
+                    <span className="empty-icon"></span>
+                    <p>No pending cashout requests</p>
+                </div>
+            ) : (
+                <div className="cashout-list">
+                    {cashouts.map(cashout => (
+                        <div key={cashout.id} className="cashout-card">
+                            <div className="cashout-header">
+                                <div className="player-info">
+                                    <img
+                                        src={cashout.playerAvatar || '/default-avatar.png'}
+                                        alt=""
+                                        className="player-avatar"
+                                    />
+                                    <div className="player-details">
+                                        <span className="player-name">
+                                            {cashout.playerName || 'Player'}
+                                        </span>
+                                        <span className="request-time">
+                                            {formatTime(cashout.createdAt)}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="cashout-amount">
+                                    <span className="amount-value">
+                                        {cashout.amount.toLocaleString()}
+                                    </span>
+                                    <span className="amount-label">chips</span>
+                                </div>
+                            </div>
+
+                            {cashout.playerNote && (
+                                <div className="player-note">
+                                     "{cashout.playerNote}"
+                                </div>
+                            )}
+
+                            <div className="cashout-actions">
+                                <button
+                                    className="action-btn approve"
+                                    onClick={() => handleApprove(cashout)}
+                                    disabled={processing === cashout.id}
+                                >
+                                    {processing === cashout.id ? '...' : ' Approve & Complete'}
+                                </button>
+                                <button
+                                    className="action-btn reject"
+                                    onClick={() => handleReject(cashout, 'Request declined')}
+                                    disabled={processing === cashout.id}
+                                >
+                                    {processing === cashout.id ? '...' : ' Reject'}
+                                </button>
+                            </div>
+
+                            <div className="escrow-notice">
+                                 Chips are locked in escrow. Approving will complete the cashout.
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}

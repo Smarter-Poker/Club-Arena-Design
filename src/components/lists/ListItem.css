@@ -1,0 +1,55 @@
+.list-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.2s;
+}
+
+.list-item:first-child {
+    border-radius: 12px 12px 0 0;
+}
+
+.list-item:last-child {
+    border-radius: 0 0 12px 12px;
+    border-bottom: none;
+}
+
+.list-item:only-child {
+    border-radius: 12px;
+}
+
+.list-item.clickable {
+    cursor: pointer;
+}
+
+.list-item.clickable:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.list-item-left {
+    flex-shrink: 0;
+}
+
+.list-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.list-item-title {
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.95);
+    margin-bottom: 2px;
+}
+
+.list-item-subtitle {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.list-item-right {
+    flex-shrink: 0;
+    color: rgba(255, 255, 255, 0.6);
+}

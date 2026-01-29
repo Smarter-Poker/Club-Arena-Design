@@ -1,0 +1,101 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  TOURNAMENT CHIP COUNT — Live Chip Leader Display
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
+import './TournamentChipCount.css';
+
+interface TournamentChipCountProps {
+    tournamentId: string;
+    limit?: number;
+}
+
+interface ChipLeader {
+    userId: string;
+    username: string;
+    avatarUrl: string;
+    chipCount: number;
+    tableNumber: number;
+    rank: number;
+}
+
+export function TournamentChipCount({ tournamentId, limit = 10 }: TournamentChipCountProps) {
+    const [leaders, setLeaders] = useState<ChipLeader[]>([]);
+    const [totalChips, setTotalChips] = useState(0);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        loadChipCounts();
+
+        const interval = setInterval(loadChipCounts, 10000);
+
+        return () => clearInterval(interval);
+    }, [tournamentId]);
+
+    const loadChipCounts = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('tournament_registrations')
+                .select('user_id, chip_count, table_number, player:profiles!user_id(username, avatar_url)')
+                .eq('tournament_id', tournamentId)
+                .eq('is_eliminated', false)
+                .order('chip_count', { ascending: false })
+                .limit(limit);
+
+            if (!error && data) {
+                let total = 0;
+                const mapped = data.map((p, idx) => {
+                    total += p.chip_count || 0;
+                    const player = Array.isArray(p.player) ? p.player[0] : p.player;
+                    return {
+                        userId: p.user_id,
+                        username: player?.username || 'Unknown',
+                        avatarUrl: player?.avatar_url || '',
+                        chipCount: p.chip_count || 0,
+                        tableNumber: p.table_number || 0,
+                        rank: idx + 1
+                    };
+                });
+                setLeaders(mapped);
+                setTotalChips(total);
+            }
+        } catch (error) {
+            console.error('Failed to load chip counts:', error);
+        }
+        setLoading(false);
+    };
+
+    const avgStack = leaders.length > 0 ? totalChips / leaders.length : 0;
+
+    if (loading) {
+        return <div className="chip-count loading">Loading...</div>;
+    }
+
+    return (
+        <div className="chip-count">
+            <div className="chip-count__header">
+                <h3> Chip Counts</h3>
+                <span className="avg-stack">Avg: {avgStack.toLocaleString()}</span>
+            </div>
+
+            <div className="chip-count__list">
+                {leaders.map(leader => (
+                    <div key={leader.userId} className={`leader-row rank-${leader.rank}`}>
+                        <span className="rank">{leader.rank}</span>
+                        <span className="avatar">{leader.avatarUrl}</span>
+                        <div className="player-info">
+                            <span className="username">{leader.username}</span>
+                            <span className="table">Table {leader.tableNumber}</span>
+                        </div>
+                        <span className="chips">{leader.chipCount.toLocaleString()}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+export default TournamentChipCount;

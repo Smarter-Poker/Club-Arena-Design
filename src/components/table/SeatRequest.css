@@ -1,0 +1,55 @@
+/**
+ * 🪑 SEAT REQUEST — Styles
+ */
+
+.seat-request {
+    padding: 20px;
+    text-align: center;
+}
+
+.seat-request h4 {
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.seats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    max-width: 200px;
+    margin: 0 auto 16px;
+}
+
+.seat {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.seat.available {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border: none;
+    color: #fff;
+}
+
+.seat.available:hover {
+    transform: scale(1.05);
+}
+
+.seat.taken {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-muted);
+    cursor: not-allowed;
+}
+
+.hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: 0;
+}

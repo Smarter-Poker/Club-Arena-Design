@@ -1,0 +1,179 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * ️ TOURNAMENT BRACKET — Visual Tournament Display
+ * Shows tournament structure, matchups, and progression
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+import { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
+import styles from './TournamentBracket.module.css';
+
+interface BracketPlayer {
+    userId: string;
+    displayName: string;
+    avatarUrl?: string;
+    chips: number;
+    eliminated: boolean;
+    finishPosition?: number;
+}
+
+interface BracketMatch {
+    id: string;
+    round: number;
+    matchNumber: number;
+    player1?: BracketPlayer;
+    player2?: BracketPlayer;
+    winner?: string;
+    status: 'pending' | 'active' | 'complete';
+}
+
+interface TournamentBracketProps {
+    tournamentId: string;
+    totalPlayers: number;
+}
+
+export default function TournamentBracket({
+    tournamentId,
+    totalPlayers
+}: TournamentBracketProps) {
+    const [players, setPlayers] = useState<BracketPlayer[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        loadPlayers();
+    }, [tournamentId]);
+
+    const loadPlayers = async () => {
+        setLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('tournament_players')
+                .select(`
+                    user_id,
+                    chips,
+                    status,
+                    finish_position,
+                    profiles(display_name, avatar_url)
+                `)
+                .eq('tournament_id', tournamentId);
+
+            if (error) throw error;
+
+            const mapped: BracketPlayer[] = (data || []).map((p: any) => ({
+                userId: p.user_id,
+                displayName: p.profiles?.display_name || 'Unknown',
+                avatarUrl: p.profiles?.avatar_url,
+                chips: p.chips || 0,
+                eliminated: p.status === 'eliminated',
+                finishPosition: p.finish_position
+            }));
+
+            // Sort by chips (active) or finish position (eliminated)
+            mapped.sort((a, b) => {
+                if (a.eliminated && !b.eliminated) return 1;
+                if (!a.eliminated && b.eliminated) return -1;
+                if (a.eliminated && b.eliminated) {
+                    return (a.finishPosition || 99) - (b.finishPosition || 99);
+                }
+                return b.chips - a.chips;
+            });
+
+            setPlayers(mapped);
+        } catch (error) {
+            console.error('Failed to load bracket:', error);
+        }
+        setLoading(false);
+    };
+
+    const formatChips = (chips: number): string => {
+        if (chips >= 1000000) return `${(chips / 1000000).toFixed(1)}M`;
+        if (chips >= 1000) return `${(chips / 1000).toFixed(0)}K`;
+        return chips.toLocaleString();
+    };
+
+    const getPositionBadge = (pos?: number): string => {
+        if (!pos) return '';
+        if (pos === 1) return '';
+        if (pos === 2) return '';
+        if (pos === 3) return '';
+        return `#${pos}`;
+    };
+
+    const activePlayers = players.filter(p => !p.eliminated);
+    const eliminatedPlayers = players.filter(p => p.eliminated);
+
+    if (loading) {
+        return (
+            <div className={styles.container}>
+                <div className={styles.loading}>Loading bracket...</div>
+            </div>
+        );
+    }
+
+    return (
+        <div className={styles.container}>
+            {/* Header */}
+            <div className={styles.header}>
+                <h3> Tournament Standings</h3>
+                <div className={styles.stats}>
+                    <span className={styles.stat}>
+                        <span className={styles.statValue}>{activePlayers.length}</span>
+                        <span className={styles.statLabel}>Remaining</span>
+                    </span>
+                    <span className={styles.stat}>
+                        <span className={styles.statValue}>{eliminatedPlayers.length}</span>
+                        <span className={styles.statLabel}>Eliminated</span>
+                    </span>
+                </div>
+            </div>
+
+            {/* Active Players */}
+            <div className={styles.section}>
+                <h4>Still In ({activePlayers.length})</h4>
+                <div className={styles.playerGrid}>
+                    {activePlayers.map((player, index) => (
+                        <div key={player.userId} className={styles.playerCard}>
+                            <span className={styles.rank}>{index + 1}</span>
+                            <div className={styles.avatar}>
+                                {player.avatarUrl ? (
+                                    <img src={player.avatarUrl} alt="" />
+                                ) : (
+                                    <span></span>
+                                )}
+                            </div>
+                            <div className={styles.info}>
+                                <span className={styles.name}>{player.displayName}</span>
+                                <span className={styles.chips}> {formatChips(player.chips)}</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Eliminated Players */}
+            {eliminatedPlayers.length > 0 && (
+                <div className={styles.section}>
+                    <h4>Finished ({eliminatedPlayers.length})</h4>
+                    <div className={styles.eliminatedList}>
+                        {eliminatedPlayers.map(player => (
+                            <div key={player.userId} className={styles.eliminatedRow}>
+                                <span className={styles.position}>
+                                    {getPositionBadge(player.finishPosition)}
+                                </span>
+                                <div className={styles.avatar}>
+                                    {player.avatarUrl ? (
+                                        <img src={player.avatarUrl} alt="" />
+                                    ) : (
+                                        <span></span>
+                                    )}
+                                </div>
+                                <span className={styles.name}>{player.displayName}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

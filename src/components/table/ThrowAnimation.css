@@ -1,0 +1,227 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  THROW ANIMATION — Styles
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+.throw-animation-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 500;
+    overflow: visible;
+}
+
+.throw-animation {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PROJECTILE — Flying Object
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.throw-animation__projectile {
+    position: absolute;
+    font-size: 2.5rem;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+    z-index: 510;
+}
+
+.throw-animation__icon {
+    display: block;
+    animation: wobble 0.15s ease-in-out infinite;
+}
+
+@keyframes wobble {
+
+    0%,
+    100% {
+        transform: rotate(-5deg);
+    }
+
+    50% {
+        transform: rotate(5deg);
+    }
+}
+
+/* Arc throw animation (for throwables) */
+.throw-animation__projectile--arc {
+    left: var(--from-x);
+    top: var(--from-y);
+    animation: throwArc 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes throwArc {
+    0% {
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 0;
+    }
+
+    15% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    50% {
+        /* Peak of arc - goes up */
+        transform: translate(calc((var(--to-x) - var(--from-x)) * 0.5 - 50%),
+                calc((var(--to-y) - var(--from-y)) * 0.5 - 80px - 50%)) scale(1.2) rotate(180deg);
+    }
+
+    100% {
+        transform: translate(calc(var(--to-x) - var(--from-x) - 50%),
+                calc(var(--to-y) - var(--from-y) - 50%)) scale(1) rotate(360deg);
+        opacity: 1;
+    }
+}
+
+/* Float animation (for reactions) */
+.throw-animation__projectile--float {
+    left: var(--from-x);
+    top: var(--from-y);
+    animation: throwFloat 0.6s ease-out forwards;
+}
+
+@keyframes throwFloat {
+    0% {
+        transform: translate(-50%, -50%) scale(0.3);
+        opacity: 0;
+    }
+
+    30% {
+        transform: translate(-50%, -100%) scale(1.2);
+        opacity: 1;
+    }
+
+    60% {
+        transform: translate(calc((var(--to-x) - var(--from-x)) * 0.7 - 50%),
+                calc((var(--to-y) - var(--from-y)) * 0.7 - 30px - 50%)) scale(1);
+    }
+
+    100% {
+        transform: translate(calc(var(--to-x) - var(--from-x) - 50%),
+                calc(var(--to-y) - var(--from-y) - 50%)) scale(0.9);
+        opacity: 1;
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   IMPACT — Landing Effect
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.throw-animation__impact {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 520;
+    animation: impactPop 0.8s ease-out forwards;
+}
+
+@keyframes impactPop {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+
+    20% {
+        transform: translate(-50%, -50%) scale(1.5);
+    }
+
+    100% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+    }
+}
+
+.throw-animation__impact-icon {
+    font-size: 3rem;
+    animation: impactBounce 0.3s ease-out;
+}
+
+@keyframes impactBounce {
+    0% {
+        transform: scale(1.5);
+    }
+
+    50% {
+        transform: scale(0.8);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.throw-animation__burst {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: radial-gradient(circle,
+            rgba(255, 215, 0, 0.4) 0%,
+            rgba(255, 215, 0, 0.1) 40%,
+            transparent 70%);
+    animation: burstExpand 0.6s ease-out forwards;
+}
+
+@keyframes burstExpand {
+    0% {
+        transform: scale(0.2);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SPECIAL EFFECTS — Premium Throwables
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Fireworks burst */
+.throw-animation__impact[data-type="fireworks"] .throw-animation__burst {
+    background: radial-gradient(circle,
+            rgba(255, 100, 100, 0.5) 0%,
+            rgba(255, 200, 100, 0.4) 30%,
+            rgba(100, 200, 255, 0.3) 60%,
+            transparent 80%);
+    animation: fireworksBurst 1s ease-out forwards;
+}
+
+@keyframes fireworksBurst {
+    0% {
+        transform: scale(0.1);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(3);
+        opacity: 0;
+    }
+}
+
+/* Lightning flash */
+.throw-animation__impact[data-type="lightning"] .throw-animation__burst {
+    background: radial-gradient(circle,
+            rgba(150, 200, 255, 0.8) 0%,
+            rgba(100, 150, 255, 0.4) 40%,
+            transparent 70%);
+}
+
+/* Diamond rain sparkle */
+.throw-animation__impact[data-type="diamond-rain"] .throw-animation__burst {
+    background: radial-gradient(circle,
+            rgba(150, 200, 255, 0.6) 0%,
+            rgba(212, 168, 75, 0.4) 40%,
+            transparent 70%);
+}

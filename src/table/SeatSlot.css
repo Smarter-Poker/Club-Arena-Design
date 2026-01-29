@@ -1,0 +1,498 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 🪑 SEAT SLOT — Styles
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BASE CONTAINER — PokerIQ Style
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.seat-slot {
+    position: relative;
+    width: 90px;
+    min-height: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: transparent;
+    border: none;
+    padding: 0;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    overflow: visible;
+}
+
+.seat-slot:hover {
+    transform: scale(1.05);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   EMPTY SEAT
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.seat-slot--empty {
+    background: rgba(18, 18, 26, 0.6);
+    border: 2px dashed rgba(212, 168, 75, 0.3);
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.seat-slot--empty:hover {
+    background: rgba(212, 168, 75, 0.1);
+    border-color: rgba(212, 168, 75, 0.5);
+}
+
+.seat-slot__empty-marker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.seat-slot__seat-number {
+    font-size: 0.625rem;
+    color: rgba(212, 168, 75, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.seat-slot__sit-button {
+    background: linear-gradient(180deg, #D4A84B 0%, #B8922A 100%);
+    border: 1px solid #C9A227;
+    color: #0A0A1A;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.seat-slot__sit-button:hover {
+    background: linear-gradient(180deg, #E4B85B 0%, #D4A84B 100%);
+    transform: scale(1.05);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   STATE VARIANTS
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.seat-slot--hero {
+    border-color: rgba(16, 185, 129, 0.5);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+}
+
+.seat-slot--active {
+    border-color: rgba(255, 215, 0, 0.6);
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.2);
+    animation: activeGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes activeGlow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 25px rgba(255, 215, 0, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 0 35px rgba(255, 215, 0, 0.35);
+    }
+}
+
+.seat-slot--folded {
+    opacity: 0.5;
+    filter: grayscale(50%);
+}
+
+.seat-slot--away,
+.seat-slot--sitting_out {
+    opacity: 0.7;
+}
+
+.seat-slot--all_in {
+    border-color: rgba(244, 63, 94, 0.6);
+    box-shadow: 0 0 20px rgba(244, 63, 94, 0.2);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ACTIVE GLOW EFFECT
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.seat-slot__active-glow {
+    position: absolute;
+    inset: -4px;
+    border-radius: 14px;
+    background: radial-gradient(circle at center, rgba(255, 215, 0, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+    animation: pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+
+    0%,
+    100% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TIMER BAR
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.seat-slot__timer-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px 12px 0 0;
+    overflow: hidden;
+}
+
+.seat-slot__timer-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10B981 0%, #FFD700 50%, #F43F5E 100%);
+    transition: width 0.1s linear;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CONTENT LAYOUT
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.seat-slot__content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   AVATAR — Large Character Style (125px height)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.seat-slot__avatar-container {
+    position: relative;
+    flex-shrink: 0;
+    margin-bottom: 0;
+}
+
+.seat-slot__avatar {
+    width: auto;
+    height: 125px;
+    max-width: 100px;
+    border-radius: 8px;
+    border: 3px solid #D4A84B;
+    object-fit: contain;
+    background: linear-gradient(135deg, #1E3A5F 0%, #0D1F33 100%);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.seat-slot__avatar--default {
+    width: 80px;
+    height: 125px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1E3A5F 0%, #0D1F33 100%);
+    color: #D4A84B;
+    font-size: 2.5rem;
+    font-weight: 700;
+    border-radius: 8px;
+}
+
+.seat-slot__status-dot {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #0A0A1A;
+}
+
+.seat-slot__status-dot--away {
+    background: #F59E0B;
+}
+
+.seat-slot__status-dot--sitting_out {
+    background: #6B7280;
+}
+
+.seat-slot__status-dot--all_in {
+    background: #F43F5E;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PLAYER INFO BOX — Golden Box with Name + Chip Count
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.seat-slot__info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 80px;
+    background: linear-gradient(180deg, rgba(20, 20, 35, 0.95) 0%, rgba(10, 10, 26, 0.98) 100%);
+    border: 2px solid #D4A84B;
+    border-radius: 8px;
+    padding: 6px 12px;
+    margin-top: -12px;
+    position: relative;
+    z-index: 5;
+    box-shadow: 0 4px 12px rgba(212, 168, 75, 0.2), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.seat-slot__name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #FFFFFF;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80px;
+    text-align: center;
+    line-height: 1.2;
+}
+
+.seat-slot__stack {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: #D4A84B;
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    margin-top: 2px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   POSITION CHIP
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.seat-slot__position-chip {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.625rem;
+    font-weight: 800;
+    color: #0A0A0F;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(0, 0, 0, 0.2);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   HOLE CARDS — PokerIQ Style (Large & Visible)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.seat-slot__cards {
+    position: absolute;
+    bottom: -8px;
+    left: 100%;
+    margin-left: 8px;
+    display: flex;
+    gap: 4px;
+    z-index: 20;
+}
+
+/* Hero cards are larger and more prominent */
+.seat-slot--hero .seat-slot__cards {
+    left: 50%;
+    margin-left: 50px;
+    bottom: 50%;
+    transform: translateY(50%);
+}
+
+.seat-slot__card {
+    width: 40px;
+    height: 56px;
+    background: linear-gradient(180deg, #FFFFFF 0%, #F0F0F0 100%);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s ease;
+}
+
+/* Hero gets larger cards */
+.seat-slot--hero .seat-slot__card {
+    width: 52px;
+    height: 72px;
+    border-radius: 8px;
+    border: 2px solid #D4A84B;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+
+.seat-slot__card--hidden {
+    background: linear-gradient(180deg, #1E3A5F 0%, #0D1F33 100%);
+    border-color: #2E5A8F;
+}
+
+.seat-slot__card-back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.seat-slot__card-pattern {
+    color: rgba(212, 168, 75, 0.4);
+    font-size: 1.5rem;
+}
+
+.seat-slot__card-rank {
+    font-size: 1.125rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.seat-slot--hero .seat-slot__card-rank {
+    font-size: 1.5rem;
+}
+
+.seat-slot__card-suit {
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.seat-slot--hero .seat-slot__card-suit {
+    font-size: 1.75rem;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ACTION BADGE
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.seat-slot__action-badge {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    animation: badgePopIn 0.3s ease;
+}
+
+@keyframes badgePopIn {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+.seat-slot__action-badge--fold {
+    background: rgba(107, 114, 128, 0.9);
+    color: #FFFFFF;
+}
+
+.seat-slot__action-badge--check {
+    background: rgba(16, 185, 129, 0.9);
+    color: #FFFFFF;
+}
+
+.seat-slot__action-badge--call {
+    background: rgba(65, 105, 225, 0.9);
+    color: #FFFFFF;
+}
+
+.seat-slot__action-badge--bet,
+.seat-slot__action-badge--raise {
+    background: rgba(245, 158, 11, 0.9);
+    color: #0A0A0F;
+}
+
+.seat-slot__action-badge--all_in {
+    background: linear-gradient(135deg, #DC143C 0%, #F43F5E 100%);
+    color: #FFFFFF;
+    animation: allInPulse 1s ease-in-out infinite;
+}
+
+@keyframes allInPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 10px rgba(244, 63, 94, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(244, 63, 94, 0.8);
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ALL-IN BADGE (PERMANENT)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.seat-slot__all-in-badge {
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 2px 8px;
+    background: linear-gradient(135deg, #DC143C 0%, #F43F5E 100%);
+    color: #FFFFFF;
+    border-radius: 4px;
+    font-size: 0.625rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    box-shadow: 0 2px 8px rgba(244, 63, 94, 0.4);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   RESPONSIVE
+   ───────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+    .seat-slot {
+        width: 100px;
+        min-height: 75px;
+        padding: 8px;
+    }
+
+    .seat-slot__avatar {
+        width: 32px;
+        height: 32px;
+    }
+
+    .seat-slot__name {
+        font-size: 0.75rem;
+        max-width: 50px;
+    }
+
+    .seat-slot__stack {
+        font-size: 0.6875rem;
+    }
+
+    .seat-slot__card {
+        width: 30px;
+        height: 44px;
+    }
+}

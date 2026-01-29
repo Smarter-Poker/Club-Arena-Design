@@ -1,0 +1,118 @@
+/**
+ *  TRANSACTION HISTORY — Styles
+ */
+
+.transaction-history {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.transaction-history.loading {
+    padding: 24px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.transaction-history__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.transaction-history__header h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.transaction-history__header select {
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 12px;
+}
+
+.transaction-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.transaction-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    transition: background 0.15s;
+}
+
+.transaction-row:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.transaction-row .icon {
+    font-size: 20px;
+}
+
+.transaction-row .details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.transaction-row .type {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.transaction-row .description {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.transaction-row .amounts {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.transaction-row .amount {
+    font-size: 14px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+}
+
+.transaction-row .amount.positive {
+    color: #4ade80;
+}
+
+.transaction-row .amount.negative {
+    color: #f87171;
+}
+
+.transaction-row .balance {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.transaction-row .time {
+    font-size: 10px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 32px;
+    color: var(--text-secondary);
+}

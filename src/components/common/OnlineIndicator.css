@@ -1,0 +1,96 @@
+/**
+ * 🟢 ONLINE INDICATOR — Styles
+ */
+
+.online-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.indicator-dot {
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* Sizes */
+.online-indicator.sm .indicator-dot {
+    width: 6px;
+    height: 6px;
+}
+
+.online-indicator.md .indicator-dot {
+    width: 8px;
+    height: 8px;
+}
+
+.online-indicator.lg .indicator-dot {
+    width: 10px;
+    height: 10px;
+}
+
+/* Status Colors */
+.online-indicator.online .indicator-dot {
+    background: #22c55e;
+    box-shadow: 0 0 6px #22c55e;
+}
+
+.online-indicator.away .indicator-dot {
+    background: #fbbf24;
+    box-shadow: 0 0 6px #fbbf24;
+    animation: none;
+}
+
+.online-indicator.disconnected .indicator-dot {
+    background: #f87171;
+    box-shadow: 0 0 6px #f87171;
+    animation: blink 1s ease-in-out infinite;
+}
+
+.online-indicator.offline .indicator-dot {
+    background: #6b7280;
+    box-shadow: none;
+    animation: none;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.3;
+    }
+}
+
+/* Label */
+.indicator-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.online-indicator.online .indicator-label {
+    color: #22c55e;
+}
+
+.online-indicator.away .indicator-label {
+    color: #fbbf24;
+}
+
+.online-indicator.disconnected .indicator-label {
+    color: #f87171;
+}
