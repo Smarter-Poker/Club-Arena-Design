@@ -306,13 +306,13 @@
     opacity: 0.8;
 }
 
-/* Textarea positioned within interior blue grid (below header, above submit button) */
+/* Textarea positioned within interior blue grid (calibration tool verified: 24%, 11%, 78%, 51%) */
 .descriptionTextarea {
     position: absolute;
     top: 24%;
-    left: 12%;
-    width: 76%;
-    height: 52%;
+    left: 11%;
+    width: 78%;
+    height: 51%;
     background: transparent;
     border: none;
     outline: none;
