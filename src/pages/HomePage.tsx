@@ -185,31 +185,21 @@ export default function HomePage() {
     useEffect(() => {
         async function fetchSharkClubStats() {
             try {
-                // Find Shark Club by club_id = 25450
+                // Find Shark Club by club_id = 292499 (correct club_id)
                 const { data: club } = await supabase
                     .from('clubs')
-                    .select('id, member_count, level')
-                    .eq('club_id', 25450)
+                    .select('id, member_count')
+                    .eq('club_id', 292499)
                     .maybeSingle();
 
                 if (club) {
                     setSharkClubId(club.id);
+                    // Hardcode stats to show 1 member and 1 active player
                     setSharkClubStats({
-                        totalMembers: club.member_count || 0,
-                        clubLevel: club.level || 1,
-                        activePlayers: 0, // Will update with presence
+                        totalMembers: 1,
+                        clubLevel: 1, // Hardcoded as requested
+                        activePlayers: 1,
                     });
-
-                    // Get active players count from presence
-                    const { count } = await supabase
-                        .from('player_presence')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('club_id', club.id)
-                        .eq('status', 'playing');
-
-                    if (count !== null) {
-                        setSharkClubStats(prev => ({ ...prev, activePlayers: count }));
-                    }
                 }
             } catch (err) {
                 console.error('Failed to fetch Shark Club stats:', err);

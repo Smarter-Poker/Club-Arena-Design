@@ -4660,8 +4660,8 @@
             dominant-baseline: middle;
         }
     </style>
-    <text id="total-members" class="stat-number" x="139.1357894736842" y="886.4888157894736" font-size="48">72,850</text>
-    <text id="club-level" class="stat-number" x="296.64437499999997" y="901.514375" font-size="48">50</text>
-    <text id="active-players" class="stat-number" x="470.485625" y="890.8915625" font-size="48">18,211</text>
+    <text id="total-members" class="stat-number" x="139.1357894736842" y="886.4888157894736" font-size="48">1</text>
+    <text id="club-level" class="stat-number" x="296.64437499999997" y="901.514375" font-size="48">1</text>
+    <text id="active-players" class="stat-number" x="470.485625" y="890.8915625" font-size="48">1</text>
 
 </svg>

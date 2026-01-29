@@ -240,7 +240,9 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
                     onClick={() => { haptic.medium(); setShowLogoGenerator(true); }}
                     aria-label="Create Logo"
                 >
-                    {!logoPreview && <span className={styles.plusIcon}>+</span>}
+                    {logoPreview && (
+                        <img src={logoPreview} alt="Logo preview" className={styles.logoThumb} />
+                    )}
                 </button>
 
                 {/* Hidden file input */}
