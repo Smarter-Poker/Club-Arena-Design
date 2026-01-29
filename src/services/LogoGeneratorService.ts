@@ -50,7 +50,7 @@ export async function generateClubLogo(options: LogoGenerationOptions): Promise<
     const prompt = buildLogoPrompt(clubName, style, theme, colorScheme);
 
     try {
-        console.log('[LogoGenerator] Generating with Grok 3 (grok-3)...');
+        console.log('[LogoGenerator] Generating with Grok 2 Vision (grok-2-vision-1212)...');
 
         const response = await fetch(XAI_API_URL, {
             method: 'POST',
@@ -59,7 +59,7 @@ export async function generateClubLogo(options: LogoGenerationOptions): Promise<
                 'Authorization': `Bearer ${XAI_API_KEY}`,
             },
             body: JSON.stringify({
-                model: 'grok-3', // Latest Grok 3 image generation model
+                model: 'grok-2-vision-1212', // Grok 2 Vision model for image generation
                 prompt: prompt,
                 n: 1,
                 // Note: Grok doesn't support 'size' parameter, uses default output size

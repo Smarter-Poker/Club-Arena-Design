@@ -299,7 +299,7 @@
     background: transparent;
     border: none;
     cursor: pointer;
-    z-index: 10;
+    z-index: 20000;
 }
 
 .closeButton:hover {
@@ -345,7 +345,7 @@
     background: transparent;
     border: none;
     cursor: pointer;
-    z-index: 10;
+    z-index: 20000;
     display: flex;
     align-items: center;
     justify-content: center;
