@@ -314,29 +314,26 @@ const LOGO_PRESETS = [
 ];
 
 function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorModalProps) {
-    const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+    const [logoDescription, setLogoDescription] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
     const handleGenerate = async () => {
-        if (!selectedPreset) return;
+        if (!logoDescription.trim()) return;
 
         setIsGenerating(true);
         setError(null);
         setPreviewUrl(null);
 
         try {
-            const preset = LOGO_PRESETS.find(p => p.id === selectedPreset);
-            if (!preset) return;
-
-            // Import the service dynamically to avoid circular deps
+            // Import the service dynamically
             const { generateClubLogo } = await import('../../services/LogoGeneratorService');
 
             const result = await generateClubLogo({
                 clubName: clubName || 'Poker Club',
-                style: preset.style,
-                theme: preset.theme,
+                style: 'modern',
+                theme: logoDescription.trim(),
             });
 
             if (result.success && result.logoUrl) {
@@ -361,33 +358,24 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
     return (
         <div className={styles.logoGeneratorOverlay} onClick={onClose}>
             <div className={styles.logoGeneratorModal} onClick={(e) => e.stopPropagation()}>
-                <h3>🤖 AI Logo Generator</h3>
+                <h3>Create Custom Logo</h3>
 
                 {!previewUrl ? (
                     <>
                         <p className={styles.generatorHint}>
-                            Select a theme and our AI will create a unique logo for your club
+                            Describe your custom logo
                         </p>
 
-                        {/* Clean dropdown selector instead of emoji grid */}
-                        <div className={styles.themeSelector}>
-                            <label htmlFor="theme-select" className={styles.themeLabel}>
-                                Choose Theme:
-                            </label>
-                            <select
-                                id="theme-select"
-                                className={styles.themeDropdown}
-                                value={selectedPreset || ''}
-                                onChange={(e) => setSelectedPreset(e.target.value)}
+                        {/* Text input for logo description */}
+                        <div className={styles.descriptionInput}>
+                            <textarea
+                                className={styles.descriptionTextarea}
+                                placeholder="e.g., A fierce shark with glowing eyes, cyberpunk style..."
+                                value={logoDescription}
+                                onChange={(e) => setLogoDescription(e.target.value)}
                                 disabled={isGenerating}
-                            >
-                                <option value="">-- Select a theme --</option>
-                                {LOGO_PRESETS.map(preset => (
-                                    <option key={preset.id} value={preset.id}>
-                                        {preset.name}
-                                    </option>
-                                ))}
-                            </select>
+                                rows={4}
+                            />
                         </div>
 
                         {error && (
@@ -400,7 +388,7 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
                             <button
                                 className={styles.generateBtn}
                                 onClick={handleGenerate}
-                                disabled={!selectedPreset || isGenerating}
+                                disabled={!logoDescription.trim() || isGenerating}
                             >
                                 {isGenerating ? (
                                     <>
@@ -408,7 +396,7 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
                                         Generating...
                                     </>
                                 ) : (
-                                    '🎨 Generate Logo'
+                                    'Submit'
                                 )}
                             </button>
                             <button className={styles.cancelBtn} onClick={onClose}>
@@ -433,7 +421,7 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
                                 className={styles.cancelBtn}
                                 onClick={() => {
                                     setPreviewUrl(null);
-                                    setSelectedPreset(null);
+                                    setLogoDescription('');
                                 }}
                             >
                                 Try Another
