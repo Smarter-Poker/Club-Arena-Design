@@ -320,8 +320,13 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
     const handleGenerate = async () => {
-        if (!logoDescription.trim()) return;
+        console.log('[LogoGenerator] handleGenerate called');
+        if (!logoDescription.trim()) {
+            console.log('[LogoGenerator] No description, returning');
+            return;
+        }
 
+        console.log('[LogoGenerator] Setting isGenerating to TRUE');
         setIsGenerating(true);
         setError(null);
         setPreviewUrl(null);
@@ -345,6 +350,7 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
             console.error('Failed to generate logo:', err);
             setError(err instanceof Error ? err.message : 'Unknown error');
         } finally {
+            console.log('[LogoGenerator] Setting isGenerating to FALSE');
             setIsGenerating(false);
         }
     };
@@ -354,6 +360,8 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
             onSelect(previewUrl);
         }
     };
+
+    console.log('[LogoGenerator] Rendering - isGenerating:', isGenerating, 'previewUrl:', !!previewUrl);
 
     return (
         <div className={styles.logoGeneratorOverlay} onClick={onClose}>
