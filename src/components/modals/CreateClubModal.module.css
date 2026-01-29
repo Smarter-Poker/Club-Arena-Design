@@ -306,13 +306,13 @@
     opacity: 0.8;
 }
 
-/* Textarea positioned over the interior typing canvas (1280x680px @ 1536x1024px frame) */
+/* Textarea positioned within interior blue grid (below header, above submit button) */
 .descriptionTextarea {
     position: absolute;
-    top: 16.6%;
-    left: 7.8%;
-    width: 83.3%;
-    height: 66.4%;
+    top: 24%;
+    left: 12%;
+    width: 76%;
+    height: 52%;
     background: transparent;
     border: none;
     outline: none;
