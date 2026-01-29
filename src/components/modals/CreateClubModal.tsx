@@ -358,8 +358,8 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
     return (
         <div className={styles.logoGeneratorOverlay} onClick={onClose}>
             <div className={styles.logoGeneratorModalContainer} onClick={(e) => e.stopPropagation()}>
-                {/* Show frame only when NOT generating */}
-                {!isGenerating && (
+                {/* Show frame only when showing input form (not generating, not preview) */}
+                {!isGenerating && !previewUrl && (
                     <img
                         src="https://club-arena.vercel.app/images/logo-generator-frame.png"
                         alt="Frame"
@@ -386,7 +386,7 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
                     }}>
                         <div style={{ fontSize: '48px', marginBottom: '20px' }}>⏳</div>
                         <div>GENERATING LOGO...</div>
-                        <div style={{ fontSize: '14px', marginTop: '10px', opacity: 0.7 }}>Powered by Grok AI</div>
+                        <div style={{ fontSize: '14px', marginTop: '10px', opacity: 0.7 }}>Powered by Smarter.Poker</div>
                     </div>
                 ) : !previewUrl ? (
                     <>
