@@ -81,6 +81,35 @@ export type SupabaseClient = typeof supabase;
 if (typeof window !== 'undefined') {
     console.log('[SSO] Same-origin SSO enabled via shared storageKey: smarter-poker-auth');
 
+    // ══════════════════════════════════════════════════════════════════════════
+    // SESSION MIGRATION — Move sessions from old default key to shared key
+    // ══════════════════════════════════════════════════════════════════════════
+    // Users who logged in before the SSO update may have their session stored
+    // under the default Supabase key. This migrates them to the shared key.
+    const OLD_DEFAULT_KEY = 'sb-kuklfnapbkmacvwxktbh-auth-token';
+    const NEW_SHARED_KEY = 'smarter-poker-auth';
+    const MIGRATION_FLAG = 'smarter_poker_auth_migration';
+
+    try {
+        const hasMigrated = localStorage.getItem(MIGRATION_FLAG);
+        const hasNewSession = localStorage.getItem(NEW_SHARED_KEY);
+        const hasOldSession = localStorage.getItem(OLD_DEFAULT_KEY);
+
+        if (!hasMigrated && !hasNewSession && hasOldSession) {
+            console.log('[SSO] 🔄 Migrating session from old key to shared key...');
+            localStorage.setItem(NEW_SHARED_KEY, hasOldSession);
+            localStorage.setItem(MIGRATION_FLAG, new Date().toISOString());
+            console.log('[SSO] ✅ Session migrated successfully');
+            // Reload to pick up the migrated session
+            window.location.reload();
+        } else if (!hasMigrated) {
+            // Mark as checked even if no migration needed
+            localStorage.setItem(MIGRATION_FLAG, new Date().toISOString());
+        }
+    } catch (e) {
+        console.error('[SSO] Migration error:', e);
+    }
+
     // Log session status on load for debugging
     supabase.auth.getSession().then(({ data: { session } }) => {
         if (session) {
