@@ -387,20 +387,28 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
                 {isGenerating ? (
                     <div style={{
                         position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        textAlign: 'center',
-                        color: '#00d4ff',
-                        fontFamily: 'Orbitron, monospace',
-                        fontSize: '24px',
-                        fontWeight: 600,
-                        textShadow: '0 0 20px rgba(0, 212, 255, 0.8)',
-                        zIndex: 20001
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: 'rgba(10, 10, 26, 0.98)',
+                        zIndex: 99999
                     }}>
-                        <div style={{ fontSize: '48px', marginBottom: '20px' }}>⏳</div>
-                        <div>GENERATING LOGO...</div>
-                        <div style={{ fontSize: '14px', marginTop: '10px', opacity: 0.7 }}>Powered by Smarter.Poker</div>
+                        <div style={{
+                            textAlign: 'center',
+                            color: '#00d4ff',
+                            fontFamily: 'Orbitron, monospace',
+                            fontSize: '24px',
+                            fontWeight: 600,
+                            textShadow: '0 0 20px rgba(0, 212, 255, 0.8)',
+                        }}>
+                            <div style={{ fontSize: '48px', marginBottom: '20px' }}>⏳</div>
+                            <div>GENERATING LOGO...</div>
+                            <div style={{ fontSize: '14px', marginTop: '10px', opacity: 0.7 }}>Powered by Smarter.Poker</div>
+                        </div>
                     </div>
                 ) : previewUrl ? (
                     <>
