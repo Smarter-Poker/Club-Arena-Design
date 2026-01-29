@@ -19,19 +19,29 @@ smarter.poker/hub/club-arena → Vercel rewrite → club-arena.vercel.app/hub/cl
 
 ## Deployment Steps
 
+**🚨 CRITICAL RULE: ALWAYS deploy to production after ANY code change! 🚨**
+
 ### 1. Deploy Club Arena Changes
 ```bash
 cd /Users/smarter.poker/Documents/club-arena
 
 # Commit your changes
-git add .
+git add -A
 git commit -m "your commit message"
-git push
+git push origin main
 
-# Force deploy to Vercel (recommended for immediate updates)
+# Deploy to production (MANDATORY after any code change)
 // turbo
-vercel deploy --prod --force
+vercel --prod --yes
 ```
+
+**When to deploy:**
+- ✅ After ANY code changes (components, pages, services, styles)
+- ✅ After configuration changes (vercel.json, package.json, etc.)
+- ✅ After asset updates (images, videos, SVGs)
+- ✅ After bug fixes, features, or UI improvements
+
+**DO NOT skip deployment!** The user expects changes live on smarter.poker immediately.
 
 ### 2. Verify Deployment
 After deploying, verify at: `https://club-arena.vercel.app/hub/club-arena/`

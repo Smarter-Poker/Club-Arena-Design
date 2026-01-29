@@ -16,6 +16,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
+import { useWalletStore } from '../stores/useWalletStore';
 import haptic from '../services/HapticService';
 import './ClubHomePage.css';
 
@@ -61,6 +62,7 @@ export default function ClubHomePage() {
     const { clubId } = useParams<{ clubId: string }>();
     const navigate = useNavigate();
     const { user } = useUserStore();
+    const { diamonds } = useWalletStore();
 
     const [club, setClub] = useState<ClubData | null>(null);
     const [tables, setTables] = useState<TableData[]>([]);
@@ -99,9 +101,9 @@ export default function ClubHomePage() {
 
         if (profileData) {
             setUserProfile(profileData as UserProfileData);
-            // Format player number as 7 digits
+            // Format player number WITHOUT leading zeros
             const pNum = (profileData as any).player_number || Math.floor(Math.random() * 9999999);
-            setPlayerNumber(pNum.toString().padStart(7, '0'));
+            setPlayerNumber(pNum.toString());
         }
     };
 
@@ -141,7 +143,7 @@ export default function ClubHomePage() {
                 if (memberData) {
                     setWallet({
                         gold: memberData.chip_balance || 0,
-                        diamonds: 0
+                        diamonds: 0 // Note: Real diamond balance comes from useWalletStore
                     });
                 }
             }
@@ -232,12 +234,12 @@ export default function ClubHomePage() {
                     </div>
                 </div>
                 <div className="club-home__header-center">
-                    <div className="club-home__vip-badge">VIP</div>
+                    <Link to="/diamond-store/vip" className="club-home__vip-badge" onClick={() => haptic.light()}>VIP</Link>
                 </div>
                 <div className="club-home__header-right">
-                    <div className="club-home__diamonds">
+                    <div className="club-home__diamonds" onClick={() => { haptic.light(); navigate('/diamond-store'); }} style={{ cursor: 'pointer' }}>
                         <span className="diamond-icon"></span>
-                        <span className="diamond-amount">{wallet.diamonds.toLocaleString()}</span>
+                        <span className="diamond-amount">{diamonds.toLocaleString()}</span>
                     </div>
                 </div>
             </header>
