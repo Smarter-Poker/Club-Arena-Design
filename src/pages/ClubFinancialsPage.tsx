@@ -7,7 +7,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import { ClubFinancialDashboard } from '../components/dashboard/ClubFinancialDashboard';
 import FinancialChart from '../components/charts/FinancialChart';
 import './ClubFinancialsPage.css';
@@ -158,7 +157,6 @@ export default function ClubFinancialsPage() {
     if (loading) {
         return (
             <div className="financials-page">
-                <SmarterHeader title=" Financials" />
                 <div className="loading-state"><div className="spinner" /></div>
             </div>
         );
@@ -166,7 +164,6 @@ export default function ClubFinancialsPage() {
 
     return (
         <div className="financials-page">
-            <SmarterHeader title=" Financials" />
 
             {/* Period Selector */}
             <div className="period-selector">

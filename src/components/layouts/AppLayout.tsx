@@ -3,7 +3,7 @@
  * Main shell layout with navigation
  * ═══════════════════════════════════════════════════════════════════════════════
  * GLOBAL COMPONENTS WIRED:
- * - QuickActionsBar: FAB menu for quick navigation
+ * - GlobalHeader: Contains hamburger menu for quick navigation
  * - NotificationDropdown: Real-time notification center in header
  * - ClubAnnouncementBanner: Important announcements at top of content
  * ═══════════════════════════════════════════════════════════════════════════════
@@ -13,7 +13,6 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import styles from './AppLayout.module.css';
 import ClubArenaWelcomeModal, { useClubArenaWelcome } from '../modals/ClubArenaWelcomeModal';
-import QuickActionsBar from '../navigation/QuickActionsBar';
 import ClubAnnouncementBanner from '../club/ClubAnnouncementBanner';
 import GlobalHeader from '../navigation/GlobalHeader';
 import { useUserStore } from '../../stores/useUserStore';
@@ -39,12 +38,9 @@ export default function AppLayout() {
         };
     }, []);
 
-    // User store for FAB conditional rendering
+    // User store for conditional rendering
     const { user } = useUserStore();
     const { showWelcome, isReady, acceptWelcome } = useClubArenaWelcome();
-
-    // Hide QuickActionsBar on club pages (they have ClubBottomNav instead)
-    const isOnClubPage = location.pathname.includes('/clubs/') || location.pathname.includes('/club-arena/clubs/');
 
     return (
         <div className={`${styles.layout} ${isInIframe ? styles.embedded : ''}`}>
@@ -66,9 +62,6 @@ export default function AppLayout() {
             <main className={styles.main}>
                 <Outlet />
             </main>
-
-            {/* Quick Actions FAB - Global floating action button (hidden on club pages) */}
-            {user && !isInIframe && !isOnClubPage && <QuickActionsBar />}
 
             {/* Footer - Hide when in iframe */}
             {!isInIframe && (

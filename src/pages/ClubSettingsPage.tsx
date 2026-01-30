@@ -8,7 +8,6 @@ import { supabase } from '../lib/supabase';
 import { ClubsService } from '../services/ClubsService';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import './ClubSettingsPage.css';
 
 interface ClubSettings {
@@ -146,7 +145,6 @@ export default function ClubSettingsPage() {
     if (loading) {
         return (
             <div className="club-settings-page">
-                <SmarterHeader title=" Club Settings" />
                 <div className="loading-state"><div className="spinner" /></div>
             </div>
         );
@@ -154,7 +152,6 @@ export default function ClubSettingsPage() {
 
     return (
         <div className="club-settings-page">
-            <SmarterHeader title=" Club Settings" />
 
             <div className="settings-content">
                 {/* Basic Info */}

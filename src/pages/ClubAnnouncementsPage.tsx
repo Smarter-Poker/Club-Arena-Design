@@ -7,7 +7,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import './ClubAnnouncementsPage.css';
 
 interface Announcement {
@@ -149,7 +148,6 @@ export default function ClubAnnouncementsPage() {
 
     return (
         <div className="announcements-page">
-            <SmarterHeader title=" Announcements" />
 
             {isAdmin && !showComposer && (
                 <div className="admin-bar">

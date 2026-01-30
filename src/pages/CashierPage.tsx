@@ -6,7 +6,6 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useWalletStore } from '../stores/useWalletStore';
 import { useUserStore } from '../stores/useUserStore';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import './CashierPage.css';
 
 type CashierAction = 'buyin' | 'cashout' | 'mint';
@@ -91,8 +90,6 @@ export default function CashierPage() {
 
     return (
         <div className="cashier-page">
-            <SmarterHeader title=" Cashier" />
-
             {/* Balance Cards */}
             <div className="balance-cards">
                 <div className="balance-card chips">
@@ -117,19 +114,19 @@ export default function CashierPage() {
                     className={action === 'buyin' ? 'active' : ''}
                     onClick={() => setAction('buyin')}
                 >
-                     Buy-In
+                    Buy-In
                 </button>
                 <button
                     className={action === 'cashout' ? 'active' : ''}
                     onClick={() => setAction('cashout')}
                 >
-                     Cash-Out
+                    Cash-Out
                 </button>
                 <button
                     className={action === 'mint' ? 'active' : ''}
                     onClick={() => setAction('mint')}
                 >
-                     Mint Chips
+                    Mint Chips
                 </button>
             </div>
 
@@ -148,7 +145,7 @@ export default function CashierPage() {
 
                 {action === 'mint' && amount && (
                     <div className="conversion-info">
-                         {Math.ceil(parseFloat(amount || '0') * DIAMOND_RATE).toLocaleString()} diamonds required
+                        {Math.ceil(parseFloat(amount || '0') * DIAMOND_RATE).toLocaleString()} diamonds required
                     </div>
                 )}
 
