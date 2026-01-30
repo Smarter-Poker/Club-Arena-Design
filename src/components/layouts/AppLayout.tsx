@@ -15,7 +15,6 @@ import styles from './AppLayout.module.css';
 import ClubArenaWelcomeModal, { useClubArenaWelcome } from '../modals/ClubArenaWelcomeModal';
 import ClubAnnouncementBanner from '../club/ClubAnnouncementBanner';
 import GlobalHeader from '../navigation/GlobalHeader';
-import FloatingHamburger from '../navigation/FloatingHamburger';
 import { useUserStore } from '../../stores/useUserStore';
 
 export default function AppLayout() {
@@ -43,11 +42,6 @@ export default function AppLayout() {
     const { user } = useUserStore();
     const { showWelcome, isReady, acceptWelcome } = useClubArenaWelcome();
 
-    // Hide FloatingHamburger on poker table pages
-    const isOnTablePage = location.pathname.includes('/table/') ||
-        location.pathname.includes('/tables/') ||
-        location.pathname.includes('/training/arena/');
-
     return (
         <div className={`${styles.layout} ${isInIframe ? styles.embedded : ''}`}>
             {/* First-time Welcome Modal - Always show regardless of iframe */}
@@ -64,13 +58,11 @@ export default function AppLayout() {
             {/* Global Announcement Banner (shows club announcements when in a club context) */}
             <ClubAnnouncementBanner />
 
+
             {/* Main Content */}
             <main className={styles.main}>
                 <Outlet />
             </main>
-
-            {/* Floating Hamburger Menu - Bottom-right navigation (hidden on table pages) */}
-            {user && !isInIframe && !isOnTablePage && <FloatingHamburger />}
 
             {/* Footer - Hide when in iframe */}
             {!isInIframe && (
