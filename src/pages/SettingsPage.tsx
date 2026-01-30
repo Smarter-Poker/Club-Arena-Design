@@ -8,7 +8,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import { notificationService } from '../services/NotificationService';
 import UserProfileEdit from '../components/social/UserProfileEdit';
 import { useSettingsStore } from '../stores/useSettingsStore';
@@ -386,7 +385,6 @@ export default function SettingsPage() {
 
     return (
         <div className={styles.page}>
-            <SmarterHeader title=" Settings" />
             <div className={styles.headerActions}>
                 {hasChanges && (
                     <button
