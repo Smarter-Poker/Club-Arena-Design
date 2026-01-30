@@ -8,34 +8,41 @@
 
 .card {
     position: relative;
-    background: linear-gradient(135deg, #1a2a3a 0%, #0d1520 100%);
+    /* Brushed steel gradient */
+    background: linear-gradient(135deg, #4a5a6a 0%, #3a4a5a 50%, #5a6a7a 100%);
     border-radius: 12px;
-    border: 1px solid #2a3a4a;
+    /* THICK glowing border */
+    border: 4px solid #00d4ff;
     overflow: hidden;
     box-shadow:
-        0 4px 20px rgba(0, 0, 0, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        /* Outer glow */
+        0 0 20px rgba(0, 212, 255, 0.6),
+        0 8px 32px rgba(0, 0, 0, 0.7),
+        /* Inner bevel */
+        inset 0 2px 4px rgba(255, 255, 255, 0.2),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* Metallic top edge */
+/* Metallic top edge - THICK and BRIGHT */
 .card::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, #2a3a4a, #4a5a6a, #2a3a4a);
+    height: 4px;
+    background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+    box-shadow: 0 0 15px #00d4ff;
 }
 
-/* Glow variation */
+/* Glow variation - even brighter */
 .glow {
-    border-color: rgba(0, 212, 255, 0.3);
+    border-color: #00d4ff;
 }
 
 .glow::before {
     background: linear-gradient(90deg, transparent, var(--metal-glow-cyan), transparent);
-    box-shadow: 0 0 10px var(--metal-glow-cyan);
+    box-shadow: 0 0 20px var(--metal-glow-cyan), 0 0 40px rgba(0, 212, 255, 0.4);
 }
 
 /* Sizes */

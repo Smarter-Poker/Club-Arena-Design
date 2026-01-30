@@ -31,17 +31,21 @@
 
 .input {
     width: 100%;
-    padding: 14px 18px;
-    background: linear-gradient(180deg, #0d1520 0%, #1a2332 100%);
-    border: 2px solid #2a3a4a;
+    padding: 18px 24px;
+    background: linear-gradient(180deg, #0d1520, #1a2332, #0d1520);
+    /* THICK glowing border */
+    border: 3px solid #00d4ff;
     border-radius: 6px;
     color: var(--metal-text);
-    font-size: 1rem;
+    font-size: 1.5rem;
+    font-weight: 600;
     outline: none;
     transition: all 0.2s ease;
     box-shadow:
-        inset 0 2px 8px rgba(0, 0, 0, 0.4),
-        0 1px 0 rgba(255, 255, 255, 0.05);
+        /* Outer glow */
+        0 0 15px rgba(0, 212, 255, 0.4),
+        /* Deep inset shadow */
+        inset 0 4px 12px rgba(0, 0, 0, 0.6);
 }
 
 .input::placeholder {
@@ -49,10 +53,12 @@
 }
 
 .input:focus {
-    border-color: var(--metal-glow-cyan);
+    border-color: #00d4ff;
     box-shadow:
-        inset 0 2px 8px rgba(0, 0, 0, 0.4),
-        0 0 15px rgba(0, 212, 255, 0.2);
+        /* Brighter glow on focus */
+        0 0 25px rgba(0, 212, 255, 0.7),
+        0 0 50px rgba(0, 212, 255, 0.3),
+        inset 0 4px 12px rgba(0, 0, 0, 0.6);
 }
 
 .input:focus+.glow {
@@ -64,8 +70,9 @@
     bottom: 0;
     left: 10%;
     right: 10%;
-    height: 2px;
+    height: 4px;
     background: linear-gradient(90deg, transparent, var(--metal-glow-cyan), transparent);
+    box-shadow: 0 0 20px var(--metal-glow-cyan);
     opacity: 0;
     transition: opacity 0.2s ease;
     pointer-events: none;

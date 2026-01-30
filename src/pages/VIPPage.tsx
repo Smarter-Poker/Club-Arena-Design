@@ -116,7 +116,7 @@ export default function VIPPage() {
                         {/* VIP Card Image */}
                         <div style={{ marginBottom: 16 }}>
                             <img
-                                src="/vip-card.jpg"
+                                src="/vip-card.png"
                                 alt="VIP Card"
                                 style={{
                                     width: '100%',
