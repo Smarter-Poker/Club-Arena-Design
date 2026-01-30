@@ -29,7 +29,8 @@
 /* Menu Panel */
 .menu {
     position: fixed;
-    top: 0;
+    top: 56px;
+    /* Start below GlobalHeader (40px height + 16px padding) */
     left: 0;
     bottom: 0;
     width: 320px;
