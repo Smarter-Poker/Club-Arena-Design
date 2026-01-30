@@ -26,22 +26,23 @@
     }
 }
 
-/* Menu Panel - Positioned below GlobalHeader */
+/* Menu Panel - Full screen overlay above GlobalHeader */
 .menu {
     position: fixed;
-    top: 56px;
-    /* Start below GlobalHeader (40px height + 16px padding) */
+    top: 0;
     left: 0;
     bottom: 0;
     width: 320px;
     max-width: 85vw;
     background: #2c3e50;
-    z-index: 1000;
+    z-index: 1001;
+    /* Above GlobalHeader (1000) */
     display: flex;
     flex-direction: column;
     animation: slideIn 0.3s ease;
     overflow-y: auto;
-    /* Cache bust: v2 */
+    padding-top: 56px;
+    /* Space for GlobalHeader */
 }
 
 @keyframes slideIn {
