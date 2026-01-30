@@ -290,40 +290,32 @@ export default function HomePage() {
     };
 
     // ═══════════════════════════════════════════════════════════════════════════════
-    // BUILD CAROUSEL CARDS
+    // BUILD CAROUSEL CARDS - Exclude Shark Club (already shown as featured card)
     // ═══════════════════════════════════════════════════════════════════════════════
     const buildCarouselCards = (): ClubCard[] => {
         const cards: ClubCard[] = [];
 
-        // Add all user clubs to carousel (unlimited)
-        userClubs.forEach((club, idx) => {
-            // Check if this is Shark Club (Featured)
-            const isSharkClub = club.name?.toLowerCase().includes('shark');
-
-            cards.push({
-                id: club.id,
-                title: club.name?.toUpperCase() || 'MY CLUB',
-                subtitle: club.is_owner ? 'CLUB OWNER' : 'MEMBER',
-                description: `${club.member_count || 0} MEMBERS\n${club.active_tables || 0} ACTIVE TABLES`,
-                icon: club.logo_url ? '' : '♣',
-                logoUrl: club.logo_url,
-                color: '#00d4ff',
-                frameImage: getFrameImage(idx),
-                isFeatured: isSharkClub,
-                action: () => {
-                    localStorage.setItem(LAST_VISITED_KEY, club.id);
-                    localStorage.setItem(LAST_CLUB_KEY, club.id);
-                    navigate(`/clubs/${club.id}`);
-                },
+        // Add user clubs to carousel, EXCLUDING Shark Club (it's shown as featured card)
+        userClubs
+            .filter((club) => club.id !== sharkClubId) // Don't duplicate Shark Club
+            .forEach((club, idx) => {
+                cards.push({
+                    id: club.id,
+                    title: club.name?.toUpperCase() || 'MY CLUB',
+                    subtitle: club.is_owner ? 'CLUB OWNER' : 'MEMBER',
+                    description: `${club.member_count || 0} MEMBERS\n${club.active_tables || 0} ACTIVE TABLES`,
+                    icon: club.logo_url ? '' : '♣',
+                    logoUrl: club.logo_url,
+                    color: '#00d4ff',
+                    frameImage: getFrameImage(idx),
+                    isFeatured: false,
+                    action: () => {
+                        localStorage.setItem(LAST_VISITED_KEY, club.id);
+                        localStorage.setItem(LAST_CLUB_KEY, club.id);
+                        navigate(`/clubs/${club.id}`);
+                    },
+                });
             });
-        });
-
-        // Sort so Shark Club (Featured) is always first
-        cards.sort((a, b) => {
-            if (a.isFeatured && !b.isFeatured) return -1;
-            if (!a.isFeatured && b.isFeatured) return 1;
-            return 0;
-        });
 
         return cards;
     };
