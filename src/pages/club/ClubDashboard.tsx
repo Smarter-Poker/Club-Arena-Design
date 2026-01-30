@@ -18,7 +18,7 @@ import { useUserStore } from '../../stores/useUserStore';
 import ClubStatsCards from '../../components/club/ClubStatsCards';
 import ClubActivityFeed from '../../components/club/ClubActivityFeed';
 import LeaderboardCard from '../../components/leaderboard/LeaderboardCard';
-import SmarterHeader from '../../components/layout/SmarterHeader';
+import ClubBottomNav from '../../components/club/ClubBottomNav';
 import styles from './ClubDashboard.module.css';
 
 interface ClubInfo {
@@ -47,6 +47,7 @@ export default function ClubDashboard() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'players' | 'tables'>('overview');
     const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'all'>('week');
+    const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
 
     useEffect(() => {
         if (clubId) {
@@ -146,7 +147,6 @@ export default function ClubDashboard() {
 
     return (
         <div className={styles.dashboard}>
-            <SmarterHeader title={`${club.name} Dashboard`} />
 
             {/* Dashboard Header */}
             <header className={styles.header}>
@@ -168,10 +168,10 @@ export default function ClubDashboard() {
                         ➕ New Table
                     </Link>
                     <Link to={`/clubs/${clubId}/announcements`} className={styles.actionBtn}>
-                         Announce
+                        Announce
                     </Link>
                     <Link to={`/clubs/${clubId}/settings`} className={styles.actionBtn}>
-                         Settings
+                        Settings
                     </Link>
                 </div>
             </header>
@@ -310,6 +310,13 @@ export default function ClubDashboard() {
                     </div>
                 )}
             </div>
+
+            {clubId && (
+                <ClubBottomNav
+                    clubId={clubId}
+                    userRole={userRole}
+                />
+            )}
         </div>
     );
 }
