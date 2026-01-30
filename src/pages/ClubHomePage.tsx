@@ -18,6 +18,7 @@ import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import { useWalletStore } from '../stores/useWalletStore';
 import haptic from '../services/HapticService';
+import ClubBottomNav from '../components/club/ClubBottomNav';
 import './ClubHomePage.css';
 
 // Types
@@ -71,6 +72,7 @@ export default function ClubHomePage() {
     const [activeFilter, setActiveFilter] = useState<GameFilter>('ALL');
     const [isOwner, setIsOwner] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
 
     // User profile data
     const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
@@ -132,10 +134,10 @@ export default function ClubHomePage() {
             if (authUser) {
                 setIsOwner(clubData.owner_id === authUser.id);
 
-                // Load user's wallet for this club
+                // Load user's wallet and role for this club
                 const { data: memberData } = await supabase
                     .from('club_members')
-                    .select('chip_balance')
+                    .select('chip_balance, role')
                     .eq('club_id', clubId)
                     .eq('user_id', authUser.id)
                     .single();
@@ -145,6 +147,7 @@ export default function ClubHomePage() {
                         gold: memberData.chip_balance || 0,
                         diamonds: 0 // Note: Real diamond balance comes from useWalletStore
                     });
+                    setUserRole(memberData.role || 'member');
                 }
             }
 
@@ -382,11 +385,15 @@ export default function ClubHomePage() {
             <div className="club-home__background"></div>
 
             {/* ═══════════════════════════════════════════════════════════════════
-                FLOATING ACTION BUTTON (Bottom Right)
+                BOTTOM NAVIGATION BAR
             ═══════════════════════════════════════════════════════════════════ */}
-            <button className="club-home__fab" onClick={() => haptic.medium()}>
-                <span className="fab-icon">≡</span>
-            </button>
+            {clubId && (
+                <ClubBottomNav
+                    clubId={clubId}
+                    userRole={userRole}
+                    clubName={club?.name}
+                />
+            )}
         </div>
     );
 }
