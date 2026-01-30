@@ -29,23 +29,66 @@
     position: relative;
 }
 
+/* Industrial side brackets - Brushed metal with Neon Stack */
+.inputWrapper::before,
+.inputWrapper::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 85%;
+    /* Brushed steel */
+    background:
+        repeating-linear-gradient(0deg, #6a7a8a 0px, #5a6a7a 1px, #6a7a8a 2px),
+        linear-gradient(180deg, #6a7a8a, #4a5a6a, #6a7a8a);
+    border: 3px solid #00d4ff;
+    /* Neon Stack */
+    box-shadow:
+        0 0 2px rgba(255, 255, 255, 1),
+        0 0 12px rgba(0, 240, 255, 0.8),
+        0 0 25px rgba(0, 240, 255, 0.4),
+        /* Industrial neumorphism */
+        inset 1px 1px 0px rgba(255, 255, 255, 0.3),
+        inset -1px -1px 0px rgba(0, 0, 0, 0.6);
+    z-index: 1;
+}
+
+.inputWrapper::before {
+    left: -10px;
+    border-radius: 8px 0 0 8px;
+}
+
+.inputWrapper::after {
+    right: -10px;
+    border-radius: 0 8px 8px 0;
+}
+
 .input {
     width: 100%;
-    padding: 18px 24px;
-    background: linear-gradient(180deg, #0d1520, #1a2332, #0d1520);
-    /* THICK glowing border */
-    border: 3px solid #00d4ff;
-    border-radius: 6px;
+    padding: 24px 32px;
+    /* Dark inset background */
+    background:
+        linear-gradient(180deg, #0a0f1a, #1a2332, #0a0f1a);
+    border: 4px solid #00d4ff;
+    border-radius: 8px;
     color: var(--metal-text);
-    font-size: 1.5rem;
-    font-weight: 600;
+    font-size: 2rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
     outline: none;
     transition: all 0.2s ease;
+    position: relative;
+    z-index: 2;
+    /* Neon Stack for input */
     box-shadow:
-        /* Outer glow */
-        0 0 15px rgba(0, 212, 255, 0.4),
-        /* Deep inset shadow */
-        inset 0 4px 12px rgba(0, 0, 0, 0.6);
+        /* White core */
+        0 0 2px rgba(255, 255, 255, 0.8),
+        /* Cyan glow */
+        0 0 15px rgba(0, 240, 255, 0.6),
+        0 0 30px rgba(0, 240, 255, 0.3),
+        /* DEEP inset shadow */
+        inset 0 6px 16px rgba(0, 0, 0, 0.9);
 }
 
 .input::placeholder {
@@ -54,11 +97,17 @@
 
 .input:focus {
     border-color: #00d4ff;
+    /* ULTRA Neon Stack on focus */
     box-shadow:
-        /* Brighter glow on focus */
-        0 0 25px rgba(0, 212, 255, 0.7),
-        0 0 50px rgba(0, 212, 255, 0.3),
-        inset 0 4px 12px rgba(0, 0, 0, 0.6);
+        /* Bright white core */
+        0 0 3px rgba(255, 255, 255, 1),
+        /* Intense cyan corona */
+        0 0 20px rgba(0, 240, 255, 1),
+        0 0 40px rgba(0, 240, 255, 0.8),
+        /* Massive atmosphere */
+        0 0 80px rgba(0, 240, 255, 0.5),
+        0 0 120px rgba(0, 240, 255, 0.3),
+        inset 0 6px 16px rgba(0, 0, 0, 0.9);
 }
 
 .input:focus+.glow {
@@ -67,15 +116,18 @@
 
 .glow {
     position: absolute;
-    bottom: 0;
-    left: 10%;
-    right: 10%;
-    height: 4px;
-    background: linear-gradient(90deg, transparent, var(--metal-glow-cyan), transparent);
-    box-shadow: 0 0 20px var(--metal-glow-cyan);
+    bottom: -3px;
+    left: 5%;
+    right: 5%;
+    height: 8px;
+    background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 1), transparent);
+    box-shadow:
+        0 0 30px rgba(0, 240, 255, 1),
+        0 0 60px rgba(0, 240, 255, 0.5);
     opacity: 0;
     transition: opacity 0.2s ease;
     pointer-events: none;
+    z-index: 3;
 }
 
 /* Error State */
