@@ -120,7 +120,7 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
             <div className={styles.backdrop} onClick={onClose} />
 
             {/* Menu Panel */}
-            <div className={styles.menu}>
+            <div className={styles.menu} style={{ paddingTop: 60, zIndex: 1001 }}>
                 {/* Menu Items */}
                 <div className={styles.menuItems}>
                     {/* Sounds Toggle */}
