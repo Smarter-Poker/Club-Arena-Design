@@ -17,6 +17,7 @@ import { useToast } from '../components/common/Toast';
 import SmarterHeader from '../components/layout/SmarterHeader';
 import IntroVideo from '../components/IntroVideo';
 import haptic from '../services/HapticService';
+import { MetalFrame, MetalButton, MetalInput, MetalCard } from '../components/metal-ui';
 import styles from './ClubsPage.module.css';
 
 type Tab = 'discover' | 'my-clubs' | 'create';
@@ -197,38 +198,43 @@ export default function ClubsPage() {
 
                 {/* Tab Content */}
                 <div className={styles.content}>
-                    {/* Discover Tab */}
+                    {/* Discover Tab - Metal UI */}
                     {activeTab === 'discover' && (
                         <div className={styles.discoverTab}>
-                            <div className={styles.joinSection}>
-                                <h3>Join a Club</h3>
-                                <p>Enter a 6-digit Club ID to join an existing club.</p>
+                            <MetalFrame title="JOIN A CLUB" variant="form" size="md">
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                    <p style={{ color: '#8899aa', textAlign: 'center', margin: 0 }}>
+                                        Enter a 6-digit Club ID to join an existing club.
+                                    </p>
 
-                                {joinError && (
-                                    <div className={styles.errorMessage}>{joinError}</div>
-                                )}
+                                    {joinError && (
+                                        <div style={{ color: '#ff6b6b', textAlign: 'center', fontSize: '0.875rem' }}>
+                                            {joinError}
+                                        </div>
+                                    )}
 
-                                <div className={styles.joinForm}>
-                                    <input
-                                        type="text"
-                                        placeholder="Club ID (e.g., 123456)"
+                                    <MetalInput
+                                        label="ENTER CLUB ID:"
+                                        placeholder="123456"
                                         value={joinClubId}
                                         onChange={(e) => {
                                             setJoinClubId(e.target.value.replace(/\D/g, ''));
                                             setJoinError(null);
                                         }}
-                                        className={styles.joinInput}
                                         maxLength={6}
+                                        style={{ textAlign: 'center', letterSpacing: '0.2em', fontFamily: 'monospace' }}
                                     />
-                                    <button
-                                        className="btn btn-primary"
+
+                                    <MetalButton
+                                        variant="primary"
+                                        fullWidth
                                         disabled={joinClubId.length < 6 || isJoining}
                                         onClick={() => { haptic.medium(); handleJoinClub(); }}
                                     >
-                                        {isJoining ? 'Joining...' : 'Join Club'}
-                                    </button>
+                                        {isJoining ? 'Joining...' : 'JOIN CLUB'}
+                                    </MetalButton>
                                 </div>
-                            </div>
+                            </MetalFrame>
                         </div>
                     )}
 
@@ -285,73 +291,93 @@ export default function ClubsPage() {
                         </div>
                     )}
 
-                    {/* Create Club Tab */}
+                    {/* Create Club Tab - Metal UI */}
                     {activeTab === 'create' && (
                         <div className={styles.createTab}>
-                            <div className={styles.createForm}>
-                                <h3>Create Your Club</h3>
-                                <p>Start your own private poker community.</p>
+                            <MetalFrame title="CREATE A CLUB" variant="form" size="md">
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                    <p style={{ color: '#8899aa', textAlign: 'center', margin: 0 }}>
+                                        Start your own private poker community.
+                                    </p>
 
-                                {createError && (
-                                    <div className={styles.errorMessage}>{createError}</div>
-                                )}
+                                    {createError && (
+                                        <div style={{ color: '#ff6b6b', textAlign: 'center', fontSize: '0.875rem' }}>
+                                            {createError}
+                                        </div>
+                                    )}
 
-                                <div className={styles.formGroup}>
-                                    <label className={styles.label}>Club Name *</label>
-                                    <input
-                                        type="text"
+                                    <MetalInput
+                                        label="CLUB NAME:"
                                         placeholder="Enter club name"
-                                        className={styles.input}
                                         value={clubName}
                                         onChange={(e) => {
                                             setClubName(e.target.value);
                                             setCreateError(null);
                                         }}
                                     />
-                                </div>
 
-                                <div className={styles.formGroup}>
-                                    <label className={styles.label}>Description</label>
-                                    <textarea
-                                        placeholder="Describe your club..."
-                                        className={styles.textarea}
-                                        rows={3}
-                                        value={clubDescription}
-                                        onChange={(e) => setClubDescription(e.target.value)}
-                                    />
-                                </div>
-
-                                <div className={styles.formGroup}>
-                                    <label className={styles.label}>Settings</label>
-                                    <div className={styles.checkboxGroup}>
-                                        <label className={styles.checkbox}>
-                                            <input
-                                                type="checkbox"
-                                                checked={isPublic}
-                                                onChange={(e) => { haptic.selection(); setIsPublic(e.target.checked); }}
-                                            />
-                                            <span>Public (anyone can find)</span>
-                                        </label>
-                                        <label className={styles.checkbox}>
-                                            <input
-                                                type="checkbox"
-                                                checked={requiresApproval}
-                                                onChange={(e) => { haptic.selection(); setRequiresApproval(e.target.checked); }}
-                                            />
-                                            <span>Require approval for new members</span>
-                                        </label>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        <label style={{
+                                            fontFamily: "'Orbitron', 'Rajdhani', sans-serif",
+                                            fontSize: '0.85rem',
+                                            fontWeight: 600,
+                                            color: '#fff',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '1px'
+                                        }}>DESCRIPTION:</label>
+                                        <textarea
+                                            placeholder="Describe your club..."
+                                            rows={3}
+                                            value={clubDescription}
+                                            onChange={(e) => setClubDescription(e.target.value)}
+                                            style={{
+                                                width: '100%',
+                                                padding: '14px 18px',
+                                                background: 'linear-gradient(180deg, #0d1520 0%, #1a2332 100%)',
+                                                border: '2px solid #2a3a4a',
+                                                borderRadius: '6px',
+                                                color: '#fff',
+                                                fontSize: '1rem',
+                                                outline: 'none',
+                                                resize: 'vertical',
+                                                minHeight: '80px'
+                                            }}
+                                        />
                                     </div>
-                                </div>
 
-                                <button
-                                    className="btn btn-primary btn-lg"
-                                    style={{ width: '100%' }}
-                                    onClick={() => { haptic.success(); handleCreateClub(); }}
-                                    disabled={isCreating || !clubName.trim()}
-                                >
-                                    {isCreating ? 'Creating...' : 'Create Club'}
-                                </button>
-                            </div>
+                                    <MetalCard size="sm">
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isPublic}
+                                                    onChange={(e) => { haptic.selection(); setIsPublic(e.target.checked); }}
+                                                    style={{ width: '18px', height: '18px', accentColor: '#00d4ff' }}
+                                                />
+                                                <span style={{ color: '#8899aa', fontSize: '0.875rem' }}>Public (anyone can find)</span>
+                                            </label>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={requiresApproval}
+                                                    onChange={(e) => { haptic.selection(); setRequiresApproval(e.target.checked); }}
+                                                    style={{ width: '18px', height: '18px', accentColor: '#00d4ff' }}
+                                                />
+                                                <span style={{ color: '#8899aa', fontSize: '0.875rem' }}>Require approval for new members</span>
+                                            </label>
+                                        </div>
+                                    </MetalCard>
+
+                                    <MetalButton
+                                        variant="primary"
+                                        fullWidth
+                                        onClick={() => { haptic.success(); handleCreateClub(); }}
+                                        disabled={isCreating || !clubName.trim()}
+                                    >
+                                        {isCreating ? 'Creating...' : 'CREATE CLUB'}
+                                    </MetalButton>
+                                </div>
+                            </MetalFrame>
                         </div>
                     )}
                 </div>
