@@ -196,8 +196,52 @@
     color: var(--text-muted);
     margin-top: 1rem;
 }
+
+/* Metal UI Layout Helpers - NO STYLING, ONLY LAYOUT */
+.balance-cards-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.balance-card-content {
+    text-align: center;
+}
+
+.balance-icon {
+    font-size: 1.5rem;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.balance-label {
+    font-size: 0.75rem;
+    color: #6a7a8a;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.balance-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #00d4ff;
+    font-family: monospace;
+}
+
+.action-tabs-metal {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
 /* Mobile Responsive */
 @media (max-width: 480px) {
-    .balance-cards { grid-template-columns: 1fr; }
-    .amount-input input { font-size: 1.5rem; }
+    .balance-cards-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .amount-input input {
+        font-size: 1.5rem;
+    }
 }

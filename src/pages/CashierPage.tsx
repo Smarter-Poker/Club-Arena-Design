@@ -93,56 +93,40 @@ export default function CashierPage() {
     return (
         <div className="cashier-page" style={{ padding: '16px', paddingBottom: '100px' }}>
             {/* Balance Cards - Metal Style */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+            <div className="balance-cards-grid">
                 <MetalCard size="sm" glow>
-                    <div style={{ textAlign: 'center' }}>
-                        <span style={{ fontSize: '1.5rem' }}>🎰</span>
-                        <div style={{ fontSize: '0.75rem', color: '#6a7a8a', textTransform: 'uppercase', marginTop: '4px' }}>Available Chips</div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#00d4ff', fontFamily: 'monospace' }}>
+                    <div className="balance-card-content">
+                        <span className="balance-icon">🎰</span>
+                        <div className="balance-label">Available Chips</div>
+                        <div className="balance-value">
                             ${balances.PLAYER.available.toLocaleString()}
                         </div>
                     </div>
                 </MetalCard>
                 <MetalCard size="sm" glow>
-                    <div style={{ textAlign: 'center' }}>
-                        <span style={{ fontSize: '1.5rem' }}>💎</span>
-                        <div style={{ fontSize: '0.75rem', color: '#6a7a8a', textTransform: 'uppercase', marginTop: '4px' }}>Diamonds</div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#00d4ff', fontFamily: 'monospace' }}>
+                    <div className="balance-card-content">
+                        <span className="balance-icon">💎</span>
+                        <div className="balance-label">Diamonds</div>
+                        <div className="balance-value">
                             {diamonds.toLocaleString()}
                         </div>
                     </div>
                 </MetalCard>
             </div>
 
+
             {/* Action Tabs - Metal Style */}
-            <div style={{
-                display: 'flex',
-                gap: '4px',
-                padding: '6px',
-                background: 'linear-gradient(180deg, #1a2a3a 0%, #0d1520 100%)',
-                border: '2px solid #2a3a4a',
-                borderRadius: '8px',
-                marginBottom: '16px'
-            }}>
+            <div className="action-tabs-metal">
                 {(['buyin', 'cashout', 'mint'] as CashierAction[]).map((act) => (
-                    <button
+                    <MetalButton
                         key={act}
-                        style={{
-                            flex: 1,
-                            padding: '12px 8px',
-                            background: action === act ? 'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)' : 'transparent',
-                            border: action === act ? '1px solid #00d4ff' : '1px solid transparent',
-                            borderRadius: '6px',
-                            color: action === act ? '#fff' : '#8899aa',
-                            fontWeight: 600,
-                            fontSize: '0.85rem',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease'
-                        }}
+                        variant={action === act ? 'primary' : 'secondary'}
+                        size="md"
                         onClick={() => setAction(act)}
+                        fullWidth
                     >
                         {act === 'buyin' ? '⬆️ Buy-In' : act === 'cashout' ? '⬇️ Cash-Out' : '🏭 Mint'}
-                    </button>
+                    </MetalButton>
                 ))}
             </div>
 
@@ -159,7 +143,6 @@ export default function CashierPage() {
                         placeholder="0"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        style={{ textAlign: 'center', fontSize: '1.5rem', fontFamily: 'monospace' }}
                     />
 
                     {action === 'mint' && amount && (
