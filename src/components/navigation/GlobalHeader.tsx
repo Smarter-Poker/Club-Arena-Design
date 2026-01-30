@@ -168,7 +168,7 @@ export default function GlobalHeader({
                             }
                         }}
                     >
-                        <span>💎</span>
+                        <span><img src="/images/diamond.png" alt="Diamond" style={{ width: 20, height: 20, display: "inline-block", verticalAlign: "middle" }} /></span>
                         <span className={styles.statValue} title={diamonds.toLocaleString() + ' diamonds'}>
                             {isLoadingDiamonds ? '...' : showFullDiamonds ? diamonds.toLocaleString() : formatCompact(diamonds)}
                         </span>
