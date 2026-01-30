@@ -250,39 +250,78 @@ export default function ClubsPage() {
                             ) : myClubs.length > 0 ? (
                                 <div className={styles.clubsGrid}>
                                     {myClubs.map(membership => (
-                                        <div key={membership.id} className={styles.clubCard}>
-                                            <div className={styles.clubHeader}>
-                                                <div className={styles.clubAvatar}></div>
-                                                <div className={styles.clubInfo}>
-                                                    <h3 className={styles.clubName}>{membership.club.name}</h3>
-                                                    <span className={styles.clubId}>ID: {membership.club.club_id}</span>
+                                        <MetalCard key={membership.id} size="md" glow>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                                {/* Club Header */}
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <div style={{
+                                                        width: '50px',
+                                                        height: '50px',
+                                                        fontSize: '24px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        background: 'linear-gradient(135deg, #1a2a3a 0%, #0d1520 100%)',
+                                                        border: '1px solid #2a3a4a',
+                                                        borderRadius: '10px'
+                                                    }}></div>
+                                                    <div style={{ flex: 1 }}>
+                                                        <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff' }}>{membership.club.name}</h3>
+                                                        <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#6a7a8a' }}>
+                                                            ID: {membership.club.club_id}
+                                                        </span>
+                                                    </div>
+                                                    {membership.role === 'owner' && (
+                                                        <span style={{
+                                                            fontSize: '0.7rem',
+                                                            fontWeight: 600,
+                                                            color: '#ffd700',
+                                                            padding: '4px 10px',
+                                                            background: 'rgba(255, 215, 0, 0.15)',
+                                                            border: '1px solid rgba(255, 215, 0, 0.4)',
+                                                            borderRadius: '20px'
+                                                        }}>OWNER</span>
+                                                    )}
                                                 </div>
-                                                {membership.role === 'owner' && (
-                                                    <span className={styles.ownerBadge}>Owner</span>
-                                                )}
+
+                                                {/* Stats Row */}
+                                                <div style={{
+                                                    display: 'flex',
+                                                    justifyContent: 'space-around',
+                                                    padding: '12px 0',
+                                                    borderTop: '1px solid rgba(255,255,255,0.1)',
+                                                    borderBottom: '1px solid rgba(255,255,255,0.1)'
+                                                }}>
+                                                    <div style={{ textAlign: 'center' }}>
+                                                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#00d4ff' }}>
+                                                            {membership.club.member_count || 0}
+                                                        </div>
+                                                        <div style={{ fontSize: '0.65rem', color: '#6a7a8a', textTransform: 'uppercase' }}>Members</div>
+                                                    </div>
+                                                    <div style={{ textAlign: 'center' }}>
+                                                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#00d4ff' }}>
+                                                            {membership.club.online_count || 0}
+                                                        </div>
+                                                        <div style={{ fontSize: '0.65rem', color: '#6a7a8a', textTransform: 'uppercase' }}>Online</div>
+                                                    </div>
+                                                    <div style={{ textAlign: 'center' }}>
+                                                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#00d4ff' }}>
+                                                            {membership.club.table_count || 0}
+                                                        </div>
+                                                        <div style={{ fontSize: '0.65rem', color: '#6a7a8a', textTransform: 'uppercase' }}>Tables</div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Enter Button */}
+                                                <MetalButton
+                                                    variant="primary"
+                                                    fullWidth
+                                                    onClick={() => { haptic.success(); navigate(`/clubs/${membership.club.id}`); }}
+                                                >
+                                                    ENTER CLUB
+                                                </MetalButton>
                                             </div>
-                                            <div className={styles.clubStats}>
-                                                <div className={styles.clubStat}>
-                                                    <span className={styles.statValue}>{membership.club.member_count || 0}</span>
-                                                    <span className={styles.statLabel}>Members</span>
-                                                </div>
-                                                <div className={styles.clubStat}>
-                                                    <span className={styles.statValue}>{membership.club.online_count || 0}</span>
-                                                    <span className={styles.statLabel}>Online</span>
-                                                </div>
-                                                <div className={styles.clubStat}>
-                                                    <span className={styles.statValue}>{membership.club.table_count || 0}</span>
-                                                    <span className={styles.statLabel}>Tables</span>
-                                                </div>
-                                            </div>
-                                            <button
-                                                className="btn btn-primary"
-                                                style={{ width: '100%' }}
-                                                onClick={() => { haptic.success(); navigate(`/clubs/${membership.club.id}`); }}
-                                            >
-                                                Enter Club
-                                            </button>
-                                        </div>
+                                        </MetalCard>
                                     ))}
                                 </div>
                             ) : (
