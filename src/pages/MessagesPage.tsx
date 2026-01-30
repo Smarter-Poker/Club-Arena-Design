@@ -7,7 +7,6 @@
 
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import ConversationList from '../components/messaging/ConversationList';
 import MessageThread from '../components/messaging/MessageThread';
 import { messagingService } from '../services/MessagingService';
@@ -53,7 +52,6 @@ export default function MessagesPage() {
         }
         return (
             <div className="messages-page">
-                <SmarterHeader title=" Messages" />
                 <div className="messages-content">
                     <ConversationList
                         clubId={clubId}
@@ -68,7 +66,6 @@ export default function MessagesPage() {
     // Desktop: Split view
     return (
         <div className="messages-page">
-            <SmarterHeader title=" Messages" />
             <div className="messages-split-view">
                 <aside className="messages-sidebar">
                     <ConversationList
