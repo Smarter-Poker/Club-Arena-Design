@@ -145,6 +145,7 @@ import type { Agent } from '../services/AgentService';
 import { useToast } from '../components/common/Toast';
 import { ClubsService } from '../services/ClubsService';
 import DailyChallengesWidget from '../components/rewards/DailyChallengesWidget';
+import ClubBottomNav from '../components/club/ClubBottomNav';
 
 export default function ClubDetailPage() {
     const { clubId } = useParams();
@@ -164,6 +165,7 @@ export default function ClubDetailPage() {
     const [savingSettings, setSavingSettings] = useState(false);
     const [editedSettings, setEditedSettings] = useState<Partial<ClubSettings>>({});
     const [showMemberMenu, setShowMemberMenu] = useState<string | null>(null);
+    const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
 
     useEffect(() => {
         loadClubData();
@@ -283,6 +285,15 @@ export default function ClubDetailPage() {
                     lastActive: m.last_active,
                 }));
                 setMembers(mappedMembers);
+
+                // Determine current user's role in this club
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    const currentUserMember = memberData.find((m: any) => m.user_id === user.id);
+                    if (currentUserMember) {
+                        setUserRole(currentUserMember.role || 'member');
+                    }
+                }
             }
 
             // Load tables
@@ -755,6 +766,15 @@ export default function ClubDetailPage() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Fixed Bottom Navigation Bar */}
+            {clubId && (
+                <ClubBottomNav
+                    clubId={clubId}
+                    userRole={userRole}
+                    clubName={club?.name}
+                />
             )}
         </div>
     );
