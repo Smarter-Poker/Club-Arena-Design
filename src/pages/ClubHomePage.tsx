@@ -217,37 +217,6 @@ export default function ClubHomePage() {
     return (
         <div className="club-home">
             {/* ═══════════════════════════════════════════════════════════════════
-                MODIFIED SMARTER.POKER HEADER
-                - No XP bar
-                - No Search bar  
-                - Settings = Club Settings only
-            ═══════════════════════════════════════════════════════════════════ */}
-            <header className="club-home__header">
-                <div className="club-home__user">
-                    <div className="club-home__user-avatar">
-                        {userProfile?.avatar_url ? (
-                            <img src={userProfile.avatar_url} alt="avatar" />
-                        ) : (
-                            <span className="avatar-placeholder">{userProfile?.display_name?.charAt(0) || 'P'}</span>
-                        )}
-                    </div>
-                    <div className="club-home__user-info">
-                        <span className="club-home__username">{userProfile?.display_name || userProfile?.username || 'Player'}</span>
-                        <span className="club-home__user-id">ID: {playerNumber}</span>
-                    </div>
-                </div>
-                <div className="club-home__header-center">
-                    <Link to="/diamond-store/vip" className="club-home__vip-badge" onClick={() => haptic.light()}>VIP</Link>
-                </div>
-                <div className="club-home__header-right">
-                    <div className="club-home__diamonds" onClick={() => { haptic.light(); navigate('/diamond-store'); }} style={{ cursor: 'pointer' }}>
-                        <span className="diamond-icon"></span>
-                        <span className="diamond-amount">{diamonds.toLocaleString()}</span>
-                    </div>
-                </div>
-            </header>
-
-            {/* ═══════════════════════════════════════════════════════════════════
                 QUICK ACTION ICONS ROW
             ═══════════════════════════════════════════════════════════════════ */}
             <div className="club-home__actions-row">

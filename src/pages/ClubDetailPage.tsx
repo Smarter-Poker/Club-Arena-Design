@@ -403,33 +403,9 @@ export default function ClubDetailPage() {
         );
     }
 
+
     return (
         <div className={styles.page}>
-            {/* Club Header */}
-            <header className={styles.header}>
-                <div className={styles.clubAvatar}>
-                    {club.avatarUrl ? (
-                        <img src={club.avatarUrl} alt={club.name} />
-                    ) : (
-                        <span>{club.name.charAt(0)}</span>
-                    )}
-                </div>
-                <div className={styles.clubInfo}>
-                    <h1>{club.name}</h1>
-                    <p className={styles.clubId}>Club ID: {club.clubId}</p>
-                    <p className={styles.clubDesc}>{club.description}</p>
-                </div>
-                <div className={styles.headerActions}>
-                    <Link to={`/clubs/${clubId}/dashboard`} className={styles.dashboardButton}> Dashboard</Link>
-                    <Link to={`/clubs/${clubId}/messages`} className={styles.dashboardButton}> Messages</Link>
-                    <Link to={`/invite/${clubId}`} className={styles.inviteButton}>+ Invite</Link>
-                    <Link to={`/clubs/${clubId}/create-table`} className={styles.createTableButton}> Create Table</Link>
-                    <Link to={`/clubs/${clubId}/financials`} className={styles.financialsButton}> Financials</Link>
-                    <Link to={`/clubs/${clubId}/announcements`} className={styles.announcementsButton}> Announcements</Link>
-                    <Link to={`/clubs/${clubId}/settings`} className={styles.settingsButton}> Settings</Link>
-                </div>
-            </header>
-
             {/* Quick Stats */}
             <section className={styles.statsRow}>
                 <StatCard value={onlineCount} label="Online Now" icon="" />

@@ -10,7 +10,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import MessageThread from '../components/messaging/MessageThread';
 import './ClubMessagesPage.css';
 
@@ -169,12 +168,6 @@ export default function ClubMessagesPage() {
 
     return (
         <div className="club-messages-page">
-            <SmarterHeader
-                title=" Club Messages"
-                showBackButton
-                backTo="/messages"
-            />
-
             {/* Summary Bar */}
             <div className="club-messages-summary">
                 <span className="summary-icon"></span>

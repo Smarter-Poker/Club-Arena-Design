@@ -6,7 +6,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import './ClubMembersPage.css';
 
 interface ClubMember {
@@ -129,8 +128,6 @@ export default function ClubMembersPage() {
 
     return (
         <div className="club-members-page">
-            <SmarterHeader title=" Club Members" />
-
             <div className="members-summary">
                 <div className="summary-stat">
                     <span className="stat-value">{members.length}</span>
