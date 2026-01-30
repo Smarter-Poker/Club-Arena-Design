@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { useWalletStore } from '../stores/useWalletStore';
 import { useUserStore } from '../stores/useUserStore';
 import ClubBottomNav from '../components/club/ClubBottomNav';
@@ -14,8 +14,9 @@ type CashierAction = 'buyin' | 'cashout' | 'mint';
 export default function CashierPage() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const { clubId: routeClubId } = useParams<{ clubId?: string }>();
     const tableId = searchParams.get('table');
-    const clubId = searchParams.get('club');
+    const clubId = routeClubId || searchParams.get('club');
 
     const { user } = useUserStore();
     const { balances, diamonds, mintChips } = useWalletStore();
