@@ -1,5 +1,7 @@
 /**
- *  CASHIER PAGE — Buy-in / Cash-out
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  CASHIER PAGE — Buy-in / Cash-out (Metal UI)
+ * ═══════════════════════════════════════════════════════════════════════════════
  */
 
 import { useState } from 'react';
@@ -7,6 +9,7 @@ import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { useWalletStore } from '../stores/useWalletStore';
 import { useUserStore } from '../stores/useUserStore';
 import ClubBottomNav from '../components/club/ClubBottomNav';
+import { MetalFrame, MetalButton, MetalInput, MetalCard } from '../components/metal-ui';
 import './CashierPage.css';
 
 type CashierAction = 'buyin' | 'cashout' | 'mint';
@@ -43,18 +46,15 @@ export default function CashierPage() {
 
         try {
             if (action === 'mint') {
-                // Mint chips from diamonds
                 await mintChips('default', value);
                 setMessage({ type: 'success', text: `Minted ${value.toLocaleString()} chips!` });
             } else if (action === 'buyin') {
-                // Buy-in: Transfer from PLAYER wallet to table
                 if (balances.PLAYER.available < value) {
                     setMessage({ type: 'error', text: 'Insufficient chip balance for buy-in' });
                     setIsProcessing(false);
                     return;
                 }
 
-                // Wire to WalletStore lockForBuyIn
                 if (user?.id && tableId) {
                     const { lockForBuyIn } = useWalletStore.getState();
                     const success = await lockForBuyIn(user.id, value, tableId);
@@ -68,7 +68,6 @@ export default function CashierPage() {
                     setMessage({ type: 'success', text: `Bought in for $${value.toLocaleString()}` });
                 }
             } else {
-                // Cash-out: Transfer from table back to PLAYER wallet
                 if (user?.id && tableId) {
                     const { unlockFromTable } = useWalletStore.getState();
                     const success = await unlockFromTable(user.id, value, tableId);
@@ -89,108 +88,143 @@ export default function CashierPage() {
         setIsProcessing(false);
     };
 
-    // Diamond to chip conversion rate
-    const DIAMOND_RATE = 38 / 100; // 38 diamonds = 100 chips
+    const DIAMOND_RATE = 38 / 100;
 
     return (
-        <div className="cashier-page">
-            {/* Balance Cards */}
-            <div className="balance-cards">
-                <div className="balance-card chips">
-                    <span className="balance-icon"></span>
-                    <div className="balance-info">
-                        <span className="balance-label">Available Chips</span>
-                        <span className="balance-amount">${balances.PLAYER.available.toLocaleString()}</span>
+        <div className="cashier-page" style={{ padding: '16px', paddingBottom: '100px' }}>
+            {/* Balance Cards - Metal Style */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                <MetalCard size="sm" glow>
+                    <div style={{ textAlign: 'center' }}>
+                        <span style={{ fontSize: '1.5rem' }}>🎰</span>
+                        <div style={{ fontSize: '0.75rem', color: '#6a7a8a', textTransform: 'uppercase', marginTop: '4px' }}>Available Chips</div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#00d4ff', fontFamily: 'monospace' }}>
+                            ${balances.PLAYER.available.toLocaleString()}
+                        </div>
                     </div>
-                </div>
-                <div className="balance-card diamonds">
-                    <span className="balance-icon"></span>
-                    <div className="balance-info">
-                        <span className="balance-label">Diamonds</span>
-                        <span className="balance-amount">{diamonds.toLocaleString()}</span>
+                </MetalCard>
+                <MetalCard size="sm" glow>
+                    <div style={{ textAlign: 'center' }}>
+                        <span style={{ fontSize: '1.5rem' }}>💎</span>
+                        <div style={{ fontSize: '0.75rem', color: '#6a7a8a', textTransform: 'uppercase', marginTop: '4px' }}>Diamonds</div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#00d4ff', fontFamily: 'monospace' }}>
+                            {diamonds.toLocaleString()}
+                        </div>
                     </div>
-                </div>
+                </MetalCard>
             </div>
 
-            {/* Action Tabs */}
-            <div className="action-tabs">
-                <button
-                    className={action === 'buyin' ? 'active' : ''}
-                    onClick={() => setAction('buyin')}
-                >
-                    Buy-In
-                </button>
-                <button
-                    className={action === 'cashout' ? 'active' : ''}
-                    onClick={() => setAction('cashout')}
-                >
-                    Cash-Out
-                </button>
-                <button
-                    className={action === 'mint' ? 'active' : ''}
-                    onClick={() => setAction('mint')}
-                >
-                    Mint Chips
-                </button>
+            {/* Action Tabs - Metal Style */}
+            <div style={{
+                display: 'flex',
+                gap: '4px',
+                padding: '6px',
+                background: 'linear-gradient(180deg, #1a2a3a 0%, #0d1520 100%)',
+                border: '2px solid #2a3a4a',
+                borderRadius: '8px',
+                marginBottom: '16px'
+            }}>
+                {(['buyin', 'cashout', 'mint'] as CashierAction[]).map((act) => (
+                    <button
+                        key={act}
+                        style={{
+                            flex: 1,
+                            padding: '12px 8px',
+                            background: action === act ? 'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)' : 'transparent',
+                            border: action === act ? '1px solid #00d4ff' : '1px solid transparent',
+                            borderRadius: '6px',
+                            color: action === act ? '#fff' : '#8899aa',
+                            fontWeight: 600,
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                        }}
+                        onClick={() => setAction(act)}
+                    >
+                        {act === 'buyin' ? '⬆️ Buy-In' : act === 'cashout' ? '⬇️ Cash-Out' : '🏭 Mint'}
+                    </button>
+                ))}
             </div>
 
-            {/* Amount Input */}
-            <div className="amount-section">
-                <label>{action === 'mint' ? 'Chips to Mint' : 'Amount'}</label>
-                <div className="amount-input">
-                    <span className="currency">$</span>
-                    <input
+            {/* Main Form - Metal Frame */}
+            <MetalFrame
+                title={action === 'buyin' ? 'TABLE BUY-IN' : action === 'cashout' ? 'CASH OUT' : 'MINT CHIPS'}
+                variant="form"
+                size="md"
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <MetalInput
+                        label={action === 'mint' ? 'CHIPS TO MINT:' : 'AMOUNT:'}
                         type="number"
                         placeholder="0"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
+                        style={{ textAlign: 'center', fontSize: '1.5rem', fontFamily: 'monospace' }}
                     />
-                </div>
 
-                {action === 'mint' && amount && (
-                    <div className="conversion-info">
-                        {Math.ceil(parseFloat(amount || '0') * DIAMOND_RATE).toLocaleString()} diamonds required
+                    {action === 'mint' && amount && (
+                        <div style={{
+                            color: '#ff9500',
+                            textAlign: 'center',
+                            fontSize: '0.875rem',
+                            padding: '8px',
+                            background: 'rgba(255, 149, 0, 0.1)',
+                            border: '1px solid rgba(255, 149, 0, 0.3)',
+                            borderRadius: '6px'
+                        }}>
+                            💎 {Math.ceil(parseFloat(amount || '0') * DIAMOND_RATE).toLocaleString()} diamonds required
+                        </div>
+                    )}
+
+                    {/* Presets */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                        {preset.map((val) => (
+                            <MetalButton
+                                key={val}
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setAmount(val.toString())}
+                            >
+                                ${val >= 1000 ? `${val / 1000}K` : val}
+                            </MetalButton>
+                        ))}
                     </div>
-                )}
 
-                {/* Presets */}
-                <div className="preset-buttons">
-                    {preset.map((val) => (
-                        <button
-                            key={val}
-                            className="preset-btn"
-                            onClick={() => setAmount(val.toString())}
-                        >
-                            ${val >= 1000 ? `${val / 1000}K` : val}
-                        </button>
-                    ))}
+                    {/* Messages */}
+                    {message && (
+                        <div style={{
+                            color: message.type === 'success' ? '#00ff88' : '#ff6b6b',
+                            textAlign: 'center',
+                            fontSize: '0.875rem',
+                            padding: '10px',
+                            background: message.type === 'success' ? 'rgba(0, 255, 136, 0.1)' : 'rgba(255, 107, 107, 0.1)',
+                            border: `1px solid ${message.type === 'success' ? 'rgba(0, 255, 136, 0.3)' : 'rgba(255, 107, 107, 0.3)'}`,
+                            borderRadius: '6px'
+                        }}>
+                            {message.text}
+                        </div>
+                    )}
+
+                    {/* Action Button */}
+                    <MetalButton
+                        variant="primary"
+                        fullWidth
+                        onClick={handleAction}
+                        disabled={isProcessing || !amount}
+                        loading={isProcessing}
+                    >
+                        {action === 'buyin' ? 'BUY IN' :
+                            action === 'cashout' ? 'CASH OUT' :
+                                'MINT CHIPS'}
+                    </MetalButton>
+
+                    {tableId && (
+                        <p style={{ color: '#6a7a8a', textAlign: 'center', fontSize: '0.8rem', margin: 0 }}>
+                            ↩️ Returning to table after transaction
+                        </p>
+                    )}
                 </div>
-            </div>
-
-            {/* Messages */}
-            {message && (
-                <div className={`message ${message.type}`}>
-                    {message.text}
-                </div>
-            )}
-
-            {/* Action Button */}
-            <button
-                className="btn btn-primary action-btn"
-                onClick={handleAction}
-                disabled={isProcessing || !amount}
-            >
-                {isProcessing ? 'Processing...' :
-                    action === 'buyin' ? 'Buy In' :
-                        action === 'cashout' ? 'Cash Out' :
-                            'Mint Chips'}
-            </button>
-
-            {tableId && (
-                <p className="table-context">
-                    Returning to table after transaction
-                </p>
-            )}
+            </MetalFrame>
 
             {clubId && (
                 <ClubBottomNav

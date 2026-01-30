@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- *  PLAYER WALLET PAGE — Triple-Wallet View
+ *  PLAYER WALLET PAGE — Triple-Wallet View (Metal UI)
  * ═══════════════════════════════════════════════════════════════════════════════
  * Displays Business, Player, and Promo wallet balances with transfer options
  */
@@ -13,6 +13,7 @@ import TransactionHistory from '../components/TransactionHistory';
 import SmarterHeader from '../components/layout/SmarterHeader';
 import DepositWithdrawModal from '../components/wallet/DepositWithdrawModal';
 import { WalletService } from '../services/WalletService';
+import { MetalFrame, MetalButton, MetalInput, MetalCard } from '../components/metal-ui';
 import './PlayerWalletPage.css';
 
 type WalletTab = 'overview' | 'transfer' | 'history';
@@ -80,12 +81,12 @@ export default function PlayerWalletPage() {
             description: 'Commissions & Settlements',
         },
         PLAYER: {
-            icon: '',
+            icon: '🎮',
             label: 'Player',
             description: 'Table Buy-ins & Gameplay',
         },
         PROMO: {
-            icon: '',
+            icon: '🎁',
             label: 'Promo',
             description: 'Bonuses & Rewards',
         },
@@ -93,89 +94,146 @@ export default function PlayerWalletPage() {
 
     return (
         <div className="wallet-page">
-            <SmarterHeader title=" My Wallet" />
+            <SmarterHeader title="💰 My Wallet" />
 
-            {/* Total Balance Card */}
-            <div className="total-balance-card">
-                <div className="balance-section">
-                    <span className="balance-label">Total Balance</span>
-                    <span className="balance-value">${totalBalance.toLocaleString()}</span>
+            {/* Total Balance Card - Metal Frame */}
+            <MetalFrame variant="card" size="lg">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <div>
+                        <span style={{ fontSize: '0.85rem', color: '#8899aa', textTransform: 'uppercase', letterSpacing: '1px' }}>Total Balance</span>
+                        <div style={{ fontSize: '2rem', fontWeight: 700, color: '#00d4ff', fontFamily: 'monospace' }}>${totalBalance.toLocaleString()}</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '1.5rem' }}>💎</span>
+                        <span style={{ fontSize: '1.25rem', fontWeight: 600, color: '#fff' }}>{diamonds.toLocaleString()}</span>
+                    </div>
                 </div>
-                <div className="diamonds-section">
-                    <span className="diamond-icon"></span>
-                    <span className="diamond-count">{diamonds.toLocaleString()}</span>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+                    <MetalButton variant="primary" size="sm" onClick={() => setShowDepositModal(true)}>
+                        ⬆️ Deposit
+                    </MetalButton>
+                    <MetalButton variant="secondary" size="sm" onClick={() => setShowWithdrawModal(true)}>
+                        ⬇️ Withdraw
+                    </MetalButton>
+                    <MetalButton variant="ghost" size="sm" onClick={() => navigate('/rakeback')}>
+                        💰 Rakeback
+                    </MetalButton>
+                    <MetalButton variant="ghost" size="sm" onClick={() => navigate('/transactions')}>
+                        📜 History
+                    </MetalButton>
                 </div>
-                <div className="balance-actions">
-                    <button className="action-btn deposit" onClick={() => setShowDepositModal(true)}>
-                         Deposit
-                    </button>
-                    <button className="action-btn withdraw" onClick={() => setShowWithdrawModal(true)}>
-                         Withdraw
-                    </button>
-                    <button className="action-btn rakeback" onClick={() => navigate('/rakeback')}>
-                         Rakeback
-                    </button>
-                    <button className="action-btn history" onClick={() => navigate('/transactions')}>
-                         Full History
-                    </button>
-                </div>
-            </div>
+            </MetalFrame>
 
-            {/* Tabs */}
-            <div className="wallet-tabs">
+            {/* Tabs - Metal Style */}
+            <div className="wallet-tabs" style={{
+                display: 'flex',
+                gap: '8px',
+                padding: '8px',
+                background: 'linear-gradient(180deg, #1a2a3a 0%, #0d1520 100%)',
+                border: '2px solid #2a3a4a',
+                borderRadius: '8px',
+                marginTop: '16px'
+            }}>
                 {(['overview', 'transfer', 'history'] as WalletTab[]).map((tab) => (
                     <button
                         key={tab}
-                        className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
+                        style={{
+                            flex: 1,
+                            padding: '12px',
+                            background: activeTab === tab ? 'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)' : 'transparent',
+                            border: activeTab === tab ? '1px solid #00d4ff' : '1px solid transparent',
+                            borderRadius: '6px',
+                            color: activeTab === tab ? '#fff' : '#8899aa',
+                            fontWeight: 600,
+                            fontSize: '0.9rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                        }}
                         onClick={() => setActiveTab(tab)}
                     >
-                        {tab === 'overview' ? ' Overview' :
+                        {tab === 'overview' ? '📊 Overview' :
                             tab === 'transfer' ? '↔️ Transfer' :
-                                ' History'}
+                                '📜 History'}
                     </button>
                 ))}
             </div>
 
-            {/* Content */}
-            <div className="wallet-content">
+            {/* Tab Content */}
+            <div className="wallet-content" style={{ marginTop: '16px' }}>
                 {activeTab === 'overview' && (
-                    <div className="wallets-grid">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         {(Object.keys(walletInfo) as WalletType[]).map((type) => (
-                            <div key={type} className={`wallet-card wallet-${type.toLowerCase()}`}>
-                                <div className="wallet-icon">{walletInfo[type].icon}</div>
-                                <div className="wallet-details">
-                                    <span className="wallet-label">{walletInfo[type].label}</span>
-                                    <span className="wallet-description">{walletInfo[type].description}</span>
-                                </div>
-                                <div className="wallet-balances">
-                                    <div className="balance-row">
-                                        <span>Available</span>
-                                        <span className="amount">${balances[type].available.toLocaleString()}</span>
-                                    </div>
-                                    <div className="balance-row">
-                                        <span>Locked</span>
-                                        <span className="amount locked">${balances[type].locked.toLocaleString()}</span>
-                                    </div>
-                                    <div className="balance-row total">
-                                        <span>Total</span>
-                                        <span className="amount">${balances[type].total.toLocaleString()}</span>
+                            <MetalCard key={type} size="md" glow>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                    <div style={{
+                                        width: '50px',
+                                        height: '50px',
+                                        fontSize: '24px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        background: 'linear-gradient(135deg, #1a2a3a 0%, #0d1520 100%)',
+                                        border: '1px solid #2a3a4a',
+                                        borderRadius: '10px'
+                                    }}>{walletInfo[type].icon}</div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontWeight: 600, fontSize: '1.1rem', color: '#fff' }}>{walletInfo[type].label}</div>
+                                        <div style={{ fontSize: '0.8rem', color: '#6a7a8a' }}>{walletInfo[type].description}</div>
                                     </div>
                                 </div>
-                            </div>
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-around',
+                                    padding: '16px 0',
+                                    marginTop: '16px',
+                                    borderTop: '1px solid rgba(255,255,255,0.1)'
+                                }}>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#00d4ff' }}>${balances[type].available.toLocaleString()}</div>
+                                        <div style={{ fontSize: '0.7rem', color: '#6a7a8a', textTransform: 'uppercase' }}>Available</div>
+                                    </div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ff9500' }}>${balances[type].locked.toLocaleString()}</div>
+                                        <div style={{ fontSize: '0.7rem', color: '#6a7a8a', textTransform: 'uppercase' }}>Locked</div>
+                                    </div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>${balances[type].total.toLocaleString()}</div>
+                                        <div style={{ fontSize: '0.7rem', color: '#6a7a8a', textTransform: 'uppercase' }}>Total</div>
+                                    </div>
+                                </div>
+                            </MetalCard>
                         ))}
                     </div>
                 )}
 
                 {activeTab === 'transfer' && (
-                    <div className="transfer-section">
-                        <h3>Transfer Between Wallets</h3>
+                    <MetalFrame title="INTERNAL TRANSFER" variant="form" size="md">
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            <p style={{ color: '#8899aa', textAlign: 'center', margin: 0 }}>
+                                Move funds between your wallets instantly.
+                            </p>
 
-                        <div className="transfer-form">
-                            <div className="form-row">
-                                <label>From</label>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <label style={{
+                                    fontFamily: "'Orbitron', 'Rajdhani', sans-serif",
+                                    fontSize: '0.85rem',
+                                    fontWeight: 600,
+                                    color: '#fff',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '1px'
+                                }}>FROM:</label>
                                 <select
                                     value={transferFrom}
                                     onChange={(e) => setTransferFrom(e.target.value as WalletType)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '14px 18px',
+                                        background: 'linear-gradient(180deg, #0d1520 0%, #1a2332 100%)',
+                                        border: '2px solid #2a3a4a',
+                                        borderRadius: '6px',
+                                        color: '#fff',
+                                        fontSize: '1rem'
+                                    }}
                                 >
                                     {(Object.keys(walletInfo) as WalletType[]).map((type) => (
                                         <option key={type} value={type}>
@@ -185,13 +243,29 @@ export default function PlayerWalletPage() {
                                 </select>
                             </div>
 
-                            <div className="transfer-arrow">↓</div>
+                            <div style={{ textAlign: 'center', fontSize: '1.5rem', color: '#00d4ff' }}>↓</div>
 
-                            <div className="form-row">
-                                <label>To</label>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <label style={{
+                                    fontFamily: "'Orbitron', 'Rajdhani', sans-serif",
+                                    fontSize: '0.85rem',
+                                    fontWeight: 600,
+                                    color: '#fff',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '1px'
+                                }}>TO:</label>
                                 <select
                                     value={transferTo}
                                     onChange={(e) => setTransferTo(e.target.value as WalletType)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '14px 18px',
+                                        background: 'linear-gradient(180deg, #0d1520 0%, #1a2332 100%)',
+                                        border: '2px solid #2a3a4a',
+                                        borderRadius: '6px',
+                                        color: '#fff',
+                                        fontSize: '1rem'
+                                    }}
                                 >
                                     {(Object.keys(walletInfo) as WalletType[]).map((type) => (
                                         <option key={type} value={type}>
@@ -201,35 +275,40 @@ export default function PlayerWalletPage() {
                                 </select>
                             </div>
 
-                            <div className="form-row">
-                                <label>Amount</label>
-                                <input
-                                    type="number"
-                                    placeholder="0.00"
-                                    value={transferAmount}
-                                    onChange={(e) => setTransferAmount(e.target.value)}
-                                />
-                            </div>
+                            <MetalInput
+                                label="AMOUNT:"
+                                type="number"
+                                placeholder="0.00"
+                                value={transferAmount}
+                                onChange={(e) => setTransferAmount(e.target.value)}
+                            />
 
                             {message && (
-                                <div className={`message ${message.type}`}>
+                                <div style={{
+                                    color: message.type === 'success' ? '#00ff88' : '#ff6b6b',
+                                    textAlign: 'center',
+                                    fontSize: '0.875rem'
+                                }}>
                                     {message.text}
                                 </div>
                             )}
 
-                            <button
-                                className="btn btn-primary transfer-btn"
+                            <MetalButton
+                                variant="primary"
+                                fullWidth
                                 onClick={handleTransfer}
                                 disabled={isTransferring || !transferAmount}
                             >
-                                {isTransferring ? 'Transferring...' : 'Transfer'}
-                            </button>
+                                {isTransferring ? 'Transferring...' : 'TRANSFER'}
+                            </MetalButton>
                         </div>
-                    </div>
+                    </MetalFrame>
                 )}
 
                 {activeTab === 'history' && user?.id && (
-                    <TransactionHistory clubId="" userId={user.id} limit={50} />
+                    <MetalCard size="lg">
+                        <TransactionHistory clubId="" userId={user.id} limit={50} />
+                    </MetalCard>
                 )}
             </div>
 

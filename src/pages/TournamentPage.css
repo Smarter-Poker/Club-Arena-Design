@@ -1,11 +1,19 @@
 /**
  * ♠ CLUB ARENA — Tournament Page Styles
+ * Premium Metal UI Theme — Brushed Steel + Cyan Glow
  */
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BASE THEME
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
 .tournament-page {
     display: flex;
     flex-direction: column;
     gap: var(--space-6);
+    background: linear-gradient(180deg, #0a0a14 0%, #0d1520 50%, #0a0a14 100%);
+    min-height: 100vh;
+    padding: 1rem;
 }
 
 .tournament-header {
@@ -13,6 +21,13 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: var(--space-4);
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #1a2535 0%, #0d1520 100%);
+    border: 2px solid #2a3a4a;
+    border-radius: 12px;
+    box-shadow:
+        0 0 20px rgba(0, 212, 255, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .tournament-header .header-left {
@@ -24,6 +39,41 @@
 .tournament-header h1 {
     margin: 0;
     font-size: var(--text-2xl);
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
+    color: #00d4ff;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+.back-link {
+    color: #6a7a8a;
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: color 0.2s;
+}
+
+.back-link:hover {
+    color: #00d4ff;
+}
+
+.tournament-header .btn-primary {
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    border: none;
+    color: #fff;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+    transition: all 0.2s;
+}
+
+.tournament-header .btn-primary:hover {
+    box-shadow: 0 0 25px rgba(0, 212, 255, 0.6);
+    transform: translateY(-2px);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -38,39 +88,66 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   TOURNAMENT LIST
+   TOURNAMENT LIST — Brushed Metal Panel
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .tournament-list {
-    background: var(--elevated-surface);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-xl);
+    background: linear-gradient(180deg, #1a2535 0%, #0d1520 100%);
+    border: 2px solid #2a3a4a;
+    border-radius: 16px;
     padding: var(--space-5);
+    box-shadow:
+        0 4px 20px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .tournament-list h2 {
     font-size: var(--text-lg);
     margin: 0 0 var(--space-4);
+    color: #8899aa;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
 }
 
 .tournament-card {
-    padding: var(--space-3);
-    background: var(--dark-surface);
-    border: 2px solid transparent;
-    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.08) 0%,
+            rgba(200, 200, 200, 0.05) 50%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #3a4a5a;
+    border-radius: 12px;
     cursor: pointer;
-    margin-bottom: var(--space-2);
-    transition: all var(--duration-fast) var(--ease-out);
+    margin-bottom: var(--space-3);
+    transition: all 0.2s ease;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.2);
 }
 
 .tournament-card:hover {
-    background: var(--royal-blue-dim);
-    border-color: var(--royal-blue-muted);
+    border-color: #00d4ff;
+    background: linear-gradient(145deg,
+            rgba(0, 212, 255, 0.1) 0%,
+            rgba(255, 255, 255, 0.05) 50%,
+            rgba(100, 100, 100, 0.03) 100%);
+    box-shadow:
+        0 0 15px rgba(0, 212, 255, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.2);
 }
 
 .tournament-card.selected {
-    background: var(--royal-blue-dim);
-    border-color: var(--royal-blue);
+    border-color: #00d4ff;
+    background: linear-gradient(145deg,
+            rgba(0, 212, 255, 0.15) 0%,
+            rgba(255, 255, 255, 0.05) 50%,
+            rgba(100, 100, 100, 0.03) 100%);
+    box-shadow:
+        0 0 20px rgba(0, 212, 255, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.2);
 }
 
 .tourn-header {
@@ -81,22 +158,30 @@
 }
 
 .tourn-name {
-    font-weight: 600;
+    font-weight: 700;
+    color: #fff;
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
 }
 
 .tourn-status {
-    font-size: var(--text-xs);
-    padding: 2px 8px;
-    border-radius: var(--radius-full);
-    background: var(--elevated-surface);
+    font-size: 0.7rem;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .tourn-status.registering {
-    color: var(--success);
+    color: #00ff88;
+    background: rgba(0, 255, 136, 0.15);
+    border: 1px solid rgba(0, 255, 136, 0.3);
 }
 
 .tourn-status.running {
-    color: var(--danger);
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.15);
+    border: 1px solid rgba(255, 107, 107, 0.3);
 }
 
 .tourn-info {
@@ -108,30 +193,36 @@
 }
 
 .tourn-type {
-    font-weight: 600;
-    color: var(--royal-blue-light);
+    font-weight: 700;
+    color: #00d4ff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .tourn-buyin {
-    font-family: var(--font-mono);
+    font-family: 'Orbitron', monospace;
+    color: #00d4ff;
 }
 
 .tourn-meta {
     display: flex;
     gap: var(--space-4);
     font-size: var(--text-xs);
-    color: var(--text-muted);
+    color: #6a7a8a;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   TOURNAMENT DETAILS
+   TOURNAMENT DETAILS — Premium Metal Panel
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .tournament-details {
-    background: var(--elevated-surface);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-xl);
+    background: linear-gradient(180deg, #1a2535 0%, #0d1520 100%);
+    border: 2px solid #2a3a4a;
+    border-radius: 16px;
     padding: var(--space-6);
+    box-shadow:
+        0 4px 20px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .detail-header {
@@ -144,27 +235,34 @@
 .detail-header h2 {
     margin: 0;
     font-size: var(--text-xl);
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .status-badge {
-    padding: var(--space-1) var(--space-3);
-    border-radius: var(--radius-full);
-    font-size: var(--text-sm);
-    font-weight: 600;
-    text-transform: capitalize;
-    background: var(--dark-surface);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .status-badge.registering {
-    background: rgba(16, 185, 129, 0.2);
-    color: var(--success);
+    background: rgba(0, 255, 136, 0.15);
+    color: #00ff88;
+    border: 1px solid rgba(0, 255, 136, 0.3);
 }
 
 .status-badge.running {
-    background: rgba(244, 63, 94, 0.2);
-    color: var(--danger);
+    background: rgba(255, 107, 107, 0.15);
+    color: #ff6b6b;
+    border: 1px solid rgba(255, 107, 107, 0.3);
 }
 
+/* Stats Grid — Brushed Metal Cards */
 .detail-stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -178,41 +276,67 @@
     align-items: center;
     gap: var(--space-2);
     padding: var(--space-4);
-    background: var(--dark-surface);
-    border-radius: var(--radius-lg);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.08) 0%,
+            rgba(200, 200, 200, 0.05) 50%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #3a4a5a;
+    border-radius: 12px;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.2);
 }
 
 .detail-stats .stat.highlight {
-    background: rgba(255, 215, 0, 0.1);
-    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-color: #ffd700;
+    background: linear-gradient(145deg,
+            rgba(255, 215, 0, 0.12) 0%,
+            rgba(255, 255, 255, 0.05) 50%,
+            rgba(100, 100, 100, 0.03) 100%);
+    box-shadow:
+        0 0 15px rgba(255, 215, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.2);
 }
 
 .stat-label {
-    font-size: var(--text-xs);
-    color: var(--text-muted);
+    font-size: 0.7rem;
+    color: #6a7a8a;
     text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .stat-value {
     font-size: var(--text-lg);
     font-weight: 700;
-    font-family: var(--font-mono);
+    font-family: 'Orbitron', monospace;
+    color: #00d4ff;
 }
 
 .stat-value.gold {
     color: #FFD700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
 
-/* Blind Structure */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BLIND STRUCTURE — Metal Table
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
 .blind-structure {
     margin-bottom: var(--space-6);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.03) 0%, rgba(0, 0, 0, 0.1) 100%);
+    border: 1px solid #2a3a4a;
+    border-radius: 10px;
+    padding: 1rem;
 }
 
 .blind-structure h3 {
-    font-size: var(--text-sm);
-    color: var(--text-muted);
+    font-size: 0.8rem;
+    color: #00d4ff;
     margin-bottom: var(--space-3);
     text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
 }
 
 .blind-structure table {
@@ -224,36 +348,43 @@
 .blind-structure td {
     padding: var(--space-2);
     text-align: left;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .blind-structure th {
-    font-size: var(--text-xs);
-    color: var(--text-muted);
+    font-size: 0.7rem;
+    color: #6a7a8a;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .blind-structure td {
     font-size: var(--text-sm);
-    font-family: var(--font-mono);
+    font-family: 'Orbitron', monospace;
+    color: #00d4ff;
 }
 
 .more-row td {
     text-align: center;
-    font-style: italic;
-    color: var(--text-muted);
+    font-style: normal;
+    color: #6a7a8a;
 }
 
-/* Payout Structure */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PAYOUT STRUCTURE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
 .payout-structure {
     margin-bottom: var(--space-6);
 }
 
 .payout-structure h3 {
-    font-size: var(--text-sm);
-    color: var(--text-muted);
+    font-size: 0.8rem;
+    color: #00d4ff;
     margin-bottom: var(--space-3);
     text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
 }
 
 .payout-list {
@@ -266,9 +397,10 @@
     display: flex;
     align-items: center;
     gap: var(--space-4);
-    padding: var(--space-2);
-    background: var(--dark-surface);
-    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(0, 0, 0, 0.1) 100%);
+    border: 1px solid #2a3a4a;
+    border-radius: 8px;
 }
 
 .payout-place {
@@ -279,25 +411,76 @@
 .payout-percent {
     flex: 1;
     font-size: var(--text-sm);
-    color: var(--text-muted);
+    color: #6a7a8a;
 }
 
 .payout-amount {
     font-weight: 700;
-    font-family: var(--font-mono);
+    font-family: 'Orbitron', monospace;
     color: #FFD700;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
 }
 
-/* Actions */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ACTIONS — Metal Buttons
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
 .detail-actions {
     margin-top: var(--space-6);
 }
 
 .detail-actions .btn-block {
     width: 100%;
+    padding: 1rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
-/* Empty State */
+.detail-actions .btn-primary {
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    border: none;
+    color: #fff;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+}
+
+.detail-actions .btn-primary:hover:not(:disabled) {
+    box-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
+    transform: translateY(-2px);
+}
+
+.detail-actions .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.detail-actions .btn-danger {
+    background: linear-gradient(135deg, #ff6b6b 0%, #cc4444 100%);
+    border: none;
+    color: #fff;
+}
+
+.detail-actions .btn-warning {
+    background: linear-gradient(135deg, #ff9500 0%, #cc7700 100%);
+    border: none;
+    color: #fff;
+}
+
+.detail-actions .btn-success {
+    background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
+    border: none;
+    color: #000;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   EMPTY STATES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.empty-state,
 .empty-detail {
     display: flex;
     flex-direction: column;
@@ -306,22 +489,113 @@
     height: 100%;
     gap: var(--space-3);
     text-align: center;
-    color: var(--text-muted);
+    color: #6a7a8a;
+    padding: 3rem;
 }
 
 .empty-icon {
     font-size: 48px;
-    opacity: 0.5;
+    opacity: 0.3;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   CREATE MODAL
+   MODALS — Metal Frame
    ═══════════════════════════════════════════════════════════════════════════════ */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal {
+    background: linear-gradient(180deg, #1a2535 0%, #0d1520 100%);
+    border: 2px solid #2a3a4a;
+    border-radius: 16px;
+    padding: 1.5rem;
+    max-width: 500px;
+    width: 90%;
+    box-shadow:
+        0 0 40px rgba(0, 212, 255, 0.2),
+        0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.modal h2 {
+    color: #00d4ff;
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0 0 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    color: #8899aa;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(180deg, #0d1520 0%, #1a2332 100%);
+    border: 2px solid #2a3a4a;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1rem;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #00d4ff;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
 
 .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--space-4);
+}
+
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    justify-content: flex-end;
+}
+
+.modal-actions .btn-ghost {
+    background: transparent;
+    border: 1px solid #3a4a5a;
+    color: #8899aa;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.modal-actions .btn-primary {
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    border: none;
+    color: #fff;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
