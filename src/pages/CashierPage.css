@@ -1,247 +1,250 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  CASHIER PAGE — Aggressive Industrial Metal UI
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
 .cashier-page {
     min-height: 100vh;
-    background: var(--bg-primary);
-    padding: 0 1rem 2rem;
+    background: linear-gradient(180deg, #0a0f1a 0%, #0d1520 50%, #0a0f1a 100%);
+    padding: 20px;
+    padding-bottom: 120px;
+    position: relative;
 }
 
-.cashier-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem 0;
+/* Background Tech Grid */
+.cashier-page::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+        linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+    background-size: 30px 30px;
+    pointer-events: none;
+    z-index: 0;
 }
 
-.cashier-header .back-btn {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    color: var(--text-primary);
-    cursor: pointer;
+.cashier-page>* {
+    position: relative;
+    z-index: 1;
 }
 
-.cashier-header h1 {
-    font-size: 1.25rem;
-    margin: 0;
-}
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BALANCE CARDS — Heavy Industrial Frames
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
-.balance-cards {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.balance-card {
-    background: var(--bg-secondary);
-    border-radius: 12px;
-    padding: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.balance-card.chips {
-    border-left: 4px solid #10b981;
-}
-
-.balance-card.diamonds {
-    border-left: 4px solid #8b5cf6;
-}
-
-.balance-icon {
-    font-size: 1.5rem;
-}
-
-.balance-info {
-    display: flex;
-    flex-direction: column;
-}
-
-.balance-label {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-}
-
-.balance-amount {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.action-tabs {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-}
-
-.action-tabs button {
-    flex: 1;
-    padding: 0.75rem;
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    background: var(--bg-secondary);
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.action-tabs button.active {
-    background: var(--accent-primary);
-    border-color: var(--accent-primary);
-    color: white;
-}
-
-.amount-section {
-    background: var(--bg-secondary);
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-}
-
-.amount-section label {
-    display: block;
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    margin-bottom: 0.75rem;
-}
-
-.amount-input {
-    display: flex;
-    align-items: center;
-    background: var(--bg-primary);
-    border: 2px solid var(--border-color);
-    border-radius: 12px;
-    padding: 0 1rem;
-    margin-bottom: 1rem;
-}
-
-.amount-input:focus-within {
-    border-color: var(--accent-primary);
-}
-
-.currency {
-    font-size: 1.5rem;
-    color: var(--text-secondary);
-    margin-right: 0.5rem;
-}
-
-.amount-input input {
-    flex: 1;
-    background: none;
-    border: none;
-    padding: 1rem 0;
-    font-size: 2rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    outline: none;
-}
-
-.conversion-info {
-    font-size: 0.875rem;
-    color: var(--accent-secondary);
-    margin-bottom: 1rem;
-    padding: 0.75rem;
-    background: rgba(var(--accent-secondary-rgb), 0.1);
-    border-radius: 8px;
-}
-
-.preset-buttons {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
-.preset-btn {
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 20px;
-    background: var(--bg-primary);
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    cursor: pointer;
-}
-
-.preset-btn:hover {
-    border-color: var(--accent-primary);
-    color: var(--accent-primary);
-}
-
-.message {
-    padding: 1rem;
-    border-radius: 12px;
-    margin-bottom: 1rem;
-    font-size: 0.875rem;
-}
-
-.message.success {
-    background: rgba(16, 185, 129, 0.1);
-    color: var(--accent-success);
-}
-
-.message.error {
-    background: rgba(239, 68, 68, 0.1);
-    color: var(--accent-danger);
-}
-
-.action-btn {
-    width: 100%;
-    padding: 1rem;
-    font-size: 1rem;
-}
-
-.table-context {
-    text-align: center;
-    font-size: 0.875rem;
-    color: var(--text-muted);
-    margin-top: 1rem;
-}
-
-/* Metal UI Layout Helpers - NO STYLING, ONLY LAYOUT */
 .balance-cards-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 16px;
+    gap: 16px;
+    margin-bottom: 24px;
 }
 
 .balance-card-content {
     text-align: center;
+    padding: 8px;
 }
 
 .balance-icon {
-    font-size: 1.5rem;
+    font-size: 2.5rem;
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
+    filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.6));
 }
 
 .balance-label {
-    font-size: 0.75rem;
+    font-family: 'Orbitron', 'Rajdhani', 'Roboto Condensed', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
     color: #6a7a8a;
     text-transform: uppercase;
-    margin-bottom: 4px;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
 }
 
 .balance-value {
-    font-size: 1.25rem;
-    font-weight: 700;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 1.8rem;
+    font-weight: 900;
     color: #00d4ff;
-    font-family: monospace;
+    text-shadow:
+        0 0 20px rgba(0, 212, 255, 0.8),
+        0 0 40px rgba(0, 212, 255, 0.4),
+        0 2px 4px rgba(0, 0, 0, 0.8);
+    letter-spacing: 1px;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ACTION TABS — Thick Beveled Buttons
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
 .action-tabs-metal {
     display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
+    gap: 12px;
+    margin-bottom: 24px;
 }
 
-/* Mobile Responsive */
+/* Override MetalButton styles for tabs */
+.action-tabs-metal button {
+    position: relative;
+    font-size: 0.9rem !important;
+    padding: 14px 20px !important;
+    font-weight: 800 !important;
+    letter-spacing: 1.5px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MAIN FORM ENHANCEMENTS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Add extra industrial styling to the MetalFrame */
+.cashier-page [class*="_frame_"] {
+    margin-bottom: 24px;
+}
+
+/* Preset Buttons Grid */
+.preset-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.preset-buttons-grid button {
+    font-size: 1rem !important;
+    font-weight: 800 !important;
+    padding: 12px 8px !important;
+    letter-spacing: 0.5px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MESSAGES & ALERTS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.cashier-message {
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+    letter-spacing: 0.5px;
+    margin: 16px 0;
+    border: 2px solid;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.cashier-message.success {
+    background: linear-gradient(135deg, rgba(0, 255, 136, 0.15), rgba(0, 255, 136, 0.05));
+    border-color: #00ff88;
+    color: #00ff88;
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+}
+
+.cashier-message.error {
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.15), rgba(255, 107, 107, 0.05));
+    border-color: #ff6b6b;
+    color: #ff6b6b;
+    text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+}
+
+.cashier-message.info {
+    background: linear-gradient(135deg, rgba(255, 149, 0, 0.15), rgba(255, 149, 0, 0.05));
+    border-color: #ff9500;
+    color: #ff9500;
+    text-shadow: 0 0 10px rgba(255, 149, 0, 0.5);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CONFIRM BUTTON — Massive Industrial Style
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.cashier-confirm-button {
+    margin-top: 24px;
+}
+
+.cashier-confirm-button button {
+    font-size: 1.3rem !important;
+    padding: 20px 48px !important;
+    font-weight: 900 !important;
+    letter-spacing: 3px !important;
+    text-transform: uppercase;
+    box-shadow:
+        0 0 30px rgba(0, 212, 255, 0.6),
+        0 0 60px rgba(0, 212, 255, 0.3),
+        0 8px 24px rgba(0, 0, 0, 0.6),
+        inset 0 2px 4px rgba(255, 255, 255, 0.3),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.4) !important;
+}
+
+.cashier-confirm-button button:hover:not(:disabled) {
+    box-shadow:
+        0 0 40px rgba(0, 212, 255, 0.8),
+        0 0 80px rgba(0, 212, 255, 0.4),
+        0 8px 24px rgba(0, 0, 0, 0.6),
+        inset 0 2px 4px rgba(255, 255, 255, 0.4) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TABLE CONTEXT INFO
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.table-context-info {
+    text-align: center;
+    font-size: 0.75rem;
+    color: #6a7a8a;
+    margin-top: 12px;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
 @media (max-width: 480px) {
     .balance-cards-grid {
         grid-template-columns: 1fr;
     }
 
-    .amount-input input {
+    .balance-value {
         font-size: 1.5rem;
     }
+
+    .action-tabs-metal {
+        flex-direction: column;
+    }
+
+    .preset-buttons-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .cashier-confirm-button button {
+        font-size: 1.1rem !important;
+        padding: 16px 32px !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.6));
+    }
+
+    50% {
+        filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.9));
+    }
+}
+
+.balance-icon {
+    animation: pulse-glow 3s ease-in-out infinite;
 }

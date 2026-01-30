@@ -146,21 +146,13 @@ export default function CashierPage() {
                     />
 
                     {action === 'mint' && amount && (
-                        <div style={{
-                            color: '#ff9500',
-                            textAlign: 'center',
-                            fontSize: '0.875rem',
-                            padding: '8px',
-                            background: 'rgba(255, 149, 0, 0.1)',
-                            border: '1px solid rgba(255, 149, 0, 0.3)',
-                            borderRadius: '6px'
-                        }}>
+                        <div className="cashier-message info">
                             💎 {Math.ceil(parseFloat(amount || '0') * DIAMOND_RATE).toLocaleString()} diamonds required
                         </div>
                     )}
 
                     {/* Presets */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                    <div className="preset-buttons-grid">
                         {preset.map((val) => (
                             <MetalButton
                                 key={val}
@@ -175,34 +167,28 @@ export default function CashierPage() {
 
                     {/* Messages */}
                     {message && (
-                        <div style={{
-                            color: message.type === 'success' ? '#00ff88' : '#ff6b6b',
-                            textAlign: 'center',
-                            fontSize: '0.875rem',
-                            padding: '10px',
-                            background: message.type === 'success' ? 'rgba(0, 255, 136, 0.1)' : 'rgba(255, 107, 107, 0.1)',
-                            border: `1px solid ${message.type === 'success' ? 'rgba(0, 255, 136, 0.3)' : 'rgba(255, 107, 107, 0.3)'}`,
-                            borderRadius: '6px'
-                        }}>
+                        <div className={`cashier-message ${message.type}`}>
                             {message.text}
                         </div>
                     )}
 
                     {/* Action Button */}
-                    <MetalButton
-                        variant="primary"
-                        fullWidth
-                        onClick={handleAction}
-                        disabled={isProcessing || !amount}
-                        loading={isProcessing}
-                    >
-                        {action === 'buyin' ? 'BUY IN' :
-                            action === 'cashout' ? 'CASH OUT' :
-                                'MINT CHIPS'}
-                    </MetalButton>
+                    <div className="cashier-confirm-button">
+                        <MetalButton
+                            variant="primary"
+                            fullWidth
+                            onClick={handleAction}
+                            disabled={isProcessing || !amount}
+                            loading={isProcessing}
+                        >
+                            {action === 'buyin' ? '⚡ CONFIRM BUY-IN ⚡' :
+                                action === 'cashout' ? '⚡ CONFIRM CASH-OUT ⚡' :
+                                    '⚡ CONFIRM MINT ⚡'}
+                        </MetalButton>
+                    </div>
 
                     {tableId && (
-                        <p style={{ color: '#6a7a8a', textAlign: 'center', fontSize: '0.8rem', margin: 0 }}>
+                        <p className="table-context-info">
                             ↩️ Returning to table after transaction
                         </p>
                     )}
