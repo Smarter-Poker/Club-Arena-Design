@@ -14,12 +14,14 @@ import PrivateChat from '../components/social/PrivateChat';
 import MessagesPanel from '../components/messaging/MessagesPanel';
 import MessageInput from '../components/messaging/MessageInput';
 import ChatBubble from '../components/messaging/ChatBubble';
+import ClubBottomNav from '../components/club/ClubBottomNav';
 import './MessagesPage.css';
 
 export default function MessagesPage() {
     const navigate = useNavigate();
     const { clubId, conversationId } = useParams<{ clubId: string; conversationId?: string }>();
     const [selectedConversation, setSelectedConversation] = useState<string | null>(conversationId || null);
+    const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
     // Note: clubId is optional now - ConversationList shows both personal and club widget
@@ -59,6 +61,12 @@ export default function MessagesPage() {
                         selectedId={selectedConversation || undefined}
                     />
                 </div>
+                {clubId && (
+                    <ClubBottomNav
+                        clubId={clubId}
+                        userRole={userRole}
+                    />
+                )}
             </div>
         );
     }
@@ -88,6 +96,12 @@ export default function MessagesPage() {
                     )}
                 </main>
             </div>
+            {clubId && (
+                <ClubBottomNav
+                    clubId={clubId}
+                    userRole={userRole}
+                />
+            )}
         </div>
     );
 }
