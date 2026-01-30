@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
+import ClubBottomNav from '../components/club/ClubBottomNav';
 import { useToast } from '../components/common/Toast';
 import './ClubAnnouncementsPage.css';
 
@@ -32,6 +33,7 @@ export default function ClubAnnouncementsPage() {
     const [newTitle, setNewTitle] = useState('');
     const [newContent, setNewContent] = useState('');
     const [posting, setPosting] = useState(false);
+    const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
 
     useEffect(() => {
         if (clubId) {
@@ -210,6 +212,14 @@ export default function ClubAnnouncementsPage() {
                     ))
                 )}
             </div>
+
+            {clubId && (
+                <ClubBottomNav
+                    clubId={clubId}
+                    userRole={userRole}
+                />
+            )}
+
         </div>
     );
 }

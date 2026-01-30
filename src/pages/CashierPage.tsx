@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useWalletStore } from '../stores/useWalletStore';
 import { useUserStore } from '../stores/useUserStore';
+import ClubBottomNav from '../components/club/ClubBottomNav';
 import './CashierPage.css';
 
 type CashierAction = 'buyin' | 'cashout' | 'mint';
@@ -14,6 +15,7 @@ export default function CashierPage() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const tableId = searchParams.get('table');
+    const clubId = searchParams.get('club');
 
     const { user } = useUserStore();
     const { balances, diamonds, mintChips } = useWalletStore();
@@ -22,6 +24,7 @@ export default function CashierPage() {
     const [amount, setAmount] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
 
     const preset = (action === 'buyin' || action === 'cashout')
         ? [100, 200, 500, 1000, 2000]
@@ -186,6 +189,13 @@ export default function CashierPage() {
                 <p className="table-context">
                     Returning to table after transaction
                 </p>
+            )}
+
+            {clubId && (
+                <ClubBottomNav
+                    clubId={clubId}
+                    userRole={userRole}
+                />
             )}
         </div>
     );

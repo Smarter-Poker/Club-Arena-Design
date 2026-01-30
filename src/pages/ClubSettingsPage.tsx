@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { ClubsService } from '../services/ClubsService';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
+import ClubBottomNav from '../components/club/ClubBottomNav';
 import './ClubSettingsPage.css';
 
 interface ClubSettings {
@@ -53,6 +54,7 @@ export default function ClubSettingsPage() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [confirmText, setConfirmText] = useState('');
+    const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
 
     useEffect(() => {
         if (clubId) loadClubSettings();
@@ -371,6 +373,14 @@ export default function ClubSettingsPage() {
                     </div>
                 </div>
             )}
+
+            {clubId && (
+                <ClubBottomNav
+                    clubId={clubId}
+                    userRole={userRole}
+                />
+            )}
+
         </div>
     );
 }

@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
+import ClubBottomNav from '../components/club/ClubBottomNav';
 import { useToast } from '../components/common/Toast';
 import { ClubFinancialDashboard } from '../components/dashboard/ClubFinancialDashboard';
 import FinancialChart from '../components/charts/FinancialChart';
@@ -38,6 +39,7 @@ export default function ClubFinancialsPage() {
     const [chartData, setChartData] = useState<{ name: string; rake: number; rakeback: number }[]>([]);
     const [loading, setLoading] = useState(true);
     const [period, setPeriod] = useState<'week' | 'month' | 'all'>('week');
+    const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
     const toast = useToast();
 
     useEffect(() => {
@@ -246,6 +248,14 @@ export default function ClubFinancialsPage() {
                     </div>
                 )}
             </section>
+
+            {clubId && (
+                <ClubBottomNav
+                    clubId={clubId}
+                    userRole={userRole}
+                />
+            )}
+
         </div>
     );
 }

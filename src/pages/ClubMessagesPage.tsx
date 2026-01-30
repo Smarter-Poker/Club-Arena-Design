@@ -10,6 +10,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
+import ClubBottomNav from '../components/club/ClubBottomNav';
 import MessageThread from '../components/messaging/MessageThread';
 import './ClubMessagesPage.css';
 
@@ -26,12 +27,14 @@ interface ClubConversation {
 
 export default function ClubMessagesPage() {
     const navigate = useNavigate();
-    const { conversationId } = useParams<{ conversationId?: string }>();
+    const { conversationId, clubId: urlClubId } = useParams<{ conversationId?: string; clubId?: string }>();
     const { user } = useUserStore();
 
     const [conversations, setConversations] = useState<ClubConversation[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedConversation, setSelectedConversation] = useState<string | null>(conversationId || null);
+    const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
+    const [clubId, setClubId] = useState<string | undefined>(urlClubId);
 
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
@@ -237,6 +240,14 @@ export default function ClubMessagesPage() {
                     />
                 </div>
             )}
+
+            {clubId && (
+                <ClubBottomNav
+                    clubId={clubId}
+                    userRole={userRole}
+                />
+            )}
+
         </div>
     );
 }

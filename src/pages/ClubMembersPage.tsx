@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
+import ClubBottomNav from '../components/club/ClubBottomNav';
 import './ClubMembersPage.css';
 
 interface ClubMember {
@@ -32,6 +33,7 @@ export default function ClubMembersPage() {
     const [filter, setFilter] = useState<MemberFilter>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
+    const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
 
     useEffect(() => {
         if (clubId) loadMembers();
@@ -94,6 +96,20 @@ export default function ClubMembersPage() {
                     is_online: onlineUserIds.has(m.user_id),
                     last_active: undefined,
                 })));
+
+                // Fetch current user's role
+                if (user?.id) {
+                    const { data: memberData } = await supabase
+                        .from('club_members')
+                        .select('role')
+                        .eq('club_id', clubId)
+                        .eq('user_id', user.id)
+                        .single();
+
+                    if (memberData) {
+                        setUserRole(memberData.role || 'member');
+                    }
+                }
             }
         } catch (error) {
             console.error('Failed to load members:', error);
@@ -195,6 +211,13 @@ export default function ClubMembersPage() {
                     ))
                 )}
             </div>
+
+            {clubId && (
+                <ClubBottomNav
+                    clubId={clubId}
+                    userRole={userRole}
+                />
+            )}
         </div>
     );
 }
