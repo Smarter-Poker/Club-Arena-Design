@@ -44,7 +44,7 @@ export default function AppLayout() {
     const { showWelcome, isReady, acceptWelcome } = useClubArenaWelcome();
 
     // Hide QuickActionsBar on club pages (they have ClubBottomNav instead)
-    const isOnClubPage = location.pathname.includes('/clubs/');
+    const isOnClubPage = location.pathname.includes('/clubs/') || location.pathname.includes('/club-arena/clubs/');
 
     return (
         <div className={`${styles.layout} ${isInIframe ? styles.embedded : ''}`}>
