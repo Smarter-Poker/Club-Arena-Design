@@ -112,13 +112,23 @@ export default function VIPPage() {
             <section className="vip-section vip-card-section">
                 <h3> VIP Diamond</h3>
                 {isVIP ? (
-                    <div className="vip-card-active" style={{ borderColor: '#ffd700' }}>
-                        <div className="vip-card-badge" style={{ background: 'linear-gradient(135deg, #ffd700, #ff980088)' }}>
-                            <span className="vip-card-icon"></span>
-                            <span className="vip-card-label">VIP</span>
+                    <div className="vip-card-active" style={{ borderColor: '#ffd700', textAlign: 'center' }}>
+                        {/* VIP Card Image */}
+                        <div style={{ marginBottom: 16 }}>
+                            <img
+                                src="/vip-card.jpg"
+                                alt="VIP Card"
+                                style={{
+                                    width: '100%',
+                                    maxWidth: 300,
+                                    height: 'auto',
+                                    borderRadius: 12,
+                                    boxShadow: '0 8px 32px rgba(255, 215, 0, 0.3)',
+                                }}
+                            />
                         </div>
-                        <div className="vip-card-info">
-                            <span className="vip-card-tier">Diamond Member</span>
+                        <div className="vip-card-info" style={{ textAlign: 'center' }}>
+                            <span className="vip-card-tier" style={{ color: '#ffd700', fontSize: 18, fontWeight: 700 }}>Diamond Member</span>
                             <span className="vip-card-expiry">Included with Smarter.Poker</span>
                         </div>
                         <button className="vip-extend-btn" onClick={() => setShowInfoModal(true)}>
