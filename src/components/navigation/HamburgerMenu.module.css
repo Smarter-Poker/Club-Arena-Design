@@ -26,7 +26,7 @@
     }
 }
 
-/* Menu Panel */
+/* Menu Panel - Positioned below GlobalHeader */
 .menu {
     position: fixed;
     top: 56px;
@@ -41,6 +41,7 @@
     flex-direction: column;
     animation: slideIn 0.3s ease;
     overflow-y: auto;
+    /* Cache bust: v2 */
 }
 
 @keyframes slideIn {
