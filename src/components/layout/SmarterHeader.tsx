@@ -3,7 +3,7 @@
  *  SMARTER.POKER HEADER — Premium App Header
  * ═══════════════════════════════════════════════════════════════════════════════
  * Standard header used across all non-playing pages
- * Shows: Hub button, Smarter.Poker branding, Diamonds, XP, Icons
+ * Shows: Hub button, Smarter.Poker branding, Diamonds, Icons
  */
 
 import { useNavigate } from 'react-router-dom';
@@ -22,7 +22,7 @@ interface SmarterHeaderProps {
 
 export default function SmarterHeader({ showBackButton = true, backTo, title }: SmarterHeaderProps) {
     const navigate = useNavigate();
-    const { user, xp, level } = useUserStore();
+    const { user } = useUserStore();
     const { diamonds } = useWalletStore();
     const [unreadNotifications, setUnreadNotifications] = useState(0);
     const [unreadMessages, setUnreadMessages] = useState(0);
@@ -66,14 +66,7 @@ export default function SmarterHeader({ showBackButton = true, backTo, title }: 
                     <button className="add-button">+</button>
                 </div>
 
-                {/* XP & Level */}
-                <div className="header-stat xp">
-                    <span className="stat-label">XP</span>
-                    <span className="stat-value">{xp?.toLocaleString() || '0'}</span>
-                    <span className="stat-divider">·</span>
-                    <span className="stat-label">LV</span>
-                    <span className="stat-value">{level || 1}</span>
-                </div>
+                {/* XP system removed */}
             </div>
 
             <div className="header-right">
@@ -88,19 +81,19 @@ export default function SmarterHeader({ showBackButton = true, backTo, title }: 
 
                 {/* Messages */}
                 <button className="header-icon-btn" onClick={() => navigate('/messages')}>
-                    
+
                     {unreadMessages > 0 && <span className="badge">{unreadMessages}</span>}
                 </button>
 
                 {/* Notifications */}
                 <button className="header-icon-btn" onClick={() => navigate('/notifications')}>
-                    
+
                     {unreadNotifications > 0 && <span className="badge">{unreadNotifications}</span>}
                 </button>
 
                 {/* Settings */}
                 <button className="header-icon-btn" onClick={() => navigate('/settings')}>
-                    
+
                 </button>
             </div>
         </header>

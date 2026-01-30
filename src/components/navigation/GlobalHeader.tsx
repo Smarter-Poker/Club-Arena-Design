@@ -10,7 +10,6 @@
  * - Dark background with neon blue accents
  * - "Smarter.Poker" in white text 
  * - Diamond wallet with + (REAL balance from user_diamond_balance)
- * - XP display with level (REAL data from profiles.xp_total)
  * - Profile picture (REAL avatar from profiles.avatar_url)
  * - Neon orb icons for profile, messages, notifications, settings
  * - Return to Hub button
@@ -48,12 +47,12 @@ export default function GlobalHeader({
     const { user } = useUserStore();
     const { loadBalances, loadDiamonds, isLoadingWallet, diamonds, isLoadingDiamonds } = useWalletStore();
 
-    const [stats, setStats] = useState({ xp: 0, diamonds: 0, level: 1 });
+    const [stats, setStats] = useState({ diamonds: 0 });
     const [isLoading, setIsLoading] = useState(true);
     const [notificationCount, setNotificationCount] = useState(0);
     const [unreadMessages, setUnreadMessages] = useState(0);
     const [showFullDiamonds, setShowFullDiamonds] = useState(false);
-    const [showFullXP, setShowFullXP] = useState(false);
+    // XP system removed
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [menuOpen, setMenuOpen] = useState(false);
 
@@ -74,10 +73,10 @@ export default function GlobalHeader({
                 loadBalances(authUser.id);
                 loadDiamonds(authUser.id);
 
-                // Fetch profile data - using xp_total (not 'xp' which doesn't exist)
+                // Fetch profile data
                 const { data: profile, error: profileError } = await supabase
                     .from('profiles')
-                    .select('avatar_url, xp_total')
+                    .select('avatar_url')
                     .eq('id', authUser.id)
                     .maybeSingle();
 
@@ -87,13 +86,8 @@ export default function GlobalHeader({
 
                 if (profile && mounted) {
                     setAvatarUrl(profile.avatar_url);
-                    const totalXp = profile.xp_total || 0;
-                    // Calculate level from XP: level = floor(sqrt(xp / 100)) + 1
-                    const calculatedLevel = Math.max(1, Math.floor(Math.sqrt(totalXp / 100)) + 1);
                     setStats({
-                        xp: totalXp,
-                        diamonds: 0, // Loaded from wallet store
-                        level: calculatedLevel
+                        diamonds: 0 // Loaded from wallet store
                     });
                 }
 
@@ -161,7 +155,7 @@ export default function GlobalHeader({
                     <span className={styles.brandText}>Smarter.Poker</span>
                 </div>
 
-                {/* CENTER: Diamond Wallet + XP */}
+                {/* CENTER: Diamond Wallet */}
                 <div className={styles.headerCenter}>
                     {/* Diamond Wallet */}
                     <a
@@ -181,23 +175,7 @@ export default function GlobalHeader({
                         <span className={styles.addBtn}>+</span>
                     </a>
 
-                    {/* XP + Level */}
-                    <div
-                        className={styles.xpDisplay}
-                        onClick={() => stats.xp >= 1000 && setShowFullXP(!showFullXP)}
-                        style={{ cursor: stats.xp >= 1000 ? 'pointer' : 'default' }}
-                    >
-                        <div className={styles.xpRow}>
-                            <span>XP</span>
-                            <span title={stats.xp.toLocaleString() + ' XP'}>
-                                {showFullXP ? stats.xp.toLocaleString() : formatCompact(stats.xp)}
-                            </span>
-                        </div>
-                        <div className={styles.xpRow}>
-                            <span>LV</span>
-                            <span>{stats.level}</span>
-                        </div>
-                    </div>
+                    {/* XP system removed */}
                 </div>
 
                 {/* RIGHT: Orb Icons */}
