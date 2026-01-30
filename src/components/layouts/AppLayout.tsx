@@ -9,7 +9,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import styles from './AppLayout.module.css';
 import ClubArenaWelcomeModal, { useClubArenaWelcome } from '../modals/ClubArenaWelcomeModal';
@@ -19,6 +19,8 @@ import GlobalHeader from '../navigation/GlobalHeader';
 import { useUserStore } from '../../stores/useUserStore';
 
 export default function AppLayout() {
+    const location = useLocation();
+
     // Detect if running inside iframe (World Hub embedding)
     // Use state to ensure correct value after client-side hydration
     const [isInIframe, setIsInIframe] = useState(false);
@@ -41,6 +43,9 @@ export default function AppLayout() {
     const { user } = useUserStore();
     const { showWelcome, isReady, acceptWelcome } = useClubArenaWelcome();
 
+    // Hide QuickActionsBar on club pages (they have ClubBottomNav instead)
+    const isOnClubPage = location.pathname.includes('/clubs/');
+
     return (
         <div className={`${styles.layout} ${isInIframe ? styles.embedded : ''}`}>
             {/* First-time Welcome Modal - Always show regardless of iframe */}
@@ -62,8 +67,8 @@ export default function AppLayout() {
                 <Outlet />
             </main>
 
-            {/* Quick Actions FAB - Global floating action button */}
-            {user && !isInIframe && <QuickActionsBar />}
+            {/* Quick Actions FAB - Global floating action button (hidden on club pages) */}
+            {user && !isInIframe && !isOnClubPage && <QuickActionsBar />}
 
             {/* Footer - Hide when in iframe */}
             {!isInIframe && (
