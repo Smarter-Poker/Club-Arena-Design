@@ -1,0 +1,70 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * MetalCard - CSS Module
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+@import './metal-theme.css';
+
+.card {
+    position: relative;
+    background: linear-gradient(135deg, #1a2a3a 0%, #0d1520 100%);
+    border-radius: 12px;
+    border: 1px solid #2a3a4a;
+    overflow: hidden;
+    box-shadow:
+        0 4px 20px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Metallic top edge */
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #2a3a4a, #4a5a6a, #2a3a4a);
+}
+
+/* Glow variation */
+.glow {
+    border-color: rgba(0, 212, 255, 0.3);
+}
+
+.glow::before {
+    background: linear-gradient(90deg, transparent, var(--metal-glow-cyan), transparent);
+    box-shadow: 0 0 10px var(--metal-glow-cyan);
+}
+
+/* Sizes */
+.sm {
+    padding: 16px;
+}
+
+.md {
+    padding: 20px;
+}
+
+.lg {
+    padding: 28px;
+}
+
+/* Title */
+.title {
+    font-family: 'Orbitron', 'Rajdhani', 'Roboto Condensed', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--metal-text);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0 0 16px 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Content */
+.content {
+    color: var(--metal-text);
+}

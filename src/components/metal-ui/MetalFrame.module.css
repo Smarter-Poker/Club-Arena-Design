@@ -1,0 +1,227 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * MetalFrame - CSS Module
+ * Futuristic Metal styling with CSS-based frame effects
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+@import './metal-theme.css';
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BASE FRAME
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.frame {
+    position: relative;
+    background: linear-gradient(135deg, #1a2a3a 0%, #0d1520 50%, #1a2a3a 100%);
+    border-radius: 16px;
+    padding: 60px 40px 40px;
+    box-shadow:
+        0 0 0 2px rgba(74, 90, 106, 0.8),
+        0 0 0 4px rgba(26, 35, 50, 0.9),
+        0 0 0 6px rgba(74, 90, 106, 0.4),
+        inset 0 2px 10px rgba(0, 0, 0, 0.5),
+        0 10px 40px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+}
+
+/* Metallic corner accents */
+.frame::before,
+.frame::after {
+    content: '';
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #4a5a6a 0%, #2a3a4a 50%, #1a2332 100%);
+    border-radius: 8px;
+}
+
+.frame::before {
+    top: 8px;
+    left: 8px;
+    border-top-left-radius: 12px;
+    box-shadow:
+        inset 2px 2px 4px rgba(255, 255, 255, 0.1),
+        inset -2px -2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.frame::after {
+    top: 8px;
+    right: 8px;
+    border-top-right-radius: 12px;
+    box-shadow:
+        inset 2px 2px 4px rgba(255, 255, 255, 0.1),
+        inset -2px -2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Glowing LED accent lines */
+.frame .content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 20px;
+    right: 20px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--metal-glow-cyan), transparent);
+    box-shadow: 0 0 10px var(--metal-glow-cyan);
+    opacity: 0.8;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TITLE BAR
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.titleBar {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, #3a4a5a 0%, #2a3a4a 50%, #1a2a3a 100%);
+    padding: 10px 40px;
+    border-radius: 0 0 8px 8px;
+    box-shadow:
+        0 4px 15px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    z-index: 10;
+}
+
+.titleBar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--metal-glow-cyan), transparent);
+    box-shadow: 0 0 8px var(--metal-glow-cyan);
+}
+
+.titleText {
+    font-family: 'Orbitron', 'Rajdhani', 'Roboto Condensed', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--metal-text);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CLOSE BUTTON
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.closeButton {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3a4a5a 0%, #2a3a4a 100%);
+    border: 2px solid #4a5a6a;
+    color: var(--metal-text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 20;
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.closeButton:hover {
+    background: linear-gradient(135deg, #4a5a6a 0%, #3a4a5a 100%);
+    border-color: var(--metal-glow-cyan);
+    box-shadow:
+        0 0 15px rgba(0, 212, 255, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.closeButton:active {
+    transform: scale(0.95);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CONTENT AREA
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.content {
+    position: relative;
+    background: var(--metal-content-bg);
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid rgba(0, 212, 255, 0.15);
+    /* Grid pattern overlay */
+    background-image:
+        linear-gradient(rgba(0, 212, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 212, 255, 0.02) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   VARIANTS
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.modal {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.wide {
+    max-width: 700px;
+}
+
+.card {
+    padding: 30px 25px 25px;
+}
+
+.form {
+    padding: 50px 35px 35px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SIZES
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.sm {
+    max-width: 350px;
+}
+
+.md {
+    max-width: 450px;
+}
+
+.lg {
+    max-width: 550px;
+}
+
+.xl {
+    max-width: 700px;
+}
+
+.auto {
+    max-width: none;
+    width: 100%;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ANIMATIONS
+   ───────────────────────────────────────────────────────────────────────────── */
+
+@keyframes metalGlow {
+
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+.frame .titleBar::before {
+    animation: metalGlow 3s ease-in-out infinite;
+}
