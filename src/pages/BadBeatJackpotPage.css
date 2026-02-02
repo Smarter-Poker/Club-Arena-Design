@@ -1,18 +1,30 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  BAD BEAT JACKPOT PAGE — Metal UI Theme
+ *  Brushed Steel + Gold Glow Jackpot Display
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
 .bbj-page {
     min-height: 100vh;
-    background: var(--bg-primary);
+    background: linear-gradient(180deg, #0a0a14 0%, #0d1520 50%, #0a0a14 100%);
     padding-bottom: 2rem;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   JACKPOT DISPLAY — Premium Gold Glow
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .jackpot-display {
     position: relative;
     margin: 1rem;
     padding: 2rem;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    background: linear-gradient(135deg, #1a2535 0%, #0d1520 50%, #1a2535 100%);
+    border: 2px solid rgba(255, 215, 0, 0.4);
     border-radius: 16px;
     text-align: center;
     overflow: hidden;
-    border: 2px solid rgba(255, 215, 0, 0.3);
+    box-shadow: 0 0 40px rgba(255, 215, 0, 0.2);
 }
 
 .jackpot-glow {
@@ -21,7 +33,7 @@
     left: 50%;
     width: 200px;
     height: 200px;
-    background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.4) 0%, transparent 70%);
     transform: translate(-50%, -50%);
     animation: pulse 2s ease-in-out infinite;
 }
@@ -42,34 +54,44 @@
 
 .jackpot-label {
     display: block;
-    font-size: 0.875rem;
-    color: rgba(255, 215, 0, 0.8);
+    font-size: 0.8rem;
+    color: rgba(255, 215, 0, 0.9);
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 3px;
     margin-bottom: 0.5rem;
     position: relative;
     z-index: 1;
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
 }
 
 .jackpot-amount {
     display: block;
-    font-size: 2.5rem;
+    font-size: 3rem;
     font-weight: 700;
-    color: #ffd700;
-    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    color: #FFD700;
+    text-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
     position: relative;
     z-index: 1;
+    font-family: 'Orbitron', monospace;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   INFO CARDS — Metal Panels
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .jackpot-info {
     display: flex;
     gap: 0.75rem;
     padding: 0 1rem;
+    margin-top: 1rem;
 }
 
 .info-card {
     flex: 1;
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #2a3a4a;
     border-radius: 12px;
     padding: 1rem;
     text-align: center;
@@ -77,26 +99,40 @@
 
 .info-label {
     display: block;
-    font-size: 0.75rem;
-    color: var(--text-secondary);
+    font-size: 0.7rem;
+    color: #6a7a8a;
     margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .info-value {
-    font-weight: 600;
-    color: var(--text-primary);
+    font-weight: 700;
+    color: #00d4ff;
+    font-family: 'Orbitron', monospace;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PAYOUT STRUCTURE
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .payout-structure {
     margin: 1rem;
     padding: 1rem;
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #2a3a4a;
     border-radius: 12px;
 }
 
 .payout-structure h3 {
     margin: 0 0 1rem;
-    font-size: 1rem;
+    font-size: 0.9rem;
+    color: #00d4ff;
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .payout-bars {
@@ -114,21 +150,27 @@
 .payout-label {
     width: 100px;
     font-size: 0.75rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
 }
 
 .bar-fill {
     height: 12px;
-    background: linear-gradient(90deg, #ffd700 0%, #ff9800 100%);
+    background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%);
     border-radius: 6px;
     min-width: 20px;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
 }
 
 .payout-percent {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #FFD700;
+    font-family: 'Orbitron', monospace;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   JACKPOT HISTORY
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .jackpot-history {
     padding: 1rem;
@@ -136,7 +178,11 @@
 
 .jackpot-history h3 {
     margin: 0 0 1rem;
-    font-size: 1rem;
+    font-size: 0.9rem;
+    color: #00d4ff;
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .history-list {
@@ -150,31 +196,45 @@
     justify-content: space-between;
     align-items: center;
     padding: 1rem;
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.05) 0%,
+            rgba(100, 100, 100, 0.02) 100%);
+    border: 1px solid #2a3a4a;
     border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.history-row:hover {
+    border-color: #3a4a5a;
 }
 
 .hit-date {
     display: block;
     font-size: 0.75rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
 }
 
 .hit-hands {
-    font-size: 0.875rem;
-    color: var(--text-primary);
+    font-size: 0.85rem;
+    color: #8a9aaa;
 }
 
 .hit-amount {
     font-weight: 700;
     font-size: 1.125rem;
-    color: #ffd700;
+    color: #FFD700;
+    font-family: 'Orbitron', monospace;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   STATES
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .loading-state,
 .empty-state {
     display: flex;
     justify-content: center;
     padding: 2rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
 }

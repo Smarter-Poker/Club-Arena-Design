@@ -1,6 +1,13 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  TABLE CREATION PAGE — Metal UI Theme
+ *  Brushed Steel + Cyan Glow Form Elements
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
 .table-creation-page {
     min-height: 100vh;
-    background: var(--bg-primary);
+    background: linear-gradient(180deg, #0a0a14 0%, #0d1520 50%, #0a0a14 100%);
     padding-bottom: 2rem;
 }
 
@@ -9,16 +16,23 @@
 }
 
 .error-message {
-    background: rgba(var(--accent-danger-rgb), 0.15);
-    border: 1px solid var(--accent-danger);
-    color: var(--accent-danger);
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid #ef4444;
+    color: #ef4444;
     padding: 0.75rem 1rem;
     border-radius: 8px;
     margin-bottom: 1rem;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   SECTIONS — Metal Panels
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .creation-section {
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #2a3a4a;
     border-radius: 12px;
     padding: 1rem;
     margin-bottom: 1rem;
@@ -26,21 +40,33 @@
 
 .creation-section h3 {
     margin: 0 0 1rem;
-    font-size: 0.875rem;
-    color: var(--text-secondary);
+    font-size: 0.8rem;
+    color: #00d4ff;
     text-transform: uppercase;
     letter-spacing: 1px;
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
 }
 
 .name-input {
     width: 100%;
     padding: 1rem;
-    border: 1px solid var(--border-color);
+    border: 2px solid #2a3a4a;
     border-radius: 8px;
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
+    background: linear-gradient(180deg, #0d1520 0%, #1a2332 100%);
+    color: #fff;
     font-size: 1rem;
+    transition: all 0.2s ease;
 }
+
+.name-input:focus {
+    outline: none;
+    border-color: #00d4ff;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   GAME TYPE BUTTONS
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .game-types {
     display: grid;
@@ -53,15 +79,21 @@
     flex-direction: column;
     align-items: center;
     padding: 1rem;
-    border: 2px solid var(--border-color);
+    border: 2px solid #2a3a4a;
     border-radius: 12px;
-    background: var(--bg-tertiary);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.04) 0%, rgba(100, 100, 100, 0.02) 100%);
     cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.game-type-btn:hover {
+    border-color: #3a4a5a;
 }
 
 .game-type-btn.active {
-    border-color: var(--accent-primary);
-    background: rgba(var(--accent-primary-rgb), 0.1);
+    border-color: #00d4ff;
+    background: rgba(0, 212, 255, 0.1);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
 }
 
 .game-icon {
@@ -71,12 +103,16 @@
 
 .game-label {
     font-size: 0.75rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
 }
 
 .game-type-btn.active .game-label {
-    color: var(--accent-primary);
+    color: #00d4ff;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   STAKES PRESETS
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .stakes-presets {
     display: flex;
@@ -87,18 +123,28 @@
 
 .stake-btn {
     padding: 0.5rem 1rem;
-    border: 1px solid var(--border-color);
+    border: 2px solid #2a3a4a;
     border-radius: 20px;
-    background: var(--bg-tertiary);
-    color: var(--text-secondary);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.04) 0%, rgba(100, 100, 100, 0.02) 100%);
+    color: #6a7a8a;
     cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.stake-btn:hover {
+    border-color: #3a4a5a;
 }
 
 .stake-btn.active {
-    background: var(--accent-primary);
-    border-color: var(--accent-primary);
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    border-color: #00d4ff;
     color: white;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CUSTOM STAKES
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .custom-stakes {
     display: flex;
@@ -113,24 +159,35 @@
 }
 
 .stake-input label {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
+    font-size: 0.7rem;
+    color: #6a7a8a;
     margin-bottom: 0.25rem;
+    text-transform: uppercase;
 }
 
 .stake-input input {
     padding: 0.75rem;
-    border: 1px solid var(--border-color);
+    border: 2px solid #2a3a4a;
     border-radius: 8px;
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
+    background: linear-gradient(180deg, #0d1520 0%, #1a2332 100%);
+    color: #00d4ff;
     text-align: center;
+    font-family: 'Orbitron', monospace;
+}
+
+.stake-input input:focus {
+    outline: none;
+    border-color: #00d4ff;
 }
 
 .stake-divider {
     font-size: 1.5rem;
-    color: var(--text-secondary);
+    color: #4a5a6a;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SIZE OPTIONS
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .size-options {
     display: flex;
@@ -140,18 +197,28 @@
 .size-btn {
     flex: 1;
     padding: 0.75rem;
-    border: 1px solid var(--border-color);
+    border: 2px solid #2a3a4a;
     border-radius: 8px;
-    background: var(--bg-tertiary);
-    color: var(--text-secondary);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.04) 0%, rgba(100, 100, 100, 0.02) 100%);
+    color: #6a7a8a;
     cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.size-btn:hover {
+    border-color: #3a4a5a;
 }
 
 .size-btn.active {
-    background: var(--accent-primary);
-    border-color: var(--accent-primary);
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    border-color: #00d4ff;
     color: white;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BUYIN RANGE
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .buyin-range {
     display: flex;
@@ -166,23 +233,34 @@
 }
 
 .buyin-input label {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
+    font-size: 0.7rem;
+    color: #6a7a8a;
     margin-bottom: 0.25rem;
+    text-transform: uppercase;
 }
 
 .buyin-input input {
     padding: 0.75rem;
-    border: 1px solid var(--border-color);
+    border: 2px solid #2a3a4a;
     border-radius: 8px;
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
+    background: linear-gradient(180deg, #0d1520 0%, #1a2332 100%);
+    color: #FFD700;
     text-align: center;
+    font-family: 'Orbitron', monospace;
+}
+
+.buyin-input input:focus {
+    outline: none;
+    border-color: #FFD700;
 }
 
 .range-divider {
-    color: var(--text-secondary);
+    color: #4a5a6a;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   OPTIONS LIST
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .options-list {
     display: flex;
@@ -194,7 +272,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 0.75rem 0;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .option-row:last-child {
@@ -202,34 +280,64 @@
 }
 
 .option-row span {
-    color: var(--text-primary);
+    color: #8a9aaa;
 }
 
 .toggle-btn {
     padding: 0.375rem 1rem;
     border-radius: 20px;
-    border: 1px solid var(--border-color);
-    background: var(--bg-tertiary);
-    color: var(--text-secondary);
+    border: 2px solid #2a3a4a;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.04) 0%, rgba(100, 100, 100, 0.02) 100%);
+    color: #6a7a8a;
     font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
     min-width: 50px;
+    transition: all 0.2s ease;
 }
 
 .toggle-btn.on {
-    background: var(--accent-primary);
-    border-color: var(--accent-primary);
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    border-color: #00d4ff;
     color: white;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CREATE BUTTON
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .create-btn {
     width: 100%;
     padding: 1rem;
     font-size: 1.125rem;
     margin-top: 1rem;
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+    transition: all 0.2s ease;
 }
-/* Mobile Responsive */
+
+.create-btn:hover:not(:disabled) {
+    box-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
+    transform: translateY(-2px);
+}
+
+.create-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   RESPONSIVE
+   ───────────────────────────────────────────────────────────────────────────── */
+
 @media (max-width: 480px) {
     .creation-section {
         padding: 0.75rem;

@@ -1,8 +1,19 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  TRANSACTION HISTORY PAGE — Metal UI Theme
+ *  Brushed Steel + Green/Red Flow Indicators
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
 .transaction-history-page {
     min-height: 100vh;
-    background: var(--bg-primary);
+    background: linear-gradient(180deg, #0a0a14 0%, #0d1520 50%, #0a0a14 100%);
     padding-bottom: 2rem;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   FILTER TABS — Metal Chips
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .filter-tabs {
     display: flex;
@@ -13,20 +24,31 @@
 
 .filter-tabs button {
     padding: 0.5rem 1rem;
-    border: 1px solid var(--border-color);
+    border: 2px solid #2a3a4a;
     border-radius: 20px;
-    background: var(--bg-secondary);
-    color: var(--text-secondary);
-    font-size: 0.875rem;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.04) 0%, rgba(100, 100, 100, 0.02) 100%);
+    color: #6a7a8a;
+    font-size: 0.85rem;
     white-space: nowrap;
     cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-tabs button:hover {
+    border-color: #3a4a5a;
+    color: #8a9aaa;
 }
 
 .filter-tabs button.active {
-    background: var(--accent-primary);
-    border-color: var(--accent-primary);
-    color: white;
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    border-color: #00d4ff;
+    color: #fff;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TRANSACTIONS LIST — Metal Rows
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .transactions-list {
     padding: 0 1rem;
@@ -40,8 +62,16 @@
     align-items: center;
     gap: 0.75rem;
     padding: 1rem;
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.05) 0%,
+            rgba(100, 100, 100, 0.02) 100%);
+    border: 1px solid #2a3a4a;
     border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.transaction-row:hover {
+    border-color: #3a4a5a;
 }
 
 .tx-icon {
@@ -55,8 +85,8 @@
 
 .tx-desc {
     display: block;
-    font-weight: 500;
-    color: var(--text-primary);
+    font-weight: 600;
+    color: #fff;
     text-transform: capitalize;
     white-space: nowrap;
     overflow: hidden;
@@ -67,26 +97,33 @@
     display: flex;
     gap: 0.5rem;
     font-size: 0.75rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
 }
 
 .tx-club {
-    color: var(--accent-primary);
+    color: #00d4ff;
 }
 
 .tx-amount {
-    font-weight: 600;
+    font-weight: 700;
     font-size: 1rem;
     white-space: nowrap;
+    font-family: 'Orbitron', monospace;
 }
 
 .tx-amount.positive {
-    color: var(--accent-success);
+    color: #10b981;
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
 }
 
 .tx-amount.negative {
-    color: var(--accent-danger);
+    color: #ef4444;
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   STATES
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .loading-state,
 .empty-state {
@@ -95,15 +132,19 @@
     align-items: center;
     justify-content: center;
     padding: 3rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
     gap: 1rem;
 }
 
 .empty-icon {
     font-size: 2.5rem;
+    opacity: 0.4;
 }
 
-/* Summary Section */
+/* ─────────────────────────────────────────────────────────────────────────────
+   SUMMARY SECTION — Metal Cards
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .tx-summary {
     display: flex;
     gap: 0.5rem;
@@ -113,7 +154,10 @@
 
 .summary-card {
     flex: 1;
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #2a3a4a;
     border-radius: 12px;
     padding: 1rem;
     text-align: center;
@@ -123,51 +167,63 @@
     display: block;
     font-size: 1.25rem;
     font-weight: 700;
+    font-family: 'Orbitron', monospace;
 }
 
 .summary-value.positive {
-    color: var(--accent-success);
+    color: #10b981;
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
 }
 
 .summary-value.negative {
-    color: var(--accent-danger);
+    color: #ef4444;
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
 }
 
 .summary-label {
     font-size: 0.625rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BUTTONS
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .export-btn {
     padding: 0.75rem 1rem;
-    background: var(--accent-primary);
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
     color: white;
     border: none;
     border-radius: 12px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    transition: all 0.2s ease;
 }
 
 .export-btn:hover {
-    opacity: 0.9;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
 }
 
 .load-more-btn {
     width: 100%;
     padding: 1rem;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.04) 0%, rgba(100, 100, 100, 0.02) 100%);
+    border: 2px solid #2a3a4a;
     border-radius: 12px;
-    color: var(--accent-primary);
-    font-weight: 500;
+    color: #00d4ff;
+    font-weight: 600;
     cursor: pointer;
     margin-top: 0.5rem;
+    transition: all 0.2s ease;
 }
 
 .load-more-btn:hover:not(:disabled) {
-    background: var(--bg-secondary);
+    border-color: #00d4ff;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
 }
 
 .load-more-btn:disabled {

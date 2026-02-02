@@ -1,33 +1,56 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  REPORT REVIEW PAGE — Metal UI Theme
+ *  Brushed Steel + Admin Review Interface
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
 .report-review-page {
     min-height: 100vh;
-    background: var(--bg-primary, #0a0a1a);
+    background: linear-gradient(180deg, #0a0a14 0%, #0d1520 50%, #0a0a14 100%);
     padding-bottom: 2rem;
 }
 
-/* Filter Tabs */
+/* ─────────────────────────────────────────────────────────────────────────────
+   FILTER TABS — Metal Navigation
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .filter-tabs {
     display: flex;
     gap: 0.5rem;
     padding: 1rem;
-    background: var(--card-bg, #1a1a2e);
-    border-bottom: 1px solid var(--border-color, #333);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border-bottom: 2px solid #2a3a4a;
 }
 
 .filter-tab {
     padding: 0.5rem 1rem;
-    border: none;
+    border: 2px solid #2a3a4a;
     border-radius: 8px;
-    background: transparent;
-    color: var(--text-secondary);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.04) 0%, rgba(100, 100, 100, 0.02) 100%);
+    color: #6a7a8a;
     cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-tab:hover {
+    border-color: #3a4a5a;
+    color: #8a9aaa;
 }
 
 .filter-tab.active {
-    background: var(--accent-color, #4f46e5);
-    color: white;
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    border-color: #00d4ff;
+    color: #fff;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
 }
 
-/* Loading/Empty States */
+/* ─────────────────────────────────────────────────────────────────────────────
+   LOADING/EMPTY STATES
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .loading-state,
 .empty-state {
     display: flex;
@@ -35,15 +58,19 @@
     align-items: center;
     justify-content: center;
     padding: 4rem 2rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
 }
 
 .empty-icon {
     font-size: 3rem;
     margin-bottom: 1rem;
+    opacity: 0.4;
 }
 
-/* Reports List */
+/* ─────────────────────────────────────────────────────────────────────────────
+   REPORTS LIST — Metal Cards
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .reports-list {
     padding: 1rem;
     display: flex;
@@ -52,17 +79,23 @@
 }
 
 .report-card {
-    background: var(--card-bg, #1a1a2e);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #2a3a4a;
     border-radius: 12px;
     padding: 1rem;
     cursor: pointer;
-    border: 2px solid transparent;
-    transition: border-color 0.2s;
+    transition: all 0.2s ease;
 }
 
-.report-card:hover,
+.report-card:hover {
+    border-color: #3a4a5a;
+}
+
 .report-card.selected {
-    border-color: var(--accent-color, #4f46e5);
+    border-color: #00d4ff;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
 }
 
 .report-header {
@@ -80,44 +113,63 @@
     font-weight: 600;
     text-transform: capitalize;
     flex: 1;
+    color: #fff;
 }
 
 .status-badge {
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
-    font-size: 0.7rem;
-    font-weight: 600;
+    font-size: 0.65rem;
+    font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
     color: white;
+}
+
+.status-badge[class*="pending"] {
+    background: #f59e0b;
+}
+
+.status-badge[class*="resolved"] {
+    background: #10b981;
+}
+
+.status-badge[class*="dismissed"] {
+    background: #6a7a8a;
 }
 
 .report-players {
     display: flex;
     gap: 1rem;
     font-size: 0.85rem;
-    color: var(--text-secondary);
+    color: #8a9aaa;
     margin-bottom: 0.5rem;
 }
 
 .report-date {
     font-size: 0.8rem;
-    color: var(--text-muted, #666);
+    color: #4a5a6a;
 }
 
-/* Modal */
+/* ─────────────────────────────────────────────────────────────────────────────
+   MODAL — Metal Dialog
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.85);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
     padding: 1rem;
+    backdrop-filter: blur(4px);
 }
 
 .modal-content {
-    background: var(--card-bg, #1a1a2e);
+    background: linear-gradient(180deg, #1a2535 0%, #0d1520 100%);
+    border: 2px solid #2a3a4a;
     border-radius: 16px;
     width: 100%;
     max-width: 500px;
@@ -130,19 +182,25 @@
     justify-content: space-between;
     align-items: center;
     padding: 1rem;
-    border-bottom: 1px solid var(--border-color, #333);
+    border-bottom: 2px solid #2a3a4a;
 }
 
 .modal-header h3 {
     margin: 0;
+    color: #fff;
 }
 
 .modal-header button {
     background: none;
     border: none;
     font-size: 1.5rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
     cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.modal-header button:hover {
+    color: #ef4444;
 }
 
 .modal-body {
@@ -156,8 +214,13 @@
 }
 
 .detail-row label {
-    color: var(--text-secondary);
+    color: #6a7a8a;
     min-width: 120px;
+    font-size: 0.85rem;
+}
+
+.detail-row span {
+    color: #fff;
 }
 
 .detail-row.full {
@@ -165,21 +228,33 @@
 }
 
 .detail-row .description {
-    background: var(--surface-secondary, #2a2a4e);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.04) 0%, rgba(100, 100, 100, 0.02) 100%);
+    border: 1px solid #2a3a4a;
     padding: 0.75rem;
     border-radius: 8px;
     margin: 0.5rem 0 0 0;
+    color: #8a9aaa;
 }
 
 .modal-body textarea {
     width: 100%;
     padding: 0.75rem;
-    background: var(--surface-secondary, #2a2a4e);
-    border: 1px solid var(--border-color, #333);
+    background: linear-gradient(180deg, #0d1520 0%, #1a2332 100%);
+    border: 2px solid #2a3a4a;
     border-radius: 8px;
-    color: white;
+    color: #fff;
     resize: vertical;
 }
+
+.modal-body textarea:focus {
+    outline: none;
+    border-color: #00d4ff;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ACTION BUTTONS
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .action-buttons {
     display: flex;
@@ -192,18 +267,30 @@
     padding: 0.75rem;
     border: none;
     border-radius: 8px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
+    transition: all 0.2s ease;
 }
 
 .btn-danger {
-    background: #ef4444;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     color: white;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}
+
+.btn-danger:hover {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
 }
 
 .btn-secondary {
-    background: var(--surface-secondary, #2a2a4e);
-    color: white;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, rgba(100, 100, 100, 0.04) 100%);
+    border: 2px solid #3a4a5a;
+    color: #8a9aaa;
+}
+
+.btn-secondary:hover {
+    border-color: #4a5a6a;
+    color: #fff;
 }
 
 .btn:disabled {
