@@ -1,8 +1,19 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  PROMOTIONS PAGE — Metal UI Theme
+ *  Brushed Steel + Cyan Glow Offers
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
 .promotions-page {
     min-height: 100vh;
-    background: var(--bg-primary);
+    background: linear-gradient(180deg, #0a0a14 0%, #0d1520 50%, #0a0a14 100%);
     padding-bottom: 2rem;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   FILTERS — Metal Chips
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .promo-filters {
     display: flex;
@@ -13,19 +24,31 @@
 .promo-filters button {
     flex: 1;
     padding: 0.75rem;
-    border: 1px solid var(--border-color);
+    border: 2px solid #2a3a4a;
     border-radius: 12px;
-    background: var(--bg-secondary);
-    color: var(--text-secondary);
-    font-size: 0.875rem;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.04) 0%, rgba(100, 100, 100, 0.02) 100%);
+    color: #6a7a8a;
+    font-size: 0.85rem;
+    font-weight: 500;
     cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.promo-filters button:hover {
+    border-color: #3a4a5a;
+    color: #8a9aaa;
 }
 
 .promo-filters button.active {
-    background: var(--accent-primary);
-    border-color: var(--accent-primary);
-    color: white;
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    border-color: #00d4ff;
+    color: #fff;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PROMOTIONS LIST — Metal Cards
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .promotions-list {
     padding: 0 1rem;
@@ -35,14 +58,24 @@
 }
 
 .promo-card {
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #2a3a4a;
     border-radius: 16px;
     overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.promo-card:hover {
+    border-color: #00d4ff;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
 }
 
 .promo-image {
     height: 120px;
     overflow: hidden;
+    background: linear-gradient(180deg, #1a2332 0%, #0d1520 100%);
 }
 
 .promo-image img {
@@ -67,22 +100,24 @@
 }
 
 .promo-type {
-    font-size: 0.75rem;
-    color: var(--accent-primary);
+    font-size: 0.7rem;
+    color: #00d4ff;
     text-transform: uppercase;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
 
 .promo-title {
     margin: 0 0 0.5rem;
     font-size: 1.125rem;
-    color: var(--text-primary);
+    color: #fff;
+    font-weight: 600;
 }
 
 .promo-desc {
     margin: 0 0 1rem;
-    font-size: 0.875rem;
-    color: var(--text-secondary);
+    font-size: 0.85rem;
+    color: #8a9aaa;
     line-height: 1.4;
 }
 
@@ -91,24 +126,31 @@
     justify-content: space-between;
     align-items: center;
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: #6a7a8a;
 }
 
 .promo-prize {
-    font-weight: 600;
-    color: var(--accent-success);
+    font-weight: 700;
+    color: #10b981;
+    font-family: 'Orbitron', monospace;
+    text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
 }
 
 .promo-countdown {
     display: inline-block;
     margin-top: 0.75rem;
     padding: 0.375rem 0.75rem;
-    background: rgba(var(--accent-warning-rgb), 0.2);
-    color: var(--accent-warning);
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: #f59e0b;
     border-radius: 20px;
     font-size: 0.75rem;
     font-weight: 600;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   STATES
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .loading-state,
 .empty-state {
@@ -117,30 +159,36 @@
     align-items: center;
     justify-content: center;
     padding: 3rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
     gap: 1rem;
 }
 
 .empty-icon {
     font-size: 2.5rem;
+    opacity: 0.4;
 }
 
-/* Daily Bonus Banner */
+/* ─────────────────────────────────────────────────────────────────────────────
+   DAILY BONUS BANNER
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .daily-bonus-banner {
     display: flex;
     align-items: center;
     gap: 0.75rem;
     margin: 1rem;
     padding: 1rem 1.25rem;
-    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+    background: linear-gradient(135deg, #00d4ff 0%, #0066aa 50%, #004488 100%);
+    border: 2px solid rgba(255, 255, 255, 0.2);
     border-radius: 12px;
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
 }
 
 .daily-bonus-banner:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
+    box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
 }
 
 .bonus-icon {
@@ -149,8 +197,10 @@
 
 .bonus-text {
     flex: 1;
-    font-weight: 600;
+    font-weight: 700;
     color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .bonus-arrow {
@@ -158,30 +208,36 @@
     color: rgba(255, 255, 255, 0.8);
 }
 
-/* Bonus Wheel Modal */
+/* ─────────────────────────────────────────────────────────────────────────────
+   BONUS WHEEL MODAL
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .bonus-wheel-overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.85);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
     padding: 1rem;
+    backdrop-filter: blur(4px);
 }
 
 .bonus-wheel-modal {
     position: relative;
-    background: var(--bg-primary);
+    background: linear-gradient(180deg, #1a2535 0%, #0d1520 100%);
+    border: 2px solid #2a3a4a;
     border-radius: 20px;
     padding: 1.5rem;
     max-width: 400px;
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;
+    box-shadow: 0 0 40px rgba(0, 212, 255, 0.2);
 }
 
 .modal-close {
@@ -190,10 +246,16 @@
     right: 1rem;
     width: 32px;
     height: 32px;
-    border: none;
+    border: 2px solid #3a4a5a;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-secondary);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.06) 0%, rgba(100, 100, 100, 0.03) 100%);
+    color: #8a9aaa;
     font-size: 1rem;
     cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    border-color: #ef4444;
+    color: #ef4444;
 }

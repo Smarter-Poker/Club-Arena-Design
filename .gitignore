@@ -24,3 +24,4 @@ supabase/.temp
 # Generated PioSolver trees (regeneratable)
 scripts/trees/
 .env*.local
+.env.prod.check

@@ -1,38 +1,67 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  SEARCH PAGE — Metal UI Theme
+ *  Brushed Steel + Cyan Glow Search Interface
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
 .search-page {
     min-height: 100vh;
-    background: var(--bg-primary);
+    background: linear-gradient(180deg, #0a0a14 0%, #0d1520 50%, #0a0a14 100%);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   HEADER — Metal Search Bar
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .search-header {
     display: flex;
     align-items: center;
     gap: 0.75rem;
     padding: 1rem;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-color);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border-bottom: 2px solid #2a3a4a;
 }
 
 .search-header .back-btn {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    color: var(--text-primary);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.06) 0%, rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #3a4a5a;
+    border-radius: 10px;
+    font-size: 1.25rem;
+    color: #8a9aaa;
     cursor: pointer;
     flex-shrink: 0;
+    padding: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.search-header .back-btn:hover {
+    border-color: #00d4ff;
+    color: #00d4ff;
 }
 
 .search-input-wrapper {
     flex: 1;
     display: flex;
     align-items: center;
-    background: var(--bg-tertiary);
+    background: linear-gradient(180deg, #0d1520 0%, #1a2332 100%);
+    border: 2px solid #2a3a4a;
     border-radius: 12px;
     padding: 0 1rem;
+    transition: all 0.2s ease;
+}
+
+.search-input-wrapper:focus-within {
+    border-color: #00d4ff;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
 }
 
 .search-icon {
     font-size: 1rem;
     margin-right: 0.5rem;
+    color: #6a7a8a;
 }
 
 .search-input-wrapper input {
@@ -40,18 +69,31 @@
     background: none;
     border: none;
     padding: 0.75rem 0;
-    color: var(--text-primary);
+    color: #fff;
     font-size: 1rem;
     outline: none;
+}
+
+.search-input-wrapper input::placeholder {
+    color: #4a5a6a;
 }
 
 .clear-btn {
     background: none;
     border: none;
-    color: var(--text-secondary);
+    color: #6a7a8a;
     cursor: pointer;
     padding: 0.5rem;
+    transition: all 0.2s ease;
 }
+
+.clear-btn:hover {
+    color: #00d4ff;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CATEGORY TABS — Metal Chips
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .category-tabs {
     display: flex;
@@ -62,20 +104,31 @@
 
 .category-tabs button {
     padding: 0.5rem 1rem;
-    border: 1px solid var(--border-color);
+    border: 2px solid #2a3a4a;
     border-radius: 20px;
-    background: var(--bg-secondary);
-    color: var(--text-secondary);
-    font-size: 0.875rem;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.04) 0%, rgba(100, 100, 100, 0.02) 100%);
+    color: #6a7a8a;
+    font-size: 0.85rem;
     cursor: pointer;
     white-space: nowrap;
+    transition: all 0.2s;
+}
+
+.category-tabs button:hover {
+    border-color: #3a4a5a;
+    color: #8a9aaa;
 }
 
 .category-tabs button.active {
-    background: var(--accent-primary);
-    border-color: var(--accent-primary);
-    color: white;
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    border-color: #00d4ff;
+    color: #fff;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SEARCH CONTENT
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .search-content {
     padding: 1rem;
@@ -87,25 +140,31 @@
     flex-direction: column;
     align-items: center;
     padding: 3rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
     text-align: center;
 }
 
 .empty-icon {
     font-size: 3rem;
     margin-bottom: 1rem;
+    opacity: 0.4;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   RECENT SEARCHES
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .recent-searches h3 {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
+    font-size: 0.8rem;
+    color: #00d4ff;
     text-transform: uppercase;
+    letter-spacing: 1px;
     margin-bottom: 1rem;
 }
 
 .empty-text {
-    color: var(--text-muted);
-    font-size: 0.875rem;
+    color: #4a5a6a;
+    font-size: 0.85rem;
 }
 
 .recent-item {
@@ -115,15 +174,21 @@
     padding: 0.75rem;
     background: none;
     border: none;
-    color: var(--text-primary);
-    font-size: 0.875rem;
+    color: #8a9aaa;
+    font-size: 0.85rem;
     cursor: pointer;
     border-radius: 8px;
+    transition: all 0.2s ease;
 }
 
 .recent-item:hover {
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.04) 0%, rgba(100, 100, 100, 0.02) 100%);
+    color: #00d4ff;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   RESULTS LIST
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .results-list {
     display: flex;
@@ -136,20 +201,26 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem;
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.05) 0%,
+            rgba(100, 100, 100, 0.02) 100%);
+    border: 1px solid #2a3a4a;
     border-radius: 12px;
     cursor: pointer;
+    transition: all 0.2s ease;
 }
 
 .result-item:hover {
-    background: var(--bg-tertiary);
+    border-color: #00d4ff;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
 }
 
 .result-avatar {
     width: 40px;
     height: 40px;
     border-radius: 10px;
-    background: var(--bg-tertiary);
+    background: linear-gradient(145deg, #1a2332 0%, #0d1520 100%);
+    border: 2px solid #3a4a5a;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -169,20 +240,22 @@
 }
 
 .result-name {
-    font-weight: 500;
-    color: var(--text-primary);
+    font-weight: 600;
+    color: #fff;
 }
 
 .result-subtitle {
     font-size: 0.75rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
 }
 
 .result-type {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    text-transform: capitalize;
-    background: var(--bg-tertiary);
+    font-size: 0.7rem;
+    color: #6a7a8a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.04) 0%, rgba(100, 100, 100, 0.02) 100%);
+    border: 1px solid #2a3a4a;
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
 }

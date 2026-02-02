@@ -1,8 +1,19 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  RAKEBACK PAGE — Metal UI Theme
+ *  Brushed Steel + Green Glow Earnings
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
 .rakeback-page {
     min-height: 100vh;
-    background: var(--bg-primary);
+    background: linear-gradient(180deg, #0a0a14 0%, #0d1520 50%, #0a0a14 100%);
     padding-bottom: 2rem;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SUMMARY SECTION — Metal Cards
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .rakeback-summary {
     padding: 1rem;
@@ -12,7 +23,10 @@
 }
 
 .summary-card {
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #2a3a4a;
     border-radius: 12px;
     padding: 1rem;
     text-align: center;
@@ -23,11 +37,18 @@
     align-items: center;
     gap: 1rem;
     text-align: left;
-    background: linear-gradient(135deg, rgba(var(--accent-success-rgb), 0.2), var(--bg-secondary));
+    border-color: rgba(16, 185, 129, 0.4);
+    background: linear-gradient(145deg,
+            rgba(16, 185, 129, 0.15) 0%,
+            rgba(16, 185, 129, 0.05) 100%);
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
 }
 
 .summary-card.pending {
-    background: linear-gradient(135deg, rgba(var(--accent-warning-rgb), 0.2), var(--bg-secondary));
+    border-color: rgba(245, 158, 11, 0.4);
+    background: linear-gradient(145deg,
+            rgba(245, 158, 11, 0.15) 0%,
+            rgba(245, 158, 11, 0.05) 100%);
 }
 
 .card-icon {
@@ -51,33 +72,49 @@
     display: block;
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #10b981;
+    font-family: 'Orbitron', monospace;
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
 }
 
 .card-label {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
+    font-size: 0.7rem;
+    color: #6a7a8a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   INFO CARD
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .rakeback-info {
     margin: 0 1rem;
     padding: 1rem;
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.05) 0%,
+            rgba(100, 100, 100, 0.02) 100%);
+    border: 1px solid #2a3a4a;
     border-radius: 12px;
-    border-left: 4px solid var(--accent-primary);
+    border-left: 4px solid #00d4ff;
 }
 
 .rakeback-info h3 {
     margin: 0 0 0.5rem;
     font-size: 1rem;
+    color: #00d4ff;
 }
 
 .rakeback-info p {
     margin: 0;
-    font-size: 0.875rem;
-    color: var(--text-secondary);
+    font-size: 0.85rem;
+    color: #8a9aaa;
     line-height: 1.5;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   HISTORY — Metal Rows
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .rakeback-history {
     padding: 1rem;
@@ -85,7 +122,11 @@
 
 .rakeback-history h3 {
     margin: 0 0 1rem;
-    font-size: 1rem;
+    font-size: 0.9rem;
+    color: #00d4ff;
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .periods-list {
@@ -99,14 +140,22 @@
     align-items: center;
     gap: 1rem;
     padding: 1rem;
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.05) 0%,
+            rgba(100, 100, 100, 0.02) 100%);
+    border: 1px solid #2a3a4a;
     border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.period-row:hover {
+    border-color: #3a4a5a;
 }
 
 .period-dates {
     flex: 1;
-    font-size: 0.875rem;
-    color: var(--text-secondary);
+    font-size: 0.85rem;
+    color: #8a9aaa;
 }
 
 .period-details {
@@ -116,12 +165,13 @@
 .rake-generated {
     display: block;
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: #6a7a8a;
 }
 
 .rakeback-rate {
     font-size: 0.75rem;
-    color: var(--accent-primary);
+    color: #00d4ff;
+    font-weight: 500;
 }
 
 .period-earned {
@@ -131,47 +181,66 @@
 
 .period-earned .amount {
     display: block;
-    font-weight: 600;
+    font-weight: 700;
+    font-family: 'Orbitron', monospace;
 }
 
 .period-earned .amount.paid {
-    color: var(--accent-success);
+    color: #10b981;
+    text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
 }
 
 .period-earned .amount.pending {
-    color: var(--accent-warning);
+    color: #f59e0b;
+    text-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
 }
 
 .period-earned .status {
     font-size: 0.625rem;
     text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
 }
 
 .period-earned .status.paid {
-    color: var(--accent-success);
+    color: #10b981;
 }
 
 .period-earned .status.pending {
-    color: var(--accent-warning);
+    color: #f59e0b;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   STATES
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .loading-state,
 .empty-state {
     display: flex;
     justify-content: center;
     padding: 2rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
 }
 
-/* Rakeback Chart */
+/* ─────────────────────────────────────────────────────────────────────────────
+   CHART
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .rakeback-chart {
     margin: 0 1rem 1rem;
     padding: 1rem;
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #2a3a4a;
     border-radius: 12px;
 }
 
 .rakeback-chart h3 {
     margin: 0 0 1rem;
-    font-size: 1rem;
+    font-size: 0.9rem;
+    color: #00d4ff;
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }

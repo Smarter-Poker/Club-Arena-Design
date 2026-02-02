@@ -1,37 +1,57 @@
 /**
- *  HAND HISTORY PAGE STYLES
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  HAND HISTORY PAGE — Metal UI Theme
+ *  Brushed Steel + Cyan Glow Replay Interface
+ * ═══════════════════════════════════════════════════════════════════════════════
  */
 
 .hand-history-page {
     min-height: 100vh;
-    background: var(--bg-primary);
+    background: linear-gradient(180deg, #0a0a14 0%, #0d1520 50%, #0a0a14 100%);
     padding-bottom: 2rem;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   HEADER — Metal Frame
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .hh-header {
     display: flex;
     align-items: center;
     gap: 1rem;
     padding: 1rem;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-color);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border-bottom: 2px solid #2a3a4a;
 }
 
 .hh-header .back-btn {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    color: var(--text-primary);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.06) 0%, rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #3a4a5a;
+    border-radius: 10px;
+    font-size: 1.25rem;
+    color: #8a9aaa;
     cursor: pointer;
-    padding: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.hh-header .back-btn:hover {
+    border-color: #00d4ff;
+    color: #00d4ff;
 }
 
 .hh-header h1 {
     font-size: 1.25rem;
     margin: 0;
+    color: #fff;
 }
 
-/* Filters */
+/* ─────────────────────────────────────────────────────────────────────────────
+   FILTERS — Metal Chips
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .hh-filters {
     display: flex;
     gap: 0.5rem;
@@ -42,23 +62,32 @@
 
 .filter-btn {
     padding: 0.5rem 1rem;
-    border: 1px solid var(--border-color);
+    border: 2px solid #2a3a4a;
     border-radius: 20px;
-    background: var(--bg-secondary);
-    color: var(--text-secondary);
-    font-size: 0.875rem;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.04) 0%, rgba(100, 100, 100, 0.02) 100%);
+    color: #6a7a8a;
+    font-size: 0.85rem;
     white-space: nowrap;
     cursor: pointer;
     transition: all 0.2s;
 }
 
-.filter-btn.active {
-    background: var(--accent-primary);
-    border-color: var(--accent-primary);
-    color: white;
+.filter-btn:hover {
+    border-color: #3a4a5a;
+    color: #8a9aaa;
 }
 
-/* Hands List */
+.filter-btn.active {
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    border-color: #00d4ff;
+    color: #fff;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   HANDS LIST
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .hands-list {
     padding: 0 1rem;
 }
@@ -71,27 +100,35 @@
     justify-content: center;
     padding: 3rem;
     text-align: center;
-    color: var(--text-secondary);
+    color: #6a7a8a;
 }
 
 .empty-icon {
     font-size: 3rem;
     margin-bottom: 1rem;
+    opacity: 0.4;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   HAND CARD — Metal Panel
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .hand-card {
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.05) 0%,
+            rgba(100, 100, 100, 0.02) 100%);
+    border: 1px solid #2a3a4a;
     border-radius: 12px;
     padding: 1rem;
     margin-bottom: 0.75rem;
     cursor: pointer;
     transition: all 0.2s;
-    border: 1px solid var(--border-color);
 }
 
 .hand-card:hover {
     transform: translateY(-2px);
-    border-color: var(--accent-primary);
+    border-color: #00d4ff;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
 }
 
 .hand-header {
@@ -103,20 +140,20 @@
 
 .table-name {
     font-weight: 600;
-    color: var(--text-primary);
+    color: #fff;
 }
 
 .hand-date {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
+    font-size: 0.85rem;
+    color: #6a7a8a;
 }
 
 .hand-body {
     display: flex;
     justify-content: space-between;
     padding: 0.75rem 0;
-    border-top: 1px solid var(--border-subtle);
-    border-bottom: 1px solid var(--border-subtle);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .pot-info,
@@ -128,28 +165,34 @@
 
 .pot-label,
 .result-label {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
+    font-size: 0.7rem;
+    color: #6a7a8a;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .pot-value {
     font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--text-primary);
+    font-weight: 700;
+    color: #00d4ff;
+    font-family: 'Orbitron', monospace;
+    text-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
 }
 
 .result-value {
     font-size: 1.125rem;
-    font-weight: 600;
+    font-weight: 700;
+    font-family: 'Orbitron', monospace;
 }
 
 .result-info.positive .result-value {
-    color: var(--accent-success);
+    color: #10b981;
+    text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
 }
 
 .result-info.negative .result-value {
-    color: var(--accent-danger);
+    color: #ef4444;
+    text-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
 }
 
 .hand-footer {
@@ -160,16 +203,17 @@
 }
 
 .stakes {
-    background: var(--bg-tertiary);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.04) 0%, rgba(100, 100, 100, 0.02) 100%);
+    border: 1px solid #2a3a4a;
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
     font-size: 0.75rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
 }
 
 .players {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
+    font-size: 0.85rem;
+    color: #6a7a8a;
 }
 
 .replay-btn {
@@ -177,45 +221,54 @@
     padding: 0.375rem 0.75rem;
     border: none;
     border-radius: 6px;
-    background: var(--accent-primary);
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
     color: white;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
+    font-weight: 500;
     cursor: pointer;
-    transition: opacity 0.2s;
+    transition: all 0.2s;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
 }
 
 .replay-btn:hover {
-    opacity: 0.9;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+    transform: translateY(-1px);
 }
 
-/* Replay Modal */
+/* ─────────────────────────────────────────────────────────────────────────────
+   REPLAY MODAL
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .replay-modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.85);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
     padding: 1rem;
+    backdrop-filter: blur(4px);
 }
 
 .replay-modal-content {
     position: relative;
-    background: var(--bg-primary);
+    background: linear-gradient(180deg, #1a2535 0%, #0d1520 100%);
+    border: 2px solid #2a3a4a;
     border-radius: 16px;
     max-width: 600px;
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;
+    box-shadow: 0 0 40px rgba(0, 212, 255, 0.2);
 }
 
 .modal-close {
     position: absolute;
     top: 1rem;
     right: 1rem;
-    background: var(--bg-tertiary);
-    border: none;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.06) 0%, rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #3a4a5a;
     width: 32px;
     height: 32px;
     border-radius: 50%;
@@ -224,16 +277,29 @@
     justify-content: center;
     cursor: pointer;
     z-index: 10;
+    color: #8a9aaa;
+    transition: all 0.2s ease;
 }
 
-/* Stats Summary */
+.modal-close:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   STATS SUMMARY
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .hh-summary {
     display: flex;
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem 1rem;
     margin: 0 1rem 1rem;
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #2a3a4a;
     border-radius: 12px;
     overflow-x: auto;
 }
@@ -248,60 +314,64 @@
 .hh-summary .stat-value {
     font-size: 1.125rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #00d4ff;
+    font-family: 'Orbitron', monospace;
 }
 
 .hh-summary .summary-stat.positive .stat-value {
-    color: var(--accent-success);
+    color: #10b981;
 }
 
 .hh-summary .summary-stat.negative .stat-value {
-    color: var(--accent-danger);
+    color: #ef4444;
 }
 
 .hh-summary .stat-label {
     font-size: 0.625rem;
     text-transform: uppercase;
-    color: var(--text-secondary);
+    color: #6a7a8a;
+    letter-spacing: 0.5px;
 }
 
 .export-btn {
     margin-left: auto;
     padding: 0.5rem 1rem;
-    border: 1px solid var(--border-color);
+    border: 2px solid #2a3a4a;
     border-radius: 8px;
     background: transparent;
-    color: var(--text-secondary);
-    font-size: 0.875rem;
+    color: #8a9aaa;
+    font-size: 0.85rem;
     cursor: pointer;
     white-space: nowrap;
     transition: all 0.2s;
 }
 
 .export-btn:hover {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
+    border-color: #00d4ff;
+    color: #00d4ff;
 }
 
-/* Load More Button */
+/* ─────────────────────────────────────────────────────────────────────────────
+   LOAD MORE
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .load-more-btn {
     display: block;
     width: calc(100% - 2rem);
     margin: 1rem;
     padding: 0.875rem;
-    border: 1px dashed var(--border-color);
+    border: 2px dashed #2a3a4a;
     border-radius: 12px;
     background: transparent;
-    color: var(--text-secondary);
-    font-size: 0.875rem;
+    color: #6a7a8a;
+    font-size: 0.85rem;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .load-more-btn:hover:not(:disabled) {
-    background: var(--bg-secondary);
-    border-color: var(--accent-primary);
-    color: var(--accent-primary);
+    border-color: #00d4ff;
+    color: #00d4ff;
 }
 
 .load-more-btn:disabled {
