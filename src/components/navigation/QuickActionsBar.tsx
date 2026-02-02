@@ -66,7 +66,7 @@ export default function QuickActionsBar({
             id: 'tournaments',
             icon: '',
             label: 'Tournaments',
-            action: () => navigate(clubId ? `/club/${clubId}/tournaments` : '/tournaments'),
+            action: () => navigate(clubId ? `/clubs/${clubId}/tournaments` : '/tournaments'),
             color: '#fbbf24'
         });
     }
@@ -76,7 +76,7 @@ export default function QuickActionsBar({
             id: 'tables',
             icon: '',
             label: 'Tables',
-            action: () => navigate(`/club/${clubId}/lobby`),
+            action: () => navigate(`/clubs/${clubId}/lobby`),
             color: '#a855f7'
         });
     }

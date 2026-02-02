@@ -186,7 +186,7 @@ function TournamentCard({ tournament, clubId }: { tournament: Tournament; clubId
     };
 
     return (
-        <Link to={`/club/${clubId}/tournament/${tournament.id}`} className="tournament-card">
+        <Link to={`/clubs/${clubId}/tournament/${tournament.id}`} className="tournament-card">
             <div className="card-header">
                 <div className="trophy-icon"></div>
                 <div className="seats-badge">9 Max</div>
@@ -217,7 +217,7 @@ function TournamentCard({ tournament, clubId }: { tournament: Tournament; clubId
 // Table Card Component
 function TableCard({ table, clubId }: { table: PokerTable; clubId: string }) {
     return (
-        <Link to={`/club/${clubId}/table/${table.id}`} className="table-card">
+        <Link to={`/clubs/${clubId}/table/${table.id}`} className="table-card">
             <div className="card-header">
                 <div className="table-icon"></div>
                 <div className="seats-badge">{table.max_players} Max</div>
