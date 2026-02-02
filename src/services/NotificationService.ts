@@ -231,6 +231,25 @@ class NotificationServiceClass {
     }
 
     /**
+     * 🏧 Notify agent when a player requests a cash-out
+     */
+    async notifyCashoutRequest(
+        agentId: string,
+        playerName: string,
+        amount: number,
+        clubId: string,
+        cashoutId: string
+    ): Promise<void> {
+        await this.create({
+            userId: agentId,
+            type: 'settlement',
+            title: '🏧 Cash-Out Request',
+            message: `${playerName} requested to cash out ${amount.toLocaleString()} chips`,
+            metadata: { clubId, cashoutId, playerName, amount }
+        });
+    }
+
+    /**
      * Show browser notification (if permitted)
      */
     private async showBrowserNotification(notification: Notification): Promise<void> {

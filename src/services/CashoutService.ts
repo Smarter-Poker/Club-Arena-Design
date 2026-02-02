@@ -7,10 +7,12 @@
  * - Agent approval/rejection of cashouts
  * - Player cancellation of pending cashouts
  * - 10-minute reversal window for agent chip sends
+ * - 🔔 Agent notifications on new cashout requests
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
 import { supabase } from '../lib/supabase';
+import { notificationService } from './NotificationService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -79,8 +81,27 @@ class CashoutServiceClass {
             throw new Error(error.message || 'Failed to request cashout');
         }
 
-        // Return the created cashout
-        return this.getCashout(data);
+        // Get the created cashout
+        const cashout = await this.getCashout(data);
+
+        // 🔔 Notify agent of the new cash-out request (graceful failure)
+        if (cashout?.agentId) {
+            try {
+                await notificationService.notifyCashoutRequest(
+                    cashout.agentId,
+                    cashout.playerName || 'A player',
+                    cashout.amount,
+                    cashout.clubId,
+                    cashout.id
+                );
+                console.log('[Cashout] Agent notified of cash-out request');
+            } catch (notifyError) {
+                console.warn('[Cashout] Failed to notify agent:', notifyError);
+                // Don't fail the cashout if notification fails
+            }
+        }
+
+        return cashout;
     }
 
     /**
