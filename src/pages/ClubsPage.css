@@ -1,98 +1,124 @@
 /**
- * ♠ CLUB ARENA — Clubs Page Styles
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  CLUBS PAGE — Metal UI Theme
+ *  Brushed Steel + Cyan Glow Club Cards
+ * ═══════════════════════════════════════════════════════════════════════════════
  */
 
 .clubs-page {
     display: flex;
     flex-direction: column;
-    gap: var(--space-8);
+    gap: 1.5rem;
+    padding: 1rem;
+    min-height: 100vh;
+    background: linear-gradient(180deg, #0a0a14 0%, #0d1520 50%, #0a0a14 100%);
 }
 
-/* Header */
+/* ─────────────────────────────────────────────────────────────────────────────
+   HEADER
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .clubs-header {
     text-align: center;
-    padding: var(--space-6) 0;
+    padding: 1rem 0;
 }
 
 .clubs-header h1 {
-    font-size: var(--text-4xl);
-    margin-bottom: var(--space-2);
+    font-size: 1.75rem;
+    margin-bottom: 0.5rem;
+    color: #fff;
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 2px;
 }
 
 .clubs-header p {
-    font-size: var(--text-lg);
-    color: var(--text-secondary);
+    font-size: 0.9rem;
+    color: #6a7a8a;
 }
 
-/* Tabs */
+/* ─────────────────────────────────────────────────────────────────────────────
+   TABS — Metal Navigation
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .clubs-tabs {
     display: flex;
-    gap: var(--space-2);
-    padding: var(--space-1);
-    background: var(--dark-surface);
-    border-radius: var(--radius-xl);
-    border: 1px solid var(--border-subtle);
+    gap: 0.5rem;
+    padding: 0.25rem;
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #2a3a4a;
+    border-radius: 12px;
     justify-content: center;
 }
 
 .clubs-tab {
-    padding: var(--space-3) var(--space-6);
-    font-size: var(--text-sm);
+    padding: 0.75rem 1.5rem;
+    font-size: 0.85rem;
     font-weight: 600;
-    color: var(--text-muted);
+    color: #6a7a8a;
     background: transparent;
     border: none;
-    border-radius: var(--radius-lg);
+    border-radius: 10px;
     cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
+    transition: all 0.2s ease;
 }
 
 .clubs-tab:hover {
-    color: var(--text-primary);
-    background: var(--elevated-surface);
+    color: #8a9aaa;
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .clubs-tab.active {
-    color: var(--pure-white);
-    background: var(--gradient-blue);
+    color: #fff;
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
 }
 
-/* Content */
+/* ─────────────────────────────────────────────────────────────────────────────
+   CONTENT
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .clubs-content {
     min-height: 400px;
 }
 
-/* Clubs Grid */
 .clubs-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: var(--space-4);
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
 }
 
-/* Club Card */
+/* ─────────────────────────────────────────────────────────────────────────────
+   CLUB CARD — Metal Panel
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .club-card {
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
-    padding: var(--space-5);
-    background: var(--gradient-card);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-xl);
+    gap: 1rem;
+    padding: 1.25rem;
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #2a3a4a;
+    border-radius: 14px;
     text-decoration: none;
     color: inherit;
-    transition: all var(--duration-normal) var(--ease-out);
+    transition: all 0.2s ease;
 }
 
 .club-card:hover {
-    border-color: var(--royal-blue);
+    border-color: #00d4ff;
     transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 8px 30px rgba(0, 212, 255, 0.2);
 }
 
 .club-card-header {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: 0.75rem;
 }
 
 .club-avatar {
@@ -102,8 +128,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--royal-blue-dim);
-    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, #00d4ff 0%, #0066aa 100%);
+    border: 2px solid rgba(0, 212, 255, 0.4);
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
 }
 
 .club-info {
@@ -111,143 +139,151 @@
 }
 
 .club-info h3 {
-    font-size: var(--text-lg);
-    font-weight: 600;
-    margin-bottom: var(--space-1);
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    color: #fff;
 }
 
 .club-id {
-    font-size: var(--text-xs);
-    font-family: var(--font-mono);
-    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-family: 'Orbitron', monospace;
+    color: #4a5a6a;
 }
 
 .owner-badge {
-    font-size: var(--text-xs);
-    font-weight: 600;
-    padding: var(--space-1) var(--space-3);
-    background: var(--gold-gradient);
-    color: var(--near-black);
-    border-radius: var(--radius-full);
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.25rem 0.75rem;
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    color: #000;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .club-description {
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
+    font-size: 0.8rem;
+    color: #6a7a8a;
     line-height: 1.5;
 }
 
 .club-stats {
     display: flex;
     justify-content: space-around;
-    padding: var(--space-4) 0;
-    border-top: 1px solid var(--border-subtle);
-    border-bottom: 1px solid var(--border-subtle);
+    padding: 0.75rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .club-stat {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-1);
+    gap: 0.25rem;
 }
 
 .stat-value {
-    font-size: var(--text-xl);
+    font-size: 1.125rem;
     font-weight: 700;
-    font-family: var(--font-mono);
-    color: var(--royal-blue-light);
+    font-family: 'Orbitron', monospace;
+    color: #00d4ff;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
 }
 
 .stat-value.online {
-    color: var(--success);
+    color: #10b981;
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
 }
 
 .stat-label {
-    font-size: var(--text-xs);
-    color: var(--text-muted);
+    font-size: 0.625rem;
+    color: #4a5a6a;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-/* Discover Card */
-.discover-card {
-    cursor: default;
-}
+/* ─────────────────────────────────────────────────────────────────────────────
+   JOIN SECTION
+   ───────────────────────────────────────────────────────────────────────────── */
 
-.discover-card:hover {
-    transform: none;
-}
-
-/* Join Section */
 .join-section {
-    margin-bottom: var(--space-8);
-    padding: var(--space-6);
-    background: var(--gradient-card);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-xl);
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #2a3a4a;
+    border-radius: 14px;
     text-align: center;
 }
 
 .join-section h3 {
-    font-size: var(--text-xl);
-    margin-bottom: var(--space-4);
+    font-size: 1.125rem;
+    margin-bottom: 1rem;
+    color: #00d4ff;
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
 }
 
 .join-form {
     display: flex;
-    gap: var(--space-3);
+    gap: 0.75rem;
     max-width: 400px;
     margin: 0 auto;
 }
 
 .join-input {
     text-align: center;
-    font-size: var(--text-lg);
-    font-family: var(--font-mono);
+    font-size: 1rem;
+    font-family: 'Orbitron', monospace;
     letter-spacing: 0.1em;
+    padding: 0.75rem;
+    background: linear-gradient(180deg, #0d1520 0%, #1a2332 100%);
+    border: 2px solid #2a3a4a;
+    border-radius: 10px;
+    color: #fff;
 }
 
-/* Search Section */
-.search-section {
-    margin-bottom: var(--space-6);
+.join-input:focus {
+    outline: none;
+    border-color: #00d4ff;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
 }
 
-.search-section h3 {
-    font-size: var(--text-lg);
-    margin-bottom: var(--space-3);
-}
+/* ─────────────────────────────────────────────────────────────────────────────
+   EMPTY STATE
+   ───────────────────────────────────────────────────────────────────────────── */
 
-.search-input {
-    max-width: 400px;
-}
-
-/* Empty State */
 .empty-state {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: var(--space-16);
+    padding: 3rem;
     text-align: center;
 }
 
 .empty-icon {
     font-size: 64px;
-    margin-bottom: var(--space-4);
-    opacity: 0.5;
+    margin-bottom: 1rem;
+    opacity: 0.4;
 }
 
 .empty-state h3 {
-    font-size: var(--text-xl);
-    margin-bottom: var(--space-2);
+    font-size: 1.125rem;
+    margin-bottom: 0.5rem;
+    color: #fff;
 }
 
 .empty-state p {
-    color: var(--text-muted);
-    margin-bottom: var(--space-6);
+    color: #6a7a8a;
+    margin-bottom: 1.5rem;
 }
 
-/* Create Club */
+/* ─────────────────────────────────────────────────────────────────────────────
+   CREATE CLUB FORM
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .create-club {
     display: flex;
     justify-content: center;
@@ -256,38 +292,60 @@
 .create-form-container {
     max-width: 500px;
     width: 100%;
-    padding: var(--space-8);
-    background: var(--gradient-card);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-2xl);
+    padding: 1.5rem;
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #2a3a4a;
+    border-radius: 16px;
 }
 
 .create-form-container h2 {
-    font-size: var(--text-2xl);
-    margin-bottom: var(--space-2);
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: #00d4ff;
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
 }
 
 .create-form-container>p {
-    color: var(--text-secondary);
-    margin-bottom: var(--space-6);
+    color: #6a7a8a;
+    margin-bottom: 1.5rem;
 }
 
 .create-form {
     display: flex;
     flex-direction: column;
-    gap: var(--space-5);
+    gap: 1.25rem;
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
+    gap: 0.5rem;
 }
 
 .form-group label {
-    font-size: var(--text-sm);
+    font-size: 0.8rem;
     font-weight: 600;
-    color: var(--text-secondary);
+    color: #6a7a8a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-group input,
+.form-group textarea {
+    padding: 0.75rem;
+    background: linear-gradient(180deg, #0d1520 0%, #1a2332 100%);
+    border: 2px solid #2a3a4a;
+    border-radius: 10px;
+    color: #fff;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #00d4ff;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
 }
 
 .textarea {
@@ -298,28 +356,31 @@
 .checkbox-group {
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: 0.75rem;
 }
 
 .checkbox-label {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: 0.75rem;
     cursor: pointer;
 }
 
 .checkbox-label input {
     width: 18px;
     height: 18px;
-    accent-color: var(--royal-blue);
+    accent-color: #00d4ff;
 }
 
 .checkbox-label span {
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
+    font-size: 0.85rem;
+    color: #8a9aaa;
 }
 
-/* Responsive */
+/* ─────────────────────────────────────────────────────────────────────────────
+   RESPONSIVE
+   ───────────────────────────────────────────────────────────────────────────── */
+
 @media (max-width: 640px) {
     .join-form {
         flex-direction: column;

@@ -1,138 +1,169 @@
 /**
- * ♠ CLUB ARENA — Unions Page Styles
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  UNIONS PAGE — Metal UI Theme
+ *  Brushed Steel + Cyan Glow Union Cards
+ * ═══════════════════════════════════════════════════════════════════════════════
  */
 
 .unions-page {
     display: flex;
     flex-direction: column;
-    gap: var(--space-8);
+    gap: 1.5rem;
+    padding: 1rem;
+    min-height: 100vh;
+    background: linear-gradient(180deg, #0a0a14 0%, #0d1520 50%, #0a0a14 100%);
 }
 
 .unions-header {
     text-align: center;
-    padding: var(--space-6) 0;
+    padding: 1rem 0;
 }
 
 .unions-header h1 {
-    font-size: var(--text-4xl);
-    margin-bottom: var(--space-2);
+    font-size: 1.75rem;
+    margin-bottom: 0.5rem;
+    color: #fff;
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 2px;
 }
 
 .unions-header p {
-    font-size: var(--text-lg);
-    color: var(--text-secondary);
+    font-size: 0.9rem;
+    color: #6a7a8a;
 }
 
-/* Grid */
+/* ─────────────────────────────────────────────────────────────────────────────
+   UNIONS GRID
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .unions-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-    gap: var(--space-6);
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.25rem;
 }
 
-/* Union Card */
 .union-card {
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
-    padding: var(--space-6);
-    background: var(--gradient-card);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-xl);
-    transition: all var(--duration-normal) var(--ease-out);
+    gap: 1rem;
+    padding: 1.5rem;
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #2a3a4a;
+    border-radius: 14px;
+    transition: all 0.2s ease;
 }
 
 .union-card:hover {
-    border-color: var(--royal-blue);
+    border-color: #00d4ff;
     transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0, 212, 255, 0.2);
 }
 
 .union-header {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: 0.75rem;
 }
 
 .union-icon {
-    font-size: 40px;
+    font-size: 2.5rem;
 }
 
 .union-header h3 {
-    font-size: var(--text-xl);
+    font-size: 1.25rem;
+    color: #fff;
+    font-weight: 700;
 }
 
 .union-description {
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
+    font-size: 0.85rem;
+    color: #6a7a8a;
     line-height: 1.6;
 }
 
 .union-stats {
     display: flex;
     justify-content: space-around;
-    padding: var(--space-4) 0;
-    border-top: 1px solid var(--border-subtle);
-    border-bottom: 1px solid var(--border-subtle);
+    padding: 0.75rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .union-stat {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-1);
+    gap: 0.25rem;
 }
 
 .union-stat .stat-value {
-    font-size: var(--text-xl);
+    font-size: 1.125rem;
     font-weight: 700;
-    font-family: var(--font-mono);
-    color: var(--royal-blue-light);
+    font-family: 'Orbitron', monospace;
+    color: #00d4ff;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
 }
 
 .union-stat .stat-value.online {
-    color: var(--success);
+    color: #10b981;
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
 }
 
 .union-stat .stat-label {
-    font-size: var(--text-xs);
-    color: var(--text-muted);
+    font-size: 0.625rem;
+    color: #4a5a6a;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-/* CTA */
+/* ─────────────────────────────────────────────────────────────────────────────
+   CREATE UNION CTA
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .create-union-cta {
     text-align: center;
-    padding: var(--space-12);
-    background: var(--gradient-card);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-2xl);
+    padding: 2.5rem;
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #2a3a4a;
+    border-radius: 16px;
 }
 
 .create-union-cta h2 {
-    font-size: var(--text-2xl);
-    margin-bottom: var(--space-3);
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: #00d4ff;
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
 }
 
 .create-union-cta p {
     max-width: 480px;
-    margin: 0 auto var(--space-6);
-    color: var(--text-secondary);
+    margin: 0 auto 1.5rem;
+    color: #6a7a8a;
 }
-/* Mobile Responsive */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   RESPONSIVE
+   ───────────────────────────────────────────────────────────────────────────── */
+
 @media (max-width: 640px) {
     .unions-header h1 {
-        font-size: var(--text-2xl);
+        font-size: 1.25rem;
     }
-    
+
     .unions-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .union-card {
-        padding: var(--space-4);
+        padding: 1rem;
     }
-    
+
     .create-union-cta {
-        padding: var(--space-6);
+        padding: 1.5rem;
     }
 }

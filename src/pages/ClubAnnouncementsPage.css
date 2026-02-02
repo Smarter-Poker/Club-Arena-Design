@@ -1,8 +1,19 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  CLUB ANNOUNCEMENTS PAGE — Metal UI Theme
+ *  Brushed Steel + Cyan Glow Announcements
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
 .announcements-page {
     min-height: 100vh;
-    background: var(--bg-primary);
+    background: linear-gradient(180deg, #0a0a14 0%, #0d1520 50%, #0a0a14 100%);
     padding-bottom: 2rem;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ADMIN BAR
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .admin-bar {
     padding: 1rem;
@@ -10,11 +21,31 @@
 
 .admin-bar button {
     width: 100%;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+    transition: all 0.2s ease;
 }
+
+.admin-bar button:hover {
+    box-shadow: 0 0 25px rgba(0, 212, 255, 0.6);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   COMPOSER — Metal Editor
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .composer {
     padding: 1rem;
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #2a3a4a;
     margin: 0 1rem 1rem;
     border-radius: 12px;
 }
@@ -22,25 +53,37 @@
 .composer-title {
     width: 100%;
     padding: 0.75rem;
-    border: 1px solid var(--border-color);
+    border: 2px solid #2a3a4a;
     border-radius: 8px;
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
+    background: linear-gradient(180deg, #0d1520 0%, #1a2332 100%);
+    color: #fff;
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: 700;
     margin-bottom: 0.75rem;
+}
+
+.composer-title:focus {
+    outline: none;
+    border-color: #00d4ff;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
 }
 
 .composer-content {
     width: 100%;
     padding: 0.75rem;
-    border: 1px solid var(--border-color);
+    border: 2px solid #2a3a4a;
     border-radius: 8px;
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
+    background: linear-gradient(180deg, #0d1520 0%, #1a2332 100%);
+    color: #fff;
     font-size: 0.875rem;
     resize: vertical;
     margin-bottom: 0.75rem;
+}
+
+.composer-content:focus {
+    outline: none;
+    border-color: #00d4ff;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
 }
 
 .composer-actions {
@@ -48,6 +91,10 @@
     gap: 0.75rem;
     justify-content: flex-end;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ANNOUNCEMENTS LIST
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .announcements-list {
     padding: 0 1rem;
@@ -57,36 +104,52 @@
 }
 
 .announcement-card {
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #2a3a4a;
     border-radius: 12px;
     padding: 1rem;
+    transition: all 0.2s ease;
+}
+
+.announcement-card:hover {
+    border-color: #3a4a5a;
 }
 
 .announcement-card.pinned {
-    border-left: 4px solid var(--accent-warning);
+    border-left: 4px solid #FFD700;
+    background: linear-gradient(145deg,
+            rgba(255, 215, 0, 0.08) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
 }
 
 .pin-badge {
     display: inline-block;
     font-size: 0.625rem;
-    color: var(--accent-warning);
-    background: rgba(var(--accent-warning-rgb), 0.15);
+    color: #FFD700;
+    background: rgba(255, 215, 0, 0.15);
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
     margin-bottom: 0.5rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .announcement-title {
     margin: 0 0 0.5rem;
     font-size: 1rem;
-    color: var(--text-primary);
+    color: #00d4ff;
+    font-weight: 700;
 }
 
 .announcement-content {
     margin: 0 0 0.75rem;
     font-size: 0.875rem;
-    color: var(--text-secondary);
-    line-height: 1.5;
+    color: #8a9aaa;
+    line-height: 1.6;
     white-space: pre-wrap;
 }
 
@@ -94,8 +157,12 @@
     display: flex;
     justify-content: space-between;
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: #4a5a6a;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   STATES
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .loading-state,
 .empty-state {
@@ -104,10 +171,11 @@
     align-items: center;
     justify-content: center;
     padding: 3rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
     gap: 1rem;
 }
 
 .empty-icon {
     font-size: 2.5rem;
+    opacity: 0.4;
 }
