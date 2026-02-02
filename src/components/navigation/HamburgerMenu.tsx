@@ -272,6 +272,252 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
 
                 {/* Menu Items */}
                 <div style={{ flex: 1, padding: '0 8px' }}>
+
+                    {/* UNIONS Section */}
+                    <div style={{ padding: '16px 8px 8px' }}>
+                        <h4 style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: colors.textSec,
+                            margin: 0,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px'
+                        }}>
+                            Unions
+                        </h4>
+                    </div>
+                    {[
+                        { icon: '🌐', label: 'Browse Unions', path: '/unions' },
+                        { icon: '➕', label: 'Create Union', path: '/unions/create' },
+                    ].map((item, index) => (
+                        <div
+                            key={`unions-${index}`}
+                            onClick={() => handleNavigate(item.path)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 12,
+                                padding: '12px 16px',
+                                cursor: 'pointer',
+                                borderRadius: 8
+                            }}
+                        >
+                            <span style={{ fontSize: 20 }}>{item.icon}</span>
+                            <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: colors.text }}>{item.label}</span>
+                            <span style={{ color: colors.textSec }}>›</span>
+                        </div>
+                    ))}
+
+                    {/* Divider */}
+                    <div style={{ height: 1, background: colors.border, margin: '12px 16px' }} />
+
+                    {/* MY CLUBS Section */}
+                    <div style={{ padding: '16px 8px 8px' }}>
+                        <h4 style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: colors.textSec,
+                            margin: 0,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px'
+                        }}>
+                            My Clubs
+                        </h4>
+                    </div>
+                    {[
+                        { icon: '♠️', label: 'My Clubs', path: '/clubs' },
+                        { icon: '🔍', label: 'Find Clubs', path: '/clubs' },
+                        { icon: '➕', label: 'Create Club', path: '/clubs/create' },
+                    ].map((item, index) => (
+                        <div
+                            key={`clubs-${index}`}
+                            onClick={() => handleNavigate(item.path)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 12,
+                                padding: '12px 16px',
+                                cursor: 'pointer',
+                                borderRadius: 8
+                            }}
+                        >
+                            <span style={{ fontSize: 20 }}>{item.icon}</span>
+                            <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: colors.text }}>{item.label}</span>
+                            <span style={{ color: colors.textSec }}>›</span>
+                        </div>
+                    ))}
+
+                    {/* Divider */}
+                    <div style={{ height: 1, background: colors.border, margin: '12px 16px' }} />
+
+                    {/* GAME MODES Section */}
+                    <div style={{ padding: '16px 8px 8px' }}>
+                        <h4 style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: colors.textSec,
+                            margin: 0,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px'
+                        }}>
+                            Game Modes
+                        </h4>
+                    </div>
+                    {[
+                        { icon: '🎰', label: 'Cash Games', path: '/lobby' },
+                        { icon: '🏆', label: 'Tournaments', path: '/tournaments' },
+                        { icon: '⚡', label: 'Sit & Go', path: '/lobby?type=sng' },
+                        { icon: '🎯', label: 'Spin-It', path: '/lobby?type=spin' },
+                    ].map((item, index) => (
+                        <div
+                            key={`games-${index}`}
+                            onClick={() => handleNavigate(item.path)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 12,
+                                padding: '12px 16px',
+                                cursor: 'pointer',
+                                borderRadius: 8
+                            }}
+                        >
+                            <span style={{ fontSize: 20 }}>{item.icon}</span>
+                            <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: colors.text }}>{item.label}</span>
+                            <span style={{ color: colors.textSec }}>›</span>
+                        </div>
+                    ))}
+
+                    {/* Divider */}
+                    <div style={{ height: 1, background: colors.border, margin: '12px 16px' }} />
+
+                    {/* CLUB FEATURES Section */}
+                    <div style={{ padding: '16px 8px 8px' }}>
+                        <h4 style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: colors.textSec,
+                            margin: 0,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px'
+                        }}>
+                            Club Features
+                        </h4>
+                    </div>
+                    {[
+                        { icon: '💬', label: 'Messages', path: '/messages' },
+                        { icon: '👥', label: 'Players', path: '/players' },
+                        { icon: '💵', label: 'Cashier', path: '/cashier' },
+                        { icon: '📊', label: 'Leaderboard', path: '/leaderboard' },
+                        { icon: '📜', label: 'Hand Histories', path: '/hand-history' },
+                        { icon: '📈', label: 'Player Stats', path: '/stats' },
+                    ].map((item, index) => (
+                        <div
+                            key={`features-${index}`}
+                            onClick={() => handleNavigate(item.path)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 12,
+                                padding: '12px 16px',
+                                cursor: 'pointer',
+                                borderRadius: 8
+                            }}
+                        >
+                            <span style={{ fontSize: 20 }}>{item.icon}</span>
+                            <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: colors.text }}>{item.label}</span>
+                            <span style={{ color: colors.textSec }}>›</span>
+                        </div>
+                    ))}
+
+                    {/* Divider */}
+                    <div style={{ height: 1, background: colors.border, margin: '12px 16px' }} />
+
+                    {/* PLAYER Section */}
+                    <div style={{ padding: '16px 8px 8px' }}>
+                        <h4 style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: colors.textSec,
+                            margin: 0,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px'
+                        }}>
+                            Player
+                        </h4>
+                    </div>
+                    {[
+                        { icon: '💼', label: 'My Wallet', path: '/wallet' },
+                        { icon: '🏅', label: 'Achievements', path: '/achievements' },
+                        { icon: '👑', label: 'VIP Status', path: '/vip' },
+                        { icon: '💎', label: 'Rakeback', path: '/rakeback' },
+                        { icon: '🎁', label: 'Promotions', path: '/promotions' },
+                        { icon: '🎰', label: 'Bonuses', path: '/bonuses' },
+                        { icon: '📋', label: 'Transactions', path: '/transactions' },
+                        { icon: '👫', label: 'Friends', path: '/friends' },
+                    ].map((item, index) => (
+                        <div
+                            key={`player-${index}`}
+                            onClick={() => handleNavigate(item.path)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 12,
+                                padding: '12px 16px',
+                                cursor: 'pointer',
+                                borderRadius: 8
+                            }}
+                        >
+                            <span style={{ fontSize: 20 }}>{item.icon}</span>
+                            <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: colors.text }}>{item.label}</span>
+                            <span style={{ color: colors.textSec }}>›</span>
+                        </div>
+                    ))}
+
+                    {/* Divider */}
+                    <div style={{ height: 1, background: colors.border, margin: '12px 16px' }} />
+
+                    {/* AGENT & ADMIN Section */}
+                    <div style={{ padding: '16px 8px 8px' }}>
+                        <h4 style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: colors.textSec,
+                            margin: 0,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px'
+                        }}>
+                            Agent & Admin
+                        </h4>
+                    </div>
+                    {[
+                        { icon: '👔', label: 'Agent Management', path: '/agent-management' },
+                        { icon: '💰', label: 'Club Financials', path: '/data' },
+                        { icon: '⚙️', label: 'Club Settings', path: '/admin' },
+                        { icon: '📊', label: 'Club Dashboard', path: '/data' },
+                        { icon: '🎫', label: 'Waitlist', path: '/waitlist' },
+                        { icon: '📢', label: 'Invite Players', path: '/invite' },
+                    ].map((item, index) => (
+                        <div
+                            key={`admin-${index}`}
+                            onClick={() => handleNavigate(item.path)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 12,
+                                padding: '12px 16px',
+                                cursor: 'pointer',
+                                borderRadius: 8
+                            }}
+                        >
+                            <span style={{ fontSize: 20 }}>{item.icon}</span>
+                            <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: colors.text }}>{item.label}</span>
+                            <span style={{ color: colors.textSec }}>›</span>
+                        </div>
+                    ))}
+
+                    {/* Divider */}
+                    <div style={{ height: 1, background: colors.border, margin: '12px 16px' }} />
+
                     {/* Settings Section */}
                     <div style={{ padding: '16px 8px 8px' }}>
                         <h4 style={{
