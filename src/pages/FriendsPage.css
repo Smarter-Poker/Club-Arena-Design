@@ -1,7 +1,18 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  FRIENDS PAGE — Metal UI Theme
+ *  Brushed Steel + Cyan Glow Social
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
 .friends-page {
     min-height: 100vh;
-    background: var(--bg-primary);
+    background: linear-gradient(180deg, #0a0a14 0%, #0d1520 50%, #0a0a14 100%);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SUMMARY STATS — Metal Cards
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .friends-summary {
     display: flex;
@@ -11,36 +22,63 @@
 
 .summary-stat {
     flex: 1;
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #2a3a4a;
     border-radius: 12px;
     padding: 0.75rem;
     text-align: center;
 }
 
 .summary-stat.online {
-    background: linear-gradient(135deg, rgba(var(--accent-success-rgb), 0.2), var(--bg-secondary));
+    border-color: rgba(16, 185, 129, 0.4);
+    background: linear-gradient(145deg,
+            rgba(16, 185, 129, 0.15) 0%,
+            rgba(16, 185, 129, 0.05) 100%);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
 }
 
 .summary-stat.pending {
-    background: linear-gradient(135deg, rgba(var(--accent-warning-rgb), 0.2), var(--bg-secondary));
+    border-color: rgba(245, 158, 11, 0.4);
+    background: linear-gradient(145deg,
+            rgba(245, 158, 11, 0.15) 0%,
+            rgba(245, 158, 11, 0.05) 100%);
 }
 
 .summary-stat .stat-value {
     display: block;
     font-size: 1.25rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #00d4ff;
+    font-family: 'Orbitron', monospace;
+    text-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+}
+
+.summary-stat.online .stat-value {
+    color: #10b981;
+    text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.summary-stat.pending .stat-value {
+    color: #f59e0b;
+    text-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
 }
 
 .summary-stat .stat-label {
-    font-size: 0.625rem;
-    color: var(--text-secondary);
+    font-size: 0.65rem;
+    color: #6a7a8a;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TABS — Metal Chips
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .friends-tabs {
     display: flex;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 2px solid #1a2332;
     margin: 0 1rem;
 }
 
@@ -49,16 +87,27 @@
     padding: 0.75rem;
     border: none;
     background: none;
-    color: var(--text-secondary);
+    color: #6a7a8a;
     font-size: 0.875rem;
+    font-weight: 500;
     cursor: pointer;
     border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.friends-tabs button:hover {
+    color: #8a9aaa;
 }
 
 .friends-tabs button.active {
-    color: var(--accent-primary);
-    border-bottom-color: var(--accent-primary);
+    color: #00d4ff;
+    border-bottom-color: #00d4ff;
+    text-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SEARCH — Metal Input
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .friends-search {
     padding: 1rem;
@@ -67,11 +116,27 @@
 .friends-search input {
     width: 100%;
     padding: 0.75rem 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    background: var(--bg-secondary);
-    color: var(--text-primary);
+    background: linear-gradient(180deg, #0d1520 0%, #1a2332 100%);
+    border: 2px solid #2a3a4a;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
 }
+
+.friends-search input:focus {
+    outline: none;
+    border-color: #00d4ff;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+}
+
+.friends-search input::placeholder {
+    color: #4a5a6a;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   FRIEND/REQUEST LIST — Metal Rows
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .friends-list,
 .pending-list {
@@ -87,9 +152,19 @@
     align-items: center;
     gap: 0.75rem;
     padding: 1rem;
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.05) 0%,
+            rgba(100, 100, 100, 0.02) 100%);
+    border: 1px solid #2a3a4a;
     border-radius: 12px;
     cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.friend-row:hover,
+.request-row:hover {
+    border-color: #00d4ff;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
 }
 
 .friend-avatar,
@@ -97,12 +172,15 @@
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    background: var(--bg-tertiary);
+    background: linear-gradient(145deg, #1a2332 0%, #0d1520 100%);
+    border: 2px solid #3a4a5a;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
     overflow: hidden;
+    font-weight: 600;
+    color: #6a7a8a;
 }
 
 .friend-avatar img,
@@ -114,13 +192,14 @@
 
 .online-dot {
     position: absolute;
-    bottom: 2px;
-    right: 2px;
-    width: 12px;
-    height: 12px;
-    background: var(--accent-success);
+    bottom: 0;
+    right: 0;
+    width: 14px;
+    height: 14px;
+    background: #10b981;
     border-radius: 50%;
-    border: 2px solid var(--bg-secondary);
+    border: 2px solid #0d1520;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
 }
 
 .friend-info,
@@ -131,14 +210,14 @@
 .friend-name,
 .request-name {
     display: block;
-    font-weight: 500;
-    color: var(--text-primary);
+    font-weight: 600;
+    color: #fff;
 }
 
 .friend-status,
 .request-label {
     font-size: 0.75rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
 }
 
 .action-btn {
@@ -146,7 +225,17 @@
     border: none;
     font-size: 1.25rem;
     cursor: pointer;
+    color: #6a7a8a;
+    transition: all 0.2s ease;
 }
+
+.action-btn:hover {
+    color: #00d4ff;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   REQUEST ACTIONS
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .request-actions {
     display: flex;
@@ -158,20 +247,37 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    border: none;
+    border: 2px solid transparent;
     font-size: 1rem;
     cursor: pointer;
+    transition: all 0.2s ease;
 }
 
 .accept-btn {
-    background: var(--accent-success);
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: white;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+
+.accept-btn:hover {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+    transform: scale(1.05);
 }
 
 .decline-btn {
-    background: var(--bg-tertiary);
-    color: var(--text-secondary);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.06) 0%, rgba(100, 100, 100, 0.03) 100%);
+    border-color: #3a4a5a;
+    color: #8a9aaa;
 }
+
+.decline-btn:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   STATES
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .loading-state,
 .empty-state {
@@ -180,10 +286,11 @@
     align-items: center;
     justify-content: center;
     padding: 3rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
     gap: 1rem;
 }
 
 .empty-icon {
     font-size: 2.5rem;
+    opacity: 0.4;
 }

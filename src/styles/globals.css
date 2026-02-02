@@ -186,6 +186,13 @@
     /* Text/Border Aliases */
     --text-tertiary: var(--metal-text-dim);
     --border-hover: var(--metal-border);
+    --border-color: var(--metal-border);
+
+    /* Accent Colors for Club Pages */
+    --accent-primary: var(--metal-glow-cyan);
+    --accent-success: #10b981;
+    --accent-success-rgb: 16, 185, 129;
+
 
     /* ─────────────── Facebook Aliases ─────────────── */
     --fb-blue: var(--royal-blue);

@@ -1,38 +1,70 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  NOTIFICATIONS PAGE — Metal UI Theme
+ *  Brushed Steel + Cyan Glow Alerts
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
 .notifications-page {
     min-height: 100vh;
-    background: var(--bg-primary);
+    background: linear-gradient(180deg, #0a0a14 0%, #0d1520 50%, #0a0a14 100%);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   HEADER — Metal Frame
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .notif-header {
     display: flex;
     align-items: center;
     gap: 1rem;
     padding: 1rem;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-color);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border-bottom: 2px solid #2a3a4a;
 }
 
 .notif-header .back-btn {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    color: var(--text-primary);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.06) 0%, rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #3a4a5a;
+    border-radius: 10px;
+    font-size: 1.25rem;
+    color: #8a9aaa;
     cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.notif-header .back-btn:hover {
+    border-color: #00d4ff;
+    color: #00d4ff;
 }
 
 .notif-header h1 {
     flex: 1;
     font-size: 1.25rem;
     margin: 0;
+    color: #fff;
 }
 
 .mark-all-btn {
     background: none;
     border: none;
-    color: var(--accent-primary);
+    color: #00d4ff;
     font-size: 0.875rem;
     cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
 }
+
+.mark-all-btn:hover {
+    text-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   NOTIFICATIONS LIST
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .notifications-list {
     padding: 1rem;
@@ -44,12 +76,13 @@
     flex-direction: column;
     align-items: center;
     padding: 3rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
 }
 
 .empty-icon {
     font-size: 3rem;
     margin-bottom: 1rem;
+    opacity: 0.4;
 }
 
 .notification-item {
@@ -57,16 +90,26 @@
     align-items: flex-start;
     gap: 0.75rem;
     padding: 1rem;
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.05) 0%,
+            rgba(100, 100, 100, 0.02) 100%);
+    border: 1px solid #2a3a4a;
     border-radius: 12px;
     margin-bottom: 0.5rem;
     cursor: pointer;
     position: relative;
+    transition: all 0.2s ease;
+}
+
+.notification-item:hover {
+    border-color: #3a4a5a;
 }
 
 .notification-item.unread {
-    background: rgba(var(--accent-primary-rgb), 0.1);
-    border-left: 3px solid var(--accent-primary);
+    background: linear-gradient(145deg,
+            rgba(0, 212, 255, 0.1) 0%,
+            rgba(0, 212, 255, 0.03) 100%);
+    border-left: 3px solid #00d4ff;
 }
 
 .notif-icon {
@@ -82,30 +125,34 @@
 
 .notif-title {
     font-weight: 600;
-    color: var(--text-primary);
+    color: #fff;
 }
 
 .notif-message {
     font-size: 0.875rem;
-    color: var(--text-secondary);
+    color: #8a9aaa;
 }
 
 .notif-time {
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: #6a7a8a;
 }
 
 .unread-dot {
-    width: 8px;
-    height: 8px;
-    background: var(--accent-primary);
+    width: 10px;
+    height: 10px;
+    background: #00d4ff;
     border-radius: 50%;
     position: absolute;
     top: 1rem;
     right: 1rem;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
 }
 
-/* Real-time indicator */
+/* ─────────────────────────────────────────────────────────────────────────────
+   REAL-TIME INDICATOR
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .realtime-indicator {
     display: flex;
     align-items: center;
@@ -113,15 +160,15 @@
     justify-content: center;
     padding: 0.5rem 1rem;
     font-size: 0.75rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
 }
 
 .live-dot {
     width: 8px;
     height: 8px;
-    background: #22c55e;
+    background: #10b981;
     border-radius: 50%;
-    box-shadow: 0 0 8px #22c55e;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
     animation: pulse 2s infinite;
 }
 
@@ -130,47 +177,63 @@
     0%,
     100% {
         opacity: 1;
+        box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
     }
 
     50% {
         opacity: 0.5;
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
     }
 }
 
-/* New notification highlight */
+/* ─────────────────────────────────────────────────────────────────────────────
+   NEW NOTIFICATION HIGHLIGHT
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .notification-item.new-highlight {
     animation: newNotif 3s ease-out;
 }
 
 @keyframes newNotif {
     0% {
-        background: rgba(34, 197, 94, 0.3);
+        background: rgba(16, 185, 129, 0.3);
+        border-color: #10b981;
     }
 
     100% {
-        background: rgba(var(--accent-primary-rgb), 0.1);
+        background: rgba(0, 212, 255, 0.1);
+        border-color: #2a3a4a;
     }
 }
 
-/* Mark all bar */
+/* ─────────────────────────────────────────────────────────────────────────────
+   MARK ALL BAR
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .mark-all-bar {
     padding: 0.5rem 1rem;
     text-align: center;
 }
 
-/* Delete button */
+/* ─────────────────────────────────────────────────────────────────────────────
+   DELETE BUTTON
+   ───────────────────────────────────────────────────────────────────────────── */
+
 .delete-btn {
     background: none;
-    border: none;
+    border: 2px solid transparent;
     font-size: 1rem;
     cursor: pointer;
     opacity: 0.5;
     padding: 0.5rem;
     border-radius: 8px;
     transition: all 0.2s;
+    color: #8a9aaa;
 }
 
 .delete-btn:hover {
     opacity: 1;
+    border-color: rgba(239, 68, 68, 0.4);
     background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
 }

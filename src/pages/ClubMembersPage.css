@@ -1,7 +1,19 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  CLUB MEMBERS PAGE — Metal UI Theme
+ *  Brushed Steel + Cyan Glow
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
 .club-members-page {
     min-height: 100vh;
-    background: var(--bg-primary);
+    background: linear-gradient(180deg, #0a0a14 0%, #0d1520 50%, #0a0a14 100%);
+    padding-bottom: 80px;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SUMMARY STATS — Metal Panels
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .members-summary {
     display: flex;
@@ -11,27 +23,50 @@
 
 .summary-stat {
     flex: 1;
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(100, 100, 100, 0.03) 100%);
+    border: 2px solid #2a3a4a;
     border-radius: 12px;
     padding: 1rem;
     text-align: center;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.15);
 }
 
 .summary-stat.online {
-    background: linear-gradient(135deg, rgba(var(--accent-success-rgb), 0.2), var(--bg-secondary));
+    border-color: rgba(16, 185, 129, 0.4);
+    background: linear-gradient(145deg,
+            rgba(16, 185, 129, 0.15) 0%,
+            rgba(16, 185, 129, 0.05) 100%);
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
 }
 
 .summary-stat .stat-value {
     display: block;
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #00d4ff;
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.summary-stat.online .stat-value {
+    color: #10b981;
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
 }
 
 .summary-stat .stat-label {
     font-size: 0.75rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SEARCH — Metal Input
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .members-search {
     padding: 0 1rem 1rem;
@@ -40,11 +75,27 @@
 .members-search input {
     width: 100%;
     padding: 0.75rem 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    background: var(--bg-secondary);
-    color: var(--text-primary);
+    background: linear-gradient(180deg, #0d1520 0%, #1a2332 100%);
+    border: 2px solid #2a3a4a;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
 }
+
+.members-search input:focus {
+    outline: none;
+    border-color: #00d4ff;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+}
+
+.members-search input::placeholder {
+    color: #4a5a6a;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   FILTERS — Metal Chips
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .members-filters {
     display: flex;
@@ -55,20 +106,32 @@
 
 .members-filters button {
     padding: 0.5rem 1rem;
-    border: 1px solid var(--border-color);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.04) 0%, rgba(100, 100, 100, 0.02) 100%);
+    border: 2px solid #2a3a4a;
     border-radius: 20px;
-    background: var(--bg-secondary);
-    color: var(--text-secondary);
-    font-size: 0.875rem;
+    color: #6a7a8a;
+    font-size: 0.85rem;
+    font-weight: 500;
     white-space: nowrap;
     cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.members-filters button:hover {
+    border-color: #4a5a6a;
+    color: #8a9aaa;
 }
 
 .members-filters button.active {
-    background: var(--accent-primary);
-    border-color: var(--accent-primary);
-    color: white;
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    border-color: #00d4ff;
+    color: #fff;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MEMBER LIST — Metal Rows
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .members-list {
     padding: 0 1rem;
@@ -82,21 +145,34 @@
     align-items: center;
     gap: 0.75rem;
     padding: 1rem;
-    background: var(--bg-secondary);
+    background: linear-gradient(145deg,
+            rgba(255, 255, 255, 0.05) 0%,
+            rgba(100, 100, 100, 0.02) 100%);
+    border: 1px solid #2a3a4a;
     border-radius: 12px;
     cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.member-row:hover {
+    border-color: #00d4ff;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+    transform: translateX(4px);
 }
 
 .member-avatar {
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    background: var(--bg-tertiary);
+    background: linear-gradient(135deg, #1a2332 0%, #0d1520 100%);
+    border: 2px solid #3a4a5a;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
     overflow: hidden;
+    font-weight: 600;
+    color: #6a7a8a;
 }
 
 .member-avatar img {
@@ -107,13 +183,27 @@
 
 .online-dot {
     position: absolute;
-    bottom: 2px;
-    right: 2px;
-    width: 12px;
-    height: 12px;
-    background: var(--accent-success);
+    bottom: 0;
+    right: 0;
+    width: 14px;
+    height: 14px;
+    background: #10b981;
     border-radius: 50%;
-    border: 2px solid var(--bg-secondary);
+    border: 2px solid #0d1520;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    animation: onlinePulse 2s ease-in-out infinite;
+}
+
+@keyframes onlinePulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    }
+
+    50% {
+        box-shadow: 0 0 16px rgba(16, 185, 129, 0.8);
+    }
 }
 
 .member-info {
@@ -122,20 +212,26 @@
 
 .member-name {
     display: block;
-    font-weight: 500;
-    color: var(--text-primary);
+    font-weight: 600;
+    color: #fff;
 }
 
 .member-role {
     font-size: 0.75rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
     text-transform: capitalize;
 }
 
 .member-balance {
-    font-weight: 600;
-    color: var(--text-primary);
+    font-weight: 700;
+    color: #00d4ff;
+    font-family: 'Orbitron', monospace;
+    text-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   STATES
+   ───────────────────────────────────────────────────────────────────────────── */
 
 .loading-state,
 .empty-state {
@@ -144,5 +240,20 @@
     align-items: center;
     justify-content: center;
     padding: 3rem;
-    color: var(--text-secondary);
+    color: #6a7a8a;
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid #2a3a4a;
+    border-top-color: #00d4ff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
