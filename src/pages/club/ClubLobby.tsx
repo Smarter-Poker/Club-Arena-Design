@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { clubService } from '../../services/ClubService';
 import { tableService } from '../../services/TableService';
 import { tournamentService } from '../../services/TournamentService';
@@ -15,7 +15,9 @@ import './ClubLobby.css';
 type GameFilter = 'ALL' | 'Hold\'em' | 'Omaha' | 'Mixed' | 'MTT' | 'Spin-It' | 'SN';
 
 export default function ClubLobby() {
-    const { clubId } = useParams<{ clubId: string }>();
+    const [searchParams] = useSearchParams();
+    const { clubId: routeClubId } = useParams<{ clubId?: string }>();
+    const clubId = routeClubId || searchParams.get('club') || undefined;
     const [club, setClub] = useState<Club | null>(null);
     const [tables, setTables] = useState<PokerTable[]>([]);
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
