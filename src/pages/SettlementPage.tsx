@@ -11,6 +11,7 @@ import { supabase } from '../lib/supabase';
 import { SettlementService } from '../services/SettlementService';
 import styles from './SettlementPage.module.css';
 import { useToast } from '../components/common/Toast';
+import ClubBottomNav from '../components/club/ClubBottomNav';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -59,7 +60,7 @@ interface AgentPayout {
 type TabType = 'overview' | 'club-wires' | 'agent-payouts' | 'history';
 
 export default function SettlementPage() {
-    const { unionId } = useParams<{ unionId: string }>();
+    const { unionId, clubId } = useParams<{ unionId?: string; clubId?: string }>();
     const navigate = useNavigate();
     const toast = useToast();
     const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -478,7 +479,7 @@ export default function SettlementPage() {
 
                         <div className={styles.payoutNote}>
                             <p>
-                                 <strong>Net Payout</strong> = Gross Commission - Player Rakeback (the spread agent keeps)
+                                <strong>Net Payout</strong> = Gross Commission - Player Rakeback (the spread agent keeps)
                             </p>
                         </div>
                     </div>
@@ -516,6 +517,9 @@ export default function SettlementPage() {
                     </div>
                 )}
             </div>
+
+            {/* Bottom Navigation */}
+            {clubId && <ClubBottomNav clubId={clubId} />}
         </div>
     );
 }

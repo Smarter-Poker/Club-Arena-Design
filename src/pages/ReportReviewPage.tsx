@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import SmarterHeader from '../components/layout/SmarterHeader';
+import ClubBottomNav from '../components/club/ClubBottomNav';
 import './ReportReviewPage.css';
 
 interface PlayerReport {
@@ -227,14 +228,14 @@ export default function ReportReviewPage() {
                                             onClick={() => handleAction(selectedReport.id, 'actioned')}
                                             disabled={processing}
                                         >
-                                             Take Action
+                                            Take Action
                                         </button>
                                         <button
                                             className="btn btn-secondary"
                                             onClick={() => handleAction(selectedReport.id, 'dismissed')}
                                             disabled={processing}
                                         >
-                                             Dismiss
+                                            Dismiss
                                         </button>
                                     </div>
                                 </>
@@ -243,6 +244,9 @@ export default function ReportReviewPage() {
                     </div>
                 </div>
             )}
+
+            {/* Bottom Navigation */}
+            {clubId && <ClubBottomNav clubId={clubId} />}
         </div>
     );
 }

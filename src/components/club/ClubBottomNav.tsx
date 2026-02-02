@@ -11,11 +11,11 @@ import styles from './ClubBottomNav.module.css';
 
 interface ClubBottomNavProps {
     clubId: string;
-    userRole: 'owner' | 'admin' | 'agent' | 'member';
+    userRole?: 'owner' | 'admin' | 'agent' | 'member';
     clubName?: string;
 }
 
-export default function ClubBottomNav({ clubId, userRole, clubName }: ClubBottomNavProps) {
+export default function ClubBottomNav({ clubId, userRole = 'member', clubName }: ClubBottomNavProps) {
     const location = useLocation();
 
     // Check if user has elevated permissions (can see Players/Admin tabs)

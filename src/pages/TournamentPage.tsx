@@ -17,6 +17,7 @@ import { tableService } from '../services/TableService';
 import TournamentBreakScreen from '../components/table/TournamentBreakScreen';
 import { WalletService } from '../services/WalletService';
 import { useToast } from '../components/common/Toast';
+import ClubBottomNav from '../components/club/ClubBottomNav';
 
 // Default fallback for unauthed (shouldn't happen in real app)
 const GUEST_USER = { id: 'guest', username: 'Guest' };
@@ -460,6 +461,9 @@ export default function TournamentPage() {
                     }}
                 />
             )}
+
+            {/* Bottom Navigation */}
+            {clubId && <ClubBottomNav clubId={clubId} />}
         </div>
     );
 }

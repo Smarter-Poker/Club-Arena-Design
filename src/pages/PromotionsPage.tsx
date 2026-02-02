@@ -12,6 +12,7 @@ import ReferralModal from '../components/social/ReferralModal';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import { promotionService } from '../services/PromotionService';
+import ClubBottomNav from '../components/club/ClubBottomNav';
 import './PromotionsPage.css';
 
 interface Promotion {
@@ -188,7 +189,7 @@ export default function PromotionsPage() {
                                     </span>
                                     {promo.prize_pool && (
                                         <span className="promo-prize">
-                                             ${promo.prize_pool.toLocaleString()}
+                                            ${promo.prize_pool.toLocaleString()}
                                         </span>
                                     )}
                                 </div>
@@ -237,6 +238,9 @@ export default function PromotionsPage() {
                 referralLink={`https://clubarena.poker/join?ref=${user?.id || 'guest'}`}
                 totalReferrals={0}
             />
+
+            {/* Bottom Navigation */}
+            {clubId && <ClubBottomNav clubId={clubId} />}
         </div>
     );
 }

@@ -9,6 +9,7 @@ import { clubService } from '../../services/ClubService';
 import { tableService } from '../../services/TableService';
 import { tournamentService } from '../../services/TournamentService';
 import type { Club, PokerTable, Tournament } from '../../types/database.types';
+import ClubBottomNav from '../../components/club/ClubBottomNav';
 import './ClubLobby.css';
 
 type GameFilter = 'ALL' | 'Hold\'em' | 'Omaha' | 'Mixed' | 'MTT' | 'Spin-It' | 'SN';
@@ -159,14 +160,7 @@ export default function ClubLobby() {
             </div>
 
             {/* Bottom Navigation */}
-            <nav className="bottom-nav">
-                <NavItem icon="✉️" label="Messages" />
-                <NavItem icon="" label="Players" />
-                <NavItem icon="" label="Cashier" active />
-                <NavItem icon="" label="Data" />
-                <NavItem icon="" label="Admin" />
-                <button className="nav-item close">✕</button>
-            </nav>
+            {clubId && <ClubBottomNav clubId={clubId} />}
         </div>
     );
 }

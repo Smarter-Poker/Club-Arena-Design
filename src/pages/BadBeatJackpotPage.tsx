@@ -7,6 +7,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/common/Toast';
 import SmarterHeader from '../components/layout/SmarterHeader';
+import ClubBottomNav from '../components/club/ClubBottomNav';
 import './BadBeatJackpotPage.css';
 
 interface JackpotInfo {
@@ -136,6 +137,7 @@ export default function BadBeatJackpotPage() {
             <div className="bbj-page">
                 <SmarterHeader title=" Bad Beat Jackpot" />
                 <div className="loading-state"><div className="spinner" /></div>
+                {clubId && <ClubBottomNav clubId={clubId} />}
             </div>
         );
     }
@@ -212,6 +214,9 @@ export default function BadBeatJackpotPage() {
                     </div>
                 )}
             </div>
+
+            {/* Bottom Navigation */}
+            {clubId && <ClubBottomNav clubId={clubId} />}
         </div>
     );
 }

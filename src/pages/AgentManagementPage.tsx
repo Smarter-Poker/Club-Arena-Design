@@ -24,6 +24,7 @@ import { PermissionService } from '@/services/PermissionService';
 import { AgentFinancialPortal } from '@/components/dashboard/AgentFinancialPortal';
 import { useToast } from '@/components/common/Toast';
 import AgentCashoutPanel from '@/components/agent/AgentCashoutPanel';
+import ClubBottomNav from '@/components/club/ClubBottomNav';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPONENT
@@ -369,14 +370,14 @@ export default function AgentManagementPage() {
                                                         setShowTransferModal(true);
                                                     }}
                                                 >
-                                                     Transfer
+                                                    Transfer
                                                 </button>
                                                 {agent.role === 'agent' && (
                                                     <button
                                                         className={`${styles.actionBtn} ${styles.promote}`}
                                                         onClick={() => handlePromoteAgent(agent.id, agent.role)}
                                                     >
-                                                         Promote
+                                                        Promote
                                                     </button>
                                                 )}
                                                 {agent.role === 'super_agent' && (
@@ -384,7 +385,7 @@ export default function AgentManagementPage() {
                                                         className={`${styles.actionBtn} ${styles.demote}`}
                                                         onClick={() => handlePromoteAgent(agent.id, agent.role)}
                                                     >
-                                                         Demote
+                                                        Demote
                                                     </button>
                                                 )}
                                                 <button
@@ -394,7 +395,7 @@ export default function AgentManagementPage() {
                                                         setShowPlayerInviteModal(true);
                                                     }}
                                                 >
-                                                     Add Player
+                                                    Add Player
                                                 </button>
                                                 <button
                                                     className={`${styles.actionBtn}`}
@@ -404,7 +405,7 @@ export default function AgentManagementPage() {
                                                         setShowCommissionModal(true);
                                                     }}
                                                 >
-                                                     History
+                                                    History
                                                 </button>
                                             </>
                                         ) : (
@@ -551,13 +552,13 @@ export default function AgentManagementPage() {
                                                         className={`${styles.actionBtn} ${styles.approve}`}
                                                         onClick={() => handleSetCreditLimit(agent.id, newLimit)}
                                                     >
-                                                         Save
+                                                        Save
                                                     </button>
                                                     <button
                                                         className={styles.actionBtn}
                                                         onClick={() => setEditingLimit(null)}
                                                     >
-                                                        
+
                                                     </button>
                                                 </div>
                                             ) : (
@@ -911,6 +912,9 @@ export default function AgentManagementPage() {
                     }
                 }}
             />
+
+            {/* Bottom Navigation */}
+            {clubId && <ClubBottomNav clubId={clubId} />}
         </div>
     );
 }
