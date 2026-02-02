@@ -6,7 +6,7 @@
  */
 
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import ConversationList from '../components/messaging/ConversationList';
 import MessageThread from '../components/messaging/MessageThread';
 import { messagingService } from '../services/MessagingService';
@@ -19,7 +19,9 @@ import './MessagesPage.css';
 
 export default function MessagesPage() {
     const navigate = useNavigate();
-    const { clubId, conversationId } = useParams<{ clubId: string; conversationId?: string }>();
+    const [searchParams] = useSearchParams();
+    const { clubId: routeClubId, conversationId } = useParams<{ clubId?: string; conversationId?: string }>();
+    const clubId = routeClubId || searchParams.get('club') || undefined;
     const [selectedConversation, setSelectedConversation] = useState<string | null>(conversationId || null);
     const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;

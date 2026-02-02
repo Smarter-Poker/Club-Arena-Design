@@ -434,6 +434,31 @@ export default function App() {
                                     </AuthGuard>
                                 }
                             />
+                            {/* Query parameter club routes for bottom nav */}
+                            <Route
+                                path="players"
+                                element={
+                                    <AuthGuard>
+                                        <ClubMembersPage />
+                                    </AuthGuard>
+                                }
+                            />
+                            <Route
+                                path="data"
+                                element={
+                                    <AuthGuard>
+                                        <ClubDashboard />
+                                    </AuthGuard>
+                                }
+                            />
+                            <Route
+                                path="admin"
+                                element={
+                                    <AuthGuard>
+                                        <ClubSettingsPage />
+                                    </AuthGuard>
+                                }
+                            />
                             <Route
                                 path="clubs/:clubId/cashier"
                                 element={

@@ -40,7 +40,7 @@ export default function ClubBottomNav({ clubId, userRole = 'member', clubName }:
             <div className={styles.navItems}>
                 {/* Messages */}
                 <Link
-                    to={`/clubs/${clubId}/messages`}
+                    to={`/messages?club=${clubId}`}
                     className={`${styles.navItem} ${activeTab === 'messages' ? styles.active : ''}`}
                 >
                     <svg className={styles.icon} viewBox="0 0 24 24" fill="currentColor">
@@ -51,7 +51,7 @@ export default function ClubBottomNav({ clubId, userRole = 'member', clubName }:
 
                 {/* Players - Always visible */}
                 <Link
-                    to={`/clubs/${clubId}/members`}
+                    to={`/players?club=${clubId}`}
                     className={`${styles.navItem} ${activeTab === 'players' ? styles.active : ''}`}
                 >
                     <svg className={styles.icon} viewBox="0 0 24 24" fill="currentColor">
@@ -62,7 +62,7 @@ export default function ClubBottomNav({ clubId, userRole = 'member', clubName }:
 
                 {/* Cashier */}
                 <Link
-                    to={`/clubs/${clubId}/cashier`}
+                    to={`/cashier?club=${clubId}`}
                     className={`${styles.navItem} ${activeTab === 'cashier' ? styles.active : ''}`}
                 >
                     <svg className={styles.icon} viewBox="0 0 24 24" fill="currentColor">
@@ -73,7 +73,7 @@ export default function ClubBottomNav({ clubId, userRole = 'member', clubName }:
 
                 {/* Data/Dashboard */}
                 <Link
-                    to={`/clubs/${clubId}/dashboard`}
+                    to={`/data?club=${clubId}`}
                     className={`${styles.navItem} ${activeTab === 'data' ? styles.active : ''}`}
                 >
                     <svg className={styles.icon} viewBox="0 0 24 24" fill="currentColor">
@@ -84,7 +84,7 @@ export default function ClubBottomNav({ clubId, userRole = 'member', clubName }:
 
                 {/* Admin - Always visible */}
                 <Link
-                    to={`/clubs/${clubId}/settings`}
+                    to={`/admin?club=${clubId}`}
                     className={`${styles.navItem} ${activeTab === 'admin' ? styles.active : ''}`}
                 >
                     <svg className={styles.icon} viewBox="0 0 24 24" fill="currentColor">

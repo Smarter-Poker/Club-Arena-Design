@@ -12,7 +12,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
 import ClubStatsCards from '../../components/club/ClubStatsCards';
@@ -40,7 +40,9 @@ interface TopPlayer {
 }
 
 export default function ClubDashboard() {
-    const { clubId } = useParams<{ clubId: string }>();
+    const [searchParams] = useSearchParams();
+    const { clubId: routeClubId } = useParams<{ clubId?: string }>();
+    const clubId = routeClubId || searchParams.get('club') || undefined;
     const { user } = useUserStore();
     const [club, setClub] = useState<ClubInfo | null>(null);
     const [topPlayers, setTopPlayers] = useState<TopPlayer[]>([]);

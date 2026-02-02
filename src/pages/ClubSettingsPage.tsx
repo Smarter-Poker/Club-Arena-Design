@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ClubsService } from '../services/ClubsService';
 import { useUserStore } from '../stores/useUserStore';
@@ -28,7 +28,9 @@ interface ClubSettings {
 
 export default function ClubSettingsPage() {
     const navigate = useNavigate();
-    const { clubId } = useParams();
+    const [searchParams] = useSearchParams();
+    const { clubId: routeClubId } = useParams();
+    const clubId = routeClubId || searchParams.get('club') || undefined;
     const { user } = useUserStore();
     const toast = useToast();
 

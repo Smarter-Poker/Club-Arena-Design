@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import ClubBottomNav from '../components/club/ClubBottomNav';
@@ -25,7 +25,9 @@ type MemberFilter = 'all' | 'online' | 'agents' | 'admins';
 
 export default function ClubMembersPage() {
     const navigate = useNavigate();
-    const { clubId } = useParams();
+    const [searchParams] = useSearchParams();
+    const { clubId: routeClubId } = useParams();
+    const clubId = routeClubId || searchParams.get('club') || undefined;
     const { user } = useUserStore();
 
     const [members, setMembers] = useState<ClubMember[]>([]);
