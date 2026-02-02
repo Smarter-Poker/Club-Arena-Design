@@ -135,6 +135,58 @@
     --bottom-nav-height: 60px;
     --sidebar-width: 280px;
 
+    /* ─────────────── FUTURISTIC METAL UI ─────────────── */
+    /* Metal Colors - Industrial Gaming */
+    --metal-darkest: #0B1426;
+    --metal-dark: #0F1C32;
+    --metal-mid: #132240;
+    --metal-light: #1A2F4F;
+    --metal-shine: #2A4060;
+
+    /* Chrome Gradients */
+    --metal-chrome-light: #C0CDE0;
+    --metal-chrome-mid: #7A8EA8;
+    --metal-chrome-dark: #4A5E78;
+
+    /* Glow Colors - Neon Accents */
+    --metal-glow-cyan: #22D3EE;
+    --metal-glow-blue: #3B82F6;
+    --metal-glow-soft: rgba(34, 211, 238, 0.3);
+
+    /* Content Areas */
+    --metal-content-bg: #0B1426;
+    --metal-content-grid: rgba(34, 211, 238, 0.03);
+
+    /* Text - Metal */
+    --metal-text: #FFFFFF;
+    --metal-text-secondary: #94A3B8;
+    --metal-text-dim: #64748B;
+
+    /* Borders & Shadows - Metal */
+    --metal-border: rgba(34, 211, 238, 0.2);
+    --metal-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    --metal-glow-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
+
+    /* Legacy Page Aliases - Maps old variables to Metal UI */
+    --bg-darker: var(--metal-darkest);
+    --bg-dark: var(--metal-dark);
+    --accent: var(--metal-glow-cyan);
+    --accent-dark: var(--metal-glow-blue);
+    --accent-rgb: 34, 211, 238;
+
+    /* Club/Lobby Aliases */
+    --club-blue: var(--metal-glow-cyan);
+    --club-blue-light: var(--metal-glow-cyan);
+    --club-blue-dark: var(--metal-glow-blue);
+    --club-blue-glow: var(--metal-glow-soft);
+    --club-blue-dim: rgba(34, 211, 238, 0.15);
+    --club-surface: var(--metal-dark);
+    --club-elevated: var(--metal-mid);
+
+    /* Text/Border Aliases */
+    --text-tertiary: var(--metal-text-dim);
+    --border-hover: var(--metal-border);
+
     /* ─────────────── Facebook Aliases ─────────────── */
     --fb-blue: var(--royal-blue);
     --fb-blue-hover: var(--royal-blue-dark);

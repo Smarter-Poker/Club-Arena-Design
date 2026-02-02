@@ -23,6 +23,7 @@ import './styles/club-engine.css';
 import { initAntiGravity, isSystemOnline, getBootStatus } from './core/AntiGravityBoot';
 import { initMasterBus, isMasterBusOnline } from './core/MasterBus';
 import { initIdentityDNA, isIdentityDNALoaded } from './core/IdentityDNA';
+import { initSentry } from './core/SentryInit';
 import SystemOffline from './core/SystemOffline';
 import { ErrorBoundary } from './components/common';
 
@@ -35,6 +36,9 @@ async function boot() {
     console.log('║   CLUB ARENA — BOOT SEQUENCE INITIATED                      ║');
     console.log('╚═══════════════════════════════════════════════════════════════╝');
     console.log('');
+
+    // PHASE 0: Initialize Sentry (FIRST - before any errors can occur)
+    initSentry();
 
     // PHASE 1: Anti-Gravity Core
     const status = await initAntiGravity();

@@ -17,6 +17,7 @@ import { useUserStore } from '../stores/useUserStore';
 import { supabase } from '../lib/supabase';
 import { masterBus } from './MasterBus';
 import { achievementTriggerService } from '../services/AchievementTriggerService';
+import { setSentryUser, clearSentryUser } from './SentryInit';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -141,6 +142,14 @@ class IdentityDNACore {
                         if (session) {
                             await this.hydrateUserFromSession(session);
                             this.updateStatus(true, session);
+
+                            // Set Sentry user context
+                            setSentryUser({
+                                id: session.user.id,
+                                email: session.user.email,
+                                username: session.user.user_metadata?.username || session.user.email?.split('@')[0],
+                            });
+
                             masterBus.emit('AUTH_STATE_CHANGED', {
                                 userId: session.user.id,
                                 isAuthenticated: true,
@@ -154,6 +163,7 @@ class IdentityDNACore {
 
                     case 'SIGNED_OUT':
                         this.clearUser();
+                        clearSentryUser(); // Clear Sentry user context
                         this.updateStatus(false, null);
                         masterBus.emit('AUTH_STATE_CHANGED', {
                             userId: null,

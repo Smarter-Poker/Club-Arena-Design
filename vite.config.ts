@@ -1,11 +1,35 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
     base: '/hub/club-arena/',
-    plugins: [react()],
+    plugins: [
+        react(),
+
+        // Sentry plugin for source maps and release tracking (production only)
+        process.env.NODE_ENV === 'production' && sentryVitePlugin({
+            org: process.env.SENTRY_ORG || 'smarter-software-inc',
+            project: process.env.SENTRY_PROJECT || 'javascript-react',
+            authToken: process.env.SENTRY_AUTH_TOKEN,
+
+            // Upload source maps
+            sourcemaps: {
+                assets: './dist/**',
+                ignore: ['node_modules'],
+            },
+
+            // Release management
+            release: {
+                name: `club-arena@${process.env.npm_package_version || '1.0.0'}`,
+                setCommits: {
+                    auto: true, // Automatically associate commits
+                },
+            },
+        }),
+    ].filter(Boolean), // Filter out false values when not in production
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './src'),
@@ -27,6 +51,7 @@ export default defineConfig({
         'process.env': {},
     },
     build: {
+        sourcemap: true, // Generate source maps for Sentry
         rollupOptions: {
             output: {
                 manualChunks: {
