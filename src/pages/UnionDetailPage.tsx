@@ -291,20 +291,20 @@ export default function UnionDetailPage() {
             {/* Tab Navigation */}
             <nav className={styles.tabNav}>
                 <button className={`${styles.tab} ${activeTab === 'overview' ? styles.active : ''}`} onClick={() => setActiveTab('overview')}>
-                     Overview
+                    Overview
                 </button>
                 <button className={`${styles.tab} ${activeTab === 'clubs' ? styles.active : ''}`} onClick={() => setActiveTab('clubs')}>
-                     Clubs
+                    Clubs
                 </button>
                 <button className={`${styles.tab} ${activeTab === 'tables' ? styles.active : ''}`} onClick={() => setActiveTab('tables')}>
-                     Tables
+                    Tables
                 </button>
                 <button className={`${styles.tab} ${activeTab === 'financials' ? styles.active : ''}`} onClick={() => setActiveTab('financials')}>
-                     Financials
+                    Financials
                 </button>
                 {union?.settings?.crossClubTournaments && (
                     <button className={`${styles.tab} ${activeTab === 'tournaments' ? styles.active : ''}`} onClick={() => setActiveTab('tournaments')}>
-                         Tournaments
+                        Tournaments
                     </button>
                 )}
                 {union?.ownerId === user?.id && (
@@ -319,7 +319,7 @@ export default function UnionDetailPage() {
                             });
                         }
                     }}>
-                         Settings
+                        Settings
                     </button>
                 )}
             </nav>
@@ -458,7 +458,7 @@ export default function UnionDetailPage() {
                         </div>
                         {unionTournaments.length === 0 ? (
                             <div className={styles.emptyState || styles.emptyText}>
-                                <span></span>
+                                <span>T</span>
                                 <p>No union-wide tournaments scheduled</p>
                                 <p style={{ fontSize: '0.85rem', opacity: 0.7 }}>Create a tournament from any member club and it will appear here</p>
                             </div>
@@ -492,21 +492,21 @@ export default function UnionDetailPage() {
                         {/* Summary Cards */}
                         <div className={styles.financialCards}>
                             <div className={styles.financialCard}>
-                                <span className={styles.financialIcon}></span>
+                                <span className={styles.financialIcon}>%</span>
                                 <div>
                                     <span className={styles.financialValue}>${financialSummary.totalRakeThisPeriod.toLocaleString()}</span>
                                     <span className={styles.financialLabel}>Total Rake This Period</span>
                                 </div>
                             </div>
                             <div className={styles.financialCard}>
-                                <span className={styles.financialIcon}></span>
+                                <span className={styles.financialIcon}>$</span>
                                 <div>
                                     <span className={`${styles.financialValue} ${styles.positive}`}>${financialSummary.unionRevenue.toLocaleString()}</span>
                                     <span className={styles.financialLabel}>Union Revenue (10%)</span>
                                 </div>
                             </div>
                             <div className={styles.financialCard}>
-                                <span className={styles.financialIcon}></span>
+                                <span className={styles.financialIcon}>◷</span>
                                 <div>
                                     <span className={styles.financialValue}>${financialSummary.pendingSettlements.toLocaleString()}</span>
                                     <span className={styles.financialLabel}>Pending Settlements</span>
@@ -514,7 +514,7 @@ export default function UnionDetailPage() {
                             </div>
                             {financialSummary.overdueAmount > 0 && (
                                 <div className={`${styles.financialCard} ${styles.overdue}`}>
-                                    <span className={styles.financialIcon}></span>
+                                    <span className={styles.financialIcon}>!</span>
                                     <div>
                                         <span className={`${styles.financialValue} ${styles.negative}`}>${financialSummary.overdueAmount.toLocaleString()}</span>
                                         <span className={styles.financialLabel}>Overdue</span>

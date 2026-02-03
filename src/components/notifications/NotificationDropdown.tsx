@@ -51,7 +51,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                 <div className="dropdown-content">
                     {notifications.length === 0 ? (
                         <div className="empty-state">
-                            <span></span>
+                            <span>✱</span>
                             <p>No notifications yet</p>
                         </div>
                     ) : (

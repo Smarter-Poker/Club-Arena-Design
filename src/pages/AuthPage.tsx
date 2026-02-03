@@ -184,7 +184,7 @@ export default function AuthPage() {
                 {/* Success Message */}
                 {success && (
                     <div className={styles.successMessage}>
-                        <span></span> {success}
+                        <span>\u2713</span> {success}
                     </div>
                 )}
 

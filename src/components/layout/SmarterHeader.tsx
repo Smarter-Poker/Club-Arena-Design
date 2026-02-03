@@ -61,7 +61,7 @@ export default function SmarterHeader({ showBackButton = true, backTo, title }: 
             <div className="header-center">
                 {/* Diamonds */}
                 <div className="header-stat diamonds">
-                    <span className="stat-icon"></span>
+                    <span className="stat-icon">◆</span>
                     <span className="stat-value">{diamonds.toLocaleString()}</span>
                     <button className="add-button">+</button>
                 </div>
@@ -75,25 +75,25 @@ export default function SmarterHeader({ showBackButton = true, backTo, title }: 
                     {user?.avatar_url ? (
                         <img src={user.avatar_url} alt="" />
                     ) : (
-                        <span></span>
+                        <span>●</span>
                     )}
                 </button>
 
                 {/* Messages */}
                 <button className="header-icon-btn" onClick={() => navigate('/messages')}>
-
+                    ◈
                     {unreadMessages > 0 && <span className="badge">{unreadMessages}</span>}
                 </button>
 
                 {/* Notifications */}
                 <button className="header-icon-btn" onClick={() => navigate('/notifications')}>
-
+                    ✱
                     {unreadNotifications > 0 && <span className="badge">{unreadNotifications}</span>}
                 </button>
 
                 {/* Settings */}
                 <button className="header-icon-btn" onClick={() => navigate('/settings')}>
-
+                    ⚙
                 </button>
             </div>
         </header>

@@ -241,7 +241,7 @@ export default function MessagesPanel({
                                     {convo.participantAvatar ? (
                                         <img src={convo.participantAvatar} alt="" />
                                     ) : (
-                                        <span></span>
+                                        <span>●</span>
                                     )}
                                 </div>
                                 <div className={styles.convoInfo}>
@@ -303,7 +303,7 @@ export default function MessagesPanel({
                     </>
                 ) : (
                     <div className={styles.noChat}>
-                        <span></span>
+                        <span>◈</span>
                         <p>Select a conversation to start messaging</p>
                     </div>
                 )}

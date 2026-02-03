@@ -165,7 +165,7 @@ export default function TournamentBracket({
                                     {player.avatarUrl ? (
                                         <img src={player.avatarUrl} alt="" />
                                     ) : (
-                                        <span></span>
+                                        <span>●</span>
                                     )}
                                 </div>
                                 <span className={styles.name}>{player.displayName}</span>

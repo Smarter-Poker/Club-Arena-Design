@@ -147,7 +147,7 @@ export default function LeaderboardCard({
                                 {userRank.avatarUrl ? (
                                     <img src={userRank.avatarUrl} alt="" />
                                 ) : (
-                                    <span></span>
+                                    <span>●</span>
                                 )}
                             </div>
                             <span className={styles.name}>
