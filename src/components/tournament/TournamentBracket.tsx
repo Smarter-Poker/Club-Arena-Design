@@ -94,9 +94,9 @@ export default function TournamentBracket({
 
     const getPositionBadge = (pos?: number): string => {
         if (!pos) return '';
-        if (pos === 1) return '';
-        if (pos === 2) return '';
-        if (pos === 3) return '';
+        if (pos === 1) return '1st';
+        if (pos === 2) return '2nd';
+        if (pos === 3) return '3rd';
         return `#${pos}`;
     };
 
@@ -139,7 +139,7 @@ export default function TournamentBracket({
                                 {player.avatarUrl ? (
                                     <img src={player.avatarUrl} alt="" />
                                 ) : (
-                                    <span></span>
+                                    <span>●</span>
                                 )}
                             </div>
                             <div className={styles.info}>

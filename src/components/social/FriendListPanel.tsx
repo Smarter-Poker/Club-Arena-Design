@@ -180,8 +180,8 @@ export default function FriendListPanel({
 
     const getStatusIcon = (status?: string): string => {
         switch (status) {
-            case 'online': return '';
-            case 'playing': return '';
+            case 'online': return '🟢';
+            case 'playing': return '♠';
             case 'away': return '🟡';
             default: return '⚫';
         }
@@ -247,7 +247,7 @@ export default function FriendListPanel({
                                 {friend.avatarUrl ? (
                                     <img src={friend.avatarUrl} alt="" />
                                 ) : (
-                                    <span></span>
+                                    <span>●</span>
                                 )}
                                 <PresenceIndicator
                                     userId={friend.friendId}
@@ -260,7 +260,7 @@ export default function FriendListPanel({
                                 <span className={styles.name}>{friend.displayName}</span>
                                 {friend.status === 'playing' && friend.tableName && (
                                     <span className={styles.playing}>
-                                         {friend.tableName}
+                                        {friend.tableName}
                                     </span>
                                 )}
                             </div>
@@ -271,7 +271,7 @@ export default function FriendListPanel({
                                     onClick={() => onMessageClick?.(friend.friendId, friend.displayName)}
                                     title="Message"
                                 >
-                                    
+
                                 </button>
                                 {friend.isOnline && onInviteClick && (
                                     <button
@@ -279,7 +279,7 @@ export default function FriendListPanel({
                                         onClick={() => onInviteClick(friend.friendId)}
                                         title="Invite to table"
                                     >
-                                        
+
                                     </button>
                                 )}
                             </div>
