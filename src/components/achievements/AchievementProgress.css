@@ -1,0 +1,172 @@
+/**
+ * ♠ CLUB ARENA — Achievement Progress Styles
+ */
+
+.achievement-progress {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+}
+
+.achievement-progress.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border-subtle);
+    border-top-color: var(--fb-blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-4);
+}
+
+.progress-header h3 {
+    font-size: var(--fs-md);
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+}
+
+.view-all {
+    font-size: var(--fs-sm);
+    color: var(--fb-blue);
+    text-decoration: none;
+}
+
+.category-filters {
+    display: flex;
+    gap: var(--space-1);
+    margin-bottom: var(--space-4);
+    overflow-x: auto;
+}
+
+.cat-btn {
+    padding: var(--space-1) var(--space-2);
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.cat-btn.active {
+    background: var(--fb-blue);
+    border-color: var(--fb-blue);
+    color: white;
+}
+
+.achievements-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.achievement-card {
+    display: flex;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border-left: 4px solid var(--border-subtle);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.achievement-card:hover {
+    transform: translateX(4px);
+}
+
+.achievement-card.rarity-common {
+    border-left-color: #95a5a6;
+}
+
+.achievement-card.rarity-rare {
+    border-left-color: #3498db;
+}
+
+.achievement-card.rarity-epic {
+    border-left-color: #9b59b6;
+}
+
+.achievement-card.rarity-legendary {
+    border-left-color: #f1c40f;
+    background: linear-gradient(90deg, rgba(241, 196, 15, 0.05), transparent);
+}
+
+.achievement-icon {
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+}
+
+.achievement-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.achievement-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+}
+
+.achievement-name {
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+}
+
+.rarity-badge {
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: var(--fw-bold);
+}
+
+.achievement-desc {
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+    margin-bottom: var(--space-2);
+}
+
+.progress-bar {
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin-bottom: var(--space-1);
+}
+
+.progress-fill {
+    height: 100%;
+    transition: width 0.5s ease;
+}
+
+.progress-text {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.reward {
+    font-weight: var(--fw-bold);
+    color: var(--accent-gold);
+}
