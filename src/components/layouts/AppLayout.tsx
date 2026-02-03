@@ -26,7 +26,6 @@ export default function AppLayout() {
 
     useEffect(() => {
         const inIframe = window.parent !== window;
-        console.log('[AppLayout] useEffect - Setting isInIframe:', inIframe);
         setIsInIframe(inIframe);
 
         // Also add class to body so CSS can hide header immediately

@@ -23,11 +23,9 @@ export default function TOSAcceptanceModal({ onAccept }: TOSAcceptanceModalProps
     };
 
     const handleAccept = async () => {
-        console.log('[TOSModal] Button clicked!');
         setIsAccepting(true);
         try {
             await onAccept();
-            console.log('[TOSModal] onAccept completed');
         } catch (err) {
             console.error('[TOSModal] onAccept error:', err);
         } finally {
@@ -39,7 +37,7 @@ export default function TOSAcceptanceModal({ onAccept }: TOSAcceptanceModalProps
         <div className="tos-modal-overlay">
             <div className="tos-modal">
                 <div className="tos-header">
-                    <span className="tos-icon">⚖️</span>
+                    <span className="tos-icon"></span>
                     <h1>Terms of Service</h1>
                     <p className="tos-subtitle">Please review and accept to continue</p>
                 </div>

@@ -94,7 +94,6 @@ class CashoutServiceClass {
                     cashout.clubId,
                     cashout.id
                 );
-                console.log('[Cashout] Agent notified of cash-out request');
             } catch (notifyError) {
                 console.warn('[Cashout] Failed to notify agent:', notifyError);
                 // Don't fail the cashout if notification fails

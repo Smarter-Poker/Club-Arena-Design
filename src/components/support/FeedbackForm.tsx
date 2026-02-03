@@ -77,8 +77,7 @@ export function FeedbackForm({ isOpen, onClose }: { isOpen: boolean, onClose: ()
                 });
 
             if (insertError) {
-                // If table doesn't exist, log to console instead
-                console.log('Feedback submitted:', { category, description, screenshotUrl });
+                // Table may not exist, silently continue
             }
 
             setSubmitted(true);
@@ -151,7 +150,7 @@ export function FeedbackForm({ isOpen, onClose }: { isOpen: boolean, onClose: ()
                             className="upload-btn"
                             onClick={() => fileInputRef.current?.click()}
                         >
-                             {screenshot ? screenshot.name : 'Attach Screenshot'}
+                            {screenshot ? screenshot.name : 'Attach Screenshot'}
                         </button>
                         {screenshot && (
                             <button

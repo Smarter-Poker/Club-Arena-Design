@@ -84,7 +84,6 @@ class PushNotificationServiceClass {
                 });
             }
             this.initialized = true;
-            console.log('[PushService] OneSignal initialized');
         } catch (error) {
             console.error('[PushService] Init failed:', error);
         }
@@ -99,7 +98,6 @@ class PushNotificationServiceClass {
             if (typeof window !== 'undefined' && window.OneSignal) {
                 // @ts-ignore
                 await window.OneSignal.login(userId);
-                console.log('[PushService] External user ID set:', userId);
             }
         } catch (error) {
             console.error('[PushService] Failed to set external user ID:', error);

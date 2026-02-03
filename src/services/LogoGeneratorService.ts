@@ -49,8 +49,6 @@ export async function generateClubLogo(options: LogoGenerationOptions): Promise<
     const prompt = buildLogoPrompt(clubName, style, theme, colorScheme);
 
     try {
-        console.log('[LogoGenerator] Generating with Grok 2 Image (grok-2-image-1212)...');
-        console.log('[LogoGenerator] Prompt:', prompt);
 
         const response = await fetch(XAI_API_URL, {
             method: 'POST',
@@ -90,7 +88,6 @@ export async function generateClubLogo(options: LogoGenerationOptions): Promise<
         const fullSizeDataUrl = `data:image/png;base64,${base64Image}`;
         const resizedDataUrl = await resizeImage(fullSizeDataUrl, TARGET_LOGO_SIZE, TARGET_LOGO_SIZE);
 
-        console.log('[LogoGenerator] Successfully generated club logo');
 
         return {
             success: true,
