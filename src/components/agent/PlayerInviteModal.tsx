@@ -199,13 +199,13 @@ export default function PlayerInviteModal({
                         className={`${styles.tab} ${mode === 'search' ? styles.active : ''}`}
                         onClick={() => setMode('search')}
                     >
-                         Find Existing
+                        Find Existing
                     </button>
                     <button
                         className={`${styles.tab} ${mode === 'invite' ? styles.active : ''}`}
                         onClick={() => setMode('invite')}
                     >
-                        ✉️ Invite New
+                        Invite New
                     </button>
                 </div>
 

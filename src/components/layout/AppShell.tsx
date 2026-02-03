@@ -32,7 +32,7 @@ export default function AppShell({
 
     // Bottom navigation items (Club Admin view)
     const navItems: NavItem[] = [
-        { id: 'messages', label: 'Messages', icon: '✉️', path: `/clubs/${clubId}/messages` },
+        { id: 'messages', label: 'Messages', icon: '', path: `/clubs/${clubId}/messages` },
         { id: 'players', label: 'Players', icon: '', path: `/clubs/${clubId}/members` },
         { id: 'cashier', label: 'Cashier', icon: '', path: `/clubs/${clubId}/cashier` },
         { id: 'data', label: 'Data', icon: '', path: `/clubs/${clubId}/dashboard` },
@@ -118,7 +118,7 @@ export default function AppShell({
                                 <span className="menu-chevron">›</span>
                             </Link>
                             <button className="menu-item exit" onClick={() => window.history.back()}>
-                                <span className="menu-icon">↩️</span>
+                                <span className="menu-icon"></span>
                                 <span>Exit</span>
                                 <span className="menu-chevron">›</span>
                             </button>

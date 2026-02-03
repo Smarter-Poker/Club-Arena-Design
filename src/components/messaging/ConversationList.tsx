@@ -318,7 +318,7 @@ export default function ConversationList({ clubId, onSelectConversation, selecte
 
             {/* New Message FAB */}
             <button className={styles.fab} onClick={() => navigate('/messages/new')}>
-                ✏️
+                +
             </button>
         </div>
     );

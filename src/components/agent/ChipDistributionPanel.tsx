@@ -93,7 +93,7 @@ export const ChipDistributionPanel: React.FC<ChipDistributionPanelProps> = ({
 
             <div className="distribution-actions">
                 <button className="action-btn" onClick={handleEqualSplit}>
-                    ⚖️ Equal Split
+                    Equal Split
                 </button>
                 <button
                     className="action-btn clear"
