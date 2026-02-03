@@ -95,11 +95,11 @@ export default function DailyBonusWheel({
 
     const getTypeIcon = (type: string): string => {
         switch (type) {
-            case 'chips': return '';
-            case 'xp': return '';
-            case 'vip': return '';
-            case 'diamonds': return '';
-            default: return '';
+            case 'chips': return '♠';
+            case 'xp': return '★';
+            case 'vip': return '♛';
+            case 'diamonds': return '◆';
+            default: return '●';
         }
     };
 
@@ -156,7 +156,7 @@ export default function DailyBonusWheel({
             {/* Spin Count */}
             {spinCount > 0 && (
                 <div className={styles.spinCount}>
-                     {spinCount} day streak!
+                    {spinCount} day streak!
                 </div>
             )}
         </div>

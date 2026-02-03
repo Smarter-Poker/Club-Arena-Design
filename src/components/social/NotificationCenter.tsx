@@ -98,11 +98,11 @@ export function NotificationCenter({
 
 function getIcon(type: NotificationType): string {
     switch (type) {
-        case 'invite': return '💌';
-        case 'request': return '';
-        case 'system': return '';
-        case 'bonus': return '';
-        default: return '';
+        case 'invite': return '✉';
+        case 'request': return '●';
+        case 'system': return '✱';
+        case 'bonus': return '★';
+        default: return '○';
     }
 }
 

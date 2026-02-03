@@ -135,14 +135,14 @@ export default function NotificationDropdown({ onNavigate }: NotificationDropdow
 
     const getIcon = (type: string): string => {
         switch (type) {
-            case 'achievement': return '';
-            case 'friend_request': return '';
-            case 'message': return '';
-            case 'tournament': return '';
-            case 'table_invite': return '';
-            case 'payment': return '';
-            case 'club': return '';
-            default: return '';
+            case 'achievement': return '★';
+            case 'friend_request': return '●';
+            case 'message': return '◈';
+            case 'tournament': return 'T';
+            case 'table_invite': return '♠';
+            case 'payment': return '$';
+            case 'club': return '♛';
+            default: return '○';
         }
     };
 
@@ -165,7 +165,7 @@ export default function NotificationDropdown({ onNavigate }: NotificationDropdow
                 className={styles.trigger}
                 onClick={() => setIsOpen(!isOpen)}
             >
-                
+
                 {unreadCount > 0 && (
                     <span className={styles.badge}>{unreadCount}</span>
                 )}

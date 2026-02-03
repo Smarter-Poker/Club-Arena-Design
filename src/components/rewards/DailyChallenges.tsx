@@ -23,10 +23,10 @@ export const DailyChallenges: React.FC<DailyChallengesProps> = ({
 }) => {
     const getRewardIcon = (type: string) => {
         switch (type) {
-            case 'chips': return '';
-            case 'diamonds': return '';
-            case 'xp': return '';
-            default: return '';
+            case 'chips': return '♠';
+            case 'diamonds': return '◆';
+            case 'xp': return '★';
+            default: return '●';
         }
     };
 

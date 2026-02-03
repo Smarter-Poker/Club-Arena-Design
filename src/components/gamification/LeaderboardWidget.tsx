@@ -82,10 +82,10 @@ export function LeaderboardWidget({
 
     const getMetricIcon = () => {
         switch (metric) {
-            case 'profit': return '';
-            case 'hands': return '';
-            case 'rake': return '';
-            default: return '';
+            case 'profit': return '$';
+            case 'hands': return '♠';
+            case 'rake': return '%';
+            default: return '≡';
         }
     };
 
@@ -107,9 +107,9 @@ export function LeaderboardWidget({
                 {entries.map(entry => (
                     <div key={entry.userId} className={`leader-entry rank-${entry.rank}`}>
                         <span className="rank">
-                            {entry.rank === 1 && ''}
-                            {entry.rank === 2 && ''}
-                            {entry.rank === 3 && ''}
+                            {entry.rank === 1 && '1st'}
+                            {entry.rank === 2 && '2nd'}
+                            {entry.rank === 3 && '3rd'}
                             {entry.rank > 3 && `#${entry.rank}`}
                         </span>
                         <span className="avatar">{entry.avatarUrl}</span>

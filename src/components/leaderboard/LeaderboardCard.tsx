@@ -56,10 +56,10 @@ export default function LeaderboardCard({
 
     const getMedalIcon = (rank: number): string => {
         switch (rank) {
-            case 1: return '';
-            case 2: return '';
-            case 3: return '';
-            default: return '';
+            case 1: return '1st';
+            case 2: return '2nd';
+            case 3: return '3rd';
+            default: return `#${rank}`;
         }
     };
 
@@ -83,12 +83,12 @@ export default function LeaderboardCard({
         <div className={styles.card}>
             <div className={styles.header}>
                 <h3>{title}</h3>
-                <span className={styles.trophy}></span>
+                <span className={styles.trophy}>T</span>
             </div>
 
             {entries.length === 0 ? (
                 <div className={styles.empty}>
-                    <span></span>
+                    <span>≡</span>
                     <p>No entries yet</p>
                 </div>
             ) : (
@@ -113,7 +113,7 @@ export default function LeaderboardCard({
                                         {entry.avatarUrl ? (
                                             <img src={entry.avatarUrl} alt="" />
                                         ) : (
-                                            <span></span>
+                                            <span>●</span>
                                         )}
                                     </div>
                                     <span className={styles.name}>
