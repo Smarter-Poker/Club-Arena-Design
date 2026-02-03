@@ -50,7 +50,7 @@ export function RunItTwiceOffer({
         <div className="run-it-twice-overlay">
             <div className="run-it-twice">
                 <div className="rit-header">
-                    <span className="icon"></span>
+                    <span className="icon">⇆</span>
                     <h3>Run It Twice?</h3>
                 </div>
 
@@ -67,7 +67,7 @@ export function RunItTwiceOffer({
                         Decline
                     </button>
                     <button className="accept" onClick={onAccept}>
-                         Accept
+                        Accept
                     </button>
                 </div>
             </div>

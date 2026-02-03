@@ -29,7 +29,7 @@ export function SpectatorList({ spectators, maxVisible = 5 }: SpectatorListProps
 
     return (
         <div className="spectator-list">
-            <span className="icon"></span>
+            <span className="icon">◉</span>
             <span className="count">{spectators.length}</span>
 
             <div className="spectators">

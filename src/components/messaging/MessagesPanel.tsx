@@ -269,7 +269,7 @@ export default function MessagesPanel({
                                 {selectedConvo.participantAvatar ? (
                                     <img src={selectedConvo.participantAvatar} alt="" />
                                 ) : (
-                                    <span></span>
+                                    <span>●</span>
                                 )}
                             </div>
                             <span>{selectedConvo.participantName}</span>
