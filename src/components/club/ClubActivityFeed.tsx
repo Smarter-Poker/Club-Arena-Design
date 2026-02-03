@@ -125,16 +125,16 @@ export default function ClubActivityFeed({
 
     const getActivityIcon = (type: ActivityType): string => {
         switch (type) {
-            case 'member_join': return '';
-            case 'member_leave': return '';
-            case 'table_start': return '';
-            case 'table_end': return '';
-            case 'tournament_win': return '';
-            case 'big_hand': return '';
-            case 'announcement': return '';
-            case 'agent_action': return '';
-            case 'payout': return '';
-            default: return '';
+            case 'member_join': return '+';
+            case 'member_leave': return '-';
+            case 'table_start': return '♦';
+            case 'table_end': return '●';
+            case 'tournament_win': return 'T';
+            case 'big_hand': return '♠';
+            case 'announcement': return '✱';
+            case 'agent_action': return '★';
+            case 'payout': return '$';
+            default: return '○';
         }
     };
 

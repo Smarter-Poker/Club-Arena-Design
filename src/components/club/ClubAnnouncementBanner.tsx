@@ -106,11 +106,11 @@ export default function ClubAnnouncementBanner({
 
     const getTypeIcon = (type: string): string => {
         switch (type) {
-            case 'info': return '';
-            case 'warning': return '';
-            case 'success': return '';
-            case 'urgent': return '';
-            default: return '';
+            case 'info': return 'i';
+            case 'warning': return '!';
+            case 'success': return '✓';
+            case 'urgent': return '!!';
+            default: return 'i';
         }
     };
 

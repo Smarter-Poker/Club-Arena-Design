@@ -23,9 +23,9 @@ export const SessionManager: React.FC<SessionManagerProps> = ({
     onTerminateAll
 }) => {
     const getDeviceIcon = (device: string) => {
-        if (device.includes('iPhone') || device.includes('Android')) return '';
-        if (device.includes('iPad') || device.includes('Tablet')) return '';
-        return '';
+        if (device.includes('iPhone') || device.includes('Android')) return '□';
+        if (device.includes('iPad') || device.includes('Tablet')) return '▢';
+        return '■';
     };
 
     const formatTime = (date: Date) => {

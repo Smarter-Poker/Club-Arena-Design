@@ -29,7 +29,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                 <img src={value} alt="Preview" className="image-preview" />
             ) : (
                 <div className="image-placeholder">
-                    <span className="placeholder-icon"></span>
+                    <span className="placeholder-icon">+</span>
                     <span className="placeholder-text">{placeholder}</span>
                 </div>
             )}

@@ -80,9 +80,9 @@ interface PlayerRowProps {
 
 function PlayerRow({ player, currency }: PlayerRowProps) {
     const rankBadge = useMemo(() => {
-        if (player.rank === 1) return '';
-        if (player.rank === 2) return '';
-        if (player.rank === 3) return '';
+        if (player.rank === 1) return '1st';
+        if (player.rank === 2) return '2nd';
+        if (player.rank === 3) return '3rd';
         return `#${player.rank}`;
     }, [player.rank]);
 
@@ -172,7 +172,7 @@ export function LeaderboardPanel({
                         </div>
                     ) : players.length === 0 ? (
                         <div className="leaderboard-panel__empty">
-                            <span className="leaderboard-panel__empty-icon"></span>
+                            <span className="leaderboard-panel__empty-icon">≡</span>
                             <span className="leaderboard-panel__empty-text">No rankings yet</span>
                             <span className="leaderboard-panel__empty-hint">Play some hands to appear on the leaderboard</span>
                         </div>
@@ -193,7 +193,7 @@ export function LeaderboardPanel({
                                                     <span>{player.playerName[0]?.toUpperCase()}</span>
                                                 )}
                                                 <span className="leaderboard-podium__medal">
-                                                    {player.rank === 1 ? '' : player.rank === 2 ? '' : ''}
+                                                    {player.rank === 1 ? '1st' : player.rank === 2 ? '2nd' : '3rd'}
                                                 </span>
                                             </div>
                                             <span className="leaderboard-podium__name">{player.playerName}</span>
