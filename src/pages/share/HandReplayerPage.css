@@ -1,0 +1,372 @@
+/**
+ * ♠ CLUB ARENA — Hand Replayer Styles
+ * PokerBros-inspired dark theme with gold accents
+ */
+
+.hand-replayer {
+    min-height: 100vh;
+    background: #0a0e1a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    padding: var(--space-4);
+}
+
+.hand-replayer.loading,
+.hand-replayer.error {
+    gap: var(--space-4);
+    color: var(--text-primary);
+}
+
+/* Background pattern */
+.replayer-bg {
+    position: absolute;
+    inset: 0;
+    background:
+        repeating-linear-gradient(45deg,
+            transparent,
+            transparent 20px,
+            rgba(255, 255, 255, 0.01) 20px,
+            rgba(255, 255, 255, 0.01) 40px),
+        linear-gradient(180deg, #0a0e1a 0%, #141828 50%, #0a0e1a 100%);
+    opacity: 0.5;
+}
+
+/* Sound toggle */
+.sound-toggle {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+    width: 44px;
+    height: 44px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    font-size: 1.25rem;
+    cursor: pointer;
+    z-index: 10;
+}
+
+/* Table */
+.replay-table {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    aspect-ratio: 3 / 4;
+    margin: var(--space-4) 0;
+}
+
+.table-felt {
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    top: 20%;
+    bottom: 25%;
+    background: linear-gradient(180deg, #1a3a2a 0%, #0f2518 50%, #1a3a2a 100%);
+    border-radius: 50%;
+    border: 4px solid;
+    border-image: linear-gradient(180deg, #d4a017, #8b6914, #d4a017) 1;
+    box-shadow:
+        0 0 40px rgba(212, 160, 23, 0.3),
+        inset 0 0 60px rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.table-center {
+    text-align: center;
+    z-index: 5;
+}
+
+.game-info {
+    margin-bottom: var(--space-2);
+}
+
+.game-type {
+    display: block;
+    font-size: var(--fs-lg);
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+}
+
+.stakes {
+    font-size: var(--fs-sm);
+    color: var(--text-secondary);
+}
+
+.pot-display {
+    background: rgba(0, 0, 0, 0.4);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-full);
+    margin: var(--space-2) 0;
+}
+
+.pot-label {
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+    display: block;
+}
+
+.pot-amount {
+    font-size: var(--fs-xl);
+    font-weight: var(--fw-bold);
+    color: var(--accent-gold);
+}
+
+/* Community cards */
+.community-cards {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    margin-top: var(--space-3);
+}
+
+.community-cards .card {
+    width: 36px;
+    height: 50px;
+    background: white;
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.card.red {
+    color: #e74c3c;
+}
+
+.card.black {
+    color: #2c3e50;
+}
+
+.card-rank {
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-bold);
+}
+
+.card-suit {
+    font-size: var(--fs-xs);
+}
+
+/* Player seats - positioned around the oval */
+.player-seat {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: translate(-50%, -50%);
+}
+
+.seat-1 {
+    top: 85%;
+    left: 50%;
+}
+
+.seat-2 {
+    top: 65%;
+    left: 15%;
+}
+
+.seat-3 {
+    top: 35%;
+    left: 10%;
+}
+
+.seat-4 {
+    top: 15%;
+    left: 30%;
+}
+
+.seat-5 {
+    top: 15%;
+    left: 70%;
+}
+
+.seat-6 {
+    top: 35%;
+    left: 90%;
+}
+
+.player-avatar {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #3a4a6b 0%, #1e2a4a 100%);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: white;
+}
+
+.player-seat.winner .player-avatar {
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 16px rgba(255, 215, 0, 0.5);
+}
+
+.player-info-pod {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-md);
+    margin-top: 4px;
+    text-align: center;
+    min-width: 70px;
+}
+
+.player-name {
+    display: block;
+    font-size: var(--fs-xs);
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80px;
+}
+
+.player-stack {
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-bold);
+    color: var(--accent-gold);
+}
+
+.player-cards {
+    display: flex;
+    gap: 2px;
+    margin-top: 4px;
+}
+
+.hole-card {
+    width: 28px;
+    height: 38px;
+    background: white;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-bold);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.hole-card.red {
+    color: #e74c3c;
+}
+
+.hole-card.black {
+    color: #2c3e50;
+}
+
+/* Action bubble */
+.action-bubble {
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--fb-blue);
+    color: white;
+    padding: 4px 12px;
+    border-radius: var(--radius-full);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-bold);
+    white-space: nowrap;
+    animation: bubblePop 0.3s ease;
+}
+
+@keyframes bubblePop {
+    0% {
+        transform: translateX(-50%) scale(0);
+    }
+
+    50% {
+        transform: translateX(-50%) scale(1.2);
+    }
+
+    100% {
+        transform: translateX(-50%) scale(1);
+    }
+}
+
+/* Playback controls */
+.playback-controls {
+    display: flex;
+    gap: var(--space-3);
+    background: rgba(0, 0, 0, 0.6);
+    padding: var(--space-3) var(--space-6);
+    border-radius: var(--radius-full);
+    backdrop-filter: blur(8px);
+    z-index: 10;
+}
+
+.ctrl-btn {
+    width: 48px;
+    height: 48px;
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-full);
+    color: white;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.ctrl-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--fb-blue);
+}
+
+.ctrl-btn.play {
+    background: var(--fb-blue);
+    border-color: var(--fb-blue);
+}
+
+/* Action timeline */
+.action-timeline {
+    display: flex;
+    gap: 4px;
+    margin-top: var(--space-4);
+}
+
+.timeline-step {
+    width: 8px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-full);
+    transition: background var(--transition-base);
+}
+
+.timeline-step.active {
+    background: var(--fb-blue);
+}
+
+/* Share button */
+.share-btn {
+    position: absolute;
+    bottom: var(--space-4);
+    left: var(--space-4);
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border-subtle);
+    color: white;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-full);
+    font-size: var(--fs-sm);
+    cursor: pointer;
+    z-index: 10;
+}
+
+/* Branding */
+.replayer-branding {
+    position: absolute;
+    bottom: var(--space-4);
+    right: var(--space-4);
+    color: rgba(255, 255, 255, 0.4);
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-bold);
+}
