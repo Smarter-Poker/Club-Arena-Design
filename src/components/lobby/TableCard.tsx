@@ -34,11 +34,11 @@ const GAME_LABELS: Record<string, string> = {
 const GAME_ICONS: Record<string, string> = {
     nlh: '♠',
     flh: '♠',
-    short_deck: '6️⃣',
+    short_deck: '6+',
     plo4: '',
     plo5: '',
     plo6: '',
-    plo_hilo: '↕️',
+    plo_hilo: 'HL',
     ofc: '',
     ofc_pineapple: '',
     double_board: '',

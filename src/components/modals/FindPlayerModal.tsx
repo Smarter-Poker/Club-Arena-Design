@@ -192,7 +192,7 @@ export default function FindPlayerModal({ isOpen, onClose }: FindPlayerModalProp
             <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
                 {/* Modal content */}
                 <div className={styles.modalContent}>
-                    <h2 className={styles.title}>🔍 Find a Player</h2>
+                    <h2 className={styles.title}>Find a Player</h2>
 
                     {/* Search input */}
                     <div className={styles.searchSection}>
@@ -210,7 +210,7 @@ export default function FindPlayerModal({ isOpen, onClose }: FindPlayerModalProp
                             onClick={handleSearch}
                             disabled={isSearching || !searchQuery.trim()}
                         >
-                            {isSearching ? '⏳' : '🔎'}
+                            {isSearching ? '...' : 'GO'}
                         </button>
                     </div>
 
@@ -218,13 +218,13 @@ export default function FindPlayerModal({ isOpen, onClose }: FindPlayerModalProp
                     <div className={styles.resultsArea}>
                         {error && (
                             <div className={styles.errorMessage}>
-                                ⚠️ {error}
+                                {error}
                             </div>
                         )}
 
                         {notFound && (
                             <div className={styles.notFoundMessage}>
-                                <span className={styles.notFoundIcon}>🎴</span>
+                                <span className={styles.notFoundIcon}></span>
                                 <p>Player is not currently playing on Smarter.Poker</p>
                             </div>
                         )}
@@ -236,7 +236,7 @@ export default function FindPlayerModal({ isOpen, onClose }: FindPlayerModalProp
                                         {searchResult.avatar_url ? (
                                             <img src={searchResult.avatar_url} alt="" />
                                         ) : (
-                                            <span>👤</span>
+                                            <span>?</span>
                                         )}
                                     </div>
                                     <div className={styles.playerInfo}>
@@ -264,7 +264,7 @@ export default function FindPlayerModal({ isOpen, onClose }: FindPlayerModalProp
                                                 </span>
                                             </div>
                                             <span className={styles.watchButton}>
-                                                👁️ Watch
+                                                Watch
                                             </span>
                                         </button>
                                     ))}
