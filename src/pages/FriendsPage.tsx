@@ -9,6 +9,8 @@ import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import SmarterHeader from '../components/layout/SmarterHeader';
 import FriendsList from '../components/social/FriendsList';
+import RecentPlayers from '../components/social/RecentPlayers';
+import InviteToTable from '../components/social/InviteToTable';
 import './FriendsPage.css';
 
 interface Friend {
@@ -20,7 +22,7 @@ interface Friend {
     current_table?: string;
 }
 
-type FriendsTab = 'friends' | 'pending' | 'blocked';
+type FriendsTab = 'friends' | 'pending' | 'recent';
 
 export default function FriendsPage() {
     const navigate = useNavigate();
@@ -213,6 +215,12 @@ export default function FriendsPage() {
                 >
                     Requests ({pendingRequests.length})
                 </button>
+                <button
+                    className={activeTab === 'recent' ? 'active' : ''}
+                    onClick={() => setActiveTab('recent')}
+                >
+                    Recent
+                </button>
             </div>
 
             {activeTab === 'friends' && (
@@ -298,6 +306,17 @@ export default function FriendsPage() {
                         ))
                     )}
                 </div>
+            )}
+
+            {activeTab === 'recent' && (
+                <RecentPlayers
+                    onAddFriend={(playerId) => {
+                        toast.info('Friend request sent!');
+                    }}
+                    onInviteToTable={(playerId) => {
+                        toast.info('Invite sent!');
+                    }}
+                />
             )}
         </div>
     );

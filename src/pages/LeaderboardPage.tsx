@@ -194,12 +194,12 @@ export default function LeaderboardPage() {
                         <p>No rankings yet. Start playing to climb the leaderboard!</p>
                     </div>
                 ) : (
-                    entries.map((entry) => (
+                    entries.map((entry, index) => (
                         <div
                             key={entry.userId}
-                            className={`leaderboard-entry ${entry.userId === user?.id ? 'current-user' : ''}`}
+                            className={`leaderboard-entry animate-fade-in-up stagger-${Math.min(index + 1, 10)} ${entry.userId === user?.id ? 'current-user' : ''}`}
                             onClick={() => navigate(`/profile/${entry.userId}`)}
-                            style={{ cursor: 'pointer' }}
+                            style={{ cursor: 'pointer', opacity: 0 }}
                         >
                             <span className={`entry-rank ${entry.rank <= 3 ? 'top-3' : ''}`}>
                                 {getRankBadge(entry.rank)}

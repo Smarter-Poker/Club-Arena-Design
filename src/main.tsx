@@ -20,6 +20,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './styles/club-engine.css';
+import './styles/animations.css';
 import { initAntiGravity, isSystemOnline, getBootStatus } from './core/AntiGravityBoot';
 import { initMasterBus, isMasterBusOnline } from './core/MasterBus';
 import { initIdentityDNA, isIdentityDNALoaded } from './core/IdentityDNA';

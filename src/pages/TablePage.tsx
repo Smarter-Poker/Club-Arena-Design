@@ -71,6 +71,8 @@ import { OFCPineappleEngine } from '../engine/OFCPineappleEngine';
 import { handPersistenceService } from '../services/HandPersistenceService';
 import { achievementTriggerService } from '../services/AchievementTriggerService';
 import SpectatorBadge from '../components/table/SpectatorBadge';
+import HandStrengthIndicator from '../components/table/HandStrengthIndicator';
+import SessionTimer from '../components/table/SessionTimer';
 import './TablePage.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1326,6 +1328,23 @@ export default function TablePage() {
                                     <SpectatorBadge observers={presence.observers} />
                                 )}
                             </div>
+
+                            {/* Hand Strength Indicator - Shows during hero's turn */}
+                            {tableState.isHandInProgress && tableState.players[tableState.heroSeat]?.holeCards && tableState.players[tableState.heroSeat]!.holeCards!.length >= 2 && (
+                                <div className="hand-strength-hud">
+                                    <HandStrengthIndicator
+                                        cards={tableState.players[tableState.heroSeat]!.holeCards!.map((c: Card) => `${c.rank}${c.suit}`)}
+                                        communityCards={tableState.communityCards.map((c: Card) => `${c.rank}${c.suit}`)}
+                                        size="sm"
+                                    />
+                                </div>
+                            )}
+
+                            {/* Session Timer */}
+                            <SessionTimer
+                                breakInterval={60}
+                                onBreakSuggested={() => console.log('Break suggested')}
+                            />
 
                         </div>
                     </div>

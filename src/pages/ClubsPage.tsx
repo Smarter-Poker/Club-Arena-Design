@@ -18,6 +18,7 @@ import SmarterHeader from '../components/layout/SmarterHeader';
 import IntroVideo from '../components/IntroVideo';
 import haptic from '../services/HapticService';
 import { MetalFrame, MetalButton, MetalInput, MetalCard } from '../components/metal-ui';
+import ClubDiscovery from '../components/clubs/ClubDiscovery';
 import styles from './ClubsPage.module.css';
 
 type Tab = 'discover' | 'my-clubs' | 'create';
@@ -235,6 +236,22 @@ export default function ClubsPage() {
                                     </MetalButton>
                                 </div>
                             </MetalFrame>
+
+                            {/* Club Discovery Browser */}
+                            <ClubDiscovery
+                                onJoinRequest={async (clubId) => {
+                                    try {
+                                        await ClubsService.join(clubId);
+                                        const memberships = await ClubsService.getUserMemberships();
+                                        setMyClubs(memberships);
+                                        setActiveTab('my-clubs');
+                                        toast.success('Successfully joined club!');
+                                    } catch (err: any) {
+                                        toast.error(err.message || 'Failed to join club');
+                                    }
+                                }}
+                                onViewClub={(club) => navigate(`/clubs/${club.id}`)}
+                            />
                         </div>
                     )}
 
