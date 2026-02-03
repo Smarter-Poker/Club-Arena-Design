@@ -1559,7 +1559,7 @@ export default function TablePage() {
                             />
                         ) : (
                             <div className="no-hand-history">
-                                <span className="empty-icon"></span>
+                                <span className="empty-icon">♠</span>
                                 <p>No recent hand to replay</p>
                                 <p className="hint">Complete a hand to view its replay</p>
                             </div>

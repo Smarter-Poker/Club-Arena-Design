@@ -173,7 +173,7 @@ export default function ClubMessagesPage() {
         <div className="club-messages-page">
             {/* Summary Bar */}
             <div className="club-messages-summary">
-                <span className="summary-icon"></span>
+                <span className="summary-icon">◈</span>
                 <span className="summary-text">
                     {conversations.length} club{conversations.length !== 1 ? 's' : ''}
                     {totalUnread > 0 && ` · ${totalUnread} unread`}
@@ -188,7 +188,7 @@ export default function ClubMessagesPage() {
                     </div>
                 ) : conversations.length === 0 ? (
                     <div className="empty-state">
-                        <span className="empty-icon"></span>
+                        <span className="empty-icon">◈</span>
                         <p>No club messages yet</p>
                         <p className="hint">Join a club to start chatting!</p>
                     </div>

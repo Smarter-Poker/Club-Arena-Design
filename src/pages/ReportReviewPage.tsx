@@ -98,13 +98,13 @@ export default function ReportReviewPage() {
 
     const getReasonIcon = (reason: string) => {
         const icons: Record<string, string> = {
-            collusion: '',
-            cheating: '',
-            abuse: '😤',
-            harassment: '',
-            other: '',
+            collusion: '↔',
+            cheating: '✗',
+            abuse: '!',
+            harassment: '⚠',
+            other: '●',
         };
-        return icons[reason] || '';
+        return icons[reason] || '●';
     };
 
     const getStatusBadge = (status: string) => {
@@ -142,7 +142,7 @@ export default function ReportReviewPage() {
                 <div className="loading-state"><div className="spinner" /></div>
             ) : reports.length === 0 ? (
                 <div className="empty-state">
-                    <span className="empty-icon"></span>
+                    <span className="empty-icon">⚠</span>
                     <p>No {filter === 'pending' ? 'pending' : ''} reports</p>
                 </div>
             ) : (

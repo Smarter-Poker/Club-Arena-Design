@@ -158,7 +158,7 @@ export default function NotificationsPage() {
                     <div className="loading-state"><div className="spinner" /></div>
                 ) : notifications.length === 0 ? (
                     <div className="empty-state">
-                        <span className="empty-icon"></span>
+                        <span className="empty-icon">○</span>
                         <p>No notifications yet</p>
                     </div>
                 ) : (

@@ -18,10 +18,10 @@ interface SearchResultsProps {
 }
 
 const TYPE_ICONS = {
-    player: '',
-    club: '',
-    table: '',
-    tournament: '',
+    player: '●',
+    club: '■',
+    table: '▦',
+    tournament: '♛',
 };
 
 export const SearchResults: React.FC<SearchResultsProps> = ({
@@ -42,7 +42,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
     if (results.length === 0 && query) {
         return (
             <div className="search-results empty">
-                <span className="empty-icon"></span>
+                <span className="empty-icon">◌</span>
                 <p>No results found for "{query}"</p>
             </div>
         );

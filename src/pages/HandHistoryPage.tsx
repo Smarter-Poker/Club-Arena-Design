@@ -196,7 +196,7 @@ export default function HandHistoryPage() {
                     </div>
                 ) : hands.length === 0 ? (
                     <div className="empty-state">
-                        <span className="empty-icon"></span>
+                        <span className="empty-icon">♠</span>
                         <p>No hands found. Play some poker!</p>
                     </div>
                 ) : (

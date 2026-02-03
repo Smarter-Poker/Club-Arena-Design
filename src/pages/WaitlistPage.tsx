@@ -124,7 +124,7 @@ export default function WaitlistPage() {
                     <div className="loading-state"><div className="spinner" /></div>
                 ) : entries.length === 0 ? (
                     <div className="empty-state">
-                        <span className="empty-icon"></span>
+                        <span className="empty-icon">☰</span>
                         <h3>No Active Waitlists</h3>
                         <p>You're not on any table waitlists</p>
                         <button className="btn btn-primary" onClick={() => navigate('/lobby')}>

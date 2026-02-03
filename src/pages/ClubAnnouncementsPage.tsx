@@ -195,7 +195,7 @@ export default function ClubAnnouncementsPage() {
                     <div className="loading-state"><div className="spinner" /></div>
                 ) : announcements.length === 0 ? (
                     <div className="empty-state">
-                        <span className="empty-icon"></span>
+                        <span className="empty-icon">◈</span>
                         <p>No announcements yet</p>
                     </div>
                 ) : (

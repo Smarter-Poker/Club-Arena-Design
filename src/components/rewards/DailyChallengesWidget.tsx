@@ -78,7 +78,7 @@ export const DailyChallengesWidget: React.FC = () => {
     if (challenges.length === 0) {
         return (
             <div className="daily-challenges-widget empty">
-                <span className="empty-icon"></span>
+                <span className="empty-icon">★</span>
                 <p>All challenges completed for today!</p>
             </div>
         );

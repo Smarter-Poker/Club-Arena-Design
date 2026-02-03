@@ -111,7 +111,7 @@ export default function AgentCashoutPanel({ clubId, onCashoutProcessed }: AgentC
                 <h3> Pending Cashouts</h3>
                 <span className="count-badge">{cashouts.length}</span>
                 <button className="refresh-btn" onClick={loadCashouts} title="Refresh">
-                    
+                    ↻
                 </button>
             </div>
 
@@ -121,7 +121,7 @@ export default function AgentCashoutPanel({ clubId, onCashoutProcessed }: AgentC
 
             {cashouts.length === 0 ? (
                 <div className="empty-state">
-                    <span className="empty-icon"></span>
+                    <span className="empty-icon">$</span>
                     <p>No pending cashout requests</p>
                 </div>
             ) : (
@@ -154,7 +154,7 @@ export default function AgentCashoutPanel({ clubId, onCashoutProcessed }: AgentC
 
                             {cashout.playerNote && (
                                 <div className="player-note">
-                                     "{cashout.playerNote}"
+                                    "{cashout.playerNote}"
                                 </div>
                             )}
 
@@ -176,7 +176,7 @@ export default function AgentCashoutPanel({ clubId, onCashoutProcessed }: AgentC
                             </div>
 
                             <div className="escrow-notice">
-                                 Chips are locked in escrow. Approving will complete the cashout.
+                                Chips are locked in escrow. Approving will complete the cashout.
                             </div>
                         </div>
                     ))}

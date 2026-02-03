@@ -442,7 +442,7 @@ export default function TournamentPage() {
                         </>
                     ) : (
                         <div className="empty-detail">
-                            <div className="empty-icon"></div>
+                            <div className="empty-icon">♛</div>
                             <h3>Select a Tournament</h3>
                             <p>Click on a tournament to view details and register.</p>
                         </div>
