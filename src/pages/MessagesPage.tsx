@@ -92,7 +92,7 @@ export default function MessagesPage() {
                         />
                     ) : (
                         <div className="messages-empty">
-                            <span className="empty-icon"></span>
+                            <span className="empty-icon">◈</span>
                             <p>Select a conversation to start chatting</p>
                         </div>
                     )}

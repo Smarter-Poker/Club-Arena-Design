@@ -120,7 +120,7 @@ export default function SuperAgentDashboard() {
             <div className="super-agent-dashboard">
                 <SmarterHeader title="Agent Dashboard" />
                 <div className="empty-state">
-                    <span className="empty-icon"></span>
+                    <span className="empty-icon">♠</span>
                     <p>You are not an agent in this club</p>
                     <button className="btn btn-primary" onClick={() => navigate(-1)}>Go Back</button>
                 </div>
@@ -135,28 +135,28 @@ export default function SuperAgentDashboard() {
             {/* Stats Grid */}
             <div className="stats-grid">
                 <div className="stat-card">
-                    <span className="stat-icon"></span>
+                    <span className="stat-icon">●</span>
                     <div className="stat-info">
                         <span className="stat-value">{agent.totalPlayers}</span>
                         <span className="stat-label">Total Players</span>
                     </div>
                 </div>
                 <div className="stat-card">
-                    <span className="stat-icon"></span>
+                    <span className="stat-icon">▶</span>
                     <div className="stat-info">
                         <span className="stat-value">{agent.activePlayerCount}</span>
                         <span className="stat-label">Active Now</span>
                     </div>
                 </div>
                 <div className="stat-card">
-                    <span className="stat-icon"></span>
+                    <span className="stat-icon">■</span>
                     <div className="stat-info">
                         <span className="stat-value">{agent.subAgentCount}</span>
                         <span className="stat-label">Sub-Agents</span>
                     </div>
                 </div>
                 <div className="stat-card highlight">
-                    <span className="stat-icon"></span>
+                    <span className="stat-icon">$</span>
                     <div className="stat-info">
                         <span className="stat-value">${agent.weeklyRakeGenerated.toLocaleString()}</span>
                         <span className="stat-label">Weekly Rake</span>

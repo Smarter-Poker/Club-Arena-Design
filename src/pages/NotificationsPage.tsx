@@ -111,10 +111,10 @@ export default function NotificationsPage() {
 
     const getIcon = (type: string): string => {
         switch (type) {
-            case 'success': return '';
-            case 'warning': return '';
-            case 'error': return '';
-            default: return '';
+            case 'success': return '✓';
+            case 'warning': return '!';
+            case 'error': return '✗';
+            default: return 'i';
         }
     };
 

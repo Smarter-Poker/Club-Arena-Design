@@ -41,8 +41,8 @@ export default function ClubLobby() {
             setClub(clubData);
             setTables(tableData);
             setTournaments(tournamentData);
-        } catch (error) {
-            console.error('Failed to load club:', error);
+        } catch {
+            // Error loading club data - user will see empty state
         }
         setIsLoading(false);
     };
@@ -80,8 +80,8 @@ export default function ClubLobby() {
                 <div className="header-left">
                     <Link to="/clubs" className="back-btn">‹‹</Link>
                     <div className="header-icons">
-                        <button className="icon-btn"></button>
-                        <button className="icon-btn"></button>
+                        <button className="icon-btn">Menu</button>
+                        <button className="icon-btn">Search</button>
                     </div>
                 </div>
                 <div className="header-center">
@@ -154,7 +154,7 @@ export default function ClubLobby() {
                     ))
                 ) : (
                     <div className="empty-state">
-                        <span className="empty-icon"></span>
+                        <span className="empty-icon">♠</span>
                         <p>No games available</p>
                         <p className="empty-hint">Check back later for new tables!</p>
                     </div>
@@ -190,7 +190,7 @@ function TournamentCard({ tournament, clubId }: { tournament: Tournament; clubId
     return (
         <Link to={`/clubs/${clubId}/tournament/${tournament.id}`} className="tournament-card">
             <div className="card-header">
-                <div className="trophy-icon"></div>
+                <div className="trophy-icon">T</div>
                 <div className="seats-badge">9 Max</div>
             </div>
             <div className="card-body">
@@ -199,7 +199,7 @@ function TournamentCard({ tournament, clubId }: { tournament: Tournament; clubId
                     <span className="buyin-amount">{tournament.buy_in}</span>
                 </div>
                 <div className="timer-row">
-                    <span className="timer-icon"></span>
+                    <span className="timer-icon">◷</span>
                     <span className="timer-value">10min</span>
                 </div>
             </div>
@@ -208,7 +208,7 @@ function TournamentCard({ tournament, clubId }: { tournament: Tournament; clubId
                 <span className="variant-badge">NLH</span>
             </div>
             <div className="card-name">
-                <span className="prize-icon"></span>
+                <span className="prize-icon">●</span>
                 <span className="tournament-name">{tournament.name}</span>
             </div>
             <div className="card-date">{formatDate(tournament.start_time ?? null)}</div>
@@ -221,7 +221,7 @@ function TableCard({ table, clubId }: { table: PokerTable; clubId: string }) {
     return (
         <Link to={`/clubs/${clubId}/table/${table.id}`} className="table-card">
             <div className="card-header">
-                <div className="table-icon"></div>
+                <div className="table-icon">♠</div>
                 <div className="seats-badge">{table.max_players} Max</div>
             </div>
             <div className="card-body">

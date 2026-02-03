@@ -116,10 +116,10 @@ export default function SearchPage() {
 
     const getIcon = (type: string): string => {
         switch (type) {
-            case 'club': return '';
-            case 'player': return '';
-            case 'table': return '';
-            default: return '';
+            case 'club': return '♠';
+            case 'player': return '●';
+            case 'table': return '■';
+            default: return '○';
         }
     };
 
@@ -171,14 +171,14 @@ export default function SearchPage() {
                         ) : (
                             recentSearches.map((s, i) => (
                                 <button key={i} className="recent-item" onClick={() => setQuery(s)}>
-                                    🕐 {s}
+                                    {s}
                                 </button>
                             ))
                         )}
                     </div>
                 ) : results.length === 0 ? (
                     <div className="empty-state">
-                        <span className="empty-icon"></span>
+                        <span className="empty-icon">○</span>
                         <p>No results for "{query}"</p>
                     </div>
                 ) : (
