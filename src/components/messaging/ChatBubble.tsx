@@ -28,7 +28,7 @@ interface ChatBubbleProps {
     onDelete?: (messageId: string) => void;
 }
 
-const REACTIONS = ['', '❤️', '😂', '😮', '😢', '😡'];
+const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '😡'];
 
 export default function ChatBubble({ message, isCurrentUser, showAvatar = true, onReact, onDelete }: ChatBubbleProps) {
     const [showReactions, setShowReactions] = useState(false);
@@ -139,14 +139,14 @@ export default function ChatBubble({ message, isCurrentUser, showAvatar = true, 
                         <div className={styles.overlay} onClick={() => setShowMenu(false)} />
                         <div className={styles.menu}>
                             <button className={styles.menuItem} onClick={() => { setShowReactions(true); setShowMenu(false); }}>
-                                 React
+                                React
                             </button>
                             <button className={styles.menuItem} onClick={handleCopy}>
-                                 Copy
+                                Copy
                             </button>
                             {isCurrentUser && (
                                 <button className={`${styles.menuItem} ${styles.danger}`} onClick={handleDelete}>
-                                    ️ Delete
+                                    Delete
                                 </button>
                             )}
                         </div>

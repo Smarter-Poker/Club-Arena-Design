@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * ️ AGENT MANAGER — Hierarchy & Commission
+ * AGENT MANAGER — Hierarchy & Commission
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Manage club agents and uplines:
@@ -120,7 +120,7 @@ export function AgentManager({
                 {/* Header */}
                 <div className="agent-modal__header">
                     <div className="agent-modal__title-group">
-                        <span className="agent-modal__icon">️</span>
+                        <span className="agent-modal__icon"></span>
                         <h2 className="agent-modal__title">Agent Management</h2>
                     </div>
                     <button className="agent-modal__close" onClick={onClose}>×</button>

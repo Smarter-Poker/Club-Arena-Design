@@ -1790,7 +1790,7 @@ export default function TablePage() {
                     {
                         title: 'Quick Actions',
                         actions: [
-                            { id: 'sitout', label: 'Sit Out', icon: '⏸️', onClick: () => { } },
+                            { id: 'sitout', label: 'Sit Out', icon: '', onClick: () => { } },
                             { id: 'rebuy', label: 'Add Chips', icon: '', onClick: () => setShowCashier(true) },
                         ]
                     },

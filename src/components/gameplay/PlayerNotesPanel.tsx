@@ -276,7 +276,7 @@ export default function PlayerNotesPanel({
                                 className={styles.deleteBtn}
                                 onClick={() => deleteNote(note.id)}
                             >
-                                ️
+                                ×
                             </button>
                         </div>
                     ))

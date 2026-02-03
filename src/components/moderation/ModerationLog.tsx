@@ -24,7 +24,7 @@ const ACTION_ICONS: Record<string, string> = {
     mute: '🔇',
     ban: '⛔',
     kick: '👢',
-    delete_message: '️',
+    delete_message: '',
     warning: '',
     unban: '',
 };

@@ -419,7 +419,7 @@ export default function ClubDetailPage() {
                 <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon="" label="Overview" />
                 <TabButton active={activeTab === 'tables'} onClick={() => setActiveTab('tables')} icon="" label="Tables" />
                 <TabButton active={activeTab === 'members'} onClick={() => setActiveTab('members')} icon="" label="Members" />
-                <TabButton active={activeTab === 'agents'} onClick={() => setActiveTab('agents')} icon="️" label="Agents" />
+                <TabButton active={activeTab === 'agents'} onClick={() => setActiveTab('agents')} icon="" label="Agents" />
                 <TabButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon="" label="Settings" />
             </nav>
 
@@ -574,7 +574,7 @@ export default function ClubDetailPage() {
                                                         <button onClick={() => handleMemberAction(member.id, 'suspend')}>Suspend</button>
                                                     )}
                                                     {member.role !== 'owner' && (
-                                                        <button onClick={() => handleMemberAction(member.id, 'remove')}>️ Remove</button>
+                                                        <button onClick={() => handleMemberAction(member.id, 'remove')}>Remove</button>
                                                     )}
                                                 </div>
                                             )}
@@ -590,7 +590,7 @@ export default function ClubDetailPage() {
                 {activeTab === 'agents' && (
                     <div className={styles.agentsContainer}>
                         <div className={styles.agentsHeader}>
-                            <h3>️ Club Agents</h3>
+                            <h3>Club Agents</h3>
                             <button className={styles.createButton} onClick={() => setShowAgentManager(true)}>
                                 + Manage Agents
                             </button>
@@ -605,7 +605,7 @@ export default function ClubDetailPage() {
                                 <p>No agents assigned to this club yet.</p>
                                 <p className={styles.emptyHint}>Agents help recruit players and earn commission on rake.</p>
                                 <button className={styles.createButton} onClick={() => setShowAgentManager(true)}>
-                                    ️ Add First Agent
+                                    + Add First Agent
                                 </button>
                             </div>
                         ) : (
@@ -727,7 +727,7 @@ export default function ClubDetailPage() {
                 <div className={styles.modalOverlay} onClick={() => setShowAgentManager(false)}>
                     <div className={styles.modal} onClick={e => e.stopPropagation()}>
                         <div className={styles.modalHeader}>
-                            <h3>️ Agent Management</h3>
+                            <h3>Agent Management</h3>
                             <button onClick={() => setShowAgentManager(false)}>×</button>
                         </div>
                         <div className={styles.modalContent}>

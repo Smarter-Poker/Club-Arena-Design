@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * ️ TOURNAMENT BRACKET — Visual Tournament Display
+ * TOURNAMENT BRACKET — Visual Tournament Display
  * Shows tournament structure, matchups, and progression
  * ═══════════════════════════════════════════════════════════════════════════════
  */

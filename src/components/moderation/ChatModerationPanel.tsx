@@ -76,7 +76,7 @@ export const ChatModerationPanel: React.FC<ChatModerationPanelProps> = ({
                                     className="action-delete"
                                     onClick={(e) => { e.stopPropagation(); handleDelete(msg.id); }}
                                 >
-                                    ️ Delete
+                                    Delete
                                 </button>
                                 <button
                                     className="action-mute"

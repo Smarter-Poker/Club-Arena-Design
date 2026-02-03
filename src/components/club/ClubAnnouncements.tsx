@@ -120,7 +120,7 @@ export function ClubAnnouncements({
                                             <span className="post-author">• {post.author}</span>
                                         </div>
                                         {isAdmin && onDelete && (
-                                            <button className="delete-post-btn" onClick={() => onDelete(post.id)}>️</button>
+                                            <button className="delete-post-btn" onClick={() => onDelete(post.id)}>×</button>
                                         )}
                                     </div>
                                     <h3 className="post-title">{post.title}</h3>

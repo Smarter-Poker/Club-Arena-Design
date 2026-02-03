@@ -185,7 +185,7 @@ export default function NotificationsPage() {
                                     deleteNotification(notif.id);
                                 }}
                             >
-                                ️
+                                ×
                             </button>
                         </div>
                     ))

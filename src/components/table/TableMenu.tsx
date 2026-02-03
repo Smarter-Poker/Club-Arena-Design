@@ -59,7 +59,7 @@ export function createDefaultMenuSections(handlers: {
         {
             title: 'Quick Actions',
             actions: [
-                { id: 'sitout', label: 'Sit Out Next Hand', icon: '⏸️', onClick: handlers.onSitOut || (() => { }) },
+                { id: 'sitout', label: 'Sit Out Next Hand', icon: '', onClick: handlers.onSitOut || (() => { }) },
                 { id: 'standup', label: 'Stand Up', icon: '🚶', onClick: handlers.onStandUp || (() => { }) },
                 { id: 'rebuy', label: 'Add Chips', icon: '', onClick: handlers.onRebuy || (() => { }) },
             ],
