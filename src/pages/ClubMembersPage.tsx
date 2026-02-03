@@ -135,9 +135,9 @@ export default function ClubMembersPage() {
 
     const getRoleBadge = (role: string): string => {
         switch (role) {
-            case 'owner': return '';
-            case 'admin': return '';
-            case 'agent': return '👔';
+            case 'owner': return '★';
+            case 'admin': return '▲';
+            case 'agent': return '●';
             default: return '';
         }
     };

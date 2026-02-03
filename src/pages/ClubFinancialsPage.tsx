@@ -147,12 +147,12 @@ export default function ClubFinancialsPage() {
 
     const getTypeIcon = (type: string): string => {
         switch (type) {
-            case 'rake': return '';
-            case 'payout': return '';
-            case 'settlement': return '';
-            case 'deposit': return '';
-            case 'withdrawal': return '';
-            default: return '';
+            case 'rake': return '%';
+            case 'payout': return '↓';
+            case 'settlement': return '☐';
+            case 'deposit': return '↑';
+            case 'withdrawal': return '↓';
+            default: return '●';
         }
     };
 

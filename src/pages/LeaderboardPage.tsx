@@ -107,9 +107,9 @@ export default function LeaderboardPage() {
     };
 
     const getRankBadge = (rank: number): string => {
-        if (rank === 1) return '';
-        if (rank === 2) return '';
-        if (rank === 3) return '';
+        if (rank === 1) return '1st';
+        if (rank === 2) return '2nd';
+        if (rank === 3) return '3rd';
         return `#${rank}`;
     };
 
@@ -190,7 +190,7 @@ export default function LeaderboardPage() {
                     </div>
                 ) : entries.length === 0 ? (
                     <div className="empty-state">
-                        <span className="empty-icon"></span>
+                        <span className="empty-icon">≡</span>
                         <p>No rankings yet. Start playing to climb the leaderboard!</p>
                     </div>
                 ) : (

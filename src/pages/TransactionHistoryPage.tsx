@@ -122,14 +122,14 @@ export default function TransactionHistoryPage() {
 
     const getIcon = (type: string): string => {
         switch (type) {
-            case 'deposit': return '';
-            case 'withdrawal': return '';
-            case 'transfer_in': return '';
-            case 'transfer_out': return '';
-            case 'rake': return '';
-            case 'rakeback': return '';
-            case 'settlement': return '';
-            default: return '';
+            case 'deposit': return '▲';
+            case 'withdrawal': return '▼';
+            case 'transfer_in': return '←';
+            case 'transfer_out': return '→';
+            case 'rake': return '%';
+            case 'rakeback': return '↺';
+            case 'settlement': return '☐';
+            default: return '●';
         }
     };
 
@@ -145,9 +145,9 @@ export default function TransactionHistoryPage() {
 
     const getCurrencySymbol = (currency: string): string => {
         switch (currency) {
-            case 'diamonds': return '';
+            case 'diamonds': return '◆';
             case 'usd': return '$';
-            default: return '';
+            default: return '♠';
         }
     };
 
@@ -176,7 +176,7 @@ export default function TransactionHistoryPage() {
                     <span className="summary-label">Withdrawals</span>
                 </div>
                 <button className="export-btn" onClick={handleExportCSV}>
-                     Export CSV
+                    Export CSV
                 </button>
             </div>
 
@@ -197,7 +197,7 @@ export default function TransactionHistoryPage() {
                     <div className="loading-state"><div className="spinner" /></div>
                 ) : transactions.length === 0 ? (
                     <div className="empty-state">
-                        <span className="empty-icon"></span>
+                        <span className="empty-icon">○</span>
                         <p>No transactions found</p>
                     </div>
                 ) : (

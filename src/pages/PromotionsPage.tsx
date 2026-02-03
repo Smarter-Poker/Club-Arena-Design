@@ -103,11 +103,11 @@ export default function PromotionsPage() {
 
     const getTypeIcon = (type: string): string => {
         switch (type) {
-            case 'bonus': return '';
-            case 'freeroll': return '';
-            case 'leaderboard': return '';
-            case 'rakeback': return '';
-            default: return '';
+            case 'bonus': return '◆';
+            case 'freeroll': return 'T';
+            case 'leaderboard': return '≡';
+            case 'rakeback': return '↺';
+            default: return '★';
         }
     };
 
@@ -135,14 +135,14 @@ export default function PromotionsPage() {
 
             {/* Daily Bonus Button */}
             <div className="daily-bonus-banner" onClick={() => setShowBonusWheel(true)}>
-                <span className="bonus-icon"></span>
+                <span className="bonus-icon">★</span>
                 <span className="bonus-text">Claim Your Daily Bonus!</span>
                 <span className="bonus-arrow">→</span>
             </div>
 
             {/* Referral Banner */}
             <div className="referral-banner" onClick={() => setShowReferral(true)}>
-                <span className="bonus-icon"></span>
+                <span className="bonus-icon">★</span>
                 <span className="bonus-text">Invite Friends & Earn 5% Rake!</span>
                 <span className="bonus-arrow">→</span>
             </div>
@@ -164,7 +164,7 @@ export default function PromotionsPage() {
                     <div className="loading-state"><div className="spinner" /></div>
                 ) : filteredPromos.length === 0 ? (
                     <div className="empty-state">
-                        <span className="empty-icon"></span>
+                        <span className="empty-icon">○</span>
                         <p>No {filter} promotions</p>
                     </div>
                 ) : (
