@@ -9,6 +9,7 @@ import { ClubsService } from '../services/ClubsService';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
+import AuditLog from '../components/admin/AuditLog';
 import './ClubSettingsPage.css';
 
 interface ClubSettings {
@@ -306,6 +307,14 @@ export default function ClubSettingsPage() {
                         </div>
                     </div>
                 </section>
+
+                {/* Audit Log - Admin Activity */}
+                {isOwner && clubId && (
+                    <section className="settings-section audit-section">
+                        <h3>Admin Activity Log</h3>
+                        <AuditLog clubId={clubId} />
+                    </section>
+                )}
 
                 {/* Danger Zone - Owner Only */}
                 {isOwner && (

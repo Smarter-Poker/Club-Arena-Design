@@ -11,6 +11,7 @@ import { useWalletStore } from '../stores/useWalletStore';
 import { notificationService } from '../services/NotificationService';
 import { supabase } from '../lib/supabase';
 import { VIPProvider, useVIPStatus } from '../hooks/useVIP';
+import { InAppAlerts, useAlerts } from './notifications/InAppAlerts';
 import './Shell.css';
 
 // VIP Badge Component
@@ -44,6 +45,9 @@ function ShellContent() {
     const { user, totalChips } = useUserStore();
     const { diamonds } = useWalletStore();
     const [unreadCount, setUnreadCount] = useState(0);
+
+    // Global alerts
+    const { alerts, dismissAlert } = useAlerts();
 
     // Sync Theme
     useEffect(() => {
@@ -199,6 +203,9 @@ function ShellContent() {
             <footer className="shell-footer">
                 <p>Club Engine 2026 - Smarter.Poker</p>
             </footer>
+
+            {/* Global In-App Alerts */}
+            <InAppAlerts alerts={alerts} onDismiss={dismissAlert} position="top-right" />
         </div>
     );
 }

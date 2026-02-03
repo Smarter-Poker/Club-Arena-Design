@@ -10,6 +10,7 @@ import ClubBottomNav from '../components/club/ClubBottomNav';
 import { useToast } from '../components/common/Toast';
 import { ClubFinancialDashboard } from '../components/dashboard/ClubFinancialDashboard';
 import FinancialChart from '../components/charts/FinancialChart';
+import RakeReports from '../components/admin/RakeReports';
 import './ClubFinancialsPage.css';
 
 interface FinancialSummary {
@@ -221,6 +222,13 @@ export default function ClubFinancialsPage() {
             {clubId && (
                 <section className="financial-dashboard-section">
                     <ClubFinancialDashboard clubId={clubId} />
+                </section>
+            )}
+
+            {/* Rake Analytics Reports */}
+            {clubId && (
+                <section className="rake-reports-section">
+                    <RakeReports clubId={clubId} />
                 </section>
             )}
 
