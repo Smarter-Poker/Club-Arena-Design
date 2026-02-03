@@ -262,7 +262,7 @@ export default function FriendsPage() {
                                             e.stopPropagation();
                                             navigate(`/messages/new?userId=${friend.user_id}`);
                                         }}
-                                    ></button>
+                                    >◈</button>
                                 </div>
                             ))
                         )}
@@ -291,7 +291,7 @@ export default function FriendsPage() {
                                     <span className="request-label">wants to be friends</span>
                                 </div>
                                 <div className="request-actions">
-                                    <button className="accept-btn" onClick={() => acceptRequest(request.id)}></button>
+                                    <button className="accept-btn" onClick={() => acceptRequest(request.id)}>✓</button>
                                     <button className="decline-btn" onClick={() => declineRequest(request.id)}>✕</button>
                                 </div>
                             </div>

@@ -175,7 +175,7 @@ export default function CreditRequestWidget({
                                 <span className="reason">{req.reason}</span>
                             </div>
                             <div className="approval-actions">
-                                <button className="approve-btn" onClick={() => handleApprove(req)}></button>
+                                <button className="approve-btn" onClick={() => handleApprove(req)}>✓</button>
                                 <button className="deny-btn" onClick={() => handleDeny(req)}>✕</button>
                             </div>
                         </div>

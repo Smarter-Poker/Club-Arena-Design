@@ -268,7 +268,7 @@ export function TournamentList({
         return (
             <div className="tournament-list tournament-list--empty">
                 <div className="tournament-list__empty-state">
-                    <span className="tournament-list__empty-icon"></span>
+                    <span className="tournament-list__empty-icon">♛</span>
                     <span className="tournament-list__empty-text">No tournaments scheduled</span>
                     <span className="tournament-list__empty-hint">Check back later for upcoming events</span>
                 </div>

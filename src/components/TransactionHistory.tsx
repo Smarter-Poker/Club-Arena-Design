@@ -64,7 +64,7 @@ export default function TransactionHistory({
     if (transactions.length === 0) {
         return (
             <div className="tx-empty">
-                <span className="tx-empty-icon"></span>
+                <span className="tx-empty-icon">$</span>
                 <p>No transactions yet</p>
             </div>
         );
@@ -116,16 +116,16 @@ export default function TransactionHistory({
 
 function getTypeIcon(type: string): string {
     const icons: Record<string, string> = {
-        deposit: '',
-        withdrawal: '',
-        buy_in: '',
-        cash_out: '',
-        agent_transfer: '',
-        rake: '',
-        bonus: '',
-        refund: '',
+        deposit: '+',
+        withdrawal: '-',
+        buy_in: '▦',
+        cash_out: '$',
+        agent_transfer: '→',
+        rake: '%',
+        bonus: '★',
+        refund: '↻',
     };
-    return icons[type] || '';
+    return icons[type] || '●';
 }
 
 function formatType(type: string): string {
