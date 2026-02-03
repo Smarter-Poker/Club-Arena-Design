@@ -440,7 +440,7 @@ export default function AgentManagementPage() {
 
                                 <div className={styles.walletRow}>
                                     <div className={styles.walletItem}>
-                                        <span className={styles.walletIcon}>[BIZ]</span>
+                                        <span className={styles.walletIcon}>◈</span>
                                         <span>${formatMoney(agent.businessBalance)}</span>
                                     </div>
                                     <div className={styles.walletItem}>
@@ -638,7 +638,7 @@ export default function AgentManagementPage() {
                             <h2>Settlement Schedule</h2>
                             <div className={styles.scheduleGrid}>
                                 <div className={styles.scheduleItem}>
-                                    <span className={styles.scheduleIcon}>[SNAP]</span>
+                                    <span className={styles.scheduleIcon}>⏱</span>
                                     <div>
                                         <strong>Sunday 11:59 PM PST</strong>
                                         <p>Snapshot & Invoice Generation</p>

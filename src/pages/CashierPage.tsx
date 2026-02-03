@@ -96,7 +96,7 @@ export default function CashierPage() {
             <div className="balance-cards-grid">
                 <MetalCard size="sm" glow>
                     <div className="balance-card-content">
-                        <span className="balance-icon">[CHIPS]</span>
+                        <span className="balance-icon">♠</span>
                         <div className="balance-label">Available Chips</div>
                         <div className="balance-value">
                             ${balances.PLAYER.available.toLocaleString()}
@@ -105,7 +105,7 @@ export default function CashierPage() {
                 </MetalCard>
                 <MetalCard size="sm" glow>
                     <div className="balance-card-content">
-                        <span className="balance-icon">[DMD]</span>
+                        <span className="balance-icon">◆</span>
                         <div className="balance-label">Diamonds</div>
                         <div className="balance-value">
                             {diamonds.toLocaleString()}

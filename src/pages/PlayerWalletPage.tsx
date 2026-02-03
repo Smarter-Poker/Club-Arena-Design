@@ -104,7 +104,7 @@ export default function PlayerWalletPage() {
                         <div style={{ fontSize: '2rem', fontWeight: 700, color: '#00d4ff', fontFamily: 'monospace' }}>${totalBalance.toLocaleString()}</div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '1.5rem' }}>[DMD]</span>
+                        <span style={{ fontSize: '1.5rem' }}>◆</span>
                         <span style={{ fontSize: '1.25rem', fontWeight: 600, color: '#fff' }}>{diamonds.toLocaleString()}</span>
                     </div>
                 </div>
