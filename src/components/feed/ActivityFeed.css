@@ -1,0 +1,126 @@
+/**
+ * ♠ CLUB ARENA — Activity Feed Styles
+ */
+
+.activity-feed {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    overflow: hidden;
+}
+
+.feed-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-4);
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.feed-header h3 {
+    font-size: var(--fs-md);
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.live-indicator {
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-bold);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+}
+
+.live-indicator.live {
+    color: var(--accent-green);
+    background: rgba(46, 204, 113, 0.1);
+    animation: pulse-live 2s infinite;
+}
+
+.live-indicator.offline {
+    color: var(--text-muted);
+    background: rgba(107, 114, 128, 0.1);
+}
+
+@keyframes pulse-live {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+
+.feed-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.feed-empty {
+    padding: var(--space-8);
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.feed-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background var(--transition-base);
+}
+
+.feed-item:last-child {
+    border-bottom: none;
+}
+
+.feed-item:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* Highlight types */
+.feed-item.big_pot {
+    background: rgba(255, 215, 0, 0.05);
+    border-left: 3px solid var(--accent-gold);
+}
+
+.feed-item.tournament_start {
+    background: rgba(147, 51, 234, 0.05);
+    border-left: 3px solid var(--accent-purple);
+}
+
+.feed-item.achievement {
+    background: rgba(46, 204, 113, 0.05);
+    border-left: 3px solid var(--accent-green);
+}
+
+.feed-icon {
+    font-size: var(--fs-lg);
+    flex-shrink: 0;
+    width: 28px;
+    text-align: center;
+}
+
+.feed-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.feed-message {
+    font-size: var(--fs-sm);
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.feed-time {
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+    margin-top: 2px;
+    display: block;
+}

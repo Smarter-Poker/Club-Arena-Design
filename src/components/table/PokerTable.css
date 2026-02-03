@@ -456,3 +456,167 @@
         height: 36px;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   PREMIUM VISUAL POLISH
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Glassmorphism player info panels */
+.player-info {
+    background: rgba(20, 30, 45, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* Active player glow effect */
+.player-seat.active::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    background: radial-gradient(circle, rgba(24, 119, 242, 0.3) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: active-glow 2s ease-in-out infinite;
+    z-index: -1;
+}
+
+@keyframes active-glow {
+
+    0%,
+    100% {
+        opacity: 0.6;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+}
+
+/* 3D chip stack effect */
+.bet-chips {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.bet-chips::before {
+    content: '●';
+    font-size: 1.2rem;
+    color: #e74c3c;
+    text-shadow:
+        0 2px 0 #c0392b,
+        0 4px 0 #a93226,
+        0 6px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Premium card shadows and 3D effect */
+.community-card,
+.hole-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.2),
+        0 4px 8px rgba(0, 0, 0, 0.15),
+        0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.community-card:hover,
+.player-seat.hero .hole-card:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow:
+        0 4px 8px rgba(0, 0, 0, 0.3),
+        0 8px 16px rgba(0, 0, 0, 0.2),
+        0 16px 32px rgba(0, 0, 0, 0.15);
+}
+
+/* Hero seat premium highlight */
+.player-seat.hero .player-avatar {
+    border: 3px solid var(--accent-gold);
+    box-shadow:
+        0 0 20px rgba(255, 215, 0, 0.4),
+        inset 0 0 10px rgba(255, 215, 0, 0.1);
+}
+
+/* Winning animation */
+.player-seat.winner .player-info {
+    animation: winner-pulse 0.5s ease-out;
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 24px rgba(255, 215, 0, 0.6);
+}
+
+@keyframes winner-pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* All-in glow effect */
+.player-seat.all-in .player-stack {
+    color: var(--accent-red);
+    animation: all-in-blink 1s ease-in-out infinite;
+}
+
+@keyframes all-in-blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+
+/* Pot shimmer effect */
+.pot-amount {
+    background: linear-gradient(90deg,
+            var(--accent-gold) 0%,
+            #fff8dc 50%,
+            var(--accent-gold) 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: pot-shimmer 3s ease-in-out infinite;
+}
+
+@keyframes pot-shimmer {
+    0% {
+        background-position: -200% center;
+    }
+
+    100% {
+        background-position: 200% center;
+    }
+}
+
+/* Table felt ambient glow */
+.table-surface::after {
+    content: '';
+    position: absolute;
+    inset: 10%;
+    background: radial-gradient(ellipse at center,
+            rgba(26, 58, 42, 0.8) 0%,
+            transparent 70%);
+    pointer-events: none;
+}
+
+/* Smooth transitions for all interactive elements */
+.empty-seat,
+.player-seat,
+.position-badge,
+.bet-amount {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

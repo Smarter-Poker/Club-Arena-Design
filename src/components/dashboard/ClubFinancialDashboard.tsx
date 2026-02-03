@@ -4,10 +4,40 @@ import { CommissionService } from '../../services/CommissionService';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
 import { useToast } from '../common/Toast';
+import {
+    AreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell,
+    BarChart,
+    Bar,
+} from 'recharts';
 
 interface FinancialDashboardProps {
     clubId: string;
 }
+
+// Mock data for charts - in production would come from Supabase
+const generateRevenueData = () => {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return days.map(day => ({
+        day,
+        revenue: Math.floor(Math.random() * 5000) + 1000,
+        rake: Math.floor(Math.random() * 500) + 100,
+    }));
+};
+
+const commissionDistribution = [
+    { name: 'Club', value: 50, color: '#1877f2' },
+    { name: 'Agents', value: 30, color: '#f7931a' },
+    { name: 'Players', value: 20, color: '#2ecc71' },
+];
 
 export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ clubId }) => {
     const { user } = useUserStore();
@@ -15,15 +45,17 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
     const [diamondBalance, setDiamondBalance] = useState(0);
     const [mintAmount, setMintAmount] = useState(1000);
     const [loading, setLoading] = useState(false);
+    const [revenueData, setRevenueData] = useState(generateRevenueData());
 
     // Commission State
     const [agentId, setAgentId] = useState('');
-    const [commissionRate, setCommissionRate] = useState(0.5); // 50% default
+    const [commissionRate, setCommissionRate] = useState(0.5);
 
     useEffect(() => {
         fetchDiamondBalance();
+        // Refresh revenue data periodically
+        const interval = setInterval(() => setRevenueData(generateRevenueData()), 30000);
 
-        // Subscribe to realtime updates for diamond wallet
         const channel = supabase
             .channel(`club_wallet:${clubId}`)
             .on(
@@ -42,14 +74,14 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
             )
             .subscribe();
 
-        // Cleanup subscription on unmount
         return () => {
+            clearInterval(interval);
             supabase.removeChannel(channel);
         };
     }, [clubId]);
 
     const fetchDiamondBalance = async () => {
-        const { data, error } = await supabase
+        const { data } = await supabase
             .from('club_diamond_wallets')
             .select('balance')
             .eq('club_id', clubId)
@@ -63,7 +95,7 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
         try {
             await WalletService.mintChips(clubId, mintAmount);
             toast.success(`Successfully minted ${mintAmount} chips!`);
-            fetchDiamondBalance(); // Refresh
+            fetchDiamondBalance();
         } catch (error) {
             toast.error('Minting failed: ' + (error as Error).message);
         } finally {
@@ -84,25 +116,111 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
         }
     };
 
-    // Cost Calculation based on 38 Diamonds / 100 Chips
     const diamondCost = Math.ceil((mintAmount / 100) * 38);
+    const totalWeeklyRevenue = revenueData.reduce((sum, d) => sum + d.revenue, 0);
+    const totalWeeklyRake = revenueData.reduce((sum, d) => sum + d.rake, 0);
 
     return (
-        <div className="p-6 bg-gray-900 text-white rounded-lg shadow-xl">
-            <h1 className="text-2xl font-bold mb-6 text-yellow-400"> Club Financial Command</h1>
+        <div className="p-6 bg-gray-900 text-white rounded-lg shadow-xl space-y-6">
+            <h1 className="text-2xl font-bold text-yellow-400">💰 Club Financial Command</h1>
 
-            {/* DIAMOND WALLET SECTION */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="bg-gray-800 p-6 rounded-lg border border-yellow-500/30">
-                    <h2 className="text-gray-400 text-sm uppercase tracking-wide mb-2"> Diamond Vault</h2>
-                    <div className="text-4xl font-mono text-blue-400">{diamondBalance.toLocaleString()} <span className="text-lg">D</span></div>
-                    <div className="mt-2 text-xs text-gray-500">Peg: 1 Diamond = $0.01</div>
+            {/* KPI Summary Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-gray-800 p-4 rounded-lg border border-blue-500/30">
+                    <div className="text-gray-400 text-xs uppercase">Diamond Vault</div>
+                    <div className="text-2xl font-mono text-blue-400">{diamondBalance.toLocaleString()}</div>
+                </div>
+                <div className="bg-gray-800 p-4 rounded-lg border border-green-500/30">
+                    <div className="text-gray-400 text-xs uppercase">Weekly Revenue</div>
+                    <div className="text-2xl font-mono text-green-400">{totalWeeklyRevenue.toLocaleString()}</div>
+                </div>
+                <div className="bg-gray-800 p-4 rounded-lg border border-orange-500/30">
+                    <div className="text-gray-400 text-xs uppercase">Weekly Rake</div>
+                    <div className="text-2xl font-mono text-orange-400">{totalWeeklyRake.toLocaleString()}</div>
+                </div>
+                <div className="bg-gray-800 p-4 rounded-lg border border-purple-500/30">
+                    <div className="text-gray-400 text-xs uppercase">Active Tables</div>
+                    <div className="text-2xl font-mono text-purple-400">12</div>
+                </div>
+            </div>
+
+            {/* Revenue Chart */}
+            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                <h2 className="text-gray-400 text-sm uppercase tracking-wide mb-4">📈 Weekly Revenue Trend</h2>
+                <ResponsiveContainer width="100%" height={200}>
+                    <AreaChart data={revenueData}>
+                        <defs>
+                            <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#1877f2" stopOpacity={0.8} />
+                                <stop offset="95%" stopColor="#1877f2" stopOpacity={0} />
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                        <XAxis dataKey="day" stroke="#6b7280" />
+                        <YAxis stroke="#6b7280" />
+                        <Tooltip
+                            contentStyle={{ background: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
+                            labelStyle={{ color: '#9ca3af' }}
+                        />
+                        <Area type="monotone" dataKey="revenue" stroke="#1877f2" fillOpacity={1} fill="url(#colorRevenue)" />
+                    </AreaChart>
+                </ResponsiveContainer>
+            </div>
+
+            {/* Commission Distribution & Rake Chart */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Pie Chart */}
+                <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                    <h2 className="text-gray-400 text-sm uppercase tracking-wide mb-4">🥧 Commission Split</h2>
+                    <ResponsiveContainer width="100%" height={180}>
+                        <PieChart>
+                            <Pie
+                                data={commissionDistribution}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={40}
+                                outerRadius={70}
+                                paddingAngle={5}
+                                dataKey="value"
+                            >
+                                {commissionDistribution.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                            </Pie>
+                            <Tooltip />
+                        </PieChart>
+                    </ResponsiveContainer>
+                    <div className="flex justify-center gap-4 mt-2">
+                        {commissionDistribution.map((item) => (
+                            <div key={item.name} className="flex items-center gap-1 text-xs">
+                                <span style={{ background: item.color }} className="w-3 h-3 rounded-full"></span>
+                                <span className="text-gray-400">{item.name} {item.value}%</span>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
-                {/* MINTING CONSOLE */}
+                {/* Bar Chart */}
+                <div className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                    <h2 className="text-gray-400 text-sm uppercase tracking-wide mb-4">💹 Daily Rake</h2>
+                    <ResponsiveContainer width="100%" height={180}>
+                        <BarChart data={revenueData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                            <XAxis dataKey="day" stroke="#6b7280" />
+                            <YAxis stroke="#6b7280" />
+                            <Tooltip
+                                contentStyle={{ background: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
+                            />
+                            <Bar dataKey="rake" fill="#f7931a" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+
+            {/* Minting Console */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-gray-800 p-6 rounded-lg border border-green-500/30">
                     <h2 className="text-gray-400 text-sm uppercase tracking-wide mb-4">🏭 Chip Minting Console</h2>
-
                     <div className="flex flex-col space-y-4">
                         <div>
                             <label className="block text-sm text-gray-400 mb-1">Chips to Mint</label>
@@ -113,49 +231,39 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
                                 className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
                             />
                         </div>
-
                         <div className="flex justify-between items-center text-sm">
                             <span className="text-gray-400">Cost (38 D / 100 Chips):</span>
                             <span className="text-red-400 font-bold">-{diamondCost} Diamonds</span>
                         </div>
-
                         <button
                             onClick={handleMint}
                             disabled={loading || diamondBalance < diamondCost}
                             className={`w-full py-2 rounded font-bold ${diamondBalance >= diamondCost
-                                ? 'bg-green-600 hover:bg-green-500 text-white'
-                                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                    ? 'bg-green-600 hover:bg-green-500 text-white'
+                                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                                 }`}
                         >
-                            {loading ? 'Minting...' : ' BURN DIAMONDS & MINT'}
+                            {loading ? 'Minting...' : '⚡ MINT CHIPS'}
                         </button>
-
-                        <div className="text-xs text-green-400 text-center">
-                             75% Cheaper than Industry Standard
-                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* COMMISSION SETTINGS */}
-            <div className="bg-gray-800 p-6 rounded-lg border border-purple-500/30">
-                <h2 className="text-gray-400 text-sm uppercase tracking-wide mb-4"> Commission Hierarchy</h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                    <div>
-                        <label className="block text-sm text-gray-400 mb-1">Agent ID</label>
-                        <input
-                            type="text"
-                            placeholder="UUID"
-                            value={agentId}
-                            onChange={(e) => setAgentId(e.target.value)}
-                            className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm text-gray-400 mb-1">Commission Rate</label>
-                        <div className="flex items-center space-x-2">
+                {/* Commission Settings */}
+                <div className="bg-gray-800 p-6 rounded-lg border border-purple-500/30">
+                    <h2 className="text-gray-400 text-sm uppercase tracking-wide mb-4">⚙️ Commission Settings</h2>
+                    <div className="flex flex-col space-y-4">
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-1">Agent ID</label>
+                            <input
+                                type="text"
+                                placeholder="UUID"
+                                value={agentId}
+                                onChange={(e) => setAgentId(e.target.value)}
+                                className="w-full bg-gray-700 border border-gray-600 rounded p-2 text-white"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-1">Rate: {(commissionRate * 100).toFixed(0)}%</label>
                             <input
                                 type="range"
                                 min="0" max="0.70" step="0.01"
@@ -163,17 +271,14 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
                                 onChange={(e) => setCommissionRate(Number(e.target.value))}
                                 className="w-full"
                             />
-                            <span className="font-mono text-purple-400 w-16">{(commissionRate * 100).toFixed(0)}%</span>
                         </div>
-                        <div className="text-xs text-red-500 mt-1">Max Cap: 70%</div>
+                        <button
+                            onClick={handleSetCommission}
+                            className="w-full bg-purple-600 hover:bg-purple-500 text-white py-2 rounded font-bold"
+                        >
+                            SET RATE
+                        </button>
                     </div>
-
-                    <button
-                        onClick={handleSetCommission}
-                        className="w-full bg-purple-600 hover:bg-purple-500 text-white py-2 rounded font-bold"
-                    >
-                        SET RATE
-                    </button>
                 </div>
             </div>
         </div>

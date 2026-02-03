@@ -1,0 +1,52 @@
+.club-stats-panel {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.club-stats-bg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+}
+
+.stats-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.stat-value {
+    position: absolute;
+    font-family: 'Inter', 'Roboto', sans-serif;
+    font-weight: 700;
+    color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Position total members - adjust based on SVG layout */
+.total-members {
+    top: 35%;
+    left: 15%;
+    font-size: 1.5rem;
+}
+
+/* Position club level */
+.club-level {
+    top: 35%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.5rem;
+}
+
+/* Position active players */
+.active-players {
+    top: 35%;
+    right: 15%;
+    font-size: 1.5rem;
+}
