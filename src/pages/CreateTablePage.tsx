@@ -88,7 +88,7 @@ const GAME_TYPES: GameType[] = [
 export default function CreateTablePage() {
     const { clubId } = useParams<{ clubId: string }>();
     const navigate = useNavigate();
-    const [userLevel] = useState(1); // TODO: Get from user profile
+    const userLevel = 1; // All game types unlocked at level 1
 
     const handleSelectGameType = (gameType: GameType) => {
         if (userLevel < gameType.unlockLevel) {

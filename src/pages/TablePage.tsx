@@ -1750,7 +1750,7 @@ export default function TablePage() {
                                 autoRebuy,
                             });
 
-                            console.log(`[TablePage] Player ${userId} seated at seat ${selectedSeat} with ${amount} chips`);
+                            // Player seated successfully
                         } catch (error) {
                             console.error('Buy-in failed:', error);
                         }

@@ -289,7 +289,6 @@ class ProfileServiceClass {
      * Accept Club Arena TOS
      */
     async acceptTOS(userId: string): Promise<boolean> {
-        console.log('[TOS] Accepting TOS for userId:', userId);
         const { error } = await supabase
             .from('profiles')
             .update({ club_arena_tos_accepted_at: new Date().toISOString() })
@@ -299,7 +298,6 @@ class ProfileServiceClass {
             console.error('[TOS] Failed to accept TOS:', error);
             return false;
         }
-        console.log('[TOS]  TOS accepted successfully');
         return true;
     }
 
