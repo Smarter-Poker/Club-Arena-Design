@@ -11,6 +11,7 @@
 import React, { useState, useEffect } from 'react';
 import { throwableService, Throwable, ThrowableCategory, ThrowAllowance } from '../../services/ThrowableService';
 import { THROWABLE_ICONS } from './ThrowableIcons';
+import { useToast } from '../common/Toast';
 import './ThrowableSelector.css';
 
 interface ThrowableSelectorProps {
@@ -38,6 +39,7 @@ export function ThrowableSelector({ userId, onSelect, onClose }: ThrowableSelect
     const [activeCategory, setActiveCategory] = useState<ThrowableCategory>('reactions');
     const [allowance, setAllowance] = useState<ThrowAllowance | null>(null);
     const [loading, setLoading] = useState(true);
+    const toast = useToast();
 
     useEffect(() => {
         async function load() {
@@ -54,7 +56,7 @@ export function ThrowableSelector({ userId, onSelect, onClose }: ThrowableSelect
         // Use the throwable (deducts from allowance or charges diamonds)
         const result = await throwableService.useThrowable(userId, throwable.id);
         if (!result.success) {
-            alert(result.error || 'Could not send reaction');
+            toast.error(result.error || 'Could not send reaction');
             return;
         }
         // Refresh allowance

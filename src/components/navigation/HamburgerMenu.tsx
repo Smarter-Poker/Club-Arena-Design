@@ -11,6 +11,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
+import { useToast } from '../common/Toast';
 import styles from './HamburgerMenu.module.css';
 
 interface HamburgerMenuProps {
@@ -35,6 +36,7 @@ const colors = {
 export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
     const navigate = useNavigate();
     const { user } = useUserStore();
+    const toast = useToast();
     const touchStartRef = useRef<number | null>(null);
 
     const [soundsEnabled, setSoundsEnabled] = useState(true);
@@ -152,7 +154,7 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                 console.error('Error resetting tutorial:', error);
             }
         }
-        alert('Tutorial reset! Refresh the page to see the intro again.');
+        toast.info('Tutorial reset! Refresh the page to see the intro again.');
         onClose();
     };
 
