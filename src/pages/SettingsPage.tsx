@@ -206,6 +206,10 @@ export default function SettingsPage() {
     const [verificationCode, setVerificationCode] = useState('');
     const [factorId, setFactorId] = useState<string>('');
 
+    // Push Notification state
+    const [pushEnabled, setPushEnabled] = useState(false);
+    const [pushLoading, setPushLoading] = useState(false);
+
     // Section refs for tab navigation
     const audioRef = useRef<HTMLElement>(null);
     const appearanceRef = useRef<HTMLElement>(null);
@@ -424,6 +428,27 @@ export default function SettingsPage() {
     useEffect(() => {
         check2FAStatus();
     }, []);
+
+    // Check push notification status
+    useEffect(() => {
+        if ('Notification' in window) {
+            setPushEnabled(Notification.permission === 'granted');
+        }
+    }, []);
+
+    const handleEnablePush = async () => {
+        setPushLoading(true);
+        try {
+            const granted = await notificationService.requestPermission();
+            setPushEnabled(granted);
+            if (granted) {
+                console.log('[Settings] Push notifications enabled');
+            }
+        } catch (err) {
+            console.error('Failed to enable push:', err);
+        }
+        setPushLoading(false);
+    };
 
     const updateSetting = <K extends keyof UserSettings>(
         key: K,
@@ -712,6 +737,26 @@ export default function SettingsPage() {
                             checked={settings.achievementNotifications}
                             onChange={(v) => updateSetting('achievementNotifications', v)}
                         />
+                    </div>
+
+                    <div className={styles.settingRow}>
+                        <div className={styles.settingInfo}>
+                            <span className={styles.settingLabel}>Push Notifications</span>
+                            <span className={styles.settingDesc}>
+                                {pushEnabled ? '🔔 Enabled' : 'Allow browser notifications'}
+                            </span>
+                        </div>
+                        {pushEnabled ? (
+                            <span className={styles.statusBadge}>Active</span>
+                        ) : (
+                            <button
+                                className={styles.actionButton}
+                                onClick={handleEnablePush}
+                                disabled={pushLoading}
+                            >
+                                {pushLoading ? 'Enabling...' : 'Enable'}
+                            </button>
+                        )}
                     </div>
                 </section>
 

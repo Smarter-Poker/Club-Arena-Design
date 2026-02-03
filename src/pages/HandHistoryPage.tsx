@@ -144,6 +144,37 @@ export default function HandHistoryPage() {
         setShowReplay(true);
     };
 
+    // Send hand to Jarvis for GTO analysis
+    const analyzeWithJarvis = (hand: HandRecord) => {
+        // Build hand summary for analysis
+        const player = hand.players.find(p => p.user_id === user?.id);
+        const handSummary = {
+            id: hand.id,
+            table: hand.table_name,
+            stakes: hand.stakes,
+            pot: hand.main_pot,
+            result: player?.result || 0,
+            players: hand.players.length,
+            playedAt: hand.played_at,
+            heroCards: (player as any)?.hole_cards || (player as any)?.holeCards || 'Unknown',
+        };
+
+        // Send to World Hub personal assistant via postMessage
+        if (window.parent !== window) {
+            // In iframe - send to parent
+            window.parent.postMessage({
+                type: 'ANALYZE_HAND',
+                payload: handSummary
+            }, '*');
+            toast.success('Hand sent to Jarvis for analysis!');
+        } else {
+            // Standalone - open Jarvis in new tab with hand data
+            const encodedData = encodeURIComponent(JSON.stringify(handSummary));
+            window.open(`https://smarter.poker/hub/jarvis?hand=${encodedData}`, '_blank');
+            toast.info('Opening Jarvis analysis...');
+        }
+    };
+
     return (
         <div className="hand-history-page">
             <SmarterHeader title=" Hand History" />
@@ -227,6 +258,7 @@ export default function HandHistoryPage() {
                                 <div className="hand-footer">
                                     <span className="stakes">{hand.stakes}</span>
                                     <span className="players">{hand.players.length} players</span>
+                                    <button className="analyze-btn" onClick={(e) => { e.stopPropagation(); analyzeWithJarvis(hand); }}>🧠 Analyze</button>
                                     <button className="replay-btn">▶ Replay</button>
                                 </div>
                             </div>
