@@ -1,0 +1,138 @@
+/**
+ * ♠ CLUB ARENA — Session Timer Styles
+ */
+
+.session-timer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+}
+
+.timer-display {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.timer-icon {
+    font-size: 16px;
+}
+
+.timer-value {
+    font-size: var(--fs-lg);
+    font-weight: var(--fw-bold);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+}
+
+.session-status {
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: 10px;
+    font-weight: var(--fw-bold);
+    color: white;
+    text-transform: uppercase;
+}
+
+.session-profit {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--border-subtle);
+}
+
+.profit-label {
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+}
+
+.profit-value {
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-bold);
+}
+
+.profit-value.positive {
+    color: var(--accent-green);
+}
+
+.profit-value.negative {
+    color: var(--accent-red);
+}
+
+.break-reminder {
+    margin-top: var(--space-2);
+    padding: var(--space-3);
+    background: linear-gradient(135deg, rgba(241, 196, 15, 0.1), rgba(243, 156, 18, 0.05));
+    border: 1px solid rgba(241, 196, 15, 0.3);
+    border-radius: var(--radius-md);
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.reminder-content {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+.reminder-icon {
+    font-size: 20px;
+}
+
+.reminder-text strong {
+    display: block;
+    font-size: var(--fs-sm);
+    color: var(--text-primary);
+}
+
+.reminder-text p {
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.reminder-actions {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.snooze-btn,
+.take-btn {
+    flex: 1;
+    padding: var(--space-2);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-bold);
+    cursor: pointer;
+}
+
+.snooze-btn {
+    background: var(--bg-card);
+    color: var(--text-secondary);
+}
+
+.take-btn {
+    background: var(--accent-green);
+    color: white;
+}
+
+.breaks-count {
+    font-size: 10px;
+    color: var(--text-muted);
+}

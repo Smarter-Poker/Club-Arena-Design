@@ -1,0 +1,86 @@
+/**
+ * ♠ CLUB ARENA — Hand Strength Indicator Styles
+ */
+
+.hand-strength-indicator {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.hand-strength-indicator.size-sm {
+    max-width: 120px;
+}
+
+.hand-strength-indicator.size-md {
+    max-width: 180px;
+}
+
+.hand-strength-indicator.size-lg {
+    max-width: 240px;
+}
+
+.strength-bar-container {
+    position: relative;
+    height: 8px;
+    background: var(--bg-card);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.hand-strength-indicator.size-sm .strength-bar-container {
+    height: 6px;
+}
+
+.hand-strength-indicator.size-lg .strength-bar-container {
+    height: 10px;
+}
+
+.strength-bar-fill {
+    height: 100%;
+    transition: width 0.5s ease, background 0.3s ease;
+    border-radius: var(--radius-full);
+}
+
+.strength-markers {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.marker {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.strength-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.hand-name {
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-bold);
+}
+
+.hand-strength-indicator.size-sm .hand-name {
+    font-size: 10px;
+}
+
+.hand-strength-indicator.size-lg .hand-name {
+    font-size: var(--fs-sm);
+}
+
+.strength-percent {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.hand-strength-indicator.size-lg .strength-percent {
+    font-size: var(--fs-xs);
+}
