@@ -571,7 +571,7 @@ export default function ClubDetailPage() {
                                                         <button onClick={() => handleMemberAction(member.id, 'demote')}> Demote</button>
                                                     )}
                                                     {member.status === 'active' && member.role !== 'owner' && (
-                                                        <button onClick={() => handleMemberAction(member.id, 'suspend')}>⏸️ Suspend</button>
+                                                        <button onClick={() => handleMemberAction(member.id, 'suspend')}>Suspend</button>
                                                     )}
                                                     {member.role !== 'owner' && (
                                                         <button onClick={() => handleMemberAction(member.id, 'remove')}>️ Remove</button>

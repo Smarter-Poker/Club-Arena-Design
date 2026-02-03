@@ -355,7 +355,7 @@ export default function HomePage() {
         {
             id: 'player-stats',
             title: 'PLAYER STATS',
-            icon: '📊',
+            icon: '',
             subtitle: 'Your Profile',
             action: () => navigate('/profile'),
         },

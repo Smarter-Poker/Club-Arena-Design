@@ -81,7 +81,7 @@ export default function PlayerWalletPage() {
             description: 'Commissions & Settlements',
         },
         PLAYER: {
-            icon: '🎮',
+            icon: '',
             label: 'Player',
             description: 'Table Buy-ins & Gameplay',
         },
@@ -94,7 +94,7 @@ export default function PlayerWalletPage() {
 
     return (
         <div className="wallet-page">
-            <SmarterHeader title="💰 My Wallet" />
+            <SmarterHeader title="My Wallet" />
 
             {/* Total Balance Card - Metal Frame */}
             <MetalFrame variant="card" size="lg">
@@ -104,22 +104,22 @@ export default function PlayerWalletPage() {
                         <div style={{ fontSize: '2rem', fontWeight: 700, color: '#00d4ff', fontFamily: 'monospace' }}>${totalBalance.toLocaleString()}</div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '1.5rem' }}>💎</span>
+                        <span style={{ fontSize: '1.5rem' }}>[DMD]</span>
                         <span style={{ fontSize: '1.25rem', fontWeight: 600, color: '#fff' }}>{diamonds.toLocaleString()}</span>
                     </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
                     <MetalButton variant="primary" size="sm" onClick={() => setShowDepositModal(true)}>
-                        ⬆️ Deposit
+                        Deposit
                     </MetalButton>
                     <MetalButton variant="secondary" size="sm" onClick={() => setShowWithdrawModal(true)}>
-                        ⬇️ Withdraw
+                        Withdraw
                     </MetalButton>
                     <MetalButton variant="ghost" size="sm" onClick={() => navigate('/rakeback')}>
-                        💰 Rakeback
+                        Rakeback
                     </MetalButton>
                     <MetalButton variant="ghost" size="sm" onClick={() => navigate('/transactions')}>
-                        📜 History
+                        History
                     </MetalButton>
                 </div>
             </MetalFrame>
@@ -151,9 +151,9 @@ export default function PlayerWalletPage() {
                         }}
                         onClick={() => setActiveTab(tab)}
                     >
-                        {tab === 'overview' ? '📊 Overview' :
-                            tab === 'transfer' ? '↔️ Transfer' :
-                                '📜 History'}
+                        {tab === 'overview' ? 'Overview' :
+                            tab === 'transfer' ? 'Transfer' :
+                                'History'}
                     </button>
                 ))}
             </div>
