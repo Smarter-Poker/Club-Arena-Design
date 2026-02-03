@@ -9,18 +9,20 @@
  * - Shark Club = Featured Club (always first)
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import { ClubsService } from '../services/ClubsService';
 import { useToast } from '../components/common/Toast';
 import GlobalHeader from '../components/navigation/GlobalHeader';
-import CreateClubModal from '../components/modals/CreateClubModal';
-import FindPlayerModal from '../components/modals/FindPlayerModal';
-import ClubStatsPanel from '../components/club/ClubStatsPanel';
 import haptic from '../services/HapticService';
 import styles from './HomePage.module.css';
+
+// Lazy-load heavy components to reduce initial bundle
+const CreateClubModal = lazy(() => import('../components/modals/CreateClubModal'));
+const FindPlayerModal = lazy(() => import('../components/modals/FindPlayerModal'));
+const ClubStatsPanel = lazy(() => import('../components/club/ClubStatsPanel'));
 
 interface ClubCard {
     id: string;
@@ -465,11 +467,13 @@ export default function HomePage() {
                         }}
                     >
                         {/* Full VectorMagic SVG - ClubStatsPanel handles dynamic text updates */}
-                        <ClubStatsPanel
-                            totalMembers={sharkClubStats.totalMembers}
-                            clubLevel={sharkClubStats.clubLevel}
-                            activePlayers={sharkClubStats.activePlayers}
-                        />
+                        <Suspense fallback={<div className={styles.cardSkeleton}>Loading...</div>}>
+                            <ClubStatsPanel
+                                totalMembers={sharkClubStats.totalMembers}
+                                clubLevel={sharkClubStats.clubLevel}
+                                activePlayers={sharkClubStats.activePlayers}
+                            />
+                        </Suspense>
                     </div>
                 </div>
 
@@ -656,20 +660,24 @@ export default function HomePage() {
             }
 
             {/* CREATE A CLUB MODAL */}
-            <CreateClubModal
-                isOpen={showCreateClubModal}
-                onClose={() => setShowCreateClubModal(false)}
-                onSuccess={(clubId) => {
-                    setShowCreateClubModal(false);
-                    navigate(`/clubs/${clubId}`);
-                }}
-            />
+            <Suspense fallback={null}>
+                <CreateClubModal
+                    isOpen={showCreateClubModal}
+                    onClose={() => setShowCreateClubModal(false)}
+                    onSuccess={(clubId) => {
+                        setShowCreateClubModal(false);
+                        navigate(`/clubs/${clubId}`);
+                    }}
+                />
+            </Suspense>
 
             {/* FIND A PLAYER MODAL */}
-            <FindPlayerModal
-                isOpen={showFindPlayerModal}
-                onClose={() => setShowFindPlayerModal(false)}
-            />
+            <Suspense fallback={null}>
+                <FindPlayerModal
+                    isOpen={showFindPlayerModal}
+                    onClose={() => setShowFindPlayerModal(false)}
+                />
+            </Suspense>
 
             {/* Loading indicator */}
             {
