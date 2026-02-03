@@ -26,7 +26,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
                 const { data: { session } } = await supabase.auth.getSession();
                 setIsAuthenticated(!!session);
             } catch (error) {
-                console.error(' [AUTH GUARD] Session check failed:', error);
+                console.error('[AUTH GUARD] Session check failed:', error);
                 setIsAuthenticated(false);
             } finally {
                 setIsLoading(false);

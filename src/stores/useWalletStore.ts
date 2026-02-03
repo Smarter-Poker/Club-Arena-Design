@@ -132,7 +132,7 @@ export const useWalletStore = create<WalletState>()(
 
                     set({ balances });
                 } catch (error) {
-                    console.error(' Load balances failed:', error);
+                    console.error('[Store] Load balances failed:', error);
                 } finally {
                     set({ isLoadingWallet: false });
                 }
@@ -154,7 +154,7 @@ export const useWalletStore = create<WalletState>()(
                         set({ diamonds: 0 });
                     }
                 } catch (error) {
-                    console.error(' Load diamonds failed:', error);
+                    console.error('[Store] Load diamonds failed:', error);
                     set({ diamonds: 0 });
                 } finally {
                     set({ isLoadingDiamonds: false });
@@ -177,7 +177,7 @@ export const useWalletStore = create<WalletState>()(
                     }));
                     set({ transactions });
                 } catch (error) {
-                    console.error(' Load transactions failed:', error);
+                    console.error('[Store] Load transactions failed:', error);
                 } finally {
                     set({ isLoadingTransactions: false });
                 }
@@ -194,7 +194,7 @@ export const useWalletStore = create<WalletState>()(
             lockForBuyIn: async (userId: string, amount: number, tableId: string) => {
                 const { balances } = get();
                 if (balances.PLAYER.available < amount) {
-                    console.error(' Insufficient balance for buy-in');
+                    console.error('[Store] Insufficient balance for buy-in');
                     return false;
                 }
 
@@ -222,7 +222,7 @@ export const useWalletStore = create<WalletState>()(
                         pendingTableId: null,
                         balances,
                     });
-                    console.error(' Lock for buy-in failed:', error);
+                    console.error('[Store] Lock for buy-in failed:', error);
                     return false;
                 }
             },
@@ -230,7 +230,7 @@ export const useWalletStore = create<WalletState>()(
             unlockFromTable: async (userId: string, amount: number, tableId: string) => {
                 const { balances, pendingTableId } = get();
                 if (pendingTableId !== tableId) {
-                    console.warn(' Table ID mismatch for unlock');
+                    console.warn('[Store] Table ID mismatch for unlock');
                 }
 
                 set({
@@ -250,7 +250,7 @@ export const useWalletStore = create<WalletState>()(
                     await WalletService.unlockFromTable(userId, tableId, amount);
                     return true;
                 } catch (error) {
-                    console.error(' Unlock from table failed:', error);
+                    console.error('[Store] Unlock from table failed:', error);
                     return false;
                 }
             },
@@ -258,7 +258,7 @@ export const useWalletStore = create<WalletState>()(
             internalTransfer: async (userId: string, fromWallet: WalletType, toWallet: WalletType, amount: number) => {
                 const { balances } = get();
                 if (balances[fromWallet].available < amount) {
-                    console.error(' Insufficient balance for transfer');
+                    console.error('[Store] Insufficient balance for transfer');
                     return false;
                 }
 
@@ -290,7 +290,7 @@ export const useWalletStore = create<WalletState>()(
                 } catch (error) {
                     // Revert on failure
                     set({ balances: previousBalances });
-                    console.error(' Internal transfer failed:', error);
+                    console.error('[Store] Internal transfer failed:', error);
                     return false;
                 }
             },
@@ -304,7 +304,7 @@ export const useWalletStore = create<WalletState>()(
                     }
                     return { chips: 0, success: false };
                 } catch (error) {
-                    console.error(' Mint chips failed:', error);
+                    console.error('[Store] Mint chips failed:', error);
                     return { chips: 0, success: false };
                 }
             },

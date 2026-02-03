@@ -62,7 +62,7 @@ export async function getArenaLobbyClubs(): Promise<ClubTrafficData[]> {
     const { data, error } = await supabase.rpc('get_arena_lobby_clubs');
 
     if (error) {
-        console.error(' Lobby fetch failed:', error);
+        console.error('[Service] Lobby fetch failed:', error);
         throw new Error('Failed to fetch arena lobby');
     }
 
@@ -81,7 +81,7 @@ export async function getClubTraffic(clubId: string): Promise<ClubTrafficData | 
     });
 
     if (error) {
-        console.error(' Club traffic fetch failed:', error);
+        console.error('[Service] Club traffic fetch failed:', error);
         throw new Error('Failed to fetch club traffic');
     }
 
@@ -104,7 +104,7 @@ export async function getClubStakes(clubId: string): Promise<StakeInfo[]> {
         .order('stake_level', { ascending: true });
 
     if (error) {
-        console.error(' Stakes fetch failed:', error);
+        console.error('[Service] Stakes fetch failed:', error);
         throw new Error('Failed to fetch stakes');
     }
 

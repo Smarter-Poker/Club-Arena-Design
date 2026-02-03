@@ -125,7 +125,7 @@ class MasterBusCore {
             stores.arena = arenaState !== undefined;
             console.log(`  ├─ ArenaStore: ${stores.arena ? '' : ''}`);
         } catch (e) {
-            console.error('  ├─ ArenaStore:  (Error)', e);
+            console.error(' ├─ ArenaStore:  (Error)', e);
         }
 
         try {
@@ -133,7 +133,7 @@ class MasterBusCore {
             stores.club = clubState !== undefined;
             console.log(`  ├─ ClubStore: ${stores.club ? '' : ''}`);
         } catch (e) {
-            console.error('  ├─ ClubStore:  (Error)', e);
+            console.error(' ├─ ClubStore:  (Error)', e);
         }
 
         try {
@@ -141,7 +141,7 @@ class MasterBusCore {
             stores.table = tableState !== undefined;
             console.log(`  ├─ TableStore: ${stores.table ? '' : ''}`);
         } catch (e) {
-            console.error('  ├─ TableStore:  (Error)', e);
+            console.error(' ├─ TableStore:  (Error)', e);
         }
 
         try {
@@ -149,7 +149,7 @@ class MasterBusCore {
             stores.union = unionState !== undefined;
             console.log(`  ├─ UnionStore: ${stores.union ? '' : ''}`);
         } catch (e) {
-            console.error('  ├─ UnionStore:  (Error)', e);
+            console.error(' ├─ UnionStore:  (Error)', e);
         }
 
         try {
@@ -157,7 +157,7 @@ class MasterBusCore {
             stores.wallet = walletState !== undefined;
             console.log(`  ├─ WalletStore: ${stores.wallet ? '' : ''}`);
         } catch (e) {
-            console.error('  ├─ WalletStore:  (Error)', e);
+            console.error(' ├─ WalletStore:  (Error)', e);
         }
 
         try {
@@ -165,7 +165,7 @@ class MasterBusCore {
             stores.settings = settingsState !== undefined;
             console.log(`  ├─ SettingsStore: ${stores.settings ? '' : ''}`);
         } catch (e) {
-            console.error('  ├─ SettingsStore:  (Error)', e);
+            console.error(' ├─ SettingsStore:  (Error)', e);
         }
 
         try {
@@ -173,7 +173,7 @@ class MasterBusCore {
             stores.user = userState !== undefined;
             console.log(`  └─ UserStore: ${stores.user ? '' : ''}`);
         } catch (e) {
-            console.error('  └─ UserStore:  (Error)', e);
+            console.error(' └─ UserStore:  (Error)', e);
         }
 
         // Determine overall status

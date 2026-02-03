@@ -36,7 +36,7 @@ export async function discoverNearbyClubs(
     });
 
     if (error) {
-        console.error(' Club discovery failed:', error);
+        console.error('[ClubsService] Club discovery failed:', error);
         throw new Error('Failed to discover nearby clubs');
     }
 
@@ -56,7 +56,7 @@ export async function searchClubs(query: string): Promise<Club[]> {
         .limit(20);
 
     if (error) {
-        console.error(' Club search failed:', error);
+        console.error('[ClubsService] Club search failed:', error);
         throw new Error('Failed to search clubs');
     }
 
@@ -78,7 +78,7 @@ export async function getClub(identifier: string): Promise<Club | null> {
 
     if (error) {
         if (error.code === 'PGRST116') return null; // Not found
-        console.error(' Get club failed:', error);
+        console.error('[ClubsService] Get club failed:', error);
         throw new Error('Failed to get club');
     }
 
@@ -141,7 +141,7 @@ export async function createClub(clubData: {
         .single();
 
     if (error) {
-        console.error(' Club creation failed:', error);
+        console.error('[ClubsService] Club creation failed:', error);
         throw new Error('Failed to create club');
     }
 
@@ -200,7 +200,7 @@ export async function joinClub(
         .single();
 
     if (error) {
-        console.error(' Join club failed:', error);
+        console.error('[ClubsService] Join club failed:', error);
         throw new Error('Failed to join club');
     }
 
@@ -221,7 +221,7 @@ export async function leaveClub(clubId: string): Promise<void> {
         .eq('user_id', user.user.id);
 
     if (error) {
-        console.error(' Leave club failed:', error);
+        console.error('[ClubsService] Leave club failed:', error);
         throw new Error('Failed to leave club');
     }
 }
@@ -242,7 +242,7 @@ export async function getUserMemberships(): Promise<(ClubMember & { club: Club }
         .eq('user_id', user.user.id);
 
     if (error) {
-        console.error(' Get memberships failed:', error);
+        console.error('[ClubsService] Get memberships failed:', error);
         throw new Error('Failed to get memberships');
     }
 
@@ -263,7 +263,7 @@ export async function getClubMembers(clubId: string): Promise<ClubMember[]> {
         .order('xp', { ascending: false });
 
     if (error) {
-        console.error(' Get club members failed:', error);
+        console.error('[ClubsService] Get club members failed:', error);
         throw new Error('Failed to get club members');
     }
 
@@ -286,7 +286,7 @@ export async function getClubChallenges(clubId: string): Promise<ClubChallenge[]
         .order('ends_at', { ascending: true });
 
     if (error) {
-        console.error(' Get challenges failed:', error);
+        console.error('[ClubsService] Get challenges failed:', error);
         throw new Error('Failed to get challenges');
     }
 
@@ -315,7 +315,7 @@ export async function getClubLeaderboard(
         .limit(50);
 
     if (error) {
-        console.error(' Get leaderboard failed:', error);
+        console.error('[ClubsService] Get leaderboard failed:', error);
         throw new Error('Failed to get leaderboard');
     }
 
@@ -323,7 +323,7 @@ export async function getClubLeaderboard(
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ️ CLUB DELETION
+// CLUB DELETION
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
@@ -362,7 +362,7 @@ export async function deleteClub(clubId: string): Promise<void> {
         .eq('id', clubId);
 
     if (error) {
-        console.error(' Delete club failed:', error);
+        console.error('[ClubsService] Delete club failed:', error);
         throw new Error('Failed to delete club');
     }
 
@@ -387,7 +387,7 @@ export async function updateClub(clubId: string, updates: Record<string, any>): 
         .single();
 
     if (error) {
-        console.error(' Update club failed:', error);
+        console.error('[ClubsService] Update club failed:', error);
         throw new Error('Failed to update club');
     }
 
@@ -433,7 +433,7 @@ export async function uploadClubLogo(clubId: string, file: File): Promise<string
         });
 
     if (error) {
-        console.error(' Logo upload failed:', error);
+        console.error('[ClubsService] Logo upload failed:', error);
         throw new Error('Failed to upload logo');
     }
 
@@ -485,7 +485,7 @@ export async function uploadClubBanner(clubId: string, file: File): Promise<stri
         });
 
     if (error) {
-        console.error(' Banner upload failed:', error);
+        console.error('[ClubsService] Banner upload failed:', error);
         throw new Error('Failed to upload banner');
     }
 

@@ -288,7 +288,7 @@ export default function ProfilePage() {
                     setAchievements([]);
                 }
             } catch (err) {
-                console.error(' [PROFILE] Load failed:', err);
+                console.error('[PROFILE] Load failed:', err);
             } finally {
                 setIsLoading(false);
             }

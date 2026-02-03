@@ -101,7 +101,7 @@ export const useArenaStore = create<ArenaState>()(
                     if (error) throw error;
                     set({ stats: data });
                 } catch (error) {
-                    console.error(' Load stats failed:', error);
+                    console.error('[Store] Load stats failed:', error);
                 } finally {
                     set({ isLoadingStats: false });
                 }
@@ -124,7 +124,7 @@ export const useArenaStore = create<ArenaState>()(
                         timeRemaining: levelConfig.timer_seconds,
                     });
                 } catch (error) {
-                    console.error(' Start training failed:', error);
+                    console.error('[Store] Start training failed:', error);
                     throw error;
                 }
             },
@@ -195,7 +195,7 @@ export const useArenaStore = create<ArenaState>()(
                     const level = await ArenaTrainingController.getUnlockedLevel(user.user.id);
                     set({ unlockedLevel: level });
                 } catch (error) {
-                    console.error(' Load unlocked level failed:', error);
+                    console.error('[Store] Load unlocked level failed:', error);
                 }
             },
 
