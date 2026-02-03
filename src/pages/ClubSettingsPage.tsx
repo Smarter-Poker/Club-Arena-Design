@@ -10,6 +10,7 @@ import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import AuditLog from '../components/admin/AuditLog';
+import { StatsExport } from '../components/admin/StatsExport';
 import './ClubSettingsPage.css';
 
 interface ClubSettings {
@@ -53,8 +54,8 @@ export default function ClubSettingsPage() {
     const [saving, setSaving] = useState(false);
     const [isOwner, setIsOwner] = useState(false);
 
-    // Delete confirmation state
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showStatsExport, setShowStatsExport] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [confirmText, setConfirmText] = useState('');
     const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
@@ -316,6 +317,27 @@ export default function ClubSettingsPage() {
                     </section>
                 )}
 
+                {/* Data Export - Owner Only */}
+                {isOwner && (
+                    <section className="settings-section export-section">
+                        <h3>📊 Data Export</h3>
+                        <div className="export-item">
+                            <div className="export-info">
+                                <span className="export-label">Export Club Stats</span>
+                                <span className="export-desc">
+                                    Download player stats, hand histories, and club analytics.
+                                </span>
+                            </div>
+                            <button
+                                className="btn btn-secondary"
+                                onClick={() => setShowStatsExport(true)}
+                            >
+                                📥 Export Stats
+                            </button>
+                        </div>
+                    </section>
+                )}
+
                 {/* Danger Zone - Owner Only */}
                 {isOwner && (
                     <section className="settings-section danger-zone">
@@ -384,6 +406,13 @@ export default function ClubSettingsPage() {
                     </div>
                 </div>
             )}
+
+            {/* Stats Export Modal */}
+            <StatsExport
+                clubId={clubId}
+                isOpen={showStatsExport}
+                onClose={() => setShowStatsExport(false)}
+            />
 
             {clubId && (
                 <ClubBottomNav

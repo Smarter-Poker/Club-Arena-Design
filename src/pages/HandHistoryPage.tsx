@@ -17,6 +17,7 @@ import SmarterHeader from '../components/layout/SmarterHeader';
 import ReplayActions from '../components/table/ReplayActions';
 import HandReplayPlayer from '../components/table/HandReplayPlayer';
 import HandHistoryModal from '../components/club/HandHistoryModal';
+import { ShareHand, type ShareableHand } from '../components/table/ShareHand';
 import './HandHistoryPage.css';
 
 type HistoryFilter = 'all' | 'won' | 'lost' | 'big-pots';
@@ -31,6 +32,8 @@ export default function HandHistoryPage() {
     const [filter, setFilter] = useState<HistoryFilter>('all');
     const [selectedHand, setSelectedHand] = useState<HandRecord | null>(null);
     const [showReplay, setShowReplay] = useState(false);
+    const [showShare, setShowShare] = useState(false);
+    const [shareHand, setShareHand] = useState<ShareableHand | null>(null);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
     const PAGE_SIZE = 25;
@@ -259,6 +262,29 @@ export default function HandHistoryPage() {
                                     <span className="stakes">{hand.stakes}</span>
                                     <span className="players">{hand.players.length} players</span>
                                     <button className="analyze-btn" onClick={(e) => { e.stopPropagation(); analyzeWithJarvis(hand); }}>🧠 Analyze</button>
+                                    <button className="share-btn" onClick={(e) => {
+                                        e.stopPropagation();
+                                        const winnerSeats = hand.players.filter(p => p.is_winner).map(p => p.seat);
+                                        setShareHand({
+                                            id: hand.id,
+                                            tableName: hand.table_name,
+                                            variant: (hand.game_type?.includes('PLO') ? 'PLO4' : 'NLH') as ShareableHand['variant'],
+                                            stakes: hand.stakes,
+                                            timestamp: new Date(hand.played_at).getTime(),
+                                            buttonSeat: 0, // Default, actual info in players' positions
+                                            players: hand.players.map((p, i) => ({
+                                                seat: p.seat || i,
+                                                name: p.username || `Player ${i + 1}`,
+                                                stack: 1000, // Default stack
+                                                isHero: p.user_id === user?.id,
+                                                isWinner: p.is_winner,
+                                            })),
+                                            preflop: [],
+                                            potTotal: hand.main_pot,
+                                            winners: winnerSeats.map((seat) => ({ seat, amount: hand.main_pot / (winnerSeats.length || 1) })),
+                                        });
+                                        setShowShare(true);
+                                    }}>📤 Share</button>
                                     <button className="replay-btn">▶ Replay</button>
                                 </div>
                             </div>
@@ -282,6 +308,16 @@ export default function HandHistoryPage() {
                         <HandReplay handId={selectedHand.id} onClose={() => setShowReplay(false)} />
                     </div>
                 </div>
+            )}
+
+            {/* Share Modal */}
+            {showShare && shareHand && (
+                <ShareHand
+                    isOpen={showShare}
+                    onClose={() => setShowShare(false)}
+                    hand={shareHand}
+                    clubName="Club Arena"
+                />
             )}
         </div>
     );

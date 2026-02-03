@@ -25,12 +25,13 @@ import { AgentFinancialPortal } from '@/components/dashboard/AgentFinancialPorta
 import { useToast } from '@/components/common/Toast';
 import AgentCashoutPanel from '@/components/agent/AgentCashoutPanel';
 import ClubBottomNav from '@/components/club/ClubBottomNav';
+import { PlayerSearch } from '@/components/admin/PlayerSearch';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
-type TabType = 'agents' | 'hierarchy' | 'credit-limits' | 'commissions' | 'payouts';
+type TabType = 'agents' | 'players' | 'hierarchy' | 'credit-limits' | 'commissions' | 'payouts';
 
 export default function AgentManagementPage() {
     const { clubId } = useParams<{ clubId: string }>();
@@ -307,13 +308,14 @@ export default function AgentManagementPage() {
 
             {/* Tab Navigation */}
             <nav className={styles.tabNav}>
-                {(['agents', 'hierarchy', 'credit-limits', 'commissions', 'payouts'] as TabType[]).map(tab => (
+                {(['agents', 'players', 'hierarchy', 'credit-limits', 'commissions', 'payouts'] as TabType[]).map(tab => (
                     <button
                         key={tab}
                         className={`${styles.tabButton} ${activeTab === tab ? styles.active : ''}`}
                         onClick={() => setActiveTab(tab)}
                     >
                         {tab === 'agents' && ' Agents'}
+                        {tab === 'players' && '👤 Players'}
                         {tab === 'hierarchy' && 'Hierarchy'}
                         {tab === 'credit-limits' && 'Credit Limits'}
                         {tab === 'commissions' && ' Commissions'}
@@ -471,6 +473,27 @@ export default function AgentManagementPage() {
                                 )}
                             </div>
                         ))}
+                    </div>
+                )}
+
+                {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                {/* PLAYERS TAB — Search and Manage Players */}
+                {/* ═══════════════════════════════════════════════════════════════════════════════ */}
+                {activeTab === 'players' && (
+                    <div className={styles.playersSection}>
+                        <PlayerSearch
+                            onPlayerSelect={(player) => {
+                                toast.info(`Selected: ${player.username}`);
+                            }}
+                            onBanPlayer={(playerId) => {
+                                if (confirm('Ban this player from the club?')) {
+                                    toast.success('Player banned');
+                                }
+                            }}
+                            onViewProfile={(playerId) => {
+                                navigate(`/profile/${playerId}`);
+                            }}
+                        />
                     </div>
                 )}
 
