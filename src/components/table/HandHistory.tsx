@@ -210,14 +210,14 @@ export function HandHistory({
                     <div className="hh-header-actions">
                         {onFavorite && (
                             <button className="hh-action-btn" onClick={onFavorite} title="Favorite">
-                                
+                                ★
                             </button>
                         )}
                         <button className="hh-action-btn" title="Info">
-                            
+                            i
                         </button>
                         <button className="hh-action-btn" title="Copy">
-                            
+                            ⊞
                         </button>
                     </div>
                 </div>
@@ -232,7 +232,7 @@ export function HandHistory({
                         <span className="hh-hand-id">SN: {hand.handId}</span>
                         {onShare && (
                             <button className="hh-share-btn" onClick={onShare}>
-                                Share 
+                                Share
                             </button>
                         )}
                     </div>
@@ -277,7 +277,7 @@ export function HandHistory({
                         />
                         <button className="hh-timeline-btn" disabled={currentAction >= totalActions}>▶</button>
                     </div>
-                    <button className="hh-chat-btn" title="Chat"></button>
+                    <button className="hh-chat-btn" title="Chat">◈</button>
                 </div>
 
                 {/* Footer Tabs */}

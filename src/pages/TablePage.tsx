@@ -1276,7 +1276,7 @@ export default function TablePage() {
 
                 <div className="header-actions">
                     <button className="header-btn" title="Help">?</button>
-                    <button className="header-btn" title="Info"></button>
+                    <button className="header-btn" title="Info">i</button>
                     <button className="header-btn table-id" title="Table ID">
                         {tableState.tableId.slice(0, 8)}
                     </button>
@@ -1449,62 +1449,62 @@ export default function TablePage() {
                     <div className="menu-overlay" onClick={toggleSideMenu} />
                     <nav className="side-menu">
                         <button className="menu-item" onClick={() => navigate('/cashier')}>
-                            <span className="menu-item-icon"></span>
+                            <span className="menu-item-icon">$</span>
                             <span className="menu-item-label">Cashier</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
                         <button className="menu-item">
-                            <span className="menu-item-icon"></span>
+                            <span className="menu-item-icon">+</span>
                             <span className="menu-item-label">Top Up</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
                         <button className="menu-item" onClick={() => { setShowGameRules(true); setIsSideMenuOpen(false); }}>
-                            <span className="menu-item-icon"></span>
+                            <span className="menu-item-icon">☰</span>
                             <span className="menu-item-label">Table Rules</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
                         <button className="menu-item">
-                            <span className="menu-item-icon"></span>
+                            <span className="menu-item-icon">♪</span>
                             <span className="menu-item-label">Sounds</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
                         <button className="menu-item">
-                            <span className="menu-item-icon"></span>
+                            <span className="menu-item-icon">⋆</span>
                             <span className="menu-item-label">Vibrations</span>
                             <span className="menu-item-toggle on">ON</span>
                         </button>
                         <button className="menu-item">
-                            <span className="menu-item-icon"></span>
+                            <span className="menu-item-icon">↗</span>
                             <span className="menu-item-label">Share</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
                         <button className="menu-item">
-                            <span className="menu-item-icon"></span>
+                            <span className="menu-item-icon">★</span>
                             <span className="menu-item-label">VIP</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
                         <button className="menu-item" onClick={() => { setShowPlayerNotes(true); setIsSideMenuOpen(false); }}>
-                            <span className="menu-item-icon"></span>
+                            <span className="menu-item-icon">✎</span>
                             <span className="menu-item-label">Player Notes</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
                         <button className="menu-item" onClick={() => { setShowHandReplay(true); setIsSideMenuOpen(false); }}>
-                            <span className="menu-item-icon"></span>
+                            <span className="menu-item-icon">♠</span>
                             <span className="menu-item-label">Hand History</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
                         <button className="menu-item" onClick={() => { setShowSitOut(true); setIsSideMenuOpen(false); }}>
-                            <span className="menu-item-icon"></span>
+                            <span className="menu-item-icon">⏸</span>
                             <span className="menu-item-label">Sit Out</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
                         <button className="menu-item" onClick={() => { handleOpenWaitlist(); setIsSideMenuOpen(false); }}>
-                            <span className="menu-item-icon"></span>
+                            <span className="menu-item-icon">⌂</span>
                             <span className="menu-item-label">Wait List</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
                         <button className="menu-item exit" onClick={() => navigate('/')}>
-                            <span className="menu-item-icon"></span>
+                            <span className="menu-item-icon">←</span>
                             <span className="menu-item-label">Exit</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
@@ -1518,7 +1518,7 @@ export default function TablePage() {
             {/* Observing Mode Indicator (when not seated) */}
             {!tableState.players.some(p => p?.isHero) && (
                 <div className="observing-indicator">
-                    <span className="eye-icon"></span>
+                    <span className="eye-icon">◉</span>
                     <span>Observing</span>
                 </div>
             )}

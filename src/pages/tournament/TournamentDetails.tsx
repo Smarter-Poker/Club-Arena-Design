@@ -227,7 +227,7 @@ export default function TournamentDetails() {
             <div className="tournament-title">
                 <h2>{tournament.name}</h2>
                 <span className="tournament-id">ID:{tournament.id.slice(0, 8)}</span>
-                <button className="qr-btn"></button>
+                <button className="qr-btn">⊞</button>
             </div>
 
             {/* Tournament Description */}
