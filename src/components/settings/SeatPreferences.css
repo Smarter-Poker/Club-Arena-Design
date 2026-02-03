@@ -1,0 +1,202 @@
+/**
+ * ♠ CLUB ARENA — Seat Preferences Styles
+ */
+
+.seat-preferences {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    max-width: 400px;
+}
+
+.seat-preferences.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border-subtle);
+    border-top-color: var(--fb-blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.prefs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-4);
+}
+
+.prefs-header h2 {
+    font-size: var(--fs-lg);
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+}
+
+.close-btn {
+    width: 28px;
+    height: 28px;
+    background: var(--bg-card);
+    border: none;
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.table-size-toggle {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+}
+
+.table-size-toggle button {
+    flex: 1;
+    padding: var(--space-2) var(--space-4);
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: var(--fs-sm);
+    cursor: pointer;
+}
+
+.table-size-toggle button.active {
+    background: var(--fb-blue);
+    border-color: var(--fb-blue);
+    color: white;
+}
+
+.table-visual {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    margin-bottom: var(--space-4);
+}
+
+.table-felt {
+    position: absolute;
+    inset: 15%;
+    background: linear-gradient(135deg, #2d5016 0%, #1a3d0c 100%);
+    border-radius: 50%;
+    border: 4px solid #4a2c0a;
+}
+
+.seat-marker {
+    position: absolute;
+    transform: translate(-50%, -50%);
+}
+
+.seat-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: var(--bg-card);
+    border: 2px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    padding: 2px;
+}
+
+.seat-marker.preferred .seat-actions {
+    border-color: var(--accent-gold);
+    background: rgba(255, 215, 0, 0.1);
+}
+
+.seat-marker.avoid .seat-actions {
+    border-color: var(--accent-red);
+    background: rgba(231, 76, 60, 0.1);
+}
+
+.action-btn {
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+
+.action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.action-btn.prefer.active {
+    color: var(--accent-gold);
+}
+
+.action-btn.avoid.active {
+    color: var(--accent-red);
+}
+
+.seat-number {
+    min-width: 20px;
+    text-align: center;
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+}
+
+.legend {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+}
+
+.legend-item {
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+}
+
+.legend-item.preferred {
+    color: var(--accent-gold);
+}
+
+.legend-item.avoid {
+    color: var(--accent-red);
+}
+
+.auto-seat-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-4);
+    font-size: var(--fs-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.auto-seat-toggle input {
+    accent-color: var(--fb-blue);
+}
+
+.selection-summary {
+    margin-bottom: var(--space-4);
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+}
+
+.selection-summary p {
+    margin: var(--space-1) 0;
+}
+
+.save-btn {
+    width: 100%;
+    padding: var(--space-3);
+    background: var(--fb-blue);
+    border: none;
+    border-radius: var(--radius-md);
+    color: white;
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-bold);
+    cursor: pointer;
+}

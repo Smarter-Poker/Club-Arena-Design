@@ -1,0 +1,166 @@
+/**
+ * ♠ CLUB ARENA — Bankroll Widget Styles
+ */
+
+.bankroll-widget {
+    position: fixed;
+    bottom: 80px;
+    left: 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    z-index: 100;
+    min-width: 140px;
+}
+
+.widget-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.compact-view {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.stack-value {
+    font-size: var(--fs-md);
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+}
+
+.profit-badge {
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-bold);
+}
+
+.profit-badge.positive {
+    background: rgba(46, 204, 113, 0.2);
+    color: var(--accent-green);
+}
+
+.profit-badge.negative {
+    background: rgba(231, 76, 60, 0.2);
+    color: var(--accent-red);
+}
+
+.toggle-icon {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+/* Expanded View */
+.expanded-view {
+    padding: var(--space-3);
+    padding-top: 0;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.profit-section {
+    padding: var(--space-3) 0;
+}
+
+.profit-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.profit-label {
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+}
+
+.profit-value {
+    font-size: var(--fs-2xl);
+    font-weight: var(--fw-bold);
+}
+
+.profit-display.positive .profit-value {
+    color: var(--accent-green);
+}
+
+.profit-display.negative .profit-value {
+    color: var(--accent-red);
+}
+
+.profit-percent {
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+    padding: var(--space-3) 0;
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stat-item .stat-value {
+    font-size: var(--fs-md);
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+}
+
+.stat-item .stat-label {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.bb-stats {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+    padding-top: var(--space-3);
+}
+
+.bb-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.bb-value {
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-bold);
+}
+
+.bb-value.positive {
+    color: var(--accent-green);
+}
+
+.bb-value.negative {
+    color: var(--accent-red);
+}
+
+.bb-label {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.bb-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--border-subtle);
+}
