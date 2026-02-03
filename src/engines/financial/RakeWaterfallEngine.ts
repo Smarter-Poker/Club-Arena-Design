@@ -29,7 +29,6 @@ export class RakeWaterfallEngine {
      * The single entry point for financial settlement of a hand.
      */
     static async processHand(ctx: HandContext) {
-        console.log(`🌊 WATERFALL: Processing Hand ${ctx.handId}`);
 
         // 1. CALCULATE RAKE & BBJ
         // LAW: 10% Rate | Cap 2.5BB | BBJ 0.5BB (LOCKED)
@@ -115,6 +114,5 @@ export class RakeWaterfallEngine {
         // We record these "Earnings" in the settlements table for Weekly Payout
         // We DO NOT pay them instantly to wallets (that's the Monday Payout)
 
-        console.log("🌊 WATERFALL: Commissions queued for Monday Settlement.");
     }
 }

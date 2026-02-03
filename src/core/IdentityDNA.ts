@@ -57,13 +57,9 @@ class IdentityDNACore {
      */
     async init(): Promise<IdentityDNAStatus> {
         if (this.initialized) {
-            console.log('🧬 [IDENTITY DNA] Already initialized');
             return this.status!;
         }
 
-        console.log('═══════════════════════════════════════════════════════════════');
-        console.log('🧬 [IDENTITY DNA] LOADING USER IDENTITY LAYER');
-        console.log('═══════════════════════════════════════════════════════════════');
 
         // Set up auth state listener FIRST
         this.setupAuthListener();
@@ -85,9 +81,6 @@ class IdentityDNACore {
                     ? new Date(session.expires_at * 1000).toISOString()
                     : null;
 
-                console.log(`  ├─ Session:  (${userId})`);
-                console.log(`  ├─ User: ${username}`);
-                console.log(`  └─ Expires: ${sessionExpiresAt || 'Never'}`);
 
                 // Hydrate user store with session data
                 await this.hydrateUserFromSession(session);
@@ -98,8 +91,6 @@ class IdentityDNACore {
                     isAuthenticated: true,
                 });
             } else {
-                console.log('  ├─ Session:  (No active session)');
-                console.log('  └─ Mode: Guest');
             }
         } catch (e) {
             console.error('  └─ Session Check Failed:', e);
@@ -118,10 +109,6 @@ class IdentityDNACore {
         this.initialized = true;
 
         // DETERMINISTIC PROOF
-        console.log('───────────────────────────────────────────────────────────────');
-        console.log(`IDENTITY_DNA:${this.status.loaded ? 'LOADED' : 'FAILED'}`);
-        console.log(`AUTH_STATUS:${authenticated ? 'AUTHENTICATED' : 'GUEST'}`);
-        console.log('═══════════════════════════════════════════════════════════════');
 
         return this.status;
     }
@@ -131,11 +118,9 @@ class IdentityDNACore {
      * This persists throughout the app lifecycle
      */
     private setupAuthListener(): void {
-        console.log('  ├─ Setting up auth state listener...');
 
         this.authListener = supabase.auth.onAuthStateChange(
             async (event: AuthChangeEvent, session: Session | null) => {
-                console.log(`🧬 [AUTH EVENT] ${event}`, session?.user?.id || 'No user');
 
                 switch (event) {
                     case 'SIGNED_IN':
@@ -174,7 +159,6 @@ class IdentityDNACore {
                     case 'TOKEN_REFRESHED':
                         if (session) {
                             this.updateStatus(true, session);
-                            console.log('🧬 [AUTH] Token refreshed successfully');
                         }
                         break;
 
@@ -190,7 +174,6 @@ class IdentityDNACore {
             }
         );
 
-        console.log('  ├─ Auth listener: ');
     }
 
     /**
@@ -220,7 +203,6 @@ class IdentityDNACore {
                     avatar_url: profile.avatar_url,
                     vip_level: profile.vip_level,
                 });
-                console.log('🧬 [PROFILE] Loaded from database:', profile.username);
             }
         } catch (e) {
             console.warn('🧬 [PROFILE] Could not load from database, using session data');
@@ -253,7 +235,6 @@ class IdentityDNACore {
      */
     private clearUser(): void {
         useUserStore.getState().logout();
-        console.log('🧬 [IDENTITY DNA] User data cleared');
     }
 
     /**
@@ -276,7 +257,6 @@ class IdentityDNACore {
      * Perform secure logout
      */
     async logout(): Promise<void> {
-        console.log('🧬 [IDENTITY DNA] Logging out...');
 
         try {
             const { error } = await supabase.auth.signOut();
@@ -330,7 +310,6 @@ class IdentityDNACore {
         }
         this.initialized = false;
         this.status = null;
-        console.log('🧬 [IDENTITY DNA] Cleanup complete');
     }
 }
 

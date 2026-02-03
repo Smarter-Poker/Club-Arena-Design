@@ -35,9 +35,6 @@ let supabaseClient: SupabaseClient | null = null;
  * Returns the boot status for absolute fail-closed logic.
  */
 export async function initAntiGravity(): Promise<BootStatus> {
-    console.log('═══════════════════════════════════════════════════════════════');
-    console.log(' [ANTIGRAVITY] BOOT SEQUENCE INITIATED');
-    console.log('═══════════════════════════════════════════════════════════════');
 
     const errors: string[] = [];
     let antigravityOk = false;
@@ -68,7 +65,6 @@ export async function initAntiGravity(): Promise<BootStatus> {
     }
 
     // DETERMINISTIC PROOF: ANTIGRAVITY_OK
-    console.log(`ANTIGRAVITY_OK:${antigravityOk}`);
 
     // ═══════════════════════════════════════════════════════════════════════════
     // PHASE 2: SUPABASE PROOF (Real Health Check)
@@ -96,7 +92,6 @@ export async function initAntiGravity(): Promise<BootStatus> {
     }
 
     // DETERMINISTIC PROOF: SUPABASE_OK
-    console.log(`SUPABASE_OK:${supabaseOk}`);
 
     // ═══════════════════════════════════════════════════════════════════════════
     // PHASE 3: BUILD BOOT STATUS
@@ -110,14 +105,12 @@ export async function initAntiGravity(): Promise<BootStatus> {
 
     // DETERMINISTIC PROOF: HEARTBEAT
     const heartbeat = (antigravityOk && supabaseOk) ? 'ONLINE' : 'OFFLINE';
-    console.log(`HEARTBEAT:${heartbeat}`);
 
     // Log errors if any
     if (errors.length > 0) {
         console.error('[ANTIGRAVITY] Boot Errors:', errors);
     }
 
-    console.log('═══════════════════════════════════════════════════════════════');
 
     return bootStatus;
 }

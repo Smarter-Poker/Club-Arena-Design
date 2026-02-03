@@ -27,7 +27,6 @@ export function initSentry() {
     const environment = import.meta.env.VITE_APP_ENV || 'production';
 
     if (environment === 'development') {
-        console.log('🔍 [Sentry] Skipping initialization in development mode');
         return;
     }
 
@@ -150,9 +149,6 @@ export function initSentry() {
             ],
         });
 
-        console.log('✅ [Sentry] Initialized successfully');
-        console.log(`   Environment: ${environment}`);
-        console.log(`   Release: club-arena@${import.meta.env.VITE_APP_VERSION || '1.0.0'}`);
     } catch (error) {
         console.error('❌ [Sentry] Initialization failed:', error);
     }

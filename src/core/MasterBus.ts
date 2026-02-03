@@ -101,13 +101,9 @@ class MasterBusCore {
      */
     init(): MasterBusStatus {
         if (this.initialized) {
-            console.log('🚌 [MASTER BUS] Already initialized');
             return this.status!;
         }
 
-        console.log('═══════════════════════════════════════════════════════════════');
-        console.log('🚌 [MASTER BUS] INITIALIZING STATE MANAGEMENT LAYER');
-        console.log('═══════════════════════════════════════════════════════════════');
 
         const stores = {
             arena: false,
@@ -123,7 +119,6 @@ class MasterBusCore {
         try {
             const arenaState = useArenaStore.getState();
             stores.arena = arenaState !== undefined;
-            console.log(`  ├─ ArenaStore: ${stores.arena ? '' : ''}`);
         } catch (e) {
             console.error(' ├─ ArenaStore:  (Error)', e);
         }
@@ -131,7 +126,6 @@ class MasterBusCore {
         try {
             const clubState = useClubStore.getState();
             stores.club = clubState !== undefined;
-            console.log(`  ├─ ClubStore: ${stores.club ? '' : ''}`);
         } catch (e) {
             console.error(' ├─ ClubStore:  (Error)', e);
         }
@@ -139,7 +133,6 @@ class MasterBusCore {
         try {
             const tableState = useTableStore.getState();
             stores.table = tableState !== undefined;
-            console.log(`  ├─ TableStore: ${stores.table ? '' : ''}`);
         } catch (e) {
             console.error(' ├─ TableStore:  (Error)', e);
         }
@@ -147,7 +140,6 @@ class MasterBusCore {
         try {
             const unionState = useUnionStore.getState();
             stores.union = unionState !== undefined;
-            console.log(`  ├─ UnionStore: ${stores.union ? '' : ''}`);
         } catch (e) {
             console.error(' ├─ UnionStore:  (Error)', e);
         }
@@ -155,7 +147,6 @@ class MasterBusCore {
         try {
             const walletState = useWalletStore.getState();
             stores.wallet = walletState !== undefined;
-            console.log(`  ├─ WalletStore: ${stores.wallet ? '' : ''}`);
         } catch (e) {
             console.error(' ├─ WalletStore:  (Error)', e);
         }
@@ -163,7 +154,6 @@ class MasterBusCore {
         try {
             const settingsState = useSettingsStore.getState();
             stores.settings = settingsState !== undefined;
-            console.log(`  ├─ SettingsStore: ${stores.settings ? '' : ''}`);
         } catch (e) {
             console.error(' ├─ SettingsStore:  (Error)', e);
         }
@@ -171,7 +161,6 @@ class MasterBusCore {
         try {
             const userState = useUserStore.getState();
             stores.user = userState !== undefined;
-            console.log(`  └─ UserStore: ${stores.user ? '' : ''}`);
         } catch (e) {
             console.error(' └─ UserStore:  (Error)', e);
         }
@@ -192,9 +181,6 @@ class MasterBusCore {
         this.setupInternalHandlers();
 
         // DETERMINISTIC PROOF
-        console.log('───────────────────────────────────────────────────────────────');
-        console.log(`MASTER_BUS:${allOnline ? 'ONLINE' : 'OFFLINE'}`);
-        console.log('═══════════════════════════════════════════════════════════════');
 
         return this.status;
     }
@@ -225,7 +211,6 @@ class MasterBusCore {
             timestamp: new Date().toISOString(),
         };
 
-        console.log(`🚌 [BUS EVENT] ${type}`, payload);
 
         const handlers = this.subscribers.get(type);
         if (handlers) {
@@ -277,7 +262,6 @@ class MasterBusCore {
                     },
                     {
                         onEvent: (clubEvent) => {
-                            console.log('🚌 [REALTIME] Club event:', clubEvent);
                         },
                     }
                 );
@@ -325,7 +309,6 @@ class MasterBusCore {
         this.subscribers.clear();
         this.status = null;
         this.initialized = false;
-        console.log('🚌 [MASTER BUS] Reset complete');
     }
 }
 

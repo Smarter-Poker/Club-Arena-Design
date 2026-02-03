@@ -173,7 +173,6 @@ export const useUserStore = create<UserState>()(
                         isLoading: false,
                     });
 
-                    console.log(' [USER STORE] Profile loaded:', profile.username);
                     return profile;
                 } catch (e) {
                     console.error('[Store] [USER STORE] Unexpected error:', e);

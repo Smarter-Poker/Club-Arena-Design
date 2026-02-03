@@ -79,7 +79,6 @@ export type SupabaseClient = typeof supabase;
 // it automatically shares the 'smarter-poker-auth' localStorage key with the Hub.
 // No postMessage or iframe handshake needed - just use the same storageKey above.
 if (typeof window !== 'undefined') {
-    console.log('[SSO] Same-origin SSO enabled via shared storageKey: smarter-poker-auth');
 
     // ══════════════════════════════════════════════════════════════════════════
     // SESSION MIGRATION — Move sessions from old default key to shared key
@@ -96,10 +95,8 @@ if (typeof window !== 'undefined') {
         const hasOldSession = localStorage.getItem(OLD_DEFAULT_KEY);
 
         if (!hasMigrated && !hasNewSession && hasOldSession) {
-            console.log('[SSO] 🔄 Migrating session from old key to shared key...');
             localStorage.setItem(NEW_SHARED_KEY, hasOldSession);
             localStorage.setItem(MIGRATION_FLAG, new Date().toISOString());
-            console.log('[SSO] ✅ Session migrated successfully');
             // Reload to pick up the migrated session
             window.location.reload();
         } else if (!hasMigrated) {
@@ -113,9 +110,7 @@ if (typeof window !== 'undefined') {
     // Log session status on load for debugging
     supabase.auth.getSession().then(({ data: { session } }) => {
         if (session) {
-            console.log('[SSO] ✅ Session found from Hub auth');
         } else {
-            console.log('[SSO] ⚠️ No session - user needs to log in at Hub');
         }
     });
 }

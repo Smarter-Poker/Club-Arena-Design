@@ -234,7 +234,6 @@ export const useTableStore = create<TableState>((set, get) => ({
                 console.warn('[TableStore] Failed to send action via WebSocket');
             }
         } else {
-            console.log(`[TableStore] Action: ${action}${amount ? ` $${amount}` : ''} (offline mode)`);
         }
     },
 
