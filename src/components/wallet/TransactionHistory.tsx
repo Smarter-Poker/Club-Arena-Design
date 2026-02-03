@@ -28,10 +28,10 @@ interface Transaction {
 const TYPE_ICONS: Record<string, string> = {
     deposit: '',
     withdrawal: '',
-    transfer: '↔️',
+    transfer: '',
     rake: '',
     bonus: '',
-    refund: '↩️',
+    refund: '',
     purchase: ''
 };
 

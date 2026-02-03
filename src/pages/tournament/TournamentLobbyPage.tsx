@@ -237,7 +237,7 @@ export default function TournamentLobbyPage() {
                         >
                             {status === 'all' ? ' All' :
                                 status === 'upcoming' ? ' Upcoming' :
-                                    status === 'registering' ? '✏️ Registering' :
+                                    status === 'registering' ? 'Registering' :
                                         status === 'running' ? ' Live' :
                                             ' Completed'}
                         </button>

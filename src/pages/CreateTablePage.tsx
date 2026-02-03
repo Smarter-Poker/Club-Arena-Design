@@ -143,7 +143,7 @@ export default function CreateTablePage() {
                     <span>Table Template</span>
                     <span className="template-icon">⚙</span>
                 </button>
-                <p className="unlock-hint">Unlock at level 1 🔒</p>
+                <p className="unlock-hint">Unlock at level 1</p>
             </div>
 
             {/* Background */}

@@ -1247,7 +1247,6 @@ export default function TablePage() {
                     const newValue = prev - 1;
                     // Auto-fold when timer expires
                     if (newValue <= 0 && handControllerRef.current) {
-                        console.log('[TablePage] Auto-folding on timeout');
                         handControllerRef.current.performAction(tableState.heroSeat, 'fold');
                         sendAction('fold', { seat: tableState.heroSeat, autoFold: true });
                         soundService.playFold();
@@ -1450,7 +1449,7 @@ export default function TablePage() {
                     <div className="menu-overlay" onClick={toggleSideMenu} />
                     <nav className="side-menu">
                         <button className="menu-item" onClick={() => navigate('/cashier')}>
-                            <span className="menu-item-icon">💳</span>
+                            <span className="menu-item-icon"></span>
                             <span className="menu-item-label">Cashier</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
@@ -1495,7 +1494,7 @@ export default function TablePage() {
                             <span className="menu-item-arrow">›</span>
                         </button>
                         <button className="menu-item" onClick={() => { setShowSitOut(true); setIsSideMenuOpen(false); }}>
-                            <span className="menu-item-icon">🚶</span>
+                            <span className="menu-item-icon"></span>
                             <span className="menu-item-label">Sit Out</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
@@ -1519,7 +1518,7 @@ export default function TablePage() {
             {/* Observing Mode Indicator (when not seated) */}
             {!tableState.players.some(p => p?.isHero) && (
                 <div className="observing-indicator">
-                    <span className="eye-icon">👁</span>
+                    <span className="eye-icon"></span>
                     <span>Observing</span>
                 </div>
             )}

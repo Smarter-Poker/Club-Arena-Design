@@ -322,7 +322,7 @@ export default function ClubSettingsPage() {
                                 className="btn btn-danger"
                                 onClick={() => setShowDeleteModal(true)}
                             >
-                                ️ Delete Club
+                                Delete Club
                             </button>
                         </div>
                     </section>

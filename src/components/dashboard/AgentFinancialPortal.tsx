@@ -107,7 +107,7 @@ export const AgentFinancialPortal: React.FC<AgentPortalProps> = ({ agentId }) =>
 
     return (
         <div className="p-6 bg-slate-900 text-white rounded-lg shadow-xl  border border-blue-900">
-            <h1 className="text-2xl font-bold mb-6 text-blue-400">👔 Agent Command Center</h1>
+            <h1 className="text-2xl font-bold mb-6 text-blue-400">Agent Command Center</h1>
 
             {/* TRIPLE WALLET GRID */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -143,7 +143,7 @@ export const AgentFinancialPortal: React.FC<AgentPortalProps> = ({ agentId }) =>
             {/* CREDIT LINE STATUS */}
             <div className="bg-slate-800 p-6 rounded border border-gray-700">
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-bold text-lg">💳 Credit Line Status</h3>
+                    <h3 className="font-bold text-lg">Credit Line Status</h3>
                     <span className="text-sm font-mono text-gray-400">Limit: {wallet.creditLimit.toLocaleString()}</span>
                 </div>
 

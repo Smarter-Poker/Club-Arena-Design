@@ -221,7 +221,7 @@ export default function ClubCarouselPage() {
                             {userProfile?.avatar_url ? (
                                 <img src={userProfile.avatar_url} alt="avatar" />
                             ) : (
-                                <span className="avatar-placeholder">🐟</span>
+                                <span className="avatar-placeholder">P</span>
                             )}
                         </div>
                         <div className="user-info">
@@ -234,7 +234,7 @@ export default function ClubCarouselPage() {
 
                 {/* Wallet Row */}
                 <div className="club-carousel__wallet">
-                    <div className="vip-badge">🔒 VIP</div>
+                    <div className="vip-badge">VIP</div>
                     <div className="wallet-balances">
                         <div className="balance gold">
                             <span className="balance-icon">♠</span>
@@ -254,10 +254,10 @@ export default function ClubCarouselPage() {
             ═══════════════════════════════════════════════════════════════════ */}
                 <div className="club-carousel__actions">
                     <button className="action-btn create" onClick={handleCreateClub}>
-                        <span className="action-icon">🏠+</span>
+                        <span className="action-icon">+</span>
                     </button>
                     <button className="action-btn search" onClick={handleSearch}>
-                        <span className="action-icon">🔍</span>
+                        <span className="action-icon">SEARCH</span>
                     </button>
                 </div>
 
@@ -327,7 +327,7 @@ export default function ClubCarouselPage() {
                                                         <span className="club-name">{club.name}</span>
                                                         <span className="club-meta">
                                                             LVL: {club.level}
-                                                            <span className="member-count">👁 {club.member_count}</span>
+                                                            <span className="member-count">{club.member_count}</span>
                                                         </span>
                                                     </div>
                                                 </div>

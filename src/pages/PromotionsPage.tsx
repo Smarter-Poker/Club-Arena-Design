@@ -104,7 +104,7 @@ export default function PromotionsPage() {
     const getTypeIcon = (type: string): string => {
         switch (type) {
             case 'bonus': return '';
-            case 'freeroll': return '🎟️';
+            case 'freeroll': return '';
             case 'leaderboard': return '';
             case 'rakeback': return '';
             default: return '';

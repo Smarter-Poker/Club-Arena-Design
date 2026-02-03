@@ -120,12 +120,12 @@ function getTypeIcon(type: string): string {
         withdrawal: '',
         buy_in: '',
         cash_out: '',
-        agent_transfer: '👔',
+        agent_transfer: '',
         rake: '',
         bonus: '',
-        refund: '↩️',
+        refund: '',
     };
-    return icons[type] || '💳';
+    return icons[type] || '';
 }
 
 function formatType(type: string): string {

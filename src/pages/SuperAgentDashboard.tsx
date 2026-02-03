@@ -1,5 +1,5 @@
 /**
- * 👔 SUPER AGENT DASHBOARD — Agent Network Management with Live Updates
+ * SUPER AGENT DASHBOARD — Agent Network Management with Live Updates
  */
 
 import { useState, useEffect } from 'react';
@@ -109,7 +109,7 @@ export default function SuperAgentDashboard() {
     if (loading) {
         return (
             <div className="super-agent-dashboard">
-                <SmarterHeader title="👔 Agent Dashboard" />
+                <SmarterHeader title="Agent Dashboard" />
                 <div className="loading-state"><div className="spinner" /></div>
             </div>
         );
@@ -118,9 +118,9 @@ export default function SuperAgentDashboard() {
     if (!agent) {
         return (
             <div className="super-agent-dashboard">
-                <SmarterHeader title="👔 Agent Dashboard" />
+                <SmarterHeader title="Agent Dashboard" />
                 <div className="empty-state">
-                    <span className="empty-icon">👔</span>
+                    <span className="empty-icon"></span>
                     <p>You are not an agent in this club</p>
                     <button className="btn btn-primary" onClick={() => navigate(-1)}>Go Back</button>
                 </div>
@@ -130,7 +130,7 @@ export default function SuperAgentDashboard() {
 
     return (
         <div className="super-agent-dashboard">
-            <SmarterHeader title="👔 Agent Dashboard" />
+            <SmarterHeader title="Agent Dashboard" />
 
             {/* Stats Grid */}
             <div className="stats-grid">
@@ -149,7 +149,7 @@ export default function SuperAgentDashboard() {
                     </div>
                 </div>
                 <div className="stat-card">
-                    <span className="stat-icon">👔</span>
+                    <span className="stat-icon"></span>
                     <div className="stat-info">
                         <span className="stat-value">{agent.subAgentCount}</span>
                         <span className="stat-label">Sub-Agents</span>
@@ -208,7 +208,7 @@ export default function SuperAgentDashboard() {
                         </div>
                         {/* Credit Request Widget */}
                         <div className="credit-section">
-                            <h3>💳 Credit</h3>
+                            <h3>Credit</h3>
                             <CreditRequestWidget
                                 agentId={agent.id}
                                 agentName={agent.displayName || 'Agent'}
