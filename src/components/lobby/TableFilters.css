@@ -1,0 +1,173 @@
+/**
+ * ♠ CLUB ARENA — Table Filters Styles
+ */
+
+.table-filters {
+    position: relative;
+}
+
+.filter-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+    font-size: var(--fs-sm);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.filter-toggle:hover,
+.filter-toggle.active {
+    border-color: var(--fb-blue);
+    color: var(--fb-blue);
+}
+
+.filter-icon {
+    font-size: 1rem;
+}
+
+.filter-badge {
+    background: var(--fb-blue);
+    color: white;
+    font-size: 10px;
+    font-weight: var(--fw-bold);
+    padding: 1px 6px;
+    border-radius: var(--radius-full);
+}
+
+.filters-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    min-width: 300px;
+    max-width: 400px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    z-index: 100;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.filter-section {
+    margin-bottom: var(--space-4);
+}
+
+.filter-section:last-of-type {
+    margin-bottom: 0;
+}
+
+.filter-section h4 {
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+    margin-bottom: var(--space-2);
+}
+
+.filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.filter-chip {
+    padding: var(--space-2) var(--space-3);
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+    font-size: var(--fs-sm);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.filter-chip:hover {
+    border-color: var(--fb-blue);
+}
+
+.filter-chip.active {
+    background: var(--fb-blue);
+    border-color: var(--fb-blue);
+    color: white;
+}
+
+.feature-toggles {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.feature-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+}
+
+.feature-toggle input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--fb-blue);
+}
+
+.toggle-label {
+    font-size: var(--fs-sm);
+    color: var(--text-secondary);
+}
+
+.filter-actions {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border-subtle);
+}
+
+.btn-reset {
+    flex: 1;
+    padding: var(--space-3);
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: var(--fs-sm);
+    cursor: pointer;
+}
+
+.btn-reset:hover {
+    background: var(--bg-tertiary);
+}
+
+.btn-apply {
+    flex: 2;
+    padding: var(--space-3);
+    background: var(--fb-blue);
+    border: none;
+    border-radius: var(--radius-md);
+    color: white;
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-bold);
+    cursor: pointer;
+}
+
+.btn-apply:hover {
+    background: #1565c0;
+}
