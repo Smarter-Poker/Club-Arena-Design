@@ -403,7 +403,7 @@ export default function SettingsPage() {
             <div className={styles.content}>
                 {/* Audio Settings */}
                 <section ref={audioRef} className={styles.section}>
-                    <h2>🔊 Audio</h2>
+                    <h2>Audio</h2>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
@@ -451,7 +451,7 @@ export default function SettingsPage() {
 
                 {/* Display Settings */}
                 <section ref={appearanceRef} className={styles.section}>
-                    <h2>🎨 Display</h2>
+                    <h2>Display</h2>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
@@ -534,7 +534,7 @@ export default function SettingsPage() {
 
                 {/* Gameplay Settings */}
                 <section ref={gameplayRef} className={styles.section}>
-                    <h2>🎮 Gameplay</h2>
+                    <h2>Gameplay</h2>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
@@ -594,7 +594,7 @@ export default function SettingsPage() {
 
                 {/* Notifications */}
                 <section ref={notificationsRef} className={styles.section}>
-                    <h2>🔔 Notifications</h2>
+                    <h2>Notifications</h2>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
@@ -631,7 +631,7 @@ export default function SettingsPage() {
 
                 {/* Privacy */}
                 <section ref={privacyRef} className={styles.section}>
-                    <h2>🔒 Privacy</h2>
+                    <h2>Privacy</h2>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
@@ -668,7 +668,7 @@ export default function SettingsPage() {
 
                 {/* Account */}
                 <section ref={securityRef} className={styles.section}>
-                    <h2>👤 Account</h2>
+                    <h2>Account</h2>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
@@ -696,7 +696,7 @@ export default function SettingsPage() {
 
                 {/* Danger Zone */}
                 <section ref={dangerRef} className={`${styles.section} ${styles.dangerZone}`}>
-                    <h2>⚠️ Danger Zone</h2>
+                    <h2>Danger Zone</h2>
 
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>

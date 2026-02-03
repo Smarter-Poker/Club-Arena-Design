@@ -297,7 +297,7 @@ export default function AgentManagementPage() {
                     </div>
                 </div>
                 <div className={styles.summaryCard}>
-                    <span className={styles.summaryIcon}>💳</span>
+                    <span className={styles.summaryIcon}></span>
                     <div>
                         <span className={styles.summaryValue}>${formatMoney(totalCreditExtended)}</span>
                         <span className={styles.summaryLabel}>Credit Extended</span>
@@ -314,8 +314,8 @@ export default function AgentManagementPage() {
                         onClick={() => setActiveTab(tab)}
                     >
                         {tab === 'agents' && ' Agents'}
-                        {tab === 'hierarchy' && '🌳 Hierarchy'}
-                        {tab === 'credit-limits' && '💳 Credit Limits'}
+                        {tab === 'hierarchy' && 'Hierarchy'}
+                        {tab === 'credit-limits' && 'Credit Limits'}
                         {tab === 'commissions' && ' Commissions'}
                         {tab === 'payouts' && ' Payouts'}
                     </button>
@@ -361,7 +361,7 @@ export default function AgentManagementPage() {
                                                     className={styles.actionBtn}
                                                     onClick={() => handleSuspendAgent(agent.id)}
                                                 >
-                                                    ⏸️ Suspend
+                                                    Suspend
                                                 </button>
                                                 <button
                                                     className={`${styles.actionBtn} ${styles.transfer}`}
@@ -413,7 +413,7 @@ export default function AgentManagementPage() {
                                                 className={`${styles.actionBtn} ${styles.primary}`}
                                                 onClick={() => handleReinstateAgent(agent.id)}
                                             >
-                                                ▶️ Reinstate
+                                                Reinstate
                                             </button>
                                         )}
                                     </div>
@@ -440,7 +440,7 @@ export default function AgentManagementPage() {
 
                                 <div className={styles.walletRow}>
                                     <div className={styles.walletItem}>
-                                        <span className={styles.walletIcon}>💼</span>
+                                        <span className={styles.walletIcon}>[BIZ]</span>
                                         <span>${formatMoney(agent.businessBalance)}</span>
                                     </div>
                                     <div className={styles.walletItem}>
@@ -498,7 +498,7 @@ export default function AgentManagementPage() {
                 {activeTab === 'credit-limits' && (
                     <div className={styles.creditLimitsSection}>
                         <div className={styles.creditHierarchy}>
-                            <h2>💳 Credit Limit Assignment</h2>
+                            <h2>Credit Limit Assignment</h2>
                             <p>Assign credit limits directly. Clubs set limits for Agents. Agents set limits for Sub-Agents.</p>
                         </div>
 
@@ -569,7 +569,7 @@ export default function AgentManagementPage() {
                                                         setNewLimit(agent.creditLimit);
                                                     }}
                                                 >
-                                                    ✏️ Edit
+                                                    Edit
                                                 </button>
                                             )}
                                         </td>
@@ -638,7 +638,7 @@ export default function AgentManagementPage() {
                             <h2>Settlement Schedule</h2>
                             <div className={styles.scheduleGrid}>
                                 <div className={styles.scheduleItem}>
-                                    <span className={styles.scheduleIcon}>📸</span>
+                                    <span className={styles.scheduleIcon}>[SNAP]</span>
                                     <div>
                                         <strong>Sunday 11:59 PM PST</strong>
                                         <p>Snapshot & Invoice Generation</p>
@@ -702,7 +702,7 @@ export default function AgentManagementPage() {
                 <div className={styles.modalOverlay} onClick={handleCloseModal}>
                     <div className={styles.modal} onClick={e => e.stopPropagation()}>
                         <div className={styles.modalHeader}>
-                            <h2>➕ Create New Agent</h2>
+                            <h2>Create New Agent</h2>
                             <button className={styles.closeBtn} onClick={handleCloseModal}>×</button>
                         </div>
 
@@ -750,7 +750,7 @@ export default function AgentManagementPage() {
                                         className={`${styles.roleOption} ${newAgentForm.role === 'agent' ? styles.selected : ''}`}
                                         onClick={() => setNewAgentForm({ ...newAgentForm, role: 'agent' })}
                                     >
-                                        <span className={styles.roleIcon}>👔</span>
+                                        <span className={styles.roleIcon}></span>
                                         <span className={styles.roleLabel}>Agent</span>
                                         <span className={styles.roleDesc}>Standard agent role</span>
                                     </button>
@@ -759,7 +759,7 @@ export default function AgentManagementPage() {
                                         className={`${styles.roleOption} ${newAgentForm.role === 'sub_agent' ? styles.selected : ''}`}
                                         onClick={() => setNewAgentForm({ ...newAgentForm, role: 'sub_agent' })}
                                     >
-                                        <span className={styles.roleIcon}>🧑‍💼</span>
+                                        <span className={styles.roleIcon}></span>
                                         <span className={styles.roleLabel}>Sub-Agent</span>
                                         <span className={styles.roleDesc}>Under another agent</span>
                                     </button>

@@ -96,7 +96,7 @@ export default function CashierPage() {
             <div className="balance-cards-grid">
                 <MetalCard size="sm" glow>
                     <div className="balance-card-content">
-                        <span className="balance-icon">🎰</span>
+                        <span className="balance-icon">[CHIPS]</span>
                         <div className="balance-label">Available Chips</div>
                         <div className="balance-value">
                             ${balances.PLAYER.available.toLocaleString()}
@@ -105,7 +105,7 @@ export default function CashierPage() {
                 </MetalCard>
                 <MetalCard size="sm" glow>
                     <div className="balance-card-content">
-                        <span className="balance-icon">💎</span>
+                        <span className="balance-icon">[DMD]</span>
                         <div className="balance-label">Diamonds</div>
                         <div className="balance-value">
                             {diamonds.toLocaleString()}
@@ -125,7 +125,7 @@ export default function CashierPage() {
                         onClick={() => setAction(act)}
                         fullWidth
                     >
-                        {act === 'buyin' ? '⬆️ Buy-In' : act === 'cashout' ? '⬇️ Cash-Out' : '🏭 Mint'}
+                        {act === 'buyin' ? 'Buy-In' : act === 'cashout' ? 'Cash-Out' : 'Mint Chips'}
                     </MetalButton>
                 ))}
             </div>
@@ -147,7 +147,7 @@ export default function CashierPage() {
 
                     {action === 'mint' && amount && (
                         <div className="cashier-message info">
-                            💎 {Math.ceil(parseFloat(amount || '0') * DIAMOND_RATE).toLocaleString()} diamonds required
+                            {Math.ceil(parseFloat(amount || '0') * DIAMOND_RATE).toLocaleString()} diamonds required
                         </div>
                     )}
 
@@ -181,15 +181,15 @@ export default function CashierPage() {
                             disabled={isProcessing || !amount}
                             loading={isProcessing}
                         >
-                            {action === 'buyin' ? '⚡ CONFIRM BUY-IN ⚡' :
-                                action === 'cashout' ? '⚡ CONFIRM CASH-OUT ⚡' :
-                                    '⚡ CONFIRM MINT ⚡'}
+                            {action === 'buyin' ? 'CONFIRM BUY-IN' :
+                                action === 'cashout' ? 'CONFIRM CASH-OUT' :
+                                    'CONFIRM MINT'}
                         </MetalButton>
                     </div>
 
                     {tableId && (
                         <p className="table-context-info">
-                            ↩️ Returning to table after transaction
+                            Returning to table after transaction
                         </p>
                     )}
                 </div>

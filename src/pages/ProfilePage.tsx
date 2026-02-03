@@ -340,9 +340,9 @@ export default function ProfilePage() {
                         className={styles.editButton}
                         onClick={() => window.open('https://smarter.poker/hub/avatars-complete', '_blank')}
                     >
-                         Change Avatar
+                        Change Avatar
                     </button>
-                    <button className={styles.editButton} onClick={() => navigate('/settings')}>✏️ Edit Profile</button>
+                    <button className={styles.editButton} onClick={() => navigate('/settings')}>Edit Profile</button>
                 </div>
             </section>
 
@@ -353,23 +353,23 @@ export default function ProfilePage() {
                     className={styles.bonusButton}
                     onClick={() => setShowBonusWheel(true)}
                 >
-                     Daily Bonus
+                    Daily Bonus
                 </button>
             </section>
 
             {/* Tab Navigation */}
             <nav className={styles.tabNav}>
                 <button className={`${styles.tab} ${activeTab === 'stats' ? styles.activeTab : ''}`} onClick={() => setActiveTab('stats')}>
-                     Stats
+                    Stats
                 </button>
                 <button className={`${styles.tab} ${activeTab === 'achievements' ? styles.activeTab : ''}`} onClick={() => setActiveTab('achievements')}>
-                     Achievements
+                    Achievements
                 </button>
                 <button className={`${styles.tab} ${activeTab === 'history' ? styles.activeTab : ''}`} onClick={() => setActiveTab('history')}>
-                     History
+                    History
                 </button>
                 <button className={`${styles.tab} ${activeTab === 'social' ? styles.activeTab : ''}`} onClick={() => setActiveTab('social')}>
-                     Friends
+                    Friends
                 </button>
             </nav>
 

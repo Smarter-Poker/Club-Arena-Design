@@ -362,14 +362,14 @@ export default function HomePage() {
         {
             id: 'leaderboard',
             title: 'LEADERBOARDS',
-            icon: '🏆',
+            icon: '',
             subtitle: 'Rankings',
             action: () => navigate('/leaderboard'),
         },
         {
             id: 'cashier',
             title: 'CASHIER',
-            icon: '💵',
+            icon: '',
             subtitle: 'Chips & Cash',
             action: () => {
                 // Route to last club's cashier if multi-club, else first club
@@ -386,14 +386,14 @@ export default function HomePage() {
         {
             id: 'diamond-store',
             title: 'DIAMOND STORE',
-            icon: '💎',
+            icon: '',
             subtitle: 'Purchase',
             action: () => navigate('/store'),
         },
         {
             id: 'hand-history',
             title: 'HAND HISTORY',
-            icon: '📜',
+            icon: '',
             subtitle: 'Review hands',
             action: () => navigate('/hand-history'),
         },
