@@ -38,7 +38,7 @@ export const ChipTransferConfirm: React.FC<ChipTransferConfirmProps> = ({
     return (
         <div className="transfer-confirm-overlay" onClick={onCancel}>
             <div className="transfer-confirm" onClick={(e) => e.stopPropagation()}>
-                <div className="confirm-icon"></div>
+                <div className="confirm-icon">↔</div>
                 <h3>Confirm Transfer</h3>
 
                 <div className="transfer-visual">

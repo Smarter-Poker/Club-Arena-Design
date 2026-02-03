@@ -38,10 +38,10 @@ export function Notification({
     const { id, type, title, message, action } = notification;
 
     const icons = {
-        info: '',
-        success: '',
-        warning: '',
-        error: '',
+        info: 'ℹ',
+        success: '✓',
+        warning: '⚠',
+        error: '✗',
     };
 
     return (
@@ -170,7 +170,7 @@ export function NotificationBell({
 }) {
     return (
         <button className="notification-bell" onClick={onClick}>
-            <span className="notification-bell-icon"></span>
+            <span className="notification-bell-icon">🔔</span>
             <AnimatePresence>
                 {count > 0 && <NotificationBadge count={count} />}
             </AnimatePresence>

@@ -21,11 +21,11 @@ interface ThrowableSelectorProps {
 }
 
 const CATEGORY_LABELS: Record<ThrowableCategory, { icon: React.ReactNode; label: string }> = {
-    reactions: { icon: <span className="category-icon category-icon--reactions"></span>, label: 'React' },
+    reactions: { icon: <span className="category-icon category-icon--reactions">☺</span>, label: 'React' },
     throws: { icon: <span className="category-icon category-icon--throws">🍅</span>, label: 'Throw' },
-    cheers: { icon: <span className="category-icon category-icon--cheers"></span>, label: 'Cheer' },
-    expressions: { icon: <span className="category-icon category-icon--expressions"></span>, label: 'Poker' },
-    premium: { icon: <span className="category-icon category-icon--premium"></span>, label: 'VIP' },
+    cheers: { icon: <span className="category-icon category-icon--cheers">★</span>, label: 'Cheer' },
+    expressions: { icon: <span className="category-icon category-icon--expressions">♠</span>, label: 'Poker' },
+    premium: { icon: <span className="category-icon category-icon--premium">♛</span>, label: 'VIP' },
 };
 
 export function ThrowableSelector({ userId, onSelect, onClose }: ThrowableSelectorProps) {

@@ -55,7 +55,7 @@ export function SearchInput({
 
     return (
         <div className={`search-input search-${size} ${fullWidth ? 'search-full' : ''} ${className}`}>
-            <span className="search-icon"></span>
+            <span className="search-icon">⌕</span>
             <input
                 ref={inputRef}
                 type="text"

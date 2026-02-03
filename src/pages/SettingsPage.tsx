@@ -198,6 +198,14 @@ export default function SettingsPage() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
 
+    // 2FA States
+    const [show2FAModal, setShow2FAModal] = useState(false);
+    const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+    const [totpSecret, setTotpSecret] = useState<string>('');
+    const [totpQRCode, setTotpQRCode] = useState<string>('');
+    const [verificationCode, setVerificationCode] = useState('');
+    const [factorId, setFactorId] = useState<string>('');
+
     // Section refs for tab navigation
     const audioRef = useRef<HTMLElement>(null);
     const appearanceRef = useRef<HTMLElement>(null);
@@ -338,6 +346,84 @@ export default function SettingsPage() {
         }
         setActionLoading(false);
     };
+
+    // 2FA Handlers
+    const check2FAStatus = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { data: factors } = await supabase.auth.mfa.listFactors();
+            const totpFactor = factors?.totp?.find(f => f.status === 'verified');
+            setTwoFactorEnabled(!!totpFactor);
+            if (totpFactor) setFactorId(totpFactor.id);
+        } catch (err) {
+            console.error('Failed to check 2FA status:', err);
+        }
+    };
+
+    const handleEnable2FA = async () => {
+        setActionLoading(true);
+        try {
+            const { data, error } = await supabase.auth.mfa.enroll({
+                factorType: 'totp',
+                friendlyName: 'Club Arena Authenticator'
+            });
+            if (error) throw error;
+
+            setTotpSecret(data.totp.secret);
+            setTotpQRCode(data.totp.qr_code);
+            setFactorId(data.id);
+            setShow2FAModal(true);
+        } catch (err) {
+            console.error('Failed to enable 2FA:', err);
+        }
+        setActionLoading(false);
+    };
+
+    const handleVerify2FA = async () => {
+        if (verificationCode.length !== 6) return;
+        setActionLoading(true);
+        try {
+            const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
+                factorId
+            });
+            if (challengeError) throw challengeError;
+
+            const { error: verifyError } = await supabase.auth.mfa.verify({
+                factorId,
+                challengeId: challenge.id,
+                code: verificationCode
+            });
+            if (verifyError) throw verifyError;
+
+            setTwoFactorEnabled(true);
+            setShow2FAModal(false);
+            setVerificationCode('');
+        } catch (err) {
+            console.error('Failed to verify 2FA:', err);
+        }
+        setActionLoading(false);
+    };
+
+    const handleDisable2FA = async () => {
+        if (!confirm('Are you sure you want to disable two-factor authentication?')) return;
+        setActionLoading(true);
+        try {
+            const { error } = await supabase.auth.mfa.unenroll({ factorId });
+            if (error) throw error;
+            setTwoFactorEnabled(false);
+            setFactorId('');
+        } catch (err) {
+            console.error('Failed to disable 2FA:', err);
+        }
+        setActionLoading(false);
+    };
+
+    // Check 2FA status on mount
+    useEffect(() => {
+        check2FAStatus();
+    }, []);
 
     const updateSetting = <K extends keyof UserSettings>(
         key: K,
@@ -688,9 +774,27 @@ export default function SettingsPage() {
                     <div className={styles.settingRow}>
                         <div className={styles.settingInfo}>
                             <span className={styles.settingLabel}>Two-Factor Authentication</span>
-                            <span className={styles.settingDesc}>Add extra security to your account</span>
+                            <span className={styles.settingDesc}>
+                                {twoFactorEnabled ? '🛡️ Enabled — Your account is protected' : 'Add extra security to your account'}
+                            </span>
                         </div>
-                        <button className={styles.actionButton} disabled title="Coming in next update">Enable</button>
+                        {twoFactorEnabled ? (
+                            <button
+                                className={styles.dangerButton}
+                                onClick={handleDisable2FA}
+                                disabled={actionLoading}
+                            >
+                                {actionLoading ? 'Disabling...' : 'Disable'}
+                            </button>
+                        ) : (
+                            <button
+                                className={styles.actionButton}
+                                onClick={handleEnable2FA}
+                                disabled={actionLoading}
+                            >
+                                {actionLoading ? 'Setting up...' : 'Enable'}
+                            </button>
+                        )}
                     </div>
                 </section>
 
@@ -773,6 +877,47 @@ export default function SettingsPage() {
                                 disabled={actionLoading || !newPassword || newPassword !== confirmPassword || newPassword.length < 8}
                             >
                                 {actionLoading ? 'Updating...' : 'Update Password'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 2FA Setup Modal */}
+            {show2FAModal && (
+                <div className={styles.modalOverlay} onClick={(e) => e.target === e.currentTarget && setShow2FAModal(false)}>
+                    <div className={styles.modal}>
+                        <h3>🛡️ Set Up Two-Factor Authentication</h3>
+                        <p>Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)</p>
+
+                        {totpQRCode && (
+                            <div style={{ textAlign: 'center', margin: '1rem 0' }}>
+                                <img src={totpQRCode} alt="2FA QR Code" style={{ maxWidth: '200px', borderRadius: '8px' }} />
+                            </div>
+                        )}
+
+                        <p style={{ fontSize: '0.85rem', color: '#9ca3af' }}>
+                            Or enter this secret manually: <code style={{ background: '#1f2937', padding: '0.25rem 0.5rem', borderRadius: '4px' }}>{totpSecret}</code>
+                        </p>
+
+                        <input
+                            type="text"
+                            placeholder="Enter 6-digit code"
+                            value={verificationCode}
+                            onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                            className={styles.input}
+                            style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '0.5rem' }}
+                            maxLength={6}
+                        />
+
+                        <div className={styles.modalActions}>
+                            <button className={styles.cancelBtn} onClick={() => setShow2FAModal(false)}>Cancel</button>
+                            <button
+                                className={styles.saveBtn}
+                                onClick={handleVerify2FA}
+                                disabled={actionLoading || verificationCode.length !== 6}
+                            >
+                                {actionLoading ? 'Verifying...' : 'Verify & Enable'}
                             </button>
                         </div>
                     </div>

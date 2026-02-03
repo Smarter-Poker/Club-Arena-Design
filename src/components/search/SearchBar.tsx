@@ -38,7 +38,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
     return (
         <form className="search-bar" onSubmit={handleSubmit}>
-            <span className="search-icon"></span>
+            <span className="search-icon">⌕</span>
             <input
                 type="text"
                 className="search-input"

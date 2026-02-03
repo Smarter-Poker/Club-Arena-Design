@@ -50,7 +50,7 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
     return (
         <div className="two-factor-setup">
             <div className="setup-header">
-                <div className="shield-icon"></div>
+                <div className="shield-icon">⛨</div>
                 <div className="header-text">
                     <h3>Two-Factor Authentication</h3>
                     <p className={isEnabled ? 'status-enabled' : 'status-disabled'}>

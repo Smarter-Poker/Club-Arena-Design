@@ -157,11 +157,11 @@ function ShellContent() {
                             )}
                         </button>
                         <div className="shell-diamonds" onClick={() => navigate('/diamond-store')} style={{ cursor: 'pointer' }}>
-                            <span className="diamond-icon"></span>
+                            <span className="diamond-icon">◇</span>
                             <span className="diamond-amount">{diamonds.toLocaleString()}</span>
                         </div>
                         <div className="shell-chips">
-                            <span className="chip-icon"></span>
+                            <span className="chip-icon">$</span>
                             <span className="chip-amount">{user ? totalChips.toLocaleString() : '0'}</span>
                         </div>
                         <button className="shell-avatar" onClick={() => navigate('/profile')}>

@@ -83,14 +83,14 @@ export const SessionBreakdown: React.FC<SessionBreakdownProps> = ({ session, onV
 
             <div className="session-highlights">
                 <div className="highlight highlight-win">
-                    <span className="highlight-icon"></span>
+                    <span className="highlight-icon">▲</span>
                     <div className="highlight-info">
                         <span className="highlight-value">+{session.biggestWin.toLocaleString()}</span>
                         <span className="highlight-label">Biggest Win</span>
                     </div>
                 </div>
                 <div className="highlight highlight-loss">
-                    <span className="highlight-icon"></span>
+                    <span className="highlight-icon">▼</span>
                     <div className="highlight-info">
                         <span className="highlight-value">-{session.biggestLoss.toLocaleString()}</span>
                         <span className="highlight-label">Biggest Loss</span>

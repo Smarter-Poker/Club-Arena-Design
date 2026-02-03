@@ -98,7 +98,7 @@ export const BlockedPlayersList: React.FC<BlockedPlayersListProps> = ({ onUnbloc
 
             {blockedPlayers.length === 0 ? (
                 <div className="no-blocked">
-                    <span className="no-blocked-icon"></span>
+                    <span className="no-blocked-icon">✓</span>
                     <p>No blocked players</p>
                 </div>
             ) : (

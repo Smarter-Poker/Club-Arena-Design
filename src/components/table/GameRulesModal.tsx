@@ -68,7 +68,7 @@ export function GameRulesModal({
                 {/* Header */}
                 <div className="rules-modal__header">
                     <div className="rules-modal__title-row">
-                        <span className="rules-modal__icon"></span>
+                        <span className="rules-modal__icon">ℹ</span>
                         <div className="rules-modal__title-group">
                             <h2 className="rules-modal__title">Table Rules</h2>
                             <span className="rules-modal__subtitle">{variant} • {stakes}</span>

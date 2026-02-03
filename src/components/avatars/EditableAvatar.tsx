@@ -26,7 +26,7 @@ export const EditableAvatar: React.FC<EditableAvatarProps> = ({
                 )}
             </div>
             <div className="edit-overlay">
-                <span className="edit-icon"></span>
+                <span className="edit-icon">✎</span>
                 <span className="edit-text">Edit</span>
             </div>
         </div>

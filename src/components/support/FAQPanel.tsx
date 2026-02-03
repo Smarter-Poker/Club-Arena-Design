@@ -45,7 +45,7 @@ export function FAQPanel({ isOpen, onClose }: { isOpen: boolean, onClose: () => 
                 </div>
 
                 <div className="faq-search">
-                    <span className="search-icon"></span>
+                    <span className="search-icon">⌕</span>
                     <input
                         placeholder="Search for answers..."
                         value={search}

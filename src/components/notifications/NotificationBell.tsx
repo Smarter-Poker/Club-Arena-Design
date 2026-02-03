@@ -20,7 +20,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
             onClick={onClick}
             aria-label={`${count} notifications`}
         >
-            <span className="bell-icon"></span>
+            <span className="bell-icon">🔔</span>
             {count > 0 && (
                 <span className="notification-badge">
                     {displayCount}

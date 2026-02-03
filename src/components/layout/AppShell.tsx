@@ -32,11 +32,11 @@ export default function AppShell({
 
     // Bottom navigation items (Club Admin view)
     const navItems: NavItem[] = [
-        { id: 'messages', label: 'Messages', icon: '', path: `/clubs/${clubId}/messages` },
-        { id: 'players', label: 'Players', icon: '', path: `/clubs/${clubId}/members` },
-        { id: 'cashier', label: 'Cashier', icon: '', path: `/clubs/${clubId}/cashier` },
-        { id: 'data', label: 'Data', icon: '', path: `/clubs/${clubId}/dashboard` },
-        { id: 'admin', label: 'Admin', icon: '', path: `/clubs/${clubId}/settings` },
+        { id: 'messages', label: 'Messages', icon: '✉', path: `/clubs/${clubId}/messages` },
+        { id: 'players', label: 'Players', icon: '●', path: `/clubs/${clubId}/members` },
+        { id: 'cashier', label: 'Cashier', icon: '$', path: `/clubs/${clubId}/cashier` },
+        { id: 'data', label: 'Data', icon: '◆', path: `/clubs/${clubId}/dashboard` },
+        { id: 'admin', label: 'Admin', icon: '⚙', path: `/clubs/${clubId}/settings` },
     ];
 
     const isActive = (path: string) => location.pathname === path;
@@ -80,27 +80,27 @@ export default function AppShell({
                         </div>
                         <div className="menu-items">
                             <Link to={`/clubs/${clubId}/cashier`} className="menu-item">
-                                <span className="menu-icon"></span>
+                                <span className="menu-icon">$</span>
                                 <span>Cashier</span>
                                 <span className="menu-chevron">›</span>
                             </Link>
                             <Link to={`/clubs/${clubId}/topup`} className="menu-item">
-                                <span className="menu-icon"></span>
+                                <span className="menu-icon">+</span>
                                 <span>Top Up</span>
                                 <span className="menu-chevron">›</span>
                             </Link>
                             <Link to={`/clubs/${clubId}/settings`} className="menu-item">
-                                <span className="menu-icon"></span>
+                                <span className="menu-icon">⚙</span>
                                 <span>Table Settings</span>
                                 <span className="menu-chevron">›</span>
                             </Link>
                             <button className="menu-item">
-                                <span className="menu-icon"></span>
+                                <span className="menu-icon">♪</span>
                                 <span>Sounds</span>
                                 <span className="menu-chevron">›</span>
                             </button>
                             <button className="menu-item">
-                                <span className="menu-icon"></span>
+                                <span className="menu-icon">◉</span>
                                 <span>Vibrations</span>
                                 <label className="toggle">
                                     <input type="checkbox" defaultChecked />
@@ -108,17 +108,17 @@ export default function AppShell({
                                 </label>
                             </button>
                             <button className="menu-item">
-                                <span className="menu-icon"></span>
+                                <span className="menu-icon">↗</span>
                                 <span>Share</span>
                                 <span className="menu-chevron">›</span>
                             </button>
                             <Link to="/vip" className="menu-item">
-                                <span className="menu-icon"></span>
+                                <span className="menu-icon">♛</span>
                                 <span>VIP</span>
                                 <span className="menu-chevron">›</span>
                             </Link>
                             <button className="menu-item exit" onClick={() => window.history.back()}>
-                                <span className="menu-icon"></span>
+                                <span className="menu-icon">→</span>
                                 <span>Exit</span>
                                 <span className="menu-chevron">›</span>
                             </button>
