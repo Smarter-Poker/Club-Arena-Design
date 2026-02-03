@@ -1,0 +1,287 @@
+/**
+ * ♠ CLUB ARENA — Player Notes
+ * Personal notes system for tracking opponents
+ */
+
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
+import { useUserStore } from '../../stores/useUserStore';
+import { useToast } from '../common/Toast';
+import './PlayerNotes.css';
+
+interface PlayerNote {
+    id: string;
+    playerId: string;
+    playerName: string;
+    playerAvatar?: string;
+    noteColor: 'green' | 'yellow' | 'red' | 'blue' | 'purple';
+    note: string;
+    tags: string[];
+    createdAt: string;
+    updatedAt: string;
+}
+
+interface PlayerNotesProps {
+    playerId?: string;
+    onClose?: () => void;
+    mode?: 'view' | 'edit' | 'list';
+}
+
+export const PlayerNotes: React.FC<PlayerNotesProps> = ({
+    playerId,
+    onClose,
+    mode = 'list',
+}) => {
+    const { user } = useUserStore();
+    const toast = useToast();
+    const [notes, setNotes] = useState<PlayerNote[]>([]);
+    const [selectedNote, setSelectedNote] = useState<PlayerNote | null>(null);
+    const [editingNote, setEditingNote] = useState('');
+    const [selectedColor, setSelectedColor] = useState<PlayerNote['noteColor']>('green');
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [loading, setLoading] = useState(true);
+
+    const colors: { id: PlayerNote['noteColor']; label: string }[] = [
+        { id: 'green', label: 'Fish' },
+        { id: 'yellow', label: 'Unknown' },
+        { id: 'red', label: 'Shark' },
+        { id: 'blue', label: 'Reg' },
+        { id: 'purple', label: 'Whale' },
+    ];
+
+    const commonTags = ['Tight', 'Loose', 'Aggressive', 'Passive', 'Bluffer', 'Calling Station', 'Tilts Easy', 'Good Player'];
+
+    useEffect(() => {
+        loadNotes();
+    }, [user?.id, playerId]);
+
+    const loadNotes = async () => {
+        if (!user?.id) return;
+
+        try {
+            let query = supabase
+                .from('player_notes')
+                .select('*')
+                .eq('user_id', user.id);
+
+            if (playerId) {
+                query = query.eq('player_id', playerId);
+            }
+
+            const { data, error } = await query.order('updated_at', { ascending: false });
+
+            if (error) throw error;
+
+            // Mock data for demo
+            const mockNotes: PlayerNote[] = [
+                {
+                    id: '1',
+                    playerId: 'player-1',
+                    playerName: 'FishyMcFish',
+                    noteColor: 'green',
+                    note: 'Calls any pair, never folds draws. 3-bet bluff frequently.',
+                    tags: ['Loose', 'Passive', 'Calling Station'],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                },
+                {
+                    id: '2',
+                    playerId: 'player-2',
+                    playerName: 'SharkMaster',
+                    noteColor: 'red',
+                    note: 'Very strong player. Balanced range, uses bet sizing tells.',
+                    tags: ['Good Player', 'Aggressive'],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                },
+            ];
+            setNotes(data?.length ? data : mockNotes);
+        } catch (error) {
+            console.error('Failed to load notes:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const saveNote = async () => {
+        if (!user?.id || !playerId || !editingNote.trim()) return;
+
+        try {
+            const noteData = {
+                user_id: user.id,
+                player_id: playerId,
+                note_color: selectedColor,
+                note: editingNote,
+                tags: selectedTags,
+            };
+
+            const { error } = await supabase
+                .from('player_notes')
+                .upsert(noteData, { onConflict: 'user_id,player_id' });
+
+            if (error) throw error;
+
+            toast.success('Note saved!');
+            loadNotes();
+            setEditingNote('');
+            setSelectedTags([]);
+        } catch (error) {
+            console.error('Failed to save note:', error);
+            toast.error('Failed to save note');
+        }
+    };
+
+    const deleteNote = async (noteId: string) => {
+        try {
+            const { error } = await supabase
+                .from('player_notes')
+                .delete()
+                .eq('id', noteId);
+
+            if (error) throw error;
+
+            toast.success('Note deleted');
+            loadNotes();
+        } catch (error) {
+            console.error('Failed to delete note:', error);
+            toast.error('Failed to delete note');
+        }
+    };
+
+    const toggleTag = (tag: string) => {
+        setSelectedTags(prev =>
+            prev.includes(tag)
+                ? prev.filter(t => t !== tag)
+                : [...prev, tag]
+        );
+    };
+
+    const filteredNotes = notes.filter(n =>
+        n.playerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        n.note.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        n.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+
+    if (loading) {
+        return (
+            <div className="player-notes loading">
+                <div className="spinner" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="player-notes">
+            <div className="notes-header">
+                <h2>📝 Player Notes</h2>
+                {onClose && <button className="close-btn" onClick={onClose}>✕</button>}
+            </div>
+
+            {/* Search */}
+            <div className="notes-search">
+                <input
+                    type="text"
+                    placeholder="Search notes..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+
+            {/* Color Legend */}
+            <div className="color-legend">
+                {colors.map(c => (
+                    <span key={c.id} className={`legend-item color-${c.id}`}>
+                        ● {c.label}
+                    </span>
+                ))}
+            </div>
+
+            {/* Notes List */}
+            <div className="notes-list">
+                {filteredNotes.length === 0 ? (
+                    <div className="empty-notes">
+                        <span>📝</span>
+                        <p>No notes yet</p>
+                    </div>
+                ) : (
+                    filteredNotes.map(note => (
+                        <div
+                            key={note.id}
+                            className={`note-card color-${note.noteColor}`}
+                            onClick={() => setSelectedNote(note)}
+                        >
+                            <div className="note-header">
+                                <div className="player-info">
+                                    <span className={`color-dot color-${note.noteColor}`}>●</span>
+                                    <span className="player-name">{note.playerName}</span>
+                                </div>
+                                <button
+                                    className="delete-btn"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        deleteNote(note.id);
+                                    }}
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                            <p className="note-text">{note.note}</p>
+                            <div className="note-tags">
+                                {note.tags.map(tag => (
+                                    <span key={tag} className="tag">{tag}</span>
+                                ))}
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {/* Edit Panel (if playerId provided) */}
+            {playerId && (
+                <div className="edit-panel">
+                    <h4>Add/Edit Note</h4>
+
+                    {/* Color Selector */}
+                    <div className="color-selector">
+                        {colors.map(c => (
+                            <button
+                                key={c.id}
+                                className={`color-btn color-${c.id} ${selectedColor === c.id ? 'active' : ''}`}
+                                onClick={() => setSelectedColor(c.id)}
+                                title={c.label}
+                            />
+                        ))}
+                    </div>
+
+                    {/* Note Input */}
+                    <textarea
+                        value={editingNote}
+                        onChange={(e) => setEditingNote(e.target.value)}
+                        placeholder="Write your notes about this player..."
+                        maxLength={500}
+                    />
+
+                    {/* Tags */}
+                    <div className="tag-selector">
+                        {commonTags.map(tag => (
+                            <button
+                                key={tag}
+                                className={`tag-btn ${selectedTags.includes(tag) ? 'active' : ''}`}
+                                onClick={() => toggleTag(tag)}
+                            >
+                                {tag}
+                            </button>
+                        ))}
+                    </div>
+
+                    <button className="save-btn" onClick={saveNote}>
+                        Save Note
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default PlayerNotes;
