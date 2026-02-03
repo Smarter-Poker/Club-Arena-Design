@@ -6,4 +6,7 @@
 
 export { ClubMemberManagement } from './ClubMemberManagement';
 export { StatsExport } from './StatsExport';
-export { TableCreator } from './TableCreator';
+export { PlayerSearch } from './PlayerSearch';
+export { AuditLog } from './AuditLog';
+export { RakeReports } from './RakeReports';
+
