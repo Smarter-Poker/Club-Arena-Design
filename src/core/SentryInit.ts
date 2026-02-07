@@ -87,26 +87,47 @@ export function initSentry() {
             beforeSend(event, hint) {
                 const error = hint.originalException as Error | undefined;
 
-                // Filter out ad blocker network errors
-                if (error && typeof error === 'object' && 'message' in error) {
-                    const message = String(error.message);
-
-                    if (message.includes('Failed to fetch') || message.includes('NetworkError')) {
-                        return null;
+                if (error && typeof error === 'object') {
+                    // Filter by error name
+                    if ('name' in error) {
+                        const name = String(error.name);
+                        // AbortError: benign signal cancellation (fetch teardown, navigation)
+                        if (name === 'AbortError') return null;
                     }
 
-                    // Filter out ResizeObserver loop errors (benign browser quirk)
-                    if (message.includes('ResizeObserver')) {
-                        return null;
+                    // Filter by error message
+                    if ('message' in error) {
+                        const message = String(error.message);
+
+                        if (message.includes('Failed to fetch') || message.includes('NetworkError')) {
+                            return null;
+                        }
+                        if (message.includes('ResizeObserver')) {
+                            return null;
+                        }
+                        // Suppress benign abort signals
+                        if (message.includes('signal is aborted') || message.includes('aborted')) {
+                            return null;
+                        }
+                        // Suppress opaque internal errors (e.g. browser IndexedDB / extension glitches)
+                        if (message.includes('Internal error')) {
+                            return null;
+                        }
+                        // Suppress null-access errors from third-party scripts / instrumentation
+                        if (message.includes("Cannot read properties of null")) {
+                            // Only suppress if stack is missing or from non-app code
+                            const stack = 'stack' in error ? String(error.stack) : '';
+                            const isAppCode = stack.includes('/src/');
+                            if (!isAppCode) return null;
+                        }
                     }
-                }
 
-                // Filter out errors from browser extensions
-                if (error && typeof error === 'object' && 'stack' in error) {
-                    const stack = String(error.stack);
-
-                    if (stack.includes('chrome-extension://') || stack.includes('moz-extension://')) {
-                        return null;
+                    // Filter out errors from browser extensions
+                    if ('stack' in error) {
+                        const stack = String(error.stack);
+                        if (stack.includes('chrome-extension://') || stack.includes('moz-extension://')) {
+                            return null;
+                        }
                     }
                 }
 
@@ -146,6 +167,17 @@ export function initSentry() {
                 // ResizeObserver
                 'ResizeObserver loop limit exceeded',
                 'ResizeObserver loop completed with undelivered notifications',
+
+                // AbortError — benign fetch/signal cancellation
+                'AbortError',
+                'signal is aborted without reason',
+                'signal is aborted',
+                'The operation was aborted',
+                'The user aborted a request',
+
+                // Opaque internal errors (browser internals / IndexedDB)
+                'UnknownError: Internal error',
+                'Internal error',
             ],
         });
 

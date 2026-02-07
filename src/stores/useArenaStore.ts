@@ -234,23 +234,35 @@ export const useArenaStore = create<ArenaState>()(
             // Custom serialization for Set and Map
             storage: {
                 getItem: (name) => {
-                    const str = localStorage.getItem(name);
-                    if (!str) return null;
-                    const parsed = JSON.parse(str);
-                    return {
-                        ...parsed,
-                        state: {
-                            ...parsed.state,
-                            previouslySeenQuestionIds: new Set(parsed.state.previouslySeenQuestionIds || []),
-                            leakSignals: new Map(parsed.state.leakSignals || []),
-                        },
-                    };
+                    try {
+                        const str = localStorage.getItem(name);
+                        if (!str) return null;
+                        const parsed = JSON.parse(str);
+                        return {
+                            ...parsed,
+                            state: {
+                                ...parsed.state,
+                                previouslySeenQuestionIds: new Set(parsed.state.previouslySeenQuestionIds || []),
+                                leakSignals: new Map(parsed.state.leakSignals || []),
+                            },
+                        };
+                    } catch {
+                        return null;
+                    }
                 },
                 setItem: (name, value) => {
-                    localStorage.setItem(name, JSON.stringify(value));
+                    try {
+                        localStorage.setItem(name, JSON.stringify(value));
+                    } catch {
+                        // localStorage unavailable (iframe sandbox, storage quota, etc.)
+                    }
                 },
                 removeItem: (name) => {
-                    localStorage.removeItem(name);
+                    try {
+                        localStorage.removeItem(name);
+                    } catch {
+                        // localStorage unavailable
+                    }
                 },
             },
         }
