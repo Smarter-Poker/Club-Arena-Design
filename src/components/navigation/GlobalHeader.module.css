@@ -110,15 +110,10 @@
 }
 
 .addBtn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
+    font-size: inherit;
     font-weight: 700;
     color: white;
-    background: none;
-    border: none;
-    padding: 0;
+    line-height: 1;
 }
 
 /* RIGHT Section */
