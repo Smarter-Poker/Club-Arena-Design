@@ -133,9 +133,11 @@
 }
 
 .addBtn {
-    font-size: 15px;
+    font-size: 23px;
     font-weight: 700;
     cursor: pointer;
+    position: relative;
+    top: -1px;
 }
 
 /* RIGHT Section */
