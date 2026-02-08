@@ -172,8 +172,8 @@ export default function GlobalHeader({
                         <span className={styles.statValue} title={diamonds.toLocaleString() + ' diamonds'}>
                             {isLoadingDiamonds ? '...' : showFullDiamonds ? diamonds.toLocaleString() : formatCompact(diamonds)}
                         </span>
-                        <span className={styles.addBtn}>+</span>
                     </a>
+                    <a href="https://smarter.poker/hub/diamond-store" className={styles.addBtn}>+</a>
 
                     {/* XP system removed */}
                 </div>
