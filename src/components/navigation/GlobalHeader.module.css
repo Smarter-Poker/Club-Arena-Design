@@ -110,9 +110,12 @@
 }
 
 .addBtn {
-    font-size: inherit;
+    font-size: 15px;
     font-weight: 700;
     color: white;
+    display: flex;
+    align-self: center;
+    line-height: 0;
 }
 
 /* RIGHT Section */
