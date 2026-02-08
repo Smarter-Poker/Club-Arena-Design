@@ -98,7 +98,7 @@
     border-radius: 0;
     text-decoration: none;
     color: white;
-    width: 90px;
+    width: auto;
     height: 40px;
     box-sizing: border-box;
     font-weight: 700;
@@ -135,11 +135,7 @@
 .addBtn {
     font-size: 15px;
     font-weight: 700;
-    color: white;
-    display: flex;
-    align-self: center;
-    line-height: 0;
-    text-decoration: none;
+    cursor: pointer;
 }
 
 /* RIGHT Section */

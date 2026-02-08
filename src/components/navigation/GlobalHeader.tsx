@@ -157,7 +157,6 @@ export default function GlobalHeader({
 
                 {/* CENTER: Diamond Wallet */}
                 <div className={styles.headerCenter}>
-                    {/* Diamond Wallet */}
                     <a
                         href="https://smarter.poker/hub/diamond-store"
                         className={styles.diamondWallet}
@@ -172,8 +171,8 @@ export default function GlobalHeader({
                         <span className={styles.statValue} title={diamonds.toLocaleString() + ' diamonds'}>
                             {isLoadingDiamonds ? '...' : showFullDiamonds ? diamonds.toLocaleString() : formatCompact(diamonds)}
                         </span>
+                        <span className={styles.addBtn} onClick={(e) => { e.stopPropagation(); e.preventDefault(); window.location.href = 'https://smarter.poker/hub/diamond-store'; }}>+</span>
                     </a>
-                    <a href="https://smarter.poker/hub/diamond-store" className={styles.addBtn}>+</a>
 
                     {/* XP system removed */}
                 </div>
