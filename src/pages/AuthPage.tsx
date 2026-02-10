@@ -157,196 +157,207 @@ export default function AuthPage() {
     return (
         <div className={styles.container}>
             <div className={styles.authCard}>
-                {/* Logo */}
-                <div className={styles.logo}>
+                {/* Metallic Frame Overlay */}
+                <div className={styles.frameOverlay}>
                     <img
-                        src={`${import.meta.env.BASE_URL}images/smarter-poker-logo.jpg`}
-                        alt="Smarter.Poker"
-                        className={styles.logoImage}
+                        src={`${import.meta.env.BASE_URL}images/auth-frame.jpg`}
+                        alt=""
                     />
                 </div>
 
-                {/* Tab Switcher */}
-                {mode !== 'reset' && (
-                    <div className={styles.tabs}>
-                        <button
-                            className={`${styles.tab} ${mode === 'login' ? styles.tabActive : ''}`}
-                            onClick={() => { setMode('login'); setError(null); setSuccess(null); }}
-                        >
-                            Login
-                        </button>
-                        <button
-                            className={`${styles.tab} ${mode === 'signup' ? styles.tabActive : ''}`}
-                            onClick={() => { setMode('signup'); setError(null); setSuccess(null); }}
-                        >
-                            Sign Up
-                        </button>
+                {/* Card Content — positioned inside the frame */}
+                <div className={styles.cardContent}>
+                    {/* Logo */}
+                    <div className={styles.logo}>
+                        <img
+                            src={`${import.meta.env.BASE_URL}images/smarter-poker-logo.jpg`}
+                            alt="Smarter.Poker"
+                            className={styles.logoImage}
+                        />
                     </div>
-                )}
 
-                {/* Success Message */}
-                {success && (
-                    <div className={styles.successMessage}>
-                        <span>\u2713</span> {success}
-                    </div>
-                )}
-
-                {/* Error Message */}
-                {error && (
-                    <div className={styles.errorMessage}>
-                        <span>!</span> {error}
-                    </div>
-                )}
-
-                {/* Login Form */}
-                {mode === 'login' && (
-                    <form onSubmit={handleLogin} className={styles.form}>
-                        <div className={styles.inputGroup}>
-                            <label htmlFor="email">Email</label>
-                            <input
-                                id="email"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="your@email.com"
-                                required
-                                autoComplete="email"
-                            />
+                    {/* Tab Switcher */}
+                    {mode !== 'reset' && (
+                        <div className={styles.tabs}>
+                            <button
+                                className={`${styles.tab} ${mode === 'login' ? styles.tabActive : ''}`}
+                                onClick={() => { setMode('login'); setError(null); setSuccess(null); }}
+                            >
+                                Login
+                            </button>
+                            <button
+                                className={`${styles.tab} ${mode === 'signup' ? styles.tabActive : ''}`}
+                                onClick={() => { setMode('signup'); setError(null); setSuccess(null); }}
+                            >
+                                Sign Up
+                            </button>
                         </div>
+                    )}
 
-                        <div className={styles.inputGroup}>
-                            <label htmlFor="password">Password</label>
-                            <input
-                                id="password"
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••"
-                                required
-                                autoComplete="current-password"
-                            />
+                    {/* Success Message */}
+                    {success && (
+                        <div className={styles.successMessage}>
+                            <span>\u2713</span> {success}
                         </div>
+                    )}
 
-                        <button
-                            type="submit"
-                            className={styles.submitButton}
-                            disabled={isLoading}
-                        >
-                            {isLoading ? 'Logging in...' : 'Login'}
-                        </button>
-
-                        <button
-                            type="button"
-                            className={styles.linkButton}
-                            onClick={() => { setMode('reset'); setError(null); }}
-                        >
-                            Forgot password?
-                        </button>
-                    </form>
-                )}
-
-                {/* Signup Form */}
-                {mode === 'signup' && (
-                    <form onSubmit={handleSignup} className={styles.form}>
-                        <div className={styles.inputGroup}>
-                            <label htmlFor="username">Username</label>
-                            <input
-                                id="username"
-                                type="text"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                placeholder="PokerPro123"
-                                required
-                                autoComplete="username"
-                            />
+                    {/* Error Message */}
+                    {error && (
+                        <div className={styles.errorMessage}>
+                            <span>!</span> {error}
                         </div>
+                    )}
 
-                        <div className={styles.inputGroup}>
-                            <label htmlFor="signup-email">Email</label>
-                            <input
-                                id="signup-email"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="your@email.com"
-                                required
-                                autoComplete="email"
-                            />
-                        </div>
+                    {/* Login Form */}
+                    {mode === 'login' && (
+                        <form onSubmit={handleLogin} className={styles.form}>
+                            <div className={styles.inputGroup}>
+                                <label htmlFor="email">Email</label>
+                                <input
+                                    id="email"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="your@email.com"
+                                    required
+                                    autoComplete="email"
+                                />
+                            </div>
 
-                        <div className={styles.inputGroup}>
-                            <label htmlFor="signup-password">Password</label>
-                            <input
-                                id="signup-password"
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••"
-                                required
-                                minLength={6}
-                                autoComplete="new-password"
-                            />
-                        </div>
+                            <div className={styles.inputGroup}>
+                                <label htmlFor="password">Password</label>
+                                <input
+                                    id="password"
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    required
+                                    autoComplete="current-password"
+                                />
+                            </div>
 
-                        <div className={styles.inputGroup}>
-                            <label htmlFor="confirm-password">Confirm Password</label>
-                            <input
-                                id="confirm-password"
-                                type="password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                placeholder="••••••••"
-                                required
-                                autoComplete="new-password"
-                            />
-                        </div>
+                            <button
+                                type="submit"
+                                className={styles.submitButton}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? 'Logging in...' : 'Login'}
+                            </button>
 
-                        <button
-                            type="submit"
-                            className={styles.submitButton}
-                            disabled={isLoading}
-                        >
-                            {isLoading ? 'Creating Account...' : 'Create Account'}
-                        </button>
-                    </form>
-                )}
+                            <button
+                                type="button"
+                                className={styles.linkButton}
+                                onClick={() => { setMode('reset'); setError(null); }}
+                            >
+                                Forgot password?
+                            </button>
+                        </form>
+                    )}
 
-                {/* Password Reset Form */}
-                {mode === 'reset' && (
-                    <form onSubmit={handlePasswordReset} className={styles.form}>
-                        <p className={styles.resetText}>
-                            Enter your email and we'll send you a link to reset your password.
-                        </p>
+                    {/* Signup Form */}
+                    {mode === 'signup' && (
+                        <form onSubmit={handleSignup} className={styles.form}>
+                            <div className={styles.inputGroup}>
+                                <label htmlFor="username">Username</label>
+                                <input
+                                    id="username"
+                                    type="text"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    placeholder="PokerPro123"
+                                    required
+                                    autoComplete="username"
+                                />
+                            </div>
 
-                        <div className={styles.inputGroup}>
-                            <label htmlFor="reset-email">Email</label>
-                            <input
-                                id="reset-email"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="your@email.com"
-                                required
-                            />
-                        </div>
+                            <div className={styles.inputGroup}>
+                                <label htmlFor="signup-email">Email</label>
+                                <input
+                                    id="signup-email"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="your@email.com"
+                                    required
+                                    autoComplete="email"
+                                />
+                            </div>
 
-                        <button
-                            type="submit"
-                            className={styles.submitButton}
-                            disabled={isLoading}
-                        >
-                            {isLoading ? 'Sending...' : 'Send Reset Link'}
-                        </button>
+                            <div className={styles.inputGroup}>
+                                <label htmlFor="signup-password">Password</label>
+                                <input
+                                    id="signup-password"
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    required
+                                    minLength={6}
+                                    autoComplete="new-password"
+                                />
+                            </div>
 
-                        <button
-                            type="button"
-                            className={styles.linkButton}
-                            onClick={() => { setMode('login'); setError(null); setSuccess(null); }}
-                        >
-                            ← Back to Login
-                        </button>
-                    </form>
-                )}
+                            <div className={styles.inputGroup}>
+                                <label htmlFor="confirm-password">Confirm Password</label>
+                                <input
+                                    id="confirm-password"
+                                    type="password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    required
+                                    autoComplete="new-password"
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                className={styles.submitButton}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? 'Creating Account...' : 'Create Account'}
+                            </button>
+                        </form>
+                    )}
+
+                    {/* Password Reset Form */}
+                    {mode === 'reset' && (
+                        <form onSubmit={handlePasswordReset} className={styles.form}>
+                            <p className={styles.resetText}>
+                                Enter your email and we'll send you a link to reset your password.
+                            </p>
+
+                            <div className={styles.inputGroup}>
+                                <label htmlFor="reset-email">Email</label>
+                                <input
+                                    id="reset-email"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="your@email.com"
+                                    required
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                className={styles.submitButton}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? 'Sending...' : 'Send Reset Link'}
+                            </button>
+
+                            <button
+                                type="button"
+                                className={styles.linkButton}
+                                onClick={() => { setMode('login'); setError(null); setSuccess(null); }}
+                            >
+                                ← Back to Login
+                            </button>
+                        </form>
+                    )}
+                </div>
             </div>
         </div>
     );
