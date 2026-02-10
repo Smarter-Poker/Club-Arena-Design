@@ -51,11 +51,12 @@
     flex-direction: column;
 }
 
-.brand-name {
-    font-size: 1rem;
-    font-weight: 700;
-    color: white;
-    letter-spacing: 0.5px;
+.brand-logo {
+    height: 36px;
+    width: auto;
+    object-fit: contain;
+    border-radius: 4px;
+    filter: drop-shadow(0 0 8px rgba(65, 105, 225, 0.3));
 }
 
 .header-title {
@@ -185,8 +186,8 @@
         display: none;
     }
 
-    .brand-name {
-        font-size: 0.875rem;
+    .brand-logo {
+        height: 28px;
     }
 
     .hub-button {

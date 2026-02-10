@@ -159,8 +159,11 @@ export default function AuthPage() {
             <div className={styles.authCard}>
                 {/* Logo */}
                 <div className={styles.logo}>
-                    <span className={styles.logoIcon}>♠</span>
-                    <h1 className={styles.logoText}>Club Arena</h1>
+                    <img
+                        src={`${import.meta.env.BASE_URL}images/smarter-poker-logo.jpg`}
+                        alt="Smarter.Poker"
+                        className={styles.logoImage}
+                    />
                 </div>
 
                 {/* Tab Switcher */}

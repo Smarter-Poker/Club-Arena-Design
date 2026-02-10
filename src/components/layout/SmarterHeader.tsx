@@ -53,7 +53,11 @@ export default function SmarterHeader({ showBackButton = true, backTo, title }: 
                     </button>
                 )}
                 <div className="header-brand">
-                    <span className="brand-name">Smarter.Poker</span>
+                    <img
+                        src={`${import.meta.env.BASE_URL}images/smarter-poker-logo.jpg`}
+                        alt="Smarter.Poker"
+                        className="brand-logo"
+                    />
                     {title && <span className="header-title">{title}</span>}
                 </div>
             </div>

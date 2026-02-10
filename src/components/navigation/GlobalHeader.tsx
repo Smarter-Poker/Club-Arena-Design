@@ -152,7 +152,11 @@ export default function GlobalHeader({
                         <span>←</span>
                         <span>{pageDepth > 1 ? 'Back' : 'Hub'}</span>
                     </button>
-                    <span className={styles.brandText}>Smarter.Poker</span>
+                    <img
+                        src={`${import.meta.env.BASE_URL}images/smarter-poker-logo.jpg`}
+                        alt="Smarter.Poker"
+                        className={styles.brandLogo}
+                    />
                 </div>
 
                 {/* CENTER: Diamond Wallet */}

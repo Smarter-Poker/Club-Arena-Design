@@ -20,7 +20,7 @@
     border: 1px solid rgba(65, 105, 225, 0.2);
     border-radius: 16px;
     padding: 2.5rem;
-    box-shadow: 
+    box-shadow:
         0 20px 60px rgba(0, 0, 0, 0.5),
         0 0 40px rgba(65, 105, 225, 0.1);
 }
@@ -31,23 +31,12 @@
     margin-bottom: 2rem;
 }
 
-.logoIcon {
-    font-size: 3rem;
-    color: #4169E1;
-    display: block;
-    margin-bottom: 0.5rem;
-    text-shadow: 0 0 20px rgba(65, 105, 225, 0.5);
-}
-
-.logoText {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #FFFFFF;
-    margin: 0;
-    background: linear-gradient(135deg, #4169E1 0%, #7B8FE8 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+.logoImage {
+    width: 100%;
+    max-width: 340px;
+    height: auto;
+    border-radius: 8px;
+    filter: drop-shadow(0 0 20px rgba(65, 105, 225, 0.35));
 }
 
 /* Tabs */
