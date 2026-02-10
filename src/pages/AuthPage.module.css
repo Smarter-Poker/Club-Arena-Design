@@ -19,9 +19,9 @@
     max-width: 480px;
     background: linear-gradient(180deg, rgba(20, 20, 40, 0.95) 0%, rgba(12, 12, 28, 0.98) 100%);
     border: 40px solid transparent;
-    border-image-slice: 80 76 80 76 fill;
+    border-image-slice: 80 76 80 76;
     border-image-width: 40px;
-    border-image-repeat: round;
+    border-image-repeat: stretch;
     /* border-image-source set via inline style for Vite base URL */
     padding: 2rem 1.5rem 1.5rem;
     box-shadow:
