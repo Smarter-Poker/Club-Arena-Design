@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🔐 CLUB ARENA — Auth Page Styles
+ * 🔐 CLUB ARENA — Auth Page Styles (Facebook Dark)
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
@@ -9,7 +9,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #0A0A0F 0%, #12121A 50%, #0A0A0F 100%);
+    background: #18191A;
     padding: 1rem;
 }
 
@@ -17,13 +17,11 @@
     position: relative;
     width: 100%;
     max-width: 480px;
-    background: linear-gradient(180deg, rgba(20, 20, 40, 0.95) 0%, rgba(12, 12, 28, 0.98) 100%);
-    border: 3px solid #555;
-    border-radius: 16px;
-    padding: 2.5rem 2rem 2rem;
-    box-shadow:
-        0 20px 60px rgba(0, 0, 0, 0.5),
-        0 0 40px rgba(65, 105, 225, 0.15);
+    background: #242526;
+    border: 1px solid #3E4042;
+    border-radius: 8px;
+    padding: 2rem 1.5rem 1.5rem;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
 /* Logo */
@@ -37,17 +35,16 @@
     max-width: 340px;
     height: auto;
     border-radius: 8px;
-    filter: drop-shadow(0 0 20px rgba(65, 105, 225, 0.35));
 }
 
 /* Tabs */
 .tabs {
     display: flex;
-    gap: 0.5rem;
+    gap: 0;
     margin-bottom: 1.5rem;
-    background: rgba(0, 0, 0, 0.3);
+    background: #3A3B3C;
     padding: 4px;
-    border-radius: 10px;
+    border-radius: 8px;
 }
 
 .tab {
@@ -55,22 +52,23 @@
     padding: 0.75rem 1rem;
     background: transparent;
     border: none;
-    border-radius: 8px;
-    color: #8888AA;
+    border-radius: 6px;
+    color: #B0B3B8;
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .tab:hover {
-    color: #FFFFFF;
+    color: #E4E6EB;
 }
 
 .tabActive {
-    background: linear-gradient(135deg, #4169E1 0%, #5B7FEE 100%);
+    background: #1877F2;
     color: #FFFFFF;
-    box-shadow: 0 4px 15px rgba(65, 105, 225, 0.3);
+    box-shadow: none;
 }
 
 /* Messages */
@@ -79,10 +77,10 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.875rem 1rem;
-    background: rgba(16, 185, 129, 0.15);
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    background: rgba(49, 162, 76, 0.15);
+    border: 1px solid rgba(49, 162, 76, 0.3);
     border-radius: 8px;
-    color: #10B981;
+    color: #31A24C;
     font-size: 0.875rem;
     margin-bottom: 1rem;
 }
@@ -97,10 +95,10 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.875rem 1rem;
-    background: rgba(244, 63, 94, 0.15);
-    border: 1px solid rgba(244, 63, 94, 0.3);
+    background: rgba(240, 40, 73, 0.15);
+    border: 1px solid rgba(240, 40, 73, 0.3);
     border-radius: 8px;
-    color: #F43F5E;
+    color: #F02849;
     font-size: 0.875rem;
     margin-bottom: 1rem;
 }
@@ -113,7 +111,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #F43F5E;
+    background: #F02849;
     color: white;
     border-radius: 50%;
 }
@@ -134,45 +132,45 @@
 .inputGroup label {
     font-size: 0.875rem;
     font-weight: 500;
-    color: #A0A0B8;
+    color: #B0B3B8;
 }
 
 .inputGroup input {
     padding: 0.875rem 1rem;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    color: #FFFFFF;
+    background: #3A3B3C;
+    border: 1px solid #3E4042;
+    border-radius: 6px;
+    color: #E4E6EB;
     font-size: 1rem;
     transition: border-color 0.2s ease;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .inputGroup input::placeholder {
-    color: #606080;
+    color: #B0B3B8;
 }
 
 .inputGroup input:focus {
     outline: none;
-    border-color: #4169E1;
-    box-shadow: 0 0 0 3px rgba(65, 105, 225, 0.1);
+    border-color: #1877F2;
+    box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.2);
 }
 
 .submitButton {
     padding: 1rem;
-    background: linear-gradient(135deg, #4169E1 0%, #5B7FEE 100%);
+    background: #1877F2;
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     color: #FFFFFF;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 15px rgba(65, 105, 225, 0.3);
+    transition: background 0.2s ease;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .submitButton:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(65, 105, 225, 0.4);
+    background: #0D5DC7;
 }
 
 .submitButton:disabled {
@@ -183,7 +181,7 @@
 .linkButton {
     background: none;
     border: none;
-    color: #6B7FD7;
+    color: #1877F2;
     font-size: 0.875rem;
     cursor: pointer;
     padding: 0.5rem;
@@ -191,12 +189,12 @@
 }
 
 .linkButton:hover {
-    color: #8B9FE7;
+    color: #4599FF;
     text-decoration: underline;
 }
 
 .resetText {
-    color: #A0A0B8;
+    color: #B0B3B8;
     font-size: 0.9rem;
     line-height: 1.5;
     margin: 0 0 0.5rem 0;
