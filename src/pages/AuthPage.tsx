@@ -156,15 +156,10 @@ export default function AuthPage() {
 
     return (
         <div className={styles.container}>
-            <div className={styles.authCard}>
-                {/* Metallic Frame Overlay */}
-                <div className={styles.frameOverlay}>
-                    <img
-                        src={`${import.meta.env.BASE_URL}images/auth-frame.png`}
-                        alt=""
-                    />
-                </div>
-
+            <div
+                className={styles.authCard}
+                style={{ borderImageSource: `url(${import.meta.env.BASE_URL}images/auth-frame.png)` }}
+            >
                 {/* Logo */}
                 <div className={styles.logo}>
                     <img
