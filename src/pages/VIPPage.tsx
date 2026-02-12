@@ -7,6 +7,8 @@ import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import { vipService, VIP_GOLD_LIMITS, FEATURE_PRICING, type VIPFeature } from '../services/VIPService';
 import { VIPCardsModal } from '../components/vip/VIPCardsModal';
+import { VIPPerksGrid } from '../components/vip/VIPPerksGrid';
+import { DiamondTopUpModal } from '../components/vip/DiamondTopUpModal';
 import SmarterHeader from '../components/layout/SmarterHeader';
 import { useToast } from '../components/common/Toast';
 import './VIPPage.css';
@@ -19,6 +21,7 @@ export default function VIPPage() {
     const [diamonds, setDiamonds] = useState(0);
     const [loading, setLoading] = useState(true);
     const [showInfoModal, setShowInfoModal] = useState(false);
+    const [showTopUpModal, setShowTopUpModal] = useState(false);
     const [purchasing, setPurchasing] = useState<string | null>(null);
 
     useEffect(() => {
@@ -171,6 +174,23 @@ export default function VIPPage() {
                         </div>
                     </div>
                 )}
+
+                {/* VIP Perks Grid */}
+                {isVIP && (
+                    <VIPPerksGrid
+                        currentTier="diamond"
+                        perks={[
+                            { id: 'rabbit', icon: '🐰', title: 'Rabbit Hunt', description: 'See undealt cards', value: 'Unlimited' },
+                            { id: 'timebank', icon: '⏱️', title: 'Time Bank', description: `${VIP_GOLD_LIMITS.timeBankSeconds}s free per month`, value: `${VIP_GOLD_LIMITS.timeBankSeconds}s` },
+                            { id: 'throwable', icon: '💣', title: 'Throwables', description: '500 free throws per month', value: '500/mo' },
+                            { id: 'offline', icon: '🛡️', title: 'Offline Protection', description: 'Unlimited timeout protection', value: 'Unlimited' },
+                            { id: 'autobank', icon: '⏱️', title: 'Auto Time Bank', description: 'Automatic time bank usage', value: 'Free' },
+                            { id: 'themes', icon: '🎨', title: 'Themes', description: `${VIP_GOLD_LIMITS.themes} premium themes`, value: `${VIP_GOLD_LIMITS.themes}` },
+                            { id: 'boost', icon: '📊', title: 'Leaderboard Boost', description: `${(VIP_GOLD_LIMITS.leaderboardBoost * 100).toFixed(0)}% score boost`, value: `+${(VIP_GOLD_LIMITS.leaderboardBoost * 100).toFixed(0)}%` },
+                            { id: 'emojis', icon: '😀', title: 'Emojis', description: 'Access to all emoji packs', value: 'All Packs' },
+                        ]}
+                    />
+                )}
             </section>
 
             {/* Diamond Balance */}
@@ -179,6 +199,12 @@ export default function VIPPage() {
                     <span className="diamond-icon"></span>
                     <span className="diamond-count">{diamonds.toLocaleString()}</span>
                     <span className="diamond-label">Diamonds</span>
+                    <button
+                        className="diamond-buy-btn"
+                        onClick={() => setShowTopUpModal(true)}
+                    >
+                        + Buy Diamonds
+                    </button>
                 </div>
             </section>
 
@@ -189,24 +215,26 @@ export default function VIPPage() {
                     <p className="section-desc">Not a Diamond member? Purchase features individually with diamonds.</p>
 
                     <div className="purchase-grid">
-                        {Object.entries(FEATURE_PRICING).map(([feature, pricing]) => (
-                            <div key={feature} className="purchase-card">
-                                <div className="purchase-info">
-                                    <span className="purchase-name">{feature.replace(/_/g, ' ')}</span>
-                                    <span className="purchase-desc">{pricing.description}</span>
+                        {Object.entries(FEATURE_PRICING)
+                            .filter(([, pricing]) => pricing.cost > 0)
+                            .map(([feature, pricing]) => (
+                                <div key={feature} className="purchase-card">
+                                    <div className="purchase-info">
+                                        <span className="purchase-name">{feature.replace(/_/g, ' ')}</span>
+                                        <span className="purchase-desc">{pricing.description}</span>
+                                    </div>
+                                    <div className="purchase-action">
+                                        <span className="purchase-cost">{pricing.cost} 💎</span>
+                                        <button
+                                            className="purchase-btn"
+                                            onClick={() => handlePurchase(feature as VIPFeature)}
+                                            disabled={purchasing === feature || diamonds < pricing.cost}
+                                        >
+                                            {purchasing === feature ? '...' : 'Buy'}
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="purchase-action">
-                                    <span className="purchase-cost">{pricing.cost} </span>
-                                    <button
-                                        className="purchase-btn"
-                                        onClick={() => handlePurchase(feature as VIPFeature)}
-                                        disabled={purchasing === feature || diamonds < pricing.cost}
-                                    >
-                                        {purchasing === feature ? '...' : 'Buy'}
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                            ))}
                     </div>
                 </section>
             )}
@@ -215,6 +243,13 @@ export default function VIPPage() {
             <VIPCardsModal
                 isOpen={showInfoModal}
                 onClose={() => setShowInfoModal(false)}
+            />
+
+            {/* Diamond Top-Up Modal */}
+            <DiamondTopUpModal
+                isOpen={showTopUpModal}
+                onClose={() => setShowTopUpModal(false)}
+                onPurchaseComplete={(newBal) => setDiamonds(newBal)}
             />
         </div>
     );

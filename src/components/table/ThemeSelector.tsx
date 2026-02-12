@@ -5,9 +5,11 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { vipService, VIP_GOLD_LIMITS, FEATURE_PRICING } from '../../services/VIPService';
 import { useUserStore } from '../../stores/useUserStore';
 import { useToast } from '../common/Toast';
+import { showDiamondTopUp } from '../common/DiamondTopUpToast';
 import './ThemeSelector.css';
 
 interface ThemeSelectorProps {
@@ -39,6 +41,7 @@ const THEMES: TableTheme[] = [
 export function ThemeSelector({ isOpen, onClose, currentTheme, onThemeChange }: ThemeSelectorProps) {
     const { user } = useUserStore();
     const toast = useToast();
+    const navigate = useNavigate();
 
     const [isVIP, setIsVIP] = useState(false);
     const [unlockedThemes, setUnlockedThemes] = useState<string[]>(['classic', 'midnight']);
@@ -85,7 +88,7 @@ export function ThemeSelector({ isOpen, onClose, currentTheme, onThemeChange }: 
         const result = await vipService.purchaseFeature(user.id, 'theme_unlock');
 
         if (!result.success) {
-            toast.error(result.error || 'Insufficient diamonds');
+            showDiamondTopUp(toast, navigate, { feature: theme.name, cost });
             return;
         }
 

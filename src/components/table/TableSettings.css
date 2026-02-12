@@ -174,3 +174,118 @@
 .table-settings__bb-info strong {
     color: var(--text-primary);
 }
+
+/* ═══ Confirmation Popup ═══ */
+.table-settings__confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(12px);
+}
+
+.table-settings__confirm {
+    background: linear-gradient(180deg, #1e1e3a 0%, #141428 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    padding: 24px;
+    width: 90%;
+    max-width: 360px;
+    text-align: center;
+}
+
+.table-settings__confirm h4 {
+    margin: 0 0 12px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.table-settings__confirm p {
+    margin: 0 0 16px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.table-settings__confirm p strong {
+    color: #60a5fa;
+}
+
+.table-settings__confirm-vip {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: rgba(255, 215, 0, 0.06);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.table-settings__confirm-vip span {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.table-settings__confirm-vip div {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.table-settings__confirm-vip strong {
+    color: #ffd700;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.table-settings__confirm-vip a {
+    color: #60a5fa;
+    font-weight: 600;
+    text-decoration: none;
+    margin-left: 4px;
+}
+
+.table-settings__confirm-vip a:hover {
+    text-decoration: underline;
+}
+
+.table-settings__confirm-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.confirm-btn {
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.confirm-btn--cancel {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.confirm-btn--cancel:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.confirm-btn--accept {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+}
+
+.confirm-btn--accept:hover {
+    background: linear-gradient(135deg, #60a5fa, #3b82f6);
+}

@@ -15,6 +15,8 @@ import { LoadingState } from '../components/common/EmptyState';
 import SmarterHeader from '../components/layout/SmarterHeader';
 import DailyBonusWheel from '../components/bonus/DailyBonusWheel';
 import FriendListPanel from '../components/social/FriendListPanel';
+import { VIPStatusCard } from '../components/vip/VIPStatusCard';
+import { VIPProgressRing } from '../components/vip/VIPProgressRing';
 import { profileService } from '../services/ProfileService';
 import { bonusService } from '../services/BonusService';
 import styles from './ProfilePage.module.css';
@@ -209,6 +211,8 @@ export default function ProfilePage() {
     const [xp, setXp] = useState<XPStats>(DEFAULT_XP);
     const [stats, setStats] = useState<PokerStats>(DEFAULT_STATS);
     const [achievements, setAchievements] = useState<Achievement[]>([]);
+    const [diamonds, setDiamonds] = useState(0);
+    const [isVIP, setIsVIP] = useState(false);
 
     // Load profile data from Supabase
     useEffect(() => {
@@ -236,6 +240,9 @@ export default function ProfilePage() {
                         vipLevel: profile.vip_level || 'bronze',
                         memberSince: profile.created_at,
                     });
+
+                    setDiamonds(profile.diamonds || 0);
+                    setIsVIP(profile.is_vip || false);
 
                     setXp({
                         currentXP: profile.xp || 0,
@@ -343,8 +350,34 @@ export default function ProfilePage() {
                         Change Avatar
                     </button>
                     <button className={styles.editButton} onClick={() => navigate('/settings')}>Edit Profile</button>
+                    <button className={styles.editButton} onClick={() => navigate('/vip')} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        💎 {diamonds.toLocaleString()} {isVIP && <span style={{ fontSize: 12 }}>👑 VIP</span>}
+                    </button>
                 </div>
             </section>
+
+            {/* VIP Status Section (for VIP users) */}
+            {isVIP && (
+                <section className={styles.xpSection}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <VIPProgressRing
+                            current={diamonds}
+                            total={5000}
+                            tier="gold"
+                            nextTier="platinum"
+                            size={72}
+                            strokeWidth={6}
+                        />
+                        <VIPStatusCard
+                            tier="gold"
+                            currentPoints={diamonds}
+                            nextTierPoints={5000}
+                            benefits={['6% Leaderboard Boost', 'Unlimited Throwables', 'Auto Time Bank', 'Premium Themes']}
+                            memberSince={user?.memberSince ? new Date(user.memberSince) : undefined}
+                        />
+                    </div>
+                </section>
+            )}
 
             {/* XP Progress */}
             <section className={styles.xpSection}>

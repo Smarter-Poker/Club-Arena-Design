@@ -4,9 +4,9 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * Settings panel with VIP feature gating:
- * - Show Stack in BBs (VIP: free, Non-VIP: 5/session)
- * - Offline Protection (VIP Gold only)
- * - Auto Time Bank (VIP: free, Non-VIP: 10/session)
+ * - Show Stack in BBs: FREE for everyone
+ * - Offline Protection: 1 free per session, VIP unlimited
+ * - Auto Time Bank: VIP=free, Non-VIP=5💎 per activation (confirmation popup)
  */
 
 import React, { useState, useEffect } from 'react';
@@ -29,34 +29,37 @@ export interface TableSettingsState {
     autoTimeBank: boolean;
 }
 
-interface SettingToggle {
+interface SettingConfig {
     key: keyof TableSettingsState;
-    feature: VIPFeature;
+    feature?: VIPFeature;
     label: string;
     description: string;
     icon: string;
+    isFree?: boolean;
+    freeLabel?: string;
 }
 
-const SETTINGS: SettingToggle[] = [
+const SETTINGS: SettingConfig[] = [
     {
         key: 'showStackInBB',
-        feature: 'show_stack_bb',
         label: 'Show Stack in BBs',
         description: 'Display stacks as big blind multiples',
-        icon: ''
+        icon: '',
+        isFree: true,
+        freeLabel: 'FREE'
     },
     {
         key: 'offlineProtection',
         feature: 'offline_protection',
         label: 'Offline Protection',
-        description: 'Auto-sit out when connection drops',
+        description: '1 free per session · VIP unlimited',
         icon: ''
     },
     {
         key: 'autoTimeBank',
         feature: 'auto_time_bank',
         label: 'Auto Time Bank',
-        description: 'Automatically use time bank when timer runs low',
+        description: 'Auto-uses time bank · VIP free · Non-VIP 5💎 per use',
         icon: ''
     }
 ];
@@ -72,72 +75,81 @@ export function TableSettings({
     const toast = useToast();
 
     const [settings, setSettings] = useState<TableSettingsState>(currentSettings);
-    const [featureAccess, setFeatureAccess] = useState<Record<VIPFeature, { hasAccess: boolean; isVIP: boolean; cost: number }>>({} as any);
+    const [isVIP, setIsVIP] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [offlineUsedThisSession, setOfflineUsedThisSession] = useState(false);
+    const [showTimeBankConfirm, setShowTimeBankConfirm] = useState(false);
 
-    // Check VIP access for all features on mount
+    // Check VIP status on mount
     useEffect(() => {
-        const checkAccess = async () => {
+        const checkVIP = async () => {
             if (!user?.id) {
                 setLoading(false);
                 return;
             }
-
-            const access: Record<string, { hasAccess: boolean; isVIP: boolean; cost: number }> = {};
-
-            for (const setting of SETTINGS) {
-                try {
-                    const result = await vipService.checkFeatureAccess(user.id, setting.feature);
-                    access[setting.feature] = {
-                        hasAccess: result.hasAccess,
-                        isVIP: result.isVIP,
-                        cost: FEATURE_PRICING[setting.feature].cost
-                    };
-                } catch {
-                    access[setting.feature] = { hasAccess: false, isVIP: false, cost: FEATURE_PRICING[setting.feature].cost };
-                }
+            try {
+                const vip = await vipService.isVIP(user.id);
+                setIsVIP(vip);
+            } catch {
+                setIsVIP(false);
             }
-
-            setFeatureAccess(access as any);
             setLoading(false);
         };
 
         if (isOpen) {
-            checkAccess();
+            checkVIP();
+            // Check session storage for offline protection usage
+            const used = sessionStorage.getItem('offline_protection_used');
+            setOfflineUsedThisSession(used === 'true');
         }
     }, [isOpen, user?.id]);
 
-    const handleToggle = async (setting: SettingToggle) => {
+    const handleToggle = async (setting: SettingConfig) => {
         if (!user?.id) {
             toast.error('Please log in');
             return;
         }
 
         const currentValue = settings[setting.key];
-        const access = featureAccess[setting.feature];
 
-        // If turning ON and doesn't have access, need to purchase
-        if (!currentValue && !access?.hasAccess) {
-            const result = await vipService.purchaseFeature(user.id, setting.feature);
+        // ── Show Stack in BBs — FREE for everyone ──
+        if (setting.isFree) {
+            const newSettings = { ...settings, [setting.key]: !currentValue };
+            setSettings(newSettings);
+            onSettingsChange(newSettings);
+            return;
+        }
 
-            if (!result.success) {
-                toast.error(result.error || 'Insufficient diamonds');
+        // ── Auto Time Bank — Non-VIP needs confirmation ──
+        if (setting.key === 'autoTimeBank' && !currentValue && !isVIP) {
+            setShowTimeBankConfirm(true);
+            return;
+        }
+
+        // ── Offline Protection — 1 free per session for non-VIP ──
+        if (setting.key === 'offlineProtection' && !currentValue && !isVIP) {
+            if (offlineUsedThisSession) {
+                toast.error('Offline protection already used this session. Get VIP for unlimited!');
                 return;
             }
-
-            toast.info(` ${result.charged} diamonds charged for ${setting.label}`);
-
-            // Update access state
-            setFeatureAccess(prev => ({
-                ...prev,
-                [setting.feature]: { ...prev[setting.feature], hasAccess: true }
-            }));
+            // Grant free usage, mark session
+            sessionStorage.setItem('offline_protection_used', 'true');
+            setOfflineUsedThisSession(true);
+            toast.info('Offline protection activated (1 free per session)');
         }
 
         // Toggle the setting
         const newSettings = { ...settings, [setting.key]: !currentValue };
         setSettings(newSettings);
         onSettingsChange(newSettings);
+    };
+
+    const confirmAutoTimeBank = () => {
+        const newSettings = { ...settings, autoTimeBank: true };
+        setSettings(newSettings);
+        onSettingsChange(newSettings);
+        setShowTimeBankConfirm(false);
+        toast.info('Auto Time Bank enabled · 5💎 per activation');
     };
 
     if (!isOpen) return null;
@@ -155,9 +167,20 @@ export function TableSettings({
                         <div className="table-settings__loading">Loading...</div>
                     ) : (
                         SETTINGS.map(setting => {
-                            const access = featureAccess[setting.feature];
                             const isEnabled = settings[setting.key];
-                            const isFree = access?.isVIP || access?.hasAccess;
+                            const isFreeFeature = setting.isFree || isVIP;
+
+                            // Offline protection: show status
+                            let costLabel = '';
+                            if (setting.isFree) {
+                                costLabel = 'FREE';
+                            } else if (isVIP) {
+                                costLabel = ' FREE';
+                            } else if (setting.key === 'offlineProtection') {
+                                costLabel = offlineUsedThisSession ? 'Used' : '1 Free';
+                            } else if (setting.key === 'autoTimeBank') {
+                                costLabel = `${FEATURE_PRICING.auto_time_bank.cost} per use`;
+                            }
 
                             return (
                                 <div
@@ -171,10 +194,10 @@ export function TableSettings({
                                         <span className="table-settings__item-desc">{setting.description}</span>
                                     </div>
                                     <div className="table-settings__item-cost">
-                                        {isFree ? (
-                                            <span className="cost-free"> FREE</span>
+                                        {isFreeFeature ? (
+                                            <span className="cost-free">{costLabel || ' FREE'}</span>
                                         ) : (
-                                            <span className="cost-diamond">{access?.cost || 0}</span>
+                                            <span className="cost-diamond">{costLabel}</span>
                                         )}
                                     </div>
                                     <div className={`table-settings__toggle ${isEnabled ? 'on' : 'off'}`}>
@@ -194,6 +217,40 @@ export function TableSettings({
                     </span>
                 </div>
             </div>
+
+            {/* ═══ Auto Time Bank Confirmation Modal (Non-VIP) ═══ */}
+            {showTimeBankConfirm && (
+                <div className="table-settings__confirm-overlay" onClick={() => setShowTimeBankConfirm(false)}>
+                    <div className="table-settings__confirm" onClick={e => e.stopPropagation()}>
+                        <h4>⏱️ Enable Auto Time Bank?</h4>
+                        <p>
+                            Each time bank activation will cost <strong>{FEATURE_PRICING.auto_time_bank.cost} 💎</strong>.
+                            Diamonds are automatically deducted from your balance.
+                        </p>
+                        <div className="table-settings__confirm-vip">
+                            <span>💎</span>
+                            <div>
+                                <strong>VIP Diamond Members</strong> get unlimited time bank for free!
+                                <a href="/vip" onClick={(e) => { e.stopPropagation(); }}>Learn More →</a>
+                            </div>
+                        </div>
+                        <div className="table-settings__confirm-actions">
+                            <button
+                                className="confirm-btn confirm-btn--cancel"
+                                onClick={() => setShowTimeBankConfirm(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="confirm-btn confirm-btn--accept"
+                                onClick={confirmAutoTimeBank}
+                            >
+                                Enable (5💎/use)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

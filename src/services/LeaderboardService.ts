@@ -10,6 +10,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { VIP_GOLD_LIMITS } from './VIPService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -27,6 +28,7 @@ export interface LeaderboardEntry {
     metric: LeaderboardMetric;
     change: number; // Position change from previous period
     xpEarned?: number;
+    isVIP?: boolean;
 }
 
 export interface PlayerStats {
@@ -93,16 +95,25 @@ export const LeaderboardService = {
             return [];
         }
 
-        return (data || []).map((row: any, index: number) => ({
-            rank: index + 1,
-            userId: row.user_id,
-            username: row.username,
-            avatar: row.avatar_url,
-            value: row.value,
-            metric,
-            change: row.position_change || 0,
-            xpEarned: LEADERBOARD_XP_REWARDS[period][index] || 0,
-        }));
+        return (data || []).map((row: any, index: number) => {
+            // Apply VIP 6% score boost for profit metric
+            let value = row.value;
+            if (metric === 'profit' && row.is_vip) {
+                value = Math.round(value * (1 + VIP_GOLD_LIMITS.leaderboardBoost));
+            }
+
+            return {
+                rank: index + 1,
+                userId: row.user_id,
+                username: row.username,
+                avatar: row.avatar_url,
+                value,
+                metric,
+                change: row.position_change || 0,
+                xpEarned: LEADERBOARD_XP_REWARDS[period][index] || 0,
+                isVIP: row.is_vip || false,
+            };
+        });
     },
 
     /**
@@ -126,16 +137,24 @@ export const LeaderboardService = {
             return [];
         }
 
-        return (data || []).map((row: any, index: number) => ({
-            rank: index + 1,
-            userId: row.user_id,
-            username: row.username,
-            avatar: row.avatar_url,
-            value: row.value,
-            metric,
-            change: row.position_change || 0,
-            xpEarned: LEADERBOARD_XP_REWARDS[period][index] || 0,
-        }));
+        return (data || []).map((row: any, index: number) => {
+            let value = row.value;
+            if (metric === 'profit' && row.is_vip) {
+                value = Math.round(value * (1 + VIP_GOLD_LIMITS.leaderboardBoost));
+            }
+
+            return {
+                rank: index + 1,
+                userId: row.user_id,
+                username: row.username,
+                avatar: row.avatar_url,
+                value,
+                metric,
+                change: row.position_change || 0,
+                xpEarned: LEADERBOARD_XP_REWARDS[period][index] || 0,
+                isVIP: row.is_vip || false,
+            };
+        });
     },
 
     /**

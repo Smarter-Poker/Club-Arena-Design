@@ -41,8 +41,11 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
 
     const [soundsEnabled, setSoundsEnabled] = useState(true);
     const [vibrationsEnabled, setVibrationsEnabled] = useState(true);
+    const [showBBEnabled, setShowBBEnabled] = useState(false);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [userName, setUserName] = useState<string>('');
+    const [isVIP, setIsVIP] = useState(false);
+    const [diamondBalance, setDiamondBalance] = useState(0);
 
     // Close on ESC key
     useEffect(() => {
@@ -69,13 +72,15 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
     useEffect(() => {
         const sounds = localStorage.getItem('soundsEnabled');
         const vibrations = localStorage.getItem('vibrationsEnabled');
+        const showBB = localStorage.getItem('showStackInBB');
         if (sounds !== null) setSoundsEnabled(sounds === 'true');
         if (vibrations !== null) setVibrationsEnabled(vibrations === 'true');
+        if (showBB !== null) setShowBBEnabled(showBB === 'true');
 
         if (user?.id) {
             supabase
                 .from('profiles')
-                .select('avatar_url, username, sounds_enabled, vibrations_enabled')
+                .select('avatar_url, username, sounds_enabled, vibrations_enabled, show_stack_bb, is_vip, diamonds')
                 .eq('id', user.id)
                 .single()
                 .then(({ data }) => {
@@ -90,6 +95,12 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                             setVibrationsEnabled(data.vibrations_enabled);
                             localStorage.setItem('vibrationsEnabled', String(data.vibrations_enabled));
                         }
+                        if (data.show_stack_bb !== null) {
+                            setShowBBEnabled(data.show_stack_bb);
+                            localStorage.setItem('showStackInBB', String(data.show_stack_bb));
+                        }
+                        setIsVIP(data.is_vip || false);
+                        setDiamondBalance(data.diamonds || 0);
                     }
                 });
         }
@@ -139,6 +150,12 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
         const newValue = !vibrationsEnabled;
         setVibrationsEnabled(newValue);
         updateSetting('vibrationsEnabled', 'vibrations_enabled', newValue);
+    };
+
+    const handleShowBBToggle = () => {
+        const newValue = !showBBEnabled;
+        setShowBBEnabled(newValue);
+        updateSetting('showStackInBB', 'show_stack_bb', newValue);
     };
 
     const handleResetTutorial = async () => {
@@ -282,11 +299,15 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                         }}
                     />
                     <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 600, fontSize: 16, color: colors.text }}>
+                        <div style={{ fontWeight: 600, fontSize: 16, color: colors.text, display: 'flex', alignItems: 'center', gap: 6 }}>
                             {userName || 'Player'}
+                            {isVIP && <span style={{ fontSize: 14 }} title="VIP Diamond Member">👑</span>}
                         </div>
-                        <div style={{ fontSize: 13, color: colors.textSecondary }}>
-                            View Profile
+                        <div style={{ fontSize: 13, color: colors.textSecondary, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span>View Profile</span>
+                            {diamondBalance > 0 && (
+                                <span style={{ color: '#60a5fa', fontWeight: 600 }}>💎 {diamondBalance.toLocaleString()}</span>
+                            )}
                         </div>
                     </div>
                     <span style={{ color: colors.textSecondary, fontSize: 18 }}>›</span>
@@ -485,6 +506,39 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                             backgroundColor: 'white',
                             boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
                             transform: vibrationsEnabled ? 'translateX(20px)' : 'translateX(0)',
+                            transition: 'transform 0.2s ease'
+                        }} />
+                    </button>
+                </div>
+
+                {/* Show Stack in BBs Toggle (FREE) */}
+                <div style={{ ...menuItemStyle, justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <span style={{ fontSize: 15, fontWeight: 500, color: colors.text }}>Show Stack in BBs</span>
+                        <span style={{ fontSize: 11, color: colors.textSecondary }}>Display stacks as big blind multiples</span>
+                    </div>
+                    <button
+                        onClick={handleShowBBToggle}
+                        style={{
+                            width: 48,
+                            height: 28,
+                            borderRadius: 14,
+                            border: 'none',
+                            padding: 2,
+                            cursor: 'pointer',
+                            backgroundColor: showBBEnabled ? colors.success : colors.bgHover,
+                            transition: 'background-color 0.2s ease',
+                            display: 'flex',
+                            alignItems: 'center'
+                        }}
+                    >
+                        <span style={{
+                            width: 24,
+                            height: 24,
+                            borderRadius: '50%',
+                            backgroundColor: 'white',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                            transform: showBBEnabled ? 'translateX(20px)' : 'translateX(0)',
                             transition: 'transform 0.2s ease'
                         }} />
                     </button>

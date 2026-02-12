@@ -4,8 +4,8 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * Poker Bros / PokerStars style throwables:
- * - VIP: 500 free throws per month, then 2 Diamonds each
- * - Non-VIP: 2 Diamonds per throw
+ * - VIP: 500 free throws per month, then 1 Diamond each
+ * - Non-VIP: 1 Diamond per throw
  */
 
 import { supabase } from '../lib/supabase';
@@ -34,7 +34,7 @@ export interface ThrowEvent {
 export interface ThrowAllowance {
     isVip: boolean;
     freeThrowsRemaining: number;
-    diamondCost: number; // 0 if free throws available, otherwise 2
+    diamondCost: number; // 0 if free throws available, otherwise 1
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -79,7 +79,7 @@ const THROWABLES: Throwable[] = [
 ];
 
 const VIP_FREE_THROWS_PER_MONTH = 500;
-const DIAMOND_COST_PER_THROW = 2;
+const DIAMOND_COST_PER_THROW = 1;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SERVICE
@@ -169,7 +169,7 @@ class ThrowableServiceClass {
                 return { success: true };
             }
 
-            // Otherwise charge 2 diamonds
+            // Otherwise charge 1 diamond
             const { data: wallet } = await supabase
                 .from('diamond_wallets')
                 .select('balance')

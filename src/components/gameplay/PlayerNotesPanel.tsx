@@ -6,8 +6,11 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
+import { vipService, FEATURE_PRICING } from '../../services/VIPService';
+import { showDiamondTopUp } from '../common/DiamondTopUpToast';
 import styles from './PlayerNotesPanel.module.css';
 
 interface PlayerNote {
@@ -58,6 +61,8 @@ export default function PlayerNotesPanel({
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isVIP, setIsVIP] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (user?.id) {
@@ -66,6 +71,8 @@ export default function PlayerNotesPanel({
             } else {
                 loadAllNotes();
             }
+            // Check VIP status for tag gating
+            vipService.checkVIPStatus(user.id).then(status => setIsVIP(status.isVIP));
         }
     }, [user?.id, targetUserId]);
 
@@ -137,12 +144,27 @@ export default function PlayerNotesPanel({
         onClose?.();
     };
 
-    const toggleTag = (tag: string) => {
-        setSelectedTags(prev =>
-            prev.includes(tag)
-                ? prev.filter(t => t !== tag)
-                : [...prev, tag]
-        );
+    const toggleTag = async (tag: string) => {
+        // Removing a tag is always free
+        if (selectedTags.includes(tag)) {
+            setSelectedTags(prev => prev.filter(t => t !== tag));
+            return;
+        }
+
+        // Adding a tag: VIPs get unlimited, non-VIPs pay 1💎 per tag
+        if (!isVIP) {
+            if (!user?.id) return;
+            const result = await vipService.purchaseFeature(user.id, 'tag_pack');
+            if (!result.success) {
+                showDiamondTopUp({ error: (msg: string) => alert(msg), info: () => { } }, navigate, {
+                    feature: 'Player Tag',
+                    cost: FEATURE_PRICING.tag_pack.cost,
+                });
+                return;
+            }
+        }
+
+        setSelectedTags(prev => [...prev, tag]);
     };
 
     const deleteNote = async (noteId: string) => {

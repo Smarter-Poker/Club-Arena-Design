@@ -320,3 +320,52 @@
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+/* ── Buy Diamonds Button ── */
+
+.diamond-buy-btn {
+    margin-left: auto;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.diamond-buy-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.diamond-balance {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+    background: rgba(96, 165, 250, 0.08);
+    border: 1px solid rgba(96, 165, 250, 0.2);
+    border-radius: 12px;
+}
+
+.section-desc {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin: 0 0 12px;
+}
+
+.purchase-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+@media (max-width: 480px) {
+    .purchase-grid {
+        grid-template-columns: 1fr;
+    }
+}

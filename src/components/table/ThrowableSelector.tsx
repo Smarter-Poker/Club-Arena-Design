@@ -4,14 +4,16 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * Custom SVG graphics — NO EMOJIS!
- * VIP: 500 free throws/month, then 2 Diamonds each
- * Non-VIP: 2 Diamonds per throw
+ * VIP: 500 free throws/month, then 1 Diamond each
+ * Non-VIP: 1 Diamond per throw
  */
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { throwableService, Throwable, ThrowableCategory, ThrowAllowance } from '../../services/ThrowableService';
 import { THROWABLE_ICONS } from './ThrowableIcons';
 import { useToast } from '../common/Toast';
+import { showDiamondTopUp } from '../common/DiamondTopUpToast';
 import './ThrowableSelector.css';
 
 interface ThrowableSelectorProps {
@@ -40,6 +42,7 @@ export function ThrowableSelector({ userId, onSelect, onClose }: ThrowableSelect
     const [allowance, setAllowance] = useState<ThrowAllowance | null>(null);
     const [loading, setLoading] = useState(true);
     const toast = useToast();
+    const navigate = useNavigate();
 
     useEffect(() => {
         async function load() {
@@ -56,7 +59,11 @@ export function ThrowableSelector({ userId, onSelect, onClose }: ThrowableSelect
         // Use the throwable (deducts from allowance or charges diamonds)
         const result = await throwableService.useThrowable(userId, throwable.id);
         if (!result.success) {
-            toast.error(result.error || 'Could not send reaction');
+            if (result.error?.includes('diamond') || result.error?.includes('insufficient')) {
+                showDiamondTopUp(toast, navigate, { feature: 'Throwable', cost: allowance?.diamondCost || 1 });
+            } else {
+                toast.error(result.error || 'Could not send reaction');
+            }
             return;
         }
         // Refresh allowance
@@ -92,7 +99,7 @@ export function ThrowableSelector({ userId, onSelect, onClose }: ThrowableSelect
                         {allowance.isVip && allowance.freeThrowsRemaining > 0 ? (
                             <span className="throwable-selector__free"> {allowance.freeThrowsRemaining} free</span>
                         ) : (
-                            <span className="throwable-selector__cost"> 2 each</span>
+                            <span className="throwable-selector__cost"> {allowance.diamondCost} each</span>
                         )}
                     </span>
                 )}

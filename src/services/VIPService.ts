@@ -42,6 +42,7 @@ export type VIPFeature =
     | 'offline_protection'
     | 'auto_time_bank'
     | 'time_bank_seconds'
+    | 'throwable'
     | 'theme_unlock'
     | 'club_creation'
     | 'emoji_pack'
@@ -74,14 +75,15 @@ export const FEATURE_PRICING: Record<VIPFeature, {
     description: string;
 }> = {
     rabbit_hunt: { cost: 5, usageType: 'per_use', description: 'See what cards would have come' },
-    show_stack_bb: { cost: 5, usageType: 'per_session', description: 'Display stack in big blinds' },
-    offline_protection: { cost: 10, usageType: 'per_session', description: 'Protection from timeout' },
-    auto_time_bank: { cost: 10, usageType: 'per_session', description: 'Automatic time bank usage' },
-    time_bank_seconds: { cost: 1, usageType: 'per_use', description: 'Extra 10 seconds of time bank' },
+    show_stack_bb: { cost: 0, usageType: 'per_session', description: 'Display stack in big blinds (FREE)' },
+    offline_protection: { cost: 0, usageType: 'per_session', description: '1 free per session, VIP unlimited' },
+    auto_time_bank: { cost: 5, usageType: 'per_use', description: 'Auto time bank (diamonds per activation)' },
+    time_bank_seconds: { cost: 5, usageType: 'per_use', description: 'Extra time bank extension' },
+    throwable: { cost: 1, usageType: 'per_use', description: 'Throw item at table' },
     theme_unlock: { cost: 25, usageType: 'permanent', description: 'Unlock table theme' },
-    club_creation: { cost: 100, usageType: 'permanent', description: 'Create additional club' },
+    club_creation: { cost: 0, usageType: 'permanent', description: 'Create club (FREE)' },
     emoji_pack: { cost: 1, usageType: 'permanent', description: 'Unlock 50 emojis' },
-    tag_pack: { cost: 1, usageType: 'permanent', description: 'Unlock 100 player tags' }
+    tag_pack: { cost: 1, usageType: 'per_use', description: 'Player tag' }
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
