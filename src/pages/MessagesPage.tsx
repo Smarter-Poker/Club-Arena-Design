@@ -9,11 +9,6 @@ import { useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import ConversationList from '../components/messaging/ConversationList';
 import MessageThread from '../components/messaging/MessageThread';
-import { messagingService } from '../services/MessagingService';
-import PrivateChat from '../components/social/PrivateChat';
-import MessagesPanel from '../components/messaging/MessagesPanel';
-import MessageInput from '../components/messaging/MessageInput';
-import ChatBubble from '../components/messaging/ChatBubble';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import './MessagesPage.css';
 

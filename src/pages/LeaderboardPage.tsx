@@ -10,12 +10,18 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { LeaderboardService } from '../services/LeaderboardService';
 import type { LeaderboardEntry, LeaderboardMetric, LeaderboardPeriod } from '../services/LeaderboardService';
+import { getUserMemberships } from '../services/ClubsService';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import SmarterHeader from '../components/layout/SmarterHeader';
 import './LeaderboardPage.css';
 
 type LeaderboardScope = 'my-clubs' | 'global';
+
+interface UserClub {
+    id: string;
+    name: string;
+}
 
 export default function LeaderboardPage() {
     const navigate = useNavigate();
@@ -30,44 +36,77 @@ export default function LeaderboardPage() {
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
     const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+    // Club selection
+    const [userClubs, setUserClubs] = useState<UserClub[]>([]);
+    const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
+    const [clubsLoading, setClubsLoading] = useState(true);
+
+    // Load user's clubs on mount
     useEffect(() => {
-        loadLeaderboard();
+        loadUserClubs();
+    }, []);
 
-        // Subscribe to real-time leaderboard updates
-        const channel = supabase
-            .channel('leaderboard-updates')
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'leaderboard_cache',
-                },
-                () => {
-                    // Reload leaderboard when data changes
-                    loadLeaderboard(true);
-                }
-            )
-            .subscribe();
+    // Load leaderboard when filters or selected club change
+    useEffect(() => {
+        if (selectedClubId) {
+            loadLeaderboard();
 
-        // Auto-refresh every 30 seconds
-        refreshTimerRef.current = setInterval(() => {
-            loadLeaderboard(true);
-        }, 30000);
+            // Subscribe to real-time leaderboard updates
+            const channel = supabase
+                .channel('leaderboard-updates')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'leaderboard_cache',
+                    },
+                    () => {
+                        loadLeaderboard(true);
+                    }
+                )
+                .subscribe();
 
-        return () => {
-            supabase.removeChannel(channel);
-            if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
-        };
-    }, [scope, period, metric]);
+            // Auto-refresh every 30 seconds
+            refreshTimerRef.current = setInterval(() => {
+                loadLeaderboard(true);
+            }, 30000);
+
+            return () => {
+                supabase.removeChannel(channel);
+                if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
+            };
+        } else {
+            setEntries([]);
+            setLoading(false);
+        }
+    }, [scope, period, metric, selectedClubId]);
+
+    const loadUserClubs = async () => {
+        setClubsLoading(true);
+        try {
+            const memberships = await getUserMemberships();
+            const clubs = memberships.map((m: any) => ({
+                id: m.club?.id || m.club_id,
+                name: m.club?.name || 'Unknown Club',
+            })).filter((c: UserClub) => c.id);
+
+            setUserClubs(clubs);
+            if (clubs.length > 0 && !selectedClubId) {
+                setSelectedClubId(clubs[0].id);
+            }
+        } catch (error) {
+            console.error('Failed to load clubs:', error);
+        }
+        setClubsLoading(false);
+    };
 
     const loadLeaderboard = async (silent = false) => {
+        if (!selectedClubId) return;
         if (!silent) setLoading(true);
         try {
-            // For now, load a sample club leaderboard
-            // In production, this would aggregate across user's clubs
             const data = await LeaderboardService.getClubLeaderboard(
-                'sample-club-id', // Would be dynamic
+                selectedClubId,
                 metric,
                 period,
                 50
@@ -79,7 +118,7 @@ export default function LeaderboardPage() {
             if (user?.id) {
                 const rank = await LeaderboardService.getUserRank(
                     user.id,
-                    'sample-club-id',
+                    selectedClubId,
                     metric,
                     period
                 );
@@ -138,6 +177,20 @@ export default function LeaderboardPage() {
 
             {/* Filters */}
             <div className="leaderboard-filters">
+                {/* Club Selector (only shown for My Clubs scope) */}
+                {userClubs.length > 1 && (
+                    <div className="filter-group">
+                        <select
+                            value={selectedClubId || ''}
+                            onChange={(e) => setSelectedClubId(e.target.value)}
+                        >
+                            {userClubs.map(club => (
+                                <option key={club.id} value={club.id}>{club.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
                 {/* Scope Toggle */}
                 <div className="filter-group scope-toggle">
                     <button
@@ -183,7 +236,23 @@ export default function LeaderboardPage() {
 
             {/* Leaderboard Table */}
             <div className="leaderboard-list">
-                {loading ? (
+                {clubsLoading ? (
+                    <div className="loading-state">
+                        <div className="spinner" />
+                        <p>Loading clubs...</p>
+                    </div>
+                ) : userClubs.length === 0 ? (
+                    <div className="empty-state">
+                        <span className="empty-icon">♠</span>
+                        <p>Join a club to see leaderboard rankings!</p>
+                        <button
+                            className="join-club-btn"
+                            onClick={() => navigate('/clubs')}
+                        >
+                            Browse Clubs
+                        </button>
+                    </div>
+                ) : loading ? (
                     <div className="loading-state">
                         <div className="spinner" />
                         <p>Loading rankings...</p>
