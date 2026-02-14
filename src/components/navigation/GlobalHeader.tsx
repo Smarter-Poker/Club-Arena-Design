@@ -143,7 +143,7 @@ export default function GlobalHeader({
                         aria-label="Menu"
                         onClick={() => setMenuOpen(true)}
                     >
-                        ☰
+                        <img src={`${import.meta.env.BASE_URL}images/btn-hamburger.png`} alt="Menu" style={{ height: '100%', width: '100%', objectFit: 'contain' }} />
                     </button>
                     <button
                         onClick={pageDepth > 1 ? handleBack : handleHubClick}

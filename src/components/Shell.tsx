@@ -98,7 +98,7 @@ function ShellContent() {
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                             aria-label="Menu"
                         >
-                            ☰
+                            <img src={`${import.meta.env.BASE_URL}images/btn-hamburger.png`} alt="Menu" style={{ height: '100%', width: '100%', objectFit: 'contain' }} />
                         </button>
                         <NavLink to="/" className="shell-logo-link">
                             <span className="shell-logo-text">Hub</span>
@@ -178,7 +178,7 @@ function ShellContent() {
                         className="shell-mobile-toggle"
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                     >
-                        {mobileMenuOpen ? '✕' : '☰'}
+                        {mobileMenuOpen ? '✕' : <img src={`${import.meta.env.BASE_URL}images/btn-hamburger.png`} alt="Menu" style={{ height: 20, width: 20, objectFit: 'contain' }} />}
                     </button>
                 </div>
 
