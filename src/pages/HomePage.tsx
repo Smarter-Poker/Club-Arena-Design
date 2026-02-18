@@ -130,25 +130,15 @@ export default function HomePage() {
             try {
                 const { data: { user: authUser } } = await supabase.auth.getUser();
                 if (authUser) {
-                    // Fetch diamonds
-                    const { data: walletData } = await supabase
-                        .from('diamond_wallets')
-                        .select('balance')
-                        .eq('user_id', authUser.id)
-                        .maybeSingle();
-
-                    if (walletData) {
-                        setDiamonds(walletData.balance || 0);
-                    }
-
-                    // Fetch XP from profile
+                    // Fetch diamonds + XP from profile (single query)
                     const { data: profileData } = await supabase
                         .from('profiles')
-                        .select('xp_total')
+                        .select('diamonds, xp_total')
                         .eq('id', authUser.id)
                         .maybeSingle();
 
                     if (profileData) {
+                        setDiamonds(profileData.diamonds || 0);
                         const totalXp = profileData.xp_total || 0;
                         setXp(totalXp);
                         setLevel(Math.max(1, Math.floor(Math.sqrt(totalXp / 100)) + 1));
