@@ -60,9 +60,9 @@ export const DiamondService = {
      */
     async getBalance(userId: string): Promise<DiamondWallet> {
         const { data, error } = await supabase
-            .from('diamond_wallets')
-            .select('balance, lifetime_earned, lifetime_spent')
-            .eq('user_id', userId)
+            .from('profiles')
+            .select('diamonds')
+            .eq('id', userId)
             .single();
 
         if (error || !data) {
@@ -70,9 +70,9 @@ export const DiamondService = {
         }
 
         return {
-            balance: data.balance || 0,
-            lifetimeEarned: data.lifetime_earned || 0,
-            lifetimeSpent: data.lifetime_spent || 0,
+            balance: data.diamonds || 0,
+            lifetimeEarned: 0,
+            lifetimeSpent: 0,
         };
     },
 

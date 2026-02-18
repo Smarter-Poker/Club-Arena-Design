@@ -170,21 +170,27 @@ class ThrowableServiceClass {
             }
 
             // Otherwise charge 1 diamond
-            const { data: wallet } = await supabase
-                .from('diamond_wallets')
-                .select('balance')
-                .eq('user_id', userId)
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('diamonds')
+                .eq('id', userId)
                 .single();
 
-            if (!wallet || wallet.balance < DIAMOND_COST_PER_THROW) {
+            if (!profile || (profile.diamonds || 0) < DIAMOND_COST_PER_THROW) {
                 return { success: false, error: `Need ${DIAMOND_COST_PER_THROW} Diamonds` };
             }
 
-            // Deduct diamonds
-            await supabase
-                .from('diamond_wallets')
-                .update({ balance: wallet.balance - DIAMOND_COST_PER_THROW })
-                .eq('user_id', userId);
+            // Deduct diamonds atomically via RPC
+            const { error: deductError } = await supabase.rpc('deduct_diamonds', {
+                p_user_id: userId,
+                p_amount: DIAMOND_COST_PER_THROW,
+                p_description: `Throwable: ${throwable.name}`,
+                p_transaction_type: 'throwable',
+            });
+
+            if (deductError) {
+                return { success: false, error: 'Failed to deduct diamonds' };
+            }
 
             // Record usage
             await supabase
