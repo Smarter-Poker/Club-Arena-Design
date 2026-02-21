@@ -74,7 +74,7 @@ export const WalletService = {
             .eq('user_id', userId);
 
         if (error) throw error;
-        return data.map(w => ({
+        return (data || []).map(w => ({
             userId: w.user_id,
             walletType: w.wallet_type as WalletType,
             balance: w.balance,
@@ -347,20 +347,16 @@ export const WalletService = {
      * Process dealer tip from player's table stack
      */
     async processDealerTip(userId: string, tableId: string, amount: number): Promise<boolean> {
-        // Deduct from player's locked chips at table
-        const { error } = await supabase
-            .from('table_chip_locks')
-            .update({ amount: supabase.rpc('table_chip_locks.amount - $1', [amount]) })
-            .eq('user_id', userId)
-            .eq('table_id', tableId);
+        // Deduct from player's locked chips at table via RPC
+        const { error } = await supabase.rpc('deduct_table_chips', {
+            p_user_id: userId,
+            p_table_id: tableId,
+            p_amount: amount,
+        });
 
         if (error) {
-            // Simple deduction approach
-            await supabase.rpc('deduct_table_chips', {
-                p_user_id: userId,
-                p_table_id: tableId,
-                p_amount: amount,
-            });
+            console.error('WalletService.processDealerTip deduction failed:', error);
+            throw new Error('Failed to deduct dealer tip');
         }
 
         // Record tip transaction

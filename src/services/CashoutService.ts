@@ -195,7 +195,7 @@ class CashoutServiceClass {
             console.error('[Cashout] Failed to release escrow:', escrowError);
         }
 
-        // Return chips to player balance
+        // Return chips to player balance — MUST succeed or throw
         const { error: balanceError } = await supabase
             .rpc('fn_add_chips', {
                 p_user_id: cashout.playerId,
@@ -204,7 +204,8 @@ class CashoutServiceClass {
             });
 
         if (balanceError) {
-            console.error('[Cashout] Failed to return chips:', balanceError);
+            console.error('[Cashout] CRITICAL: Failed to return chips after rejection:', balanceError);
+            throw new Error('Cashout rejected but chip return failed — chips may be stuck in escrow');
         }
 
         return true;

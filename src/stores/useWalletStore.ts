@@ -233,6 +233,9 @@ export const useWalletStore = create<WalletState>()(
                     console.warn('[Store] Table ID mismatch for unlock');
                 }
 
+                // Save previous state for rollback
+                const previousBalances = { ...balances };
+
                 set({
                     pendingBuyIn: null,
                     pendingTableId: null,
@@ -250,6 +253,8 @@ export const useWalletStore = create<WalletState>()(
                     await WalletService.unlockFromTable(userId, tableId, amount);
                     return true;
                 } catch (error) {
+                    // Revert optimistic update on failure
+                    set({ balances: previousBalances, pendingBuyIn: null, pendingTableId: null });
                     console.error('[Store] Unlock from table failed:', error);
                     return false;
                 }

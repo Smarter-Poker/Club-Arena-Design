@@ -460,7 +460,8 @@ export const CreditService = {
     getNextSettlementDate(): string {
         const now = new Date();
         const dayOfWeek = now.getDay();
-        const daysUntilSunday = (7 - dayOfWeek) % 7 || 7;
+        // Sunday = 0 → settlement is today; otherwise, days until next Sunday
+        const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
         const nextSunday = new Date(now.getTime() + daysUntilSunday * 24 * 60 * 60 * 1000);
         nextSunday.setHours(23, 59, 59, 0);
         return nextSunday.toISOString();
