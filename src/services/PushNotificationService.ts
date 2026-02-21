@@ -273,12 +273,11 @@ class PushNotificationServiceClass {
      */
     async notifyAchievement(
         userId: string,
-        achievementName: string,
-        xpReward: number
+        achievementName: string
     ): Promise<boolean> {
         return this.sendToUser(userId, {
             title: ' Achievement Unlocked!',
-            message: `${achievementName} (+${xpReward} XP)`,
+            message: `${achievementName}`,
             category: 'achievement',
             url: '/achievements',
         });

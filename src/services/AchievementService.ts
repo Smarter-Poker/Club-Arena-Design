@@ -22,7 +22,6 @@ export interface Achievement {
     category: AchievementCategory;
     rarity: AchievementRarity;
     requirement: number;
-    xpReward: number;
     chipReward?: number;
     hidden?: boolean;
 }
@@ -42,36 +41,36 @@ export interface UserAchievement {
 
 export const ACHIEVEMENTS: Achievement[] = [
     // Hands Played
-    { id: 'hands_100', name: 'Getting Started', description: 'Play 100 hands', icon: '', category: 'hands', rarity: 'common', requirement: 100, xpReward: 50 },
-    { id: 'hands_1000', name: 'Regular', description: 'Play 1,000 hands', icon: '', category: 'hands', rarity: 'rare', requirement: 1000, xpReward: 200 },
-    { id: 'hands_10000', name: 'Grinder', description: 'Play 10,000 hands', icon: '', category: 'hands', rarity: 'epic', requirement: 10000, xpReward: 500 },
-    { id: 'hands_100000', name: 'Professional', description: 'Play 100,000 hands', icon: '', category: 'hands', rarity: 'legendary', requirement: 100000, xpReward: 2000 },
+    { id: 'hands_100', name: 'Getting Started', description: 'Play 100 hands', icon: '', category: 'hands', rarity: 'common', requirement: 100, chipReward: 0 },
+    { id: 'hands_1000', name: 'Regular', description: 'Play 1,000 hands', icon: '', category: 'hands', rarity: 'rare', requirement: 1000, chipReward: 0 },
+    { id: 'hands_10000', name: 'Grinder', description: 'Play 10,000 hands', icon: '', category: 'hands', rarity: 'epic', requirement: 10000, chipReward: 0 },
+    { id: 'hands_100000', name: 'Professional', description: 'Play 100,000 hands', icon: '', category: 'hands', rarity: 'legendary', requirement: 100000, chipReward: 0 },
 
     // Wins
-    { id: 'wins_10', name: 'First Blood', description: 'Win 10 hands', icon: '✊', category: 'wins', rarity: 'common', requirement: 10, xpReward: 25 },
-    { id: 'wins_100', name: 'Winner', description: 'Win 100 hands', icon: '', category: 'wins', rarity: 'rare', requirement: 100, xpReward: 100 },
-    { id: 'wins_1000', name: 'Dominator', description: 'Win 1,000 hands', icon: '', category: 'wins', rarity: 'epic', requirement: 1000, xpReward: 400 },
+    { id: 'wins_10', name: 'First Blood', description: 'Win 10 hands', icon: '✊', category: 'wins', rarity: 'common', requirement: 10, chipReward: 0 },
+    { id: 'wins_100', name: 'Winner', description: 'Win 100 hands', icon: '', category: 'wins', rarity: 'rare', requirement: 100, chipReward: 0 },
+    { id: 'wins_1000', name: 'Dominator', description: 'Win 1,000 hands', icon: '', category: 'wins', rarity: 'epic', requirement: 1000, chipReward: 0 },
 
     // Social
-    { id: 'friends_5', name: 'Social Butterfly', description: 'Add 5 friends', icon: '🦋', category: 'social', rarity: 'common', requirement: 5, xpReward: 30 },
-    { id: 'friends_25', name: 'Popular', description: 'Add 25 friends', icon: '', category: 'social', rarity: 'rare', requirement: 25, xpReward: 150 },
-    { id: 'clubs_3', name: 'Club Hopper', description: 'Join 3 clubs', icon: '', category: 'social', rarity: 'common', requirement: 3, xpReward: 50 },
+    { id: 'friends_5', name: 'Social Butterfly', description: 'Add 5 friends', icon: '🦋', category: 'social', rarity: 'common', requirement: 5, chipReward: 0 },
+    { id: 'friends_25', name: 'Popular', description: 'Add 25 friends', icon: '', category: 'social', rarity: 'rare', requirement: 25, chipReward: 0 },
+    { id: 'clubs_3', name: 'Club Hopper', description: 'Join 3 clubs', icon: '', category: 'social', rarity: 'common', requirement: 3, chipReward: 0 },
 
     // Financial
-    { id: 'profit_1000', name: 'In the Green', description: 'Profit $1,000', icon: '', category: 'financial', rarity: 'rare', requirement: 1000, xpReward: 200 },
-    { id: 'profit_10000', name: 'High Roller', description: 'Profit $10,000', icon: '', category: 'financial', rarity: 'epic', requirement: 10000, xpReward: 500 },
-    { id: 'biggest_pot_500', name: 'Big Pot', description: 'Win a $500+ pot', icon: '', category: 'financial', rarity: 'rare', requirement: 500, xpReward: 100 },
+    { id: 'profit_1000', name: 'In the Green', description: 'Profit $1,000', icon: '', category: 'financial', rarity: 'rare', requirement: 1000, chipReward: 0 },
+    { id: 'profit_10000', name: 'High Roller', description: 'Profit $10,000', icon: '', category: 'financial', rarity: 'epic', requirement: 10000, chipReward: 0 },
+    { id: 'biggest_pot_500', name: 'Big Pot', description: 'Win a $500+ pot', icon: '', category: 'financial', rarity: 'rare', requirement: 500, chipReward: 0 },
 
     // Tournament
-    { id: 'tourney_win_1', name: 'Champion', description: 'Win a tournament', icon: '', category: 'tournament', rarity: 'epic', requirement: 1, xpReward: 300 },
-    { id: 'tourney_top3_10', name: 'Consistent', description: 'Finish top 3 in 10 tournaments', icon: '🎖️', category: 'tournament', rarity: 'rare', requirement: 10, xpReward: 250 },
-    { id: 'tourney_played_50', name: 'Tournament Regular', description: 'Play 50 tournaments', icon: '', category: 'tournament', rarity: 'rare', requirement: 50, xpReward: 200 },
+    { id: 'tourney_win_1', name: 'Champion', description: 'Win a tournament', icon: '', category: 'tournament', rarity: 'epic', requirement: 1, chipReward: 0 },
+    { id: 'tourney_top3_10', name: 'Consistent', description: 'Finish top 3 in 10 tournaments', icon: '🎖️', category: 'tournament', rarity: 'rare', requirement: 10, chipReward: 0 },
+    { id: 'tourney_played_50', name: 'Tournament Regular', description: 'Play 50 tournaments', icon: '', category: 'tournament', rarity: 'rare', requirement: 50, chipReward: 0 },
 
     // Special
-    { id: 'royal_flush', name: 'Royal Flush', description: 'Hit a Royal Flush', icon: '', category: 'special', rarity: 'legendary', requirement: 1, xpReward: 1000, chipReward: 500 },
-    { id: 'straight_flush', name: 'Straight Flush', description: 'Hit a Straight Flush', icon: '🌊', category: 'special', rarity: 'epic', requirement: 1, xpReward: 300 },
-    { id: 'quads', name: 'Four of a Kind', description: 'Hit Quads', icon: '4️⃣', category: 'special', rarity: 'rare', requirement: 1, xpReward: 100 },
-    { id: 'bad_beat', name: 'Bad Beat Survivor', description: 'Lose with quads or better', icon: '💔', category: 'special', rarity: 'epic', requirement: 1, xpReward: 200, hidden: true },
+    { id: 'royal_flush', name: 'Royal Flush', description: 'Hit a Royal Flush', icon: '', category: 'special', rarity: 'legendary', requirement: 1, chipReward: 500 },
+    { id: 'straight_flush', name: 'Straight Flush', description: 'Hit a Straight Flush', icon: '🌊', category: 'special', rarity: 'epic', requirement: 1, chipReward: 0 },
+    { id: 'quads', name: 'Four of a Kind', description: 'Hit Quads', icon: '4️⃣', category: 'special', rarity: 'rare', requirement: 1, chipReward: 0 },
+    { id: 'bad_beat', name: 'Bad Beat Survivor', description: 'Lose with quads or better', icon: '💔', category: 'special', rarity: 'epic', requirement: 1, chipReward: 0, hidden: true },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -217,15 +216,6 @@ class AchievementServiceClass {
     // ─────────────────────────────────────────────────────────────────────────────
 
     private async awardRewards(userId: string, achievement: Achievement): Promise<void> {
-        // Award XP
-        if (achievement.xpReward > 0) {
-            await supabase.rpc('add_xp', {
-                p_user_id: userId,
-                p_amount: achievement.xpReward,
-                p_source: `achievement:${achievement.id}`
-            });
-        }
-
         // Award chips
         if (achievement.chipReward && achievement.chipReward > 0) {
             await supabase.rpc('add_to_promo_wallet', {
@@ -243,7 +233,7 @@ class AchievementServiceClass {
                 type: 'achievement',
                 title: ` Achievement Unlocked!`,
                 message: `You earned "${achievement.name}"!`,
-                data: { achievement_id: achievement.id, xp: achievement.xpReward }
+                data: { achievement_id: achievement.id }
             });
     }
 

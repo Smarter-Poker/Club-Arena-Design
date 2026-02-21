@@ -47,13 +47,13 @@ export default function PromotionsPage() {
                         Daily bonuses are awarded for consecutive daily logins:
                     </p>
                     <ul>
-                        <li>Day 1: 100 chips + 10 XP</li>
-                        <li>Day 2: 200 chips + 20 XP</li>
-                        <li>Day 3: 300 chips + 30 XP</li>
-                        <li>Day 4: 400 chips + 40 XP</li>
-                        <li>Day 5: 500 chips + 50 XP</li>
-                        <li>Day 6: 600 chips + 60 XP</li>
-                        <li>Day 7: 1000 chips + 100 XP</li>
+                        <li>Day 1: 100 chips</li>
+                        <li>Day 2: 200 chips</li>
+                        <li>Day 3: 300 chips</li>
+                        <li>Day 4: 400 chips</li>
+                        <li>Day 5: 500 chips</li>
+                        <li>Day 6: 600 chips</li>
+                        <li>Day 7: 1000 chips + 100 Diamonds</li>
                     </ul>
                     <p>
                         Missing a day resets your streak to Day 1.

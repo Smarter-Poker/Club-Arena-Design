@@ -14,7 +14,7 @@ interface AchievementNotificationProps {
         description: string;
         icon: string;
         rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
-        xpReward: number;
+
         diamondReward?: number;
     } | null;
     onDismiss: () => void;
@@ -75,7 +75,7 @@ export function AchievementNotification({ achievement, onDismiss }: AchievementN
                 </div>
 
                 <div className="achievement-notification__rewards">
-                    <span className="reward xp">+{achievement.xpReward} XP</span>
+
                     {achievement.diamondReward && (
                         <span className="reward diamond">+{achievement.diamondReward} </span>
                     )}

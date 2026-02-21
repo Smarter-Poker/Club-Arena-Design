@@ -18,7 +18,7 @@ interface Challenge {
     description: string;
     progress: number;
     target: number;
-    reward: { type: 'chips' | 'diamonds' | 'xp'; amount: number };
+    reward: { type: 'chips' | 'diamonds'; amount: number };
     expiresAt?: Date;
     completed: boolean;
 }
@@ -46,8 +46,8 @@ export const DailyChallengesWidget: React.FC = () => {
                 progress: c.progress,
                 target: c.challenge.requirement,
                 reward: {
-                    type: c.challenge.chipReward > 0 ? 'chips' : 'xp',
-                    amount: c.challenge.chipReward > 0 ? c.challenge.chipReward : c.challenge.xpReward,
+                    type: 'chips',
+                    amount: c.challenge.chipReward,
                 },
                 expiresAt: new Date(Date.now() + 86400000), // Expires at end of day
                 completed: c.completed,

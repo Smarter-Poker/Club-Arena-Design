@@ -219,7 +219,7 @@
     gap: 4px;
 }
 
-.xp-badge {
+.chip-badge {
     font-size: var(--fs-xs);
     font-weight: var(--fw-bold);
     color: var(--fb-blue);

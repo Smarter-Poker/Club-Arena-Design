@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Provides rotating daily challenges that refresh each day.
- * Players can complete challenges for XP, chips, and other rewards.
+ * Players can complete challenges for chips and other rewards.
  */
 
 import { supabase } from '../lib/supabase';
@@ -28,7 +28,6 @@ export interface DailyChallenge {
     description: string;
     type: ChallengeType;
     requirement: number;
-    xpReward: number;
     chipReward: number;
     icon: string;
 }
@@ -49,25 +48,25 @@ export interface UserDailyChallenge {
 
 export const CHALLENGE_POOL: DailyChallenge[] = [
     // Easy Challenges (daily grind)
-    { id: 'hands_10', name: 'Warm Up', description: 'Play 10 hands today', type: 'hands_played', requirement: 10, xpReward: 25, chipReward: 50, icon: '' },
-    { id: 'hands_25', name: 'Getting Serious', description: 'Play 25 hands today', type: 'hands_played', requirement: 25, xpReward: 50, chipReward: 100, icon: '' },
-    { id: 'hands_50', name: 'Grinder', description: 'Play 50 hands today', type: 'hands_played', requirement: 50, xpReward: 100, chipReward: 200, icon: '' },
+    { id: 'hands_10', name: 'Warm Up', description: 'Play 10 hands today', type: 'hands_played', requirement: 10, chipReward: 50, icon: '' },
+    { id: 'hands_25', name: 'Getting Serious', description: 'Play 25 hands today', type: 'hands_played', requirement: 25, chipReward: 100, icon: '' },
+    { id: 'hands_50', name: 'Grinder', description: 'Play 50 hands today', type: 'hands_played', requirement: 50, chipReward: 200, icon: '' },
 
     // Win Challenges
-    { id: 'wins_3', name: 'Triple Threat', description: 'Win 3 hands today', type: 'hands_won', requirement: 3, xpReward: 40, chipReward: 75, icon: '' },
-    { id: 'wins_5', name: 'High Five', description: 'Win 5 hands today', type: 'hands_won', requirement: 5, xpReward: 75, chipReward: 150, icon: '✋' },
-    { id: 'wins_10', name: 'Ten Bagger', description: 'Win 10 hands today', type: 'hands_won', requirement: 10, xpReward: 150, chipReward: 300, icon: '' },
+    { id: 'wins_3', name: 'Triple Threat', description: 'Win 3 hands today', type: 'hands_won', requirement: 3, chipReward: 75, icon: '' },
+    { id: 'wins_5', name: 'High Five', description: 'Win 5 hands today', type: 'hands_won', requirement: 5, chipReward: 150, icon: '✋' },
+    { id: 'wins_10', name: 'Ten Bagger', description: 'Win 10 hands today', type: 'hands_won', requirement: 10, chipReward: 300, icon: '' },
 
     // Showdown Challenges
-    { id: 'showdown_3', name: 'Show Your Cards', description: 'Reach 3 showdowns today', type: 'showdowns', requirement: 3, xpReward: 30, chipReward: 60, icon: '👀' },
-    { id: 'showdown_5', name: 'Showdown King', description: 'Reach 5 showdowns today', type: 'showdowns', requirement: 5, xpReward: 60, chipReward: 120, icon: '' },
+    { id: 'showdown_3', name: 'Show Your Cards', description: 'Reach 3 showdowns today', type: 'showdowns', requirement: 3, chipReward: 60, icon: '👀' },
+    { id: 'showdown_5', name: 'Showdown King', description: 'Reach 5 showdowns today', type: 'showdowns', requirement: 5, chipReward: 120, icon: '' },
 
     // Tournament Challenges
-    { id: 'tourney_1', name: 'Tournament Time', description: 'Play 1 tournament today', type: 'tournaments_played', requirement: 1, xpReward: 50, chipReward: 100, icon: '' },
-    { id: 'tourney_3', name: 'Tournament Regular', description: 'Play 3 tournaments today', type: 'tournaments_played', requirement: 3, xpReward: 150, chipReward: 300, icon: '' },
+    { id: 'tourney_1', name: 'Tournament Time', description: 'Play 1 tournament today', type: 'tournaments_played', requirement: 1, chipReward: 100, icon: '' },
+    { id: 'tourney_3', name: 'Tournament Regular', description: 'Play 3 tournaments today', type: 'tournaments_played', requirement: 3, chipReward: 300, icon: '' },
 
     // Social Challenges
-    { id: 'friend_1', name: 'Make a Friend', description: 'Add 1 friend today', type: 'friends_added', requirement: 1, xpReward: 30, chipReward: 50, icon: '' },
+    { id: 'friend_1', name: 'Make a Friend', description: 'Add 1 friend today', type: 'friends_added', requirement: 1, chipReward: 50, icon: '' },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -176,18 +175,6 @@ class DailyChallengeServiceClass {
      * Award rewards for completing a challenge
      */
     private async awardRewards(userId: string, challenge: DailyChallenge): Promise<void> {
-        // Award XP
-        if (challenge.xpReward > 0) {
-            const { error: xpError } = await supabase.rpc('add_player_xp', {
-                p_user_id: userId,
-                p_amount: challenge.xpReward,
-                p_reason: `Daily Challenge: ${challenge.name}`,
-            });
-            if (xpError) {
-                console.error('[DailyChallenge] Failed to award XP:', xpError);
-            }
-        }
-
         // Award chips atomically via RPC (read-modify-write was a race condition)
         if (challenge.chipReward > 0) {
             const { error: chipError } = await supabase.rpc('credit_player_wallet', {
@@ -208,7 +195,6 @@ class DailyChallengeServiceClass {
     async getStats(userId: string): Promise<{
         totalCompleted: number;
         currentStreak: number;
-        totalXpEarned: number;
         totalChipsEarned: number;
     }> {
         const { data } = await supabase
@@ -218,17 +204,15 @@ class DailyChallengeServiceClass {
             .eq('completed', true);
 
         if (!data) {
-            return { totalCompleted: 0, currentStreak: 0, totalXpEarned: 0, totalChipsEarned: 0 };
+            return { totalCompleted: 0, currentStreak: 0, totalChipsEarned: 0 };
         }
 
         const totalCompleted = data.length;
-        let totalXpEarned = 0;
         let totalChipsEarned = 0;
 
         for (const uc of data) {
             const challenge = CHALLENGE_POOL.find(c => c.id === uc.challenge_id);
             if (challenge) {
-                totalXpEarned += challenge.xpReward;
                 totalChipsEarned += challenge.chipReward;
             }
         }
@@ -247,7 +231,7 @@ class DailyChallengeServiceClass {
             }
         }
 
-        return { totalCompleted, currentStreak, totalXpEarned, totalChipsEarned };
+        return { totalCompleted, currentStreak, totalChipsEarned };
     }
 
     /**
@@ -302,7 +286,6 @@ class DailyChallengeServiceClass {
             description: '',
             type: 'hands_played' as ChallengeType,
             requirement: 0,
-            xpReward: 0,
             chipReward: 0,
             icon: '❓',
         };

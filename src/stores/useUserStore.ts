@@ -59,10 +59,7 @@ interface UserState {
     totalChips: number;
     updateTotalChips: (chips: number) => void;
 
-    // XP & Level
-    xp: number;
-    level: number;
-    updateXP: (xp: number, level: number) => void;
+
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -92,8 +89,7 @@ export const useUserStore = create<UserState>()(
             isLoading: false,
             currentClubId: null,
             totalChips: 0,
-            xp: 0,
-            level: 1,
+
 
             login: (user: UserProfile) => {
                 set({
@@ -189,9 +185,7 @@ export const useUserStore = create<UserState>()(
                 set({ totalChips: chips });
             },
 
-            updateXP: (xp: number, level: number) => {
-                set({ xp, level });
-            },
+
         }),
         {
             name: 'club-arena-user',

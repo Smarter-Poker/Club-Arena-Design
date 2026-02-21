@@ -1,6 +1,6 @@
 /**
  * ♠ CLUB ARENA — Daily Challenges System
- * Gamification 2.0 with streak rewards and XP progression
+ * Gamification 2.0 with streak rewards and chip progression
  */
 
 import React, { useState, useEffect } from 'react';
@@ -14,7 +14,7 @@ interface Challenge {
     title: string;
     description: string;
     icon: string;
-    xpReward: number;
+    chipReward: number;
     diamondReward?: number;
     progress: number;
     target: number;
@@ -42,7 +42,7 @@ export const DailyChallenges: React.FC = () => {
         nextMilestone: 10,
         milestoneReward: 100,
     });
-    const [xp, setXp] = useState({ current: 2450, level: 12, nextLevel: 3000 });
+
     const [showAnimation, setShowAnimation] = useState(false);
 
     useEffect(() => {
@@ -57,7 +57,7 @@ export const DailyChallenges: React.FC = () => {
                 title: 'Table Time',
                 description: 'Play 30 minutes today',
                 icon: '⏱️',
-                xpReward: 50,
+                chipReward: 50,
                 progress: 22,
                 target: 30,
                 completed: false,
@@ -69,7 +69,7 @@ export const DailyChallenges: React.FC = () => {
                 title: 'Hand Master',
                 description: 'Win 10 hands',
                 icon: '🃏',
-                xpReward: 75,
+                chipReward: 75,
                 diamondReward: 5,
                 progress: 10,
                 target: 10,
@@ -82,7 +82,7 @@ export const DailyChallenges: React.FC = () => {
                 title: 'Big Pot Hunter',
                 description: 'Win a pot over 1000 chips',
                 icon: '💰',
-                xpReward: 100,
+                chipReward: 100,
                 progress: 0,
                 target: 1,
                 completed: false,
@@ -94,7 +94,7 @@ export const DailyChallenges: React.FC = () => {
                 title: 'Tournament Warrior',
                 description: 'Finish top 3 in a tournament',
                 icon: '🏆',
-                xpReward: 200,
+                chipReward: 200,
                 diamondReward: 20,
                 progress: 0,
                 target: 1,
@@ -107,7 +107,7 @@ export const DailyChallenges: React.FC = () => {
                 title: 'Social Butterfly',
                 description: 'Share 3 hands',
                 icon: '📤',
-                xpReward: 50,
+                chipReward: 50,
                 progress: 1,
                 target: 3,
                 completed: false,
@@ -123,38 +123,25 @@ export const DailyChallenges: React.FC = () => {
 
         setShowAnimation(true);
 
-        // Update XP
-        setXp((prev) => ({
-            ...prev,
-            current: prev.current + challenge.xpReward,
-        }));
+
 
         // Mark as claimed
         setChallenges((prev) =>
             prev.map((c) => c.id === challenge.id ? { ...c, claimed: true } : c)
         );
 
-        toast.success(`+${challenge.xpReward} XP${challenge.diamondReward ? ` +${challenge.diamondReward} 💎` : ''}`);
+        toast.success(`+${challenge.chipReward} Chips${challenge.diamondReward ? ` +${challenge.diamondReward} 💎` : ''}`);
 
         setTimeout(() => setShowAnimation(false), 2000);
     };
 
     const dailyChallenges = challenges.filter((c) => c.type === 'daily');
     const weeklyChallenges = challenges.filter((c) => c.type === 'weekly');
-    const xpProgress = (xp.current / xp.nextLevel) * 100;
+
 
     return (
         <div className="daily-challenges">
-            {/* XP Progress Bar */}
-            <div className="xp-header">
-                <div className="level-badge">
-                    <span className="level-num">LV {xp.level}</span>
-                </div>
-                <div className="xp-bar-container">
-                    <div className="xp-bar" style={{ width: `${xpProgress}%` }} />
-                    <span className="xp-text">{xp.current.toLocaleString()} / {xp.nextLevel.toLocaleString()} XP</span>
-                </div>
-            </div>
+
 
             {/* Streak Display */}
             <div className="streak-card">
@@ -211,7 +198,7 @@ export const DailyChallenges: React.FC = () => {
                                 ) : challenge.claimed ? (
                                     <span className="claimed-check">✓</span>
                                 ) : (
-                                    <span className="xp-badge">+{challenge.xpReward} XP</span>
+                                    <span className="chip-badge">+{challenge.chipReward} Chips</span>
                                 )}
                             </div>
                         </div>
@@ -243,7 +230,7 @@ export const DailyChallenges: React.FC = () => {
                                 </span>
                             </div>
                             <div className="challenge-reward">
-                                <span className="xp-badge">+{challenge.xpReward} XP</span>
+                                <span className="chip-badge">+{challenge.chipReward} Chips</span>
                                 {challenge.diamondReward && (
                                     <span className="diamond-badge">+{challenge.diamondReward} 💎</span>
                                 )}
@@ -253,12 +240,7 @@ export const DailyChallenges: React.FC = () => {
                 </div>
             </section>
 
-            {/* XP Gain Animation */}
-            {showAnimation && (
-                <div className="xp-animation">
-                    <span>+XP</span>
-                </div>
-            )}
+
         </div>
     );
 };

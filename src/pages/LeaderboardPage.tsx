@@ -282,9 +282,6 @@ export default function LeaderboardPage() {
                             </div>
                             <div className="entry-info">
                                 <span className="entry-name">{entry.username}</span>
-                                {entry.xpEarned && (
-                                    <span className="entry-xp">+{entry.xpEarned} XP</span>
-                                )}
                             </div>
                             <div className={`entry-value ${entry.value >= 0 ? 'positive' : 'negative'}`}>
                                 {formatValue(entry.value, metric)}

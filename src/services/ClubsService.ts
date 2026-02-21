@@ -188,7 +188,7 @@ export async function joinClub(
             user_id: user.user.id,
             role,
             tier: 'bronze',
-            xp: 0,
+
             diamonds: 0,
             reputation_xp: 0,
             trust_score: 50, // Starting trust score
@@ -260,7 +260,7 @@ export async function getClubMembers(clubId: string): Promise<ClubMember[]> {
       profile:profiles(username, avatar_url)
     `)
         .eq('club_id', clubId)
-        .order('xp', { ascending: false });
+        .order('reputation_xp', { ascending: false });
 
     if (error) {
         console.error('[ClubsService] Get club members failed:', error);
@@ -311,7 +311,7 @@ export async function getClubLeaderboard(
       profile:profiles(username, avatar_url)
     `)
         .eq('club_id', clubId)
-        .order('xp', { ascending: false })
+        .order('reputation_xp', { ascending: false })
         .limit(50);
 
     if (error) {

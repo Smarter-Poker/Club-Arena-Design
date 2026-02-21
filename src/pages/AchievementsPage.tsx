@@ -2,7 +2,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  *  ACHIEVEMENTS PAGE — Player Achievements & Badges with Real-Time Unlocks
  * ═══════════════════════════════════════════════════════════════════════════════
- * Display unlocked achievements, progress, and XP rewards
+ * Display unlocked achievements, progress, and badges
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -22,7 +22,7 @@ interface Achievement {
     description: string;
     icon: string;
     category: AchievementCategory;
-    xpReward: number;
+
     rarity: 'common' | 'rare' | 'epic' | 'legendary';
     progress: number; // 0-100
     unlocked: boolean;
@@ -33,30 +33,30 @@ interface Achievement {
 // Achievement definitions
 const ACHIEVEMENTS: Omit<Achievement, 'progress' | 'unlocked' | 'unlockedAt'>[] = [
     // Poker achievements
-    { id: 'first_hand', name: 'First Hand', description: 'Play your first hand of poker', icon: '', category: 'poker', xpReward: 50, rarity: 'common', requirement: 'Play 1 hand' },
-    { id: 'hundred_hands', name: 'Centurion', description: 'Play 100 hands', icon: '💯', category: 'poker', xpReward: 200, rarity: 'common', requirement: 'Play 100 hands' },
-    { id: 'thousand_hands', name: 'Grinder', description: 'Play 1,000 hands', icon: '', category: 'poker', xpReward: 500, rarity: 'rare', requirement: 'Play 1,000 hands' },
-    { id: 'ten_thousand', name: 'Marathon Runner', description: 'Play 10,000 hands', icon: '🏃', category: 'poker', xpReward: 2000, rarity: 'epic', requirement: 'Play 10,000 hands' },
-    { id: 'royal_flush', name: 'Royal Blood', description: 'Hit a Royal Flush', icon: '', category: 'poker', xpReward: 1000, rarity: 'legendary', requirement: 'Get Royal Flush' },
-    { id: 'straight_flush', name: 'Straight Shooter', description: 'Hit a Straight Flush', icon: '🌊', category: 'poker', xpReward: 500, rarity: 'epic', requirement: 'Get Straight Flush' },
-    { id: 'quads', name: 'Four of a Kind', description: 'Hit Quad Aces', icon: '', category: 'poker', xpReward: 300, rarity: 'rare', requirement: 'Get Quad Aces' },
+    { id: 'first_hand', name: 'First Hand', description: 'Play your first hand of poker', icon: '', category: 'poker', rarity: 'common', requirement: 'Play 1 hand' },
+    { id: 'hundred_hands', name: 'Centurion', description: 'Play 100 hands', icon: '💯', category: 'poker', rarity: 'common', requirement: 'Play 100 hands' },
+    { id: 'thousand_hands', name: 'Grinder', description: 'Play 1,000 hands', icon: '', category: 'poker', rarity: 'rare', requirement: 'Play 1,000 hands' },
+    { id: 'ten_thousand', name: 'Marathon Runner', description: 'Play 10,000 hands', icon: '🏃', category: 'poker', rarity: 'epic', requirement: 'Play 10,000 hands' },
+    { id: 'royal_flush', name: 'Royal Blood', description: 'Hit a Royal Flush', icon: '', category: 'poker', rarity: 'legendary', requirement: 'Get Royal Flush' },
+    { id: 'straight_flush', name: 'Straight Shooter', description: 'Hit a Straight Flush', icon: '🌊', category: 'poker', rarity: 'epic', requirement: 'Get Straight Flush' },
+    { id: 'quads', name: 'Four of a Kind', description: 'Hit Quad Aces', icon: '', category: 'poker', rarity: 'rare', requirement: 'Get Quad Aces' },
 
     // Social achievements
-    { id: 'first_club', name: 'Club Member', description: 'Join your first club', icon: '', category: 'social', xpReward: 100, rarity: 'common', requirement: 'Join 1 club' },
-    { id: 'five_clubs', name: 'Social Butterfly', description: 'Join 5 different clubs', icon: '🦋', category: 'social', xpReward: 300, rarity: 'rare', requirement: 'Join 5 clubs' },
-    { id: 'first_friend', name: 'Friendly', description: 'Add your first friend', icon: '', category: 'social', xpReward: 50, rarity: 'common', requirement: 'Add 1 friend' },
-    { id: 'popular', name: 'Popular', description: 'Have 50 friends', icon: '', category: 'social', xpReward: 500, rarity: 'epic', requirement: 'Add 50 friends' },
+    { id: 'first_club', name: 'Club Member', description: 'Join your first club', icon: '', category: 'social', rarity: 'common', requirement: 'Join 1 club' },
+    { id: 'five_clubs', name: 'Social Butterfly', description: 'Join 5 different clubs', icon: '🦋', category: 'social', rarity: 'rare', requirement: 'Join 5 clubs' },
+    { id: 'first_friend', name: 'Friendly', description: 'Add your first friend', icon: '', category: 'social', rarity: 'common', requirement: 'Add 1 friend' },
+    { id: 'popular', name: 'Popular', description: 'Have 50 friends', icon: '', category: 'social', rarity: 'epic', requirement: 'Add 50 friends' },
 
     // Financial achievements  
-    { id: 'first_win', name: 'Winner', description: 'Win your first pot', icon: '', category: 'financial', xpReward: 50, rarity: 'common', requirement: 'Win 1 pot' },
-    { id: 'big_winner', name: 'Big Winner', description: 'Win a pot over $1,000', icon: '', category: 'financial', xpReward: 200, rarity: 'rare', requirement: 'Win $1K+ pot' },
-    { id: 'profitable', name: 'Profitable', description: 'Reach $10,000 lifetime profit', icon: '', category: 'financial', xpReward: 1000, rarity: 'epic', requirement: '$10K profit' },
+    { id: 'first_win', name: 'Winner', description: 'Win your first pot', icon: '', category: 'financial', rarity: 'common', requirement: 'Win 1 pot' },
+    { id: 'big_winner', name: 'Big Winner', description: 'Win a pot over $1,000', icon: '', category: 'financial', rarity: 'rare', requirement: 'Win $1K+ pot' },
+    { id: 'profitable', name: 'Profitable', description: 'Reach $10,000 lifetime profit', icon: '', category: 'financial', rarity: 'epic', requirement: '$10K profit' },
 
     // Tournament achievements
-    { id: 'first_tourney', name: 'Tournament Player', description: 'Play in a tournament', icon: '', category: 'tournament', xpReward: 100, rarity: 'common', requirement: 'Enter 1 tournament' },
-    { id: 'final_table', name: 'Final Tablist', description: 'Make a final table', icon: '', category: 'tournament', xpReward: 300, rarity: 'rare', requirement: 'Make final table' },
-    { id: 'champion', name: 'Champion', description: 'Win a tournament', icon: '', category: 'tournament', xpReward: 500, rarity: 'epic', requirement: 'Win tournament' },
-    { id: 'ten_wins', name: 'Serial Winner', description: 'Win 10 tournaments', icon: '', category: 'tournament', xpReward: 2000, rarity: 'legendary', requirement: 'Win 10 tournaments' },
+    { id: 'first_tourney', name: 'Tournament Player', description: 'Play in a tournament', icon: '', category: 'tournament', rarity: 'common', requirement: 'Enter 1 tournament' },
+    { id: 'final_table', name: 'Final Tablist', description: 'Make a final table', icon: '', category: 'tournament', rarity: 'rare', requirement: 'Make final table' },
+    { id: 'champion', name: 'Champion', description: 'Win a tournament', icon: '', category: 'tournament', rarity: 'epic', requirement: 'Win tournament' },
+    { id: 'ten_wins', name: 'Serial Winner', description: 'Win 10 tournaments', icon: '', category: 'tournament', rarity: 'legendary', requirement: 'Win 10 tournaments' },
 ];
 
 export default function AchievementsPage() {
@@ -65,7 +65,7 @@ export default function AchievementsPage() {
     const [category, setCategory] = useState<AchievementCategory>('all');
     const [achievements, setAchievements] = useState<Achievement[]>([]);
     const [loading, setLoading] = useState(true);
-    const [totalXP, setTotalXP] = useState(0);
+
     const [newUnlock, setNewUnlock] = useState<Achievement | null>(null);
     const unlockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -140,11 +140,7 @@ export default function AchievementsPage() {
 
             setAchievements(merged);
 
-            // Calculate total XP
-            const xp = merged
-                .filter(a => a.unlocked)
-                .reduce((sum, a) => sum + a.xpReward, 0);
-            setTotalXP(xp);
+
         } catch (error) {
             console.error('Failed to load achievements:', error);
         }
@@ -176,10 +172,7 @@ export default function AchievementsPage() {
                     <span className="stat-value">{unlockedCount}/{achievements.length}</span>
                     <span className="stat-label">Unlocked</span>
                 </div>
-                <div className="summary-stat highlight">
-                    <span className="stat-value"> {totalXP.toLocaleString()}</span>
-                    <span className="stat-label">Total XP</span>
-                </div>
+
             </div>
 
             {/* Category Filter */}
@@ -227,7 +220,7 @@ export default function AchievementsPage() {
                         <div className="unlock-text">
                             <span className="unlock-label"> Achievement Unlocked!</span>
                             <span className="unlock-name">{newUnlock.name}</span>
-                            <span className="unlock-xp">+{newUnlock.xpReward} XP</span>
+
                         </div>
                     </div>
                     <button className="unlock-dismiss" onClick={() => setNewUnlock(null)}>✕</button>

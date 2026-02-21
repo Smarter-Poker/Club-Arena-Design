@@ -83,7 +83,7 @@ export default function BonusPage() {
                 for (let i = 1; i <= 7; i++) {
                     dailies.push({
                         day: i,
-                        reward: i === 7 ? ' 100 Diamonds' : `${i * 10} XP`,
+                        reward: i === 7 ? ' 100 Diamonds' : `${i * 10} Chips`,
                         claimed: i <= (profile.streak_days || 0),
                     });
                 }

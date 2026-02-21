@@ -6,7 +6,7 @@
  * Manages club and union leaderboards with:
  * - Daily, weekly, monthly, and all-time rankings
  * - Multiple metrics: profit, hands played, VPIP, PFR, ROI
- * - XP integration for progression rewards
+
  */
 
 import { supabase } from '../lib/supabase';
@@ -27,7 +27,6 @@ export interface LeaderboardEntry {
     value: number;
     metric: LeaderboardMetric;
     change: number; // Position change from previous period
-    xpEarned?: number;
     isVIP?: boolean;
 }
 
@@ -61,13 +60,7 @@ export interface HandResultForStats {
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// XP rewards for leaderboard positions
-const LEADERBOARD_XP_REWARDS: Record<LeaderboardPeriod, number[]> = {
-    daily: [50, 30, 20, 10, 10, 5, 5, 5, 5, 5],   // Top 10
-    weekly: [200, 125, 75, 50, 50, 25, 25, 25, 25, 25],
-    monthly: [500, 300, 200, 100, 100, 50, 50, 50, 50, 50],
-    all_time: [], // No rewards for all-time
-};
+
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SERVICE
@@ -110,7 +103,6 @@ export const LeaderboardService = {
                 value,
                 metric,
                 change: row.position_change || 0,
-                xpEarned: LEADERBOARD_XP_REWARDS[period][index] || 0,
                 isVIP: row.is_vip || false,
             };
         });
@@ -151,7 +143,6 @@ export const LeaderboardService = {
                 value,
                 metric,
                 change: row.position_change || 0,
-                xpEarned: LEADERBOARD_XP_REWARDS[period][index] || 0,
                 isVIP: row.is_vip || false,
             };
         });
@@ -258,42 +249,7 @@ export const LeaderboardService = {
         };
     },
 
-    /**
-     * Calculate XP reward based on leaderboard position
-     */
-    calculateXPReward(rank: number, period: LeaderboardPeriod): number {
-        const rewards = LEADERBOARD_XP_REWARDS[period];
-        if (rank > 0 && rank <= rewards.length) {
-            return rewards[rank - 1];
-        }
-        return 0;
-    },
 
-    /**
-     * Process end-of-period leaderboard rewards
-     * Called by scheduled job at period boundaries
-     */
-    async processLeaderboardRewards(
-        clubId: string,
-        period: LeaderboardPeriod
-    ): Promise<{ awarded: number; totalXP: number }> {
-        const leaderboard = await this.getClubLeaderboard(clubId, 'profit', period, 10);
-
-        let totalXP = 0;
-        let awarded = 0;
-
-        for (const entry of leaderboard) {
-            const xp = this.calculateXPReward(entry.rank, period);
-            if (xp > 0) {
-                // Award XP via Identity DNA system
-                // XPEventBus.emit('LEADERBOARD_REWARD', { userId: entry.userId, xp, rank: entry.rank, period })
-                totalXP += xp;
-                awarded++;
-            }
-        }
-
-        return { awarded, totalXP };
-    },
 
     /**
      * Get period date boundaries

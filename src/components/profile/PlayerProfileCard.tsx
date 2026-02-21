@@ -21,7 +21,7 @@ interface PlayerProfile {
     username: string;
     avatarUrl: string;
     level: number;
-    xp: number;
+
     isVIP: boolean;
     status: 'online' | 'away' | 'offline' | 'playing';
     stats: {
@@ -65,7 +65,7 @@ export function PlayerProfileCard({
                     username: data.username || 'Unknown',
                     avatarUrl: data.avatar_url || '',
                     level: data.level || 1,
-                    xp: data.xp || 0,
+
                     isVIP: data.is_vip || false,
                     status: presence?.status || 'offline',
                     stats: {
@@ -130,7 +130,7 @@ export function PlayerProfileCard({
 
                     {profile.currentTable && (
                         <div className="player-card__current">
-                             Playing at <strong>{profile.currentTable}</strong>
+                            Playing at <strong>{profile.currentTable}</strong>
                         </div>
                     )}
 

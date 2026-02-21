@@ -19,7 +19,6 @@ import type { HandEvent } from '../engine/HandController';
 
 interface TriggerResult {
     triggeredAchievements: Achievement[];
-    xpAwarded: number;
     chipsAwarded: number;
 }
 
@@ -43,7 +42,6 @@ class AchievementTriggerServiceClass {
     ): Promise<TriggerResult> {
         const result: TriggerResult = {
             triggeredAchievements: [],
-            xpAwarded: 0,
             chipsAwarded: 0,
         };
 
@@ -51,7 +49,6 @@ class AchievementTriggerServiceClass {
         const handsResult = await achievementService.incrementProgress(userId, 'hands_100');
         if (handsResult.unlocked && handsResult.achievement) {
             result.triggeredAchievements.push(handsResult.achievement);
-            result.xpAwarded += handsResult.achievement.xpReward;
         }
 
         // Also check higher tier hand achievements
@@ -62,7 +59,6 @@ class AchievementTriggerServiceClass {
         );
         for (const ach of handsPlayedAchievements) {
             result.triggeredAchievements.push(ach);
-            result.xpAwarded += ach.xpReward;
             result.chipsAwarded += ach.chipReward || 0;
         }
 
@@ -71,7 +67,6 @@ class AchievementTriggerServiceClass {
             const winsResult = await achievementService.checkWins(userId, userProgress.totalWins + 1);
             for (const ach of winsResult) {
                 result.triggeredAchievements.push(ach);
-                result.xpAwarded += ach.xpReward;
                 result.chipsAwarded += ach.chipReward || 0;
             }
         }
@@ -81,7 +76,6 @@ class AchievementTriggerServiceClass {
             const specialAch = await achievementService.checkSpecialHand(userId, handData.handRank);
             if (specialAch) {
                 result.triggeredAchievements.push(specialAch);
-                result.xpAwarded += specialAch.xpReward;
                 result.chipsAwarded += specialAch.chipReward || 0;
             }
         }
@@ -94,7 +88,7 @@ class AchievementTriggerServiceClass {
 
         // 5. Send push notification for unlocked achievements
         for (const ach of result.triggeredAchievements) {
-            pushNotificationService.notifyAchievement(userId, ach.name, ach.xpReward)
+            pushNotificationService.notifyAchievement(userId, ach.name)
                 .catch(err => console.warn('[Achievements] Push notification failed:', err));
         }
 
@@ -115,7 +109,6 @@ class AchievementTriggerServiceClass {
     ): Promise<TriggerResult> {
         const result: TriggerResult = {
             triggeredAchievements: [],
-            xpAwarded: 0,
             chipsAwarded: 0,
         };
 
@@ -123,7 +116,6 @@ class AchievementTriggerServiceClass {
         const playedResult = await achievementService.incrementProgress(userId, 'tourney_played_10');
         if (playedResult.unlocked && playedResult.achievement) {
             result.triggeredAchievements.push(playedResult.achievement);
-            result.xpAwarded += playedResult.achievement.xpReward;
         }
 
         // Check wins
@@ -131,7 +123,6 @@ class AchievementTriggerServiceClass {
             const winResult = await achievementService.incrementProgress(userId, 'tourney_wins_5');
             if (winResult.unlocked && winResult.achievement) {
                 result.triggeredAchievements.push(winResult.achievement);
-                result.xpAwarded += winResult.achievement.xpReward;
             }
         }
 
@@ -144,21 +135,18 @@ class AchievementTriggerServiceClass {
     async onFriendAdded(userId: string): Promise<TriggerResult> {
         const result: TriggerResult = {
             triggeredAchievements: [],
-            xpAwarded: 0,
             chipsAwarded: 0,
         };
 
         const friendResult = await achievementService.incrementProgress(userId, 'friends_5');
         if (friendResult.unlocked && friendResult.achievement) {
             result.triggeredAchievements.push(friendResult.achievement);
-            result.xpAwarded += friendResult.achievement.xpReward;
         }
 
         // Check higher tiers
         const higherResult = await achievementService.incrementProgress(userId, 'friends_25');
         if (higherResult.unlocked && higherResult.achievement) {
             result.triggeredAchievements.push(higherResult.achievement);
-            result.xpAwarded += higherResult.achievement.xpReward;
         }
 
         return result;
@@ -170,7 +158,6 @@ class AchievementTriggerServiceClass {
     async onLogin(userId: string): Promise<TriggerResult> {
         const result: TriggerResult = {
             triggeredAchievements: [],
-            xpAwarded: 0,
             chipsAwarded: 0,
         };
 
@@ -178,7 +165,6 @@ class AchievementTriggerServiceClass {
         const streakResult = await achievementService.incrementProgress(userId, 'streak_7');
         if (streakResult.unlocked && streakResult.achievement) {
             result.triggeredAchievements.push(streakResult.achievement);
-            result.xpAwarded += streakResult.achievement.xpReward;
         }
 
         return result;

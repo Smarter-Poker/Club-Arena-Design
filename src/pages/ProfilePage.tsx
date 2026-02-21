@@ -1,7 +1,7 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
  *  CLUB ENGINE — Profile Page
- * User profile with XP progression, DNA, and achievements
+ * User profile with DNA, VIP status, and achievements
  * 
  * NO HARDCODED DATA - All data comes from Supabase
  * ═══════════════════════════════════════════════════════════════════════════════
@@ -35,15 +35,7 @@ interface UserProfile {
     memberSince: string;
 }
 
-interface XPStats {
-    currentXP: number;
-    levelXP: number;
-    nextLevelXP: number;
-    level: number;
-    tier: 'Newcomer' | 'Regular' | 'Skilled' | 'Expert' | 'Master' | 'Legend';
-    streakDays: number;
-    streakMultiplier: number;
-}
+
 
 interface PokerStats {
     totalHands: number;
@@ -74,15 +66,7 @@ interface Achievement {
 // DEFAULT VALUES (for new users with no data)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const DEFAULT_XP: XPStats = {
-    currentXP: 0,
-    levelXP: 0,
-    nextLevelXP: 1000,
-    level: 1,
-    tier: 'Newcomer',
-    streakDays: 0,
-    streakMultiplier: 1,
-};
+
 
 const DEFAULT_STATS: PokerStats = {
     totalHands: 0,
@@ -103,16 +87,7 @@ const DEFAULT_STATS: PokerStats = {
 // HELPER FUNCTIONS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function calculateLevel(xp: number): { level: number; tier: XPStats['tier'] } {
-    const level = Math.floor(xp / 1000) + 1;
-    let tier: XPStats['tier'] = 'Newcomer';
-    if (level >= 50) tier = 'Legend';
-    else if (level >= 30) tier = 'Master';
-    else if (level >= 20) tier = 'Expert';
-    else if (level >= 10) tier = 'Skilled';
-    else if (level >= 5) tier = 'Regular';
-    return { level, tier };
-}
+
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPONENTS
@@ -137,31 +112,7 @@ const VIPBadge = ({ level }: { level: string }) => {
     );
 };
 
-const XPProgressBar = ({ xp }: { xp: XPStats }) => {
-    const progress = xp.nextLevelXP > 0 ? (xp.levelXP / xp.nextLevelXP) * 100 : 0;
 
-    return (
-        <div className={styles.xpContainer}>
-            <div className={styles.xpHeader}>
-                <span className={styles.xpLevel}>Level {xp.level}</span>
-                <span className={styles.xpTier}>{xp.tier}</span>
-                <span className={styles.xpCount}>
-                    {xp.levelXP.toLocaleString()} / {xp.nextLevelXP.toLocaleString()} XP
-                </span>
-            </div>
-            <div className={styles.xpBar}>
-                <div className={styles.xpFill} style={{ width: `${progress}%` }} />
-            </div>
-            {xp.streakDays > 0 && (
-                <div className={styles.streakInfo}>
-                    <span className={styles.streakIcon}></span>
-                    <span>{xp.streakDays} Day Streak</span>
-                    <span className={styles.streakMultiplier}>×{xp.streakMultiplier} XP</span>
-                </div>
-            )}
-        </div>
-    );
-};
 
 const StatCard = ({ value, label, positive }: { value: string | number; label: string; positive?: boolean | null }) => (
     <div className={styles.statCard}>
@@ -208,7 +159,6 @@ export default function ProfilePage() {
 
     // Real data from database
     const [user, setUser] = useState<UserProfile | null>(null);
-    const [xp, setXp] = useState<XPStats>(DEFAULT_XP);
     const [stats, setStats] = useState<PokerStats>(DEFAULT_STATS);
     const [achievements, setAchievements] = useState<Achievement[]>([]);
     const [diamonds, setDiamonds] = useState(0);
@@ -229,8 +179,6 @@ export default function ProfilePage() {
                     .single();
 
                 if (profile) {
-                    const { level, tier } = calculateLevel(profile.xp || 0);
-
                     setUser({
                         id: profile.id,
                         username: profile.username || 'Player',
@@ -243,16 +191,6 @@ export default function ProfilePage() {
 
                     setDiamonds(profile.diamonds || 0);
                     setIsVIP(profile.is_vip || false);
-
-                    setXp({
-                        currentXP: profile.xp || 0,
-                        levelXP: (profile.xp || 0) % 1000,
-                        nextLevelXP: 1000,
-                        level,
-                        tier,
-                        streakDays: profile.streak_days || 0,
-                        streakMultiplier: 1 + (profile.streak_days || 0) * 0.1,
-                    });
 
                     if (profile.stats) {
                         setStats({
@@ -379,9 +317,8 @@ export default function ProfilePage() {
                 </section>
             )}
 
-            {/* XP Progress */}
+            {/* Daily Bonus */}
             <section className={styles.xpSection}>
-                <XPProgressBar xp={xp} />
                 <button
                     className={styles.bonusButton}
                     onClick={() => setShowBonusWheel(true)}

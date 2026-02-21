@@ -15,7 +15,7 @@ export interface DailyBonus {
     day: number;
     claimed: boolean;
     reward: number;
-    rewardType: 'chips' | 'xp' | 'vip_points';
+    rewardType: 'chips' | 'vip_points';
     claimedAt?: string;
 }
 
@@ -24,7 +24,7 @@ export interface SpecialBonus {
     name: string;
     description: string;
     reward: number;
-    rewardType: 'chips' | 'xp' | 'vip_points' | 'item';
+    rewardType: 'chips' | 'vip_points' | 'item';
     condition: string;
     progress: number;
     target: number;
@@ -44,9 +44,9 @@ export interface BonusStatus {
 // Daily bonus rewards by day (7-day cycle)
 const DAILY_REWARDS = [
     { day: 1, reward: 100, type: 'chips' },
-    { day: 2, reward: 50, type: 'xp' },
+    { day: 2, reward: 150, type: 'chips' },
     { day: 3, reward: 200, type: 'chips' },
-    { day: 4, reward: 100, type: 'xp' },
+    { day: 4, reward: 300, type: 'chips' },
     { day: 5, reward: 500, type: 'chips' },
     { day: 6, reward: 200, type: 'vip_points' },
     { day: 7, reward: 1000, type: 'chips' } // Jackpot day!
@@ -214,9 +214,7 @@ class BonusServiceClass {
             case 'chips':
                 ({ error } = await supabase.rpc('add_chips', { p_user_id: userId, p_amount: amount }));
                 break;
-            case 'xp':
-                ({ error } = await supabase.rpc('add_xp', { p_user_id: userId, p_amount: amount }));
-                break;
+
             case 'vip_points':
                 ({ error } = await supabase.rpc('add_vip_points', { p_user_id: userId, p_amount: amount }));
                 break;

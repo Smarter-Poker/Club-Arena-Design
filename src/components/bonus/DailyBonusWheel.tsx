@@ -15,7 +15,7 @@ import styles from './DailyBonusWheel.module.css';
 interface WheelSegment {
     label: string;
     value: number;
-    type: 'chips' | 'xp' | 'vip' | 'diamonds';
+    type: 'chips' | 'vip' | 'diamonds';
     color: string;
     probability: number;
 }
@@ -29,10 +29,10 @@ interface DailyBonusWheelProps {
 
 const DEFAULT_SEGMENTS: WheelSegment[] = [
     { label: '100 Chips', value: 100, type: 'chips', color: '#10b981', probability: 30 },
-    { label: '50 XP', value: 50, type: 'xp', color: '#3b82f6', probability: 25 },
+    { label: '200 Chips', value: 200, type: 'chips', color: '#34d399', probability: 25 },
     { label: '500 Chips', value: 500, type: 'chips', color: '#22c55e', probability: 15 },
     { label: '1 VIP Point', value: 1, type: 'vip', color: '#a78bfa', probability: 10 },
-    { label: '200 XP', value: 200, type: 'xp', color: '#60a5fa', probability: 8 },
+    { label: '750 Chips', value: 750, type: 'chips', color: '#16a34a', probability: 8 },
     { label: '1000 Chips', value: 1000, type: 'chips', color: '#059669', probability: 5 },
     { label: '5 Diamonds', value: 5, type: 'diamonds', color: '#38bdf8', probability: 4 },
     { label: '5000 Chips', value: 5000, type: 'chips', color: '#fbbf24', probability: 3 },
@@ -96,7 +96,7 @@ export default function DailyBonusWheel({
     const getTypeIcon = (type: string): string => {
         switch (type) {
             case 'chips': return '♠';
-            case 'xp': return '★';
+
             case 'vip': return '♛';
             case 'diamonds': return '◆';
             default: return '●';

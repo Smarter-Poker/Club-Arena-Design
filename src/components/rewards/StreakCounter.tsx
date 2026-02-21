@@ -64,7 +64,7 @@ export const StreakCounter: React.FC<StreakCounterProps> = ({
                 {streakBonus > 0 && (
                     <div className="stat bonus">
                         <span className="stat-value">+{streakBonus}%</span>
-                        <span className="stat-label">XP Bonus</span>
+                        <span className="stat-label">Bonus</span>
                     </div>
                 )}
             </div>

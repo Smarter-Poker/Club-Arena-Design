@@ -17,7 +17,7 @@ interface DailyBonusWheelProps {
 }
 
 interface WheelReward {
-    type: 'chips' | 'diamonds' | 'xp' | 'vip_time';
+    type: 'chips' | 'diamonds' | 'vip_time';
     amount: number;
     label: string;
     color: string;
@@ -25,11 +25,11 @@ interface WheelReward {
 
 const WHEEL_PRIZES: WheelReward[] = [
     { type: 'chips', amount: 100, label: '100 ', color: '#22c55e' },
-    { type: 'xp', amount: 50, label: '50 XP', color: '#3b82f6' },
+    { type: 'chips', amount: 200, label: '200 🪙', color: '#22c55e' },
     { type: 'chips', amount: 250, label: '250 ', color: '#22c55e' },
     { type: 'diamonds', amount: 5, label: '5 ', color: '#a855f7' },
     { type: 'chips', amount: 500, label: '500 ', color: '#22c55e' },
-    { type: 'xp', amount: 100, label: '100 XP', color: '#3b82f6' },
+    { type: 'chips', amount: 750, label: '750 🪙', color: '#22c55e' },
     { type: 'chips', amount: 1000, label: '1K ', color: '#fbbf24' },
     { type: 'diamonds', amount: 25, label: '25 ', color: '#a855f7' },
 ];
@@ -162,7 +162,7 @@ export function DailyBonusWheel({ isOpen, onClose, onReward }: DailyBonusWheelPr
 
                 {result && (
                     <div className="bonus-wheel__result">
-                         You won <strong>{result.label}</strong>!
+                        You won <strong>{result.label}</strong>!
                     </div>
                 )}
 

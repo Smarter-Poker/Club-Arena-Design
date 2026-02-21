@@ -78,8 +78,6 @@ export default function HomePage() {
 
     // Real data states
     const [diamonds, setDiamonds] = useState(0);
-    const [xp, setXp] = useState(0);
-    const [level, setLevel] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
     const [userClubs, setUserClubs] = useState<any[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -130,18 +128,15 @@ export default function HomePage() {
             try {
                 const { data: { user: authUser } } = await supabase.auth.getUser();
                 if (authUser) {
-                    // Fetch diamonds + XP from profile (single query)
+                    // Fetch diamonds from profile
                     const { data: profileData } = await supabase
                         .from('profiles')
-                        .select('diamonds, xp_total')
+                        .select('diamonds')
                         .eq('id', authUser.id)
                         .maybeSingle();
 
                     if (profileData) {
                         setDiamonds(profileData.diamonds || 0);
-                        const totalXp = profileData.xp_total || 0;
-                        setXp(totalXp);
-                        setLevel(Math.max(1, Math.floor(Math.sqrt(totalXp / 100)) + 1));
                     }
 
                     // Fetch user's clubs (unlimited)

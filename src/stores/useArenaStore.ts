@@ -2,7 +2,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  *  CLUB ENGINE — Arena Stats Store (Zustand)
  * ═══════════════════════════════════════════════════════════════════════════════
- * User progression, XP, streaks, and training state management
+ * User progression, streaks, and training state management
  */
 
 import { create } from 'zustand';

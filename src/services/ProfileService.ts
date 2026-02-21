@@ -1,7 +1,7 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
  *  PROFILE SERVICE — User Profile Management
- * Handles XP, VIP levels, streaks, and avatars
+ * Handles VIP levels, streaks, and avatars
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
@@ -19,10 +19,8 @@ export interface UserProfile {
     avatarUrl?: string;
     bio?: string;
 
-    // XP & Leveling
-    xp: number;
+    // Leveling
     level: number;
-    xpToNextLevel: number;
 
     // VIP
     vipTier: 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
@@ -60,8 +58,7 @@ const VIP_THRESHOLDS = {
     diamond: 100000
 };
 
-// XP per level formula: level * 100
-const xpForLevel = (level: number) => level * 100;
+
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SERVICE CLASS
@@ -119,31 +116,7 @@ class ProfileServiceClass {
         return !error;
     }
 
-    /**
-     * Add XP to user
-     */
-    async addXP(userId: string, amount: number): Promise<{ newXP: number; leveledUp: boolean; newLevel: number }> {
-        const profile = await this.getProfile(userId);
-        if (!profile) throw new Error('Profile not found');
 
-        let newXP = profile.xp + amount;
-        let newLevel = profile.level;
-        let leveledUp = false;
-
-        // Check for level up
-        while (newXP >= xpForLevel(newLevel + 1)) {
-            newXP -= xpForLevel(newLevel + 1);
-            newLevel++;
-            leveledUp = true;
-        }
-
-        await supabase
-            .from('profiles')
-            .update({ xp: newXP, level: newLevel })
-            .eq('id', userId);
-
-        return { newXP, leveledUp, newLevel };
-    }
 
     /**
      * Add VIP points
@@ -255,9 +228,8 @@ class ProfileServiceClass {
     /**
      * Get leaderboard
      */
-    async getLeaderboard(metric: 'xp' | 'winnings' | 'hands', limit: number = 10): Promise<UserProfile[]> {
+    async getLeaderboard(metric: 'winnings' | 'hands', limit: number = 10): Promise<UserProfile[]> {
         const orderColumn = {
-            xp: 'xp',
             winnings: 'total_winnings',
             hands: 'hands_played'
         }[metric];
@@ -313,9 +285,7 @@ class ProfileServiceClass {
             displayName: data.display_name as string | undefined,
             avatarUrl: data.avatar_url as string | undefined,
             bio: data.bio as string | undefined,
-            xp: (data.xp as number) || 0,
             level,
-            xpToNextLevel: xpForLevel(level + 1),
             vipTier: (data.vip_tier as UserProfile['vipTier']) || 'bronze',
             vipPoints: (data.vip_points as number) || 0,
             currentStreak: (data.current_streak as number) || 0,

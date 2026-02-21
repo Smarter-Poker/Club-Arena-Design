@@ -7,7 +7,7 @@ interface Challenge {
     description: string;
     progress: number;
     target: number;
-    reward: { type: 'chips' | 'diamonds' | 'xp'; amount: number };
+    reward: { type: 'chips' | 'diamonds'; amount: number };
     expiresAt?: Date;
     completed: boolean;
 }
@@ -25,7 +25,7 @@ export const DailyChallenges: React.FC<DailyChallengesProps> = ({
         switch (type) {
             case 'chips': return '♠';
             case 'diamonds': return '◆';
-            case 'xp': return '★';
+
             default: return '●';
         }
     };

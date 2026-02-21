@@ -102,7 +102,6 @@ export default function AuthPage() {
                         username: username.trim(),
                         display_name: username.trim(),
                         vip_level: 'bronze',
-                        xp: 0,
                         diamonds: 0,
                         created_at: new Date().toISOString(),
                     });

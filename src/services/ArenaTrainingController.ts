@@ -175,7 +175,7 @@ async function recordSessionCompletion(
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) return;
 
-    // Call the record_arena_session RPC for XP and Diamond rewards
+    // Call the record_arena_session RPC for Diamond rewards
     await supabase.rpc('record_arena_session', {
         p_user_id: user.user.id,
         p_session_id: sessionId,
