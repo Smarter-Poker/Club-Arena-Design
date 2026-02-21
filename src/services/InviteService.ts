@@ -38,9 +38,10 @@ export const InviteService = {
      */
     generateCode(): string {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        const randomBytes = crypto.getRandomValues(new Uint8Array(8));
         let code = '';
         for (let i = 0; i < 8; i++) {
-            code += chars.charAt(Math.floor(Math.random() * chars.length));
+            code += chars.charAt(randomBytes[i] % chars.length);
         }
         return code;
     },

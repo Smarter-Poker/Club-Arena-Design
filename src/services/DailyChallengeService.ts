@@ -178,29 +178,26 @@ class DailyChallengeServiceClass {
     private async awardRewards(userId: string, challenge: DailyChallenge): Promise<void> {
         // Award XP
         if (challenge.xpReward > 0) {
-            await supabase.rpc('add_player_xp', {
+            const { error: xpError } = await supabase.rpc('add_player_xp', {
                 p_user_id: userId,
                 p_amount: challenge.xpReward,
                 p_reason: `Daily Challenge: ${challenge.name}`,
             });
+            if (xpError) {
+                console.error('[DailyChallenge] Failed to award XP:', xpError);
+            }
         }
 
-        // Award chips through wallet
+        // Award chips atomically via RPC (read-modify-write was a race condition)
         if (challenge.chipReward > 0) {
-            // Add to player wallet
-            const { data: wallet } = await supabase
-                .from('player_wallets')
-                .select('promo_balance')
-                .eq('user_id', userId)
-                .maybeSingle();
-
-            if (wallet) {
-                await supabase
-                    .from('player_wallets')
-                    .update({
-                        promo_balance: (wallet.promo_balance || 0) + challenge.chipReward,
-                    })
-                    .eq('user_id', userId);
+            const { error: chipError } = await supabase.rpc('credit_player_wallet', {
+                p_user_id: userId,
+                p_amount: challenge.chipReward,
+                p_category: 'daily_challenge',
+                p_description: `Daily Challenge: ${challenge.name}`,
+            });
+            if (chipError) {
+                console.error('[DailyChallenge] Failed to award chips:', chipError);
             }
         }
     }

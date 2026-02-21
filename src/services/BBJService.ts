@@ -287,6 +287,11 @@ export const BBJService = {
             return null;
         }
 
+        if (params.dealtInPlayerIds.length === 0) {
+            console.error('BBJService.executePayout: No dealt-in players for table share');
+            return null;
+        }
+
         const totalAmount = pool.main_balance;
         const winnerShare = totalAmount * PAYOUT_SHARES.WINNER;
         const loserShare = totalAmount * PAYOUT_SHARES.LOSER;
