@@ -190,7 +190,7 @@ export const SettlementService = {
             netPlayerPL,
             grossRake,
             unionTax,
-            finalWire: Math.abs(finalWire),
+            finalWire,
             action: finalWire >= 0 ? 'COLLECT_FROM_UNION' : 'PAY_TO_UNION',
         };
     },
@@ -300,13 +300,19 @@ export const SettlementService = {
             }
         }
 
-        // 4. Finalize period — only if payouts succeeded or none were expected
+        // 4. Finalize period — only if ≥80% of payouts succeeded
         const totalExpected = (agentSettlements?.length || 0) + (playerSnapshots?.length || 0);
         const totalSucceeded = agentsPaid + playersWithRakeback;
-        if (totalExpected === 0 || totalSucceeded > 0) {
+        const successRate = totalExpected > 0 ? totalSucceeded / totalExpected : 1;
+
+        if (totalExpected === 0 || successRate >= 0.8) {
             await supabase.rpc('finalize_settlement_period', { p_period_id: periodId });
         } else {
-            console.error(`[Settlement] All ${totalExpected} payouts failed for period ${periodId} — NOT finalizing`);
+            console.error(
+                `[Settlement] Only ${totalSucceeded}/${totalExpected} payouts succeeded ` +
+                `(${Math.round(successRate * 100)}%) for period ${periodId} — NOT finalizing. ` +
+                `Requires ≥80% success rate.`
+            );
         }
 
         return { agentsPaid, playersWithRakeback, totalDisbursed };

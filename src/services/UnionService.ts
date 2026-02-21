@@ -408,6 +408,9 @@ class UnionServiceClass {
 
         if (error) return false;
 
+        // Decrement union club_count (symmetric with addClub's increment)
+        await supabase.rpc('decrement_union_club_count', { p_union_id: unionId });
+
         // Update club's union_id to null
         await supabase
             .from('clubs')

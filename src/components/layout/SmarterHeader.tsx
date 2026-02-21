@@ -49,7 +49,7 @@ export default function SmarterHeader({ showBackButton = true, backTo, title }: 
                 {showBackButton && (
                     <button className="hub-button" onClick={handleBack}>
                         <span className="hub-arrow">←</span>
-                        <span className="hub-text">Hub</span>
+                        <span className="hub-text">{backTo ? 'Hub' : 'Back'}</span>
                     </button>
                 )}
                 <div className="header-brand">

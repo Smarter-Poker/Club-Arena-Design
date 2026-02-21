@@ -335,22 +335,39 @@ export const CreditService = {
 
         if (fetchError) throw fetchError;
 
-        const newAmountPaid = (invoice.amount_paid || 0) + amount;
-        const newRemaining = invoice.debt_owed - newAmountPaid;
-        const newStatus = newRemaining <= 0 ? 'paid' : newRemaining < invoice.debt_owed ? 'partial' : 'pending';
+        // STEP 1: If paying from wallet, deduct FIRST (before recording anything)
+        if (method === 'wallet') {
+            const { error: deductError } = await supabase.rpc('deduct_agent_balance', {
+                p_agent_id: invoice.agent_id,
+                p_amount: amount,
+            });
+            if (deductError) {
+                throw new Error(`Wallet deduction failed: ${deductError.message}`);
+            }
+        }
 
-        // Update invoice
-        await supabase
-            .from('credit_invoices')
-            .update({
-                amount_paid: newAmountPaid,
-                amount_remaining: Math.max(0, newRemaining),
-                status: newStatus,
-                paid_at: newStatus === 'paid' ? new Date().toISOString() : null,
-            })
-            .eq('id', invoiceId);
+        // STEP 2: Atomically update invoice amounts to prevent race conditions
+        const { error: updateError } = await supabase.rpc('apply_invoice_payment', {
+            p_invoice_id: invoiceId,
+            p_amount: amount,
+        });
 
-        // Record payment
+        if (updateError) {
+            // Rollback wallet deduction if invoice update failed
+            if (method === 'wallet') {
+                try {
+                    await supabase.rpc('credit_agent_balance', {
+                        p_agent_id: invoice.agent_id,
+                        p_amount: amount,
+                    });
+                } catch (rollbackErr) {
+                    console.error('[CreditService] Rollback failed:', rollbackErr);
+                }
+            }
+            throw new Error(`Invoice update failed: ${updateError.message}`);
+        }
+
+        // STEP 3: Record payment (after money has moved)
         const { data: payment, error: payError } = await supabase
             .from('credit_payments')
             .insert({
@@ -362,14 +379,6 @@ export const CreditService = {
             .single();
 
         if (payError) throw payError;
-
-        // If paying from wallet, deduct from agent balance
-        if (method === 'wallet') {
-            await supabase.rpc('deduct_agent_balance', {
-                p_agent_id: invoice.agent_id,
-                p_amount: amount,
-            });
-        }
 
         return {
             id: payment.id,
