@@ -152,7 +152,7 @@ export const RakeService = {
 
         // STEP 2: Execute pot drops (if there's rake to take)
         if (calculation.cappedRake > 0) {
-            await this.executePotDrops({
+            const potDropSuccess = await this.executePotDrops({
                 handId,
                 tableId,
                 clubId,
@@ -160,6 +160,19 @@ export const RakeService = {
                 rakeAmount: calculation.cappedRake,
                 bbjAmount: calculation.bbjDrop,
             });
+
+            // ABORT waterfall if pot drops failed — cannot attribute rake that was never collected
+            if (!potDropSuccess) {
+                console.error('[RakeService] Pot drops failed — aborting waterfall for hand:', handId);
+                return {
+                    handId,
+                    tableId,
+                    calculation,
+                    attributions: [],
+                    bbjContributed: false,
+                    commissionsQueued: false,
+                };
+            }
         }
 
         // STEP 3: Attribute rake to dealt-in players
@@ -279,6 +292,7 @@ export const RakeService = {
 
         if (error) {
             console.error('RakeService.distributeHandRake error:', error);
+            throw new Error('Failed to persist rake attributions');
         }
 
         return attributions;
@@ -294,6 +308,9 @@ export const RakeService = {
         rakeAmount: number;
         players: DealtInPlayer[];
     }): Promise<boolean> {
+        // Guard against division by zero
+        if (params.players.length === 0) return true;
+
         // Group players by agent for commission attribution
         const byAgent = new Map<string, number>();
         const perPlayer = params.rakeAmount / params.players.length;

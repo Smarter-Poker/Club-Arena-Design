@@ -388,8 +388,18 @@ class TournamentService {
             .single();
 
         if (error) {
-            // Refund on failure - credit back
-            console.error('[TournamentService] Registration failed, should refund:', error);
+            // Refund on failure — actually issue the refund
+            console.error('[TournamentService] Registration failed, refunding buy-in:', error);
+            try {
+                await supabase.rpc('credit_player_wallet', {
+                    p_user_id: userId,
+                    p_amount: totalCost,
+                    p_category: 'tournament_refund',
+                    p_description: `Registration refund: ${tournament.name} (insert failed)`,
+                });
+            } catch (refundErr) {
+                console.error('[TournamentService] CRITICAL: Refund also failed:', refundErr);
+            }
             throw error;
         }
 
