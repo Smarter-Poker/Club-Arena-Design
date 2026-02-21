@@ -44,9 +44,9 @@ export default function HandHistoryPage() {
         }
     }, [user?.id, filter]);
 
-    const loadHands = async (reset = false) => {
+    const loadHands = async (reset = false, overridePage?: number) => {
         if (!user?.id) return;
-        const currentPage = reset ? 1 : page;
+        const currentPage = reset ? 1 : (overridePage ?? page);
         if (reset) {
             setLoading(true);
             setPage(1);
@@ -84,8 +84,9 @@ export default function HandHistoryPage() {
     };
 
     const loadMore = () => {
-        setPage(p => p + 1);
-        loadHands(false);
+        const nextPage = page + 1;
+        setPage(nextPage);
+        loadHands(false, nextPage);
     };
 
     // Stats summary
@@ -168,7 +169,7 @@ export default function HandHistoryPage() {
             window.parent.postMessage({
                 type: 'ANALYZE_HAND',
                 payload: handSummary
-            }, '*');
+            }, window.location.origin);
             toast.success('Hand sent to Jarvis for analysis!');
         } else {
             // Standalone - open Jarvis in new tab with hand data

@@ -250,6 +250,8 @@ export const LeaderboardService = {
             return null;
         }
 
+        if (!data) return null;
+
         return {
             rank: data.rank,
             total: data.total_players,

@@ -300,8 +300,14 @@ export const SettlementService = {
             }
         }
 
-        // 4. Finalize period
-        await supabase.rpc('finalize_settlement_period', { p_period_id: periodId });
+        // 4. Finalize period — only if payouts succeeded or none were expected
+        const totalExpected = (agentSettlements?.length || 0) + (playerSnapshots?.length || 0);
+        const totalSucceeded = agentsPaid + playersWithRakeback;
+        if (totalExpected === 0 || totalSucceeded > 0) {
+            await supabase.rpc('finalize_settlement_period', { p_period_id: periodId });
+        } else {
+            console.error(`[Settlement] All ${totalExpected} payouts failed for period ${periodId} — NOT finalizing`);
+        }
 
         return { agentsPaid, playersWithRakeback, totalDisbursed };
     },

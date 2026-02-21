@@ -5,7 +5,7 @@
  * Display unlocked achievements, progress, and XP rewards
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
@@ -67,6 +67,7 @@ export default function AchievementsPage() {
     const [loading, setLoading] = useState(true);
     const [totalXP, setTotalXP] = useState(0);
     const [newUnlock, setNewUnlock] = useState<Achievement | null>(null);
+    const unlockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         if (user?.id) {
@@ -95,8 +96,9 @@ export default function AchievementsPage() {
                                 unlockedAt: new Date().toISOString(),
                             });
 
-                            // Auto-hide after 5 seconds
-                            setTimeout(() => setNewUnlock(null), 5000);
+                            // Auto-hide after 5 seconds (clear previous timer)
+                            if (unlockTimerRef.current) clearTimeout(unlockTimerRef.current);
+                            unlockTimerRef.current = setTimeout(() => setNewUnlock(null), 5000);
 
                             // Reload achievements
                             loadAchievements();
@@ -107,6 +109,7 @@ export default function AchievementsPage() {
 
             return () => {
                 supabase.removeChannel(channel);
+                if (unlockTimerRef.current) clearTimeout(unlockTimerRef.current);
             };
         }
     }, [user?.id]);
