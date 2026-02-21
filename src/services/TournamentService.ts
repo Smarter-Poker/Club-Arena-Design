@@ -403,14 +403,16 @@ class TournamentService {
             throw error;
         }
 
-        // Update player count and prize pool
-        await supabase
-            .from('tournaments')
-            .update({
-                current_players: tournament.current_players + 1,
-                prize_pool: tournament.prize_pool + tournament.buy_in, // Only buy-in goes to prize pool, not rake
-            })
-            .eq('id', tournamentId);
+        // Atomically update player count and prize pool to prevent race conditions
+        // with concurrent registrations
+        const { error: countError } = await supabase.rpc('increment_tournament_registration', {
+            p_tournament_id: tournamentId,
+            p_buy_in: tournament.buy_in,
+        });
+
+        if (countError) {
+            console.error('[TournamentService] Failed to increment registration count:', countError);
+        }
 
         return data;
     }
@@ -447,13 +449,15 @@ class TournamentService {
             .eq('tournament_id', tournamentId)
             .eq('user_id', userId);
 
-        await supabase
-            .from('tournaments')
-            .update({
-                current_players: tournament.current_players - 1,
-                prize_pool: tournament.prize_pool - tournament.buy_in,
-            })
-            .eq('id', tournamentId);
+        // Atomically decrement player count and prize pool to prevent race conditions
+        const { error: countError } = await supabase.rpc('decrement_tournament_registration', {
+            p_tournament_id: tournamentId,
+            p_buy_in: tournament.buy_in,
+        });
+
+        if (countError) {
+            console.error('[TournamentService] Failed to decrement registration count:', countError);
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
@@ -1217,12 +1221,16 @@ class TournamentService {
 
             const newCollectorBounty = (collector?.current_bounty || bountyConfig.baseBounty) + addedToHead;
 
-            // Update collector's bounty
-            await supabase
+            // Atomically increment collector's bounty to prevent race on concurrent knockouts
+            const { error: bountyUpdateError } = await supabase
                 .from('tournament_players')
                 .update({ current_bounty: newCollectorBounty })
                 .eq('tournament_id', tournamentId)
                 .eq('user_id', collectorPlayerId);
+
+            if (bountyUpdateError) {
+                console.error('[TournamentService] Failed to update collector bounty:', bountyUpdateError);
+            }
 
             // Record bounty payout
             await supabase
