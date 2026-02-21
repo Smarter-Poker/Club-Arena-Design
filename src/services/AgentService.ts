@@ -444,37 +444,23 @@ class AgentServiceClass {
         fromWallet: 'business' | 'player' | 'promo',
         toWallet: 'business' | 'player' | 'promo'
     ): Promise<boolean> {
-        const walletMap = {
-            business: 'business_balance',
-            player: 'player_balance',
-            promo: 'promo_balance',
-        };
+        if (amount <= 0) throw new Error('Transfer amount must be positive');
+        if (fromWallet === toWallet) throw new Error('Cannot transfer to the same wallet');
 
-        const fromCol = walletMap[fromWallet];
-        const toCol = walletMap[toWallet];
+        // Use RPC for atomic wallet-to-wallet transfer to prevent race conditions
+        const { error } = await supabase.rpc('agent_self_transfer', {
+            p_agent_id: agentId,
+            p_amount: amount,
+            p_from_wallet: fromWallet,
+            p_to_wallet: toWallet,
+        });
 
-        const { data: agent } = await supabase
-            .from('agents')
-            .select('business_balance, player_balance, promo_balance')
-            .eq('id', agentId)
-            .single();
+        if (error) {
+            console.error('[AgentService] selfTransfer failed:', error);
+            throw new Error(error.message || 'Self-transfer failed');
+        }
 
-        if (!agent) throw new Error('Agent not found');
-
-        const currentFrom = Number((agent as any)[fromCol]);
-        const currentTo = Number((agent as any)[toCol]);
-
-        if (currentFrom < amount) throw new Error('Insufficient balance');
-
-        const { error } = await supabase
-            .from('agents')
-            .update({
-                [fromCol]: currentFrom - amount,
-                [toCol]: currentTo + amount,
-            })
-            .eq('id', agentId);
-
-        return !error;
+        return true;
     }
 
     /**
@@ -486,6 +472,8 @@ class AgentServiceClass {
         clubId: string,
         amount: number
     ): Promise<boolean> {
+        if (amount <= 0) throw new Error('Transfer amount must be positive');
+
         // Get agent's business balance
         const { data: agent } = await supabase
             .from('agents')
@@ -496,27 +484,32 @@ class AgentServiceClass {
         if (!agent) throw new Error('Agent not found');
         if (Number(agent.business_balance) < amount) throw new Error('Insufficient balance');
 
-        // Get player's chip balance
-        const { data: member } = await supabase
-            .from('club_members')
-            .select('chip_balance')
-            .eq('user_id', playerId)
-            .eq('club_id', clubId)
-            .single();
+        // STEP 1: Debit agent first
+        const { error: debitError } = await supabase
+            .from('agents')
+            .update({ business_balance: Number(agent.business_balance) - amount })
+            .eq('id', agentId);
 
-        if (!member) throw new Error('Player not found');
+        if (debitError) throw debitError;
 
-        // Execute transfer
-        const [agentResult, memberResult] = await Promise.all([
-            supabase.from('agents').update({
-                business_balance: Number(agent.business_balance) - amount
-            }).eq('id', agentId),
-            supabase.from('club_members').update({
-                chip_balance: (member.chip_balance || 0) + amount
-            }).eq('user_id', playerId).eq('club_id', clubId),
-        ]);
+        // STEP 2: Credit player via atomic RPC — rollback agent on failure
+        const { error: rpcError } = await supabase.rpc('credit_player_chips', {
+            p_user_id: playerId,
+            p_club_id: clubId,
+            p_amount: amount,
+        });
 
-        return !agentResult.error && !memberResult.error;
+        if (rpcError) {
+            // Rollback: re-credit agent
+            console.error('[AgentService] Player credit failed, rolling back agent debit:', rpcError);
+            await supabase
+                .from('agents')
+                .update({ business_balance: Number(agent.business_balance) })
+                .eq('id', agentId);
+            throw new Error('Failed to credit player — agent balance restored');
+        }
+
+        return true;
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
@@ -569,26 +562,47 @@ class AgentServiceClass {
             throw new Error('Insufficient balance for distribution');
         }
 
-        // Process each distribution
-        for (const dist of distributions) {
-            if (dist.type === 'agent') {
-                // Transfer to sub-agent
-                const subAgent = await this.getAgent(dist.toId);
-                if (!subAgent) continue;
+        // STEP 1: Deduct from source FIRST to prevent chip duplication
+        const { error: deductError } = await supabase.from('agents').update({
+            business_balance: agent.businessBalance - totalAmount,
+        }).eq('id', fromAgentId);
 
-                await supabase.from('agents').update({
-                    business_balance: subAgent.businessBalance + dist.amount,
-                }).eq('id', dist.toId);
-            } else {
-                // Transfer to player
-                await this.transferToPlayer(fromAgentId, dist.toId, agent.clubId, dist.amount);
+        if (deductError) throw new Error('Failed to deduct from source agent');
+
+        // STEP 2: Process each distribution
+        let distributed = 0;
+        for (const dist of distributions) {
+            try {
+                if (dist.type === 'agent') {
+                    const subAgent = await this.getAgent(dist.toId);
+                    if (!subAgent) {
+                        console.warn(`[AgentService] Sub-agent ${dist.toId} not found, skipping`);
+                        continue;
+                    }
+                    await supabase.from('agents').update({
+                        business_balance: subAgent.businessBalance + dist.amount,
+                    }).eq('id', dist.toId);
+                } else {
+                    await supabase.rpc('credit_player_chips', {
+                        p_user_id: dist.toId,
+                        p_club_id: agent.clubId,
+                        p_amount: dist.amount,
+                    });
+                }
+                distributed += dist.amount;
+            } catch (err) {
+                console.error(`[AgentService] Distribution to ${dist.toId} failed:`, err);
+                // Continue with remaining distributions — partial failures are logged
             }
         }
 
-        // Deduct from source agent
-        await supabase.from('agents').update({
-            business_balance: agent.businessBalance - totalAmount,
-        }).eq('id', fromAgentId);
+        // If nothing was distributed, refund the full deduction
+        if (distributed === 0 && distributions.length > 0) {
+            await supabase.from('agents').update({
+                business_balance: agent.businessBalance,
+            }).eq('id', fromAgentId);
+            throw new Error('All distributions failed — balance restored');
+        }
 
         return true;
     }
