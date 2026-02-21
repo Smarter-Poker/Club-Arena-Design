@@ -142,7 +142,7 @@ export const CommissionService = {
             .eq('agent_id', agentId);
 
         if (error) throw error;
-        return data.map(r => ({
+        return (data || []).map(r => ({
             id: r.id,
             clubId: r.club_id,
             agentId: r.agent_id,
@@ -302,7 +302,7 @@ export const CommissionService = {
             .limit(limit);
 
         if (error) throw error;
-        return data.map(p => ({
+        return (data || []).map(p => ({
             agentId: p.agent_id,
             periodId: p.period_id,
             grossRake: p.gross_rake,

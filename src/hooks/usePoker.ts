@@ -31,7 +31,7 @@ export function useCountdown(initialSeconds: number, autoStart = true) {
             }, 1000);
         }
         return () => clearInterval(intervalRef.current);
-    }, [isRunning, seconds]);
+    }, [isRunning]);
 
     const start = useCallback(() => setIsRunning(true), []);
     const pause = useCallback(() => setIsRunning(false), []);
@@ -315,7 +315,7 @@ export function useBetSlider(options: {
         setPercentOfPot,
         setBigBlinds,
         presets,
-        inBigBlinds: betAmount / bigBlind,
+        inBigBlinds: bigBlind > 0 ? betAmount / bigBlind : 0,
         isAllIn: betAmount >= maxBet,
     };
 }

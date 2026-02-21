@@ -300,14 +300,14 @@ export default function HandReplayViewer({
             <div className={styles.progress}>
                 <div
                     className={styles.progressFill}
-                    style={{ width: `${((currentStep + 1) / hand.actions.length) * 100}%` }}
+                    style={{ width: `${hand.actions.length > 0 ? ((currentStep + 1) / hand.actions.length) * 100 : 0}%` }}
                 />
             </div>
 
             {/* Winners (at end) */}
             {currentStep >= hand.actions.length - 1 && hand.winners.length > 0 && (
                 <div className={styles.winners}>
-                     {hand.winners.map((w, i) => {
+                    {hand.winners.map((w, i) => {
                         const player = hand.players.find(p => p.id === w.playerId);
                         return (
                             <span key={i}>

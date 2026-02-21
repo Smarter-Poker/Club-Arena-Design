@@ -21,6 +21,7 @@ interface TournamentTimerState {
     intervalId: ReturnType<typeof setInterval>;
     isPaused: boolean;
     lastTick: number;
+    breakTimeoutId?: ReturnType<typeof setTimeout>;
 }
 
 class TournamentTimerServiceClass {
@@ -59,6 +60,9 @@ class TournamentTimerServiceClass {
         const timer = this.activeTimers.get(tournamentId);
         if (timer) {
             clearInterval(timer.intervalId);
+            if (timer.breakTimeoutId) {
+                clearTimeout(timer.breakTimeoutId);
+            }
             this.activeTimers.delete(tournamentId);
         }
     }
@@ -184,8 +188,8 @@ class TournamentTimerServiceClass {
             resumeAt: new Date(Date.now() + durationMinutes * 60 * 1000).toISOString(),
         });
 
-        // Schedule resume
-        setTimeout(async () => {
+        // Schedule resume and store the timeout ID for cleanup
+        const breakTimeoutId = setTimeout(async () => {
             await supabase
                 .from('tournaments')
                 .update({ status: 'running' })
@@ -193,8 +197,16 @@ class TournamentTimerServiceClass {
 
             this.resumeTimer(tournamentId);
 
+            // Clear the stored timeout ID
+            const t = this.activeTimers.get(tournamentId);
+            if (t) t.breakTimeoutId = undefined;
+
             await this.broadcastEvent(tournamentId, 'BREAK_END', {});
         }, durationMinutes * 60 * 1000);
+
+        // Store timeout ID so stopTimer can clear it
+        const timer = this.activeTimers.get(tournamentId);
+        if (timer) timer.breakTimeoutId = breakTimeoutId;
     }
 
     /**
