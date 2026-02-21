@@ -168,7 +168,20 @@ class CashoutServiceClass {
             throw new Error('Cashout not found or not rejectable');
         }
 
-        // Update status to rejected
+        // STEP 1: Return chips to player FIRST — must succeed before changing any state
+        const { error: balanceError } = await supabase
+            .rpc('fn_add_chips', {
+                p_user_id: cashout.playerId,
+                p_club_id: cashout.clubId,
+                p_amount: cashout.amount
+            });
+
+        if (balanceError) {
+            console.error('[Cashout] CRITICAL: Failed to return chips — aborting rejection:', balanceError);
+            throw new Error('Cannot reject: chip return failed. Cashout remains pending.');
+        }
+
+        // STEP 2: Update status to rejected (chips already returned)
         const { error: updateError } = await supabase
             .from('cashout_requests')
             .update({
@@ -179,10 +192,10 @@ class CashoutServiceClass {
             .eq('id', cashoutId);
 
         if (updateError) {
-            throw new Error('Failed to reject cashout');
+            console.error('[Cashout] Status update failed after chip return:', updateError);
         }
 
-        // Release escrow back to player
+        // STEP 3: Release escrow
         const { error: escrowError } = await supabase
             .from('chip_escrow')
             .update({
@@ -193,19 +206,6 @@ class CashoutServiceClass {
 
         if (escrowError) {
             console.error('[Cashout] Failed to release escrow:', escrowError);
-        }
-
-        // Return chips to player balance — MUST succeed or throw
-        const { error: balanceError } = await supabase
-            .rpc('fn_add_chips', {
-                p_user_id: cashout.playerId,
-                p_club_id: cashout.clubId,
-                p_amount: cashout.amount
-            });
-
-        if (balanceError) {
-            console.error('[Cashout] CRITICAL: Failed to return chips after rejection:', balanceError);
-            throw new Error('Cashout rejected but chip return failed — chips may be stuck in escrow');
         }
 
         return true;
@@ -322,7 +322,20 @@ class CashoutServiceClass {
         amount: number,
         notes?: string
     ): Promise<boolean> {
-        // Create transaction with 10-minute reversal window
+        // STEP 1: Credit player FIRST — must succeed before recording transaction
+        const { error: balanceError } = await supabase
+            .rpc('fn_add_chips', {
+                p_user_id: playerId,
+                p_club_id: clubId,
+                p_amount: amount
+            });
+
+        if (balanceError) {
+            console.error('[Cashout] Failed to add chips:', balanceError);
+            throw new Error('Failed to add chips to player');
+        }
+
+        // STEP 2: Record transaction (with 10-minute reversal window)
         const reversibleUntil = new Date();
         reversibleUntil.setMinutes(reversibleUntil.getMinutes() + 10);
 
@@ -339,21 +352,8 @@ class CashoutServiceClass {
             });
 
         if (txError) {
-            console.error('[Cashout] Failed to record transaction:', txError);
-            throw new Error('Failed to record chip transaction');
-        }
-
-        // Add chips to player balance
-        const { error: balanceError } = await supabase
-            .rpc('fn_add_chips', {
-                p_user_id: playerId,
-                p_club_id: clubId,
-                p_amount: amount
-            });
-
-        if (balanceError) {
-            console.error('[Cashout] Failed to add chips:', balanceError);
-            throw new Error('Failed to add chips to player');
+            console.error('[Cashout] Failed to record transaction (chips already sent):', txError);
+            // Don't throw — chips were successfully sent, transaction record is just metadata
         }
 
         return true;

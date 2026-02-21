@@ -121,28 +121,24 @@ class BonusServiceClass {
      * Claim daily bonus
      */
     async claimDailyBonus(userId: string): Promise<{ success: boolean; reward: number; rewardType: string }> {
-        const status = await this.getBonusStatus(userId);
-
-        if (!status.canClaimDaily) {
-            throw new Error('Daily bonus already claimed today');
-        }
-
-        const reward = DAILY_REWARDS[(status.currentDay - 1) % 7];
-        const now = new Date().toISOString();
-
-        // Update or insert bonus record
-        const { error } = await supabase
-            .from('user_bonuses')
-            .upsert({
-                user_id: userId,
-                daily_streak: status.streak + 1,
-                last_daily_claim: now
-            }, { onConflict: 'user_id' });
+        // Atomic claim: RPC checks last_daily_claim < today AND increments streak in one operation
+        // This prevents TOCTOU double-claims from concurrent requests
+        const { data: claimResult, error } = await supabase.rpc('try_claim_daily_bonus', {
+            p_user_id: userId,
+        });
 
         if (error) {
             console.error('[Bonus] Failed to claim:', error);
             throw new Error('Failed to claim bonus');
         }
+
+        if (!claimResult?.claimed) {
+            throw new Error('Daily bonus already claimed today');
+        }
+
+        // claimResult contains { claimed: true, new_streak: number }
+        const currentDay = ((claimResult.new_streak - 1) % 7);
+        const reward = DAILY_REWARDS[currentDay];
 
         // Award the reward
         await this.awardReward(userId, reward.reward, reward.type);
@@ -194,23 +190,19 @@ class BonusServiceClass {
      * Update bonus progress
      */
     async updateProgress(userId: string, bonusId: string, amount: number = 1): Promise<number> {
-        const { data } = await supabase
-            .from('special_bonuses')
-            .select('progress, target')
-            .eq('id', bonusId)
-            .eq('user_id', userId)
-            .single();
+        // Use atomic RPC to prevent read-modify-write race on concurrent progress updates
+        const { data, error } = await supabase.rpc('increment_bonus_progress', {
+            p_bonus_id: bonusId,
+            p_user_id: userId,
+            p_amount: amount,
+        });
 
-        if (!data) return 0;
+        if (error) {
+            console.error('[Bonus] Failed to update progress:', error);
+            return 0;
+        }
 
-        const newProgress = Math.min(data.progress + amount, data.target);
-
-        await supabase
-            .from('special_bonuses')
-            .update({ progress: newProgress })
-            .eq('id', bonusId);
-
-        return newProgress;
+        return data ?? 0;
     }
 
     /**

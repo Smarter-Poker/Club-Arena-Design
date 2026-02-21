@@ -280,10 +280,15 @@ export const BBJService = {
         winnerUserId: string;
         dealtInPlayerIds: string[];
     }): Promise<BBJPayout | null> {
-        // Get current pool
-        const pool = await this.getPool({ clubId: params.poolId });
-        if (!pool) {
-            console.error('BBJService.executePayout: Pool not found');
+        // Get current pool by ID (NOT by clubId — params.poolId is the pool's primary key)
+        const { data: pool, error: poolError } = await supabase
+            .from('bbj_pools')
+            .select('*')
+            .eq('id', params.poolId)
+            .single();
+
+        if (poolError || !pool) {
+            console.error('BBJService.executePayout: Pool not found:', poolError);
             return null;
         }
 
