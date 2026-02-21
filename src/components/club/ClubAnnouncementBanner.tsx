@@ -52,7 +52,11 @@ export default function ClubAnnouncementBanner({
         // Load dismissed from localStorage
         const stored = localStorage.getItem(`dismissed_announcements_${clubId}`);
         if (stored) {
-            setDismissed(new Set(JSON.parse(stored)));
+            try {
+                setDismissed(new Set(JSON.parse(stored)));
+            } catch {
+                localStorage.removeItem(`dismissed_announcements_${clubId}`);
+            }
         }
     }, [clubId]);
 
@@ -138,7 +142,9 @@ export default function ClubAnnouncementBanner({
         return null;
     }
 
-    const current = visibleAnnouncements[currentIndex % visibleAnnouncements.length];
+    // Safe modulo to avoid negative index (JS % can return negative)
+    const safeIndex = ((currentIndex % visibleAnnouncements.length) + visibleAnnouncements.length) % visibleAnnouncements.length;
+    const current = visibleAnnouncements[safeIndex];
 
     return (
         <div className={`${styles.banner} ${getTypeClass(current.type)}`}>
@@ -162,7 +168,7 @@ export default function ClubAnnouncementBanner({
                 {visibleAnnouncements.length > 1 && (
                     <div className={styles.pagination}>
                         <button onClick={() => setCurrentIndex(prev => prev - 1)}>‹</button>
-                        <span>{(currentIndex % visibleAnnouncements.length) + 1}/{visibleAnnouncements.length}</span>
+                        <span>{safeIndex + 1}/{visibleAnnouncements.length}</span>
                         <button onClick={() => setCurrentIndex(prev => prev + 1)}>›</button>
                     </div>
                 )}

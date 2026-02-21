@@ -219,7 +219,8 @@ class TableService {
 
                 if (walletError) {
                     console.error('[TableService] Error returning chips:', walletError);
-                    // Continue with leaving even if chip return fails
+                    // CRITICAL: Do NOT delete the seat if chip return failed — chips would be lost
+                    return { success: false, chipsReturned: 0 };
                 }
             }
 

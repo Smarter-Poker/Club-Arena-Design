@@ -3,7 +3,7 @@
  * Floating action shortcut panel for power users
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './QuickActionsPanel.css';
 
@@ -17,19 +17,21 @@ interface QuickAction {
 
 export const QuickActionsPanel: React.FC = () => {
     const navigate = useNavigate();
+    const navigateRef = useRef(navigate);
+    navigateRef.current = navigate;
     const [isOpen, setIsOpen] = useState(false);
     const [recentlyUsed, setRecentlyUsed] = useState<string[]>([]);
 
-    const actions: QuickAction[] = [
-        { id: 'lobby', icon: '🎰', label: 'Lobby', shortcut: 'L', action: () => navigate('/lobby') },
-        { id: 'create', icon: '+', label: 'Create Table', shortcut: 'N', action: () => navigate('/create-table') },
-        { id: 'wallet', icon: '💰', label: 'Wallet', shortcut: 'W', action: () => navigate('/wallet') },
-        { id: 'messages', icon: '✉', label: 'Messages', shortcut: 'M', action: () => navigate('/messages') },
-        { id: 'friends', icon: '●', label: 'Friends', shortcut: 'F', action: () => navigate('/friends') },
-        { id: 'stats', icon: '📊', label: 'Stats', shortcut: 'S', action: () => navigate('/stats') },
-        { id: 'history', icon: '📝', label: 'Hand History', shortcut: 'H', action: () => navigate('/hand-history') },
-        { id: 'settings', icon: '⚙', label: 'Settings', shortcut: ',', action: () => navigate('/settings') },
-    ];
+    const actions: QuickAction[] = useMemo(() => [
+        { id: 'lobby', icon: '🎰', label: 'Lobby', shortcut: 'L', action: () => navigateRef.current('/lobby') },
+        { id: 'create', icon: '+', label: 'Create Table', shortcut: 'N', action: () => navigateRef.current('/create-table') },
+        { id: 'wallet', icon: '💰', label: 'Wallet', shortcut: 'W', action: () => navigateRef.current('/wallet') },
+        { id: 'messages', icon: '✉', label: 'Messages', shortcut: 'M', action: () => navigateRef.current('/messages') },
+        { id: 'friends', icon: '●', label: 'Friends', shortcut: 'F', action: () => navigateRef.current('/friends') },
+        { id: 'stats', icon: '📊', label: 'Stats', shortcut: 'S', action: () => navigateRef.current('/stats') },
+        { id: 'history', icon: '📝', label: 'Hand History', shortcut: 'H', action: () => navigateRef.current('/hand-history') },
+        { id: 'settings', icon: '⚙', label: 'Settings', shortcut: ',', action: () => navigateRef.current('/settings') },
+    ], []);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -59,7 +61,13 @@ export const QuickActionsPanel: React.FC = () => {
 
     useEffect(() => {
         const saved = localStorage.getItem('quickActionsRecent');
-        if (saved) setRecentlyUsed(JSON.parse(saved));
+        if (saved) {
+            try {
+                setRecentlyUsed(JSON.parse(saved));
+            } catch {
+                localStorage.removeItem('quickActionsRecent');
+            }
+        }
     }, []);
 
     const sortedActions = [

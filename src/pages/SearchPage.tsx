@@ -30,7 +30,13 @@ export default function SearchPage() {
 
     useEffect(() => {
         const saved = localStorage.getItem('recentSearches');
-        if (saved) setRecentSearches(JSON.parse(saved));
+        if (saved) {
+            try {
+                setRecentSearches(JSON.parse(saved));
+            } catch {
+                localStorage.removeItem('recentSearches');
+            }
+        }
     }, []);
 
     const search = useCallback(async (searchQuery: string) => {
@@ -98,16 +104,18 @@ export default function SearchPage() {
             setResults(allResults);
 
             if (searchQuery.length >= 2) {
-                const updated = [searchQuery, ...recentSearches.filter(s => s !== searchQuery)].slice(0, 5);
-                setRecentSearches(updated);
-                localStorage.setItem('recentSearches', JSON.stringify(updated));
+                setRecentSearches(prev => {
+                    const updated = [searchQuery, ...prev.filter(s => s !== searchQuery)].slice(0, 5);
+                    localStorage.setItem('recentSearches', JSON.stringify(updated));
+                    return updated;
+                });
             }
         } catch (error) {
             console.error('Search failed:', error);
             toast.error('Search failed. Please try again.');
         }
         setLoading(false);
-    }, [category, recentSearches]);
+    }, [category]);
 
     useEffect(() => {
         const timeout = setTimeout(() => search(query), 300);
