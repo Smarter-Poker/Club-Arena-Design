@@ -418,17 +418,17 @@ class TournamentService {
         // Calculate refund amount (buy-in + rake)
         const refundAmount = tournament.buy_in + (tournament.rake || 0);
 
-        // Refund to player wallet
-        try {
-            await supabase.rpc('credit_player_wallet', {
-                p_user_id: userId,
-                p_amount: refundAmount,
-                p_category: 'tournament_refund',
-                p_description: `Tournament refund: ${tournament.name}`,
-            });
-        } catch (err) {
-            console.error('[TournamentService] Refund failed:', err);
-            // Continue with unregistration even if refund fails - can be handled manually
+        // Refund to player wallet — MUST succeed before unregistering
+        const { error: refundError } = await supabase.rpc('credit_player_wallet', {
+            p_user_id: userId,
+            p_amount: refundAmount,
+            p_category: 'tournament_refund',
+            p_description: `Tournament refund: ${tournament.name}`,
+        });
+
+        if (refundError) {
+            console.error('[TournamentService] Refund failed, aborting unregistration:', refundError);
+            throw new Error('Refund failed — cannot unregister without refunding buy-in');
         }
 
         await supabase
@@ -568,15 +568,16 @@ class TournamentService {
 
         // Credit prize to player wallet if they won money
         if (prize > 0) {
-            try {
-                await supabase.rpc('credit_player_wallet', {
-                    p_user_id: userId,
-                    p_amount: prize,
-                    p_category: 'tournament_prize',
-                    p_description: `${ordinal(position)} place in ${tournament.name}`,
-                });
-            } catch (err) {
-                console.error('[TournamentService] Prize credit failed:', err);
+            const { error: prizeError } = await supabase.rpc('credit_player_wallet', {
+                p_user_id: userId,
+                p_amount: prize,
+                p_category: 'tournament_prize',
+                p_description: `${ordinal(position)} place in ${tournament.name}`,
+            });
+
+            if (prizeError) {
+                console.error('[TournamentService] CRITICAL: Prize credit failed:', prizeError);
+                throw new Error(`Failed to credit ${ordinal(position)} place prize of $${prize}`);
             }
         }
 

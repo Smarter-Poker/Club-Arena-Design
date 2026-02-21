@@ -104,6 +104,10 @@ class PresenceServiceClass {
         await supabase.removeChannel(channel);
         this.channels.delete(channelName);
 
+        // Stop heartbeat if no channels remain
+        if (this.channels.size === 0) {
+            this.stopHeartbeat();
+        }
     }
 
     /**

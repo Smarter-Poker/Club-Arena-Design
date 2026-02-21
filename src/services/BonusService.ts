@@ -217,21 +217,26 @@ class BonusServiceClass {
      * Award reward to user
      */
     private async awardReward(userId: string, amount: number, type: string): Promise<void> {
+        let error;
         switch (type) {
             case 'chips':
-                // Add to user's wallet
-                await supabase.rpc('add_chips', { p_user_id: userId, p_amount: amount });
+                ({ error } = await supabase.rpc('add_chips', { p_user_id: userId, p_amount: amount }));
                 break;
             case 'xp':
-                // Add XP
-                await supabase.rpc('add_xp', { p_user_id: userId, p_amount: amount });
+                ({ error } = await supabase.rpc('add_xp', { p_user_id: userId, p_amount: amount }));
                 break;
             case 'vip_points':
-                // Add VIP points
-                await supabase.rpc('add_vip_points', { p_user_id: userId, p_amount: amount });
+                ({ error } = await supabase.rpc('add_vip_points', { p_user_id: userId, p_amount: amount }));
                 break;
+            default:
+                console.warn(`[Bonus] Unknown reward type: ${type}`);
+                return;
         }
 
+        if (error) {
+            console.error(`[Bonus] Failed to award ${type} reward:`, error);
+            throw new Error(`Failed to award ${type} reward`);
+        }
     }
 }
 

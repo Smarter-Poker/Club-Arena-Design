@@ -157,7 +157,7 @@ export const useTableStore = create<TableState>((set, get) => ({
                 set((state) => {
                     const newSeats = [...state.seats];
                     const seat = newSeats[mySeat - 1];
-                    if (seat) seat.is_folded = true;
+                    if (seat) newSeats[mySeat - 1] = { ...seat, is_folded: true };
                     return { seats: newSeats, isMyTurn: false };
                 });
                 break;
@@ -172,8 +172,7 @@ export const useTableStore = create<TableState>((set, get) => ({
                     const newSeats = [...state.seats];
                     const seat = newSeats[mySeat - 1];
                     if (seat) {
-                        seat.bet = currentBet;
-                        seat.stack -= callAmount;
+                        newSeats[mySeat - 1] = { ...seat, bet: currentBet, stack: seat.stack - callAmount };
                     }
                     return {
                         seats: newSeats,
@@ -192,8 +191,7 @@ export const useTableStore = create<TableState>((set, get) => ({
                     const newSeats = [...state.seats];
                     const seat = newSeats[mySeat - 1];
                     if (seat) {
-                        seat.bet = amount;
-                        seat.stack -= amount;
+                        newSeats[mySeat - 1] = { ...seat, bet: amount, stack: seat.stack - amount };
                     }
                     return {
                         seats: newSeats,
@@ -210,9 +208,7 @@ export const useTableStore = create<TableState>((set, get) => ({
                     const newSeats = [...state.seats];
                     const seat = newSeats[mySeat - 1];
                     if (seat) {
-                        seat.bet = seat.stack;
-                        seat.is_all_in = true;
-                        seat.stack = 0;
+                        newSeats[mySeat - 1] = { ...seat, bet: seat.stack, is_all_in: true, stack: 0 };
                     }
                     return {
                         seats: newSeats,
