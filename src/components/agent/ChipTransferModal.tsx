@@ -69,7 +69,7 @@ export default function ChipTransferModal({
         try {
             // Load players assigned to this agent in this club
             const { data, error } = await supabase
-                .from('club_memberships')
+                .from('club_members')
                 .select(`
                     user_id,
                     users:user_id (
@@ -106,7 +106,7 @@ export default function ChipTransferModal({
 
         try {
             const { data, error } = await supabase
-                .from('club_memberships')
+                .from('club_members')
                 .select('agent_credit_limit, agent_credit_used')
                 .eq('club_id', clubId)
                 .eq('user_id', user.id)
@@ -145,7 +145,7 @@ export default function ChipTransferModal({
         try {
             // 1. Update agent's credit used
             const { error: agentError } = await supabase
-                .from('club_memberships')
+                .from('club_members')
                 .update({
                     agent_credit_used: supabase.rpc('increment', { x: transferAmount })
                 })
@@ -156,7 +156,7 @@ export default function ChipTransferModal({
 
             // 2. Update player's balance
             const { error: playerError } = await supabase
-                .from('club_memberships')
+                .from('club_members')
                 .update({
                     player_balance: supabase.rpc('increment', { x: transferAmount })
                 })

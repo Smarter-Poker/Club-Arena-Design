@@ -42,7 +42,7 @@ export default function ClubStatsCards({ clubId }: ClubStatsCardsProps) {
         try {
             // Get member count
             const { count: memberCount } = await supabase
-                .from('club_memberships')
+                .from('club_members')
                 .select('id', { count: 'exact', head: true })
                 .eq('club_id', clubId)
                 .eq('status', 'active');
@@ -68,7 +68,7 @@ export default function ClubStatsCards({ clubId }: ClubStatsCardsProps) {
             // Get weekly growth (compare to last week)
             const weekAgo = new Date(Date.now() - 7 * 86400000);
             const { count: newMembers } = await supabase
-                .from('club_memberships')
+                .from('club_members')
                 .select('id', { count: 'exact', head: true })
                 .eq('club_id', clubId)
                 .gte('created_at', weekAgo.toISOString());

@@ -71,14 +71,13 @@ export default function ClubMembersPage() {
         setLoading(true);
         try {
             const { data, error } = await supabase
-                .from('club_memberships')
+                .from('club_members')
                 .select(`
-                    id,
                     user_id,
                     role,
                     chip_balance,
                     joined_at,
-                    profiles:user_id (
+                    profiles!inner (
                         username,
                         avatar_url
                     )
@@ -88,7 +87,7 @@ export default function ClubMembersPage() {
 
             if (!error && data) {
                 setMembers(data.map((m: any) => ({
-                    id: m.id,
+                    id: m.user_id,
                     user_id: m.user_id,
                     username: m.profiles?.username || 'Unknown',
                     avatar_url: m.profiles?.avatar_url,

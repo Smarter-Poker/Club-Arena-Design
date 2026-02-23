@@ -98,7 +98,7 @@ export default function ClubAnnouncementsPage() {
             // Check if user is admin
             if (user?.id) {
                 const { data: membership } = await supabase
-                    .from('club_memberships')
+                    .from('club_members')
                     .select('role')
                     .eq('club_id', clubId)
                     .eq('user_id', user.id)

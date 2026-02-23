@@ -78,7 +78,7 @@ export default function PlayerInviteModal({
 
             // Filter out players already in club
             const { data: existingMembers } = await supabase
-                .from('club_memberships')
+                .from('club_members')
                 .select('user_id')
                 .eq('club_id', clubId);
 
@@ -108,7 +108,7 @@ export default function PlayerInviteModal({
         try {
             // First add to club_memberships
             const { error: membershipError } = await supabase
-                .from('club_memberships')
+                .from('club_members')
                 .insert({
                     club_id: clubId,
                     user_id: player.id,

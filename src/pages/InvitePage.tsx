@@ -76,7 +76,7 @@ export default function InvitePage() {
             // Check if already a member
             if (user?.id) {
                 const { data: membership } = await supabase
-                    .from('club_memberships')
+                    .from('club_members')
                     .select('id')
                     .eq('club_id', clubData.id)
                     .eq('user_id', user.id)
@@ -99,7 +99,7 @@ export default function InvitePage() {
         setError(null);
         try {
             const { error: joinError } = await supabase
-                .from('club_memberships')
+                .from('club_members')
                 .insert({
                     club_id: club.id,
                     user_id: user.id,

@@ -70,7 +70,7 @@ export default function ClubDashboard() {
             if (clubData) {
                 // Get member count
                 const { count: memberCount } = await supabase
-                    .from('club_memberships')
+                    .from('club_members')
                     .select('*', { count: 'exact', head: true })
                     .eq('club_id', clubId);
 
@@ -92,7 +92,7 @@ export default function ClubDashboard() {
 
             // Load top players by profit
             const { data: playersData } = await supabase
-                .from('club_memberships')
+                .from('club_members')
                 .select(`
                     user_id,
                     total_profit,

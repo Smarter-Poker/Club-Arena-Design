@@ -46,7 +46,7 @@ export default function SuperAgentDashboard() {
                     {
                         event: '*',
                         schema: 'public',
-                        table: 'club_memberships',
+                        table: 'club_members',
                         filter: `club_id=eq.${clubId}`,
                     },
                     () => loadDashboardData()
