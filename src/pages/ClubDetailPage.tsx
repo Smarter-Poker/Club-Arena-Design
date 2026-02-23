@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import styles from './ClubDetailPage.module.css';
 import ClubHome from '../components/club/ClubHome';
 import CurrencyStore from '../components/club/CurrencyStore';
@@ -131,7 +131,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 import { supabase } from '../lib/supabase';
 import { presenceService } from '../services/PresenceService';
 import ClubActivityFeed from '../components/club/ClubActivityFeed';
-import CreateTableModal from '../components/club/CreateTableModal';
+// CreateTableModal replaced by full TableConfigPage navigation
 import { MembershipService } from '../services/MembershipService';
 import { ClubService } from '../services/ClubService';
 import ClubAnnouncementBanner from '../components/club/ClubAnnouncementBanner';
@@ -149,6 +149,7 @@ import ClubBottomNav from '../components/club/ClubBottomNav';
 
 export default function ClubDetailPage() {
     const { clubId } = useParams();
+    const navigate = useNavigate();
     const toast = useToast();
     const [activeTab, setActiveTab] = useState<'overview' | 'tables' | 'members' | 'agents' | 'settings'>('overview');
     const [club, setClub] = useState<ClubData | null>(null);
@@ -158,7 +159,7 @@ export default function ClubDetailPage() {
     const [tables, setTables] = useState<ClubTable[]>([]);
     const [loading, setLoading] = useState(true);
     const [onlineCount, setOnlineCount] = useState(0);
-    const [showCreateTable, setShowCreateTable] = useState(false);
+    const [deletingTableId, setDeletingTableId] = useState<string | null>(null);
     const [agents, setAgents] = useState<Agent[]>([]);
     const [agentsLoading, setAgentsLoading] = useState(false);
     const [showAgentManager, setShowAgentManager] = useState(false);
@@ -494,14 +495,41 @@ export default function ClubDetailPage() {
                     <div className={styles.tablesContainer}>
                         <div className={styles.tablesHeader}>
                             <h3>All Tables ({tables.length})</h3>
-                            <button className={styles.createButton} onClick={() => setShowCreateTable(true)}>+ Create Table</button>
+                            <button className={styles.createButton} onClick={() => navigate(`/clubs/${clubId}/create-table`)}>+ Create Table</button>
                         </div>
                         <div className={styles.tablesGrid}>
                             {tables.map(table => (
                                 <div key={table.id} className={styles.tableCard}>
                                     <div className={styles.tableCardHeader}>
                                         <h4>{table.name}</h4>
-                                        <StatusBadge status={table.status} />
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <StatusBadge status={table.status} />
+                                            {(userRole === 'owner' || userRole === 'admin') && (
+                                                <button
+                                                    className={styles.deleteTableBtn}
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        if (!confirm(`Delete table "${table.name}"?`)) return;
+                                                        setDeletingTableId(table.id);
+                                                        try {
+                                                            const { error } = await supabase.rpc('soft_delete_table', { table_id: table.id });
+                                                            if (error) throw error;
+                                                            setTables(prev => prev.filter(t => t.id !== table.id));
+                                                            toast.success('Table deleted');
+                                                        } catch (err) {
+                                                            console.error('Failed to delete table:', err);
+                                                            toast.error('Failed to delete table');
+                                                        } finally {
+                                                            setDeletingTableId(null);
+                                                        }
+                                                    }}
+                                                    disabled={deletingTableId === table.id}
+                                                    title="Delete table"
+                                                >
+                                                    {deletingTableId === table.id ? '...' : '✕'}
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className={styles.tableCardBody}>
                                         <div className={styles.tableInfo}>
@@ -712,18 +740,6 @@ export default function ClubDetailPage() {
                     </div>
                 )}
             </section>
-
-            {/* Create Table Modal */}
-            {showCreateTable && clubId && (
-                <CreateTableModal
-                    clubId={clubId}
-                    onClose={() => setShowCreateTable(false)}
-                    onSuccess={() => {
-                        setShowCreateTable(false);
-                        loadClubData();
-                    }}
-                />
-            )}
 
             {/* Agent Manager - Navigate to dedicated page */}
             {showAgentManager && clubId && (
