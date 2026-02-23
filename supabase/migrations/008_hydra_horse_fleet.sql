@@ -243,8 +243,8 @@ BEGIN
     VALUES (p_horse_id, p_table_id, p_seat_number, p_buy_in, p_buy_in)
     RETURNING id INTO v_session_id;
     
-    -- Seat at table (using existing seats table)
-    INSERT INTO seats (table_id, user_id, seat_number, stack, status)
+    -- Seat at table (using existing table_seats table)
+    INSERT INTO table_seats (table_id, user_id, seat_number, stack, status)
     VALUES (p_table_id, p_horse_id, p_seat_number, p_buy_in, 'active')
     ON CONFLICT (table_id, seat_number) DO UPDATE SET
         user_id = p_horse_id,
@@ -290,11 +290,11 @@ DECLARE
     v_final_stack INTEGER;
 BEGIN
     -- Get final stack
-    SELECT stack INTO v_final_stack FROM seats
+    SELECT stack INTO v_final_stack FROM table_seats
     WHERE table_id = p_table_id AND user_id = p_horse_id;
     
-    -- Remove from seats
-    DELETE FROM seats WHERE table_id = p_table_id AND user_id = p_horse_id;
+    -- Remove from table_seats
+    DELETE FROM table_seats WHERE table_id = p_table_id AND user_id = p_horse_id;
     
     -- Update session
     UPDATE horse_sessions SET

@@ -162,15 +162,19 @@ export default function ClubHomePage() {
                 setTables(tableData);
             }
 
-            // Load BBJ amount
-            const { data: bbjData } = await supabase
-                .from('bbj_pools')
-                .select('main_balance')
-                .limit(1)
-                .single();
+            // Load BBJ amount (bbj_pools table may not exist yet — graceful fallback)
+            try {
+                const { data: bbjData, error: bbjError } = await supabase
+                    .from('bbj_pools')
+                    .select('main_balance')
+                    .limit(1)
+                    .single();
 
-            if (bbjData) {
-                setJackpotAmount(bbjData.main_balance || 0);
+                if (!bbjError && bbjData) {
+                    setJackpotAmount(bbjData.main_balance || 0);
+                }
+            } catch {
+                // BBJ table doesn't exist yet — show 0
             }
 
         } catch (error) {

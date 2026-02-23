@@ -62,8 +62,9 @@ export async function getArenaLobbyClubs(): Promise<ClubTrafficData[]> {
     const { data, error } = await supabase.rpc('get_arena_lobby_clubs');
 
     if (error) {
-        console.error('[Service] Lobby fetch failed:', error);
-        throw new Error('Failed to fetch arena lobby');
+        console.warn('[ArenaLobbyEngine] get_arena_lobby_clubs RPC not available:', error.message);
+        // Fallback: return empty array instead of crashing
+        return [];
     }
 
     return (data || []).map((club: any) => ({
@@ -81,8 +82,9 @@ export async function getClubTraffic(clubId: string): Promise<ClubTrafficData | 
     });
 
     if (error) {
-        console.error('[Service] Club traffic fetch failed:', error);
-        throw new Error('Failed to fetch club traffic');
+        console.warn('[ArenaLobbyEngine] get_club_traffic RPC not available:', error.message);
+        // Fallback: return null instead of crashing
+        return null;
     }
 
     if (!data) return null;

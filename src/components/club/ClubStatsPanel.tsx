@@ -23,25 +23,35 @@ export const ClubStatsPanel: React.FC<ClubStatsPanelProps> = ({
 }) => {
     return (
         <div className="club-stats-panel">
-            {/* Background SVG loaded as image (browser caches) */}
+            {/* Background SVG/JPG loaded as image (browser caches) */}
             <img
-                src="/hub/club-arena/images/club-stats-panel.svg"
-                alt="Club Stats"
+                src={`${import.meta.env.BASE_URL || '/'}images/shark-club-card-v25.jpg`}
+                alt="Shark Club Card"
                 className="club-stats-bg"
                 loading="lazy"
             />
 
-            {/* Dynamic text overlays positioned with CSS */}
             <div className="stats-overlay">
-                <span className="stat-value total-members">
-                    {totalMembers.toLocaleString()}
-                </span>
-                <span className="stat-value club-level">
-                    {clubLevel}
-                </span>
-                <span className="stat-value active-players">
-                    {activePlayers.toLocaleString()}
-                </span>
+                <div className="stats-group members-group">
+                    <span className="stat-label">TOTAL<br />MEMBERS</span>
+                    <span className="stat-value">
+                        {Math.max(1, totalMembers).toLocaleString()}
+                    </span>
+                </div>
+
+                <div className="stats-group level-group">
+                    <span className="stat-label">CLUB LEVEL</span>
+                    <span className="stat-value">
+                        {Math.max(1, clubLevel)}
+                    </span>
+                </div>
+
+                <div className="stats-group active-group">
+                    <span className="stat-label">ACTIVE<br />PLAYERS</span>
+                    <span className="stat-value">
+                        {activePlayers?.toLocaleString() || '0'}
+                    </span>
+                </div>
             </div>
         </div>
     );

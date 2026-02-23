@@ -182,17 +182,26 @@ export const HydraService = {
      * Get available horses from the fleet (not currently seated)
      */
     async getAvailableHorses(count: number = 3, profile?: HorseProfile): Promise<HorsePlayer[]> {
-        const { data, error } = await supabase.rpc('get_available_horses', {
-            p_count: count,
-            p_profile: profile || null,
-        });
+        // Direct query instead of RPC (get_available_horses RPC doesn't exist in Supabase)
+        let query = supabase
+            .from('profiles')
+            .select('id, display_name, player_number, avatar_url, horse_profile, horse_status')
+            .eq('is_horse', true)
+            .eq('horse_status', 'available')
+            .limit(count);
+
+        if (profile) {
+            query = query.eq('horse_profile', profile);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
             console.error('HydraService.getAvailableHorses error:', error);
             return [];
         }
 
-        return data.map((h: any) => ({
+        return (data || []).map((h: any) => ({
             id: h.id,
             name: h.display_name,
             playerNumber: h.player_number,
@@ -213,46 +222,57 @@ export const HydraService = {
      * Get active horses at a table
      */
     async getActiveHorses(tableId: string): Promise<HorsePlayer[]> {
-        const { data, error } = await supabase
-            .from('seats')
-            .select(`
-        seat_number,
-        stack,
-        status,
-        created_at,
-        profiles:user_id (
-          id,
-          display_name,
-          player_number,
-          avatar_url,
-          is_horse,
-          horse_profile,
-          horse_status
-        )
-      `)
-            .eq('table_id', tableId)
-            .eq('profiles.is_horse', true);
+        // Step 1: Get all seats at this table
+        const { data: seatData, error: seatError } = await supabase
+            .from('table_seats')
+            .select('user_id, seat_number, stack, created_at')
+            .eq('table_id', tableId);
 
-        if (error) {
-            console.error('HydraService.getActiveHorses error:', error);
+        if (seatError || !seatData?.length) {
+            if (seatError) console.error('HydraService.getActiveHorses seat query error:', seatError);
             return [];
         }
 
-        return (data || []).map((seat: any) => ({
-            id: seat.profiles.id,
-            name: seat.profiles.display_name,
-            playerNumber: seat.profiles.player_number,
-            avatar: seat.profiles.avatar_url || '',
-            profile: seat.profiles.horse_profile || 'reg',
-            stack: seat.stack,
-            seatNumber: seat.seat_number,
-            status: seat.profiles.horse_status || 'seated',
-            tableId,
-            joinedAt: seat.created_at,
-            leavingAfterOrbit: seat.profiles.horse_status === 'leaving',
-            handsPlayed: 0,
-            orbitsPlayed: 0,
-        }));
+        const userIds = seatData.map(s => s.user_id).filter(Boolean);
+        if (!userIds.length) return [];
+
+        // Step 2: Check which of these users are horses
+        const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, display_name, player_number, avatar_url, is_horse, horse_profile, horse_status')
+            .in('id', userIds)
+            .eq('is_horse', true);
+
+        if (profileError) {
+            // If horse columns don't exist yet, silently return empty
+            console.warn('HydraService.getActiveHorses profile query error:', profileError);
+            return [];
+        }
+
+        if (!profileData?.length) return [];
+
+        const profileMap = new Map(profileData.map(p => [p.id, p]));
+
+        return seatData
+            .filter(seat => profileMap.has(seat.user_id))
+            .map(seat => {
+                const profile = profileMap.get(seat.user_id)!;
+                return {
+                    id: profile.id,
+                    name: profile.display_name,
+                    playerNumber: profile.player_number,
+                    avatar: profile.avatar_url || '',
+                    profile: (profile.horse_profile || 'reg') as HorseProfile,
+                    stack: seat.stack,
+                    seatNumber: seat.seat_number,
+                    status: (profile.horse_status || 'seated') as HorseStatus,
+                    tableId,
+                    joinedAt: seat.created_at,
+                    leavingAfterOrbit: profile.horse_status === 'leaving',
+                    handsPlayed: 0,
+                    orbitsPlayed: 0,
+                };
+            });
     },
 
     /**
@@ -261,9 +281,10 @@ export const HydraService = {
     async getTableLiquidityStatus(tableId: string): Promise<TableLiquidityStatus> {
         const horses = await this.getActiveHorses(tableId);
 
+        // Simple seat count query (no FK join needed)
         const { data: seats, error } = await supabase
-            .from('seats')
-            .select('user_id, profiles:user_id(is_horse)')
+            .from('table_seats')
+            .select('user_id')
             .eq('table_id', tableId);
 
         if (error) {

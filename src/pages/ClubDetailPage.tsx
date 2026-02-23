@@ -286,6 +286,9 @@ export default function ClubDetailPage() {
                 }));
                 setMembers(mappedMembers);
 
+                // Update member count to reflect actual data (clubs.member_count may be stale)
+                setClub(prev => prev ? { ...prev, memberCount: mappedMembers.length } : null);
+
                 // Determine current user's role in this club
                 const { data: { user } } = await supabase.auth.getUser();
                 if (user) {

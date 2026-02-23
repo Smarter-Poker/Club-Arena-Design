@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import { ClubsService } from '../services/ClubsService';
+import { ArenaLobbyEngine } from '../services/ArenaLobbyEngine';
 import { useToast } from '../components/common/Toast';
 import GlobalHeader from '../components/navigation/GlobalHeader';
 import haptic from '../services/HapticService';
@@ -181,11 +182,14 @@ export default function HomePage() {
 
                 if (club) {
                     setSharkClubId(club.id);
-                    // Hardcode stats to show 1 member and 1 active player
+                    // Fetch real-time active players from ArenaLobbyEngine
+                    const traffic = await ArenaLobbyEngine.getClubTraffic(club.id);
+                    const activePlayers = traffic ? traffic.active_players : 0;
+
                     setSharkClubStats({
-                        totalMembers: 1,
-                        clubLevel: 1, // Hardcoded as requested
-                        activePlayers: 1,
+                        totalMembers: club.member_count || 0,
+                        clubLevel: 50, // Hardcoded as requested
+                        activePlayers: activePlayers,
                     });
                 }
             } catch (err) {
@@ -284,7 +288,7 @@ export default function HomePage() {
 
         // Add user clubs to carousel, EXCLUDING Shark Club (it's shown as featured card)
         userClubs
-            .filter((club) => club.id !== sharkClubId) // Don't duplicate Shark Club
+            .filter((club) => club.id !== sharkClubId && !club.name.toLowerCase().includes('shark club')) // Don't duplicate Shark Club
             .forEach((club, idx) => {
                 cards.push({
                     id: club.id,

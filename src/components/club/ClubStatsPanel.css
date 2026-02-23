@@ -21,32 +21,62 @@
     pointer-events: none;
 }
 
-.stat-value {
-    position: absolute;
+.stat-label {
     font-family: 'Inter', 'Roboto', sans-serif;
-    font-weight: 700;
-    color: #ffffff;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    color: #A5EFF0;
+    color: #A5EFF0;
+    /* Paler cyan matching original */
+    margin-bottom: 2px;
+    text-shadow: 0 0 5px rgba(0, 212, 255, 0.4);
+    text-transform: uppercase;
 }
 
-/* Position total members - adjust based on SVG layout */
-.total-members {
-    top: 35%;
-    left: 15%;
-    font-size: 1.5rem;
+.stats-group {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
 }
 
-/* Position club level */
-.club-level {
-    top: 35%;
+.members-group {
+    top: 79.5%;
+    left: 20%;
+    transform: translateX(-50%);
+}
+
+.level-group {
+    top: 79.5%;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 1.5rem;
 }
 
-/* Position active players */
-.active-players {
-    top: 35%;
-    right: 15%;
-    font-size: 1.5rem;
+.active-group {
+    top: 79.5%;
+    left: 80%;
+    transform: translateX(-50%);
+}
+
+
+.stat-value {
+    font-family: 'Inter', 'Roboto', sans-serif;
+    font-weight: 700;
+    font-size: 24px;
+    letter-spacing: 1px;
+    color: #ADF9F9;
+    /* Extracted exact neon white-cyan */
+    text-shadow:
+        0 0 4px rgba(0, 255, 255, 0.8),
+        0 0 12px rgba(0, 212, 255, 0.9),
+        0 0 20px rgba(0, 150, 255, 0.7);
+}
+
+.level-group .stat-value {
+    font-size: 56px;
+    line-height: 1;
+    margin-top: 8px;
 }
