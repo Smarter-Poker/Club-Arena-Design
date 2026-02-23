@@ -987,8 +987,7 @@
 .sharkClubCard {
     position: relative;
     width: 360px;
-    height: 604px;
-    /* Matches SVG viewBox 768:1344 aspect ratio */
+    /* Height auto-sizes from child's aspect-ratio (604:1024) */
     cursor: pointer;
     transition: all 0.3s ease;
     border-radius: 12px;

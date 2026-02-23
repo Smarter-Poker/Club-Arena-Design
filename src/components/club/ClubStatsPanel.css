@@ -1,15 +1,17 @@
 .club-stats-panel {
     position: relative;
     width: 100%;
-    height: 100%;
+    /* Lock aspect ratio to match the v25 card image (604:1024) */
+    aspect-ratio: 604 / 1024;
     display: block;
+    overflow: hidden;
 }
 
 .club-stats-bg {
     width: 100%;
     height: 100%;
     display: block;
-    object-fit: contain;
+    object-fit: cover;
 }
 
 .stats-overlay {
@@ -26,7 +28,6 @@
     font-weight: 600;
     font-size: 14px;
     letter-spacing: 0.5px;
-    color: #A5EFF0;
     color: #A5EFF0;
     /* Paler cyan matching original */
     margin-bottom: 2px;
