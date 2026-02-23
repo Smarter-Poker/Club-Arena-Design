@@ -304,7 +304,8 @@ export default function ClubDetailPage() {
             const { data: tableData } = await supabase
                 .from('tables')
                 .select('*')
-                .eq('club_id', clubId);
+                .eq('club_id', clubId)
+                .eq('is_deleted', false);
 
             if (tableData) {
                 const mappedTables: ClubTable[] = tableData.map((t: any) => ({

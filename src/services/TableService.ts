@@ -19,6 +19,7 @@ class TableService {
             .from('tables')
             .select('*')
             .eq('club_id', clubId)
+            .eq('is_deleted', false)
             .neq('status', 'closed')
             .order('created_at', { ascending: false });
 
@@ -36,6 +37,7 @@ class TableService {
         const { data, error } = await supabase
             .from('tables')
             .select('*')
+            .eq('is_deleted', false)
             .in('status', ['waiting', 'active'])
             .order('current_players', { ascending: false })
             .limit(limit);
@@ -66,6 +68,7 @@ class TableService {
             .from('tables')
             .select('*')
             .in('club_id', clubIds)
+            .eq('is_deleted', false)
             .neq('status', 'closed');
 
         if (error) {

@@ -73,6 +73,7 @@ export default function ClubHomePage() {
     const [isOwner, setIsOwner] = useState(false);
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
+    const [deletingTableId, setDeletingTableId] = useState<string | null>(null);
 
     // User profile data
     const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
@@ -156,6 +157,7 @@ export default function ClubHomePage() {
                 .from('tables')
                 .select('*')
                 .eq('club_id', clubId)
+                .eq('is_deleted', false)
                 .order('created_at', { ascending: false });
 
             if (tableData) {
@@ -306,7 +308,7 @@ export default function ClubHomePage() {
             ═══════════════════════════════════════════════════════════════════ */}
             <div className="club-home__games">
                 {/* CREATE NEW TABLE - Only visible to owners/admins */}
-                {isOwner && (
+                {(isOwner || userRole === 'admin') && (
                     <Link to={`/clubs/${clubId}/create-table`} className="create-table-card">
                         <div className="create-table-card__table">
                             <div className="new-badge">NEW</div>
@@ -318,29 +320,56 @@ export default function ClubHomePage() {
 
                 {/* EXISTING TABLES */}
                 {filteredTables.map(table => (
-                    <Link
-                        key={table.id}
-                        to={`/table/${table.id}`}
-                        className="table-card"
-                    >
-                        <div className="table-card__header">
-                            <span className="table-card__variant">{table.game_variant}</span>
-                            <span className="table-card__seats">{table.max_players} Max</span>
-                        </div>
-                        <div className="table-card__body">
-                            <h3 className="table-card__name">{table.name}</h3>
-                            <div className="table-card__stakes">
-                                {table.small_blind}/{table.big_blind}
+                    <div key={table.id} className="table-card-wrapper" style={{ position: 'relative' }}>
+                        <Link
+                            to={`/table/${table.id}`}
+                            className="table-card"
+                        >
+                            <div className="table-card__header">
+                                <span className="table-card__variant">{table.game_variant}</span>
+                                <span className="table-card__seats">{table.max_players} Max</span>
                             </div>
-                            <div className="table-card__players">
-                                {table.current_players || 0}/{table.max_players} playing
+                            <div className="table-card__body">
+                                <h3 className="table-card__name">{table.name}</h3>
+                                <div className="table-card__stakes">
+                                    {table.small_blind}/{table.big_blind}
+                                </div>
+                                <div className="table-card__players">
+                                    {table.current_players || 0}/{table.max_players} playing
+                                </div>
                             </div>
-                        </div>
-                        <div className="table-card__status">
-                            <span className={`status-dot ${table.status}`}></span>
-                            {table.status}
-                        </div>
-                    </Link>
+                            <div className="table-card__status">
+                                <span className={`status-dot ${table.status}`}></span>
+                                {table.status}
+                            </div>
+                        </Link>
+                        {/* Delete button for owners/admins */}
+                        {(isOwner || userRole === 'admin') && (
+                            <button
+                                className="table-card__delete-btn"
+                                onClick={async (e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    if (!confirm(`Delete table "${table.name}"?`)) return;
+                                    setDeletingTableId(table.id);
+                                    try {
+                                        const { error } = await supabase.rpc('soft_delete_table', { table_id: table.id });
+                                        if (error) throw error;
+                                        setTables(prev => prev.filter(t => t.id !== table.id));
+                                    } catch (err) {
+                                        console.error('Failed to delete table:', err);
+                                        alert('Failed to delete table');
+                                    } finally {
+                                        setDeletingTableId(null);
+                                    }
+                                }}
+                                disabled={deletingTableId === table.id}
+                                title="Delete table"
+                            >
+                                {deletingTableId === table.id ? '...' : '\u2715'}
+                            </button>
+                        )}
+                    </div>
                 ))}
 
                 {/* EMPTY STATE */}
