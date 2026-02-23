@@ -169,29 +169,50 @@ export default function HomePage() {
         fetchUserData();
     }, []);
 
-    // Fetch Shark Club stats
+    // Fetch Shark Club stats — ALL data from live Supabase queries
     useEffect(() => {
         async function fetchSharkClubStats() {
             try {
                 // Find Shark Club by club_id = 25450
                 const { data: club } = await supabase
                     .from('clubs')
-                    .select('id, member_count')
+                    .select('id')
                     .eq('club_id', 25450)
                     .maybeSingle();
 
-                if (club) {
-                    setSharkClubId(club.id);
-                    // Fetch real-time active players from ArenaLobbyEngine
-                    const traffic = await ArenaLobbyEngine.getClubTraffic(club.id);
-                    const activePlayers = traffic ? traffic.active_players : 0;
+                if (!club) return;
+                setSharkClubId(club.id);
 
-                    setSharkClubStats({
-                        totalMembers: club.member_count || 0,
-                        clubLevel: 50, // Hardcoded as requested
-                        activePlayers: activePlayers,
-                    });
+                // 1. Real member count from club_members table
+                const { count: memberCount } = await supabase
+                    .from('club_members')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('club_id', club.id);
+
+                // 2. Real active players: count occupied seats at this club's tables
+                let activePlayers = 0;
+                const { data: clubTables } = await supabase
+                    .from('tables')
+                    .select('id')
+                    .eq('club_id', club.id);
+
+                if (clubTables && clubTables.length > 0) {
+                    const tableIds = clubTables.map(t => t.id);
+                    const { count: seatCount } = await supabase
+                        .from('table_seats')
+                        .select('*', { count: 'exact', head: true })
+                        .in('table_id', tableIds);
+                    activePlayers = seatCount || 0;
                 }
+
+                // 3. Club level — no column exists yet, default to 1
+                const clubLevel = 1;
+
+                setSharkClubStats({
+                    totalMembers: memberCount || 0,
+                    clubLevel,
+                    activePlayers,
+                });
             } catch (err) {
                 console.error('Failed to fetch Shark Club stats:', err);
             }
