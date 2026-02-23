@@ -2,7 +2,7 @@
  *  BAD BEAT JACKPOT PAGE — Live Jackpot Updates
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/common/Toast';
@@ -92,7 +92,7 @@ export default function BadBeatJackpotPage() {
         }
     }, [clubId]);
 
-    const loadJackpotData = async () => {
+    const loadJackpotData = useCallback(async () => {
         setLoading(true);
         try {
             // Load jackpot info
@@ -122,7 +122,7 @@ export default function BadBeatJackpotPage() {
             console.error('Failed to load jackpot:', error);
         }
         setLoading(false);
-    };
+    }, [clubId]);
 
     const formatDate = (dateStr: string): string => {
         return new Date(dateStr).toLocaleDateString(undefined, {

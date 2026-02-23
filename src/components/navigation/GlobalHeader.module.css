@@ -63,15 +63,17 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 6px 10px;
+    width: 36px;
+    height: 36px;
+    padding: 6px;
     border-radius: 6px;
     background: linear-gradient(135deg, rgba(0, 136, 255, 0.2) 0%, rgba(0, 102, 204, 0.3) 100%);
     border: 1px solid rgba(0, 136, 255, 0.4);
     color: white;
-    font-size: 20px;
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(0, 136, 255, 0.2);
     transition: all 0.2s;
+    flex-shrink: 0;
 }
 
 .hamburger:hover {

@@ -86,6 +86,7 @@ export default function HandReplay({ handId: propHandId, handData: initialData, 
     const [isLoading, setIsLoading] = useState(!initialData);
     const [currentStep, setCurrentStep] = useState(1);
     const [totalSteps, setTotalSteps] = useState(1);
+    const totalStepsRef = useRef(1);
     const [isPlaying, setIsPlaying] = useState(false);
     const toast = useToast();
 
@@ -105,8 +106,16 @@ export default function HandReplay({ handId: propHandId, handData: initialData, 
                 (handData.community_cards.length >= 4 ? 1 : 0) + // turn
                 (handData.community_cards.length >= 5 ? 1 : 0);  // river
             setTotalSteps(stages);
+            totalStepsRef.current = stages;
         }
     }, [handData]);
+
+    // Cleanup interval on unmount to prevent memory leaks
+    useEffect(() => {
+        return () => {
+            if (playbackRef.current) clearInterval(playbackRef.current);
+        };
+    }, []);
 
     const loadHandData = async () => {
         setIsLoading(true);
@@ -166,7 +175,7 @@ export default function HandReplay({ handId: propHandId, handData: initialData, 
             setIsPlaying(true);
             playbackRef.current = setInterval(() => {
                 setCurrentStep((prev) => {
-                    if (prev >= totalSteps) {
+                    if (prev >= totalStepsRef.current) {
                         if (playbackRef.current) clearInterval(playbackRef.current);
                         setIsPlaying(false);
                         return prev;
@@ -279,7 +288,7 @@ export default function HandReplay({ handId: propHandId, handData: initialData, 
             {/* Share Button */}
             <div className="share-row">
                 <button className="share-btn" onClick={handleShare}>
-                    Share 
+                    Share
                 </button>
             </div>
 

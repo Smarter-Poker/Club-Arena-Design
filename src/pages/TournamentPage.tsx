@@ -164,6 +164,14 @@ export default function TournamentPage() {
         if (!selectedTournament) return;
         try {
             await tournamentService.unregisterPlayer(selectedTournament.id, currentUser.id);
+
+            // Refund buy-in back to player's wallet
+            await WalletService.unlockFromTable(
+                currentUser.id,
+                selectedTournament.id,
+                selectedTournament.buy_in
+            );
+
             setIsRegistered(false);
 
             setTournaments(prev => prev.map(t =>
@@ -176,6 +184,8 @@ export default function TournamentPage() {
                 current_players: prev.current_players - 1,
                 prize_pool: prev.prize_pool - prev.buy_in,
             } : null);
+
+            toast.success(`Unregistered! ${selectedTournament.buy_in} chips refunded.`);
         } catch (error) {
             toast.error('Unregister failed: ' + (error as Error).message);
         }

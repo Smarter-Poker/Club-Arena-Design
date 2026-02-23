@@ -244,6 +244,20 @@ export const SettlementService = {
 
         // 2. Process each agent payout
         for (const settlement of agentSettlements || []) {
+            // Skip agents with zero or negative settlements (e.g. excess credit extended)
+            if (settlement.net_settlement <= 0) {
+                console.warn(
+                    `[Settlement] Skipping agent ${settlement.agent_id}: ` +
+                    `net_settlement=${settlement.net_settlement} (non-positive)`
+                );
+                await supabase
+                    .from('agent_settlements')
+                    .update({ status: 'paid', paid_at: new Date().toISOString(), notes: 'Zero/negative net — no disbursement' })
+                    .eq('id', settlement.id);
+                agentsPaid++;
+                continue;
+            }
+
             try {
                 await WalletService.creditCommission(
                     settlement.agent_id,

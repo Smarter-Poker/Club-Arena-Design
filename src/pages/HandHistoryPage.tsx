@@ -40,7 +40,7 @@ export default function HandHistoryPage() {
 
     useEffect(() => {
         if (user?.id) {
-            loadHands();
+            loadHands(true);
         }
     }, [user?.id, filter]);
 

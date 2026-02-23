@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { useWalletStore } from '../stores/useWalletStore';
 import { useUserStore } from '../stores/useUserStore';
@@ -29,6 +29,24 @@ export default function CashierPage() {
     const [isProcessing, setIsProcessing] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
+
+    // Load user's club role for bottom nav
+    useEffect(() => {
+        async function loadRole() {
+            if (!clubId || !user?.id) return;
+            try {
+                const { supabase } = await import('../lib/supabase');
+                const { data } = await supabase
+                    .from('club_members')
+                    .select('role')
+                    .eq('club_id', clubId)
+                    .eq('user_id', user.id)
+                    .single();
+                if (data?.role) setUserRole(data.role as typeof userRole);
+            } catch { /* keep default 'member' */ }
+        }
+        loadRole();
+    }, [clubId, user?.id]);
 
     const preset = (action === 'buyin' || action === 'cashout')
         ? [100, 200, 500, 1000, 2000]
