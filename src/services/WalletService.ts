@@ -236,15 +236,52 @@ export const WalletService = {
 
     /**
      * Lock chips for table buy-in
+     * Deducts from club_members.chip_balance for the user's club membership
      */
     async lockForBuyIn(userId: string, tableId: string, amount: number): Promise<boolean> {
-        const { error } = await supabase.rpc('lock_chips_for_table', {
-            p_user_id: userId,
-            p_table_id: tableId,
-            p_amount: amount,
-        });
+        // 1. Get the table's club_id
+        const { data: tableData, error: tableError } = await supabase
+            .from('tables')
+            .select('club_id')
+            .eq('id', tableId)
+            .single();
 
-        if (error) throw error;
+        if (tableError || !tableData?.club_id) {
+            console.error('[WalletService] Failed to get table club_id:', tableError);
+            throw new Error('Table not found');
+        }
+
+        // 2. Get current chip balance
+        const { data: memberData, error: memberError } = await supabase
+            .from('club_members')
+            .select('chip_balance')
+            .eq('club_id', tableData.club_id)
+            .eq('user_id', userId)
+            .single();
+
+        if (memberError || !memberData) {
+            console.error('[WalletService] User not a member of this club:', memberError);
+            throw new Error('Not a member of this club');
+        }
+
+        const currentBalance = memberData.chip_balance || 0;
+        if (currentBalance < amount) {
+            throw new Error(`Insufficient chips: have ${currentBalance}, need ${amount}`);
+        }
+
+        // 3. Deduct chips from club_members balance
+        const { error: updateError } = await supabase
+            .from('club_members')
+            .update({ chip_balance: currentBalance - amount })
+            .eq('club_id', tableData.club_id)
+            .eq('user_id', userId);
+
+        if (updateError) {
+            console.error('[WalletService] Failed to deduct chips:', updateError);
+            throw new Error('Failed to deduct chips for buy-in');
+        }
+
+        console.log(`[WalletService] Buy-in: ${amount} chips deducted. Balance: ${currentBalance} → ${currentBalance - amount}`);
         return true;
     },
 

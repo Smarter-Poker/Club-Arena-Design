@@ -617,10 +617,24 @@ export default function TablePage() {
                     positions: Array(table.max_players || 6).fill(null),
                     lastActions: Array(table.max_players || 6).fill(null),
                 }));
+
+                // Load user's chip balance from club_members for this table's club
+                if (userId && userId !== 'guest' && table.club_id) {
+                    const { data: memberData } = await supabase
+                        .from('club_members')
+                        .select('chip_balance')
+                        .eq('club_id', table.club_id)
+                        .eq('user_id', userId)
+                        .single();
+
+                    if (memberData) {
+                        setAccountBalance(memberData.chip_balance || 0);
+                    }
+                }
             }
         }
         loadTableInfo();
-    }, [tableId]);
+    }, [tableId, userId]);
 
     // Join/leave multiplayer room
     useEffect(() => {
