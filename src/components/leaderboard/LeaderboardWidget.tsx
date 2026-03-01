@@ -4,7 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { LeaderboardService } from '../../services/LeaderboardService';
+import type { LeaderboardMetric, LeaderboardPeriod } from '../../services/LeaderboardService';
 import './LeaderboardWidget.css';
 
 interface LeaderboardEntry {
@@ -42,18 +43,46 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
         loadLeaderboard();
     }, [clubId, selectedType, timeframe]);
 
+    // Map widget timeframe to service period type
+    const periodMap: Record<string, LeaderboardPeriod> = {
+        daily: 'daily',
+        weekly: 'weekly',
+        monthly: 'monthly',
+        alltime: 'all_time',
+    };
+
+    // Map widget type to service metric
+    const metricMap: Record<string, LeaderboardMetric> = {
+        profit: 'profit',
+        hands: 'hands_played',
+        tournaments: 'tournaments_won',
+        streak: 'profit', // fallback — streak uses profit as proxy
+    };
+
     const loadLeaderboard = async () => {
+        if (!clubId) {
+            setLoading(false);
+            return;
+        }
         setLoading(true);
         try {
-            // Mock data for demo
-            const mockEntries: LeaderboardEntry[] = [
-                { rank: 1, userId: '1', username: 'PokerPro99', value: 12500, change: 2 },
-                { rank: 2, userId: '2', username: 'AceHunter', value: 9800, change: -1 },
-                { rank: 3, userId: '3', username: 'ChipMaster', value: 8250, change: 1 },
-                { rank: 4, userId: '4', username: 'BluffKing', value: 6100, change: 0 },
-                { rank: 5, userId: '5', username: 'RiverRat', value: 4500, change: -2 },
-            ].slice(0, limit);
-            setEntries(mockEntries);
+            const servicePeriod = periodMap[timeframe] || 'weekly';
+            const serviceMetric = metricMap[selectedType] || 'profit';
+            const data = await LeaderboardService.getClubLeaderboard(
+                clubId,
+                serviceMetric,
+                servicePeriod,
+                limit
+            );
+            const mapped: LeaderboardEntry[] = data.map(entry => ({
+                rank: entry.rank,
+                userId: entry.userId,
+                username: entry.username,
+                avatar: entry.avatar,
+                value: entry.value,
+                change: entry.change,
+            }));
+            setEntries(mapped);
         } catch (error) {
             console.error('Failed to load leaderboard:', error);
         } finally {

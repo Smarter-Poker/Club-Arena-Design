@@ -2,7 +2,8 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  *  LEADERBOARD PAGE — Global Rankings with Real-Time Updates
  * ═══════════════════════════════════════════════════════════════════════════════
- * Full-page leaderboard with club/union rankings and live updates
+ * Full-page leaderboard with club/union rankings, podium display, and live updates.
+ * Supports Clubs, Charities, and Home Game venue types with appropriate metrics.
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -22,6 +23,22 @@ interface UserClub {
     id: string;
     name: string;
 }
+
+// Metric definitions with labels and icons for each metric type
+const METRIC_OPTIONS: { value: LeaderboardMetric; label: string; icon: string; description: string }[] = [
+    { value: 'profit', label: 'Profit', icon: '💰', description: 'Total profit earned' },
+    { value: 'hands_played', label: 'Hands Played', icon: '🃏', description: 'Total hands dealt in' },
+    { value: 'tournaments_won', label: 'Tournaments Won', icon: '🏆', description: 'Tournament victories' },
+    { value: 'vpip', label: 'VPIP', icon: '📊', description: 'Voluntarily put $ in pot %' },
+    { value: 'roi', label: 'ROI', icon: '📈', description: 'Return on investment %' },
+];
+
+const PERIOD_OPTIONS: { value: LeaderboardPeriod; label: string }[] = [
+    { value: 'daily', label: 'Today' },
+    { value: 'weekly', label: 'This Week' },
+    { value: 'monthly', label: 'This Month' },
+    { value: 'all_time', label: 'All Time' },
+];
 
 export default function LeaderboardPage() {
     const navigate = useNavigate();
@@ -131,30 +148,38 @@ export default function LeaderboardPage() {
         setLoading(false);
     };
 
-    const formatValue = (value: number, metric: LeaderboardMetric): string => {
-        // Format profit-related metrics as currency
-        if (metric === 'profit') {
-            if (Math.abs(value) >= 1000000) {
-                return `$${(value / 1000000).toFixed(1)}M`;
-            }
-            if (Math.abs(value) >= 1000) {
-                return `$${(value / 1000).toFixed(1)}K`;
-            }
+    const formatValue = (value: number, m: LeaderboardMetric): string => {
+        if (m === 'profit') {
+            if (Math.abs(value) >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+            if (Math.abs(value) >= 1000) return `$${(value / 1000).toFixed(1)}K`;
             return `$${value.toLocaleString()}`;
+        }
+        if (m === 'vpip' || m === 'roi') {
+            return `${value.toFixed(1)}%`;
         }
         return value.toLocaleString();
     };
 
     const getRankBadge = (rank: number): string => {
+        if (rank === 1) return '🥇';
+        if (rank === 2) return '🥈';
+        if (rank === 3) return '🥉';
+        return `#${rank}`;
+    };
+
+    const getRankLabel = (rank: number): string => {
         if (rank === 1) return '1st';
         if (rank === 2) return '2nd';
         if (rank === 3) return '3rd';
         return `#${rank}`;
     };
 
+    const top3 = entries.slice(0, 3);
+    const rest = entries.slice(3);
+
     return (
         <div className="leaderboard-page">
-            <SmarterHeader title=" Leaderboard" />
+            <SmarterHeader title="🏆 Leaderboard" />
 
             {/* Live Indicator */}
             <div className="live-indicator">
@@ -166,7 +191,7 @@ export default function LeaderboardPage() {
             {userRank && (
                 <div className="user-rank-card">
                     <div className="user-rank-position">
-                        <span className="rank-number">{getRankBadge(userRank.rank)}</span>
+                        <span className="rank-number">{getRankLabel(userRank.rank)}</span>
                         <span className="rank-label">Your Rank</span>
                     </div>
                     <div className="rank-context">
@@ -177,7 +202,7 @@ export default function LeaderboardPage() {
 
             {/* Filters */}
             <div className="leaderboard-filters">
-                {/* Club Selector (only shown for My Clubs scope) */}
+                {/* Club Selector (only shown when multiple clubs) */}
                 {userClubs.length > 1 && (
                     <div className="filter-group">
                         <select
@@ -213,10 +238,9 @@ export default function LeaderboardPage() {
                         value={period}
                         onChange={(e) => setPeriod(e.target.value as LeaderboardPeriod)}
                     >
-                        <option value="daily">Today</option>
-                        <option value="weekly">This Week</option>
-                        <option value="monthly">This Month</option>
-                        <option value="allTime">All Time</option>
+                        {PERIOD_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
                     </select>
                 </div>
 
@@ -226,15 +250,16 @@ export default function LeaderboardPage() {
                         value={metric}
                         onChange={(e) => setMetric(e.target.value as LeaderboardMetric)}
                     >
-                        <option value="profit">Profit</option>
-                        <option value="hands_played">Hands Played</option>
-                        <option value="rake_generated">Rake Generated</option>
-                        <option value="tournaments_won">Tournaments Won</option>
+                        {METRIC_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>
+                                {opt.icon} {opt.label}
+                            </option>
+                        ))}
                     </select>
                 </div>
             </div>
 
-            {/* Leaderboard Table */}
+            {/* Leaderboard Content */}
             <div className="leaderboard-list">
                 {clubsLoading ? (
                     <div className="loading-state">
@@ -259,40 +284,151 @@ export default function LeaderboardPage() {
                     </div>
                 ) : entries.length === 0 ? (
                     <div className="empty-state">
-                        <span className="empty-icon">≡</span>
-                        <p>No rankings yet. Start playing to climb the leaderboard!</p>
+                        <span className="empty-icon">🏆</span>
+                        <p>No rankings yet for this period.</p>
+                        <p className="empty-sub">Start playing to climb the leaderboard!</p>
                     </div>
                 ) : (
-                    entries.map((entry, index) => (
-                        <div
-                            key={entry.userId}
-                            className={`leaderboard-entry animate-fade-in-up stagger-${Math.min(index + 1, 10)} ${entry.userId === user?.id ? 'current-user' : ''}`}
-                            onClick={() => navigate(`/profile/${entry.userId}`)}
-                            style={{ cursor: 'pointer', opacity: 0 }}
-                        >
-                            <span className={`entry-rank ${entry.rank <= 3 ? 'top-3' : ''}`}>
-                                {getRankBadge(entry.rank)}
-                            </span>
-                            <div className="entry-avatar">
-                                {entry.avatar ? (
-                                    <img src={entry.avatar} alt="" />
-                                ) : (
-                                    <span>{entry.username[0]?.toUpperCase()}</span>
-                                )}
-                            </div>
-                            <div className="entry-info">
-                                <span className="entry-name">{entry.username}</span>
-                            </div>
-                            <div className={`entry-value ${entry.value >= 0 ? 'positive' : 'negative'}`}>
-                                {formatValue(entry.value, metric)}
-                                {entry.change !== 0 && (
-                                    <span className={`change ${entry.change > 0 ? 'up' : 'down'}`}>
-                                        {entry.change > 0 ? '▲' : '▼'} {Math.abs(entry.change)}
+                    <>
+                        {/* ── TOP 3 PODIUM ── */}
+                        {top3.length >= 3 && (
+                            <div className="podium-section">
+                                {/* 2nd Place */}
+                                <div
+                                    className="podium-place podium-2nd"
+                                    onClick={() => navigate(`/profile/${top3[1].userId}`)}
+                                >
+                                    <div className="podium-avatar silver">
+                                        {top3[1].avatar ? (
+                                            <img src={top3[1].avatar} alt="" />
+                                        ) : (
+                                            <span>{top3[1].username[0]?.toUpperCase()}</span>
+                                        )}
+                                    </div>
+                                    {top3[1].isVIP && <span className="vip-badge">VIP</span>}
+                                    <span className="podium-name">{top3[1].username}</span>
+                                    <span className="podium-value silver-text">
+                                        {formatValue(top3[1].value, metric)}
                                     </span>
-                                )}
+                                    <span className="podium-rank-emoji">🥈</span>
+                                    <div className="podium-bar silver-bar"></div>
+                                </div>
+
+                                {/* 1st Place */}
+                                <div
+                                    className="podium-place podium-1st"
+                                    onClick={() => navigate(`/profile/${top3[0].userId}`)}
+                                >
+                                    <div className="podium-crown">👑</div>
+                                    <div className="podium-avatar gold">
+                                        {top3[0].avatar ? (
+                                            <img src={top3[0].avatar} alt="" />
+                                        ) : (
+                                            <span>{top3[0].username[0]?.toUpperCase()}</span>
+                                        )}
+                                    </div>
+                                    {top3[0].isVIP && <span className="vip-badge">VIP</span>}
+                                    <span className="podium-name">{top3[0].username}</span>
+                                    <span className="podium-value gold-text">
+                                        {formatValue(top3[0].value, metric)}
+                                    </span>
+                                    <span className="podium-rank-emoji">🥇</span>
+                                    <div className="podium-bar gold-bar"></div>
+                                </div>
+
+                                {/* 3rd Place */}
+                                <div
+                                    className="podium-place podium-3rd"
+                                    onClick={() => navigate(`/profile/${top3[2].userId}`)}
+                                >
+                                    <div className="podium-avatar bronze">
+                                        {top3[2].avatar ? (
+                                            <img src={top3[2].avatar} alt="" />
+                                        ) : (
+                                            <span>{top3[2].username[0]?.toUpperCase()}</span>
+                                        )}
+                                    </div>
+                                    {top3[2].isVIP && <span className="vip-badge">VIP</span>}
+                                    <span className="podium-name">{top3[2].username}</span>
+                                    <span className="podium-value bronze-text">
+                                        {formatValue(top3[2].value, metric)}
+                                    </span>
+                                    <span className="podium-rank-emoji">🥉</span>
+                                    <div className="podium-bar bronze-bar"></div>
+                                </div>
                             </div>
-                        </div>
-                    ))
+                        )}
+
+                        {/* Show top 3 as list rows if less than 3 total */}
+                        {top3.length < 3 && top3.map((entry, index) => (
+                            <div
+                                key={entry.userId}
+                                className={`leaderboard-entry animate-fade-in-up stagger-${index + 1} ${entry.userId === user?.id ? 'current-user' : ''}`}
+                                onClick={() => navigate(`/profile/${entry.userId}`)}
+                                style={{ cursor: 'pointer' }}
+                            >
+                                <span className={`entry-rank top-3`}>
+                                    {getRankBadge(entry.rank)}
+                                </span>
+                                <div className="entry-avatar">
+                                    {entry.avatar ? (
+                                        <img src={entry.avatar} alt="" />
+                                    ) : (
+                                        <span>{entry.username[0]?.toUpperCase()}</span>
+                                    )}
+                                </div>
+                                <div className="entry-info">
+                                    <span className="entry-name">
+                                        {entry.username}
+                                        {entry.isVIP && <span className="entry-vip-tag">VIP</span>}
+                                    </span>
+                                </div>
+                                <div className={`entry-value ${entry.value >= 0 ? 'positive' : 'negative'}`}>
+                                    {formatValue(entry.value, metric)}
+                                </div>
+                            </div>
+                        ))}
+
+                        {/* ── REMAINING RANKINGS (4th+) ── */}
+                        {rest.length > 0 && (
+                            <div className="rankings-divider">
+                                <span>Rankings</span>
+                            </div>
+                        )}
+                        {rest.map((entry, index) => (
+                            <div
+                                key={entry.userId}
+                                className={`leaderboard-entry animate-fade-in-up stagger-${Math.min(index + 1, 10)} ${entry.userId === user?.id ? 'current-user' : ''}`}
+                                onClick={() => navigate(`/profile/${entry.userId}`)}
+                                style={{ cursor: 'pointer' }}
+                            >
+                                <span className="entry-rank">
+                                    {getRankLabel(entry.rank)}
+                                </span>
+                                <div className="entry-avatar">
+                                    {entry.avatar ? (
+                                        <img src={entry.avatar} alt="" />
+                                    ) : (
+                                        <span>{entry.username[0]?.toUpperCase()}</span>
+                                    )}
+                                </div>
+                                <div className="entry-info">
+                                    <span className="entry-name">
+                                        {entry.username}
+                                        {entry.isVIP && <span className="entry-vip-tag">VIP</span>}
+                                    </span>
+                                </div>
+                                <div className={`entry-value ${entry.value >= 0 ? 'positive' : 'negative'}`}>
+                                    {formatValue(entry.value, metric)}
+                                    {entry.change !== 0 && (
+                                        <span className={`change ${entry.change > 0 ? 'up' : 'down'}`}>
+                                            {entry.change > 0 ? '▲' : '▼'} {Math.abs(entry.change)}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </>
                 )}
             </div>
         </div>
