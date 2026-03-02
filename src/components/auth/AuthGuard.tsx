@@ -97,6 +97,18 @@ export function GuestGuard({ children }: AuthGuardProps) {
         }
 
         checkAuth();
+
+        // Listen for auth changes (e.g. OAuth callback completing)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            (_event, session) => {
+                setIsAuthenticated(!!session);
+                setIsLoading(false);
+            }
+        );
+
+        return () => {
+            subscription.unsubscribe();
+        };
     }, []);
 
     if (isLoading) {

@@ -87,6 +87,12 @@ class HandPersistenceServiceClass {
         players: { seat: number; user_id: string; username: string; stack: number }[],
         config: PersistenceConfig
     ): Promise<void> {
+        // Guard: if a hand is already in progress, finalize it before starting a new one
+        if (this.currentHand?.id) {
+            console.warn('[HandPersistence] Duplicate HAND_START — finalizing previous hand', this.currentHand.hand_number);
+            await this.onHandComplete(this.currentHand.hand_number, 0);
+        }
+
         // Initialize hand record
         this.currentHand = {
             table_id: config.tableId,

@@ -11,15 +11,19 @@ import { createClient, RealtimeChannel } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-// Fallback credentials for PokerIQ-Production (same as World Hub)
-const FALLBACK_URL = 'https://kuklfnapbkmacvwxktbh.supabase.co';
-const FALLBACK_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1a2xmbmFwYmttYWN2d3hrdGJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MzA4NDQsImV4cCI6MjA4MzMwNjg0NH0.ZGFrUYq7yAbkveFdudh4q_Xk0qN0AZ-jnu4FkX9YKjo';
+// SECURITY: No hardcoded fallback credentials — env vars are required
+if (!supabaseUrl || !supabaseAnonKey) {
+    console.error(
+        '[Supabase] VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set in environment variables. ' +
+        'Check your .env file.'
+    );
+}
 
 // Create the Supabase client with realtime enabled for live traffic
 // CRITICAL: storageKey MUST match Hub's 'smarter-poker-auth' for same-origin SSO
 export const supabase = createClient(
-    supabaseUrl || FALLBACK_URL,
-    supabaseAnonKey || FALLBACK_ANON_KEY,
+    supabaseUrl || '',
+    supabaseAnonKey || '',
     {
         auth: {
             autoRefreshToken: true,

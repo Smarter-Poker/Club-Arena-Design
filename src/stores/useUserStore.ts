@@ -100,6 +100,10 @@ export const useUserStore = create<UserState>()(
             },
 
             logout: () => {
+                // Sign out from Supabase auth (clears session token)
+                supabase.auth.signOut().catch((err) => {
+                    console.error('[UserStore] signOut error:', err);
+                });
                 set({
                     user: null,
                     isAuthenticated: false,

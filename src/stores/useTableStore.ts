@@ -151,6 +151,27 @@ export const useTableStore = create<TableState>((set, get) => ({
         const { mySeat, myStack, pot, currentBet, wsSendAction, wsConnected } = get();
         if (mySeat === null) return;
 
+        // Validate bet/raise amounts before processing
+        if ((action === 'bet' || action === 'raise') && amount !== undefined) {
+            if (amount <= 0 || !Number.isFinite(amount)) {
+                console.warn('[TableStore] Invalid bet amount:', amount);
+                return;
+            }
+            if (amount > myStack) {
+                console.warn('[TableStore] Bet exceeds stack, clamping to all-in');
+                amount = myStack;
+            }
+        }
+
+        // Snapshot for rollback on WS failure
+        const snapshot = {
+            seats: get().seats,
+            pot: get().pot,
+            currentBet: get().currentBet,
+            myStack: get().myStack,
+            isMyTurn: get().isMyTurn,
+        };
+
         // Update local state immediately (optimistic)
         switch (action) {
             case 'fold':
@@ -227,9 +248,24 @@ export const useTableStore = create<TableState>((set, get) => ({
                 seat: mySeat,
             });
             if (!success) {
-                console.warn('[TableStore] Failed to send action via WebSocket');
+                console.warn('[TableStore] Failed to send action via WebSocket — rolling back optimistic update');
+                set({
+                    seats: snapshot.seats,
+                    pot: snapshot.pot,
+                    currentBet: snapshot.currentBet,
+                    myStack: snapshot.myStack,
+                    isMyTurn: snapshot.isMyTurn,
+                });
             }
         } else {
+            console.warn('[TableStore] WebSocket not connected — rolling back');
+            set({
+                seats: snapshot.seats,
+                pot: snapshot.pot,
+                currentBet: snapshot.currentBet,
+                myStack: snapshot.myStack,
+                isMyTurn: snapshot.isMyTurn,
+            });
         }
     },
 

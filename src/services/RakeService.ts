@@ -105,18 +105,30 @@ export const RakeService = {
             };
         }
 
+        // Use integer arithmetic (cents) to avoid floating point precision errors
+        // Multiply by 100, compute, then divide back
+        const potCents = Math.round(potSize * 100);
+        const bbCents = Math.round(bigBlind * 100);
+
         // Calculate raw rake (10% of pot)
-        const rawRake = potSize * RAKE_LAWS.RAKE_PERCENT;
+        const rawRakeCents = Math.round(potCents * RAKE_LAWS.RAKE_PERCENT);
 
         // Apply cap (2.5x BB)
-        const rakeCap = bigBlind * RAKE_LAWS.CAP_MULTIPLIER;
-        const cappedRake = Math.min(rawRake, rakeCap);
+        const rakeCapCents = Math.round(bbCents * RAKE_LAWS.CAP_MULTIPLIER);
+        const cappedRakeCents = Math.min(rawRakeCents, rakeCapCents);
 
         // Calculate BBJ drop (0.5x BB)
-        const bbjDrop = bigBlind * RAKE_LAWS.BBJ_MULTIPLIER;
+        const bbjDropCents = Math.round(bbCents * RAKE_LAWS.BBJ_MULTIPLIER);
 
         // Total deduction from pot
-        const totalDeduction = cappedRake + bbjDrop;
+        const totalDeductionCents = cappedRakeCents + bbjDropCents;
+
+        // Convert back to dollars
+        const rawRake = rawRakeCents / 100;
+        const rakeCap = rakeCapCents / 100;
+        const cappedRake = cappedRakeCents / 100;
+        const bbjDrop = bbjDropCents / 100;
+        const totalDeduction = totalDeductionCents / 100;
 
         return {
             potSize,
@@ -266,18 +278,23 @@ export const RakeService = {
             return [];
         }
 
-        // Calculate equal split
-        const creditPerPlayer = totalRake / activePlayers.length;
+        // Calculate equal split using integer arithmetic to avoid floating point loss
+        const totalRakeCents = Math.round(totalRake * 100);
+        const baseCreditCents = Math.floor(totalRakeCents / activePlayers.length);
+        let remainderCents = totalRakeCents - (baseCreditCents * activePlayers.length);
         const timestamp = new Date().toISOString();
 
-        // Build attribution records
-        const attributions: RakeAttribution[] = activePlayers.map(p => ({
-            userId: p.userId,
-            tableId,
-            handId,
-            rakeCredit: creditPerPlayer,
-            timestamp,
-        }));
+        // Build attribution records — distribute remainder 1 cent at a time
+        const attributions: RakeAttribution[] = activePlayers.map((p, i) => {
+            const extra = i < remainderCents ? 1 : 0;
+            return {
+                userId: p.userId,
+                tableId,
+                handId,
+                rakeCredit: (baseCreditCents + extra) / 100,
+                timestamp,
+            };
+        });
 
         // Persist attributions to database
         const { error } = await supabase.from('rake_credits').insert(
@@ -322,16 +339,18 @@ export const RakeService = {
             }
         }
 
-        // Queue commission credits for each agent
+        // Queue commission credits for each agent (with idempotency key to prevent duplicates)
         for (const [agentId, amount] of byAgent) {
-            const { error } = await supabase.from('commission_queue').insert({
+            const idempotencyKey = `${params.handId}:${agentId}`;
+            const { error } = await supabase.from('commission_queue').upsert({
                 agent_id: agentId,
                 club_id: params.clubId,
                 hand_id: params.handId,
+                idempotency_key: idempotencyKey,
                 rake_generated: amount,
                 status: 'pending',
                 created_at: new Date().toISOString(),
-            });
+            }, { onConflict: 'idempotency_key', ignoreDuplicates: true });
 
             if (error) {
                 console.error('RakeService.queueCommissionCredits error:', error);
