@@ -256,7 +256,7 @@ class CashoutServiceClass {
             return [];
         }
 
-        return (data || []).map(this.mapCashout);
+        return (data || []).map(d => this.mapCashout(d));
     }
 
     /**
@@ -284,7 +284,7 @@ class CashoutServiceClass {
             return [];
         }
 
-        return (data || []).map(this.mapCashout);
+        return (data || []).map(d => this.mapCashout(d));
     }
 
     /**

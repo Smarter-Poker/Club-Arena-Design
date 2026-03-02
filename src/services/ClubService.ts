@@ -85,8 +85,22 @@ class ClubServiceClass {
         description: string,
         settings: Partial<ClubSettings> = {}
     ): Promise<Club> {
-        // Generate unique 6-digit club ID
-        const clubId = Math.floor(100000 + Math.random() * 900000);
+        // Generate unique 6-digit club ID with collision check
+        let clubId: number;
+        let attempts = 0;
+        do {
+            clubId = Math.floor(100000 + Math.random() * 900000);
+            const { count } = await supabase
+                .from('clubs')
+                .select('id', { count: 'exact', head: true })
+                .eq('club_id', clubId);
+            if (!count || count === 0) break;
+            attempts++;
+        } while (attempts < 10);
+
+        if (attempts >= 10) {
+            throw new Error('Failed to generate unique club ID after 10 attempts');
+        }
 
         const { data, error } = await supabase
             .from('clubs')
@@ -271,7 +285,21 @@ class ClubServiceClass {
      * Get online member count for a club
      */
     async getOnlineCount(clubId: string): Promise<number> {
-        // This would typically check presence/session data
+        // Try to get actual online count from members who were active in last 15 minutes
+        const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+
+        const { count: onlineCount, error: onlineError } = await supabase
+            .from('club_members')
+            .select('*', { count: 'exact', head: true })
+            .eq('club_id', clubId)
+            .eq('status', 'active')
+            .gte('last_active_at', fifteenMinAgo);
+
+        if (!onlineError && onlineCount !== null) {
+            return onlineCount;
+        }
+
+        // Fallback: estimate from total members if last_active_at not available
         const { count, error } = await supabase
             .from('club_members')
             .select('*', { count: 'exact', head: true })
@@ -279,7 +307,7 @@ class ClubServiceClass {
             .eq('status', 'active');
 
         if (error) throw error;
-        return Math.floor((count || 0) * 0.3); // Assume ~30% online
+        return Math.floor((count || 0) * 0.15); // Conservative estimate
     }
 
     /**

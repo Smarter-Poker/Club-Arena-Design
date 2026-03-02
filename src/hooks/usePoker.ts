@@ -208,7 +208,8 @@ export function usePotOdds(
     const potOdds = betToCall > 0 ? betToCall / (potSize + betToCall) : 0;
     const potOddsPercent = potOdds * 100;
 
-    const impliedOdds = potSize > 0 ? (betToCall / potSize) * 100 : 0;
+    // Implied odds ratio: (pot + bet) / bet — how much you stand to win relative to cost
+    const impliedOdds = betToCall > 0 ? ((potSize + betToCall) / betToCall) : 0;
 
     const shouldCall = estimatedEquity !== undefined
         ? estimatedEquity > potOddsPercent

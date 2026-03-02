@@ -4,7 +4,7 @@
  */
 
 import type { Card, ActionType, SeatPlayer, HandStage } from '../types/database.types';
-import { evaluateHand } from './PokerEngine';
+import { evaluateHand, evaluateOmahaHand } from './PokerEngine';
 
 interface BotDecision {
     action: ActionType;
@@ -35,7 +35,7 @@ export class BotLogic {
         const stack = player.stack;
 
         // 1. Evaluate Hand Strength (0-1 score)
-        const handStrength = this.calculateHandStrength(player.cards, communityCards, stage);
+        const handStrength = this.calculateHandStrength(player.cards, communityCards, stage, gameState.gameVariant);
 
         // 2. Calculate Pot Odds
         const potOdds = toCall / (pot + toCall);
@@ -149,16 +149,23 @@ export class BotLogic {
     private static calculateHandStrength(
         holeCards: Card[],
         communityCards: Card[],
-        stage: HandStage
+        stage: HandStage,
+        gameVariant: string = 'nlh'
     ): number {
-        if (!holeCards || holeCards.length !== 2) return 0;
+        if (!holeCards || holeCards.length === 0) return 0;
 
         if (stage === 'preflop') {
+            // For Omaha, use a simplified preflop eval
+            if (gameVariant.startsWith('plo') && holeCards.length >= 4) {
+                return this.evaluateOmahaHoleCards(holeCards);
+            }
+            if (holeCards.length !== 2) return 0.3; // fallback
             return this.evaluateHoleCards(holeCards);
         }
 
-        // Use actual evaluator rank vs pure board
-        const myHand = evaluateHand(holeCards, communityCards);
+        // Use correct evaluator based on game variant
+        const evaluator = gameVariant.startsWith('plo') ? evaluateOmahaHand : evaluateHand;
+        const myHand = evaluator(holeCards, communityCards);
 
         // Normalize ranking (1=High Card, 10=Royal Flush)
         // This is very crude. A real bot runs equity sims.
@@ -199,6 +206,41 @@ export class BotLogic {
         // Max possible score ~30 (AA). Min ~2 (72o)
         // Normalize to 0-1
         return Math.min(score / 30, 1);
+    }
+
+    private static evaluateOmahaHoleCards(cards: Card[]): number {
+        // Simplified Omaha preflop hand strength
+        // Values: double-suited, connected, high cards, pairs
+        let score = 0;
+        const ranks = cards.map(c => this.rankValue(c.rank));
+        const suits = cards.map(c => c.suit);
+        const highCard = Math.max(...ranks);
+
+        // High card bonus
+        score += highCard * 0.5;
+
+        // Pairs (useful in Omaha for sets)
+        const rankSet = new Map<number, number>();
+        for (const r of ranks) rankSet.set(r, (rankSet.get(r) || 0) + 1);
+        for (const [r, count] of rankSet) {
+            if (count >= 2) score += r * 0.8;
+        }
+
+        // Suited cards bonus
+        const suitCounts = new Map<string, number>();
+        for (const s of suits) suitCounts.set(s, (suitCounts.get(s) || 0) + 1);
+        for (const count of suitCounts.values()) {
+            if (count >= 2) score += 3; // double suited bonus
+        }
+
+        // Connectedness
+        const sortedRanks = [...ranks].sort((a, b) => a - b);
+        for (let i = 1; i < sortedRanks.length; i++) {
+            if (sortedRanks[i] - sortedRanks[i - 1] <= 2) score += 1.5;
+        }
+
+        // Normalize to 0-1 (max possible ~40)
+        return Math.min(score / 40, 1);
     }
 
     private static rankValue(rank: string): number {

@@ -44,7 +44,7 @@ export interface GameEvent {
 }
 
 export interface PlayerPresence {
-    oduserId: string;
+    userId: string;
     username: string;
     avatar?: string;
     seatNumber?: number;
@@ -144,7 +144,7 @@ export class TableWebSocket {
 
                         // Track presence
                         await this.channel?.track({
-                            oduserId: this.userId,
+                            userId: this.userId,
                             username: this.username,
                             status: 'watching',
                             joinedAt: Date.now(),
@@ -198,21 +198,34 @@ export class TableWebSocket {
     // ─────────────────────────────────────────────────────────────────────────────
 
     private handleGameEvent(event: GameEvent): void {
+        // Chat events don't need sequence ordering
+        if (event.type === 'CHAT_MESSAGE') {
+            this.dispatchEvent(event);
+            return;
+        }
+
         // Check sequence for ordering
         if (event.sequence <= this.lastSequence) {
             console.warn('[TableWS] Ignoring out-of-order event:', event.sequence);
             return;
         }
 
-        // Handle missing events (gap in sequence)
+        // Handle missing events (gap in sequence) — queue and request resync
         if (event.sequence > this.lastSequence + 1) {
-            console.warn('[TableWS] Missing events detected, requesting resync');
+            console.warn('[TableWS] Missing events (expected:', this.lastSequence + 1, 'got:', event.sequence, ')');
+            this.pendingEvents.push(event);
             this.requestResync();
+            return; // Don't process until resync fills the gap
         }
 
         this.lastSequence = event.sequence;
+        this.dispatchEvent(event);
 
-        // Notify all handlers
+        // Process any queued events that are now in sequence
+        this.processPendingEvents();
+    }
+
+    private dispatchEvent(event: GameEvent): void {
         this.eventHandlers.forEach((handler) => {
             try {
                 handler(event);
@@ -220,6 +233,22 @@ export class TableWebSocket {
                 console.error('[TableWS] Event handler error:', error);
             }
         });
+    }
+
+    private processPendingEvents(): void {
+        // Sort pending by sequence
+        this.pendingEvents.sort((a, b) => a.sequence - b.sequence);
+
+        while (this.pendingEvents.length > 0) {
+            const next = this.pendingEvents[0];
+            if (next.sequence === this.lastSequence + 1) {
+                this.pendingEvents.shift();
+                this.lastSequence = next.sequence;
+                this.dispatchEvent(next);
+            } else {
+                break; // Still have a gap
+            }
+        }
     }
 
     private handlePresenceSync(): void {
@@ -329,7 +358,7 @@ export class TableWebSocket {
         if (!this.channel) return;
 
         await this.channel.track({
-            oduserId: this.userId,
+            userId: this.userId,
             username: this.username,
             ...updates,
             joinedAt: Date.now(),

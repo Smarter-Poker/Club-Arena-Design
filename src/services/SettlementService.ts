@@ -314,19 +314,27 @@ export const SettlementService = {
             }
         }
 
-        // 4. Finalize period — only if ≥80% of payouts succeeded
+        // 4. Finalize or mark partial based on payout success
         const totalExpected = (agentSettlements?.length || 0) + (playerSnapshots?.length || 0);
         const totalSucceeded = agentsPaid + playersWithRakeback;
         const successRate = totalExpected > 0 ? totalSucceeded / totalExpected : 1;
 
-        if (totalExpected === 0 || successRate >= 0.8) {
+        if (totalExpected === 0 || successRate === 1) {
+            // All payouts succeeded — finalize
             await supabase.rpc('finalize_settlement_period', { p_period_id: periodId });
         } else {
+            // Partial success — mark for manual reconciliation (never auto-finalize partial)
             console.error(
                 `[Settlement] Only ${totalSucceeded}/${totalExpected} payouts succeeded ` +
-                `(${Math.round(successRate * 100)}%) for period ${periodId} — NOT finalizing. ` +
-                `Requires ≥80% success rate.`
+                `(${Math.round(successRate * 100)}%) for period ${periodId} — marking PARTIAL.`
             );
+            await supabase
+                .from('settlement_periods')
+                .update({
+                    status: 'partial',
+                    notes: `${totalSucceeded}/${totalExpected} payouts succeeded (${Math.round(successRate * 100)}%). Manual reconciliation required.`,
+                })
+                .eq('id', periodId);
         }
 
         return { agentsPaid, playersWithRakeback, totalDisbursed };

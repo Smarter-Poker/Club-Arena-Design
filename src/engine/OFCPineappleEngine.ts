@@ -175,6 +175,11 @@ export const OFCPineappleEngine = {
         const newGame = { ...game };
 
         for (const player of newGame.players) {
+            // Reset hand from previous round before dealing new cards
+            player.hand = { front: [], middle: [], back: [] };
+            player.isFouled = false;
+            player.score = 0;
+
             if (player.isFantasyland) {
                 // Fantasyland: deal all 13 cards + 1 extra (14 total, discard 1)
                 player.currentCards = newGame.deck.splice(0, 14);
@@ -416,7 +421,12 @@ export const OFCPineappleEngine = {
         let frontRoyalty = 0;
         const frontEval = this.evaluateFront(hand.front);
         if (frontEval.rank === 'trips') {
-            const tripRank = hand.front[0].rank;
+            // Find the actual trip rank (don't assume first card is the trip)
+            const rankCounts = new Map<string, number>();
+            for (const c of hand.front) {
+                rankCounts.set(c.rank, (rankCounts.get(c.rank) || 0) + 1);
+            }
+            const tripRank = [...rankCounts.entries()].find(([_, count]) => count === 3)?.[0] || hand.front[0].rank;
             frontRoyalty = FRONT_ROYALTIES[`trips_${tripRank}${tripRank}${tripRank}`] || 10;
         } else if (frontEval.rank === 'pair') {
             const pairRank = this.getPairRank(hand.front);

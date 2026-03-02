@@ -96,9 +96,9 @@ const ALLOCATION = {
  * BBJ Payout Distribution
  */
 const PAYOUT_SHARES = {
-    WINNER: 0.50,      // 50% to losing hand holder
-    LOSER: 0.25,       // 25% to winning hand holder  
-    TABLE: 0.25,       // 25% split among table players
+    WINNER: 0.50,      // 50% to the player with the better hand (who beat the qualifier)
+    LOSER: 0.25,       // 25% to the player with the qualifying losing hand
+    TABLE: 0.25,       // 25% split among all dealt-in players at the table
 };
 
 /**

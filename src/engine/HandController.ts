@@ -568,9 +568,21 @@ export class HandController {
 
         // Distribute winnings (minus rake)
         const totalWinnings = this.state.pot - rake;
-        const adjustedWinners = winners.map(w => ({
+        const totalWinnerAmount = winners.reduce((sum, w) => sum + w.amount, 0);
+
+        // Proportionally reduce each winner's amount, distributing remainder chips
+        const adjustedAmounts = winners.map(w =>
+            Math.floor(w.amount * (totalWinnings / (totalWinnerAmount || 1)))
+        );
+        let remainder = totalWinnings - adjustedAmounts.reduce((s, a) => s + a, 0);
+        // Give remainder chips to winners in order (prevents chip loss from rounding)
+        for (let i = 0; i < adjustedAmounts.length && remainder > 0; i++) {
+            adjustedAmounts[i]++;
+            remainder--;
+        }
+        const adjustedWinners = winners.map((w, i) => ({
             ...w,
-            amount: Math.floor(w.amount * (totalWinnings / this.state.pot)),
+            amount: adjustedAmounts[i],
         }));
 
         // Add winnings to stacks
@@ -706,7 +718,13 @@ export class HandController {
     // ─────────────────────────────────────────────────────────────────────────────
 
     getState(): GameState {
-        return { ...this.state };
+        return {
+            ...this.state,
+            players: this.state.players.map(p => ({ ...p, cards: [...p.cards] })),
+            communityCards: [...this.state.communityCards],
+            pots: this.state.pots.map(p => ({ ...p, eligiblePlayers: [...p.eligiblePlayers] })),
+            actionHistory: [...this.state.actionHistory],
+        };
     }
 
     getCurrentPlayer(): SeatPlayer | undefined {

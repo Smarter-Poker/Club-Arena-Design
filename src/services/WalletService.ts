@@ -251,16 +251,44 @@ export const WalletService = {
             throw new Error('Table not found');
         }
 
-        // 2. Get current chip balance
+        // 2. Atomically deduct chips using RPC to prevent race conditions
+        // This single RPC call checks balance AND deducts in one atomic DB operation
+        const { data: rpcResult, error: rpcError } = await supabase.rpc('lock_chips_for_buyin', {
+            p_user_id: userId,
+            p_club_id: tableData.club_id,
+            p_amount: amount,
+        });
+
+        if (rpcError) {
+            console.error('[WalletService] Atomic buy-in deduction failed:', rpcError);
+            // Fallback to non-atomic if RPC doesn't exist yet
+            if (rpcError.code === '42883') { // function does not exist
+                console.warn('[WalletService] Falling back to non-atomic deduction');
+                return this.lockForBuyInFallback(userId, tableData.club_id, amount);
+            }
+            throw new Error(rpcError.message || 'Failed to deduct chips for buy-in');
+        }
+
+        if (rpcResult === false) {
+            throw new Error('Insufficient chips for buy-in');
+        }
+
+        console.log(`[WalletService] Buy-in: ${amount} chips deducted atomically for user ${userId}`);
+        return true;
+    },
+
+    /**
+     * Fallback non-atomic buy-in deduction (used if RPC doesn't exist)
+     */
+    async lockForBuyInFallback(userId: string, clubId: string, amount: number): Promise<boolean> {
         const { data: memberData, error: memberError } = await supabase
             .from('club_members')
             .select('chip_balance')
-            .eq('club_id', tableData.club_id)
+            .eq('club_id', clubId)
             .eq('user_id', userId)
             .single();
 
         if (memberError || !memberData) {
-            console.error('[WalletService] User not a member of this club:', memberError);
             throw new Error('Not a member of this club');
         }
 
@@ -269,19 +297,16 @@ export const WalletService = {
             throw new Error(`Insufficient chips: have ${currentBalance}, need ${amount}`);
         }
 
-        // 3. Deduct chips from club_members balance
         const { error: updateError } = await supabase
             .from('club_members')
             .update({ chip_balance: currentBalance - amount })
-            .eq('club_id', tableData.club_id)
+            .eq('club_id', clubId)
             .eq('user_id', userId);
 
         if (updateError) {
-            console.error('[WalletService] Failed to deduct chips:', updateError);
             throw new Error('Failed to deduct chips for buy-in');
         }
 
-        console.log(`[WalletService] Buy-in: ${amount} chips deducted. Balance: ${currentBalance} → ${currentBalance - amount}`);
         return true;
     },
 

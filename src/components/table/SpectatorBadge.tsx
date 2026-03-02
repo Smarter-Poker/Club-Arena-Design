@@ -80,7 +80,7 @@ export const SpectatorBadge: React.FC<SpectatorBadgeProps> = ({ observers, class
                     </div>
                     {observers.map((obs) => (
                         <div
-                            key={obs.oduserId}
+                            key={obs.userId}
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',

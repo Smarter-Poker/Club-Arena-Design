@@ -224,11 +224,17 @@ class AgentServiceClass {
             .eq('user_id', input.userId)
             .single();
 
-        // If sub-agent, verify parent exists and has capacity
+        // If sub-agent, verify parent exists and has capacity + rate limits
         if (input.parentAgentId) {
             const parent = await this.getAgent(input.parentAgentId);
             if (!parent) throw new Error('Parent agent not found');
             if (parent.role === 'sub_agent') throw new Error('Sub-agents cannot have sub-agents');
+            if (input.commissionRate > parent.commissionRate) {
+                throw new Error(`Commission rate (${input.commissionRate}) cannot exceed parent rate (${parent.commissionRate})`);
+            }
+            if (input.playerRakebackRate > parent.playerRakebackRate) {
+                throw new Error(`Rakeback rate cannot exceed parent rate (${parent.playerRakebackRate})`);
+            }
         }
 
         const { data, error } = await supabase
@@ -312,14 +318,28 @@ class AgentServiceClass {
      * Set credit limit (Club → Agent, Agent → Sub-Agent)
      */
     async setCreditLimit(agentId: string, newLimit: number, assignedBy: string, reason?: string): Promise<boolean> {
-        // Get current limit for logging
+        if (newLimit < 0) throw new Error('Credit limit cannot be negative');
+
+        // Get current limit and parent info for logging + validation
         const { data: agent } = await supabase
             .from('agents')
-            .select('credit_limit')
+            .select('credit_limit, parent_agent_id')
             .eq('id', agentId)
             .single();
 
         if (!agent) throw new Error('Agent not found');
+
+        // If sub-agent, verify limit doesn't exceed parent's
+        if (agent.parent_agent_id) {
+            const { data: parent } = await supabase
+                .from('agents')
+                .select('credit_limit')
+                .eq('id', agent.parent_agent_id)
+                .single();
+            if (parent && newLimit > Number(parent.credit_limit)) {
+                throw new Error('Credit limit cannot exceed parent agent limit');
+            }
+        }
 
         const oldLimit = Number(agent.credit_limit);
 

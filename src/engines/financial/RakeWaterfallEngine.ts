@@ -81,7 +81,10 @@ export class RakeWaterfallEngine {
             p_bbj_amount: bbj
         });
 
-        if (error) console.error("Drop Failure:", error);
+        if (error) {
+            console.error('[RakeWaterfall] CRITICAL pot deduction failure:', error);
+            throw new Error(`Failed to execute pot drops for hand ${ctx.handId}: ${error.message}`);
+        }
     }
 
     // INTERNAL: Calculate and Queue Commissions

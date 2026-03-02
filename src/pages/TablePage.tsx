@@ -1071,14 +1071,14 @@ export default function TablePage() {
                     if (seatIdx >= 0 && seatIdx < updatedPlayers.length) {
                         const existing = updatedPlayers[seatIdx];
                         // Only update if actually different to prevent loops
-                        if (!existing || existing.id !== p.oduserId) {
+                        if (!existing || existing.id !== p.userId) {
                             updatedPlayers[seatIdx] = {
-                                id: p.oduserId,
+                                id: p.userId,
                                 name: p.username,
                                 avatar: p.avatar || '',
                                 stack: existing?.stack ?? 0,
                                 status: existing?.status ?? 'active',
-                                isHero: p.oduserId === userId,
+                                isHero: p.userId === userId,
                                 showCards: existing?.showCards ?? false,
                             };
                             hasChanges = true;
