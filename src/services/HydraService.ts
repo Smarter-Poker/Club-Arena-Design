@@ -103,12 +103,13 @@ const PROFILE_WEIGHTS: Record<HorseProfile, {
     call: number;
     bet: number;
     raise: number;
+    allin: number;
 }> = {
-    fish: { fold: 15, check: 20, call: 40, bet: 15, raise: 10 },
-    reg: { fold: 30, check: 25, call: 20, bet: 15, raise: 10 },
-    nit: { fold: 50, check: 25, call: 15, bet: 5, raise: 5 },
-    lag: { fold: 20, check: 15, call: 15, bet: 25, raise: 25 },
-    maniac: { fold: 10, check: 10, call: 15, bet: 30, raise: 35 },
+    fish: { fold: 15, check: 20, call: 40, bet: 15, raise: 10, allin: 0 },
+    reg: { fold: 30, check: 25, call: 20, bet: 15, raise: 10, allin: 0 },
+    nit: { fold: 50, check: 25, call: 15, bet: 5, raise: 5, allin: 0 },
+    lag: { fold: 20, check: 15, call: 15, bet: 25, raise: 25, allin: 0 },
+    maniac: { fold: 10, check: 10, call: 15, bet: 30, raise: 35, allin: 0 },
 };
 
 // Stack size ranges per profile (in BB)
@@ -332,26 +333,34 @@ export const HydraService = {
         const availableHorses = await this.getAvailableHorses(horsesToAdd);
         const seatedHorses: HorsePlayer[] = [];
 
+        // Use Promise-based delays instead of setTimeout so we can await all results
+        const seatPromises = [];
         for (let i = 0; i < Math.min(horsesToAdd, availableHorses.length); i++) {
             const horse = availableHorses[i];
             const delay = randomInRange(
-                this.config.entryDelayRange[0] * 1000,
-                this.config.entryDelayRange[1] * 1000
-            );
+                this.config.entryDelayRange[0],
+                this.config.entryDelayRange[1]
+            ) * 1000; // Convert seconds to ms
 
             // Stagger entries for natural appearance
-            setTimeout(async () => {
-                try {
-                    const seatedHorse = await this.seatHorse(horse.id, tableId, bigBlind);
-                    if (seatedHorse) {
-                        seatedHorses.push(seatedHorse);
+            const promise = new Promise<void>((resolve) => {
+                setTimeout(async () => {
+                    try {
+                        const seatedHorse = await this.seatHorse(horse.id, tableId, bigBlind);
+                        if (seatedHorse) {
+                            seatedHorses.push(seatedHorse);
+                        }
+                    } catch (err) {
+                        console.error(`Failed to seat horse ${horse.id}:`, err);
                     }
-                } catch (err) {
-                    console.error(`Failed to seat horse ${horse.id}:`, err);
-                }
-            }, delay * (i + 1));
+                    resolve();
+                }, delay * (i + 1));
+            });
+            seatPromises.push(promise);
         }
 
+        // Wait for all staggered seats to complete
+        await Promise.all(seatPromises);
         return seatedHorses;
     },
 

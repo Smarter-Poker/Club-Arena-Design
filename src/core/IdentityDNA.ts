@@ -305,7 +305,7 @@ class IdentityDNACore {
      */
     cleanup(): void {
         if (this.authListener) {
-            this.authListener.data.subscription.unsubscribe();
+            this.authListener.data?.subscription?.unsubscribe();
             this.authListener = null;
         }
         this.initialized = false;
