@@ -351,8 +351,12 @@ export function calculatePots(players: SeatPlayer[]): Pot[] {
     const activePlayers = players.filter(p => !p.is_folded);
     if (activePlayers.length === 0) return [];
 
-    // Sort by total bet amount
-    const sortedBets = [...new Set(activePlayers.map(p => p.bet))].sort((a, b) => a - b);
+    // All players who contributed chips (including folded ones)
+    const allContributors = players.filter(p => p.bet > 0);
+    if (allContributors.length === 0) return [];
+
+    // Get unique bet levels from ALL players who put chips in (including folded)
+    const sortedBets = [...new Set(allContributors.map(p => p.bet))].sort((a, b) => a - b);
 
     const pots: Pot[] = [];
     let previousLevel = 0;
@@ -361,32 +365,35 @@ export function calculatePots(players: SeatPlayer[]): Pot[] {
         if (level === 0) continue;
 
         const contribution = level - previousLevel;
-        const contributors = activePlayers.filter(p => p.bet >= level);
+        // Count ALL players (including folded) who put in at least this much
+        const totalContributors = allContributors.filter(p => p.bet >= level).length;
+        // Only active (non-folded) players are eligible to win
+        const eligiblePlayers = activePlayers.filter(p => p.bet >= level);
 
-        if (contributors.length > 0) {
+        if (totalContributors > 0 && eligiblePlayers.length > 0) {
             pots.push({
-                amount: contribution * players.filter(p => p.bet >= level).length,
-                eligiblePlayers: contributors.map(p => p.user_id),
+                amount: contribution * totalContributors,
+                eligiblePlayers: eligiblePlayers.map(p => p.user_id),
             });
         }
 
         previousLevel = level;
     }
 
-    // Combine into main pot and side pots
+    // Combine pots with identical eligible players
     if (pots.length === 0) return [];
 
-    const mainPot = pots[0];
+    const merged: Pot[] = [pots[0]];
     for (let i = 1; i < pots.length; i++) {
-        // Merge pots with same eligible players
-        if (JSON.stringify(mainPot.eligiblePlayers) === JSON.stringify(pots[i].eligiblePlayers)) {
-            mainPot.amount += pots[i].amount;
-            pots.splice(i, 1);
-            i--;
+        const last = merged[merged.length - 1];
+        if (JSON.stringify(last.eligiblePlayers) === JSON.stringify(pots[i].eligiblePlayers)) {
+            last.amount += pots[i].amount;
+        } else {
+            merged.push(pots[i]);
         }
     }
 
-    return pots;
+    return merged;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

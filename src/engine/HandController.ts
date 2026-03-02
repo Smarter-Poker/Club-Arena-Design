@@ -188,8 +188,11 @@ export class HandController {
 
         if (activePlayers.length < 2) return;
 
-        // Find SB and BB positions
-        const sbSeat = this.getNextActiveSeat(this.state.dealerSeat);
+        // Heads-up: dealer IS the small blind
+        const isHeadsUp = activePlayers.length === 2;
+        const sbSeat = isHeadsUp
+            ? this.state.dealerSeat
+            : this.getNextActiveSeat(this.state.dealerSeat);
         const bbSeat = this.getNextActiveSeat(sbSeat);
 
         // Post small blind
@@ -389,23 +392,73 @@ export class HandController {
 
     private isBettingRoundComplete(): boolean {
         const activePlayers = this.getActivePlayers();
+        const playersToAct = activePlayers.filter(p => !p.is_all_in);
 
-        // All players must have acted
+        // If everyone is all-in (or folded), betting is complete
+        if (playersToAct.length === 0) return true;
+        // If only one player left who can act and bets are equalized, betting is complete
+        if (playersToAct.length === 1) {
+            // They still need to have acted this round (or their bet equals current bet)
+            const stageActions = this.state.actionHistory.filter(a => a.stage === this.state.stage);
+            const hasActed = stageActions.some(a => a.seat === playersToAct[0].seat);
+            if (hasActed && playersToAct[0].bet >= this.state.currentBet) return true;
+            if (!hasActed) return false;
+        }
+
+        // Get actions for this betting round
         const stageActions = this.state.actionHistory.filter(a => a.stage === this.state.stage);
-        const actedSeats = new Set(stageActions.map(a => a.seat));
 
-        for (const player of activePlayers) {
-            if (!player.is_all_in && !actedSeats.has(player.seat)) {
-                return false;
+        // Find the last aggressive action (bet/raise/all_in that increased currentBet)
+        let lastAggressorSeat = -1;
+        for (const action of stageActions) {
+            if (action.action === 'bet' || action.action === 'raise' ||
+                (action.action === 'all_in' && action.amount > 0)) {
+                // Check if this action actually raised the bet
+                const player = this.state.players.find(p => p.seat === action.seat);
+                if (player && (player.bet >= this.state.currentBet || player.is_all_in)) {
+                    lastAggressorSeat = action.seat;
+                }
+            }
+        }
+
+        // Every non-all-in active player must have acted AFTER the last aggressor
+        // (or there was no aggression, in which case everyone just needs to have acted once)
+        for (const player of playersToAct) {
+            const playerActions = stageActions.filter(a => a.seat === player.seat);
+
+            if (playerActions.length === 0) {
+                return false; // This player hasn't acted at all
+            }
+
+            // If there was a raise, check this player acted AFTER it
+            if (lastAggressorSeat !== -1 && lastAggressorSeat !== player.seat) {
+                // Find last aggressor action index (manual findLastIndex for compatibility)
+                let lastAggressorActionIdx = -1;
+                for (let i = stageActions.length - 1; i >= 0; i--) {
+                    const a = stageActions[i];
+                    if (a.seat === lastAggressorSeat &&
+                        (a.action === 'bet' || a.action === 'raise' || a.action === 'all_in')) {
+                        lastAggressorActionIdx = i;
+                        break;
+                    }
+                }
+                let playerLastActionIdx = -1;
+                for (let i = stageActions.length - 1; i >= 0; i--) {
+                    if (stageActions[i].seat === player.seat) {
+                        playerLastActionIdx = i;
+                        break;
+                    }
+                }
+
+                if (playerLastActionIdx < lastAggressorActionIdx) {
+                    return false; // Player needs to react to the raise
+                }
             }
         }
 
         // All bets must be equalized (except all-ins)
-        const playersToCheck = activePlayers.filter(p => !p.is_all_in);
-        if (playersToCheck.length === 0) return true;
-
         const targetBet = this.state.currentBet;
-        return playersToCheck.every(p => p.bet === targetBet);
+        return playersToAct.every(p => p.bet === targetBet);
     }
 
     private advanceStage(): void {
@@ -557,8 +610,25 @@ export class HandController {
     }
 
     private getFirstPostflopPlayer(): number {
-        // First active player after dealer
-        return this.getNextActiveSeat(this.state.dealerSeat);
+        // Postflop: first active (non-folded, non-all-in) player after dealer
+        // This is typically the SB position
+        const activePlayers = this.getActivePlayers().filter(p => !p.is_all_in);
+        if (activePlayers.length === 0) return -1;
+
+        let seat = this.getNextActiveSeat(this.state.dealerSeat);
+        let iterations = 0;
+        const maxIterations = this.state.players.length;
+
+        while (iterations < maxIterations) {
+            const player = this.state.players.find(p => p.seat === seat);
+            if (player && !player.is_folded && !player.is_all_in && !player.is_sitting_out) {
+                return seat;
+            }
+            seat = this.getNextActiveSeat(seat);
+            iterations++;
+        }
+
+        return activePlayers[0]?.seat ?? -1;
     }
 
     private setNextPlayer(): void {
@@ -568,20 +638,35 @@ export class HandController {
             return;
         }
 
-        // First to act preflop: UTG (after BB)
+        const allActive = this.getActivePlayers();
+        const isHeadsUp = allActive.length === 2;
+
+        // First to act preflop: UTG (after BB), or dealer/SB in heads-up
         if (this.state.stage === 'preflop' && this.state.actionHistory.length === 0) {
-            const sbSeat = this.getNextActiveSeat(this.state.dealerSeat);
-            const bbSeat = this.getNextActiveSeat(sbSeat);
-            this.state.currentPlayerSeat = this.getNextActiveSeat(bbSeat);
+            if (isHeadsUp) {
+                // Heads-up: dealer/SB acts first preflop
+                this.state.currentPlayerSeat = this.state.dealerSeat;
+            } else {
+                // Multi-way: UTG (player after BB) acts first
+                const sbSeat = this.getNextActiveSeat(this.state.dealerSeat);
+                const bbSeat = this.getNextActiveSeat(sbSeat);
+                this.state.currentPlayerSeat = this.getNextActiveSeat(bbSeat);
+            }
             return;
         }
 
-        // Otherwise, next active player
+        // Otherwise, next active non-folded, non-all-in player
         let nextSeat = this.getNextActiveSeat(this.state.currentPlayerSeat);
-        const player = this.state.players.find(p => p.seat === nextSeat);
+        let iterations = 0;
+        const maxIterations = this.state.players.length;
 
-        while (player && (player.is_folded || player.is_all_in)) {
+        while (iterations < maxIterations) {
+            const player = this.state.players.find(p => p.seat === nextSeat);
+            if (player && !player.is_folded && !player.is_all_in && !player.is_sitting_out) {
+                break;
+            }
             nextSeat = this.getNextActiveSeat(nextSeat);
+            iterations++;
             if (nextSeat === this.state.currentPlayerSeat) break; // Full circle
         }
 

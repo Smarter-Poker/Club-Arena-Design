@@ -234,7 +234,7 @@ export default function TablePage() {
             id: `msg_${Date.now()}`,
             type: 'PLAYER' as const,
             playerId: userId,
-            playerName: tableState.players[tableState.heroSeat]?.name || 'You',
+            playerName: tableState.players[tableState.heroSeat - 1]?.name || 'You',
             content: message,
             timestamp: new Date()
         }]);
@@ -644,9 +644,9 @@ export default function TablePage() {
         roomService.joinRoom(
             tableId,
             userId,
-            tableState.players[tableState.heroSeat]?.name || 'Player',
+            tableState.players[tableState.heroSeat - 1]?.name || 'Player',
             tableState.heroSeat,
-            tableState.players[tableState.heroSeat]?.stack || 10000
+            tableState.players[tableState.heroSeat - 1]?.stack || 10000
         );
 
         // Subscribe to room messages
@@ -930,19 +930,22 @@ export default function TablePage() {
                     break;
 
                 case 'WINNERS':
-                    // Update player stacks with winnings
+                    // Sync all player stacks from the engine state after pot distribution
                     setTableState(prev => {
                         const updatedPlayers = [...prev.players];
-                        for (const winner of event.winners) {
-                            const playerIdx = updatedPlayers.findIndex(p => p?.id === winner.userId);
-                            if (playerIdx >= 0 && updatedPlayers[playerIdx]) {
-                                updatedPlayers[playerIdx] = {
-                                    ...updatedPlayers[playerIdx]!,
-                                    stack: updatedPlayers[playerIdx]!.stack + winner.amount,
-                                };
+                        const engineState = handControllerRef.current?.getState();
+                        if (engineState) {
+                            for (const ep of engineState.players) {
+                                const playerIdx = updatedPlayers.findIndex(p => p?.id === ep.user_id);
+                                if (playerIdx >= 0 && updatedPlayers[playerIdx]) {
+                                    updatedPlayers[playerIdx] = {
+                                        ...updatedPlayers[playerIdx]!,
+                                        stack: ep.stack,
+                                    };
+                                }
                             }
                         }
-                        return { ...prev, players: updatedPlayers };
+                        return { ...prev, players: updatedPlayers, pot: 0 };
                     });
                     playWinSound();
 
@@ -970,15 +973,21 @@ export default function TablePage() {
                         setHandNumber(prev => prev + 1);
                         handControllerRef.current = null;
                         setTableState(prev => {
-                            // Clear all players' hole cards
+                            // Clear all players' hole cards and reset status for next hand
                             const clearedPlayers = prev.players.map(p =>
-                                p ? { ...p, holeCards: undefined, showCards: false } : null
+                                p ? {
+                                    ...p,
+                                    holeCards: undefined,
+                                    showCards: false,
+                                    status: p.stack > 0 ? 'active' as const : p.status,
+                                } : null
                             );
                             return {
                                 ...prev,
                                 communityCards: [],
                                 boardStage: 'preflop',
                                 pot: 0,
+                                lastActions: Array(prev.maxPlayers).fill(null),
                                 players: clearedPlayers,
                             };
                         });
@@ -1344,10 +1353,10 @@ export default function TablePage() {
                             </div>
 
                             {/* Hand Strength Indicator - Shows during hero's turn */}
-                            {tableState.isHandInProgress && tableState.players[tableState.heroSeat]?.holeCards && tableState.players[tableState.heroSeat]!.holeCards!.length >= 2 && (
+                            {tableState.isHandInProgress && tableState.players[tableState.heroSeat - 1]?.holeCards && tableState.players[tableState.heroSeat - 1]!.holeCards!.length >= 2 && (
                                 <div className="hand-strength-hud">
                                     <HandStrengthIndicator
-                                        cards={tableState.players[tableState.heroSeat]!.holeCards!.map((c: Card) => `${c.rank}${c.suit}`)}
+                                        cards={tableState.players[tableState.heroSeat - 1]!.holeCards!.map((c: Card) => `${c.rank}${c.suit}`)}
                                         communityCards={tableState.communityCards.map((c: Card) => `${c.rank}${c.suit}`)}
                                         size="sm"
                                     />
@@ -1403,7 +1412,7 @@ export default function TablePage() {
           ═══════════════════════════════════════════════════════════════════════ */}
             <div className="action-panel">
                 {/* Spectator Mode - Show when user is not seated */}
-                {!tableState.players[tableState.heroSeat] ? (
+                {!tableState.players[tableState.heroSeat - 1] ? (
                     <div className="spectator-mode" style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -1453,23 +1462,59 @@ export default function TablePage() {
                             <button className="confirm-btn" onClick={handleConfirmRaise}>Confirm</button>
                         </div>
                     </div>
+                ) : tableState.currentPlayerSeat === tableState.heroSeat && tableState.isHandInProgress ? (
+                    /* Normal Action Buttons - Show dynamically based on game state */
+                    (() => {
+                        const heroPlayer = getPlayerAtSeat(tableState.heroSeat);
+                        const heroBet = heroPlayer?.stack || 0; // Current bet tracked in engine
+                        const toCall = tableState.pot > 0 ? Math.max(0, tableState.pot - (heroBet || 0)) : 0;
+                        const bigBlind = parseFloat(tableState.blinds.split('/')[1]) || 2;
+                        // Determine if there's a bet to call by checking currentPlayerSeat state
+                        const handState = handControllerRef.current?.getState();
+                        const currentBet = handState?.currentBet || 0;
+                        const myEngineBet = handState?.players.find(p => p.user_id === userId)?.bet || 0;
+                        const callAmount = currentBet - myEngineBet;
+                        const hasActiveBet = callAmount > 0;
+
+                        return (
+                            <div className="action-buttons">
+                                <div className="timer-display">
+                                    <span className="timer-icon"></span>
+                                    <span className="timer-value">{actionTimeRemaining}</span>
+                                    <span className="time-bank">20s</span>
+                                </div>
+                                <button className="action-btn fold-btn" onClick={handleFold}>
+                                    Fold
+                                </button>
+                                {hasActiveBet ? (
+                                    <button className="action-btn call-btn" onClick={handleCall}>
+                                        Call {callAmount}
+                                    </button>
+                                ) : (
+                                    <button className="action-btn check-btn" onClick={handleCheck}>
+                                        Check
+                                    </button>
+                                )}
+                                <button className="action-btn raise-btn" onClick={hasActiveBet ? handleRaise : handleBet}>
+                                    {hasActiveBet ? 'Raise' : 'Bet'}
+                                </button>
+                                <button className="action-btn allin-btn" onClick={handleAllIn}
+                                    style={{ backgroundColor: '#c41e3a', fontWeight: 'bold' }}>
+                                    All In
+                                </button>
+                            </div>
+                        );
+                    })()
                 ) : (
-                    /* Normal Action Buttons */
-                    <div className="action-buttons">
+                    /* Waiting for turn */
+                    <div className="action-buttons" style={{ opacity: 0.5 }}>
                         <div className="timer-display">
                             <span className="timer-icon"></span>
-                            <span className="timer-value">{actionTimeRemaining}</span>
-                            <span className="time-bank">20s</span>
+                            <span className="timer-value">--</span>
                         </div>
-                        <button className="action-btn fold-btn" onClick={handleFold}>
-                            Fold
-                        </button>
-                        <button className="action-btn check-btn" onClick={handleCheck}>
-                            Check
-                        </button>
-                        <button className="action-btn raise-btn" onClick={handleRaise}>
-                            Raise
-                        </button>
+                        <button className="action-btn fold-btn" disabled>Fold</button>
+                        <button className="action-btn check-btn" disabled>Check</button>
+                        <button className="action-btn raise-btn" disabled>Raise</button>
                     </div>
                 )}
             </div>
@@ -1694,7 +1739,7 @@ export default function TablePage() {
                 isOpen={showTipDealer}
                 onClose={() => setShowTipDealer(false)}
                 onTip={handleTipDealer}
-                balance={tableState.players[tableState.heroSeat]?.stack || 0}
+                balance={tableState.players[tableState.heroSeat - 1]?.stack || 0}
             />
 
             {/* Straddle Toggle (UTG only) */}
@@ -1721,7 +1766,7 @@ export default function TablePage() {
                 onClose={() => setShowCashier(false)}
                 onAddChips={handleAddChips}
                 onWithdrawChips={handleWithdrawChips}
-                currentStack={tableState.players[tableState.heroSeat]?.stack || 0}
+                currentStack={tableState.players[tableState.heroSeat - 1]?.stack || 0}
                 accountBalance={accountBalance}
                 minBuyIn={100}
                 maxBuyIn={500}
@@ -1744,7 +1789,7 @@ export default function TablePage() {
                         if (selectedSeat && selectedSeat > 0 && selectedSeat <= newPlayers.length) {
                             newPlayers[selectedSeat - 1] = {
                                 id: userId || 'demo-player',
-                                name: 'You',
+                                name: username || 'You',
                                 avatar: '',
                                 stack: amount,
                                 status: 'active',
@@ -1763,7 +1808,7 @@ export default function TablePage() {
                             const newPlayers = [...tableState.players];
                             newPlayers[selectedSeat - 1] = {
                                 id: userId,
-                                name: 'You', // Will be updated from profile
+                                name: username || 'Player',
                                 avatar: '',
                                 stack: amount,
                                 status: 'active',
