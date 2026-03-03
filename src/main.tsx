@@ -57,20 +57,16 @@ async function boot() {
     if (isSystemOnline() && isMasterBusOnline()) {
         //  ALL SYSTEMS GO — Render the full app
         root.render(
-            <React.StrictMode>
-                <ErrorBoundary>
-                    <BrowserRouter basename="/hub/club-arena">
-                        <App />
-                    </BrowserRouter>
-                </ErrorBoundary>
-            </React.StrictMode>
+            <ErrorBoundary>
+                <BrowserRouter basename="/hub/club-arena">
+                    <App />
+                </BrowserRouter>
+            </ErrorBoundary>
         );
     } else {
         //  FAIL-CLOSED — Only render diagnostic screen
         root.render(
-            <React.StrictMode>
-                <SystemOffline status={status} />
-            </React.StrictMode>
+            <SystemOffline status={status} />
         );
     }
 }
