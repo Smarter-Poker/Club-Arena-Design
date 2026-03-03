@@ -1228,7 +1228,7 @@ export default function TablePage() {
                             agentId: undefined,
                         }));
                         handleHandComplete(
-                            `hand-${event.handNumber}`,
+                            handPersistenceService.getCurrentHandId() || crypto.randomUUID(),
                             event.rake > 0 ? tableStateRef.current.pot : 0,
                             true,
                             rakePlayers

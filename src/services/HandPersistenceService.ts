@@ -62,6 +62,11 @@ class HandPersistenceServiceClass {
         };
     }
 
+    /** Get the current persisted hand UUID (if available) */
+    getCurrentHandId(): string | null {
+        return this.currentHand?.id || null;
+    }
+
     private async handleEvent(event: HandEvent, config: PersistenceConfig): Promise<void> {
         switch (event.type) {
             case 'HAND_START':
