@@ -148,7 +148,11 @@ class CreditRequestServiceClass {
 
         const amount = approvedAmount || request.requested_amount;
 
-        // Update request status
+        // IMPORTANT: Execute credit transfer BEFORE marking as approved
+        // to prevent approved status without actual transfer on failure
+        await this.executeCreditTransfer(approverId, request.requester_id, amount, requestId);
+
+        // Only update request status after successful transfer
         const { data, error } = await supabase
             .from('credit_requests')
             .update({
@@ -162,9 +166,6 @@ class CreditRequestServiceClass {
             .single();
 
         if (error) throw error;
-
-        // Execute credit transfer
-        await this.executeCreditTransfer(approverId, request.requester_id, amount, requestId);
 
         // Notify requester
         try {

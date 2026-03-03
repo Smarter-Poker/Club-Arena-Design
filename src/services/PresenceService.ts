@@ -33,7 +33,7 @@ interface PresenceCallbacks {
 
 class PresenceServiceClass {
     private channels: Map<string, RealtimeChannel> = new Map();
-    private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+    private channelHeartbeats: Map<string, ReturnType<typeof setInterval>> = new Map();
     private currentUserId: string | null = null;
 
     /**
@@ -104,10 +104,8 @@ class PresenceServiceClass {
         await supabase.removeChannel(channel);
         this.channels.delete(channelName);
 
-        // Stop heartbeat if no channels remain
-        if (this.channels.size === 0) {
-            this.stopHeartbeat();
-        }
+        // Stop heartbeat for this specific channel
+        this.stopHeartbeat(channelName);
     }
 
     /**
@@ -220,11 +218,11 @@ class PresenceServiceClass {
         userId: string,
         presence: Omit<PresenceState, 'userId' | 'lastSeen'>
     ): void {
-        // Only start if not already running
-        if (this.heartbeatInterval) return;
+        // Don't start duplicate heartbeat for same channel
+        if (this.channelHeartbeats.has(channelName)) return;
 
-        // Heartbeat every 30 seconds to update lastSeen
-        this.heartbeatInterval = setInterval(async () => {
+        // Heartbeat every 30 seconds to update lastSeen per channel
+        const interval = setInterval(async () => {
             const channel = this.channels.get(channelName);
             if (channel) {
                 await channel.track({
@@ -234,12 +232,23 @@ class PresenceServiceClass {
                 });
             }
         }, 30000);
+
+        this.channelHeartbeats.set(channelName, interval);
     }
 
-    private stopHeartbeat(): void {
-        if (this.heartbeatInterval) {
-            clearInterval(this.heartbeatInterval);
-            this.heartbeatInterval = null;
+    private stopHeartbeat(channelName?: string): void {
+        if (channelName) {
+            const interval = this.channelHeartbeats.get(channelName);
+            if (interval) {
+                clearInterval(interval);
+                this.channelHeartbeats.delete(channelName);
+            }
+        } else {
+            // Stop all heartbeats
+            for (const interval of this.channelHeartbeats.values()) {
+                clearInterval(interval);
+            }
+            this.channelHeartbeats.clear();
         }
     }
 }
