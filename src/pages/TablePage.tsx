@@ -811,7 +811,9 @@ export default function TablePage() {
         const tId = tableId || 'default';
 
         // GUARD: prevent duplicate creation
+        console.log(`[HC-GUARD] hip=${handInProgressRef.current}, hcr=${!!handControllerRef.current}, hat=${_handActiveForTable[tId]}, ahc=${!!_activeHandController[tId]}`);
         if (handInProgressRef.current || handControllerRef.current || _handActiveForTable[tId] || _activeHandController[tId]) {
+            console.log('[HC-GUARD] BLOCKED duplicate HC creation');
             return;
         }
 
@@ -1185,11 +1187,14 @@ export default function TablePage() {
     // Trigger first hand when horses are loaded (via useEffect that watches for players)
     // This only fires ONCE — subsequent hands are triggered by HAND_COMPLETE
     const firstHandStartedRef = useRef(false);
+    const instanceIdRef = useRef(Math.random().toString(36).slice(2, 6));
     useEffect(() => {
+        console.log(`[HC-TRIGGER] instance=${instanceIdRef.current}, firstStarted=${firstHandStartedRef.current}, players=${tableState.players.filter(p => p && p.stack > 0).length}, hcr=${!!handControllerRef.current}`);
         if (firstHandStartedRef.current) return;
         const seatedPlayers = tableState.players.filter(p => p && p.stack > 0);
         if (seatedPlayers.length >= 2 && !handControllerRef.current) {
             firstHandStartedRef.current = true;
+            console.log(`[HC-TRIGGER] instance=${instanceIdRef.current} CALLING startNextHand`);
             startNextHandRef.current();
         }
     }, [tableState.players]);
