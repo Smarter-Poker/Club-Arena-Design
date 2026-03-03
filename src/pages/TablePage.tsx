@@ -810,12 +810,17 @@ export default function TablePage() {
         const tId = tableId || 'default';
         if (seatedPlayers.length < 2 || handInProgressRef.current || handControllerRef.current || _handActiveForTable[tId] || _activeHandController[tId]) {
             // If remounted with an active hand, restore the ref from module-level
-            if (_activeHandController[tId] && !handControllerRef.current) {
+            if (_activeHandController[tId] && _activeHandController[tId] !== true && !handControllerRef.current) {
                 handControllerRef.current = _activeHandController[tId];
                 handInProgressRef.current = _handActiveForTable[tId] || false;
             }
             return;
         }
+
+        // IMMEDIATELY set module-level locks BEFORE any construction — this is a synchronous mutex
+        // that prevents a parallel useEffect (from component remount) from also creating a HandController
+        _handActiveForTable[tId] = true;
+        _activeHandController[tId] = true as any; // Sentinel value — replaced with actual HC below
 
         // Parse table settings from blinds string (e.g., "1/2" -> SB=1, BB=2)
         const blindParts = tableState.blinds.split('/');
@@ -860,9 +865,18 @@ export default function TablePage() {
         const dealerSeatIndex = (handNumber - 1) % seatedPlayers.length;
         const dealerSeat = hcPlayers[dealerSeatIndex]?.seat || 1;
 
-        const hand = new HandController(config, hcPlayers, dealerSeat);
+        let hand: HandController;
+        try {
+            hand = new HandController(config, hcPlayers, dealerSeat);
+        } catch (err) {
+            console.error('[HC] Failed to create HandController:', err);
+            _handActiveForTable[tId] = false;
+            _activeHandController[tId] = null;
+            handInProgressRef.current = false;
+            return;
+        }
         handControllerRef.current = hand;
-        _activeHandController[tId] = hand; // Module-level lock
+        _activeHandController[tId] = hand; // Replace sentinel with actual instance
 
         // Wire persistence service for hand history
         const clubId = tableId || 'demo'; // In production, get from table record
@@ -875,7 +889,7 @@ export default function TablePage() {
 
         // Subscribe to events and update UI
         hand.onEvent((event) => {
-            console.log('[HC Event]', event.type, event.type === 'TURN_CHANGE' ? `seat=${(event as any).seat}` : '');
+            // Minimal event logging (remove verbose debug logs for production)
             switch (event.type) {
                 case 'HAND_START':
                     handInProgressRef.current = true; // Set ref SYNCHRONOUSLY to prevent re-creation
@@ -966,7 +980,6 @@ export default function TablePage() {
                     // Play turn alert and reset timer if it's hero's turn
                     {
                         const currentState = tableStateRef.current;
-                        console.log(`[TURN_CHANGE] seat=${event.seat}, heroSeat=${currentState.heroSeat}, players=${currentState.players.filter(Boolean).length}, horseMapSize=${horseMapRef.current.size}`);
                         if (event.seat === currentState.heroSeat) {
                             playTurnAlert();
                             setActionTimeRemaining(15); // Reset action timer
@@ -976,7 +989,7 @@ export default function TablePage() {
                         const actingPlayer = currentState.players[event.seat - 1] as any;
                         const horseInfo = horseMapRef.current.get(event.seat);
                         const isHorse = actingPlayer?.isHorse || !!horseInfo;
-                        console.log(`[TURN_CHANGE] actingPlayer=${actingPlayer?.name || 'null'}, isHorse=${isHorse}, horseInfo=${!!horseInfo}, actingPlayer.isHorse=${actingPlayer?.isHorse}`);
+                        // Horse auto-action detection
                         if (isHorse && handControllerRef.current) {
                             const bigBlind = parseFloat(currentState.blinds.split('/')[1]) || 0.5;
                             const activePlayers = currentState.players.filter(p => p && (p as any).status !== 'folded').length;
@@ -1152,7 +1165,15 @@ export default function TablePage() {
 
         setHandController(hand);
         console.log('[HC] Starting hand #' + handNumber + ' with ' + seatedPlayers.length + ' players');
-        hand.start();
+        try {
+            hand.start();
+        } catch (err) {
+            console.error('[HC] hand.start() failed:', err);
+            handControllerRef.current = null;
+            handInProgressRef.current = false;
+            _handActiveForTable[tId] = false;
+            _activeHandController[tId] = null;
+        }
 
         // No cleanup — handControllerRef is managed by HAND_COMPLETE handler
         // Cleaning up here would null the ref during re-renders, breaking horse timeouts
