@@ -17,8 +17,13 @@
     display: flex;
     flex-direction: column;
     background: linear-gradient(180deg, #0A0A1A 0%, #0D1020 100%);
-    /* Dark navy */
     overflow: hidden;
+    /* Mobile touch optimizations */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+    overscroll-behavior: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -711,29 +716,119 @@
 
 @media (max-width: 768px) {
     .table-container {
-        padding: 50px 10px 10px;
+        padding: 4px 4px 4px;
+    }
+
+    .table-scaler {
+        max-width: 100%;
     }
 
     .table-rail {
-        padding: 8px;
+        padding: 6px;
     }
 
     .jackpot-banner {
-        padding: 4px 12px;
+        padding: 3px 10px;
     }
 
     .jackpot-amount {
-        font-size: 0.875rem;
+        font-size: 0.75rem;
+    }
+
+    .jackpot-label {
+        font-size: 0.5rem;
+    }
+
+    .action-panel {
+        padding: 8px 12px;
     }
 
     .action-btn {
-        padding: 12px 14px;
-        font-size: 0.875rem;
+        padding: 14px 12px;
+        font-size: 0.9375rem;
+        min-height: 48px;
+    }
+
+    .action-buttons {
+        gap: 8px;
+        max-width: 100%;
     }
 
     .side-menu {
         width: 100%;
         max-width: 320px;
+    }
+
+    .pot-badge {
+        padding: 4px 10px;
+        gap: 4px;
+    }
+
+    .pot-badge__amount {
+        font-size: 0.875rem;
+    }
+
+    .pot-badge__label {
+        font-size: 0.5rem;
+    }
+
+    .game-info {
+        gap: 2px;
+    }
+
+    .game-type {
+        font-size: 0.75rem;
+    }
+
+    .game-variant {
+        font-size: 0.5rem;
+    }
+
+    .game-blinds {
+        font-size: 0.625rem;
+    }
+
+    .dealer-button {
+        width: 22px;
+        height: 22px;
+        font-size: 0.625rem;
+    }
+
+    .add-chips-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1.125rem;
+        top: 54px;
+        left: 8px;
+    }
+
+    .table-header {
+        padding: 6px 8px;
+    }
+
+    .observing-indicator {
+        bottom: 80px;
+        padding: 6px 16px;
+        font-size: 0.75rem;
+    }
+
+    .raise-slider-panel {
+        gap: 8px;
+    }
+
+    .raise-presets {
+        gap: 4px;
+    }
+
+    .preset-btn {
+        padding: 8px;
+        font-size: 0.75rem;
+    }
+
+    .raise-adjust-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
     }
 }
 
@@ -748,11 +843,39 @@
         font-size: 0.875rem;
     }
 
-    .game-type {
-        font-size: 1rem;
+    .table-id {
+        font-size: 0.625rem;
+        padding: 0 6px;
     }
 
     .raise-amount {
-        font-size: 1.5rem;
+        font-size: 1.25rem;
+    }
+
+    .action-btn {
+        padding: 12px 8px;
+        font-size: 0.875rem;
+        min-height: 44px;
+        border-radius: 8px;
+    }
+
+    .confirm-btn {
+        padding: 10px 14px;
+        font-size: 0.8125rem;
+    }
+}
+
+@media (max-width: 380px) {
+    .table-container {
+        padding: 2px 2px 2px;
+    }
+
+    .action-btn {
+        padding: 10px 6px;
+        font-size: 0.8125rem;
+    }
+
+    .table-header {
+        padding: 4px 6px;
     }
 }

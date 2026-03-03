@@ -472,27 +472,131 @@
 
 @media (max-width: 768px) {
     .seat-slot {
-        width: 100px;
-        min-height: 75px;
-        padding: 8px;
+        width: 80px;
+        min-height: 50px;
+    }
+
+    .seat-slot__content {
+        gap: 4px;
     }
 
     .seat-slot__avatar {
-        width: 32px;
-        height: 32px;
+        height: 56px;
+        max-width: 48px;
+        border-width: 2px;
+    }
+
+    .seat-slot__avatar--default {
+        width: 48px;
+        height: 56px;
+        font-size: 1.5rem;
+    }
+
+    .seat-slot__info {
+        min-width: 60px;
+        padding: 3px 6px;
+        margin-top: -8px;
     }
 
     .seat-slot__name {
-        font-size: 0.75rem;
-        max-width: 50px;
+        font-size: 0.625rem;
+        max-width: 58px;
     }
 
     .seat-slot__stack {
-        font-size: 0.6875rem;
+        font-size: 0.625rem;
     }
 
     .seat-slot__card {
-        width: 30px;
+        width: 28px;
+        height: 40px;
+    }
+
+    .seat-slot__card-rank {
+        font-size: 0.875rem;
+    }
+
+    .seat-slot__card-suit {
+        font-size: 0.875rem;
+    }
+
+    .seat-slot__cards {
+        margin-left: 4px;
+        gap: 2px;
+    }
+
+    .seat-slot--hero .seat-slot__card {
+        width: 40px;
+        height: 56px;
+    }
+
+    .seat-slot--hero .seat-slot__cards {
+        margin-left: 30px;
+    }
+
+    .seat-slot__position-chip {
+        width: 18px;
+        height: 18px;
+        font-size: 0.5rem;
+        top: -4px;
+        right: -4px;
+    }
+
+    .seat-slot__action-badge {
+        font-size: 0.5625rem;
+        padding: 2px 6px;
+    }
+
+    .seat-slot__all-in-badge {
+        font-size: 0.5rem;
+        padding: 1px 4px;
+    }
+
+    .seat-slot--empty {
+        padding: 4px;
+    }
+}
+
+@media (max-width: 400px) {
+    .seat-slot {
+        width: 68px;
+        min-height: 42px;
+    }
+
+    .seat-slot__avatar {
         height: 44px;
+        max-width: 40px;
+    }
+
+    .seat-slot__avatar--default {
+        width: 40px;
+        height: 44px;
+        font-size: 1.25rem;
+    }
+
+    .seat-slot__info {
+        min-width: 52px;
+        padding: 2px 4px;
+        margin-top: -6px;
+        border-width: 1px;
+    }
+
+    .seat-slot__name {
+        font-size: 0.5625rem;
+        max-width: 48px;
+    }
+
+    .seat-slot__stack {
+        font-size: 0.5625rem;
+    }
+
+    .seat-slot__card {
+        width: 24px;
+        height: 34px;
+    }
+
+    .seat-slot--hero .seat-slot__card {
+        width: 34px;
+        height: 48px;
     }
 }
