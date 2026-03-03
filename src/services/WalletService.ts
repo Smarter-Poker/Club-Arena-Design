@@ -261,10 +261,11 @@ export const WalletService = {
 
         if (rpcError) {
             console.error('[WalletService] Atomic buy-in deduction failed:', rpcError);
-            // Fallback to non-atomic if RPC doesn't exist yet
+            // SECURITY: Do NOT fall back to non-atomic deduction — it has a race condition
+            // that allows double-spending. If the RPC doesn't exist, fail hard.
             if (rpcError.code === '42883') { // function does not exist
-                console.warn('[WalletService] Falling back to non-atomic deduction');
-                return this.lockForBuyInFallback(userId, tableData.club_id, amount);
+                console.error('[WalletService] CRITICAL: lock_chips_for_buyin RPC not deployed. Cannot proceed safely.');
+                throw new Error('Buy-in system not available. Please contact support.');
             }
             throw new Error(rpcError.message || 'Failed to deduct chips for buy-in');
         }
@@ -422,13 +423,18 @@ export const WalletService = {
         }
 
         // Record tip transaction
-        await supabase.from('wallet_transactions').insert({
+        const { error: insertError } = await supabase.from('wallet_transactions').insert({
             user_id: userId,
             type: 'TIP',
             amount: -amount,
             table_id: tableId,
             description: `Dealer tip at table`,
         });
+
+        if (insertError) {
+            console.error('[WalletService] Tip transaction record failed:', insertError);
+            // Deduction succeeded but record failed — log for reconciliation
+        }
 
         return true;
     },
@@ -438,14 +444,19 @@ export const WalletService = {
      */
     async processInsurance(userId: string, tableId: string, handId: string, premium: number): Promise<boolean> {
         // Deduct premium from player's table stack
-        await supabase.rpc('deduct_table_chips', {
+        const { error: deductError } = await supabase.rpc('deduct_table_chips', {
             p_user_id: userId,
             p_table_id: tableId,
             p_amount: premium,
         });
 
+        if (deductError) {
+            console.error('[WalletService] Insurance deduction failed:', deductError);
+            throw new Error('Failed to deduct insurance premium');
+        }
+
         // Record insurance transaction
-        await supabase.from('wallet_transactions').insert({
+        const { error: insertError } = await supabase.from('wallet_transactions').insert({
             user_id: userId,
             type: 'INSURANCE',
             amount: -premium,
@@ -453,6 +464,11 @@ export const WalletService = {
             hand_id: handId,
             description: 'Insurance premium',
         });
+
+        if (insertError) {
+            console.error('[WalletService] Insurance transaction record failed:', insertError);
+            // Deduction succeeded but record failed — log for reconciliation
+        }
 
         return true;
     },

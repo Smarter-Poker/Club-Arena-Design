@@ -198,6 +198,9 @@ export const useWalletStore = create<WalletState>()(
                     return false;
                 }
 
+                // Deep copy for safe rollback
+                const previousBalances = JSON.parse(JSON.stringify(balances));
+
                 // Optimistic update
                 set({
                     pendingBuyIn: amount,
@@ -216,11 +219,11 @@ export const useWalletStore = create<WalletState>()(
                     await WalletService.lockForBuyIn(userId, tableId, amount);
                     return true;
                 } catch (error) {
-                    // Revert on failure
+                    // Revert on failure using deep-copied state
                     set({
                         pendingBuyIn: null,
                         pendingTableId: null,
-                        balances,
+                        balances: previousBalances,
                     });
                     console.error('[Store] Lock for buy-in failed:', error);
                     return false;
@@ -233,8 +236,8 @@ export const useWalletStore = create<WalletState>()(
                     console.warn('[Store] Table ID mismatch for unlock');
                 }
 
-                // Save previous state for rollback
-                const previousBalances = { ...balances };
+                // Deep copy previous state for safe rollback (shallow copy shares nested refs)
+                const previousBalances = JSON.parse(JSON.stringify(balances));
 
                 set({
                     pendingBuyIn: null,
