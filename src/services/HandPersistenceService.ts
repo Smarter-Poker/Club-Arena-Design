@@ -164,7 +164,8 @@ class HandPersistenceServiceClass {
         if (!this.currentHand) return;
 
         // Update community cards
-        this.currentHand.community_cards = cards.map((c) => `${c.rank}${c.suit}`);
+        // Use first char of suit name: "spades" → "s", "hearts" → "h", "diamonds" → "d", "clubs" → "c"
+        this.currentHand.community_cards = cards.map((c) => `${c.rank}${c.suit[0]}`);
     }
 
     private onWinners(winners: { userId: string; amount: number }[]): void {

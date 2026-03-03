@@ -216,6 +216,8 @@ export const RakeService = {
                 unionId,
                 rakeAmount: calculation.cappedRake,
                 bbjAmount: calculation.bbjDrop,
+                potSize,
+                numPlayers: players.length,
             });
 
             // ABORT waterfall if pot drops failed — cannot attribute rake that was never collected
@@ -288,13 +290,21 @@ export const RakeService = {
         unionId?: string;
         rakeAmount: number;
         bbjAmount: number;
+        potSize?: number;
+        numPlayers?: number;
     }): Promise<boolean> {
-        const { error } = await supabase.rpc('execute_pot_drops', {
-            p_hand_id: params.handId,
-            p_table_id: params.tableId,
-            p_rake_amount: params.rakeAmount,
-            p_bbj_amount: params.bbjAmount,
-        });
+        // Direct INSERT into rake_records (bypasses broken execute_pot_drops RPC)
+        const { error } = await supabase
+            .from('rake_records')
+            .insert({
+                hand_id: params.handId,
+                table_id: params.tableId,
+                club_id: params.clubId,
+                rake_amount: params.rakeAmount,
+                bbj_contribution: params.bbjAmount,
+                pot_size: params.potSize || 0,
+                num_players: params.numPlayers || 0,
+            });
 
         if (error) {
             console.error('RakeService.executePotDrops error:', error);
