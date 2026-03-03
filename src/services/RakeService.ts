@@ -69,13 +69,55 @@ export interface DealtInPlayer {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// CONSTANTS (HARD LAWS - DO NOT MODIFY)
+// OFFICIAL RAKE CHART — Stake-Based Tiers (DO NOT MODIFY)
 // ═══════════════════════════════════════════════════════════════════════════════
 
+interface RakeTier {
+    sb: number;
+    bb: number;
+    rakePercent: number;
+    maxAmount: number;       // Cap in dollars
+    bbjRakeBB: number;       // BBJ drop in BB units
+    mainBBJ: number;         // % of BBJ drop → Main pool
+    backupBBJ: number;       // % of BBJ drop → Backup pool
+    promotional: number;     // % of BBJ drop → Promo pool
+}
+
+const RAKE_CHART: RakeTier[] = [
+    { sb: 0.10, bb: 0.20, rakePercent: 0.10, maxAmount: 3,    bbjRakeBB: 0.60,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
+    { sb: 0.20, bb: 0.40, rakePercent: 0.10, maxAmount: 3,    bbjRakeBB: 0.60,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
+    { sb: 0.25, bb: 0.50, rakePercent: 0.10, maxAmount: 3,    bbjRakeBB: 0.60,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
+    { sb: 0.30, bb: 0.60, rakePercent: 0.10, maxAmount: 5,    bbjRakeBB: 0.60,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
+    { sb: 0.50, bb: 1.00, rakePercent: 0.10, maxAmount: 5,    bbjRakeBB: 0.25,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
+    { sb: 1.00, bb: 2.00, rakePercent: 0.10, maxAmount: 5,    bbjRakeBB: 0.25,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
+    { sb: 2.00, bb: 4.00, rakePercent: 0.10, maxAmount: 7.50, bbjRakeBB: 0.12,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
+    { sb: 2.00, bb: 5.00, rakePercent: 0.10, maxAmount: 7.50, bbjRakeBB: 0.12,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
+    { sb: 5.00, bb: 5.00, rakePercent: 0.10, maxAmount: 7.50, bbjRakeBB: 0.12,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
+    { sb: 3.00, bb: 6.00, rakePercent: 0.10, maxAmount: 8,    bbjRakeBB: 0.12,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
+    { sb: 4.00, bb: 8.00, rakePercent: 0.10, maxAmount: 10,   bbjRakeBB: 0.12,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
+    { sb: 5.00, bb: 10.0, rakePercent: 0.10, maxAmount: 12.50,bbjRakeBB: 0.06,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
+    { sb: 10.0, bb: 20.0, rakePercent: 0.10, maxAmount: 15,   bbjRakeBB: 0.06,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
+    { sb: 10.0, bb: 25.0, rakePercent: 0.10, maxAmount: 15,   bbjRakeBB: 0.06,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
+];
+
+/** Look up the correct rake tier for given blinds — falls back to closest match */
+function getRakeTier(smallBlind: number, bigBlind: number): RakeTier {
+    // Exact match first
+    const exact = RAKE_CHART.find(t => t.sb === smallBlind && t.bb === bigBlind);
+    if (exact) return exact;
+
+    // Closest by big blind
+    let closest = RAKE_CHART[0];
+    let minDiff = Math.abs(bigBlind - closest.bb);
+    for (const tier of RAKE_CHART) {
+        const diff = Math.abs(bigBlind - tier.bb);
+        if (diff < minDiff) { minDiff = diff; closest = tier; }
+    }
+    return closest;
+}
+
 const RAKE_LAWS = {
-    RAKE_PERCENT: 0.10,        // 10% of pot
-    CAP_MULTIPLIER: 2.5,       // Rake cap = BB × 2.5
-    BBJ_MULTIPLIER: 0.5,       // BBJ drop = BB × 0.5
+    RAKE_PERCENT: 0.10,        // 10% of pot (universal)
     TOURNAMENT_RAKE: 0.10,     // Flat 10% on tournament buy-ins
     MIN_POT_FOR_RAKE: 0,       // Minimum pot size to take rake
 } as const;
@@ -89,58 +131,59 @@ export const RakeService = {
      * CALCULATE RAKE & BBJ
      * Implements the Locked Scaling Laws
      */
-    calculateRake(potSize: number, bigBlind: number, wentToFlop: boolean = true): RakeCalculation {
+    calculateRake(potSize: number, bigBlind: number, wentToFlop: boolean = true, smallBlind?: number): RakeCalculation {
+        const sb = smallBlind ?? bigBlind / 2;
+        const tier = getRakeTier(sb, bigBlind);
+
         // NO FLOP, NO DROP rule
         if (!wentToFlop) {
             return {
-                potSize,
-                bigBlind,
-                rakePercent: RAKE_LAWS.RAKE_PERCENT,
-                rawRake: 0,
-                cappedRake: 0,
-                rakeCap: bigBlind * RAKE_LAWS.CAP_MULTIPLIER,
-                bbjDrop: 0,
-                totalDeduction: 0,
-                netPot: potSize,
+                potSize, bigBlind,
+                rakePercent: tier.rakePercent,
+                rawRake: 0, cappedRake: 0,
+                rakeCap: tier.maxAmount,
+                bbjDrop: 0, totalDeduction: 0, netPot: potSize,
             };
         }
 
-        // Use integer arithmetic (cents) to avoid floating point precision errors
-        // Multiply by 100, compute, then divide back
+        // Integer arithmetic (cents) to avoid floating point
         const potCents = Math.round(potSize * 100);
-        const bbCents = Math.round(bigBlind * 100);
 
-        // Calculate raw rake (10% of pot)
-        const rawRakeCents = Math.round(potCents * RAKE_LAWS.RAKE_PERCENT);
+        // Raw rake = rakePercent of pot
+        const rawRakeCents = Math.round(potCents * tier.rakePercent);
 
-        // Apply cap (2.5x BB)
-        const rakeCapCents = Math.round(bbCents * RAKE_LAWS.CAP_MULTIPLIER);
+        // Cap from chart (in dollars → cents)
+        const rakeCapCents = Math.round(tier.maxAmount * 100);
         const cappedRakeCents = Math.min(rawRakeCents, rakeCapCents);
 
-        // Calculate BBJ drop (0.5x BB)
-        const bbjDropCents = Math.round(bbCents * RAKE_LAWS.BBJ_MULTIPLIER);
+        // BBJ drop = bbjRakeBB × BB (in BB units → dollars → cents)
+        const bbjDropDollars = tier.bbjRakeBB * bigBlind;
+        const bbjDropCents = Math.round(bbjDropDollars * 100);
 
         // Total deduction from pot
         const totalDeductionCents = cappedRakeCents + bbjDropCents;
 
-        // Convert back to dollars
-        const rawRake = rawRakeCents / 100;
-        const rakeCap = rakeCapCents / 100;
-        const cappedRake = cappedRakeCents / 100;
-        const bbjDrop = bbjDropCents / 100;
-        const totalDeduction = totalDeductionCents / 100;
-
         return {
-            potSize,
-            bigBlind,
-            rakePercent: RAKE_LAWS.RAKE_PERCENT,
-            rawRake,
-            cappedRake,
-            rakeCap,
-            bbjDrop,
-            totalDeduction,
-            netPot: potSize - totalDeduction,
+            potSize, bigBlind,
+            rakePercent: tier.rakePercent,
+            rawRake: rawRakeCents / 100,
+            cappedRake: cappedRakeCents / 100,
+            rakeCap: tier.maxAmount,
+            bbjDrop: bbjDropCents / 100,
+            totalDeduction: totalDeductionCents / 100,
+            netPot: potSize - (totalDeductionCents / 100),
         };
+    },
+
+    /** Get the BBJ split percentages for given stakes */
+    getBBJSplit(smallBlind: number, bigBlind: number): { main: number; backup: number; promo: number } {
+        const tier = getRakeTier(smallBlind, bigBlind);
+        return { main: tier.mainBBJ, backup: tier.backupBBJ, promo: tier.promotional };
+    },
+
+    /** Get the rake tier for given stakes */
+    getTier(smallBlind: number, bigBlind: number): RakeTier {
+        return getRakeTier(smallBlind, bigBlind);
     },
 
     /**
@@ -364,22 +407,15 @@ export const RakeService = {
      * GET SCALING MATRIX
      * Reference table for stake-based caps
      */
-    getScalingMatrix(): { stakeLevel: string; bigBlind: number; rakeCap: number; bbjDrop: number }[] {
-        const stakes = [
-            { stakeLevel: '$0.10 / $0.20', bigBlind: 0.20 },
-            { stakeLevel: '$0.25 / $0.50', bigBlind: 0.50 },
-            { stakeLevel: '$0.50 / $1.00', bigBlind: 1.00 },
-            { stakeLevel: '$1.00 / $2.00', bigBlind: 2.00 },
-            { stakeLevel: '$2.00 / $5.00', bigBlind: 5.00 },
-            { stakeLevel: '$5.00 / $10.00', bigBlind: 10.00 },
-            { stakeLevel: '$10.00 / $20.00', bigBlind: 20.00 },
-            { stakeLevel: '$25.00 / $50.00', bigBlind: 50.00 },
-        ];
-
-        return stakes.map(s => ({
-            ...s,
-            rakeCap: s.bigBlind * RAKE_LAWS.CAP_MULTIPLIER,
-            bbjDrop: s.bigBlind * RAKE_LAWS.BBJ_MULTIPLIER,
+    getScalingMatrix(): { stakeLevel: string; bigBlind: number; rakeCap: number; bbjDrop: number; mainBBJ: number; backupBBJ: number; promo: number }[] {
+        return RAKE_CHART.map(t => ({
+            stakeLevel: `$${t.sb} / $${t.bb}`,
+            bigBlind: t.bb,
+            rakeCap: t.maxAmount,
+            bbjDrop: t.bbjRakeBB * t.bb,
+            mainBBJ: t.mainBBJ,
+            backupBBJ: t.backupBBJ,
+            promo: t.promotional,
         }));
     },
 
