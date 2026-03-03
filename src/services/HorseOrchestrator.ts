@@ -17,7 +17,7 @@
 
 import { supabase } from '../lib/supabase';
 import { HydraService } from './HydraService';
-import { TournamentService } from './TournamentService';
+import { tournamentService } from './TournamentService';
 import { RakeService } from './RakeService';
 import { masterBus } from '../core/MasterBus';
 
@@ -345,7 +345,7 @@ class HorseOrchestrator {
                     });
 
                 if (seatError) {
-                    console.warn(`[Orchestrator] Failed to seat horse ${horse.displayName}: ${seatError.message}`);
+                    console.warn(`[Orchestrator] Failed to seat horse ${horse.name}: ${seatError.message}`);
                     continue;
                 }
 
@@ -412,7 +412,7 @@ class HorseOrchestrator {
                     .insert({
                         tournament_id: tournament.id,
                         user_id: horse.id,
-                        username: horse.displayName,
+                        username: horse.name,
                         chips: config.startingStack,
                         status: 'registered',
                     });
@@ -477,7 +477,7 @@ class HorseOrchestrator {
                     .insert({
                         tournament_id: sng.id,
                         user_id: horse.id,
-                        username: horse.displayName,
+                        username: horse.name,
                         chips: config.startingStack,
                         status: 'registered',
                     });
@@ -547,7 +547,7 @@ class HorseOrchestrator {
                     .insert({
                         tournament_id: spin.id,
                         user_id: horse.id,
-                        username: horse.displayName,
+                        username: horse.name,
                         chips: config.startingStack,
                         status: 'registered',
                     });
