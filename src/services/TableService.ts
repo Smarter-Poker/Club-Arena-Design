@@ -38,7 +38,7 @@ class TableService {
             .from('tables')
             .select('*')
             .eq('is_deleted', false)
-            .in('status', ['waiting', 'active'])
+            .neq('status', 'closed')
             .order('current_players', { ascending: false })
             .limit(limit);
 

@@ -219,6 +219,9 @@ export default function TablePage() {
         joinedAt: Date;
     }>>([]);
 
+    // Buy-in processing lock to prevent double-click
+    const buyInProcessingRef = useRef(false);
+
     // Chat state
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [isChatCollapsed, setIsChatCollapsed] = useState(false);
@@ -1778,86 +1781,93 @@ export default function TablePage() {
                 isOpen={showBuyInModal}
                 onClose={() => setShowBuyInModal(false)}
                 onConfirm={async (amount, autoRebuy) => {
+                    // Debounce protection: prevent double-click
+                    if (buyInProcessingRef.current) return;
+                    buyInProcessingRef.current = true;
+                    try {
 
-                    // DEBUG: Log all buy-in conditions
-                    console.log('[BuyIn] onConfirm called:', {
-                        amount,
-                        autoRebuy,
-                        tableId,
-                        userId,
-                        selectedSeat,
-                        isGuest: userId === 'guest',
-                        tableIdMatch: tableId?.match(/^[0-9a-f-]{36}$/i) ? 'UUID' : 'NOT-UUID',
-                    });
-
-                    // Demo mode bypass - skip wallet RPC for demo tables
-                    const isDemoTable = tableId === 'demo' || !tableId?.match(/^[0-9a-f-]{36}$/i);
-
-                    console.log('[BuyIn] isDemoTable:', isDemoTable);
-                    console.log('[BuyIn] Will attempt real buy-in:', !isDemoTable && !!(userId && userId !== 'guest' && tableId && selectedSeat));
-
-                    if (isDemoTable) {
-                        // Directly set chips for demo mode
-                        setAccountBalance(amount);
-                        const newPlayers = [...tableState.players];
-                        if (selectedSeat && selectedSeat > 0 && selectedSeat <= newPlayers.length) {
-                            newPlayers[selectedSeat - 1] = {
-                                id: userId || 'demo-player',
-                                name: username || 'You',
-                                avatar: '',
-                                stack: amount,
-                                status: 'active',
-                                isHero: true,
-                                showCards: false,
-                            };
-                            setTableState(prev => ({ ...prev, players: newPlayers, heroSeat: selectedSeat }));
-                        }
-                    } else if (userId && userId !== 'guest' && tableId && selectedSeat) {
-                        try {
-                            console.log('[BuyIn] Calling WalletService.lockForBuyIn:', { userId, tableId, amount });
-                            // Lock chips in escrow for table buy-in
-                            await WalletService.lockForBuyIn(userId, tableId, amount);
-                            console.log('[BuyIn] lockForBuyIn SUCCESS');
-                            setAccountBalance(prev => prev + amount);
-
-                            // Add player to local table state
-                            const newPlayers = [...tableState.players];
-                            newPlayers[selectedSeat - 1] = {
-                                id: userId,
-                                name: username || 'Player',
-                                avatar: '',
-                                stack: amount,
-                                status: 'active',
-                                isHero: true,
-                                showCards: false,
-                            };
-                            setTableState(prev => ({ ...prev, players: newPlayers, heroSeat: selectedSeat }));
-
-                            // Notify Hydra service that a real player joined (triggers horse recede)
-                            HydraService.onRealPlayerJoined(tableId, userId);
-
-                            // Broadcast seat update to other clients
-                            await sendAction('player_seated', {
-                                seat: selectedSeat,
-                                userId,
-                                stack: amount,
-                                autoRebuy,
-                            });
-
-                            // Player seated successfully
-                        } catch (error) {
-                            console.error('[BuyIn] Buy-in FAILED:', error);
-                        }
-                    } else {
-                        console.error('[BuyIn] FELL THROUGH - no branch matched:', {
-                            isDemoTable,
-                            userId,
-                            isGuest: userId === 'guest',
+                        // DEBUG: Log all buy-in conditions
+                        console.log('[BuyIn] onConfirm called:', {
+                            amount,
+                            autoRebuy,
                             tableId,
+                            userId,
                             selectedSeat,
+                            isGuest: userId === 'guest',
+                            tableIdMatch: tableId?.match(/^[0-9a-f-]{36}$/i) ? 'UUID' : 'NOT-UUID',
                         });
+
+                        // Demo mode bypass - skip wallet RPC for demo tables
+                        const isDemoTable = tableId === 'demo' || !tableId?.match(/^[0-9a-f-]{36}$/i);
+
+                        console.log('[BuyIn] isDemoTable:', isDemoTable);
+                        console.log('[BuyIn] Will attempt real buy-in:', !isDemoTable && !!(userId && userId !== 'guest' && tableId && selectedSeat));
+
+                        if (isDemoTable) {
+                            // Directly set chips for demo mode
+                            setAccountBalance(amount);
+                            const newPlayers = [...tableState.players];
+                            if (selectedSeat && selectedSeat > 0 && selectedSeat <= newPlayers.length) {
+                                newPlayers[selectedSeat - 1] = {
+                                    id: userId || 'demo-player',
+                                    name: username || 'You',
+                                    avatar: '',
+                                    stack: amount,
+                                    status: 'active',
+                                    isHero: true,
+                                    showCards: false,
+                                };
+                                setTableState(prev => ({ ...prev, players: newPlayers, heroSeat: selectedSeat }));
+                            }
+                        } else if (userId && userId !== 'guest' && tableId && selectedSeat) {
+                            try {
+                                console.log('[BuyIn] Calling WalletService.lockForBuyIn:', { userId, tableId, amount });
+                                // Lock chips in escrow for table buy-in
+                                await WalletService.lockForBuyIn(userId, tableId, amount);
+                                console.log('[BuyIn] lockForBuyIn SUCCESS');
+                                setAccountBalance(prev => prev + amount);
+
+                                // Add player to local table state
+                                const newPlayers = [...tableState.players];
+                                newPlayers[selectedSeat - 1] = {
+                                    id: userId,
+                                    name: username || 'Player',
+                                    avatar: '',
+                                    stack: amount,
+                                    status: 'active',
+                                    isHero: true,
+                                    showCards: false,
+                                };
+                                setTableState(prev => ({ ...prev, players: newPlayers, heroSeat: selectedSeat }));
+
+                                // Notify Hydra service that a real player joined (triggers horse recede)
+                                HydraService.onRealPlayerJoined(tableId, userId);
+
+                                // Broadcast seat update to other clients
+                                await sendAction('player_seated', {
+                                    seat: selectedSeat,
+                                    userId,
+                                    stack: amount,
+                                    autoRebuy,
+                                });
+
+                                // Player seated successfully
+                            } catch (error) {
+                                console.error('[BuyIn] Buy-in FAILED:', error);
+                            }
+                        } else {
+                            console.error('[BuyIn] FELL THROUGH - no branch matched:', {
+                                isDemoTable,
+                                userId,
+                                isGuest: userId === 'guest',
+                                tableId,
+                                selectedSeat,
+                            });
+                        }
+                        setShowBuyInModal(false);
+                    } finally {
+                        buyInProcessingRef.current = false;
                     }
-                    setShowBuyInModal(false);
                 }}
                 tableName={tableState.tableName}
                 minBuyIn={(() => { const bb = parseFloat(tableState.blinds.split('/')[1]) || 2; return bb * 40; })()}
