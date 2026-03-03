@@ -689,6 +689,9 @@ export default function TablePage() {
     // HORSE LOADING — Load seated horses from DB into React table state
     // ═══════════════════════════════════════════════════════════════════════════
     const horsesLoadedRef = useRef(false);
+    // Track horse seat→profile mapping synchronously (not via React state)
+    // so TURN_CHANGE handler can check immediately without waiting for re-render
+    const horseMapRef = useRef<Map<number, { id: string; profile: string; name: string; stack: number }>>(new Map());
 
     useEffect(() => {
         if (!tableId || horsesLoadedRef.current) return;
@@ -726,6 +729,20 @@ export default function TablePage() {
         };
 
         const populateHorsePlayers = (horses: import('../services/HydraService').HorsePlayer[]) => {
+            // Set horse map SYNCHRONOUSLY before React state update
+            // This ensures TURN_CHANGE handler can detect horses immediately
+            for (const horse of horses) {
+                const bbMatch = tableState.blinds.match(/\/(\d+)/);
+                const bigBlind = bbMatch ? parseFloat(bbMatch[1]) : 2;
+                const stack = horse.stack > 0 ? horse.stack : bigBlind * 100;
+                horseMapRef.current.set(horse.seatNumber, {
+                    id: horse.id,
+                    profile: horse.profile,
+                    name: horse.name || `Player ${horse.seatNumber}`,
+                    stack,
+                });
+            }
+
             setTableState(prev => {
                 const updatedPlayers = [...prev.players];
                 let populated = 0;
@@ -733,9 +750,8 @@ export default function TablePage() {
                 for (const horse of horses) {
                     const seatIdx = horse.seatNumber - 1;
                     if (seatIdx >= 0 && seatIdx < updatedPlayers.length && !updatedPlayers[seatIdx]) {
-                        // Calculate stack if not set (use BB-based sizing from profile)
                         const bbMatch = prev.blinds.match(/\/(\d+)/);
-                        const bigBlind = bbMatch ? parseInt(bbMatch[1]) : 2;
+                        const bigBlind = bbMatch ? parseFloat(bbMatch[1]) : 2;
                         const stack = horse.stack > 0 ? horse.stack : bigBlind * 100;
 
                         updatedPlayers[seatIdx] = {
@@ -749,7 +765,7 @@ export default function TablePage() {
                             // Extended horse properties for TURN_CHANGE auto-action
                             isHorse: true,
                             horseProfile: horse.profile,
-                        } as any; // Cast to any since SeatPlayer doesn't have isHorse/horseProfile in its type
+                        } as any;
                         populated++;
                     }
                 }
@@ -933,10 +949,12 @@ export default function TablePage() {
                             setActionTimeRemaining(15); // Reset action timer
                         }
 
-                        // Auto-action for horses (check extended player properties)
+                        // Auto-action for horses (check extended player properties OR horseMapRef)
                         const actingPlayer = currentState.players[event.seat - 1] as any;
-                        if (actingPlayer?.isHorse && handControllerRef.current) {
-                            const bigBlind = parseFloat(currentState.blinds.split('/')[1]) || 2;
+                        const horseInfo = horseMapRef.current.get(event.seat);
+                        const isHorse = actingPlayer?.isHorse || !!horseInfo;
+                        if (isHorse && handControllerRef.current) {
+                            const bigBlind = parseFloat(currentState.blinds.split('/')[1]) || 0.5;
                             const activePlayers = currentState.players.filter(p => p && (p as any).status !== 'folded').length;
 
                             // Get toCall from HandController state for accurate bet-to-call
@@ -946,19 +964,23 @@ export default function TablePage() {
                             const playerBet = currentBets.find((p: any) => p.seat === event.seat)?.bet || 0;
                             const toCall = Math.max(0, maxBet - playerBet);
 
+                            // Use actingPlayer stack or horseInfo stack or engine player stack
+                            const enginePlayer = currentBets.find((p: any) => p.seat === event.seat);
+                            const playerStack = actingPlayer?.stack || horseInfo?.stack || enginePlayer?.stack || 100;
+
                             const context: import('../services/HydraService').HandContext = {
                                 pot: currentState.pot || hcState?.pot || 0,
                                 toCall,
                                 minRaise: Math.max(bigBlind, toCall + bigBlind),
-                                maxRaise: actingPlayer.stack,
+                                maxRaise: playerStack,
                                 position: event.seat <= 3 ? 'early' : event.seat <= 5 ? 'middle' : 'late',
                                 street: (currentState.boardStage || 'preflop') as 'preflop' | 'flop' | 'turn' | 'river',
                                 playersInHand: activePlayers,
-                                stackToPotRatio: (currentState.pot || 1) > 0 ? actingPlayer.stack / (currentState.pot || 1) : 100,
+                                stackToPotRatio: (currentState.pot || 1) > 0 ? playerStack / (currentState.pot || 1) : 100,
                                 isHeadsUp: activePlayers === 2,
                             };
 
-                            const horseProfile = actingPlayer.horseProfile || 'reg';
+                            const horseProfile = actingPlayer?.horseProfile || horseInfo?.profile || 'reg';
                             const decision = HydraService.getDecision(
                                 { ...actingPlayer, profile: horseProfile } as import('../services/HydraService').HorsePlayer,
                                 context
