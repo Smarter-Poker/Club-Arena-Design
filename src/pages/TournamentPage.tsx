@@ -89,12 +89,9 @@ export default function TournamentPage() {
     const handleRegister = async () => {
         if (!selectedTournament) return;
         try {
-            // Deduct buy-in from wallet first
-            await WalletService.lockForBuyIn(
-                currentUser.id,
-                selectedTournament.id,
-                selectedTournament.buy_in
-            );
+            // NOTE: Do NOT call WalletService.lockForBuyIn here — registerPlayer()
+            // already handles wallet deduction atomically (buy_in + rake).
+            // Calling both would double-deduct the player's chips.
 
             await tournamentService.registerPlayer(
                 selectedTournament.id,
@@ -103,16 +100,17 @@ export default function TournamentPage() {
             );
             setIsRegistered(true);
 
-            // Update tournament in list
+            // Update tournament in list (prize pool = buy_in minus rake)
+            const prizeContribution = selectedTournament.buy_in - (selectedTournament.rake || 0);
             setTournaments(prev => prev.map(t =>
                 t.id === selectedTournament.id
-                    ? { ...t, current_players: t.current_players + 1, prize_pool: t.prize_pool + t.buy_in }
+                    ? { ...t, current_players: t.current_players + 1, prize_pool: t.prize_pool + prizeContribution }
                     : t
             ));
             setSelectedTournament(prev => prev ? {
                 ...prev,
                 current_players: prev.current_players + 1,
-                prize_pool: prev.prize_pool + prev.buy_in,
+                prize_pool: prev.prize_pool + prizeContribution,
             } : null);
 
             toast.success(`Registered! ${selectedTournament.buy_in} chips deducted.`);

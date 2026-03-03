@@ -471,6 +471,17 @@ class TournamentService {
         const tournament = await this.getTournament(tournamentId);
         if (!tournament) throw new Error('Tournament not found');
 
+        // Validate tournament has required configuration
+        if (!tournament.blind_structure?.length) {
+            throw new Error('Tournament has no blind structure defined');
+        }
+        if (!tournament.payout_structure?.length) {
+            throw new Error('Tournament has no payout structure defined');
+        }
+        if ((tournament.starting_chips || 0) <= 0) {
+            throw new Error('Tournament starting chips must be > 0');
+        }
+
         // 1. Get Players
         const { data: players } = await supabase
             .from('tournament_players')
@@ -509,8 +520,12 @@ class TournamentService {
             if (table) createdTables.push(table);
         }
 
-        // 3. Seat Players
-        const shuffled = [...players].sort(() => 0.5 - Math.random());
+        // 3. Seat Players — Fisher-Yates shuffle for unbiased randomization
+        const shuffled = [...players];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
         const tableSeats = createdTables.map(t => ({ tableId: t.id, nextSeat: 1 }));
 
         for (let i = 0; i < shuffled.length; i++) {

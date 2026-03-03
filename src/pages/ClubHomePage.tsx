@@ -105,7 +105,10 @@ export default function ClubHomePage() {
         if (profileData) {
             setUserProfile(profileData as UserProfileData);
             // Format player number WITHOUT leading zeros
-            const pNum = (profileData as any).player_number || Math.floor(Math.random() * 9999999);
+            // Use a deterministic hash of user ID as fallback if player_number is not set,
+            // so the same user always sees the same number (not random on each render)
+            const pNum = (profileData as any).player_number ||
+                Math.abs([...profileData.id].reduce((h, c) => (h << 5) - h + c.charCodeAt(0), 0) % 9999999) + 1;
             setPlayerNumber(pNum.toString());
         }
     };

@@ -73,30 +73,32 @@ export default function CashierPage() {
                     return;
                 }
 
-                if (user?.id && tableId) {
-                    const { lockForBuyIn } = useWalletStore.getState();
-                    const success = await lockForBuyIn(user.id, value, tableId);
-                    if (success) {
-                        setMessage({ type: 'success', text: `Bought in for $${value.toLocaleString()}` });
-                        navigate(`/table/${tableId}`);
-                    } else {
-                        setMessage({ type: 'error', text: 'Buy-in failed. Please try again.' });
-                    }
-                } else {
+                if (!user?.id || !tableId) {
+                    setMessage({ type: 'error', text: 'No table selected for buy-in.' });
+                    setIsProcessing(false);
+                    return;
+                }
+                const { lockForBuyIn } = useWalletStore.getState();
+                const success = await lockForBuyIn(user.id, value, tableId);
+                if (success) {
                     setMessage({ type: 'success', text: `Bought in for $${value.toLocaleString()}` });
+                    navigate(`/table/${tableId}`);
+                } else {
+                    setMessage({ type: 'error', text: 'Buy-in failed. Please try again.' });
                 }
             } else {
-                if (user?.id && tableId) {
-                    const { unlockFromTable } = useWalletStore.getState();
-                    const success = await unlockFromTable(user.id, value, tableId);
-                    if (success) {
-                        setMessage({ type: 'success', text: `Cashed out $${value.toLocaleString()}` });
-                        navigate(`/table/${tableId}`);
-                    } else {
-                        setMessage({ type: 'error', text: 'Cash-out failed. Please try again.' });
-                    }
-                } else {
+                if (!user?.id || !tableId) {
+                    setMessage({ type: 'error', text: 'No table selected for cash-out.' });
+                    setIsProcessing(false);
+                    return;
+                }
+                const { unlockFromTable } = useWalletStore.getState();
+                const success = await unlockFromTable(user.id, value, tableId);
+                if (success) {
                     setMessage({ type: 'success', text: `Cashed out $${value.toLocaleString()}` });
+                    navigate(`/table/${tableId}`);
+                } else {
+                    setMessage({ type: 'error', text: 'Cash-out failed. Please try again.' });
                 }
             }
             setAmount('');
