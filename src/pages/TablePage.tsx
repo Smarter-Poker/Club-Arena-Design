@@ -239,6 +239,9 @@ export default function TablePage() {
     // Buy-in processing lock to prevent double-click
     const buyInProcessingRef = useRef(false);
 
+    // Actual club_id from the table record (NOT the tableId)
+    const actualClubIdRef = useRef<string>('');
+
     // Chat state
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [isChatCollapsed, setIsChatCollapsed] = useState(false);
@@ -549,25 +552,30 @@ export default function TablePage() {
 
         // Execute waterfall (distribute rake to all parties)
         if (tableId && players.length > 0) {
-            const clubId = players[0]?.clubId || tableId;
-            await RakeService.executeWaterfall({
-                handId,
-                tableId,
-                clubId,
-                smallBlind,
-                potSize,
-                bigBlind,
-                wentToFlop,
-                players: players.map(p => ({
-                    ...p,
-                    isSittingOut: false,
-                    hasCards: true,
-                    wentToFlop
-                }))
-            });
+            const clubId = actualClubIdRef.current || players[0]?.clubId || tableId;
+            try {
+                await RakeService.executeWaterfall({
+                    handId,
+                    tableId,
+                    clubId,
+                    smallBlind,
+                    potSize,
+                    bigBlind,
+                    wentToFlop,
+                    players: players.map(p => ({
+                        ...p,
+                        isSittingOut: false,
+                        hasCards: true,
+                        wentToFlop
+                    }))
+                });
+            } catch (rakeErr) {
+                console.error('[Rake] Waterfall failed:', rakeErr);
+            }
 
             // Record BBJ contribution (0.5x BB per hand that sees flop)
-            if (wentToFlop && bbjAmount > 0) {
+            // NOTE: Always attempt if wentToFlop — pool starts at 0 and grows from contributions
+            if (wentToFlop) {
                 try {
                     const pool = await BBJService.getPool({ clubId });
                     if (pool) {
@@ -645,6 +653,9 @@ export default function TablePage() {
                     positions: Array(table.max_players || 6).fill(null),
                     lastActions: Array(table.max_players || 6).fill(null),
                 }));
+
+                // Store actual club_id for persistence and rake
+                actualClubIdRef.current = table.club_id || '';
 
                 // Load user's chip balance from club_members for this table's club
                 if (userId && userId !== 'guest' && table.club_id) {
@@ -902,8 +913,8 @@ export default function TablePage() {
         handInProgressRef.current = true;
         _win.__pokerLocks.activeHC = hand;
 
-        // Wire persistence service
-        const clubId = tableId || 'demo';
+        // Wire persistence service — use ACTUAL club_id, not table_id
+        const clubId = actualClubIdRef.current || tableId || 'demo';
         handPersistenceService.wireToHandController(hand, {
             tableId: tableId || 'anonymous',
             clubId,

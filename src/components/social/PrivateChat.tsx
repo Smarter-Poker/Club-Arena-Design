@@ -66,7 +66,7 @@ export function PrivateChat({
                         {friendAvatar ? (
                             <img src={friendAvatar} alt={friendName} />
                         ) : (
-                            <span>{friendName[0].toUpperCase()}</span>
+                            <span>{(friendName || '?')[0]?.toUpperCase() || '?'}</span>
                         )}
                         <span className={`status-dot ${isOnline ? 'online' : 'offline'}`} />
                     </div>

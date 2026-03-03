@@ -153,7 +153,7 @@ function FriendItem({ friend, onChat, onRemove, onInvite }: {
                     {friend.avatar ? (
                         <img src={friend.avatar} alt={friend.name} />
                     ) : (
-                        <span>{friend.name[0].toUpperCase()}</span>
+                        <span>{(friend.name || '?')[0]?.toUpperCase() || '?'}</span>
                     )}
                     <span className={`status-badge ${friend.status}`} />
                 </div>

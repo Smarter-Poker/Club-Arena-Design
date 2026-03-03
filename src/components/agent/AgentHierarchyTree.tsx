@@ -84,7 +84,7 @@ export const AgentHierarchyTree: React.FC<AgentHierarchyTreeProps> = ({
                         {node.avatarUrl ? (
                             <img src={node.avatarUrl} alt={node.displayName} />
                         ) : (
-                            <span>{node.displayName[0]}</span>
+                            <span>{(node.displayName || '?')[0]}</span>
                         )}
                     </div>
 

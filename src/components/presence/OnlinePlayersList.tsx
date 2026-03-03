@@ -119,7 +119,7 @@ export const OnlinePlayersList: React.FC<OnlinePlayersListProps> = ({
                                 {player.avatarUrl ? (
                                     <img src={player.avatarUrl} alt={player.displayName} />
                                 ) : (
-                                    <span>{player.displayName[0]}</span>
+                                    <span>{(player.displayName || '?')[0]}</span>
                                 )}
                                 <PresenceIndicator userId={player.id} size="small" />
                             </div>

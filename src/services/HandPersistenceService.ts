@@ -43,6 +43,12 @@ class HandPersistenceServiceClass {
         controller: HandController,
         config: PersistenceConfig
     ): () => void {
+        // Clean up previous subscription to prevent memory leak
+        if (this.unsubscribe) {
+            this.unsubscribe();
+            this.unsubscribe = null;
+        }
+
         // Subscribe to all hand events
         this.unsubscribe = controller.onEvent((event: HandEvent) => {
             this.handleEvent(event, config);
