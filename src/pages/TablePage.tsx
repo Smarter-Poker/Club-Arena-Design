@@ -1167,15 +1167,25 @@ export default function TablePage() {
                         _win.__pokerLocks.activeHC = null;
                         handNumberRef.current += 1;
                         setTableState(prev => {
+                            // Parse big blind for auto-rebuy calculation
+                            const bbMatch = prev.blinds.match(/\/(\d+\.?\d*)/);
+                            const bb = bbMatch ? parseFloat(bbMatch[1]) : 0.5;
+                            const rebuyStack = bb * 100; // 100 BB rebuy
+
                             // Clear all players' hole cards and reset status for next hand
-                            const clearedPlayers = prev.players.map(p =>
-                                p ? {
+                            // Auto-rebuy horses that busted (stack <= 0)
+                            const clearedPlayers = prev.players.map((p, idx) => {
+                                if (!p) return null;
+                                const isHorse = (p as any).isHorse || horseMapRef.current.has(idx + 1);
+                                const needsRebuy = isHorse && p.stack <= 0;
+                                return {
                                     ...p,
                                     holeCards: undefined,
                                     showCards: false,
-                                    status: p.stack > 0 ? 'active' as const : p.status,
-                                } : null
-                            );
+                                    stack: needsRebuy ? rebuyStack : p.stack,
+                                    status: (needsRebuy || p.stack > 0) ? 'active' as const : p.status,
+                                };
+                            });
                             return {
                                 ...prev,
                                 communityCards: [],
