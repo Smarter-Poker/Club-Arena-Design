@@ -793,7 +793,7 @@ export default function TablePage() {
     // HAND CONTROLLER — Manages poker game loop for ALL tables
     // ═══════════════════════════════════════════════════════════════════════════
     const [handController, setHandController] = useState<HandController | null>(null);
-    const [handNumber, setHandNumber] = useState(1);
+    const handNumberRef = useRef(1);
     const handControllerRef = useRef<HandController | null>(null);
     const handInProgressRef = useRef(false); // Stable ref to prevent re-creation
 
@@ -801,42 +801,45 @@ export default function TablePage() {
     const tableStateRef = useRef(tableState);
     useEffect(() => { tableStateRef.current = tableState; }, [tableState]);
 
-    // Wire HandController for ALL tables (production + demo)
-    useEffect(() => {
-        // Count seated players with chips
-        const seatedPlayers = tableState.players.filter(p => p && p.stack > 0);
-
-        // Need 2+ players to start a hand — use MODULE-LEVEL lock to survive remounts
+    // ═══════════════════════════════════════════════════════════════════════════
+    // startNextHand — IMPERATIVE hand creation (NOT driven by useEffect deps)
+    // Called directly from: (1) horse loading callback, (2) HAND_COMPLETE handler
+    // This eliminates React dependency-array re-runs that caused duplicate HCs
+    // ═══════════════════════════════════════════════════════════════════════════
+    const startNextHandRef = useRef<() => void>(() => {});
+    startNextHandRef.current = () => {
         const tId = tableId || 'default';
-        if (seatedPlayers.length < 2 || handInProgressRef.current || handControllerRef.current || _handActiveForTable[tId] || _activeHandController[tId]) {
-            // If remounted with an active hand, restore the ref from module-level
-            if (_activeHandController[tId] && _activeHandController[tId] !== true && !handControllerRef.current) {
-                handControllerRef.current = _activeHandController[tId];
-                handInProgressRef.current = _handActiveForTable[tId] || false;
-            }
+
+        // GUARD: prevent duplicate creation
+        if (handInProgressRef.current || handControllerRef.current || _handActiveForTable[tId] || _activeHandController[tId]) {
             return;
         }
 
-        // IMMEDIATELY set module-level locks BEFORE any construction — this is a synchronous mutex
-        // that prevents a parallel useEffect (from component remount) from also creating a HandController
-        _handActiveForTable[tId] = true;
-        _activeHandController[tId] = true as any; // Sentinel value — replaced with actual HC below
+        // Read latest state from ref (avoids stale closures)
+        const currentState = tableStateRef.current;
+        const seatedPlayers = currentState.players.filter(p => p && p.stack > 0);
+        if (seatedPlayers.length < 2) return;
 
-        // Parse table settings from blinds string (e.g., "1/2" -> SB=1, BB=2)
-        const blindParts = tableState.blinds.split('/');
+        // IMMEDIATELY set module-level lock
+        _handActiveForTable[tId] = true;
+        _activeHandController[tId] = true as any; // Sentinel
+
+        // Parse table settings
+        const blindParts = currentState.blinds.split('/');
         const smallBlind = parseFloat(blindParts[0]) || 1;
         const bigBlind = parseFloat(blindParts[1]) || 2;
 
-        // Map game type to variant
         const variantMap: Record<string, 'nlh' | 'plo4' | 'plo5' | 'plo6' | 'short_deck'> = {
             'NLH': 'nlh', 'PLO4': 'plo4', 'PLO5': 'plo5', 'PLO6': 'plo6',
             'SHORT': 'short_deck', 'nlh': 'nlh', 'plo4': 'plo4', 'plo5': 'plo5'
         };
-        const gameVariant = variantMap[tableState.gameType] || 'nlh';
+        const gameVariant = variantMap[currentState.gameType] || 'nlh';
+
+        const handNumber = handNumberRef.current;
 
         // Convert to SeatPlayer format for HandController
         const hcPlayers: import('../types/database.types').SeatPlayer[] = seatedPlayers.map((p, idx) => ({
-            seat: p ? tableState.players.indexOf(p) + 1 : idx + 1,
+            seat: p ? currentState.players.indexOf(p) + 1 : idx + 1,
             user_id: p!.id,
             username: p!.name,
             stack: p!.stack,
@@ -847,21 +850,19 @@ export default function TablePage() {
             is_sitting_out: false,
         }));
 
-        // Configure hand with table settings
         const config = {
             tableId: tableId || 'anonymous',
-            handNumber: handNumber,
-            gameVariant: gameVariant,
-            smallBlind: smallBlind,
-            bigBlind: bigBlind,
+            handNumber,
+            gameVariant,
+            smallBlind,
+            bigBlind,
             rakeConfig: {
                 percent: 5,
-                cap: Math.max(3, bigBlind * 15), // Rake cap scales with stakes
+                cap: Math.max(3, bigBlind * 15),
                 noFlop: true
             },
         };
 
-        // Find dealer seat (rotate through seated players)
         const dealerSeatIndex = (handNumber - 1) % seatedPlayers.length;
         const dealerSeat = hcPlayers[dealerSeatIndex]?.seat || 1;
 
@@ -872,28 +873,27 @@ export default function TablePage() {
             console.error('[HC] Failed to create HandController:', err);
             _handActiveForTable[tId] = false;
             _activeHandController[tId] = null;
-            handInProgressRef.current = false;
             return;
         }
         handControllerRef.current = hand;
-        _activeHandController[tId] = hand; // Replace sentinel with actual instance
+        handInProgressRef.current = true;
+        _activeHandController[tId] = hand;
 
-        // Wire persistence service for hand history
-        const clubId = tableId || 'demo'; // In production, get from table record
+        // Wire persistence service
+        const clubId = tableId || 'demo';
         handPersistenceService.wireToHandController(hand, {
             tableId: tableId || 'anonymous',
-            clubId: clubId,
-            stakes: tableState.blinds,
+            clubId,
+            stakes: currentState.blinds,
             gameVariant: gameVariant as 'nlh' | 'plo4' | 'plo5' | 'plo6',
         });
 
         // Subscribe to events and update UI
         hand.onEvent((event) => {
-            // Minimal event logging (remove verbose debug logs for production)
             switch (event.type) {
                 case 'HAND_START':
-                    handInProgressRef.current = true; // Set ref SYNCHRONOUSLY to prevent re-creation
-                    _handActiveForTable[tableId || 'default'] = true; // Module-level lock
+                    handInProgressRef.current = true;
+                    _handActiveForTable[tableId || 'default'] = true;
                     setTableState(prev => ({
                         ...prev,
                         isHandInProgress: true,
@@ -1117,7 +1117,7 @@ export default function TablePage() {
                     }));
                     setLastHandId(`hand-${event.handNumber}`);
 
-                    // Delayed cleanup: clear board and cards after 3 seconds
+                    // Delayed cleanup: clear board and cards after 3 seconds, then start next hand
                     setTimeout(() => {
                         // Clear ALL locks to allow next hand
                         handInProgressRef.current = false;
@@ -1125,7 +1125,7 @@ export default function TablePage() {
                         const tid = tableId || 'default';
                         _handActiveForTable[tid] = false;
                         _activeHandController[tid] = null;
-                        setHandNumber(prev => prev + 1);
+                        handNumberRef.current += 1;
                         setTableState(prev => {
                             // Clear all players' hole cards and reset status for next hand
                             const clearedPlayers = prev.players.map(p =>
@@ -1145,20 +1145,26 @@ export default function TablePage() {
                                 players: clearedPlayers,
                             };
                         });
+                        // Start next hand IMPERATIVELY (not via useEffect)
+                        setTimeout(() => startNextHandRef.current(), 500);
                     }, 3000);
 
                     // Execute rake waterfall
-                    const players = seatedPlayers.map(p => ({
-                        userId: p!.id,
-                        clubId: clubId,
-                        agentId: undefined,
-                    }));
-                    handleHandComplete(
-                        `hand-${event.handNumber}`,
-                        event.rake > 0 ? tableState.pot : 0,
-                        true,
-                        players
-                    );
+                    {
+                        const currentPlayers = tableStateRef.current.players.filter(p => p && p.stack > 0);
+                        const rakeClubId = tableId || 'demo';
+                        const rakePlayers = currentPlayers.map(p => ({
+                            userId: p!.id,
+                            clubId: rakeClubId,
+                            agentId: undefined,
+                        }));
+                        handleHandComplete(
+                            `hand-${event.handNumber}`,
+                            event.rake > 0 ? tableStateRef.current.pot : 0,
+                            true,
+                            rakePlayers
+                        );
+                    }
                     break;
             }
         });
@@ -1174,10 +1180,19 @@ export default function TablePage() {
             _handActiveForTable[tId] = false;
             _activeHandController[tId] = null;
         }
+    };
 
-        // No cleanup — handControllerRef is managed by HAND_COMPLETE handler
-        // Cleaning up here would null the ref during re-renders, breaking horse timeouts
-    }, [tableId, tableState.players, tableState.blinds, tableState.gameType, handNumber]);
+    // Trigger first hand when horses are loaded (via useEffect that watches for players)
+    // This only fires ONCE — subsequent hands are triggered by HAND_COMPLETE
+    const firstHandStartedRef = useRef(false);
+    useEffect(() => {
+        if (firstHandStartedRef.current) return;
+        const seatedPlayers = tableState.players.filter(p => p && p.stack > 0);
+        if (seatedPlayers.length >= 2 && !handControllerRef.current) {
+            firstHandStartedRef.current = true;
+            startNextHandRef.current();
+        }
+    }, [tableState.players]);
 
     // Handle incoming game events from WebSocket
     useEffect(() => {
