@@ -40,12 +40,12 @@ export default function ClubStatsCards({ clubId }: ClubStatsCardsProps) {
     const loadStats = async () => {
         setLoading(true);
         try {
-            // Get member count
+            // Get member count (all non-banned members)
             const { count: memberCount } = await supabase
                 .from('club_members')
                 .select('id', { count: 'exact', head: true })
                 .eq('club_id', clubId)
-                .eq('status', 'active');
+                .not('status', 'in', '("banned","suspended")');
 
             // Get active tables
             const { count: tableCount } = await supabase

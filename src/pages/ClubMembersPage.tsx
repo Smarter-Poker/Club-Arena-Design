@@ -83,7 +83,7 @@ export default function ClubMembersPage() {
                     )
                 `)
                 .eq('club_id', clubId)
-                .eq('status', 'active');
+                .not('status', 'in', '("banned","suspended")');
 
             if (!error && data) {
                 setMembers(data.map((m: any) => ({
