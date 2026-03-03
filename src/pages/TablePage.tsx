@@ -856,6 +856,7 @@ export default function TablePage() {
 
         // Subscribe to events and update UI
         hand.onEvent((event) => {
+            console.log('[HC Event]', event.type, event.type === 'TURN_CHANGE' ? `seat=${(event as any).seat}` : '');
             switch (event.type) {
                 case 'HAND_START':
                     setTableState(prev => ({
@@ -944,6 +945,7 @@ export default function TablePage() {
                     // Play turn alert and reset timer if it's hero's turn
                     {
                         const currentState = tableStateRef.current;
+                        console.log(`[TURN_CHANGE] seat=${event.seat}, heroSeat=${currentState.heroSeat}, players=${currentState.players.filter(Boolean).length}, horseMapSize=${horseMapRef.current.size}`);
                         if (event.seat === currentState.heroSeat) {
                             playTurnAlert();
                             setActionTimeRemaining(15); // Reset action timer
@@ -953,6 +955,7 @@ export default function TablePage() {
                         const actingPlayer = currentState.players[event.seat - 1] as any;
                         const horseInfo = horseMapRef.current.get(event.seat);
                         const isHorse = actingPlayer?.isHorse || !!horseInfo;
+                        console.log(`[TURN_CHANGE] actingPlayer=${actingPlayer?.name || 'null'}, isHorse=${isHorse}, horseInfo=${!!horseInfo}, actingPlayer.isHorse=${actingPlayer?.isHorse}`);
                         if (isHorse && handControllerRef.current) {
                             const bigBlind = parseFloat(currentState.blinds.split('/')[1]) || 0.5;
                             const activePlayers = currentState.players.filter(p => p && (p as any).status !== 'folded').length;
