@@ -351,24 +351,27 @@ export function calculatePots(players: SeatPlayer[]): Pot[] {
     const activePlayers = players.filter(p => !p.is_folded);
     if (activePlayers.length === 0) return [];
 
+    // Use totalInvested (cumulative across all streets) — falls back to bet for backwards compat
+    const getInvestment = (p: SeatPlayer) => p.totalInvested ?? p.bet ?? 0;
+
     // All players who contributed chips (including folded ones)
-    const allContributors = players.filter(p => p.bet > 0);
+    const allContributors = players.filter(p => getInvestment(p) > 0);
     if (allContributors.length === 0) return [];
 
-    // Get unique bet levels from ALL players who put chips in (including folded)
-    const sortedBets = [...new Set(allContributors.map(p => p.bet))].sort((a, b) => a - b);
+    // Get unique investment levels from ALL players who put chips in (including folded)
+    const sortedInvestments = [...new Set(allContributors.map(p => getInvestment(p)))].sort((a, b) => a - b);
 
     const pots: Pot[] = [];
     let previousLevel = 0;
 
-    for (const level of sortedBets) {
+    for (const level of sortedInvestments) {
         if (level === 0) continue;
 
         const contribution = level - previousLevel;
         // Count ALL players (including folded) who put in at least this much
-        const totalContributors = allContributors.filter(p => p.bet >= level).length;
+        const totalContributors = allContributors.filter(p => getInvestment(p) >= level).length;
         // Only active (non-folded) players are eligible to win
-        const eligiblePlayers = activePlayers.filter(p => p.bet >= level);
+        const eligiblePlayers = activePlayers.filter(p => getInvestment(p) >= level);
 
         if (totalContributors > 0 && eligiblePlayers.length > 0) {
             pots.push({

@@ -149,6 +149,7 @@ export class HandController {
         return players.map(p => ({
             ...p,
             bet: 0,
+            totalInvested: 0,
             cards: [],
             is_folded: false,
             is_all_in: false,
@@ -200,6 +201,7 @@ export class HandController {
         if (sbPlayer) {
             const sbAmount = Math.min(smallBlind, sbPlayer.stack);
             sbPlayer.bet = sbAmount;
+            sbPlayer.totalInvested += sbAmount;
             sbPlayer.stack -= sbAmount;
             this.state.pot += sbAmount;
         }
@@ -209,6 +211,7 @@ export class HandController {
         if (bbPlayer) {
             const bbAmount = Math.min(bigBlind, bbPlayer.stack);
             bbPlayer.bet = bbAmount;
+            bbPlayer.totalInvested += bbAmount;
             bbPlayer.stack -= bbAmount;
             this.state.pot += bbAmount;
             this.state.currentBet = bbAmount;
@@ -218,6 +221,7 @@ export class HandController {
         if (this.config.ante) {
             for (const player of this.state.players.filter(p => !p.is_sitting_out)) {
                 const anteAmount = Math.min(this.config.ante, player.stack);
+                player.totalInvested += anteAmount;
                 player.stack -= anteAmount;
                 this.state.pot += anteAmount;
             }
@@ -234,6 +238,7 @@ export class HandController {
 
         for (const player of this.state.players.filter(p => !p.is_sitting_out)) {
             const actualAnte = Math.min(anteAmount, player.stack);
+            player.totalInvested += actualAnte;
             player.stack -= actualAnte;
             this.state.pot += actualAnte;
         }
@@ -303,6 +308,7 @@ export class HandController {
             case 'call':
                 actualAmount = Math.min(bettingState.toCall, player.stack);
                 player.bet += actualAmount;
+                player.totalInvested += actualAmount;
                 player.stack -= actualAmount;
                 this.state.pot += actualAmount;
                 if (player.stack === 0) player.is_all_in = true;
@@ -315,8 +321,10 @@ export class HandController {
                 if (raiseSize > this.state.lastRaise) {
                     this.state.lastRaise = raiseSize;
                 }
-                player.stack -= (actualAmount - player.bet);
-                this.state.pot += (actualAmount - player.bet);
+                const chipsAdded = actualAmount - player.bet;
+                player.totalInvested += chipsAdded;
+                player.stack -= chipsAdded;
+                this.state.pot += chipsAdded;
                 player.bet = actualAmount;
                 this.state.currentBet = actualAmount;
                 if (player.stack === 0) player.is_all_in = true;
@@ -324,6 +332,7 @@ export class HandController {
 
             case 'all_in':
                 actualAmount = player.stack + player.bet;
+                player.totalInvested += player.stack;
                 this.state.pot += player.stack;
                 player.bet += player.stack;
                 player.stack = 0;

@@ -104,6 +104,7 @@ export const useTableStore = create<TableState>((set, get) => ({
             username: username,
             stack: buyIn,
             bet: 0,
+            totalInvested: 0,
             cards: [],
             is_folded: false,
             is_all_in: false,

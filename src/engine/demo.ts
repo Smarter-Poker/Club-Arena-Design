@@ -59,9 +59,9 @@ export function runEngineDemo(): void {
     console.log('\n3️⃣ Testing Hand Controller...');
 
     const players: SeatPlayer[] = [
-        { seat: 1, user_id: 'player-1', username: 'Alice', stack: 1000, bet: 0, cards: [], is_folded: false, is_all_in: false, is_sitting_out: false },
-        { seat: 2, user_id: 'player-2', username: 'Bob', stack: 1000, bet: 0, cards: [], is_folded: false, is_all_in: false, is_sitting_out: false },
-        { seat: 3, user_id: 'player-3', username: 'Charlie', stack: 1000, bet: 0, cards: [], is_folded: false, is_all_in: false, is_sitting_out: false },
+        { seat: 1, user_id: 'player-1', username: 'Alice', stack: 1000, bet: 0, totalInvested: 0, cards: [], is_folded: false, is_all_in: false, is_sitting_out: false },
+        { seat: 2, user_id: 'player-2', username: 'Bob', stack: 1000, bet: 0, totalInvested: 0, cards: [], is_folded: false, is_all_in: false, is_sitting_out: false },
+        { seat: 3, user_id: 'player-3', username: 'Charlie', stack: 1000, bet: 0, totalInvested: 0, cards: [], is_folded: false, is_all_in: false, is_sitting_out: false },
     ];
 
     const config: HandConfig = {

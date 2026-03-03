@@ -239,6 +239,7 @@ export interface SeatPlayer {
     username: string;
     stack: number;
     bet: number;
+    totalInvested: number;  // Cumulative chips invested across all streets (never reset)
     cards: Card[];
     is_folded: boolean;
     is_all_in: boolean;

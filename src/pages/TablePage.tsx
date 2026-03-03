@@ -878,6 +878,7 @@ export default function TablePage() {
             username: p!.name,
             stack: p!.stack,
             bet: 0,
+            totalInvested: 0,
             cards: [],
             is_folded: false,
             is_all_in: false,
