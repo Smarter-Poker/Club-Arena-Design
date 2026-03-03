@@ -384,8 +384,19 @@ class UnionServiceClass {
 
         if (error) return false;
 
-        // Update union club_count
-        await supabase.rpc('increment_union_club_count', { p_union_id: unionId });
+        // Update union club_count via direct update
+        const { data: union } = await supabase
+            .from('unions')
+            .select('club_count')
+            .eq('id', unionId)
+            .single();
+
+        if (union) {
+            await supabase
+                .from('unions')
+                .update({ club_count: (union.club_count || 0) + 1 })
+                .eq('id', unionId);
+        }
 
         // Update club's union_id
         await supabase
@@ -408,8 +419,19 @@ class UnionServiceClass {
 
         if (error) return false;
 
-        // Decrement union club_count (symmetric with addClub's increment)
-        await supabase.rpc('decrement_union_club_count', { p_union_id: unionId });
+        // Decrement union club_count via direct update
+        const { data: union } = await supabase
+            .from('unions')
+            .select('club_count')
+            .eq('id', unionId)
+            .single();
+
+        if (union) {
+            await supabase
+                .from('unions')
+                .update({ club_count: Math.max(0, (union.club_count || 0) - 1) })
+                .eq('id', unionId);
+        }
 
         // Update club's union_id to null
         await supabase

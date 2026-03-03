@@ -346,10 +346,17 @@ class MessagingServiceClass {
      * Toggle a reaction on a message (add if not exists, remove if exists)
      */
     async toggleReaction(messageId: string, reaction: string): Promise<boolean> {
+        const userId = (await supabase.auth.getUser()).data?.user?.id;
+        if (!userId) {
+            console.error('[Messaging] No user ID available for reaction');
+            return false;
+        }
+
         const { data, error } = await supabase
-            .rpc('toggle_message_reaction', {
+            .rpc('fn_toggle_message_reaction', {
                 p_message_id: messageId,
-                p_reaction: reaction
+                p_reaction: reaction,
+                p_user_id: userId
             });
 
         if (error) {
@@ -364,21 +371,26 @@ class MessagingServiceClass {
      * Get reactions for a message
      */
     async getReactions(messageId: string): Promise<MessageReaction[]> {
-        const { data, error } = await supabase
-            .rpc('get_message_reactions', {
-                p_message_id: messageId
-            });
+        try {
+            const { data, error } = await supabase
+                .rpc('get_message_reactions', {
+                    p_message_id: messageId
+                });
 
-        if (error) {
-            console.error('[Messaging] Failed to get reactions:', error);
+            if (error) {
+                console.warn('[Messaging] get_message_reactions RPC not available - returning empty array');
+                return [];
+            }
+
+            return (data || []).map((r: { reaction: string; count: number; user_reacted: boolean }) => ({
+                reaction: r.reaction,
+                count: r.count,
+                userReacted: r.user_reacted
+            }));
+        } catch (err) {
+            console.warn('[Messaging] Failed to get reactions:', err);
             return [];
         }
-
-        return (data || []).map((r: { reaction: string; count: number; user_reacted: boolean }) => ({
-            reaction: r.reaction,
-            count: r.count,
-            userReacted: r.user_reacted
-        }));
     }
 
     /**

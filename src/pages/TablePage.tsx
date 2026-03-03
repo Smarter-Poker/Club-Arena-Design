@@ -1652,8 +1652,8 @@ export default function TablePage() {
                 onClose={() => setShowGameRules(false)}
                 variant="No Limit Hold'em"
                 stakes="$1/$2"
-                minBuyIn={100}
-                maxBuyIn={500}
+                minBuyIn={(() => { const bb = parseFloat(tableState.blinds.split('/')[1]) || 2; return bb * 40; })()}
+                maxBuyIn={(() => { const bb = parseFloat(tableState.blinds.split('/')[1]) || 2; return bb * 100; })()}
                 rakePercentage={5}
                 rakeCap={3}
                 isStraddleEnabled={true}
@@ -1768,9 +1768,9 @@ export default function TablePage() {
                 onWithdrawChips={handleWithdrawChips}
                 currentStack={tableState.players[tableState.heroSeat - 1]?.stack || 0}
                 accountBalance={accountBalance}
-                minBuyIn={100}
-                maxBuyIn={500}
-                maxStack={1000}
+                minBuyIn={(() => { const bb = parseFloat(tableState.blinds.split('/')[1]) || 2; return bb * 40; })()}
+                maxBuyIn={(() => { const bb = parseFloat(tableState.blinds.split('/')[1]) || 2; return bb * 100; })()}
+                maxStack={(() => { const bb = parseFloat(tableState.blinds.split('/')[1]) || 2; return bb * 200; })()}
             />
 
             {/* Buy-In Modal */}
@@ -1836,10 +1836,10 @@ export default function TablePage() {
                     setShowBuyInModal(false);
                 }}
                 tableName={tableState.tableName}
-                minBuyIn={100}
-                maxBuyIn={500}
+                minBuyIn={(() => { const bb = parseFloat(tableState.blinds.split('/')[1]) || 2; return bb * 40; })()}
+                maxBuyIn={(() => { const bb = parseFloat(tableState.blinds.split('/')[1]) || 2; return bb * 100; })()}
                 accountBalance={(tableId === 'demo' || !tableId?.match(/^[0-9a-f-]{36}$/i)) ? 10000 : accountBalance}
-                bigBlind={10}
+                bigBlind={parseFloat(tableState.blinds.split('/')[1]) || 2}
             />
 
             {/* Rabbit Hunt (post-hand card reveal) */}

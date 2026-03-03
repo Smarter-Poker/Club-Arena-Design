@@ -193,7 +193,7 @@ export type MemberRole = keyof typeof MEMBER_ROLES;
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const DEFAULT_TABLE_CONFIG = {
-    minBuyIn: 20, // Big blinds
+    minBuyIn: 40, // Big blinds — 40 BB minimum for all cash games
     maxBuyIn: 100, // Big blinds
     timeBank: 30, // Seconds
     autoMuckEnabled: true,

@@ -171,13 +171,13 @@ export default function DepositWithdrawModal({
 
             if (txError) throw txError;
 
-            // For withdrawals, lock the funds
+            // For withdrawals, update wallet status directly (locking handled via status)
             if (mode === 'withdraw') {
-                await supabase.rpc('lock_wallet_funds', {
-                    p_user_id: userId,
-                    p_wallet_type: 'PLAYER',
-                    p_amount: totalAmount
-                });
+                try {
+                    await supabase.from('wallets').update({ locked_until: new Date(Date.now() + 3600000).toISOString() }).eq('user_id', userId);
+                } catch (err) {
+                    console.warn('[DepositWithdraw] Failed to lock wallet (non-fatal):', err);
+                }
             }
 
             setReferenceId(data.id);

@@ -171,19 +171,39 @@ export const BBJService = {
         tableId: string;
         bigBlind: number;
         currentMainBalance: number;
+        clubId?: string;
+        handNumber?: number;
+        stakesTier?: string;
     }): Promise<BBJContribution | null> {
         const contribution = this.calculateContribution(params.bigBlind);
-        const ratios = this.getAllocationRatios(params.currentMainBalance);
+
+        // Determine stakes tier from big blind
+        const stakesTier = params.stakesTier || (
+            params.bigBlind <= 100 ? 'micro' :
+            params.bigBlind <= 500 ? 'low' :
+            params.bigBlind <= 2000 ? 'mid' : 'high'
+        );
+
+        // Get club_id from table if not provided
+        let clubId = params.clubId;
+        if (!clubId) {
+            const { data: tableData } = await supabase
+                .from('tables')
+                .select('club_id')
+                .eq('id', params.tableId)
+                .single();
+            clubId = tableData?.club_id || '';
+        }
 
         // Call RPC to atomically update pool and record contribution
-        const { data, error } = await supabase.rpc('bbj_record_contribution', {
-            p_pool_id: params.poolId,
-            p_hand_id: params.handId,
+        // Using the existing add_bbj_contribution function signature
+        const { data, error } = await supabase.rpc('add_bbj_contribution', {
             p_table_id: params.tableId,
+            p_club_id: clubId,
             p_amount: contribution,
-            p_main_portion: contribution * ratios.MAIN,
-            p_backup_portion: contribution * ratios.BACKUP,
-            p_promo_portion: contribution * ratios.PROMO,
+            p_big_blind: params.bigBlind,
+            p_hand_number: params.handNumber || 0,
+            p_stakes_tier: stakesTier,
         });
 
         if (error) {
@@ -303,19 +323,38 @@ export const BBJService = {
         const tableShare = totalAmount * PAYOUT_SHARES.TABLE;
         const perPlayerShare = tableShare / params.dealtInPlayerIds.length;
 
-        // Call RPC to atomically:
-        // 1. Transfer funds from pool to users
-        // 2. Reset main balance (seed from backup)
-        // 3. Record payout event
-        const { data, error } = await supabase.rpc('bbj_execute_payout', {
-            p_pool_id: params.poolId,
-            p_hand_id: params.handId,
-            p_loser_user_id: params.loserUserId,
+        // Get table/club context from pool
+        const { data: poolContext } = await supabase
+            .from('bbj_pools')
+            .select('club_id')
+            .eq('id', params.poolId)
+            .single();
+
+        // Get table info for context
+        const tableId = params.handId; // Use hand context to find table
+        const clubId = poolContext?.club_id || '';
+
+        // Call RPC to atomically execute the BBJ payout
+        // Using the existing award_bbj function
+        const { data, error } = await supabase.rpc('award_bbj', {
+            p_club_id: clubId,
+            p_table_id: tableId,
+            p_hand_number: 0,
+            p_big_blind: 0,
+            p_stakes_tier: 'mid',
+            p_game_variant: 'nlh',
             p_winner_user_id: params.winnerUserId,
-            p_dealt_in_player_ids: params.dealtInPlayerIds,
-            p_winner_share: winnerShare,
-            p_loser_share: loserShare,
-            p_table_share: tableShare,
+            p_winner_hand: 'BBJ Winner',
+            p_winner_cards: '',
+            p_winner_display_name: '',
+            p_loser_user_id: params.loserUserId,
+            p_loser_hand: 'BBJ Qualifier',
+            p_loser_cards: '',
+            p_loser_display_name: '',
+            p_payout_total_pct: 100,
+            p_payout_winner_pct: PAYOUT_SHARES.WINNER * 100,
+            p_payout_loser_pct: PAYOUT_SHARES.LOSER * 100,
+            p_payout_table_pct: PAYOUT_SHARES.TABLE * 100,
         });
 
         if (error) {
@@ -355,12 +394,22 @@ export const BBJService = {
         recipientUserIds: string[];
         reason: string;
     }): Promise<boolean> {
-        const { error } = await supabase.rpc('bbj_promo_payout', {
-            p_pool_id: params.poolId,
-            p_amount: params.amount,
-            p_recipient_user_ids: params.recipientUserIds,
-            p_reason: params.reason,
-        });
+        // Distribute promo payout to each recipient
+        const perPlayer = Math.floor(params.amount / params.recipientUserIds.length);
+        let lastError: Error | null = null;
+
+        for (const userId of params.recipientUserIds) {
+            const { error: payoutError } = await supabase.rpc('add_to_promo_wallet', {
+                p_user_id: userId,
+                p_amount: perPlayer,
+            });
+            if (payoutError) {
+                console.error(`BBJService.executePromoPayout: Failed for ${userId}:`, payoutError);
+                lastError = payoutError;
+            }
+        }
+
+        const error = lastError;
 
         if (error) {
             console.error('BBJService.executePromoPayout error:', error);

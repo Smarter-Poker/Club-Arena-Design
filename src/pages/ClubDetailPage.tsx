@@ -513,7 +513,7 @@ export default function ClubDetailPage() {
                                                         if (!confirm(`Delete table "${table.name}"?`)) return;
                                                         setDeletingTableId(table.id);
                                                         try {
-                                                            const { error } = await supabase.rpc('soft_delete_table', { table_id: table.id });
+                                                            const { error } = await supabase.from('tables').update({ status: 'deleted', is_active: false }).eq('id', table.id);
                                                             if (error) throw error;
                                                             setTables(prev => prev.filter(t => t.id !== table.id));
                                                             toast.success('Table deleted');

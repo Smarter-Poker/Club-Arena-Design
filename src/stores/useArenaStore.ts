@@ -94,14 +94,20 @@ export const useArenaStore = create<ArenaState>()(
                     const { data: user } = await supabase.auth.getUser();
                     if (!user.user) return;
 
-                    const { data, error } = await supabase.rpc('get_user_stats', {
+                    // Try get_user_level_stats first, fall back to defaults if not available
+                    const { data, error } = await supabase.rpc('get_user_level_stats', {
                         p_user_id: user.user.id,
                     });
 
-                    if (error) throw error;
-                    set({ stats: data });
+                    if (error) {
+                        console.warn('[Store] get_user_level_stats RPC not available - using defaults');
+                        set({ stats: { total_clubs: 0, active_tables: 0, active_players: 0, total_hands_24h: 0, biggest_pot_24h: 0, training_sessions_active: 0 } });
+                        return;
+                    }
+                    set({ stats: data || { total_clubs: 0, active_tables: 0, active_players: 0, total_hands_24h: 0, biggest_pot_24h: 0, training_sessions_active: 0 } });
                 } catch (error) {
-                    console.error('[Store] Load stats failed:', error);
+                    console.warn('[Store] Load stats failed - using defaults:', error);
+                    set({ stats: { total_clubs: 0, active_tables: 0, active_players: 0, total_hands_24h: 0, biggest_pot_24h: 0, training_sessions_active: 0 } });
                 } finally {
                     set({ isLoadingStats: false });
                 }

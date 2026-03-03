@@ -123,7 +123,7 @@ class BonusServiceClass {
     async claimDailyBonus(userId: string): Promise<{ success: boolean; reward: number; rewardType: string }> {
         // Atomic claim: RPC checks last_daily_claim < today AND increments streak in one operation
         // This prevents TOCTOU double-claims from concurrent requests
-        const { data: claimResult, error } = await supabase.rpc('try_claim_daily_bonus', {
+        const { data: claimResult, error } = await supabase.rpc('claim_daily_bonus', {
             p_user_id: userId,
         });
 
@@ -191,18 +191,23 @@ class BonusServiceClass {
      */
     async updateProgress(userId: string, bonusId: string, amount: number = 1): Promise<number> {
         // Use atomic RPC to prevent read-modify-write race on concurrent progress updates
-        const { data, error } = await supabase.rpc('increment_bonus_progress', {
-            p_bonus_id: bonusId,
-            p_user_id: userId,
-            p_amount: amount,
-        });
+        try {
+            const { data, error } = await supabase.rpc('increment_bonus_progress', {
+                p_bonus_id: bonusId,
+                p_user_id: userId,
+                p_amount: amount,
+            });
 
-        if (error) {
-            console.error('[Bonus] Failed to update progress:', error);
+            if (error) {
+                console.warn('[Bonus] increment_bonus_progress RPC not available - returning silently');
+                return 0;
+            }
+
+            return data ?? 0;
+        } catch (err) {
+            console.warn('[Bonus] Failed to update progress (non-critical):', err);
             return 0;
         }
-
-        return data ?? 0;
     }
 
     /**

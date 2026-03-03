@@ -19,6 +19,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { SettlementService } from './SettlementService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -346,19 +347,38 @@ export const CreditService = {
             }
         }
 
-        // STEP 2: Atomically update invoice amounts to prevent race conditions
-        const { error: updateError } = await supabase.rpc('apply_invoice_payment', {
-            p_invoice_id: invoiceId,
-            p_amount: amount,
-        });
+        // STEP 2: Atomically update invoice amounts via direct table update
+        const { data: invoiceUpdate, error: fetchError2 } = await supabase
+            .from('credit_invoices')
+            .select('amount_paid, amount_remaining')
+            .eq('id', invoiceId)
+            .single();
+
+        if (fetchError2) {
+            throw new Error(`Failed to fetch invoice: ${fetchError2.message}`);
+        }
+
+        const newAmountPaid = (invoiceUpdate?.amount_paid || 0) + amount;
+        const newAmountRemaining = Math.max(0, (invoiceUpdate?.amount_remaining || 0) - amount);
+
+        const { error: updateError } = await supabase
+            .from('credit_invoices')
+            .update({
+                amount_paid: newAmountPaid,
+                amount_remaining: newAmountRemaining,
+                status: newAmountRemaining <= 0 ? 'paid' : 'partial',
+            })
+            .eq('id', invoiceId);
 
         if (updateError) {
             // Rollback wallet deduction if invoice update failed
             if (method === 'wallet') {
                 try {
-                    await supabase.rpc('credit_agent_balance', {
+                    const periodId = (await SettlementService.getCurrentPeriod()).id;
+                    await supabase.rpc('credit_agent_commission', {
                         p_agent_id: invoice.agent_id,
                         p_amount: amount,
+                        p_period_id: periodId,
                     });
                 } catch (rollbackErr) {
                     console.error('[CreditService] Rollback failed:', rollbackErr);

@@ -252,7 +252,7 @@ class CreditRequestServiceClass {
         requestId: string
     ): Promise<void> {
         // Use RPC for atomic credit transfer
-        const { error } = await supabase.rpc('execute_credit_transfer', {
+        const { error } = await supabase.rpc('wallet_user_transfer', {
             p_from_user_id: fromUserId,
             p_to_user_id: toUserId,
             p_amount: amount,

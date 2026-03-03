@@ -89,7 +89,7 @@ export function SpinAndGoLobby({ clubId, onRegister }: SpinAndGoLobbyProps) {
 
         setRegistering(tournament.id);
         try {
-            const { error } = await supabase.rpc('fn_register_spin_tournament', {
+            const { error } = await supabase.rpc('register_for_tournament', {
                 p_tournament_id: tournament.id,
                 p_user_id: user.id
             });

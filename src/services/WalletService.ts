@@ -253,9 +253,10 @@ export const WalletService = {
 
         // 2. Atomically deduct chips using RPC to prevent race conditions
         // This single RPC call checks balance AND deducts in one atomic DB operation
-        const { data: rpcResult, error: rpcError } = await supabase.rpc('lock_chips_for_buyin', {
+        const { data: rpcResult, error: rpcError } = await supabase.rpc('lock_chips_for_table', {
             p_user_id: userId,
             p_club_id: tableData.club_id,
+            p_table_id: tableId,
             p_amount: amount,
         });
 
@@ -264,7 +265,7 @@ export const WalletService = {
             // SECURITY: Do NOT fall back to non-atomic deduction — it has a race condition
             // that allows double-spending. If the RPC doesn't exist, fail hard.
             if (rpcError.code === '42883') { // function does not exist
-                console.error('[WalletService] CRITICAL: lock_chips_for_buyin RPC not deployed. Cannot proceed safely.');
+                console.error('[WalletService] CRITICAL: lock_chips_for_table RPC not deployed. Cannot proceed safely.');
                 throw new Error('Buy-in system not available. Please contact support.');
             }
             throw new Error(rpcError.message || 'Failed to deduct chips for buy-in');
@@ -315,9 +316,17 @@ export const WalletService = {
      * Unlock chips on cash-out from table
      */
     async unlockFromTable(userId: string, tableId: string, amount: number): Promise<boolean> {
+        // Get club_id from table for the RPC
+        const { data: tableData } = await supabase
+            .from('tables')
+            .select('club_id')
+            .eq('id', tableId)
+            .single();
+
         const { error } = await supabase.rpc('unlock_chips_from_table', {
             p_user_id: userId,
             p_table_id: tableId,
+            p_club_id: tableData?.club_id || '',
             p_amount: amount,
         });
 
@@ -410,12 +419,29 @@ export const WalletService = {
      * Process dealer tip from player's table stack
      */
     async processDealerTip(userId: string, tableId: string, amount: number): Promise<boolean> {
-        // Deduct from player's locked chips at table via RPC
-        const { error } = await supabase.rpc('deduct_table_chips', {
-            p_user_id: userId,
-            p_table_id: tableId,
-            p_amount: amount,
-        });
+        // Deduct from player's locked chips at table
+        // Use table_chip_locks to track locked chip balances
+        const { data: lockData, error: lockError } = await supabase
+            .from('table_chip_locks')
+            .select('locked_amount')
+            .eq('user_id', userId)
+            .eq('table_id', tableId)
+            .single();
+
+        if (lockError || !lockData) {
+            console.error('WalletService.processDealerTip: No chip lock found:', lockError);
+            throw new Error('No chips locked at this table');
+        }
+
+        if (lockData.locked_amount < amount) {
+            throw new Error('Insufficient chips for dealer tip');
+        }
+
+        const { error } = await supabase
+            .from('table_chip_locks')
+            .update({ locked_amount: lockData.locked_amount - amount })
+            .eq('user_id', userId)
+            .eq('table_id', tableId);
 
         if (error) {
             console.error('WalletService.processDealerTip deduction failed:', error);
@@ -444,11 +470,27 @@ export const WalletService = {
      */
     async processInsurance(userId: string, tableId: string, handId: string, premium: number): Promise<boolean> {
         // Deduct premium from player's table stack
-        const { error: deductError } = await supabase.rpc('deduct_table_chips', {
-            p_user_id: userId,
-            p_table_id: tableId,
-            p_amount: premium,
-        });
+        const { data: chipLock, error: chipLockError } = await supabase
+            .from('table_chip_locks')
+            .select('locked_amount')
+            .eq('user_id', userId)
+            .eq('table_id', tableId)
+            .single();
+
+        if (chipLockError || !chipLock) {
+            console.error('[WalletService] Insurance: No chip lock found:', chipLockError);
+            throw new Error('No chips locked at this table');
+        }
+
+        if (chipLock.locked_amount < premium) {
+            throw new Error('Insufficient chips for insurance premium');
+        }
+
+        const { error: deductError } = await supabase
+            .from('table_chip_locks')
+            .update({ locked_amount: chipLock.locked_amount - premium })
+            .eq('user_id', userId)
+            .eq('table_id', tableId);
 
         if (deductError) {
             console.error('[WalletService] Insurance deduction failed:', deductError);

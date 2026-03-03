@@ -468,7 +468,7 @@ class AgentServiceClass {
         if (fromWallet === toWallet) throw new Error('Cannot transfer to the same wallet');
 
         // Use RPC for atomic wallet-to-wallet transfer to prevent race conditions
-        const { error } = await supabase.rpc('agent_self_transfer', {
+        const { error } = await supabase.rpc('wallet_internal_transfer', {
             p_agent_id: agentId,
             p_amount: amount,
             p_from_wallet: fromWallet,
@@ -513,9 +513,8 @@ class AgentServiceClass {
         if (debitError) throw debitError;
 
         // STEP 2: Credit player via atomic RPC — rollback agent on failure
-        const { error: rpcError } = await supabase.rpc('credit_player_chips', {
+        const { error: rpcError } = await supabase.rpc('add_chips', {
             p_user_id: playerId,
-            p_club_id: clubId,
             p_amount: amount,
         });
 
@@ -603,9 +602,8 @@ class AgentServiceClass {
                         business_balance: subAgent.businessBalance + dist.amount,
                     }).eq('id', dist.toId);
                 } else {
-                    await supabase.rpc('credit_player_chips', {
+                    await supabase.rpc('add_chips', {
                         p_user_id: dist.toId,
-                        p_club_id: agent.clubId,
                         p_amount: dist.amount,
                     });
                 }

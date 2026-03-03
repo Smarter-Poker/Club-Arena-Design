@@ -209,8 +209,8 @@ const DEFAULT_CONFIG: TableConfig = {
     actionTimeSeconds: 15,
     smallBlind: 0.05,
     bigBlind: 0.10,
-    minBuyInBB: 2,
-    maxBuyInBB: 25,
+    minBuyInBB: 40,
+    maxBuyInBB: 100,
     anteBB: 0,
     careerPercentMin: 0,
     maintainPercentMin: 0,
@@ -408,7 +408,7 @@ export default function TableConfigPage() {
     const handleDeleteTable = async (tableId: string) => {
         setDeleting(true);
         try {
-            const { error } = await supabase.rpc('soft_delete_table', { table_id: tableId });
+            const { error } = await supabase.from('tables').update({ status: 'deleted', is_active: false }).eq('id', tableId);
             if (error) throw error;
 
             toast.success('Table deleted');

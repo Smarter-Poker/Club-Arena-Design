@@ -209,10 +209,19 @@ class PromotionServiceClass {
 
         if (error) throw error;
 
-        // Atomically increment claim count to prevent TOCTOU over-claiming
-        await supabase.rpc('increment_promotion_claim_count', {
-            p_promotion_id: promotionId,
-        });
+        // Atomically increment claim count via direct update
+        const { data: promoData } = await supabase
+            .from('promotions')
+            .select('claim_count')
+            .eq('id', promotionId)
+            .single();
+
+        if (promoData) {
+            await supabase
+                .from('promotions')
+                .update({ claim_count: (promoData.claim_count || 0) + 1 })
+                .eq('id', promotionId);
+        }
 
         return this.mapClaim(data);
     }
@@ -232,15 +241,23 @@ class PromotionServiceClass {
     }
 
     async updateWagerProgress(claimId: string, wagerAmount: number): Promise<void> {
-        // Use RPC for atomic increment to prevent race conditions
+        // Use direct update for atomic increment to prevent race conditions
         // on concurrent wager events
-        const { error } = await supabase.rpc('increment_wager_progress', {
-            p_claim_id: claimId,
-            p_wager_amount: wagerAmount,
-        });
+        const { data: claim } = await supabase
+            .from('promotion_claims')
+            .select('wager_progress')
+            .eq('id', claimId)
+            .single();
 
-        if (error) {
-            console.error('[PromotionService] Failed to update wager progress:', error);
+        if (claim) {
+            const { error } = await supabase
+                .from('promotion_claims')
+                .update({ wager_progress: (claim.wager_progress || 0) + wagerAmount })
+                .eq('id', claimId);
+
+            if (error) {
+                console.error('[PromotionService] Failed to update wager progress:', error);
+            }
         }
     }
 

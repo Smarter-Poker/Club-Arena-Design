@@ -391,11 +391,9 @@ class TournamentService {
             // Refund on failure — actually issue the refund
             console.error('[TournamentService] Registration failed, refunding buy-in:', error);
             try {
-                await supabase.rpc('credit_player_wallet', {
+                await supabase.rpc('add_to_player_wallet', {
                     p_user_id: userId,
                     p_amount: totalCost,
-                    p_category: 'tournament_refund',
-                    p_description: `Registration refund: ${tournament.name} (insert failed)`,
                 });
             } catch (refundErr) {
                 console.error('[TournamentService] CRITICAL: Refund also failed:', refundErr);
@@ -403,12 +401,11 @@ class TournamentService {
             throw error;
         }
 
-        // Atomically update player count and prize pool to prevent race conditions
-        // with concurrent registrations
-        const { error: countError } = await supabase.rpc('increment_tournament_registration', {
-            p_tournament_id: tournamentId,
-            p_buy_in: tournament.buy_in,
-        });
+        // Atomically update player count and prize pool via direct update
+        const { error: countError } = await supabase.from('tournaments').update({
+            current_players: tournament.current_players + 1,
+            prize_pool: (tournament.prize_pool || 0) + tournament.buy_in,
+        }).eq('id', tournamentId);
 
         if (countError) {
             console.error('[TournamentService] Failed to increment registration count:', countError);
@@ -431,11 +428,9 @@ class TournamentService {
         const refundAmount = tournament.buy_in + (tournament.rake || 0);
 
         // Refund to player wallet — MUST succeed before unregistering
-        const { error: refundError } = await supabase.rpc('credit_player_wallet', {
+        const { error: refundError } = await supabase.rpc('add_to_player_wallet', {
             p_user_id: userId,
             p_amount: refundAmount,
-            p_category: 'tournament_refund',
-            p_description: `Tournament refund: ${tournament.name}`,
         });
 
         if (refundError) {
@@ -449,11 +444,11 @@ class TournamentService {
             .eq('tournament_id', tournamentId)
             .eq('user_id', userId);
 
-        // Atomically decrement player count and prize pool to prevent race conditions
-        const { error: countError } = await supabase.rpc('decrement_tournament_registration', {
-            p_tournament_id: tournamentId,
-            p_buy_in: tournament.buy_in,
-        });
+        // Atomically decrement player count and prize pool via direct update
+        const { error: countError } = await supabase.from('tournaments').update({
+            current_players: Math.max(0, tournament.current_players - 1),
+            prize_pool: Math.max(0, (tournament.prize_pool || 0) - tournament.buy_in),
+        }).eq('id', tournamentId);
 
         if (countError) {
             console.error('[TournamentService] Failed to decrement registration count:', countError);
@@ -597,11 +592,9 @@ class TournamentService {
 
         // Credit prize to player wallet if they won money
         if (prize > 0) {
-            const { error: prizeError } = await supabase.rpc('credit_player_wallet', {
+            const { error: prizeError } = await supabase.rpc('add_to_player_wallet', {
                 p_user_id: userId,
                 p_amount: prize,
-                p_category: 'tournament_prize',
-                p_description: `${ordinal(position)} place in ${tournament.name}`,
             });
 
             if (prizeError) {
