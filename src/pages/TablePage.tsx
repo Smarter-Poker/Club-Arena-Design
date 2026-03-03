@@ -38,6 +38,7 @@ import BadBeatJackpot from '../components/table/BadBeatJackpot';
 import { ThrowableSelector } from '../components/table/ThrowableSelector';
 import { ThrowAnimationContainer } from '../components/table/ThrowAnimation';
 import { throwableService, type Throwable, type ThrowEvent } from '../services/ThrowableService';
+import { useTabKeepAlive, workerTimeout } from '../hooks/useTabKeepAlive';
 import TipDealer from '../components/table/TipDealer';
 import StraddleToggle from '../components/table/StraddleToggle';
 import TimeBank from '../components/table/TimeBank';
@@ -181,6 +182,9 @@ if (!_win.__pokerLocks) {
 export default function TablePage() {
     const { tableId } = useParams<{ tableId: string }>();
     const navigate = useNavigate();
+
+    // Prevent Chrome from throttling this tab (keeps horse AI timers alive)
+    useTabKeepAlive();
 
     // Get current user
     const [userId, setUserId] = useState<string>('guest');
@@ -1080,8 +1084,8 @@ export default function TablePage() {
                                 context
                             );
 
-                            // Execute after think time
-                            setTimeout(() => {
+                            // Execute after think time (workerTimeout is throttle-proof)
+                            workerTimeout(() => {
                                 if (handControllerRef.current) {
                                     let finalAction = decision.action as string;
                                     let finalAmount = decision.amount;
@@ -1201,7 +1205,7 @@ export default function TablePage() {
                     setLastHandId(`hand-${event.handNumber}`);
 
                     // Delayed cleanup: clear board and cards after 3 seconds, then start next hand
-                    setTimeout(() => {
+                    workerTimeout(() => {
                         // Clear ALL locks to allow next hand
                         handInProgressRef.current = false;
                         handControllerRef.current = null;
@@ -1238,7 +1242,7 @@ export default function TablePage() {
                             };
                         });
                         // Start next hand IMPERATIVELY (not via useEffect)
-                        setTimeout(() => startNextHandRef.current(), 500);
+                        workerTimeout(() => startNextHandRef.current(), 500);
                     }, 3000);
 
                     // Execute rake waterfall
@@ -1434,7 +1438,7 @@ export default function TablePage() {
         soundService.playChips();
 
         // Check for all-in scenario triggers (after slight delay to let state update)
-        setTimeout(() => {
+        workerTimeout(() => {
             const activePlayers = tableState.players.filter(
                 p => p && p.status === 'active' && p.stack > 0
             );
