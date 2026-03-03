@@ -1779,8 +1779,22 @@ export default function TablePage() {
                 onClose={() => setShowBuyInModal(false)}
                 onConfirm={async (amount, autoRebuy) => {
 
+                    // DEBUG: Log all buy-in conditions
+                    console.log('[BuyIn] onConfirm called:', {
+                        amount,
+                        autoRebuy,
+                        tableId,
+                        userId,
+                        selectedSeat,
+                        isGuest: userId === 'guest',
+                        tableIdMatch: tableId?.match(/^[0-9a-f-]{36}$/i) ? 'UUID' : 'NOT-UUID',
+                    });
+
                     // Demo mode bypass - skip wallet RPC for demo tables
                     const isDemoTable = tableId === 'demo' || !tableId?.match(/^[0-9a-f-]{36}$/i);
+
+                    console.log('[BuyIn] isDemoTable:', isDemoTable);
+                    console.log('[BuyIn] Will attempt real buy-in:', !isDemoTable && !!(userId && userId !== 'guest' && tableId && selectedSeat));
 
                     if (isDemoTable) {
                         // Directly set chips for demo mode
@@ -1800,8 +1814,10 @@ export default function TablePage() {
                         }
                     } else if (userId && userId !== 'guest' && tableId && selectedSeat) {
                         try {
+                            console.log('[BuyIn] Calling WalletService.lockForBuyIn:', { userId, tableId, amount });
                             // Lock chips in escrow for table buy-in
                             await WalletService.lockForBuyIn(userId, tableId, amount);
+                            console.log('[BuyIn] lockForBuyIn SUCCESS');
                             setAccountBalance(prev => prev + amount);
 
                             // Add player to local table state
@@ -1830,8 +1846,16 @@ export default function TablePage() {
 
                             // Player seated successfully
                         } catch (error) {
-                            console.error('Buy-in failed:', error);
+                            console.error('[BuyIn] Buy-in FAILED:', error);
                         }
+                    } else {
+                        console.error('[BuyIn] FELL THROUGH - no branch matched:', {
+                            isDemoTable,
+                            userId,
+                            isGuest: userId === 'guest',
+                            tableId,
+                            selectedSeat,
+                        });
                     }
                     setShowBuyInModal(false);
                 }}

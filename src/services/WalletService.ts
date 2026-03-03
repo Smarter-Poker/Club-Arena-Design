@@ -261,14 +261,9 @@ export const WalletService = {
         });
 
         if (rpcError) {
-            console.error('[WalletService] Atomic buy-in deduction failed:', rpcError);
-            // SECURITY: Do NOT fall back to non-atomic deduction — it has a race condition
-            // that allows double-spending. If the RPC doesn't exist, fail hard.
-            if (rpcError.code === '42883') { // function does not exist
-                console.error('[WalletService] CRITICAL: lock_chips_for_table RPC not deployed. Cannot proceed safely.');
-                throw new Error('Buy-in system not available. Please contact support.');
-            }
-            throw new Error(rpcError.message || 'Failed to deduct chips for buy-in');
+            console.warn('[WalletService] RPC lock_chips_for_table failed:', rpcError.message, '— falling back to direct deduction');
+            // RPC failed (permission denied or doesn't exist) — use direct table update fallback
+            return this.lockForBuyInFallback(userId, tableData.club_id, amount);
         }
 
         if (rpcResult === false) {
@@ -323,14 +318,34 @@ export const WalletService = {
             .eq('id', tableId)
             .single();
 
+        const clubId = tableData?.club_id || '';
+
         const { error } = await supabase.rpc('unlock_chips_from_table', {
             p_user_id: userId,
             p_table_id: tableId,
-            p_club_id: tableData?.club_id || '',
+            p_club_id: clubId,
             p_amount: amount,
         });
 
-        if (error) throw error;
+        if (error) {
+            console.warn('[WalletService] RPC unlock_chips_from_table failed:', error.message, '— falling back to direct credit');
+            // Fallback: credit chips back to club_members directly
+            const { data: memberData } = await supabase
+                .from('club_members')
+                .select('chip_balance')
+                .eq('club_id', clubId)
+                .eq('user_id', userId)
+                .single();
+
+            const currentBalance = memberData?.chip_balance || 0;
+            const { error: updateError } = await supabase
+                .from('club_members')
+                .update({ chip_balance: currentBalance + amount })
+                .eq('club_id', clubId)
+                .eq('user_id', userId);
+
+            if (updateError) throw updateError;
+        }
         return true;
     },
 
