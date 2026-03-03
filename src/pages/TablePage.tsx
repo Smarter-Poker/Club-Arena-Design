@@ -132,14 +132,20 @@ const createEmptySeats = (count: 6 | 9): (SeatPlayer | null)[] => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// MODULE-LEVEL LOCKS — persist across component remounts (GLOBAL, not per-table)
-// Using global locks because tableId from useParams() can be undefined during
-// React re-renders, causing per-table locks to check wrong keys.
+// WINDOW-LEVEL LOCKS — TRUE singletons that survive module reloads, lazy-load
+// chunk duplication, and React component remounts. Using window.* guarantees
+// only ONE HandController exists regardless of how many module instances load.
 // ═══════════════════════════════════════════════════════════════════════════════
 const _horsesLoadedForTable: Record<string, boolean> = {};
-let _globalHandActive = false;
-let _globalActiveHC: any = null;
-let _globalFirstHandTriggered = false;
+const _win = window as any;
+if (!_win.__pokerLocks) {
+    _win.__pokerLocks = {
+        handActive: false,
+        activeHC: null as any,
+        firstHandTriggered: false,
+        horsesLoaded: {} as Record<string, boolean>,
+    };
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPONENT
@@ -812,7 +818,7 @@ export default function TablePage() {
     const startNextHandRef = useRef<() => void>(() => {});
     startNextHandRef.current = () => {
         // GUARD: prevent duplicate creation using GLOBAL locks
-        if (_globalHandActive || _globalActiveHC || handControllerRef.current) {
+        if (_win.__pokerLocks.handActive || _win.__pokerLocks.activeHC || handControllerRef.current) {
             return;
         }
 
@@ -822,8 +828,8 @@ export default function TablePage() {
         if (seatedPlayers.length < 2) return;
 
         // IMMEDIATELY set GLOBAL lock — prevents any parallel call from proceeding
-        _globalHandActive = true;
-        _globalActiveHC = true; // Sentinel, replaced with actual HC below
+        _win.__pokerLocks.handActive = true;
+        _win.__pokerLocks.activeHC = true; // Sentinel, replaced with actual HC below
 
         // Parse table settings
         const blindParts = currentState.blinds.split('/');
@@ -872,13 +878,13 @@ export default function TablePage() {
             hand = new HandController(config, hcPlayers, dealerSeat);
         } catch (err) {
             console.error('[HC] Failed to create HandController:', err);
-            _globalHandActive = false;
-            _globalActiveHC = null;
+            _win.__pokerLocks.handActive = false;
+            _win.__pokerLocks.activeHC = null;
             return;
         }
         handControllerRef.current = hand;
         handInProgressRef.current = true;
-        _globalActiveHC = hand;
+        _win.__pokerLocks.activeHC = hand;
 
         // Wire persistence service
         const clubId = tableId || 'demo';
@@ -894,7 +900,7 @@ export default function TablePage() {
             switch (event.type) {
                 case 'HAND_START':
                     handInProgressRef.current = true;
-                    _globalHandActive = true;
+                    _win.__pokerLocks.handActive = true;
                     setTableState(prev => ({
                         ...prev,
                         isHandInProgress: true,
@@ -1123,8 +1129,8 @@ export default function TablePage() {
                         // Clear ALL locks to allow next hand
                         handInProgressRef.current = false;
                         handControllerRef.current = null;
-                        _globalHandActive = false;
-                        _globalActiveHC = null;
+                        _win.__pokerLocks.handActive = false;
+                        _win.__pokerLocks.activeHC = null;
                         handNumberRef.current += 1;
                         setTableState(prev => {
                             // Clear all players' hole cards and reset status for next hand
@@ -1177,8 +1183,8 @@ export default function TablePage() {
             console.error('[HC] hand.start() failed:', err);
             handControllerRef.current = null;
             handInProgressRef.current = false;
-            _globalHandActive = false;
-            _globalActiveHC = null;
+            _win.__pokerLocks.handActive = false;
+            _win.__pokerLocks.activeHC = null;
         }
     };
 
@@ -1186,10 +1192,10 @@ export default function TablePage() {
     // This only fires ONCE — subsequent hands are triggered by HAND_COMPLETE
     useEffect(() => {
         // Use GLOBAL flag so component remounts don't re-trigger
-        if (_globalFirstHandTriggered || _globalHandActive || _globalActiveHC) return;
+        if (_win.__pokerLocks.firstHandTriggered || _win.__pokerLocks.handActive || _win.__pokerLocks.activeHC) return;
         const seatedPlayers = tableState.players.filter(p => p && p.stack > 0);
         if (seatedPlayers.length >= 2) {
-            _globalFirstHandTriggered = true;
+            _win.__pokerLocks.firstHandTriggered = true;
             startNextHandRef.current();
         }
     }, [tableState.players]);
