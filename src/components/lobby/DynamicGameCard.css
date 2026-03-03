@@ -2,11 +2,12 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  * DYNAMIC GAME CARD — PokerBros-Style Lobby Cards
  * ═══════════════════════════════════════════════════════════════════════════════
- * Color-coded by game variant, dynamic badges, feature icons, animated elements
+ * Facebook Dark Theme (#18191A / #242526 / #3A3B3C)
+ * Color-coded accents by game variant, dynamic badges, feature icons
  */
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   BASE CARD
+   BASE CARD — Facebook Dark foundation
 ═══════════════════════════════════════════════════════════════════════════════ */
 .dgc {
     position: relative;
@@ -19,9 +20,11 @@
     display: flex;
     flex-direction: column;
     text-decoration: none;
-    color: white;
+    color: #E4E6EB;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
+    background: #242526;
+    border: 1px solid #3E4042;
 }
 
 .dgc:active {
@@ -30,93 +33,86 @@
 
 .dgc:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    border-color: #4E4F50;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   GAME VARIANT THEMES — Background gradients per game type
+   GAME VARIANT THEMES — Accent stripe + subtle tint on FB dark base
 ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* NLH — Deep Red / Crimson */
+/* NLH — Red accent */
 .dgc--nlh {
-    background: linear-gradient(145deg, #4a0a0a 0%, #1a0505 40%, #2a0808 100%);
-    border: 1px solid rgba(200, 40, 40, 0.35);
-    box-shadow: 0 2px 12px rgba(180, 30, 30, 0.15);
+    background: linear-gradient(145deg, #2e1a1a 0%, #242526 35%, #242526 100%);
+    border-color: rgba(220, 50, 50, 0.3);
 }
-.dgc--nlh .dgc__variant-logo { color: #ff4444; text-shadow: 0 0 20px rgba(255, 68, 68, 0.5); }
-.dgc--nlh .dgc__glow { background: radial-gradient(ellipse at 50% 20%, rgba(255, 50, 50, 0.12) 0%, transparent 70%); }
+.dgc--nlh .dgc__variant-logo { color: #ff5555; text-shadow: 0 0 12px rgba(255, 85, 85, 0.4); }
+.dgc--nlh .dgc__glow { background: radial-gradient(ellipse at 50% 10%, rgba(255, 50, 50, 0.08) 0%, transparent 60%); }
 
-/* PLO4 — Electric Blue / Cyan */
+/* PLO4 — Blue accent */
 .dgc--plo4 {
-    background: linear-gradient(145deg, #0a1a3a 0%, #050d1a 40%, #081428 100%);
-    border: 1px solid rgba(40, 120, 220, 0.35);
-    box-shadow: 0 2px 12px rgba(30, 100, 200, 0.15);
+    background: linear-gradient(145deg, #1a1e2e 0%, #242526 35%, #242526 100%);
+    border-color: rgba(35, 116, 225, 0.3);
 }
-.dgc--plo4 .dgc__variant-logo { color: #44aaff; text-shadow: 0 0 20px rgba(68, 170, 255, 0.5); }
-.dgc--plo4 .dgc__glow { background: radial-gradient(ellipse at 50% 20%, rgba(50, 150, 255, 0.12) 0%, transparent 70%); }
+.dgc--plo4 .dgc__variant-logo { color: #4da6ff; text-shadow: 0 0 12px rgba(77, 166, 255, 0.4); }
+.dgc--plo4 .dgc__glow { background: radial-gradient(ellipse at 50% 10%, rgba(35, 116, 225, 0.08) 0%, transparent 60%); }
 
-/* PLO5 — Teal / Aqua */
+/* PLO5 — Teal accent */
 .dgc--plo5 {
-    background: linear-gradient(145deg, #0a2a2a 0%, #051515 40%, #082020 100%);
-    border: 1px solid rgba(40, 200, 180, 0.35);
-    box-shadow: 0 2px 12px rgba(30, 180, 160, 0.15);
+    background: linear-gradient(145deg, #1a2a28 0%, #242526 35%, #242526 100%);
+    border-color: rgba(40, 200, 180, 0.3);
 }
-.dgc--plo5 .dgc__variant-logo { color: #44ddcc; text-shadow: 0 0 20px rgba(68, 221, 204, 0.5); }
-.dgc--plo5 .dgc__glow { background: radial-gradient(ellipse at 50% 20%, rgba(50, 200, 180, 0.12) 0%, transparent 70%); }
+.dgc--plo5 .dgc__variant-logo { color: #44ddcc; text-shadow: 0 0 12px rgba(68, 221, 204, 0.4); }
+.dgc--plo5 .dgc__glow { background: radial-gradient(ellipse at 50% 10%, rgba(40, 200, 180, 0.08) 0%, transparent 60%); }
 
-/* PLO8 / Hi-Lo — Purple / Violet */
+/* PLO8 / Hi-Lo — Purple accent */
 .dgc--plo8,
 .dgc--plo_hilo {
-    background: linear-gradient(145deg, #2a0a3a 0%, #150520 40%, #1a0828 100%);
-    border: 1px solid rgba(160, 60, 220, 0.35);
-    box-shadow: 0 2px 12px rgba(140, 40, 200, 0.15);
+    background: linear-gradient(145deg, #281a2e 0%, #242526 35%, #242526 100%);
+    border-color: rgba(160, 60, 220, 0.3);
 }
 .dgc--plo8 .dgc__variant-logo,
-.dgc--plo_hilo .dgc__variant-logo { color: #bb66ff; text-shadow: 0 0 20px rgba(187, 102, 255, 0.5); }
+.dgc--plo_hilo .dgc__variant-logo { color: #bb66ff; text-shadow: 0 0 12px rgba(187, 102, 255, 0.4); }
 .dgc--plo8 .dgc__glow,
-.dgc--plo_hilo .dgc__glow { background: radial-gradient(ellipse at 50% 20%, rgba(150, 60, 255, 0.12) 0%, transparent 70%); }
+.dgc--plo_hilo .dgc__glow { background: radial-gradient(ellipse at 50% 10%, rgba(150, 60, 255, 0.08) 0%, transparent 60%); }
 
-/* Pineapple — Orange / Amber */
+/* Pineapple — Orange accent */
 .dgc--ofc_pineapple,
 .dgc--pineapple,
 .dgc--crazy_pineapple {
-    background: linear-gradient(145deg, #3a2a0a 0%, #1a1205 40%, #281c08 100%);
-    border: 1px solid rgba(220, 160, 40, 0.35);
-    box-shadow: 0 2px 12px rgba(200, 140, 30, 0.15);
+    background: linear-gradient(145deg, #2e261a 0%, #242526 35%, #242526 100%);
+    border-color: rgba(220, 160, 40, 0.3);
 }
 .dgc--ofc_pineapple .dgc__variant-logo,
 .dgc--pineapple .dgc__variant-logo,
-.dgc--crazy_pineapple .dgc__variant-logo { color: #ffaa33; text-shadow: 0 0 20px rgba(255, 170, 51, 0.5); }
+.dgc--crazy_pineapple .dgc__variant-logo { color: #ffaa33; text-shadow: 0 0 12px rgba(255, 170, 51, 0.4); }
 .dgc--ofc_pineapple .dgc__glow,
 .dgc--pineapple .dgc__glow,
-.dgc--crazy_pineapple .dgc__glow { background: radial-gradient(ellipse at 50% 20%, rgba(255, 170, 50, 0.12) 0%, transparent 70%); }
+.dgc--crazy_pineapple .dgc__glow { background: radial-gradient(ellipse at 50% 10%, rgba(255, 170, 50, 0.08) 0%, transparent 60%); }
 
-/* Short Deck — Gold / Premium */
+/* Short Deck — Gold accent */
 .dgc--short_deck {
-    background: linear-gradient(145deg, #3a2a00 0%, #1a1200 40%, #2a1e00 100%);
-    border: 1px solid rgba(255, 200, 0, 0.35);
-    box-shadow: 0 2px 12px rgba(255, 180, 0, 0.15);
+    background: linear-gradient(145deg, #2e2a1a 0%, #242526 35%, #242526 100%);
+    border-color: rgba(255, 200, 0, 0.3);
 }
-.dgc--short_deck .dgc__variant-logo { color: #ffc800; text-shadow: 0 0 20px rgba(255, 200, 0, 0.5); }
-.dgc--short_deck .dgc__glow { background: radial-gradient(ellipse at 50% 20%, rgba(255, 200, 0, 0.12) 0%, transparent 70%); }
+.dgc--short_deck .dgc__variant-logo { color: #ffc800; text-shadow: 0 0 12px rgba(255, 200, 0, 0.4); }
+.dgc--short_deck .dgc__glow { background: radial-gradient(ellipse at 50% 10%, rgba(255, 200, 0, 0.08) 0%, transparent 60%); }
 
-/* Mixed / Double Board — Silver */
+/* Mixed / Double Board — Silver accent */
 .dgc--mixed,
 .dgc--double_board {
-    background: linear-gradient(145deg, #1a1a2a 0%, #0d0d15 40%, #141420 100%);
-    border: 1px solid rgba(150, 150, 200, 0.35);
-    box-shadow: 0 2px 12px rgba(120, 120, 180, 0.15);
+    background: linear-gradient(145deg, #1e1e26 0%, #242526 35%, #242526 100%);
+    border-color: rgba(150, 150, 200, 0.3);
 }
 .dgc--mixed .dgc__variant-logo,
-.dgc--double_board .dgc__variant-logo { color: #aaaadd; text-shadow: 0 0 20px rgba(170, 170, 221, 0.5); }
+.dgc--double_board .dgc__variant-logo { color: #aaaadd; text-shadow: 0 0 12px rgba(170, 170, 221, 0.4); }
 
-/* PLO6 — Deep Indigo */
+/* PLO6 — Indigo accent */
 .dgc--plo6 {
-    background: linear-gradient(145deg, #0a0a3a 0%, #05051a 40%, #080828 100%);
-    border: 1px solid rgba(80, 80, 220, 0.35);
-    box-shadow: 0 2px 12px rgba(60, 60, 200, 0.15);
+    background: linear-gradient(145deg, #1a1a2e 0%, #242526 35%, #242526 100%);
+    border-color: rgba(80, 80, 220, 0.3);
 }
-.dgc--plo6 .dgc__variant-logo { color: #7777ff; text-shadow: 0 0 20px rgba(119, 119, 255, 0.5); }
+.dgc--plo6 .dgc__variant-logo { color: #7777ff; text-shadow: 0 0 12px rgba(119, 119, 255, 0.4); }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    GLOW OVERLAY — ambient light effect at top of card
@@ -156,7 +152,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   BLINDS DISPLAY — Prominent blind level
+   BLINDS DISPLAY
 ═══════════════════════════════════════════════════════════════════════════════ */
 .dgc__blinds-section {
     position: relative;
@@ -170,7 +166,7 @@
 
 .dgc__blinds-label {
     font-size: 0.6rem;
-    color: rgba(255, 255, 255, 0.5);
+    color: #B0B3B8;
     text-transform: uppercase;
     letter-spacing: 1px;
     font-weight: 600;
@@ -180,13 +176,13 @@
     font-family: 'Oswald', 'Impact', 'Arial Black', sans-serif;
     font-weight: 800;
     font-size: 1.5rem;
-    color: #fff;
+    color: #E4E6EB;
     line-height: 1;
 }
 
 .dgc__timer {
     font-size: 0.65rem;
-    color: rgba(255, 255, 255, 0.45);
+    color: #B0B3B8;
     font-family: monospace;
     display: flex;
     align-items: center;
@@ -198,25 +194,25 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    border: 1px solid #B0B3B8;
     display: inline-block;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   BOTTOM BAR — Date, buy-in, player count, features
+   BOTTOM BAR — FB dark elevated surface
 ═══════════════════════════════════════════════════════════════════════════════ */
 .dgc__bottom {
     position: relative;
     z-index: 1;
     padding: 6px 8px;
-    background: rgba(0, 0, 0, 0.4);
+    background: #18191A;
     display: flex;
     align-items: center;
     gap: 4px;
     font-size: 0.6rem;
-    color: rgba(255, 255, 255, 0.7);
+    color: #B0B3B8;
     flex-wrap: wrap;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-top: 1px solid #3E4042;
 }
 
 .dgc__date {
@@ -239,20 +235,20 @@
 
 .dgc__buyin-range {
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.85);
+    color: #E4E6EB;
 }
 
 .dgc__max-icon {
     width: 10px;
     height: 10px;
-    background: linear-gradient(135deg, #44aaff, #2277cc);
+    background: linear-gradient(135deg, #2374E1, #1a5bb5);
     border-radius: 50%;
     display: inline-block;
 }
 
 .dgc__seat-info {
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.85);
+    color: #E4E6EB;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -318,9 +314,9 @@
 
 /* Insurance Badge */
 .dgc__badge--insurance {
-    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    background: linear-gradient(135deg, #2374E1, #1a5bb5);
     color: #fff;
-    border: 1px solid rgba(37, 99, 235, 0.5);
+    border: 1px solid rgba(35, 116, 225, 0.5);
 }
 
 /* VPIP Badge */
@@ -345,7 +341,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   PLAYER COUNT INDICATOR — Top right area
+   PLAYER COUNT INDICATOR
 ═══════════════════════════════════════════════════════════════════════════════ */
 .dgc__players {
     position: absolute;
@@ -356,7 +352,7 @@
     gap: 3px;
     font-size: 0.7rem;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.9);
+    color: #E4E6EB;
     z-index: 2;
 }
 
@@ -364,12 +360,12 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #10b981;
+    background: #31A24C;
     animation: dotPulse 1.5s ease-in-out infinite;
 }
 
 .dgc__players-dot--empty {
-    background: #666;
+    background: #4E4F50;
     animation: none;
 }
 
@@ -424,42 +420,42 @@
 .dgc__tourney-type-icon--ko {
     background: linear-gradient(135deg, #dc2626, #7f1d1d);
     border: 2px solid #ff4444;
-    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
 }
 
 /* Freezeout icon */
 .dgc__tourney-type-icon--freezeout {
-    background: linear-gradient(135deg, #2563eb, #1e3a8a);
-    border: 2px solid #3b82f6;
-    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+    background: linear-gradient(135deg, #2374E1, #1a3a6a);
+    border: 2px solid #4da6ff;
+    box-shadow: 0 2px 8px rgba(35, 116, 225, 0.3);
 }
 
 /* Freeroll icon */
 .dgc__tourney-type-icon--freeroll {
-    background: linear-gradient(135deg, #059669, #064e3b);
-    border: 2px solid #10b981;
-    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.4);
+    background: linear-gradient(135deg, #31A24C, #1a5e2e);
+    border: 2px solid #42b864;
+    box-shadow: 0 2px 8px rgba(49, 162, 76, 0.3);
 }
 
 /* Mystery Bounty icon */
 .dgc__tourney-type-icon--mystery {
     background: linear-gradient(135deg, #7c3aed, #4c1d95);
     border: 2px solid #8b5cf6;
-    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
 }
 
 /* PKO icon */
 .dgc__tourney-type-icon--pko {
     background: linear-gradient(135deg, #ea580c, #7c2d12);
     border: 2px solid #f97316;
-    box-shadow: 0 2px 8px rgba(234, 88, 12, 0.4);
+    box-shadow: 0 2px 8px rgba(234, 88, 12, 0.3);
 }
 
 /* Turbo icon */
 .dgc__tourney-type-icon--turbo {
     background: linear-gradient(135deg, #eab308, #713f12);
     border: 2px solid #facc15;
-    box-shadow: 0 2px 8px rgba(234, 179, 8, 0.4);
+    box-shadow: 0 2px 8px rgba(234, 179, 8, 0.3);
 }
 
 /* Event tier badge */
@@ -482,8 +478,9 @@
 }
 
 .dgc__event-tier--side {
-    background: linear-gradient(135deg, #94a3b8, #64748b);
-    color: #fff;
+    background: #3A3B3C;
+    color: #E4E6EB;
+    border: 1px solid #4E4F50;
 }
 
 /* Max players badge (top-right) */
@@ -493,12 +490,12 @@
     right: 6px;
     z-index: 3;
     padding: 2px 6px;
-    background: rgba(0, 0, 0, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: #3A3B3C;
+    border: 1px solid #4E4F50;
     border-radius: 4px;
     font-size: 0.6rem;
     font-weight: 800;
-    color: white;
+    color: #E4E6EB;
 }
 
 /* Buy-in display */
@@ -513,7 +510,7 @@
 
 .dgc__mtt-buyin-label {
     font-size: 0.6rem;
-    color: rgba(255, 255, 255, 0.5);
+    color: #B0B3B8;
     text-transform: uppercase;
 }
 
@@ -521,7 +518,7 @@
     font-family: 'Oswald', 'Impact', 'Arial Black', sans-serif;
     font-weight: 800;
     font-size: 2.2rem;
-    color: #fff;
+    color: #E4E6EB;
     line-height: 1;
 }
 
@@ -532,7 +529,7 @@
     padding: 0 8px;
     font-size: 0.6rem;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.75);
+    color: #B0B3B8;
     line-height: 1.2;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -571,13 +568,14 @@
 }
 
 .dgc__status--reg {
-    background: #059669;
+    background: #31A24C;
     color: white;
 }
 
 .dgc__status--announced {
-    background: rgba(255, 255, 255, 0.15);
-    color: rgba(255, 255, 255, 0.7);
+    background: #3A3B3C;
+    color: #B0B3B8;
+    border: 1px solid #4E4F50;
 }
 
 @keyframes livePulse {
@@ -586,15 +584,15 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SNG CARD — Heads-up / Small table styling
+   SNG CARD
 ═══════════════════════════════════════════════════════════════════════════════ */
 .dgc--sng {
-    background: linear-gradient(145deg, #1a1a0a 0%, #0d0d05 40%, #14140a 100%);
-    border: 1px solid rgba(200, 180, 80, 0.35);
+    background: linear-gradient(145deg, #2a2820 0%, #242526 35%, #242526 100%);
+    border-color: rgba(200, 180, 80, 0.25);
 }
 
-.dgc--sng .dgc__variant-logo { color: #ddc866; text-shadow: 0 0 15px rgba(221, 200, 102, 0.4); }
-.dgc--sng .dgc__glow { background: radial-gradient(ellipse at 50% 20%, rgba(221, 200, 100, 0.08) 0%, transparent 70%); }
+.dgc--sng .dgc__variant-logo { color: #ddc866; text-shadow: 0 0 10px rgba(221, 200, 102, 0.3); }
+.dgc--sng .dgc__glow { background: radial-gradient(ellipse at 50% 10%, rgba(221, 200, 100, 0.06) 0%, transparent 60%); }
 
 /* HU badge */
 .dgc__hu-badge {
@@ -604,7 +602,7 @@
     z-index: 3;
     width: 28px;
     height: 18px;
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    background: linear-gradient(135deg, #2374E1, #1a5bb5);
     border-radius: 3px;
     display: flex;
     align-items: center;
@@ -615,22 +613,22 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SPIN CARD — Gold / Premium styling
+   SPIN CARD — Gold accent on FB dark
 ═══════════════════════════════════════════════════════════════════════════════ */
 .dgc--spin {
-    background: linear-gradient(145deg, #2a2000 0%, #151000 40%, #1e1800 100%);
-    border: 1px solid rgba(255, 200, 0, 0.3);
+    background: linear-gradient(145deg, #2e2a1a 0%, #242526 35%, #242526 100%);
+    border-color: rgba(255, 200, 0, 0.25);
 }
 
 .dgc--spin .dgc__variant-logo { color: #ffc800; }
-.dgc--spin .dgc__glow { background: radial-gradient(ellipse at 50% 30%, rgba(255, 200, 0, 0.1) 0%, transparent 70%); }
+.dgc--spin .dgc__glow { background: radial-gradient(ellipse at 50% 15%, rgba(255, 200, 0, 0.07) 0%, transparent 60%); }
 
 .dgc__spin-multiplier {
     position: relative;
     z-index: 1;
     padding: 0 10px;
     font-size: 0.65rem;
-    color: rgba(255, 255, 255, 0.6);
+    color: #B0B3B8;
 }
 
 .dgc__spin-multiplier strong {
@@ -639,7 +637,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   UNION BADGE — Small icon in corner
+   UNION BADGE
 ═══════════════════════════════════════════════════════════════════════════════ */
 .dgc__union-badge {
     position: absolute;
@@ -649,27 +647,26 @@
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #fbbf24, #d97706);
-    border: 1px solid rgba(251, 191, 36, 0.6);
+    background: #3A3B3C;
+    border: 1px solid #4E4F50;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.4rem;
     font-weight: 900;
-    color: #000;
+    color: #E4E6EB;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    ANIMATED DECORATIVE ELEMENTS
 ═══════════════════════════════════════════════════════════════════════════════ */
-
-/* Card back pattern overlay */
 .dgc__card-deco {
     position: absolute;
     z-index: 1;
-    opacity: 0.08;
+    opacity: 0.05;
     font-size: 4rem;
     pointer-events: none;
+    color: #E4E6EB;
 }
 
 .dgc__card-deco--left {

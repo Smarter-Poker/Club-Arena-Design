@@ -43,6 +43,9 @@ interface TableData {
     status: string;
     small_blind: number;
     big_blind: number;
+    min_buy_in: number;
+    max_buy_in: number;
+    settings?: string;
 }
 
 interface TournamentData {
