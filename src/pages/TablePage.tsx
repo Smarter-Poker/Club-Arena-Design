@@ -132,11 +132,14 @@ const createEmptySeats = (count: 6 | 9): (SeatPlayer | null)[] => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// MODULE-LEVEL LOCKS — persist across component remounts
+// MODULE-LEVEL LOCKS — persist across component remounts (GLOBAL, not per-table)
+// Using global locks because tableId from useParams() can be undefined during
+// React re-renders, causing per-table locks to check wrong keys.
 // ═══════════════════════════════════════════════════════════════════════════════
 const _horsesLoadedForTable: Record<string, boolean> = {};
-const _handActiveForTable: Record<string, boolean> = {};
-let _activeHandController: Record<string, any> = {};
+let _globalHandActive = false;
+let _globalActiveHC: any = null;
+let _globalFirstHandTriggered = false;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPONENT
@@ -808,12 +811,8 @@ export default function TablePage() {
     // ═══════════════════════════════════════════════════════════════════════════
     const startNextHandRef = useRef<() => void>(() => {});
     startNextHandRef.current = () => {
-        const tId = tableId || 'default';
-
-        // GUARD: prevent duplicate creation
-        console.log(`[HC-GUARD] hip=${handInProgressRef.current}, hcr=${!!handControllerRef.current}, hat=${_handActiveForTable[tId]}, ahc=${!!_activeHandController[tId]}`);
-        if (handInProgressRef.current || handControllerRef.current || _handActiveForTable[tId] || _activeHandController[tId]) {
-            console.log('[HC-GUARD] BLOCKED duplicate HC creation');
+        // GUARD: prevent duplicate creation using GLOBAL locks
+        if (_globalHandActive || _globalActiveHC || handControllerRef.current) {
             return;
         }
 
@@ -822,9 +821,9 @@ export default function TablePage() {
         const seatedPlayers = currentState.players.filter(p => p && p.stack > 0);
         if (seatedPlayers.length < 2) return;
 
-        // IMMEDIATELY set module-level lock
-        _handActiveForTable[tId] = true;
-        _activeHandController[tId] = true as any; // Sentinel
+        // IMMEDIATELY set GLOBAL lock — prevents any parallel call from proceeding
+        _globalHandActive = true;
+        _globalActiveHC = true; // Sentinel, replaced with actual HC below
 
         // Parse table settings
         const blindParts = currentState.blinds.split('/');
@@ -873,13 +872,13 @@ export default function TablePage() {
             hand = new HandController(config, hcPlayers, dealerSeat);
         } catch (err) {
             console.error('[HC] Failed to create HandController:', err);
-            _handActiveForTable[tId] = false;
-            _activeHandController[tId] = null;
+            _globalHandActive = false;
+            _globalActiveHC = null;
             return;
         }
         handControllerRef.current = hand;
         handInProgressRef.current = true;
-        _activeHandController[tId] = hand;
+        _globalActiveHC = hand;
 
         // Wire persistence service
         const clubId = tableId || 'demo';
@@ -895,7 +894,7 @@ export default function TablePage() {
             switch (event.type) {
                 case 'HAND_START':
                     handInProgressRef.current = true;
-                    _handActiveForTable[tableId || 'default'] = true;
+                    _globalHandActive = true;
                     setTableState(prev => ({
                         ...prev,
                         isHandInProgress: true,
@@ -1124,9 +1123,8 @@ export default function TablePage() {
                         // Clear ALL locks to allow next hand
                         handInProgressRef.current = false;
                         handControllerRef.current = null;
-                        const tid = tableId || 'default';
-                        _handActiveForTable[tid] = false;
-                        _activeHandController[tid] = null;
+                        _globalHandActive = false;
+                        _globalActiveHC = null;
                         handNumberRef.current += 1;
                         setTableState(prev => {
                             // Clear all players' hole cards and reset status for next hand
@@ -1179,22 +1177,19 @@ export default function TablePage() {
             console.error('[HC] hand.start() failed:', err);
             handControllerRef.current = null;
             handInProgressRef.current = false;
-            _handActiveForTable[tId] = false;
-            _activeHandController[tId] = null;
+            _globalHandActive = false;
+            _globalActiveHC = null;
         }
     };
 
     // Trigger first hand when horses are loaded (via useEffect that watches for players)
     // This only fires ONCE — subsequent hands are triggered by HAND_COMPLETE
-    const firstHandStartedRef = useRef(false);
-    const instanceIdRef = useRef(Math.random().toString(36).slice(2, 6));
     useEffect(() => {
-        console.log(`[HC-TRIGGER] instance=${instanceIdRef.current}, firstStarted=${firstHandStartedRef.current}, players=${tableState.players.filter(p => p && p.stack > 0).length}, hcr=${!!handControllerRef.current}`);
-        if (firstHandStartedRef.current) return;
+        // Use GLOBAL flag so component remounts don't re-trigger
+        if (_globalFirstHandTriggered || _globalHandActive || _globalActiveHC) return;
         const seatedPlayers = tableState.players.filter(p => p && p.stack > 0);
-        if (seatedPlayers.length >= 2 && !handControllerRef.current) {
-            firstHandStartedRef.current = true;
-            console.log(`[HC-TRIGGER] instance=${instanceIdRef.current} CALLING startNextHand`);
+        if (seatedPlayers.length >= 2) {
+            _globalFirstHandTriggered = true;
             startNextHandRef.current();
         }
     }, [tableState.players]);
