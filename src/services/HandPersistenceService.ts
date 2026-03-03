@@ -163,14 +163,17 @@ class HandPersistenceServiceClass {
     private onCommunityCards(cards: { rank: string; suit: string }[]): void {
         if (!this.currentHand) return;
 
-        // Update community cards
+        // APPEND new community cards (don't overwrite — events fire per stage: flop=3, turn=1, river=1)
         // Use first char of suit name: "spades" → "s", "hearts" → "h", "diamonds" → "d", "clubs" → "c"
-        this.currentHand.community_cards = cards.map((c) => `${c.rank}${c.suit[0]}`);
+        const formatted = cards.map((c) => `${c.rank}${c.suit[0]}`);
+        this.currentHand.community_cards.push(...formatted);
     }
 
     private onWinners(winners: { userId: string; amount: number }[]): void {
         if (!this.currentHand) return;
+        console.log('[HandPersistence] WINNERS event received:', JSON.stringify(winners));
         this.currentHand.winner_ids = winners.map((w) => w.userId);
+        console.log('[HandPersistence] winner_ids set to:', JSON.stringify(this.currentHand.winner_ids));
     }
 
     private onPotUpdate(pot: number): void {
@@ -180,6 +183,15 @@ class HandPersistenceServiceClass {
 
     private async onHandComplete(handNumber: number, rake: number): Promise<void> {
         if (!this.currentHand?.id) return;
+
+        console.log('[HandPersistence] HAND_COMPLETE — saving:', {
+            id: this.currentHand.id,
+            pot: this.currentHand.pot,
+            rake,
+            community_cards: this.currentHand.community_cards,
+            winner_ids: this.currentHand.winner_ids,
+            actions_count: this.handActions.length,
+        });
 
         // Update hand record with final state
         const { error } = await supabase
