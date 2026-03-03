@@ -76,6 +76,32 @@ import SessionTimer from '../components/table/SessionTimer';
 import './TablePage.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// RAKE CONFIG HELPER — Derives HandController rake from official chart
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Official rake chart caps by blind level (mirrors RakeService.RAKE_CHART) */
+function getRakeConfigForBlinds(sb: number, bb: number): { percent: number; cap: number; noFlop: boolean } {
+    // Official chart: 10% rake, tier-based cap, no flop no drop
+    const CAPS: [number, number, number][] = [
+        // [sb, bb, cap]
+        [0.10, 0.20, 3], [0.20, 0.40, 3], [0.25, 0.50, 3], [0.30, 0.60, 5],
+        [0.50, 1.00, 5], [1.00, 2.00, 5], [2.00, 4.00, 7.50], [2.00, 5.00, 7.50],
+        [5.00, 5.00, 7.50], [3.00, 6.00, 8], [4.00, 8.00, 10], [5.00, 10.0, 12.50],
+        [10.0, 20.0, 15], [10.0, 25.0, 15],
+    ];
+    const exact = CAPS.find(([s, b]) => s === sb && b === bb);
+    if (exact) return { percent: 10, cap: exact[2], noFlop: true };
+    // Fallback: closest by BB
+    let closest = CAPS[0];
+    let minDiff = Math.abs(bb - closest[1]);
+    for (const tier of CAPS) {
+        const diff = Math.abs(bb - tier[1]);
+        if (diff < minDiff) { minDiff = diff; closest = tier; }
+    }
+    return { percent: 10, cap: closest[2], noFlop: true };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -891,11 +917,7 @@ export default function TablePage() {
             gameVariant,
             smallBlind,
             bigBlind,
-            rakeConfig: {
-                percent: 5,
-                cap: Math.max(3, bigBlind * 15),
-                noFlop: true
-            },
+            rakeConfig: getRakeConfigForBlinds(smallBlind, bigBlind),
         };
 
         const dealerSeatIndex = (handNumber - 1) % seatedPlayers.length;
