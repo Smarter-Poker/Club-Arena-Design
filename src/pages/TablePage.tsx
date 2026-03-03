@@ -685,26 +685,81 @@ export default function TablePage() {
         };
     }, [tableId, userId, tableState.heroSeat]);
 
-    // Initialize Hydra horse fleet for table liquidity
+    // ═══════════════════════════════════════════════════════════════════════════
+    // HORSE LOADING — Load seated horses from DB into React table state
+    // ═══════════════════════════════════════════════════════════════════════════
+    const horsesLoadedRef = useRef(false);
+
     useEffect(() => {
-        if (!tableId) return;
+        if (!tableId || horsesLoadedRef.current) return;
+        // Wait for table info to load first (maxPlayers must be set)
+        if (tableState.blinds === '?/?') return;
 
-        // Initialize Hydra and seed table with horses if needed
-        HydraService.initialize();
+        const loadHorses = async () => {
+            try {
+                // Initialize Hydra
+                HydraService.initialize();
 
-        const seedTableWithHorses = async () => {
-            const status = await HydraService.getTableLiquidityStatus(tableId);
+                // Get all horses seated at this table via HydraService
+                const horses = await HydraService.getActiveHorses(tableId);
 
-            if (status.needsMoreHorses) {
-                // Extract big blind from stakes string (e.g., "1/2" → 2)
-                const bbMatch = tableState.blinds.match(/\/(\d+)/);
-                const bigBlind = bbMatch ? parseInt(bbMatch[1]) : 2;
+                if (horses.length === 0) {
+                    console.log('[Horses] No horses found at table, seeding...');
+                    // Seed with new horses if none exist
+                    const bbMatch = tableState.blinds.match(/\/(\d+)/);
+                    const bigBlind = bbMatch ? parseInt(bbMatch[1]) : 2;
+                    await HydraService.seedTable(tableId, bigBlind);
+                    // Re-query after seeding
+                    const seededHorses = await HydraService.getActiveHorses(tableId);
+                    if (seededHorses.length > 0) {
+                        populateHorsePlayers(seededHorses);
+                    }
+                } else {
+                    console.log(`[Horses] Loading ${horses.length} horses into table state`);
+                    populateHorsePlayers(horses);
+                }
 
-                await HydraService.seedTable(tableId, bigBlind);
+                horsesLoadedRef.current = true;
+            } catch (err) {
+                console.error('[Horses] Failed to load horses:', err);
             }
         };
 
-        seedTableWithHorses();
+        const populateHorsePlayers = (horses: import('../services/HydraService').HorsePlayer[]) => {
+            setTableState(prev => {
+                const updatedPlayers = [...prev.players];
+                let populated = 0;
+
+                for (const horse of horses) {
+                    const seatIdx = horse.seatNumber - 1;
+                    if (seatIdx >= 0 && seatIdx < updatedPlayers.length && !updatedPlayers[seatIdx]) {
+                        // Calculate stack if not set (use BB-based sizing from profile)
+                        const bbMatch = prev.blinds.match(/\/(\d+)/);
+                        const bigBlind = bbMatch ? parseInt(bbMatch[1]) : 2;
+                        const stack = horse.stack > 0 ? horse.stack : bigBlind * 100;
+
+                        updatedPlayers[seatIdx] = {
+                            id: horse.id,
+                            name: horse.name || `Player ${horse.playerNumber || seatIdx + 1}`,
+                            avatar: horse.avatar || '',
+                            stack,
+                            status: 'active' as const,
+                            isHero: false,
+                            showCards: false,
+                            // Extended horse properties for TURN_CHANGE auto-action
+                            isHorse: true,
+                            horseProfile: horse.profile,
+                        } as any; // Cast to any since SeatPlayer doesn't have isHorse/horseProfile in its type
+                        populated++;
+                    }
+                }
+
+                console.log(`[Horses] Populated ${populated} horses into seats`);
+                return { ...prev, players: updatedPlayers };
+            });
+        };
+
+        loadHorses();
     }, [tableId, tableState.blinds]);
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -713,6 +768,10 @@ export default function TablePage() {
     const [handController, setHandController] = useState<HandController | null>(null);
     const [handNumber, setHandNumber] = useState(1);
     const handControllerRef = useRef<HandController | null>(null);
+
+    // Keep a ref to the latest tableState for use inside HandController event closures
+    const tableStateRef = useRef(tableState);
+    useEffect(() => { tableStateRef.current = tableState; }, [tableState]);
 
     // Wire HandController for ALL tables (production + demo)
     useEffect(() => {
@@ -867,42 +926,70 @@ export default function TablePage() {
                 case 'TURN_CHANGE':
                     setTableState(prev => ({ ...prev, currentPlayerSeat: event.seat }));
                     // Play turn alert and reset timer if it's hero's turn
-                    if (event.seat === tableState.heroSeat) {
-                        playTurnAlert();
-                        setActionTimeRemaining(15); // Reset action timer
-                    }
+                    {
+                        const currentState = tableStateRef.current;
+                        if (event.seat === currentState.heroSeat) {
+                            playTurnAlert();
+                            setActionTimeRemaining(15); // Reset action timer
+                        }
 
-                    // Auto-action for horses (check extended player properties)
-                    const actingPlayer = tableState.players[event.seat - 1] as any;
-                    if (actingPlayer?.isHorse && handControllerRef.current) {
-                        const bigBlind = parseFloat(tableState.blinds.split('/')[1]) || 2;
-                        const activePlayers = tableState.players.filter(p => p && p.status === 'active').length;
+                        // Auto-action for horses (check extended player properties)
+                        const actingPlayer = currentState.players[event.seat - 1] as any;
+                        if (actingPlayer?.isHorse && handControllerRef.current) {
+                            const bigBlind = parseFloat(currentState.blinds.split('/')[1]) || 2;
+                            const activePlayers = currentState.players.filter(p => p && (p as any).status !== 'folded').length;
 
-                        const context: import('../services/HydraService').HandContext = {
-                            pot: tableState.pot,
-                            toCall: bigBlind,
-                            minRaise: bigBlind * 2,
-                            maxRaise: actingPlayer.stack,
-                            position: event.seat <= 3 ? 'early' : event.seat <= 5 ? 'middle' : 'late',
-                            street: (tableState.boardStage || 'preflop') as 'preflop' | 'flop' | 'turn' | 'river',
-                            playersInHand: activePlayers,
-                            stackToPotRatio: tableState.pot > 0 ? actingPlayer.stack / tableState.pot : 100,
-                            isHeadsUp: activePlayers === 2,
-                        };
+                            // Get toCall from HandController state for accurate bet-to-call
+                            const hcState = handControllerRef.current.getState();
+                            const currentBets = hcState?.players || [];
+                            const maxBet = Math.max(...currentBets.map((p: any) => p.bet || 0), 0);
+                            const playerBet = currentBets.find((p: any) => p.seat === event.seat)?.bet || 0;
+                            const toCall = Math.max(0, maxBet - playerBet);
 
-                        const horseProfile = actingPlayer.horseProfile || 'reg';
-                        const decision = HydraService.getDecision(
-                            { ...actingPlayer, profile: horseProfile } as import('../services/HydraService').HorsePlayer,
-                            context
-                        );
+                            const context: import('../services/HydraService').HandContext = {
+                                pot: currentState.pot || hcState?.pot || 0,
+                                toCall,
+                                minRaise: Math.max(bigBlind, toCall + bigBlind),
+                                maxRaise: actingPlayer.stack,
+                                position: event.seat <= 3 ? 'early' : event.seat <= 5 ? 'middle' : 'late',
+                                street: (currentState.boardStage || 'preflop') as 'preflop' | 'flop' | 'turn' | 'river',
+                                playersInHand: activePlayers,
+                                stackToPotRatio: (currentState.pot || 1) > 0 ? actingPlayer.stack / (currentState.pot || 1) : 100,
+                                isHeadsUp: activePlayers === 2,
+                            };
 
-                        // Execute after think time
-                        setTimeout(() => {
-                            if (handControllerRef.current) {
-                                const amount = decision.action === 'call' ? context.toCall : decision.amount;
-                                handControllerRef.current.performAction(event.seat, decision.action as any, amount);
-                            }
-                        }, decision.thinkTime);
+                            const horseProfile = actingPlayer.horseProfile || 'reg';
+                            const decision = HydraService.getDecision(
+                                { ...actingPlayer, profile: horseProfile } as import('../services/HydraService').HorsePlayer,
+                                context
+                            );
+
+                            // Execute after think time
+                            setTimeout(() => {
+                                if (handControllerRef.current) {
+                                    let finalAction = decision.action as string;
+                                    let finalAmount = decision.amount;
+
+                                    // Map HydraService 'allin' to HandController 'all_in'
+                                    if (finalAction === 'allin') finalAction = 'all_in';
+
+                                    // Validate action against game state
+                                    if (finalAction === 'check' && toCall > 0) {
+                                        finalAction = 'call';
+                                        finalAmount = toCall;
+                                    }
+                                    if (finalAction === 'call') {
+                                        finalAmount = toCall;
+                                    }
+                                    if (finalAction === 'fold' && toCall === 0) {
+                                        finalAction = 'check'; // Don't fold when checking is free
+                                    }
+
+                                    console.log(`[Horse] Seat ${event.seat} (${horseProfile}): ${finalAction}${finalAmount ? ' $' + finalAmount : ''}`);
+                                    handControllerRef.current.performAction(event.seat, finalAction as any, finalAmount);
+                                }
+                            }, decision.thinkTime);
+                        }
                     }
                     break;
 
