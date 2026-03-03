@@ -92,8 +92,13 @@ class IdentityDNACore {
                 });
             } else {
             }
-        } catch (e) {
-            console.error('  └─ Session Check Failed:', e);
+        } catch (e: any) {
+            // AbortError is benign — suppress it
+            if (e?.name === 'AbortError' || e?.message?.includes('aborted')) {
+                console.warn('  └─ Session check aborted (benign)');
+            } else {
+                console.error('  └─ Session Check Failed:', e);
+            }
         }
 
         // Build status

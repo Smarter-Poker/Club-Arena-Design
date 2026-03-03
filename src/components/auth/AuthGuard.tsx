@@ -20,30 +20,45 @@ export function AuthGuard({ children }: AuthGuardProps) {
     const location = useLocation();
 
     useEffect(() => {
+        let cancelled = false;
+
         // Check current session
         async function checkAuth() {
             try {
                 const { data: { session } } = await supabase.auth.getSession();
-                setIsAuthenticated(!!session);
-            } catch (error) {
-                console.error('[AUTH GUARD] Session check failed:', error);
-                setIsAuthenticated(false);
-            } finally {
-                setIsLoading(false);
+                if (!cancelled) {
+                    setIsAuthenticated(!!session);
+                    setIsLoading(false);
+                }
+            } catch (error: any) {
+                // AbortError is benign — component unmounted or signal cancelled
+                // Do NOT set isAuthenticated(false) on abort — let onAuthStateChange handle it
+                if (error?.name === 'AbortError' || error?.message?.includes('aborted')) {
+                    console.warn('[AUTH GUARD] Session check aborted (benign)');
+                    return;
+                }
+                if (!cancelled) {
+                    console.error('[AUTH GUARD] Session check failed:', error);
+                    setIsAuthenticated(false);
+                    setIsLoading(false);
+                }
             }
         }
 
         checkAuth();
 
-        // Listen for auth changes
+        // Listen for auth changes — this is the reliable source of truth
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             (event, session) => {
-                setIsAuthenticated(!!session);
-                setIsLoading(false);
+                if (!cancelled) {
+                    setIsAuthenticated(!!session);
+                    setIsLoading(false);
+                }
             }
         );
 
         return () => {
+            cancelled = true;
             subscription.unsubscribe();
         };
     }, []);
@@ -85,14 +100,23 @@ export function GuestGuard({ children }: AuthGuardProps) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
+        let cancelled = false;
+
         async function checkAuth() {
             try {
                 const { data: { session } } = await supabase.auth.getSession();
-                setIsAuthenticated(!!session);
-            } catch (error) {
-                setIsAuthenticated(false);
-            } finally {
-                setIsLoading(false);
+                if (!cancelled) {
+                    setIsAuthenticated(!!session);
+                    setIsLoading(false);
+                }
+            } catch (error: any) {
+                if (error?.name === 'AbortError' || error?.message?.includes('aborted')) {
+                    return; // Benign — ignore
+                }
+                if (!cancelled) {
+                    setIsAuthenticated(false);
+                    setIsLoading(false);
+                }
             }
         }
 
@@ -101,12 +125,15 @@ export function GuestGuard({ children }: AuthGuardProps) {
         // Listen for auth changes (e.g. OAuth callback completing)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             (_event, session) => {
-                setIsAuthenticated(!!session);
-                setIsLoading(false);
+                if (!cancelled) {
+                    setIsAuthenticated(!!session);
+                    setIsLoading(false);
+                }
             }
         );
 
         return () => {
+            cancelled = true;
             subscription.unsubscribe();
         };
     }, []);
