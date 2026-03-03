@@ -25,7 +25,10 @@ export default function ClubLobby() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        if (!clubId) return;
+        if (!clubId) {
+            setIsLoading(false);
+            return;
+        }
         loadClubData();
     }, [clubId]);
 
