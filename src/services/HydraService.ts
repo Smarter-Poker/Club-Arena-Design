@@ -186,7 +186,7 @@ export const HydraService = {
         // Direct query instead of RPC (get_available_horses RPC doesn't exist in Supabase)
         let query = supabase
             .from('profiles')
-            .select('id, display_name, player_number, avatar_url, horse_profile, horse_status')
+            .select('id, display_name, username, player_number, avatar_url, horse_profile, horse_status')
             .eq('is_horse', true)
             .eq('horse_status', 'available')
             .limit(count);
@@ -204,7 +204,7 @@ export const HydraService = {
 
         return (data || []).map((h: any) => ({
             id: h.id,
-            name: h.display_name,
+            name: h.display_name || h.username || `Player ${h.player_number || ''}`,
             playerNumber: h.player_number,
             avatar: h.avatar_url,
             profile: h.horse_profile as HorseProfile,
@@ -226,7 +226,7 @@ export const HydraService = {
         // Step 1: Get all seats at this table
         const { data: seatData, error: seatError } = await supabase
             .from('table_seats')
-            .select('user_id, seat_number, stack, created_at')
+            .select('user_id, seat_number, stack, joined_at')
             .eq('table_id', tableId);
 
         if (seatError || !seatData?.length) {
@@ -240,7 +240,7 @@ export const HydraService = {
         // Step 2: Check which of these users are horses
         const { data: profileData, error: profileError } = await supabase
             .from('profiles')
-            .select('id, display_name, player_number, avatar_url, is_horse, horse_profile, horse_status')
+            .select('id, display_name, username, player_number, avatar_url, is_horse, horse_profile, horse_status')
             .in('id', userIds)
             .eq('is_horse', true);
 
@@ -260,7 +260,7 @@ export const HydraService = {
                 const profile = profileMap.get(seat.user_id)!;
                 return {
                     id: profile.id,
-                    name: profile.display_name,
+                    name: profile.display_name || profile.username || `Player ${seat.seat_number}`,
                     playerNumber: profile.player_number,
                     avatar: profile.avatar_url || '',
                     profile: (profile.horse_profile || 'reg') as HorseProfile,
@@ -268,7 +268,7 @@ export const HydraService = {
                     seatNumber: seat.seat_number,
                     status: (profile.horse_status || 'seated') as HorseStatus,
                     tableId,
-                    joinedAt: seat.created_at,
+                    joinedAt: seat.joined_at,
                     leavingAfterOrbit: profile.horse_status === 'leaving',
                     handsPlayed: 0,
                     orbitsPlayed: 0,
@@ -380,18 +380,57 @@ export const HydraService = {
 
         const stack = getStackForProfile(horseData.horse_profile as HorseProfile, bigBlind);
 
-        // Seat the horse using RPC
-        const { data, error } = await supabase.rpc('seat_horse', {
-            p_horse_id: horseId,
-            p_table_id: tableId,
-            p_seat_number: 0, // RPC will find available seat
-            p_buy_in: stack,
-        });
+        // Find an available seat at the table
+        const { data: existingSeats } = await supabase
+            .from('table_seats')
+            .select('seat_number')
+            .eq('table_id', tableId);
 
-        if (error) {
-            console.error('HydraService.seatHorse error:', error);
+        const takenSeats = new Set((existingSeats || []).map(s => s.seat_number));
+
+        // Get table max_players to know seat range
+        const { data: tableData } = await supabase
+            .from('tables')
+            .select('max_players')
+            .eq('id', tableId)
+            .single();
+
+        const maxSeats = tableData?.max_players || 9;
+        let availableSeat = 0;
+        for (let s = 1; s <= maxSeats; s++) {
+            if (!takenSeats.has(s)) {
+                availableSeat = s;
+                break;
+            }
+        }
+
+        if (availableSeat === 0) {
+            console.warn('HydraService.seatHorse: No available seats at table', tableId);
             return null;
         }
+
+        // Insert directly into table_seats (no RPC needed)
+        const { error } = await supabase
+            .from('table_seats')
+            .insert({
+                table_id: tableId,
+                seat_number: availableSeat,
+                user_id: horseId,
+                stack,
+                is_sitting_out: false,
+                is_away: false,
+            });
+
+        if (error) {
+            console.error('HydraService.seatHorse insert error:', error);
+            return null;
+        }
+
+        // Update horse status to seated
+        await supabase
+            .from('profiles')
+            .update({ horse_status: 'seated' })
+            .eq('id', horseId);
 
         return {
             id: horseData.id,
@@ -400,7 +439,7 @@ export const HydraService = {
             avatar: horseData.avatar_url,
             profile: horseData.horse_profile as HorseProfile,
             stack,
-            seatNumber: data.seat_number,
+            seatNumber: availableSeat,
             status: 'seated',
             tableId,
             joinedAt: new Date().toISOString(),
@@ -413,7 +452,7 @@ export const HydraService = {
     /**
      * Schedule horse for removal (Organic Recede law)
      */
-    async scheduleHorseRemoval(tableId: string, horseId: string, triggeredBy?: string): Promise<void> {
+    async scheduleHorseRemoval(tableId: string, horseId: string, _triggeredBy?: string): Promise<void> {
         const horses = await this.getActiveHorses(tableId);
         const horse = horses.find(h => h.id === horseId);
 
@@ -422,27 +461,34 @@ export const HydraService = {
             return;
         }
 
-        horse.leavingAfterOrbit = true;
-
-        await supabase.rpc('schedule_horse_leave', {
-            p_horse_id: horseId,
-            p_triggered_by: triggeredBy || null,
-        });
+        // Mark horse as leaving
+        await supabase
+            .from('profiles')
+            .update({ horse_status: 'leaving' })
+            .eq('id', horseId);
     },
 
     /**
      * Remove a horse from table (called after orbit completes)
      */
     async removeHorse(tableId: string, horseId: string): Promise<boolean> {
-        const { error } = await supabase.rpc('remove_horse', {
-            p_horse_id: horseId,
-            p_table_id: tableId,
-        });
+        // Delete the seat
+        const { error: seatError } = await supabase
+            .from('table_seats')
+            .delete()
+            .eq('table_id', tableId)
+            .eq('user_id', horseId);
 
-        if (error) {
-            console.error('HydraService.removeHorse error:', error);
+        if (seatError) {
+            console.error('HydraService.removeHorse seat delete error:', seatError);
             return false;
         }
+
+        // Set horse back to available
+        await supabase
+            .from('profiles')
+            .update({ horse_status: 'available' })
+            .eq('id', horseId);
 
         return true;
     },
