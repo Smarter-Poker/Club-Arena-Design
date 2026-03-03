@@ -83,6 +83,7 @@ function formatStack(amount: number): string {
 }
 
 function formatStackAsBB(stack: number, bigBlind: number): string {
+    if (bigBlind <= 0) return '0 BB';
     const bb = Math.round(stack / bigBlind);
     return `${bb} BB`;
 }

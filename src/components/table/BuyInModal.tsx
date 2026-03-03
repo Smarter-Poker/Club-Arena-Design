@@ -71,7 +71,8 @@ export function BuyInModal({
 
     // Calculate slider percentage
     const sliderPercent = useMemo(() => {
-        return ((clampedBuyIn - minBuyIn) / (maxBuyIn - minBuyIn)) * 100;
+        const range = maxBuyIn - minBuyIn;
+        return range > 0 ? ((clampedBuyIn - minBuyIn) / range) * 100 : 0;
     }, [clampedBuyIn, minBuyIn, maxBuyIn]);
 
     // Check if user has enough balance

@@ -28,9 +28,9 @@ export const BankrollWidget: React.FC<BankrollWidgetProps> = ({
     const [animatedProfit, setAnimatedProfit] = useState(0);
 
     const profit = stats.currentStack - stats.buyIn;
-    const profitPercent = ((profit / stats.buyIn) * 100).toFixed(1);
-    const bbWon = (profit / stats.bigBlinds).toFixed(1);
-    const bbPer100 = stats.handsPlayed > 0
+    const profitPercent = stats.buyIn > 0 ? ((profit / stats.buyIn) * 100).toFixed(1) : '0.0';
+    const bbWon = stats.bigBlinds > 0 ? (profit / stats.bigBlinds).toFixed(1) : '0.0';
+    const bbPer100 = stats.handsPlayed > 0 && stats.bigBlinds > 0
         ? ((profit / stats.bigBlinds) / stats.handsPlayed * 100).toFixed(1)
         : '0.0';
 

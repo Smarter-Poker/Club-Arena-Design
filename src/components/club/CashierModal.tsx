@@ -48,7 +48,7 @@ export function CashierModal({
 
     const handleAction = async () => {
         const val = parseFloat(amount);
-        if (!val || val <= 0) return;
+        if (isNaN(val) || val <= 0) return;
 
         setLoading(true);
         try {

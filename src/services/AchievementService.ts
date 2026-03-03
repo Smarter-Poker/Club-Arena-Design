@@ -260,6 +260,10 @@ class AchievementServiceClass {
         const winAchievements = ['wins_10', 'wins_100', 'wins_1000'];
 
         for (const id of winAchievements) {
+            const achievement = this.getById(id);
+            if (achievement && totalWins >= achievement.requirement) {
+                unlocked.push(achievement);
+            }
             await this.setProgress(userId, id, totalWins);
         }
         return unlocked;

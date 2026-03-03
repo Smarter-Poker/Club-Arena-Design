@@ -43,7 +43,7 @@ export function TipDealer({
     const handleCustomSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const amount = parseFloat(customAmount);
-        if (!isNaN(amount)) {
+        if (!isNaN(amount) && amount > 0) {
             handleTip(amount);
         }
     };
