@@ -144,6 +144,7 @@ if (!_win.__pokerLocks) {
         activeHC: null as any,
         firstHandTriggered: false,
         horsesLoaded: {} as Record<string, boolean>,
+        lastHandStartMs: 0,
     };
 }
 
@@ -727,7 +728,7 @@ export default function TablePage() {
                 const horses = await HydraService.getActiveHorses(tableId);
 
                 if (horses.length === 0) {
-                    console.log('[Horses] No horses found at table, seeding...');
+                    // No horses found, seed the table
                     // Seed with new horses if none exist
                     const bbMatch = tableState.blinds.match(/\/(\d+)/);
                     const bigBlind = bbMatch ? parseInt(bbMatch[1]) : 2;
@@ -738,7 +739,7 @@ export default function TablePage() {
                         populateHorsePlayers(seededHorses);
                     }
                 } else {
-                    console.log(`[Horses] Loading ${horses.length} horses into table state`);
+                    // Load horses into table state
                     populateHorsePlayers(horses);
                 }
             } catch (err) {
@@ -790,7 +791,7 @@ export default function TablePage() {
                     }
                 }
 
-                console.log(`[Horses] Populated ${populated} horses into seats`);
+                // Horses populated into seats
                 return { ...prev, players: updatedPlayers };
             });
         };
@@ -817,8 +818,14 @@ export default function TablePage() {
     // ═══════════════════════════════════════════════════════════════════════════
     const startNextHandRef = useRef<() => void>(() => {});
     startNextHandRef.current = () => {
-        // GUARD: prevent duplicate creation using GLOBAL locks
-        if (_win.__pokerLocks.handActive || _win.__pokerLocks.activeHC || handControllerRef.current) {
+        // GUARD: prevent duplicate creation using GLOBAL window locks + timestamp debounce
+        const locks = _win.__pokerLocks;
+        const now = Date.now();
+        if (locks.handActive || locks.activeHC || handControllerRef.current) {
+            return;
+        }
+        // Timestamp debounce: no two hands can start within 3 seconds
+        if (locks.lastHandStartMs && (now - locks.lastHandStartMs) < 3000) {
             return;
         }
 
@@ -830,6 +837,7 @@ export default function TablePage() {
         // IMMEDIATELY set GLOBAL lock — prevents any parallel call from proceeding
         _win.__pokerLocks.handActive = true;
         _win.__pokerLocks.activeHC = true; // Sentinel, replaced with actual HC below
+        _win.__pokerLocks.lastHandStartMs = now;
 
         // Parse table settings
         const blindParts = currentState.blinds.split('/');
@@ -1051,7 +1059,33 @@ export default function TablePage() {
                                         finalAction = 'check'; // Don't fold when checking is free
                                     }
 
-                                    console.log(`[Horse] Seat ${event.seat} (${horseProfile}): ${finalAction}${finalAmount ? ' $' + finalAmount : ''}`);
+                                    // Validate raise/bet amount against HandController's actual minRaise
+                                    // HydraService may not account for lastRaise tracking in the engine
+                                    if ((finalAction === 'raise' || finalAction === 'bet') && handControllerRef.current) {
+                                        const hcStateNow = handControllerRef.current.getState();
+                                        const engineCurrentBet = hcStateNow.currentBet;
+                                        const engineMinRaise = Math.max(bigBlind, hcStateNow.lastRaise || bigBlind);
+                                        const minTotalForRaise = engineCurrentBet + engineMinRaise;
+
+                                        if (finalAmount === undefined || finalAmount < minTotalForRaise) {
+                                            // Can't meet minimum raise — fall back to call or check
+                                            if (toCall > 0 && playerStack >= toCall) {
+                                                finalAction = 'call';
+                                                finalAmount = toCall;
+                                            } else if (toCall > 0) {
+                                                finalAction = 'all_in';
+                                                finalAmount = undefined;
+                                            } else {
+                                                finalAction = 'check';
+                                                finalAmount = undefined;
+                                            }
+                                        } else if (finalAmount > playerStack + (engineCurrentBet > 0 ? toCall : 0)) {
+                                            // Over stack — go all-in
+                                            finalAction = 'all_in';
+                                            finalAmount = undefined;
+                                        }
+                                    }
+
                                     handControllerRef.current.performAction(event.seat, finalAction as any, finalAmount);
                                 }
                             }, decision.thinkTime);
@@ -1176,7 +1210,6 @@ export default function TablePage() {
         });
 
         setHandController(hand);
-        console.log('[HC] Starting hand #' + handNumber + ' with ' + seatedPlayers.length + ' players');
         try {
             hand.start();
         } catch (err) {
