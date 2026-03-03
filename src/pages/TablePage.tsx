@@ -432,8 +432,14 @@ export default function TablePage() {
             if (!tableId) return;
 
             try {
-                // Get BBJ pool for this table's club/union
-                const pool = await BBJService.getPool({ clubId: tableId });
+                // Get BBJ pool — fetch the actual club_id from the table record
+                const { data: tableData } = await supabase
+                    .from('tables')
+                    .select('club_id')
+                    .eq('id', tableId)
+                    .single();
+                const actualClubId = tableData?.club_id || tableId;
+                const pool = await BBJService.getPool({ clubId: actualClubId });
                 if (pool) {
                     setBbjAmount(pool.main_balance);
                 }
@@ -531,12 +537,13 @@ export default function TablePage() {
         wentToFlop: boolean,
         players: Array<{ userId: string; clubId: string; agentId?: string }>
     ) => {
-        // Parse big blind from string (e.g., "1/2" -> 2)
+        // Parse blinds from string (e.g., "0.25/0.50" -> sb=0.25, bb=0.50)
         const blindParts = tableState.blinds.split('/');
+        const smallBlind = parseFloat(blindParts[0]) || 1;
         const bigBlind = parseFloat(blindParts[1]) || 2;
 
-        // Calculate rake
-        const rakeCalc = RakeService.calculateRake(potSize, bigBlind, wentToFlop);
+        // Calculate rake using official stake-based chart
+        const rakeCalc = RakeService.calculateRake(potSize, bigBlind, wentToFlop, smallBlind);
         setCurrentRake(rakeCalc);
         setSessionRake(prev => prev + rakeCalc.cappedRake);
 
@@ -547,6 +554,7 @@ export default function TablePage() {
                 handId,
                 tableId,
                 clubId,
+                smallBlind,
                 potSize,
                 bigBlind,
                 wentToFlop,

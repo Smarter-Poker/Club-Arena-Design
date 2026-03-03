@@ -352,8 +352,13 @@ export const BBJService = {
             .eq('id', params.poolId)
             .single();
 
-        // Get table info for context
-        const tableId = params.handId; // Use hand context to find table
+        // Get actual table_id from the hand record
+        const { data: handRecord } = await supabase
+            .from('hands')
+            .select('table_id')
+            .eq('id', params.handId)
+            .single();
+        const tableId = handRecord?.table_id || params.handId;
         const clubId = poolContext?.club_id || '';
 
         // Call RPC to atomically execute the BBJ payout

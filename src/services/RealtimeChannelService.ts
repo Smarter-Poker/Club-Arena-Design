@@ -307,7 +307,7 @@ class RealtimeChannelService {
             onEvent?: (event: HandEvent) => void;
         }
     ): () => void {
-        const channelName = `hand:${handId} `;
+        const channelName = `hand:${handId}`;
 
         const channel = supabase.channel(channelName);
 
@@ -334,7 +334,7 @@ class RealtimeChannelService {
      * Unsubscribe from hand channel
      */
     async unsubscribeFromHand(handId: string): Promise<void> {
-        const channelName = `hand:${handId} `;
+        const channelName = `hand:${handId}`;
         const subscription = this.subscriptions.get(channelName);
 
         if (subscription) {
@@ -347,7 +347,7 @@ class RealtimeChannelService {
      * Stream hand events for replay
      */
     async streamHandReplay(handId: string, events: HandEvent[], speedMs: number = 1000): Promise<void> {
-        const channel = supabase.channel(`hand:${handId} `);
+        const channel = supabase.channel(`hand:${handId}`);
         await channel.subscribe();
 
         for (const event of events) {

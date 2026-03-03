@@ -195,15 +195,17 @@ export const RakeService = {
         tableId: string;
         clubId: string;
         unionId?: string;
+        smallBlind?: number;
         potSize: number;
         bigBlind: number;
         wentToFlop: boolean;
         players: DealtInPlayer[];
     }): Promise<WaterfallResult> {
         const { handId, tableId, clubId, unionId, potSize, bigBlind, wentToFlop, players } = params;
+        const sb = params.smallBlind ?? bigBlind / 2;
 
-        // STEP 1: Calculate rake and BBJ
-        const calculation = this.calculateRake(potSize, bigBlind, wentToFlop);
+        // STEP 1: Calculate rake and BBJ using official stake-based chart
+        const calculation = this.calculateRake(potSize, bigBlind, wentToFlop, sb);
 
         // STEP 2: Execute pot drops (if there's rake to take)
         if (calculation.cappedRake > 0) {
