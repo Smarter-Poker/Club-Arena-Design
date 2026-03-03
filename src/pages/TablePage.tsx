@@ -1135,7 +1135,7 @@ export default function TablePage() {
 
         // No cleanup — handControllerRef is managed by HAND_COMPLETE handler
         // Cleaning up here would null the ref during re-renders, breaking horse timeouts
-    }, [tableId, tableState.blinds, tableState.gameType, handNumber]);
+    }, [tableId, tableState.players, tableState.blinds, tableState.gameType, handNumber]);
 
     // Handle incoming game events from WebSocket
     useEffect(() => {
