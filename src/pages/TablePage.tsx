@@ -698,6 +698,9 @@ export default function TablePage() {
         // Wait for table info to load first (maxPlayers must be set)
         if (tableState.blinds === '?/?') return;
 
+        // Set IMMEDIATELY to prevent duplicate async calls on re-render
+        horsesLoadedRef.current = true;
+
         const loadHorses = async () => {
             try {
                 // Initialize Hydra
@@ -721,10 +724,9 @@ export default function TablePage() {
                     console.log(`[Horses] Loading ${horses.length} horses into table state`);
                     populateHorsePlayers(horses);
                 }
-
-                horsesLoadedRef.current = true;
             } catch (err) {
                 console.error('[Horses] Failed to load horses:', err);
+                horsesLoadedRef.current = false; // Allow retry on error
             }
         };
 
@@ -784,6 +786,7 @@ export default function TablePage() {
     const [handController, setHandController] = useState<HandController | null>(null);
     const [handNumber, setHandNumber] = useState(1);
     const handControllerRef = useRef<HandController | null>(null);
+    const handInProgressRef = useRef(false); // Stable ref to prevent re-creation
 
     // Keep a ref to the latest tableState for use inside HandController event closures
     const tableStateRef = useRef(tableState);
@@ -794,8 +797,8 @@ export default function TablePage() {
         // Count seated players with chips
         const seatedPlayers = tableState.players.filter(p => p && p.stack > 0);
 
-        // Need 2+ players to start a hand
-        if (seatedPlayers.length < 2 || tableState.isHandInProgress || handControllerRef.current) {
+        // Need 2+ players to start a hand — use REF to prevent re-creation
+        if (seatedPlayers.length < 2 || handInProgressRef.current || handControllerRef.current) {
             return;
         }
 
@@ -859,6 +862,7 @@ export default function TablePage() {
             console.log('[HC Event]', event.type, event.type === 'TURN_CHANGE' ? `seat=${(event as any).seat}` : '');
             switch (event.type) {
                 case 'HAND_START':
+                    handInProgressRef.current = true; // Set ref SYNCHRONOUSLY to prevent re-creation
                     setTableState(prev => ({
                         ...prev,
                         isHandInProgress: true,
@@ -1077,6 +1081,7 @@ export default function TablePage() {
 
                 case 'HAND_COMPLETE':
                     // First, keep cards visible for 3 seconds so players can see showdown
+                    handInProgressRef.current = false; // Allow next hand creation
                     setTableState(prev => ({
                         ...prev,
                         isHandInProgress: false,
@@ -1085,8 +1090,8 @@ export default function TablePage() {
 
                     // Delayed cleanup: clear board and cards after 3 seconds
                     setTimeout(() => {
-                        setHandNumber(prev => prev + 1);
                         handControllerRef.current = null;
+                        setHandNumber(prev => prev + 1);
                         setTableState(prev => {
                             // Clear all players' hole cards and reset status for next hand
                             const clearedPlayers = prev.players.map(p =>
@@ -1125,12 +1130,12 @@ export default function TablePage() {
         });
 
         setHandController(hand);
+        console.log('[HC] Starting hand #' + handNumber + ' with ' + seatedPlayers.length + ' players');
         hand.start();
 
-        return () => {
-            handControllerRef.current = null;
-        };
-    }, [tableId, tableState.players, tableState.isHandInProgress, tableState.blinds, tableState.gameType, handNumber]);
+        // No cleanup — handControllerRef is managed by HAND_COMPLETE handler
+        // Cleaning up here would null the ref during re-renders, breaking horse timeouts
+    }, [tableId, tableState.blinds, tableState.gameType, handNumber]);
 
     // Handle incoming game events from WebSocket
     useEffect(() => {
