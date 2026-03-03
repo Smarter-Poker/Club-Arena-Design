@@ -556,6 +556,111 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
+   TOURNAMENT CARD
+═══════════════════════════════════════════════════════════════════════════════ */
+.tournament-card {
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, #1a2a3e 0%, #0f1a2e 100%);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 8px;
+    padding: 0.75rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.tournament-card:hover {
+    border-color: #3b82f6;
+    transform: translateY(-2px);
+}
+
+.tournament-card.live {
+    border-color: rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.15);
+}
+
+.tournament-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.tournament-card__type {
+    background: #7c3aed;
+    color: white;
+    font-size: 0.65rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    font-weight: 600;
+}
+
+.tournament-card__status {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.tournament-card__status.running {
+    color: #ef4444;
+}
+
+.tournament-card__status.announced {
+    color: #3b82f6;
+}
+
+.tournament-card__status.registering {
+    color: #10b981;
+}
+
+.tournament-card__body {
+    flex: 1;
+}
+
+.tournament-card__name {
+    color: white;
+    font-size: 0.85rem;
+    margin: 0 0 0.35rem;
+    line-height: 1.2;
+}
+
+.tournament-card__buyin {
+    color: #fbbf24;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.tournament-card__fee {
+    color: #888;
+    font-size: 0.7rem;
+    margin-left: 0.25rem;
+}
+
+.tournament-card__gtd {
+    color: #10b981;
+    font-weight: 600;
+    font-size: 0.75rem;
+    margin-top: 0.15rem;
+}
+
+.tournament-card__players {
+    color: #888;
+    font-size: 0.7rem;
+    margin-top: 0.15rem;
+}
+
+.tournament-card__footer {
+    margin-top: 0.5rem;
+    padding-top: 0.4rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tournament-card__time {
+    color: #888;
+    font-size: 0.7rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
    EMPTY STATE
 ═══════════════════════════════════════════════════════════════════════════════ */
 .empty-tables {

@@ -44,6 +44,20 @@ interface TableData {
     big_blind: number;
 }
 
+interface TournamentData {
+    id: string;
+    name: string;
+    game_type: string;
+    buy_in_amount: number;
+    buy_in_fee: number;
+    guaranteed_prize: number | null;
+    start_time: string;
+    status: string;
+    current_players: number;
+    max_players: number;
+    starting_chips: number;
+}
+
 interface WalletBalances {
     gold: number;
     diamonds: number;
@@ -67,6 +81,7 @@ export default function ClubHomePage() {
 
     const [club, setClub] = useState<ClubData | null>(null);
     const [tables, setTables] = useState<TableData[]>([]);
+    const [tournaments, setTournaments] = useState<TournamentData[]>([]);
     const [wallet, setWallet] = useState<WalletBalances>({ gold: 0, diamonds: 0 });
     const [jackpotAmount, setJackpotAmount] = useState(0);
     const [activeFilter, setActiveFilter] = useState<GameFilter>('ALL');
@@ -167,6 +182,18 @@ export default function ClubHomePage() {
                 setTables(tableData);
             }
 
+            // Load tournaments for this club
+            const { data: tournamentData } = await supabase
+                .from('tournaments')
+                .select('*')
+                .eq('club_id', clubId)
+                .neq('status', 'COMPLETED')
+                .order('start_time', { ascending: true });
+
+            if (tournamentData) {
+                setTournaments(tournamentData);
+            }
+
             // Load BBJ amount (bbj_pools table may not exist yet — graceful fallback)
             try {
                 const { data: bbjData, error: bbjError } = await supabase
@@ -189,17 +216,37 @@ export default function ClubHomePage() {
         }
     };
 
+    // Filter tables (hide tables when MTT/SNG tab is active)
+    const showTournaments = activeFilter === 'MTT' || activeFilter === 'SNG';
     const filteredTables = tables.filter(table => {
+        if (showTournaments) return false; // Hide tables when viewing tournaments
         if (activeFilter === 'ALL') return true;
         if (activeFilter === 'Hold\'em') return table.game_variant?.toLowerCase().includes('nlh') || table.game_variant?.toLowerCase().includes('holdem');
         if (activeFilter === 'Omaha') return table.game_variant?.toLowerCase().includes('plo') || table.game_variant?.toLowerCase().includes('omaha');
-        if (activeFilter === 'MTT') return false;
-        if (activeFilter === 'SNG') return false;
         return true;
+    });
+
+    // Filter tournaments for MTT/SNG tabs
+    // SNG = max_players <= 10, MTT = max_players > 10
+    const filteredTournaments = tournaments.filter(t => {
+        if (activeFilter === 'MTT') return t.max_players > 10;
+        if (activeFilter === 'SNG') return t.max_players <= 10;
+        if (activeFilter === 'ALL') return true; // Show tournaments in ALL tab too
+        return false;
     });
 
     const formatNumber = (num: number) => {
         return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
+    const formatTournamentTime = (isoTime: string) => {
+        const d = new Date(isoTime);
+        const now = new Date();
+        const diff = d.getTime() - now.getTime();
+        if (diff < 0) return 'LIVE';
+        if (diff < 3600000) return `${Math.ceil(diff / 60000)}m`;
+        if (diff < 86400000) return `${Math.ceil(diff / 3600000)}h`;
+        return d.toLocaleDateString('en-US', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
     };
 
     const formatJackpot = (num: number) => {
@@ -375,11 +422,49 @@ export default function ClubHomePage() {
                     </div>
                 ))}
 
+                {/* TOURNAMENT CARDS — shown for MTT/SNG/ALL filters */}
+                {filteredTournaments.map(tournament => (
+                    <Link
+                        key={tournament.id}
+                        to={`/tournaments/${tournament.id}`}
+                        className={`tournament-card ${tournament.status === 'RUNNING' ? 'live' : ''}`}
+                    >
+                        <div className="tournament-card__header">
+                            <span className="tournament-card__type">{tournament.game_type}</span>
+                            <span className={`tournament-card__status ${tournament.status.toLowerCase()}`}>
+                                {tournament.status === 'RUNNING' ? 'LIVE' : tournament.status}
+                            </span>
+                        </div>
+                        <div className="tournament-card__body">
+                            <h3 className="tournament-card__name">{tournament.name}</h3>
+                            <div className="tournament-card__buyin">
+                                {tournament.buy_in_amount + tournament.buy_in_fee} chips
+                                {tournament.buy_in_fee > 0 && (
+                                    <span className="tournament-card__fee">({tournament.buy_in_amount}+{tournament.buy_in_fee})</span>
+                                )}
+                            </div>
+                            {tournament.guaranteed_prize && (
+                                <div className="tournament-card__gtd">
+                                    GTD: {tournament.guaranteed_prize.toLocaleString()}
+                                </div>
+                            )}
+                            <div className="tournament-card__players">
+                                {tournament.current_players}/{tournament.max_players} registered
+                            </div>
+                        </div>
+                        <div className="tournament-card__footer">
+                            <span className="tournament-card__time">
+                                {tournament.status === 'RUNNING' ? '🔴 In Progress' : `⏰ ${formatTournamentTime(tournament.start_time)}`}
+                            </span>
+                        </div>
+                    </Link>
+                ))}
+
                 {/* EMPTY STATE */}
-                {filteredTables.length === 0 && !isOwner && (
+                {filteredTables.length === 0 && filteredTournaments.length === 0 && !isOwner && (
                     <div className="empty-tables">
-                        <p>No tables available</p>
-                        <p className="empty-hint">Check back later or wait for the owner to create tables.</p>
+                        <p>{showTournaments ? 'No tournaments available' : 'No tables available'}</p>
+                        <p className="empty-hint">Check back later or wait for the owner to create {showTournaments ? 'tournaments' : 'tables'}.</p>
                     </div>
                 )}
             </div>
