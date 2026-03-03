@@ -65,8 +65,9 @@ export function useBlindTimer(
                 if (t <= 1) {
                     // Move to next level
                     if (currentLevelIndex < levels.length - 1) {
-                        setCurrentLevelIndex((i) => i + 1);
-                        return levels[currentLevelIndex + 1]?.duration || 0;
+                        const nextIdx = currentLevelIndex + 1;
+                        setCurrentLevelIndex(nextIdx);
+                        return levels[nextIdx]?.duration || 0;
                     }
                     setIsRunning(false);
                     return 0;
@@ -82,8 +83,9 @@ export function useBlindTimer(
     const pause = useCallback(() => setIsRunning(false), []);
     const skipLevel = useCallback(() => {
         if (currentLevelIndex < levels.length - 1) {
-            setCurrentLevelIndex((i) => i + 1);
-            setTimeRemaining(levels[currentLevelIndex + 1]?.duration || 0);
+            const nextIdx = currentLevelIndex + 1;
+            setCurrentLevelIndex(nextIdx);
+            setTimeRemaining(levels[nextIdx]?.duration || 0);
         }
     }, [currentLevelIndex, levels]);
 

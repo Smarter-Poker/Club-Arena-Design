@@ -35,11 +35,16 @@ export const SessionTimer: React.FC<SessionTimerProps> = ({
             const elapsedSec = Math.floor((now - start) / 1000);
             setElapsed(elapsedSec);
 
-            // Check for break reminder
+            // Check for break reminder (use functional update to avoid stale closure)
             const minutesSinceBreak = (elapsedSec - lastBreakRef.current) / 60;
-            if (minutesSinceBreak >= breakInterval && !showBreakReminder) {
-                setShowBreakReminder(true);
-                onBreakSuggested?.();
+            if (minutesSinceBreak >= breakInterval) {
+                setShowBreakReminder(prev => {
+                    if (!prev) {
+                        onBreakSuggested?.();
+                        return true;
+                    }
+                    return prev;
+                });
             }
         };
 

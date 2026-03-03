@@ -375,7 +375,7 @@ export default function UnionDetailPage() {
                                     </div>
                                     <div>
                                         <span>Pending</span>
-                                        <strong>${financialSummary.pendingSettlements.toLocaleString()}</strong>
+                                        <strong>{financialSummary.pendingSettlements} settlement{financialSummary.pendingSettlements !== 1 ? 's' : ''}</strong>
                                     </div>
                                     {financialSummary.overdueAmount > 0 && (
                                         <div>
@@ -508,7 +508,7 @@ export default function UnionDetailPage() {
                             <div className={styles.financialCard}>
                                 <span className={styles.financialIcon}>◷</span>
                                 <div>
-                                    <span className={styles.financialValue}>${financialSummary.pendingSettlements.toLocaleString()}</span>
+                                    <span className={styles.financialValue}>{financialSummary.pendingSettlements}</span>
                                     <span className={styles.financialLabel}>Pending Settlements</span>
                                 </div>
                             </div>

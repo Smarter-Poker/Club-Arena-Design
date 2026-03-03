@@ -201,13 +201,18 @@ export default function SettlementPage() {
         if (!selectedPeriod) return;
 
         setIsProcessing(true);
+        // Capture period ref to avoid stale closure race
+        const period = selectedPeriod;
         try {
             // Execute real payouts via SettlementService
-            const result = await SettlementService.executeMondayPayouts(selectedPeriod.id);
+            const result = await SettlementService.executeMondayPayouts(period.id);
 
-            // Refresh data
-            setAgentPayouts(prev => prev.map(a => ({ ...a, status: 'paid' })));
-            setClubWires(prev => prev.map(w => ({ ...w, status: 'processed' })));
+            // Only update state if payouts succeeded
+            if (result.agentsPaid > 0 || result.playersWithRakeback > 0) {
+                setAgentPayouts(prev => prev.map(a => ({ ...a, status: 'paid' as const })));
+                setClubWires(prev => prev.map(w => ({ ...w, status: 'processed' as const })));
+                toast.success(`Payouts complete: ${result.agentsPaid} agents, ${result.playersWithRakeback} players, $${result.totalDisbursed.toLocaleString()} disbursed`);
+            }
         } catch (error) {
             console.error('[SettlementPage] Payout failed:', error);
             toast.error('Payout execution failed: ' + (error as Error).message);

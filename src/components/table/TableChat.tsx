@@ -209,9 +209,9 @@ export function TableChat({
             {/* Quick Emojis */}
             {showEmojis && (
                 <div className="table-chat__emojis">
-                    {QUICK_EMOJIS.map((emoji) => (
+                    {QUICK_EMOJIS.map((emoji, index) => (
                         <button
-                            key={emoji}
+                            key={`emoji-${index}`}
                             className="table-chat__emoji-btn"
                             onClick={() => handleQuickEmoji(emoji)}
                         >

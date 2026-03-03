@@ -21,6 +21,9 @@ export default function UnionsPage() {
         unionService.getUnions().then(data => {
             setUnions(data);
             setLoading(false);
+        }).catch(err => {
+            console.error('[UnionsPage] Failed to load unions:', err);
+            setLoading(false);
         });
     };
 

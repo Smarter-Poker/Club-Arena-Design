@@ -33,8 +33,9 @@ function calculateChips(amount: number): { value: number; count: number }[] {
     for (const denom of denominations) {
         if (remaining >= denom) {
             const count = Math.floor(remaining / denom);
-            chips.push({ value: denom, count: Math.min(count, 10) }); // Cap at 10 per denomination
-            remaining -= count * denom;
+            const displayCount = Math.min(count, 10); // Cap at 10 per denomination for visual
+            chips.push({ value: denom, count: displayCount });
+            remaining -= displayCount * denom; // Subtract capped count, not uncapped
         }
     }
 
