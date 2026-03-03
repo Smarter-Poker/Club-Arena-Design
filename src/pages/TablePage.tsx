@@ -132,6 +132,13 @@ const createEmptySeats = (count: 6 | 9): (SeatPlayer | null)[] => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// MODULE-LEVEL LOCKS — persist across component remounts
+// ═══════════════════════════════════════════════════════════════════════════════
+const _horsesLoadedForTable: Record<string, boolean> = {};
+const _handActiveForTable: Record<string, boolean> = {};
+let _activeHandController: Record<string, any> = {};
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -694,12 +701,13 @@ export default function TablePage() {
     const horseMapRef = useRef<Map<number, { id: string; profile: string; name: string; stack: number }>>(new Map());
 
     useEffect(() => {
-        if (!tableId || horsesLoadedRef.current) return;
+        if (!tableId || horsesLoadedRef.current || _horsesLoadedForTable[tableId]) return;
         // Wait for table info to load first (maxPlayers must be set)
         if (tableState.blinds === '?/?') return;
 
-        // Set IMMEDIATELY to prevent duplicate async calls on re-render
+        // Set IMMEDIATELY to prevent duplicate async calls on re-render AND remount
         horsesLoadedRef.current = true;
+        _horsesLoadedForTable[tableId] = true;
 
         const loadHorses = async () => {
             try {
@@ -727,6 +735,7 @@ export default function TablePage() {
             } catch (err) {
                 console.error('[Horses] Failed to load horses:', err);
                 horsesLoadedRef.current = false; // Allow retry on error
+                if (tableId) _horsesLoadedForTable[tableId] = false;
             }
         };
 
@@ -797,8 +806,14 @@ export default function TablePage() {
         // Count seated players with chips
         const seatedPlayers = tableState.players.filter(p => p && p.stack > 0);
 
-        // Need 2+ players to start a hand — use REF to prevent re-creation
-        if (seatedPlayers.length < 2 || handInProgressRef.current || handControllerRef.current) {
+        // Need 2+ players to start a hand — use MODULE-LEVEL lock to survive remounts
+        const tId = tableId || 'default';
+        if (seatedPlayers.length < 2 || handInProgressRef.current || handControllerRef.current || _handActiveForTable[tId] || _activeHandController[tId]) {
+            // If remounted with an active hand, restore the ref from module-level
+            if (_activeHandController[tId] && !handControllerRef.current) {
+                handControllerRef.current = _activeHandController[tId];
+                handInProgressRef.current = _handActiveForTable[tId] || false;
+            }
             return;
         }
 
@@ -847,6 +862,7 @@ export default function TablePage() {
 
         const hand = new HandController(config, hcPlayers, dealerSeat);
         handControllerRef.current = hand;
+        _activeHandController[tId] = hand; // Module-level lock
 
         // Wire persistence service for hand history
         const clubId = tableId || 'demo'; // In production, get from table record
@@ -863,6 +879,7 @@ export default function TablePage() {
             switch (event.type) {
                 case 'HAND_START':
                     handInProgressRef.current = true; // Set ref SYNCHRONOUSLY to prevent re-creation
+                    _handActiveForTable[tableId || 'default'] = true; // Module-level lock
                     setTableState(prev => ({
                         ...prev,
                         isHandInProgress: true,
@@ -1081,7 +1098,6 @@ export default function TablePage() {
 
                 case 'HAND_COMPLETE':
                     // First, keep cards visible for 3 seconds so players can see showdown
-                    handInProgressRef.current = false; // Allow next hand creation
                     setTableState(prev => ({
                         ...prev,
                         isHandInProgress: false,
@@ -1090,7 +1106,12 @@ export default function TablePage() {
 
                     // Delayed cleanup: clear board and cards after 3 seconds
                     setTimeout(() => {
+                        // Clear ALL locks to allow next hand
+                        handInProgressRef.current = false;
                         handControllerRef.current = null;
+                        const tid = tableId || 'default';
+                        _handActiveForTable[tid] = false;
+                        _activeHandController[tid] = null;
                         setHandNumber(prev => prev + 1);
                         setTableState(prev => {
                             // Clear all players' hole cards and reset status for next hand
