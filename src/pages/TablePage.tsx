@@ -1093,39 +1093,56 @@ export default function TablePage() {
                                     // Map HydraService 'allin' to HandController 'all_in'
                                     if (finalAction === 'allin') finalAction = 'all_in';
 
+                                    // Get fresh engine state for accurate validation
+                                    const hcStateNow = handControllerRef.current.getState();
+                                    const engineCurrentBet = hcStateNow.currentBet || 0;
+                                    const freshPlayerBet = hcStateNow.players?.find((p: any) => p.seat === event.seat)?.bet || 0;
+                                    const freshToCall = Math.max(0, engineCurrentBet - freshPlayerBet);
+
                                     // Validate action against game state
-                                    if (finalAction === 'check' && toCall > 0) {
+                                    if (finalAction === 'check' && freshToCall > 0) {
                                         finalAction = 'call';
-                                        finalAmount = toCall;
+                                        finalAmount = freshToCall;
+                                    }
+                                    if (finalAction === 'call' && freshToCall === 0) {
+                                        // Nothing to call — check instead (prevents "Nothing to call" rejection)
+                                        finalAction = 'check';
+                                        finalAmount = undefined;
                                     }
                                     if (finalAction === 'call') {
-                                        finalAmount = toCall;
+                                        finalAmount = freshToCall;
                                     }
-                                    if (finalAction === 'fold' && toCall === 0) {
+                                    if (finalAction === 'fold' && freshToCall === 0) {
                                         finalAction = 'check'; // Don't fold when checking is free
                                     }
 
+                                    // Remap raise↔bet based on whether there's an existing bet
+                                    // Engine requires 'bet' when opening, 'raise' when increasing
+                                    if (finalAction === 'raise' && engineCurrentBet === 0) {
+                                        finalAction = 'bet'; // No bet to raise — use bet instead
+                                    }
+                                    if (finalAction === 'bet' && engineCurrentBet > 0) {
+                                        finalAction = 'raise'; // Bet already exists — use raise instead
+                                    }
+
                                     // Validate raise/bet amount against HandController's actual minRaise
-                                    // HydraService may not account for lastRaise tracking in the engine
                                     if ((finalAction === 'raise' || finalAction === 'bet') && handControllerRef.current) {
-                                        const hcStateNow = handControllerRef.current.getState();
-                                        const engineCurrentBet = hcStateNow.currentBet;
                                         const engineMinRaise = Math.max(bigBlind, hcStateNow.lastRaise || bigBlind);
                                         const minTotalForRaise = engineCurrentBet + engineMinRaise;
 
                                         if (finalAmount === undefined || finalAmount < minTotalForRaise) {
                                             // Can't meet minimum raise — fall back to call or check
-                                            if (toCall > 0 && playerStack >= toCall) {
+                                            if (freshToCall > 0 && playerStack >= freshToCall) {
                                                 finalAction = 'call';
-                                                finalAmount = toCall;
-                                            } else if (toCall > 0) {
+                                                finalAmount = freshToCall;
+                                            } else if (freshToCall > 0) {
                                                 finalAction = 'all_in';
                                                 finalAmount = undefined;
                                             } else {
                                                 finalAction = 'check';
                                                 finalAmount = undefined;
                                             }
-                                        } else if (finalAmount > playerStack + (engineCurrentBet > 0 ? toCall : 0)) {
+                                        } else if (finalAmount > playerStack + (engineCurrentBet > 0 ? freshToCall : 0)) {
                                             // Over stack — go all-in
                                             finalAction = 'all_in';
                                             finalAmount = undefined;
