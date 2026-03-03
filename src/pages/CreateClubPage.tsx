@@ -570,8 +570,8 @@ export default function CreateClubPage() {
 
             if (insertError) throw insertError;
 
-            // Add owner as first member
-            await supabase
+            // Add owner as first member — if this fails, delete the orphaned club
+            const { error: memberError } = await supabase
                 .from('club_members')
                 .insert({
                     club_id: data.id,
@@ -579,6 +579,12 @@ export default function CreateClubPage() {
                     role: 'owner',
                     status: 'active',
                 });
+
+            if (memberError) {
+                console.error('[CreateClub] Owner membership failed, cleaning up orphaned club:', memberError);
+                await supabase.from('clubs').delete().eq('id', data.id);
+                throw new Error('Failed to set up club ownership. Please try again.');
+            }
 
             navigate(`/clubs/${data.id}`);
         } catch (err: any) {

@@ -68,10 +68,16 @@ export default function LobbyPage() {
                     schema: 'public',
                     table: 'table_seats',
                 },
-                () => {
-                    // Refetch to get accurate player counts
-                    tableService.getActiveTables().then(setTables);
-                }
+                (() => {
+                    // Debounce seat changes to avoid rapid refetching
+                    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+                    return () => {
+                        if (debounceTimer) clearTimeout(debounceTimer);
+                        debounceTimer = setTimeout(() => {
+                            tableService.getActiveTables().then(setTables);
+                        }, 500);
+                    };
+                })()
             )
             .subscribe();
 

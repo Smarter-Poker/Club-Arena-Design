@@ -138,34 +138,36 @@ export function PotDisplay({
     const [displayPot, setDisplayPot] = useState(mainPot);
     const [isAnimating, setIsAnimating] = useState(false);
 
-    // Animate pot changes
+    // Animate pot changes — only re-trigger when mainPot changes (not displayPot)
     useEffect(() => {
-        if (mainPot !== displayPot) {
-            setIsAnimating(true);
+        setIsAnimating(true);
 
-            // Animate number counting up
-            const diff = mainPot - displayPot;
-            const steps = 20;
-            const increment = diff / steps;
-            let current = displayPot;
-            let step = 0;
+        // Animate number counting up from current display value
+        const startValue = displayPot;
+        const diff = mainPot - startValue;
+        if (diff === 0) { setIsAnimating(false); return; }
 
-            const timer = setInterval(() => {
-                step++;
-                current += increment;
+        const steps = 20;
+        const increment = diff / steps;
+        let current = startValue;
+        let step = 0;
 
-                if (step >= steps) {
-                    setDisplayPot(mainPot);
-                    setIsAnimating(false);
-                    clearInterval(timer);
-                } else {
-                    setDisplayPot(Math.round(current));
-                }
-            }, 25);
+        const timer = setInterval(() => {
+            step++;
+            current += increment;
 
-            return () => clearInterval(timer);
-        }
-    }, [mainPot, displayPot]);
+            if (step >= steps) {
+                setDisplayPot(mainPot);
+                setIsAnimating(false);
+                clearInterval(timer);
+            } else {
+                setDisplayPot(Math.round(current));
+            }
+        }, 25);
+
+        return () => clearInterval(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mainPot]);
 
     // Calculate chip visualization
     const chipBreakdown = useMemo(() => getChipBreakdown(mainPot), [mainPot]);

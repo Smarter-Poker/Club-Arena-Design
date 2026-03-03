@@ -573,7 +573,7 @@ export default function HomePage() {
                         // Navigate to Hub Marketplace (parent World Hub)
                         if (window.parent !== window) {
                             // In iframe - use postMessage to navigate parent
-                            window.parent.postMessage({ type: 'NAVIGATE', path: '/hub/marketplace' }, '*');
+                            window.parent.postMessage({ type: 'NAVIGATE', path: '/hub/marketplace' }, window.location.origin);
                         } else {
                             // Standalone - redirect to Hub
                             window.location.href = 'https://smarter.poker/hub/marketplace';

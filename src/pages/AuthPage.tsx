@@ -66,8 +66,13 @@ export default function AuthPage() {
             return;
         }
 
-        if (password.length < 6) {
-            setError('Password must be at least 6 characters');
+        if (password.length < 8) {
+            setError('Password must be at least 8 characters');
+            setIsLoading(false);
+            return;
+        }
+        if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+            setError('Password must include at least one uppercase letter and one number');
             setIsLoading(false);
             return;
         }
@@ -107,8 +112,11 @@ export default function AuthPage() {
                     });
 
                 if (profileError) {
-                    console.warn('🔐 [AUTH] Profile creation failed:', profileError);
-                    // Continue anyway - profile might already exist
+                    // PGRST116 = no rows (ok on upsert), 23505 = unique violation (username taken)
+                    if (profileError.code === '23505') {
+                        throw new Error('Username is already taken. Please choose a different one.');
+                    }
+                    console.warn('[AUTH] Profile creation failed (non-critical, may already exist):', profileError.code);
                 }
 
 
