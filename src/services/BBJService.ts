@@ -137,11 +137,33 @@ export const BBJService = {
         const { data, error } = await query.single();
 
         if (error) {
+            // No pool found is not a critical error — return a default empty pool
+            if (error.code === 'PGRST116') {
+                console.warn('BBJService.getPool: No pool found, returning default');
+                return null;
+            }
             console.error('BBJService.getPool error:', error);
             return null;
         }
 
-        return data;
+        // Map DB columns to service interface
+        // DB has: pool_amount, hands_contributed
+        // Service expects: main_balance, backup_balance, promo_balance, total_contributed
+        const mapped: BBJPool = {
+            id: data.id,
+            union_id: data.union_id,
+            club_id: data.club_id,
+            main_balance: data.pool_amount || data.main_balance || 0,
+            backup_balance: data.backup_balance || 0,
+            promo_balance: data.promo_balance || 0,
+            total_contributed: data.hands_contributed || data.total_contributed || 0,
+            last_hit_at: data.last_hit_at,
+            last_hit_amount: data.last_hit_amount || 0,
+            created_at: data.created_at,
+            updated_at: data.updated_at,
+        };
+
+        return mapped;
     },
 
     /**
