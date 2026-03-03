@@ -19,6 +19,7 @@ import { useUserStore } from '../stores/useUserStore';
 import { useWalletStore } from '../stores/useWalletStore';
 import haptic from '../services/HapticService';
 import ClubBottomNav from '../components/club/ClubBottomNav';
+import { CashGameCard, TournamentCard, SNGCard, SpinCard } from '../components/lobby/DynamicGameCard';
 import './ClubHomePage.css';
 
 // Types
@@ -71,7 +72,7 @@ interface UserProfileData {
     player_number: number;
 }
 
-type GameFilter = 'ALL' | 'Hold\'em' | 'Omaha' | 'Mixed' | 'MTT' | 'SNG';
+type GameFilter = 'ALL' | 'Hold\'em' | 'Omaha' | 'Mixed' | 'MTT' | 'Spin-It' | 'SN';
 
 export default function ClubHomePage() {
     const { clubId } = useParams<{ clubId: string }>();
@@ -94,7 +95,7 @@ export default function ClubHomePage() {
     const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
     const [playerNumber, setPlayerNumber] = useState<string>('0000000');
 
-    const filters: GameFilter[] = ['ALL', 'Hold\'em', 'Omaha', 'Mixed', 'MTT', 'SNG'];
+    const filters: GameFilter[] = ['ALL', 'Hold\'em', 'Omaha', 'Mixed', 'MTT', 'Spin-It', 'SN'];
 
     // Load user profile on mount
     useEffect(() => {
@@ -216,22 +217,30 @@ export default function ClubHomePage() {
         }
     };
 
-    // Filter tables (hide tables when MTT/SNG tab is active)
-    const showTournaments = activeFilter === 'MTT' || activeFilter === 'SNG';
+    // Filter tables (hide tables when MTT/Spin-It/SN tab is active)
+    const showTournaments = activeFilter === 'MTT' || activeFilter === 'SN' || activeFilter === 'Spin-It';
     const filteredTables = tables.filter(table => {
         if (showTournaments) return false; // Hide tables when viewing tournaments
         if (activeFilter === 'ALL') return true;
         if (activeFilter === 'Hold\'em') return table.game_variant?.toLowerCase().includes('nlh') || table.game_variant?.toLowerCase().includes('holdem');
         if (activeFilter === 'Omaha') return table.game_variant?.toLowerCase().includes('plo') || table.game_variant?.toLowerCase().includes('omaha');
+        if (activeFilter === 'Mixed') {
+            const v = table.game_variant?.toLowerCase() || '';
+            return v.includes('pineapple') || v.includes('short_deck') || v.includes('ofc') || v.includes('mixed') || v.includes('double');
+        }
         return true;
     });
 
-    // Filter tournaments for MTT/SNG tabs
-    // SNG = max_players <= 10, MTT = max_players > 10
+    // Filter tournaments for MTT/SN/Spin-It tabs
     const filteredTournaments = tournaments.filter(t => {
-        if (activeFilter === 'MTT') return t.max_players > 10;
-        if (activeFilter === 'SNG') return t.max_players <= 10;
-        if (activeFilter === 'ALL') return true; // Show tournaments in ALL tab too
+        const isSpin = t.name.toLowerCase().includes('spin');
+        const isSNG = !isSpin && (t.name.toLowerCase().includes('sng') || t.max_players <= 10);
+        const isMTT = !isSpin && !isSNG;
+
+        if (activeFilter === 'MTT') return isMTT;
+        if (activeFilter === 'SN') return isSNG;
+        if (activeFilter === 'Spin-It') return isSpin;
+        if (activeFilter === 'ALL') return true;
         return false;
     });
 
@@ -368,97 +377,42 @@ export default function ClubHomePage() {
                     </Link>
                 )}
 
-                {/* EXISTING TABLES */}
+                {/* EXISTING TABLES — Dynamic PokerBros-style cards */}
                 {filteredTables.map(table => (
-                    <div key={table.id} className="table-card-wrapper" style={{ position: 'relative' }}>
-                        <Link
-                            to={`/table/${table.id}`}
-                            className="table-card"
-                        >
-                            <div className="table-card__header">
-                                <span className="table-card__variant">{table.game_variant}</span>
-                                <span className="table-card__seats">{table.max_players} Max</span>
-                            </div>
-                            <div className="table-card__body">
-                                <h3 className="table-card__name">{table.name}</h3>
-                                <div className="table-card__stakes">
-                                    {table.small_blind}/{table.big_blind}
-                                </div>
-                                <div className="table-card__players">
-                                    {table.current_players || 0}/{table.max_players} playing
-                                </div>
-                            </div>
-                            <div className="table-card__status">
-                                <span className={`status-dot ${table.status}`}></span>
-                                {table.status}
-                            </div>
-                        </Link>
-                        {/* Delete button for owners/admins */}
-                        {(isOwner || userRole === 'admin') && (
-                            <button
-                                className="table-card__delete-btn"
-                                onClick={async (e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    if (!confirm(`Delete table "${table.name}"?`)) return;
-                                    setDeletingTableId(table.id);
-                                    try {
-                                        const { error } = await supabase.from('tables').update({ status: 'deleted', is_active: false }).eq('id', table.id);
-                                        if (error) throw error;
-                                        setTables(prev => prev.filter(t => t.id !== table.id));
-                                    } catch (err) {
-                                        console.error('Failed to delete table:', err);
-                                        alert('Failed to delete table');
-                                    } finally {
-                                        setDeletingTableId(null);
-                                    }
-                                }}
-                                disabled={deletingTableId === table.id}
-                                title="Delete table"
-                            >
-                                {deletingTableId === table.id ? '...' : '\u2715'}
-                            </button>
-                        )}
-                    </div>
+                    <CashGameCard
+                        key={table.id}
+                        table={table}
+                        isAdmin={isOwner || userRole === 'admin'}
+                        onDelete={async (id) => {
+                            if (!confirm(`Delete table "${table.name}"?`)) return;
+                            setDeletingTableId(id);
+                            try {
+                                const { error } = await supabase.from('tables').update({ status: 'deleted', is_active: false }).eq('id', id);
+                                if (error) throw error;
+                                setTables(prev => prev.filter(t => t.id !== id));
+                            } catch (err) {
+                                console.error('Failed to delete table:', err);
+                                alert('Failed to delete table');
+                            } finally {
+                                setDeletingTableId(null);
+                            }
+                        }}
+                    />
                 ))}
 
-                {/* TOURNAMENT CARDS — shown for MTT/SNG/ALL filters */}
-                {filteredTournaments.map(tournament => (
-                    <Link
-                        key={tournament.id}
-                        to={`/tournaments/${tournament.id}`}
-                        className={`tournament-card ${tournament.status === 'RUNNING' ? 'live' : ''}`}
-                    >
-                        <div className="tournament-card__header">
-                            <span className="tournament-card__type">{tournament.game_type}</span>
-                            <span className={`tournament-card__status ${tournament.status.toLowerCase()}`}>
-                                {tournament.status === 'RUNNING' ? 'LIVE' : tournament.status}
-                            </span>
-                        </div>
-                        <div className="tournament-card__body">
-                            <h3 className="tournament-card__name">{tournament.name}</h3>
-                            <div className="tournament-card__buyin">
-                                {tournament.buy_in_amount + tournament.buy_in_fee} chips
-                                {tournament.buy_in_fee > 0 && (
-                                    <span className="tournament-card__fee">({tournament.buy_in_amount}+{tournament.buy_in_fee})</span>
-                                )}
-                            </div>
-                            {tournament.guaranteed_prize && (
-                                <div className="tournament-card__gtd">
-                                    GTD: {tournament.guaranteed_prize.toLocaleString()}
-                                </div>
-                            )}
-                            <div className="tournament-card__players">
-                                {tournament.current_players}/{tournament.max_players} registered
-                            </div>
-                        </div>
-                        <div className="tournament-card__footer">
-                            <span className="tournament-card__time">
-                                {tournament.status === 'RUNNING' ? '🔴 In Progress' : `⏰ ${formatTournamentTime(tournament.start_time)}`}
-                            </span>
-                        </div>
-                    </Link>
-                ))}
+                {/* TOURNAMENT CARDS — Dynamic PokerBros-style cards */}
+                {filteredTournaments.map(tournament => {
+                    const isSNG = tournament.name.toLowerCase().includes('sng') || tournament.max_players <= 10;
+                    const isSpin = tournament.name.toLowerCase().includes('spin');
+
+                    if (isSpin) {
+                        return <SpinCard key={tournament.id} tournament={tournament} />;
+                    }
+                    if (isSNG) {
+                        return <SNGCard key={tournament.id} tournament={tournament} />;
+                    }
+                    return <TournamentCard key={tournament.id} tournament={tournament} />;
+                })}
 
                 {/* EMPTY STATE */}
                 {filteredTables.length === 0 && filteredTournaments.length === 0 && !isOwner && (
