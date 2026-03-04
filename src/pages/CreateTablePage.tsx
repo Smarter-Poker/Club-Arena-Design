@@ -101,13 +101,13 @@ export default function CreateTablePage() {
                     .select('union_id')
                     .eq('club_id', clubId)
                     .limit(1)
-                    .single();
+                    .maybeSingle();
                 if (data) {
                     // Club is in a union — redirect back, tables are union-level only
                     navigate(`/clubs/${clubId}`, { replace: true });
                 }
             } catch {
-                // Not in a union — standalone club, allow table creation
+                // Query error — allow page to render (fail-open for standalone clubs)
             }
         })();
     }, [clubId, navigate]);

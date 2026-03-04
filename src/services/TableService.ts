@@ -119,6 +119,16 @@ class TableService {
             ...settings,
         };
 
+        // Union guard: clubs inside a union cannot create their own tables
+        const { data: unionCheck } = await supabase
+            .from('union_clubs')
+            .select('union_id')
+            .eq('club_id', clubId)
+            .maybeSingle();
+        if (unionCheck) {
+            throw new Error('Clubs inside a union cannot create standalone tables. Tables are managed at the union level.');
+        }
+
         const { data, error } = await supabase
             .from('tables')
             .insert({

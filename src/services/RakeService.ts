@@ -380,18 +380,19 @@ export const RakeService = {
         });
 
         // Update each player's rake_generated in club_members
-        // Use Promise.allSettled so one failure doesn't block the others
+        // NOTE: Read-modify-write pattern — low race risk since hands settle sequentially per table.
+        // TODO: Replace with atomic RPC `increment_rake_generated` for multi-table horse safety.
         const clubId = players[0]?.clubId;
         if (clubId) {
-            const updates = attributions.map(async (attr) => {
+            // Run sequentially to minimize race window for same player across tables
+            for (const attr of attributions) {
                 try {
-                    // Fetch current rake_generated
                     const { data: member } = await supabase
                         .from('club_members')
                         .select('rake_generated')
                         .eq('club_id', clubId)
                         .eq('user_id', attr.userId)
-                        .single();
+                        .maybeSingle();
 
                     if (member) {
                         const newRake = (member.rake_generated || 0) + attr.rakeCredit;
@@ -402,10 +403,9 @@ export const RakeService = {
                             .eq('user_id', attr.userId);
                     }
                 } catch (e) {
-                    console.warn(`[RakeService] Failed to update rake_generated for ${attr.userId.substring(0,8)}:`, e);
+                    console.warn(`[RakeService] Failed to update rake_generated for ${attr.userId.substring(0, 8)}:`, e);
                 }
-            });
-            await Promise.allSettled(updates);
+            }
         }
 
         return attributions;

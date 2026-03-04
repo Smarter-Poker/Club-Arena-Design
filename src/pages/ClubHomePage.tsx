@@ -178,17 +178,17 @@ export default function ClubHomePage() {
             // Check if this club is inside a union
             // Clubs inside a union play on UNION tables — they cannot create their own
             try {
-                const { data: ucRow } = await supabase
+                const { data: ucRow, error: ucErr } = await supabase
                     .from('union_clubs')
                     .select('union_id')
                     .eq('club_id', clubId)
                     .limit(1)
-                    .single();
-                if (ucRow) {
+                    .maybeSingle();
+                if (!ucErr && ucRow) {
                     setIsInUnion(true);
                 }
             } catch {
-                // Not in a union — standalone club
+                // Query error — fail-open for standalone clubs
             }
 
             // Load tables

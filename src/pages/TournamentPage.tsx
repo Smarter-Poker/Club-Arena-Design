@@ -69,15 +69,15 @@ export default function TournamentPage() {
         if (!clubId) return;
         (async () => {
             try {
-                const { data } = await supabase
+                const { data, error } = await supabase
                     .from('union_clubs')
                     .select('union_id')
                     .eq('club_id', clubId)
                     .limit(1)
-                    .single();
-                if (data) setIsInUnion(true);
+                    .maybeSingle();
+                if (!error && data) setIsInUnion(true);
             } catch {
-                // Not in a union
+                // Query error — fail-open
             }
         })();
     }, [clubId]);

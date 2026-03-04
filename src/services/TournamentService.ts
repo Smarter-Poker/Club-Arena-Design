@@ -309,21 +309,31 @@ class TournamentService {
      * Create a new tournament
      */
     async createTournament(clubId: string, config: TournamentConfig): Promise<Tournament> {
+        // Union guard: clubs inside a union cannot create their own tournaments
+        const { data: unionCheck } = await supabase
+            .from('union_clubs')
+            .select('union_id')
+            .eq('club_id', clubId)
+            .maybeSingle();
+        if (unionCheck) {
+            throw new Error('Clubs inside a union cannot create standalone tournaments. Tournaments are managed at the union level.');
+        }
+
         const { data, error } = await supabase
             .from('tournaments')
             .insert({
                 club_id: clubId,
                 name: config.name,
-                type: config.type,
-                buy_in: config.buyIn,
-                rake: config.rake,
+                game_type: config.type?.toUpperCase() || 'NLH',
+                buy_in_amount: config.buyIn,
+                buy_in_fee: config.rake || 0,
                 starting_chips: config.startingStack,
                 max_players: config.maxPlayers,
                 current_players: 0,
                 status: 'scheduled',
                 blind_structure: config.blindStructure,
                 payout_structure: config.payoutStructure,
-                prize_pool: 0,
+                guaranteed_prize: 0,
                 start_time: config.startTime?.toISOString(),
             })
             .select()
@@ -354,8 +364,8 @@ class TournamentService {
             throw new Error('Tournament is full');
         }
 
-        // Calculate total cost (buy-in + rake)
-        const totalCost = tournament.buy_in + (tournament.rake || 0);
+        // Calculate total cost (buy-in + fee)
+        const totalCost = (tournament.buy_in_amount || tournament.buy_in || 0) + (tournament.buy_in_fee || tournament.rake || 0);
 
         // Check player wallet balance
         const balance = await WalletService.getWalletBalance(userId, 'PLAYER');
@@ -404,7 +414,7 @@ class TournamentService {
         // Atomically update player count and prize pool via direct update
         const { error: countError } = await supabase.from('tournaments').update({
             current_players: tournament.current_players + 1,
-            prize_pool: (tournament.prize_pool || 0) + tournament.buy_in,
+            guaranteed_prize: (tournament.guaranteed_prize || tournament.prize_pool || 0) + (tournament.buy_in_amount || tournament.buy_in || 0),
         }).eq('id', tournamentId);
 
         if (countError) {
@@ -424,8 +434,8 @@ class TournamentService {
             throw new Error('Cannot unregister after tournament started');
         }
 
-        // Calculate refund amount (buy-in + rake)
-        const refundAmount = tournament.buy_in + (tournament.rake || 0);
+        // Calculate refund amount (buy-in + fee)
+        const refundAmount = (tournament.buy_in_amount || tournament.buy_in || 0) + (tournament.buy_in_fee || tournament.rake || 0);
 
         // Refund to player wallet — MUST succeed before unregistering
         const { error: refundError } = await supabase.rpc('add_to_player_wallet', {
@@ -447,7 +457,7 @@ class TournamentService {
         // Atomically decrement player count and prize pool via direct update
         const { error: countError } = await supabase.from('tournaments').update({
             current_players: Math.max(0, tournament.current_players - 1),
-            prize_pool: Math.max(0, (tournament.prize_pool || 0) - tournament.buy_in),
+            guaranteed_prize: Math.max(0, (tournament.guaranteed_prize || tournament.prize_pool || 0) - (tournament.buy_in_amount || tournament.buy_in || 0)),
         }).eq('id', tournamentId);
 
         if (countError) {
@@ -761,7 +771,7 @@ class TournamentService {
         // @ts-ignore
         const rebuyChips = tournament.rebuy_chips || tournament.starting_chips;
         // @ts-ignore
-        const rebuyCost = tournament.rebuy_cost || tournament.buy_in;
+        const rebuyCost = tournament.rebuy_cost || tournament.buy_in_amount || tournament.buy_in;
 
         // Process rebuy via RPC
         const { data, error } = await supabase.rpc('process_tournament_rebuy', {
@@ -825,7 +835,7 @@ class TournamentService {
         // @ts-ignore
         const addonChips = tournament.addon_chips || tournament.starting_chips;
         // @ts-ignore
-        const addonCost = tournament.addon_cost || tournament.buy_in;
+        const addonCost = tournament.addon_cost || tournament.buy_in_amount || tournament.buy_in;
 
         const { data, error } = await supabase.rpc('process_tournament_rebuy', {
             p_tournament_id: tournamentId,
@@ -1106,7 +1116,7 @@ class TournamentService {
                         game_id: tournamentId,
                         placement: player.position,
                         total_players: tournament.current_players || players.length,
-                        buy_in: tournament.buy_in || 0,
+                        buy_in: tournament.buy_in_amount || tournament.buy_in || 0,
                         winnings: player.prize || 0,
                     });
                 }

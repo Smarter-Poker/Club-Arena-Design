@@ -592,7 +592,7 @@ export default function TablePage() {
                         .select('union_id')
                         .eq('club_id', clubId)
                         .limit(1)
-                        .single();
+                        .maybeSingle();
                     if (ucRow) unionId = ucRow.union_id;
                 } catch { /* club may not be in a union — standalone club */ }
 
@@ -947,7 +947,7 @@ export default function TablePage() {
         });
 
         // Subscribe to events and update UI
-        hand.onEvent((event) => {
+        hand.onEvent(async (event) => {
             switch (event.type) {
                 case 'HAND_START':
                     handInProgressRef.current = true;
@@ -1262,13 +1262,13 @@ export default function TablePage() {
                     // Execute rake waterfall
                     {
                         const currentPlayers = tableStateRef.current.players.filter(p => p && p.stack > 0);
-                        const rakeClubId = tableId || 'demo';
+                        const rakeClubId = actualClubIdRef.current || tableId || 'demo';
                         const rakePlayers = currentPlayers.map(p => ({
                             userId: p!.id,
                             clubId: rakeClubId,
                             agentId: undefined,
                         }));
-                        handleHandComplete(
+                        await handleHandComplete(
                             handPersistenceService.getCurrentHandId() || crypto.randomUUID(),
                             event.rake > 0 ? tableStateRef.current.pot : 0,
                             true,

@@ -438,7 +438,7 @@ export const WalletService = {
         // Use table_chip_locks to track locked chip balances
         const { data: lockData, error: lockError } = await supabase
             .from('table_chip_locks')
-            .select('locked_amount')
+            .select('amount')
             .eq('user_id', userId)
             .eq('table_id', tableId)
             .single();
@@ -448,13 +448,13 @@ export const WalletService = {
             throw new Error('No chips locked at this table');
         }
 
-        if (lockData.locked_amount < amount) {
+        if (lockData.amount < amount) {
             throw new Error('Insufficient chips for dealer tip');
         }
 
         const { error } = await supabase
             .from('table_chip_locks')
-            .update({ locked_amount: lockData.locked_amount - amount })
+            .update({ amount: lockData.amount - amount })
             .eq('user_id', userId)
             .eq('table_id', tableId);
 
@@ -466,7 +466,9 @@ export const WalletService = {
         // Record tip transaction
         const { error: insertError } = await supabase.from('wallet_transactions').insert({
             user_id: userId,
-            type: 'TIP',
+            wallet_type: 'PLAYER',
+            type: 'debit',
+            category: 'TIP',
             amount: -amount,
             table_id: tableId,
             description: `Dealer tip at table`,
@@ -487,7 +489,7 @@ export const WalletService = {
         // Deduct premium from player's table stack
         const { data: chipLock, error: chipLockError } = await supabase
             .from('table_chip_locks')
-            .select('locked_amount')
+            .select('amount')
             .eq('user_id', userId)
             .eq('table_id', tableId)
             .single();
@@ -497,13 +499,13 @@ export const WalletService = {
             throw new Error('No chips locked at this table');
         }
 
-        if (chipLock.locked_amount < premium) {
+        if (chipLock.amount < premium) {
             throw new Error('Insufficient chips for insurance premium');
         }
 
         const { error: deductError } = await supabase
             .from('table_chip_locks')
-            .update({ locked_amount: chipLock.locked_amount - premium })
+            .update({ amount: chipLock.amount - premium })
             .eq('user_id', userId)
             .eq('table_id', tableId);
 
@@ -515,7 +517,9 @@ export const WalletService = {
         // Record insurance transaction
         const { error: insertError } = await supabase.from('wallet_transactions').insert({
             user_id: userId,
-            type: 'INSURANCE',
+            wallet_type: 'PLAYER',
+            type: 'debit',
+            category: 'INSURANCE',
             amount: -premium,
             table_id: tableId,
             hand_id: handId,

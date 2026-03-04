@@ -263,8 +263,11 @@ export interface Tournament {
     club_id: string;
     name: string;
     type: TournamentType;
+    game_type?: string;
     buy_in: number;
+    buy_in_amount?: number;
     rake: number;
+    buy_in_fee?: number;
     starting_chips: number;
     max_players: number;
     current_players: number;
@@ -272,10 +275,16 @@ export interface Tournament {
     blind_structure: BlindLevel[];
     payout_structure: PayoutEntry[];
     prize_pool: number;
+    guaranteed_prize?: number;
     start_time?: string;
     started_at?: string;
     ended_at?: string;
     created_at: string;
+    rebuy_cost?: number;
+    rebuy_chips?: number;
+    addon_cost?: number;
+    addon_chips?: number;
+    [key: string]: any;
 }
 
 export type TournamentType = 'sng' | 'mtt' | 'satellite' | 'spin' | 'bounty' | 'mystery_bounty' | 'progressive_bounty';
