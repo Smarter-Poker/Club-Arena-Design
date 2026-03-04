@@ -223,45 +223,65 @@ class TableService {
 
             const chipsToReturn = seat.stack || 0;
 
+            // Get club_id from table (needed for chip credit + tournament leave + transaction log)
+            const { data: tableData } = await supabase
+                .from('tables')
+                .select('club_id, tournament_id')
+                .eq('id', tableId)
+                .single();
+
+            const clubId = tableData?.club_id;
+            if (!clubId) {
+                console.error('[TableService] Cannot return chips — table has no club_id');
+                return { success: false, chipsReturned: 0 };
+            }
+
             // Return chips to player wallet (credit club_members.chip_balance)
             if (chipsToReturn > 0) {
-                // Get club_id + tournament_id from table for chip credit + tournament leave
-                const { data: tableData } = await supabase
-                    .from('tables')
-                    .select('club_id, tournament_id')
-                    .eq('id', tableId)
-                    .single();
-
-                const clubId = tableData?.club_id;
-                if (!clubId) {
-                    console.error('[TableService] Cannot return chips — table has no club_id');
-                    return { success: false, chipsReturned: 0 };
-                }
 
                 // Credit chips back to the player's club membership balance
-                const { data: memberData, error: memberError } = await supabase
-                    .from('club_members')
-                    .select('chip_balance')
-                    .eq('club_id', clubId)
-                    .eq('user_id', userId)
-                    .single();
-
-                if (memberError || !memberData) {
-                    console.error('[TableService] Cannot find club membership:', memberError);
-                    return { success: false, chipsReturned: 0 };
+                // Try atomic RPC first (single SQL statement — no read-then-write race)
+                let chipsCredited = false;
+                try {
+                    const { error: rpcError } = await supabase.rpc('fn_add_chips', {
+                        p_user_id: userId,
+                        p_club_id: clubId,
+                        p_amount: chipsToReturn,
+                    });
+                    chipsCredited = !rpcError;
+                    if (rpcError) {
+                        console.warn('[TableService] RPC fn_add_chips failed, using fallback:', rpcError.message);
+                    }
+                } catch {
+                    // RPC may not exist — use fallback
                 }
 
-                const newBalance = (memberData.chip_balance || 0) + chipsToReturn;
-                const { error: updateError } = await supabase
-                    .from('club_members')
-                    .update({ chip_balance: newBalance })
-                    .eq('club_id', clubId)
-                    .eq('user_id', userId);
+                if (!chipsCredited) {
+                    // Fallback: read-modify-write (matches existing pattern)
+                    const { data: memberData, error: memberError } = await supabase
+                        .from('club_members')
+                        .select('chip_balance')
+                        .eq('club_id', clubId)
+                        .eq('user_id', userId)
+                        .single();
 
-                if (updateError) {
-                    console.error('[TableService] Error crediting chips back:', updateError);
-                    // CRITICAL: Do NOT delete the seat if chip return failed — chips would be lost
-                    return { success: false, chipsReturned: 0 };
+                    if (memberError || !memberData) {
+                        console.error('[TableService] Cannot find club membership:', memberError);
+                        return { success: false, chipsReturned: 0 };
+                    }
+
+                    const newBalance = (memberData.chip_balance || 0) + chipsToReturn;
+                    const { error: updateError } = await supabase
+                        .from('club_members')
+                        .update({ chip_balance: newBalance })
+                        .eq('club_id', clubId)
+                        .eq('user_id', userId);
+
+                    if (updateError) {
+                        console.error('[TableService] Error crediting chips back:', updateError);
+                        // CRITICAL: Do NOT delete the seat if chip return failed — chips would be lost
+                        return { success: false, chipsReturned: 0 };
+                    }
                 }
 
                 console.log(`[TableService] Returned ${chipsToReturn} chips to wallet for user ${userId}`);
@@ -336,6 +356,25 @@ class TableService {
                     action: 'leave',
                     chips_cashed_out: chipsToReturn
                 });
+
+            // Log chip transaction for financial audit trail (cash-out from table)
+            if (chipsToReturn > 0) {
+                try {
+                    await supabase
+                        .from('chip_transactions')
+                        .insert({
+                            club_id: clubId,
+                            from_user_id: null,
+                            to_user_id: userId,
+                            amount: chipsToReturn,
+                            type: 'cash_out',
+                            reference_id: tableId,
+                            notes: `Cash-out from table`,
+                        });
+                } catch (txErr) {
+                    console.warn('[TableService] chip_transaction log failed:', txErr);
+                }
+            }
 
             return { success: true, chipsReturned: chipsToReturn };
         } catch (err) {

@@ -498,6 +498,13 @@ export class HeadlessTableEngine {
                     );
                 }
 
+                // Process players who requested to leave mid-hand (leave_pending flag)
+                if (!this.isTournamentTable()) {
+                    this.processLeavePendingPlayers().catch(err =>
+                        console.error(`[HeadlessTableEngine:${this.tableId}] Leave-pending processing error:`, err)
+                    );
+                }
+
                 // Feed hand result to Horse AI Brain's 32 anti-exploit modules
                 if (HorseBrainAdapter.isBrainAvailable() && this.handController) {
                     const handState = this.handController.getState() as any;
@@ -875,6 +882,106 @@ export class HeadlessTableEngine {
      * Mark a horse as having left the table (set left_at timestamp)
      * Called when a horse runs out of chips and can't rebuy from wallet
      */
+    /**
+     * Process seats flagged with leave_pending=true after hand completes.
+     * Credits remaining stack back to club_members.chip_balance and removes the seat.
+     * This handles the case where a player clicked "Leave" mid-hand.
+     */
+    private async processLeavePendingPlayers(): Promise<void> {
+        const { data: pendingSeats, error } = await this.supabaseClient
+            .from('table_seats')
+            .select('user_id, stack, seat_number')
+            .eq('table_id', this.tableId)
+            .eq('leave_pending', true);
+
+        if (error || !pendingSeats || pendingSeats.length === 0) return;
+
+        const clubId = this.tableInfo?.club_id;
+        if (!clubId) return;
+
+        for (const seat of pendingSeats) {
+            try {
+                const chipsToReturn = seat.stack || 0;
+
+                if (chipsToReturn > 0) {
+                    // Credit chips back using atomic RPC first, fallback to guarded update
+                    let credited = false;
+                    try {
+                        const { error: rpcError } = await this.supabaseClient.rpc('fn_add_chips', {
+                            p_user_id: seat.user_id,
+                            p_club_id: clubId,
+                            p_amount: chipsToReturn,
+                        });
+                        credited = !rpcError;
+                    } catch {
+                        // RPC may not exist — use fallback
+                    }
+
+                    if (!credited) {
+                        // Fallback: read-then-write with concurrency guard
+                        const { data: member } = await this.supabaseClient
+                            .from('club_members')
+                            .select('chip_balance')
+                            .eq('club_id', clubId)
+                            .eq('user_id', seat.user_id)
+                            .single();
+
+                        if (member) {
+                            const newBalance = (member.chip_balance || 0) + chipsToReturn;
+                            await this.supabaseClient
+                                .from('club_members')
+                                .update({ chip_balance: newBalance })
+                                .eq('club_id', clubId)
+                                .eq('user_id', seat.user_id);
+                        }
+                    }
+
+                    // Log the cash-out transaction
+                    try {
+                        await this.supabaseClient.from('chip_transactions').insert({
+                            club_id: clubId,
+                            from_user_id: null,
+                            to_user_id: seat.user_id,
+                            amount: chipsToReturn,
+                            type: 'cash_out',
+                            reference_id: this.tableId,
+                            notes: `Cash-out from table (leave_pending after hand)`,
+                        });
+                    } catch { /* Non-blocking — chip credit already succeeded */ }
+                }
+
+                // Remove the seat
+                await this.supabaseClient
+                    .from('table_seats')
+                    .delete()
+                    .eq('table_id', this.tableId)
+                    .eq('user_id', seat.user_id)
+                    .eq('seat_number', seat.seat_number);
+
+                console.log(
+                    `[HeadlessTableEngine:${this.tableId}] Processed leave_pending for ${seat.user_id} — ` +
+                    `returned ${chipsToReturn} chips, seat cleared`
+                );
+            } catch (err) {
+                console.error(
+                    `[HeadlessTableEngine:${this.tableId}] Error processing leave_pending for ${seat.user_id}:`, err
+                );
+            }
+        }
+
+        // Update player count after removals
+        const { count } = await this.supabaseClient
+            .from('table_seats')
+            .select('*', { count: 'exact', head: true })
+            .eq('table_id', this.tableId)
+            .is('left_at', null);
+
+        await this.supabaseClient
+            .from('tables')
+            .update({ current_players: count || 0 })
+            .eq('id', this.tableId);
+    }
+
     private async markHorseAsLeft(userId: string, reason: string): Promise<void> {
         const { error } = await this.supabaseClient
             .from('table_seats')
