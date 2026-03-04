@@ -276,10 +276,13 @@ export function compareHands(a: EvaluatedHand, b: EvaluatedHand): number {
         return a.ranking - b.ranking;
     }
 
-    // Compare kickers
-    for (let i = 0; i < Math.min(a.kickers.length, b.kickers.length); i++) {
-        if (a.kickers[i] !== b.kickers[i]) {
-            return a.kickers[i] - b.kickers[i];
+    // Compare kickers — use max length to handle mismatched arrays
+    const maxLen = Math.max(a.kickers.length, b.kickers.length);
+    for (let i = 0; i < maxLen; i++) {
+        const aVal = a.kickers[i] ?? 0;
+        const bVal = b.kickers[i] ?? 0;
+        if (aVal !== bVal) {
+            return aVal - bVal;
         }
     }
 
@@ -310,7 +313,16 @@ export function evaluateOmahaHand(holeCards: Card[], communityCards: Card[]): Ev
         }
     }
 
-    return bestHand!;
+    // Guard: if no combos produced a hand (e.g., < 3 community cards), return a fallback
+    if (!bestHand) {
+        return {
+            ranking: 0,
+            name: 'No Hand',
+            cards: [...holeCards, ...communityCards],
+            kickers: [],
+        } as EvaluatedHand;
+    }
+    return bestHand;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -561,10 +573,12 @@ export function determineWinners(
         return [{ userId: activePlayers[0].user_id, amount: totalPot }];
     }
 
-    const isHiLo = gameVariant.includes('8') || gameVariant === 'plo8';
+    // Hi/Lo only applies to Omaha variants (plo8, etc.) — never call evaluateOmahaLowHand for Hold'em
+    const isOmaha = gameVariant.startsWith('plo');
+    const isHiLo = isOmaha && (gameVariant.includes('8') || gameVariant === 'plo8');
 
     // Evaluate hands
-    const evaluator = gameVariant.startsWith('plo') ? evaluateOmahaHand : evaluateHand;
+    const evaluator = isOmaha ? evaluateOmahaHand : evaluateHand;
     const playerHands = activePlayers.map(p => ({
         player: p,
         hand: evaluator(p.cards, communityCards),
