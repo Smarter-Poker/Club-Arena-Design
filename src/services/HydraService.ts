@@ -227,11 +227,12 @@ export const HydraService = {
      * Get active horses at a table
      */
     async getActiveHorses(tableId: string): Promise<HorsePlayer[]> {
-        // Step 1: Get all seats at this table
+        // Step 1: Get all active seats at this table (exclude departed players)
         const { data: seatData, error: seatError } = await supabase
             .from('table_seats')
             .select('user_id, seat_number, stack, joined_at')
-            .eq('table_id', tableId);
+            .eq('table_id', tableId)
+            .is('left_at', null);
 
         if (seatError || !seatData?.length) {
             if (seatError) console.error('HydraService.getActiveHorses seat query error:', seatError);
@@ -286,11 +287,12 @@ export const HydraService = {
     async getTableLiquidityStatus(tableId: string): Promise<TableLiquidityStatus> {
         const horses = await this.getActiveHorses(tableId);
 
-        // Simple seat count query (no FK join needed)
+        // Simple seat count query — only active seats
         const { data: seats, error } = await supabase
             .from('table_seats')
             .select('user_id')
-            .eq('table_id', tableId);
+            .eq('table_id', tableId)
+            .is('left_at', null);
 
         if (error) {
             console.error('HydraService.getTableLiquidityStatus error:', error);

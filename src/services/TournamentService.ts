@@ -677,7 +677,7 @@ class TournamentService {
         // 3. Remove from seat (and trigger room update via postgres change or client refresh)
         // Find seat first to check correctness?
         // Note: Using maybeSingle to be safe.
-        const { data: seat } = await supabase.from('table_seats').select('table_id').eq('user_id', userId).maybeSingle();
+        const { data: seat } = await supabase.from('table_seats').select('table_id').eq('user_id', userId).is('left_at', null).maybeSingle();
         if (seat) {
             const { data: table } = await supabase.from('tables').select('tournament_id').eq('id', seat.table_id).single();
             if (table?.tournament_id === tournamentId) {

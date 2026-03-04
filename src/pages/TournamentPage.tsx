@@ -183,6 +183,7 @@ export default function TournamentPage() {
                 .select('table_id')
                 .eq('user_id', currentUser.id)
                 .in('table_id', tableIds)
+                .is('left_at', null)
                 .maybeSingle();
 
             if (seat) {
