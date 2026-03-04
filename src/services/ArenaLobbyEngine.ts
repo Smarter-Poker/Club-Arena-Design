@@ -100,10 +100,11 @@ export async function getClubTraffic(clubId: string): Promise<ClubTrafficData | 
  */
 export async function getClubStakes(clubId: string): Promise<StakeInfo[]> {
     const { data, error } = await supabase
-        .from('live_game_feed')
+        .from('tables')
         .select('*')
         .eq('club_id', clubId)
-        .order('stake_level', { ascending: true });
+        .eq('status', 'active')
+        .order('small_blind', { ascending: true });
 
     if (error) {
         console.error('[Service] Stakes fetch failed:', error);
@@ -133,7 +134,7 @@ export function subscribeToClubTraffic(
             {
                 event: '*',
                 schema: 'public',
-                table: 'live_game_feed',
+                table: 'tables',
                 filter: `club_id=eq.${clubId}`,
             },
             async () => {
@@ -165,7 +166,7 @@ export function subscribeToLobbyTraffic(
             {
                 event: '*',
                 schema: 'public',
-                table: 'live_game_feed',
+                table: 'tables',
             },
             async () => {
                 // Re-fetch all lobby data on any change

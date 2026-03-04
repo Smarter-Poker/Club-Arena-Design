@@ -136,7 +136,7 @@ class ProfileServiceClass {
 
         await supabase
             .from('profiles')
-            .update({ vip_points: newPoints, vip_tier: newTier })
+            .update({ vip_points: newPoints, vip_level: newTier })
             .eq('id', userId);
 
         return { newPoints, newTier };
@@ -174,7 +174,7 @@ class ProfileServiceClass {
                 .update({
                     current_streak: currentStreak,
                     longest_streak: longestStreak,
-                    last_login_date: today
+                    last_login: new Date().toISOString(),
                 })
                 .eq('id', userId);
         }
@@ -186,10 +186,10 @@ class ProfileServiceClass {
      * Get player stats
      */
     async getStats(userId: string): Promise<ProfileStats | null> {
-        // Get from hand_results or similar table
+        // Get player hand results from hand_players (joined to hands for variant)
         const { data } = await supabase
-            .from('hand_results')
-            .select('profit, game_variant')
+            .from('hand_players')
+            .select('chips_won, chips_lost, is_winner, hands(game_type)')
             .eq('user_id', userId);
 
         if (!data || data.length === 0) {
@@ -203,15 +203,17 @@ class ProfileServiceClass {
         }
 
         const totalHands = data.length;
-        const wins = data.filter(h => h.profit > 0).length;
+        const wins = data.filter((h: any) => h.is_winner).length;
         const winRate = (wins / totalHands) * 100;
-        const avgProfit = data.reduce((sum, h) => sum + h.profit, 0) / totalHands;
-        const biggestWin = Math.max(...data.map(h => h.profit));
+        const profits = data.map((h: any) => (h.chips_won || 0) - (h.chips_lost || 0));
+        const avgProfit = profits.reduce((sum: number, p: number) => sum + p, 0) / totalHands;
+        const biggestWin = Math.max(...profits, 0);
 
-        // Find favorite variant
+        // Find favorite variant from joined hands data
         const variantCounts: Record<string, number> = {};
-        data.forEach(h => {
-            variantCounts[h.game_variant] = (variantCounts[h.game_variant] || 0) + 1;
+        data.forEach((h: any) => {
+            const variant = h.hands?.game_type || 'NLH';
+            variantCounts[variant] = (variantCounts[variant] || 0) + 1;
         });
         const favoriteVariant = Object.entries(variantCounts)
             .sort((a, b) => b[1] - a[1])[0]?.[0] || 'No Limit Hold\'em';

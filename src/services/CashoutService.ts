@@ -347,7 +347,7 @@ class CashoutServiceClass {
                 to_user_id: playerId,
                 amount,
                 transaction_type: 'send',
-                reversible_until: reversibleUntil.toISOString(),
+                metadata: { reversible_until: reversibleUntil.toISOString() },
                 notes
             });
 
@@ -375,16 +375,14 @@ class CashoutServiceClass {
             throw new Error('Cannot remove chips: Outside 10-minute window or insufficient reversible amount');
         }
 
-        // Mark original transaction as reversed
+        // Mark original transaction as reversed via metadata
         const { error: reverseError } = await supabase
             .from('chip_transactions')
-            .update({ is_reversed: true })
+            .update({ metadata: { is_reversed: true } })
             .eq('from_user_id', agentId)
             .eq('to_user_id', playerId)
             .eq('club_id', clubId)
             .eq('transaction_type', 'send')
-            .eq('is_reversed', false)
-            .gte('reversible_until', new Date().toISOString())
             .limit(1);
 
         if (reverseError) {

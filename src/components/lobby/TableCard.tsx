@@ -70,7 +70,7 @@ export default function TableCard({ table }: TableCardProps) {
     useEffect(() => {
         // Fetch waitlist count
         supabase
-            .from('waitlist')
+            .from('table_waitlists')
             .select('id', { count: 'exact', head: true })
             .eq('table_id', table.id)
             .eq('status', 'waiting')

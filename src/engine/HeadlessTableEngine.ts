@@ -747,14 +747,14 @@ export class HeadlessTableEngine {
     }
 
     /**
-     * Sync stacks to tournament_players.chips so tournament engine can track eliminations
+     * Sync stacks to tournament_players.stack so tournament engine can track eliminations
      */
     private async syncTournamentPlayerChips(players: SeatedPlayer[]): Promise<void> {
         if (!this.tableInfo?.tournament_id) return;
         const updates = players.map(player =>
             this.supabaseClient
                 .from('tournament_players')
-                .update({ chips: player.stack })
+                .update({ stack: player.stack })
                 .eq('tournament_id', this.tableInfo!.tournament_id!)
                 .eq('user_id', player.user_id)
         );

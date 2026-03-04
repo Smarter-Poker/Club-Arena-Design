@@ -56,7 +56,7 @@ export default function SuperAgentDashboard() {
                     {
                         event: '*',
                         schema: 'public',
-                        table: 'transactions',
+                        table: 'chip_transactions',
                     },
                     () => loadDashboardData()
                 )

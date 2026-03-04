@@ -52,36 +52,35 @@ export default function TransactionHistoryPage() {
 
         try {
             let query = supabase
-                .from('transactions')
+                .from('chip_transactions')
                 .select(`
                     id,
-                    type,
+                    transaction_type,
                     amount,
-                    currency,
-                    description,
+                    notes,
                     created_at,
                     club_id,
                     clubs (name)
                 `)
-                .eq('user_id', user?.id)
+                .or(`from_user_id.eq.${user?.id},to_user_id.eq.${user?.id}`)
                 .order('created_at', { ascending: false })
                 .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1);
 
             // Apply filter
-            if (filter === 'deposits') query = query.eq('type', 'deposit');
-            else if (filter === 'withdrawals') query = query.eq('type', 'withdrawal');
-            else if (filter === 'transfers') query = query.in('type', ['transfer_in', 'transfer_out']);
-            else if (filter === 'rake') query = query.in('type', ['rake', 'rakeback']);
+            if (filter === 'deposits') query = query.eq('transaction_type', 'deposit');
+            else if (filter === 'withdrawals') query = query.in('transaction_type', ['cash_out', 'withdrawal']);
+            else if (filter === 'transfers') query = query.in('transaction_type', ['transfer_in', 'transfer_out', 'agent_transfer']);
+            else if (filter === 'rake') query = query.in('transaction_type', ['rake', 'rakeback']);
 
             const { data, error } = await query;
 
             if (!error && data) {
                 const mapped = data.map((t: any) => ({
                     id: t.id,
-                    type: t.type,
+                    type: t.transaction_type,
                     amount: t.amount,
-                    currency: t.currency || 'chips',
-                    description: t.description || '',
+                    currency: 'chips' as const,
+                    description: t.notes || '',
                     created_at: t.created_at,
                     club_id: t.club_id,
                     club_name: t.clubs?.name,

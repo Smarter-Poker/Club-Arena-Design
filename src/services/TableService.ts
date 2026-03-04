@@ -312,7 +312,7 @@ class TableService {
             if (tblInfo?.tournament_id) {
                 await supabase
                     .from('tournament_players')
-                    .update({ status: 'eliminated', chips: 0 })
+                    .update({ status: 'eliminated', stack: 0 })
                     .eq('tournament_id', tblInfo.tournament_id)
                     .eq('user_id', userId);
             }

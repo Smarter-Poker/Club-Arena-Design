@@ -263,14 +263,14 @@ export class TournamentEngine {
             // Load existing players
             const { data: fullPlayers } = await this.supabase
                 .from('tournament_players')
-                .select('user_id, username, chips, status')
+                .select('user_id, stack, status, horse_id')
                 .eq('tournament_id', this.tournamentId);
             if (fullPlayers) {
                 for (const p of fullPlayers) {
                     this.players.set(p.user_id, {
                         user_id: p.user_id,
-                        username: p.username || p.user_id.slice(0, 8),
-                        chips: p.chips || this.tournamentInfo.starting_chips,
+                        username: p.horse_id || p.user_id.slice(0, 8),
+                        chips: p.stack || this.tournamentInfo.starting_chips,
                         status: p.status || 'playing',
                     });
                 }
@@ -310,11 +310,10 @@ export class TournamentEngine {
         const playerRows = registrations.map(r => ({
             tournament_id: this.tournamentId,
             user_id: r.user_id,
-            username: r.display_name || r.user_id.slice(0, 8),
-            chips: this.tournamentInfo!.starting_chips,
+            stack: this.tournamentInfo!.starting_chips,
             status: 'registered',
-            rebuys: 0,
-            add_on: false,
+            rebuy_count: 0,
+            addon_count: 0,
         }));
 
         const { error: insertError } = await this.supabase
@@ -529,7 +528,7 @@ export class TournamentEngine {
         // Update all tournament_players to 'playing'
         await this.supabase
             .from('tournament_players')
-            .update({ status: 'playing', chips: this.tournamentInfo!.starting_chips })
+            .update({ status: 'playing', stack: this.tournamentInfo!.starting_chips })
             .eq('tournament_id', this.tournamentId)
             .eq('status', 'registered');
 
@@ -676,9 +675,9 @@ export class TournamentEngine {
             .from('tournament_players')
             .update({
                 status: 'eliminated',
-                position,
-                prize,
-                chips: 0,
+                finish_position: position,
+                prize_won: prize,
+                stack: 0,
                 eliminated_at: new Date().toISOString(),
             })
             .eq('tournament_id', this.tournamentId)
@@ -910,8 +909,8 @@ export class TournamentEngine {
                 .from('tournament_players')
                 .update({
                     status: 'winner',
-                    position: 1,
-                    prize: firstPrize,
+                    finish_position: 1,
+                    prize_won: firstPrize,
                 })
                 .eq('tournament_id', this.tournamentId)
                 .eq('user_id', winner.user_id);

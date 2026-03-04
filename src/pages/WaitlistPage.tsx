@@ -41,7 +41,7 @@ export default function WaitlistPage() {
                     {
                         event: '*',
                         schema: 'public',
-                        table: 'waitlist',
+                        table: 'table_waitlists',
                     },
                     (payload) => {
                         // Refresh waitlist on any change
