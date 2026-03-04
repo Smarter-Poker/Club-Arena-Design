@@ -51,7 +51,7 @@ export default function TournamentBracket({
                 .from('tournament_players')
                 .select(`
                     user_id,
-                    chips,
+                    stack,
                     status,
                     finish_position,
                     profiles(display_name, avatar_url)
@@ -64,7 +64,7 @@ export default function TournamentBracket({
                 userId: p.user_id,
                 displayName: p.profiles?.display_name || 'Unknown',
                 avatarUrl: p.profiles?.avatar_url,
-                chips: p.chips || 0,
+                chips: p.stack || 0,
                 eliminated: p.status === 'eliminated',
                 finishPosition: p.finish_position
             }));

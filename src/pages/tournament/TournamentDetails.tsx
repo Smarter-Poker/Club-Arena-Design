@@ -67,7 +67,7 @@ export default function TournamentDetails() {
                 // Fetch tournament entries from supabase
                 const { data: playersData, error } = await supabase
                     .from('tournament_players')
-                    .select('id, user_id, username, avatar_url, chips, status')
+                    .select('id, user_id, stack, status, horse_id')
                     .eq('tournament_id', data.id)
                     .order('created_at', { ascending: true });
 
@@ -75,16 +75,15 @@ export default function TournamentDetails() {
                     setEntries(playersData.map((e: {
                         id: string;
                         user_id: string;
-                        username?: string;
-                        avatar_url?: string | null;
-                        chips?: number;
+                        horse_id?: string | null;
+                        stack?: number;
                         status: string;
                     }) => ({
                         id: e.id,
                         user_id: e.user_id,
-                        username: e.username || 'Player',
-                        avatar_url: e.avatar_url || null,
-                        chips: e.chips || data.starting_chips,
+                        username: e.horse_id || 'Player',
+                        avatar_url: null,
+                        chips: e.stack || data.starting_chips,
                         status: e.status as TournamentEntry['status'],
                     })));
 

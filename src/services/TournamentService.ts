@@ -413,8 +413,7 @@ class TournamentService {
             .insert({
                 tournament_id: tournamentId,
                 user_id: userId,
-                username,
-                chips: 0,
+                stack: 0,
                 status: 'registered',
             })
             .select()
@@ -583,11 +582,11 @@ class TournamentService {
 
         if (error) throw error;
 
-        // 5. Update Player Chips
+        // 5. Update Player Stacks
         await supabase
             .from('tournament_players')
             .update({
-                chips: tournament.starting_chips,
+                stack: tournament.starting_chips,
                 status: 'playing',
             })
             .eq('tournament_id', tournamentId)
@@ -617,8 +616,8 @@ class TournamentService {
             .from('tournament_players')
             .update({
                 status: 'eliminated',
-                position,
-                prize,
+                finish_position: position,
+                prize_won: prize,
                 eliminated_at: new Date().toISOString(),
             })
             .eq('tournament_id', tournamentId)
@@ -767,13 +766,13 @@ class TournamentService {
         // Check current stack (must be at or below starting stack)
         const { data: player } = await supabase
             .from('tournament_players')
-            .select('chips')
+            .select('stack')
             .eq('tournament_id', tournamentId)
             .eq('user_id', userId)
             .single();
 
         if (!player) return { allowed: false, reason: 'Player not found' };
-        if (player.chips > tournament.starting_chips) {
+        if (player.stack > tournament.starting_chips) {
             return { allowed: false, reason: 'Stack too high for rebuy' };
         }
 
@@ -1106,10 +1105,10 @@ class TournamentService {
         try {
             const { data: players } = await supabase
                 .from('tournament_players')
-                .select('user_id, position, prize')
+                .select('user_id, finish_position, prize_won')
                 .eq('tournament_id', tournamentId)
-                .not('position', 'is', null)
-                .order('position', { ascending: true });
+                .not('finish_position', 'is', null)
+                .order('finish_position', { ascending: true });
 
             if (players && players.length > 0) {
                 // Dynamically import to avoid circular deps
@@ -1128,10 +1127,10 @@ class TournamentService {
                         club_id: tournament.club_id,
                         game_type: gameType,
                         game_id: tournamentId,
-                        placement: player.position,
+                        placement: player.finish_position,
                         total_players: tournament.current_players || players.length,
                         buy_in: tournament.buy_in_amount || 0,
-                        winnings: player.prize || 0,
+                        winnings: player.prize_won || 0,
                     });
                 }
             }
