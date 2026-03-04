@@ -20,6 +20,7 @@ import { HandController, type HandConfig, type HandEvent } from './HandControlle
 import { HandPersistence } from '../services/HandPersistenceService';
 import { HydraService, type HorseDecision } from '../services/HydraService';
 import { BotLogic, type HorseStyle, type BotDecision } from './BotLogic';
+import { HorseBrainAdapter } from './HorseBrainAdapter';
 import { GTOQueryService } from '../services/GTOQueryService';
 import { RakeService, type DealtInPlayer } from '../services/RakeService';
 import { workerTimeout, cancelWorkerTimeout } from '../hooks/useTabKeepAlive';
@@ -96,6 +97,9 @@ export class HeadlessTableEngine {
         console.log(`[HeadlessTableEngine:${this.tableId}] Starting...`);
 
         try {
+            // Initialize Horse AI Brain (loads HorsePokerBrain.js if available, else uses BotLogic)
+            await HorseBrainAdapter.initialize();
+
             // Load table configuration from database
             await this.loadTableInfo();
             if (!this.tableInfo) {
@@ -150,6 +154,9 @@ export class HeadlessTableEngine {
         this.unsubscribeHands.forEach(unsub => unsub());
         this.unsubscribeHands = [];
         this.horseAIHandlers.clear();
+
+        // Clear brain session data for this table
+        HorseBrainAdapter.clearTableSessions(this.tableId);
 
         // Clean up per-table persistence
         this.persistence.dispose();
@@ -490,6 +497,26 @@ export class HeadlessTableEngine {
                         console.error(`[HeadlessTableEngine:${this.tableId}] Failed to auto-rebuy horses:`, err)
                     );
                 }
+
+                // Feed hand result to Horse AI Brain's 32 anti-exploit modules
+                if (HorseBrainAdapter.isBrainAvailable() && this.handController) {
+                    const handState = this.handController.getState() as any;
+                    const winnerIds = ((handState.winners || handState.lastWinners || []) as any[]).map((w: any) => w.user_id || w.userId || w.id);
+                    HorseBrainAdapter.processHandResult(
+                        this.tableId,
+                        this.tableInfo?.big_blind || 2,
+                        handState.stage || 'river',
+                        this.currentHandPotSize,
+                        players.map(p => ({
+                            user_id: p.user_id,
+                            chipDelta: 0, // Will be calculated by brain from stack changes
+                            showedCards: true,
+                            folded: false,
+                            invested: 0,
+                        })),
+                        winnerIds
+                    ).catch(() => {}); // Non-blocking
+                }
                 break;
         }
     }
@@ -521,78 +548,99 @@ export class HeadlessTableEngine {
         };
         const horseStyle: HorseStyle = styleMap[player.horse_profile || 'balanced'] || 'balanced';
 
-        // ── Build GameState for BotLogic (upgraded brain) ──
+        // ── Build GameState ──
         const gameState = {
             players: state.players,
-            communityCards: state.communityCards || [],
+            communityCards: (state.communityCards || []) as any[],
             pot: state.pot,
             currentBet: state.currentBet,
             minRaise: state.minRaise,
-            stage: state.stage,
-            gameVariant: (this.tableInfo?.game_variant || 'nlh') as 'nlh' | 'plo4' | 'plo5' | 'plo6',
+            stage: state.stage as string,
+            gameVariant: (this.tableInfo?.game_variant || 'nlh') as string,
             bigBlind: this.tableInfo?.big_blind || 2,
         };
 
-        // ── Get decision from upgraded BotLogic brain ──
-        const decision = BotLogic.decide(enginePlayer, gameState, horseStyle);
-
-        // ── Optional: GTO overlay — enhance decision with PioSolver data if available ──
-        // Fire-and-forget GTO lookup (non-blocking, won't delay action)
-        this.enhanceWithGTO(enginePlayer, state, decision, horseStyle).catch(() => {});
-
-        // Execute after think time (shortened for headless — 200-600ms)
-        const thinkTime = Math.min(decision.thinkTime, 200 + Math.random() * 400);
+        // ── Get decision from Horse AI Brain (falls back to BotLogic if brain not loaded) ──
+        const gameType = this.isTournamentTable() ? 'tournament' : 'cash';
         const handControllerRef = this.handController;
 
-        const timerId = workerTimeout(() => {
-            if (!handControllerRef || !this.running) return;
-
-            let action = decision.action as string;
-            let amount = decision.amount;
-
-            // Validate and normalize action
-            if (action === 'allin') action = 'all_in';
-            if (action === 'check' && toCall > 0) action = 'call';
-            if (action === 'call' && toCall === 0) action = 'check';
-            if (action === 'call') amount = toCall;
-            if (action === 'fold' && toCall === 0) action = 'check';
-
-            // Validate bet/raise — convert to correct action type
-            if (action === 'raise' && state.currentBet === 0) action = 'bet';
-            if (action === 'bet' && state.currentBet > 0) action = 'raise';
-
-            // Clamp bet/raise amounts to valid range
-            // HandController.performAction expects:
-            //   bet: amount >= minRaise (absolute bet size)
-            //   raise: amount >= currentBet + minRaise (raise-TO total)
-            if (action === 'bet' && amount !== undefined) {
-                amount = Math.max(state.minRaise, amount);
-                if (amount >= enginePlayer.stack) {
-                    action = 'all_in';
-                    amount = undefined;
-                }
-            } else if (action === 'raise' && amount !== undefined) {
-                const minRaiseTo = state.currentBet + state.minRaise;
-                amount = Math.max(minRaiseTo, amount);
-                const maxRaiseTo = enginePlayer.stack + enginePlayer.bet;
-                if (amount >= maxRaiseTo) {
-                    action = 'all_in';
-                    amount = undefined;
-                }
-            }
-
+        // Async decision flow — brain may be async, but we handle it within the timer
+        (async () => {
+            let decision: BotDecision;
             try {
-                handControllerRef.performAction(seat, action as any, amount);
-            } catch (err) {
-                // If action fails, try folding as fallback
-                try {
-                    handControllerRef.performAction(seat, 'fold');
-                } catch {
-                    // Hand may have already completed
-                }
+                decision = await HorseBrainAdapter.getDecision(
+                    player.user_id,
+                    enginePlayer,
+                    gameState,
+                    this.tableId,
+                    horseStyle,
+                    gameType as 'cash' | 'tournament'
+                );
+            } catch {
+                decision = BotLogic.decide(enginePlayer, gameState as any, horseStyle);
             }
-        }, thinkTime);
-        this.pendingTimerIds.push(timerId);
+
+            // GTO overlay only when using BotLogic fallback (brain has its own GTO integration)
+            if (!HorseBrainAdapter.isBrainAvailable()) {
+                this.enhanceWithGTO(enginePlayer, state, decision, horseStyle).catch(() => {});
+            }
+
+            // Execute after think time (shortened for headless — 200-600ms)
+            const thinkTime = Math.min(decision.thinkTime, 200 + Math.random() * 400);
+
+            const timerId = workerTimeout(() => {
+                if (!handControllerRef || !this.running) return;
+
+                let action = decision.action as string;
+                let amount = decision.amount;
+
+                // Validate and normalize action
+                if (action === 'allin') action = 'all_in';
+                if (action === 'check' && toCall > 0) action = 'call';
+                if (action === 'call' && toCall === 0) action = 'check';
+                if (action === 'call') amount = toCall;
+                if (action === 'fold' && toCall === 0) action = 'check';
+
+                // Validate bet/raise — convert to correct action type
+                if (action === 'raise' && state.currentBet === 0) action = 'bet';
+                if (action === 'bet' && state.currentBet > 0) action = 'raise';
+
+                // Clamp bet/raise amounts to valid range
+                if (action === 'bet' && amount !== undefined) {
+                    amount = Math.max(state.minRaise, amount);
+                    if (amount >= enginePlayer.stack) {
+                        action = 'all_in';
+                        amount = undefined;
+                    }
+                } else if (action === 'raise' && amount !== undefined) {
+                    const minRaiseTo = state.currentBet + state.minRaise;
+                    amount = Math.max(minRaiseTo, amount);
+                    const maxRaiseTo = enginePlayer.stack + enginePlayer.bet;
+                    if (amount >= maxRaiseTo) {
+                        action = 'all_in';
+                        amount = undefined;
+                    }
+                }
+
+                try {
+                    handControllerRef.performAction(seat, action as any, amount);
+                } catch (err) {
+                    // If action fails, try folding as fallback
+                    try {
+                        handControllerRef.performAction(seat, 'fold');
+                    } catch {
+                        // Hand may have already completed
+                    }
+                }
+            }, thinkTime);
+            this.pendingTimerIds.push(timerId);
+        })().catch(err => {
+            console.error(`[HeadlessTableEngine:${this.tableId}] Horse decision error:`, err);
+            // Emergency fallback: fold
+            try {
+                handControllerRef?.performAction(seat, 'fold');
+            } catch { /* Hand may have completed */ }
+        });
     }
 
     /**
@@ -809,6 +857,9 @@ export class HeadlessTableEngine {
                 }).then(({ error: chipTxError }) => {
                     if (chipTxError) console.error(`[HeadlessTableEngine:${this.tableId}] Chip transaction log failed:`, chipTxError);
                 });
+
+                // Track rebuy in Horse AI Brain
+                HorseBrainAdapter.recordRebuy(this.tableId, horse.user_id, rebuyAmount);
 
                 console.log(
                     `[HeadlessTableEngine:${this.tableId}] Auto-rebuy: ${horse.username} → ${rebuyAmount} chips ` +
