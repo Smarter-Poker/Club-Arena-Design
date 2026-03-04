@@ -39,6 +39,7 @@ class TableService {
             .select('*')
             .eq('is_deleted', false)
             .neq('status', 'closed')
+            .is('tournament_id', null)   // Exclude tournament tables from cash lobby
             .order('current_players', { ascending: false })
             .limit(limit);
 

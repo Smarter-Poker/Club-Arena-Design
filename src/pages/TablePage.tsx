@@ -420,7 +420,7 @@ export default function TablePage() {
 
     // Cashier state
     const [showCashier, setShowCashier] = useState(false);
-    const [accountBalance, setAccountBalance] = useState(10000); // From wallet
+    const [accountBalance, setAccountBalance] = useState(0); // Loaded from club_members.chip_balance
 
     // Handle Time Bank activation
     const handleActivateTimeBank = () => {
