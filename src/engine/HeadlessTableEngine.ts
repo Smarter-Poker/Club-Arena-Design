@@ -64,6 +64,7 @@ export class HeadlessTableEngine {
     private horseAIHandlers: Map<string, () => void> = new Map();
     private unsubscribeHands: (() => void)[] = [];
     private persistence: HandPersistence;
+    private dealerSeatIndex: number = 0; // Tracks dealer position (rotates each hand)
     // Per-hand rake tracking
     private currentHandWentToFlop: boolean = false;
     private currentHandPotSize: number = 0;
@@ -178,9 +179,10 @@ export class HeadlessTableEngine {
     private async loadSeatedPlayers(): Promise<void> {
         const { data, error } = await this.supabaseClient
             .from('table_seats')
-            .select('user_id, stack')
+            .select('user_id, stack, seat_number')
             .eq('table_id', this.tableId)
-            .is('left_at', null);
+            .is('left_at', null)
+            .order('seat_number', { ascending: true });
 
         if (error) {
             console.error(`[HeadlessTableEngine:${this.tableId}] Failed to load seats:`, error);
@@ -215,9 +217,9 @@ export class HeadlessTableEngine {
                     user_id: seat.user_id,
                     username: profile.display_name || profile.username || 'Player',
                     stack: seat.stack,
-                    seat_number: 0, // Will be reassigned in hand setup
+                    seat_number: seat.seat_number || 1, // Use actual DB seat number
                     is_horse: profile.is_horse || false,
-                    horse_profile: profile.horse_profile || 'reg',
+                    horse_profile: profile.horse_profile || 'balanced',
                 };
             });
 
@@ -278,9 +280,9 @@ export class HeadlessTableEngine {
 
         console.log(`[HeadlessTableEngine:${this.tableId}] Dealing hand ${handNumber} with ${players.length} players`);
 
-        // Convert to SeatPlayer format
-        const hcPlayers: SeatPlayer[] = players.map((p, idx) => ({
-            seat: idx + 1,
+        // Convert to SeatPlayer format — use actual seat numbers from DB
+        const hcPlayers: SeatPlayer[] = players.map((p) => ({
+            seat: p.seat_number,
             user_id: p.user_id,
             username: p.username,
             stack: p.stack,
@@ -303,7 +305,10 @@ export class HeadlessTableEngine {
             rakeConfig: this.getRakeConfig(this.tableInfo.small_blind, this.tableInfo.big_blind),
         };
 
-        const dealerSeat = (handNumber - 1) % players.length + 1;
+        // Rotate dealer button properly: cycle through actual seat numbers
+        this.dealerSeatIndex = this.dealerSeatIndex % players.length;
+        const dealerSeat = players[this.dealerSeatIndex].seat_number;
+        this.dealerSeatIndex++; // Advance for next hand
 
         this.handController = new HandController(config, hcPlayers, dealerSeat);
 
@@ -405,7 +410,7 @@ export class HeadlessTableEngine {
         if (!this.handController) return;
 
         const seat = event.seat;
-        const player = players.find((p, idx) => idx + 1 === seat);
+        const player = players.find(p => p.seat_number === seat);
         if (!player) return;
 
         // Build hand context from current state
