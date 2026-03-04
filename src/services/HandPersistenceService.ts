@@ -76,7 +76,7 @@ class HandPersistenceServiceClass {
                 this.onPlayerAction(event.seat, event.action, event.amount);
                 break;
             case 'COMMUNITY_CARDS':
-                this.onCommunityCards(event.cards);
+                this.onCommunityCards(event.cards, (event as any).stage);
                 break;
             case 'HAND_COMPLETE':
                 await this.onHandComplete(event.handNumber, event.rake);
@@ -195,13 +195,18 @@ class HandPersistenceServiceClass {
         });
     }
 
-    private onCommunityCards(cards: { rank: string; suit: string }[]): void {
+    private onCommunityCards(cards: { rank: string; suit: string }[], stage?: string): void {
         if (!this.currentHand) return;
 
         // APPEND new community cards (don't overwrite — events fire per stage: flop=3, turn=1, river=1)
         // Use first char of suit name: "spades" → "s", "hearts" → "h", "diamonds" → "d", "clubs" → "c"
         const formatted = cards.map((c) => `${c.rank}${c.suit[0]}`);
         this.currentHand.community_cards.push(...formatted);
+
+        // Track the current street based on community card stage
+        if (stage) {
+            (this.currentHand as any)._currentStreet = stage;
+        }
     }
 
     private onWinners(winners: { userId: string; amount: number }[]): void {
@@ -234,32 +239,33 @@ class HandPersistenceServiceClass {
             localOnly: !!(this.currentHand as any)._localOnly,
         });
 
+        // Determine final street from community cards or tracked stage
+        const ccCount = this.currentHand.community_cards.length;
+        const finalStreet = ccCount >= 5 ? 'river' : ccCount >= 4 ? 'turn' : ccCount >= 3 ? 'flop' : 'preflop';
+
         // Skip DB update for local-only hands (insert failed + retry failed)
         if (!(this.currentHand as any)._localOnly) {
+            const updatePayload = {
+                pot: this.currentHand.pot,
+                rake,
+                community_cards: this.currentHand.community_cards,
+                winner_ids: this.currentHand.winner_ids,
+                actions: this.handActions,
+                status: 'completed',
+                street: finalStreet,
+                ended_at: new Date().toISOString(),
+            };
+
             const { error } = await supabase
                 .from('hands')
-                .update({
-                    pot: this.currentHand.pot,
-                    rake,
-                    community_cards: this.currentHand.community_cards,
-                    winner_ids: this.currentHand.winner_ids,
-                    actions: this.handActions,
-                    ended_at: new Date().toISOString(),
-                })
+                .update(updatePayload)
                 .eq('id', this.currentHand.id);
 
             if (error) {
                 console.error('[HandPersistence] Failed to update hand:', error);
                 // Retry the final update once
                 try {
-                    await supabase.from('hands').update({
-                        pot: this.currentHand.pot,
-                        rake,
-                        community_cards: this.currentHand.community_cards,
-                        winner_ids: this.currentHand.winner_ids,
-                        actions: this.handActions,
-                        ended_at: new Date().toISOString(),
-                    }).eq('id', this.currentHand.id);
+                    await supabase.from('hands').update(updatePayload).eq('id', this.currentHand.id);
                 } catch (e) {
                     console.error('[HandPersistence] Retry update also failed:', e);
                 }
