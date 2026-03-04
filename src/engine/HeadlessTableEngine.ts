@@ -19,6 +19,8 @@ import { supabase } from '../lib/supabase';
 import { HandController, type HandConfig, type HandEvent } from './HandController';
 import { handPersistenceService } from '../services/HandPersistenceService';
 import { HydraService, type HorseDecision } from '../services/HydraService';
+import { BotLogic, type HorseStyle, type BotDecision } from './BotLogic';
+import { GTOQueryService } from '../services/GTOQueryService';
 import { RakeService, type DealtInPlayer } from '../services/RakeService';
 import { workerTimeout } from '../hooks/useTabKeepAlive';
 import type { SeatPlayer, GameVariant } from '../types/database.types';
@@ -401,52 +403,46 @@ export class HeadlessTableEngine {
         const player = players.find((p, idx) => idx + 1 === seat);
         if (!player) return;
 
-        // All players in HeadlessTableEngine are horses — make AI decision for every seat
-        const horseProfile = player.horse_profile || 'reg';
-
         // Build hand context from current state
         const state = this.handController.getState();
         const enginePlayer = state.players.find(p => p.seat === seat);
         if (!enginePlayer) return;
 
         const activePlayers = state.players.filter(p => !p.is_folded && p.stack > 0).length;
-        const maxBet = Math.max(...state.players.map(p => p.bet), 0);
-        const toCall = Math.max(0, maxBet - enginePlayer.bet);
+        const toCall = Math.max(0, state.currentBet - enginePlayer.bet);
 
-        const context = {
+        // ── Map horse_profile to winning style ──
+        // All horses are fundamentally winning players with different styles
+        const styleMap: Record<string, HorseStyle> = {
+            'tag': 'tag', 'lag': 'lag', 'balanced': 'balanced',
+            'tricky': 'tricky', 'grinder': 'grinder',
+            // Legacy profile mapping (all become winning styles)
+            'reg': 'tag', 'fish': 'balanced', 'nit': 'grinder',
+            'maniac': 'lag',
+        };
+        const horseStyle: HorseStyle = styleMap[player.horse_profile || 'balanced'] || 'balanced';
+
+        // ── Build GameState for BotLogic (upgraded brain) ──
+        const gameState = {
+            players: state.players,
+            communityCards: state.communityCards || [],
             pot: state.pot,
-            toCall,
+            currentBet: state.currentBet,
             minRaise: state.minRaise,
-            maxRaise: enginePlayer.stack,
-            position: seat <= 3 ? 'early' as const : seat <= 5 ? 'middle' as const : 'late' as const,
-            street: state.stage as 'preflop' | 'flop' | 'turn' | 'river',
-            playersInHand: activePlayers,
-            stackToPotRatio: state.pot > 0 ? enginePlayer.stack / state.pot : 100,
-            isHeadsUp: activePlayers === 2,
+            stage: state.stage,
+            gameVariant: (this.tableInfo?.game_variant || 'nlh') as 'nlh' | 'plo4' | 'plo5' | 'plo6',
+            bigBlind: this.tableInfo?.big_blind || 2,
         };
 
-        // Get horse decision
-        const decision = HydraService.getDecision(
-            {
-                id: player.user_id,
-                name: player.username,
-                playerNumber: 0,
-                avatar: '',
-                profile: horseProfile as any,
-                stack: enginePlayer.stack,
-                seatNumber: seat,
-                status: 'seated',
-                tableId: this.tableId,
-                joinedAt: new Date().toISOString(),
-                leavingAfterOrbit: false,
-                handsPlayed: 0,
-                orbitsPlayed: 0,
-            },
-            context
-        );
+        // ── Get decision from upgraded BotLogic brain ──
+        const decision = BotLogic.decide(enginePlayer, gameState, horseStyle);
 
-        // Execute after think time (shortened for headless — 200-800ms instead of full think time)
-        const thinkTime = Math.min(decision.thinkTime, 300 + Math.random() * 500);
+        // ── Optional: GTO overlay — enhance decision with PioSolver data if available ──
+        // Fire-and-forget GTO lookup (non-blocking, won't delay action)
+        this.enhanceWithGTO(enginePlayer, state, decision, horseStyle).catch(() => {});
+
+        // Execute after think time (shortened for headless — 200-600ms)
+        const thinkTime = Math.min(decision.thinkTime, 200 + Math.random() * 400);
         const handControllerRef = this.handController;
 
         workerTimeout(() => {
@@ -471,17 +467,14 @@ export class HeadlessTableEngine {
             //   bet: amount >= minRaise (absolute bet size)
             //   raise: amount >= currentBet + minRaise (raise-TO total)
             if (action === 'bet' && amount !== undefined) {
-                // Ensure bet meets minimum
                 amount = Math.max(state.minRaise, amount);
                 if (amount >= enginePlayer.stack) {
                     action = 'all_in';
                     amount = undefined;
                 }
             } else if (action === 'raise' && amount !== undefined) {
-                // Ensure raise-to meets minimum (currentBet + minRaise)
                 const minRaiseTo = state.currentBet + state.minRaise;
                 amount = Math.max(minRaiseTo, amount);
-                // Cap at player's stack + their existing bet
                 const maxRaiseTo = enginePlayer.stack + enginePlayer.bet;
                 if (amount >= maxRaiseTo) {
                     action = 'all_in';
@@ -500,6 +493,86 @@ export class HeadlessTableEngine {
                 }
             }
         }, thinkTime);
+    }
+
+    /**
+     * GTO Enhancement Layer — overlay PioSolver data on top of BotLogic decisions
+     * This is non-blocking and only modifies the decision if GTO data is available.
+     * Gracefully falls back to BotLogic's built-in evaluation if no data exists.
+     */
+    private async enhanceWithGTO(
+        player: SeatPlayer,
+        state: any,
+        decision: BotDecision,
+        style: HorseStyle
+    ): Promise<void> {
+        try {
+            // Map seat number to position name
+            const totalPlayers = state.players.filter((p: any) => !p.is_folded).length;
+            const positionMap: Record<number, string> = {
+                1: 'SB', 2: 'BB', 3: totalPlayers <= 6 ? 'UTG' : 'UTG',
+                4: totalPlayers <= 6 ? 'CO' : 'MP', 5: 'CO', 6: 'BTN',
+            };
+            const position = positionMap[player.seat] || 'BTN';
+
+            // Determine pot type
+            const maxBet = state.currentBet || 0;
+            const bb = this.tableInfo?.big_blind || 2;
+            const potType = maxBet > bb * 6 ? '3bet' : maxBet > bb ? 'srp' : 'limp';
+
+            // Build board string
+            const board = (state.communityCards || []).map((c: any) => `${c.rank}${c.suit}`);
+
+            const actionFacing = state.currentBet > 0
+                ? `bet_${Math.round((state.currentBet / state.pot) * 100)}`
+                : 'check';
+
+            // Query GTO solution (cached in-memory)
+            const gtoSolution = await GTOQueryService.getGTOAction(
+                position, potType, state.stage, board, actionFacing
+            );
+
+            if (!gtoSolution) return; // No GTO data — keep BotLogic decision
+
+            // Use GTO frequencies to influence the decision
+            const freqs = gtoSolution.gto_frequencies;
+            if (!freqs) return;
+
+            // Sample from GTO frequencies with style-based weighting
+            // TAG/Grinder follow GTO more closely; LAG/Tricky deviate more
+            const gtoAdherence: Record<HorseStyle, number> = {
+                tag: 0.85, grinder: 0.80, balanced: 0.75, lag: 0.60, tricky: 0.55,
+            };
+            const adherence = gtoAdherence[style] || 0.70;
+
+            // Only override if GTO strongly disagrees with BotLogic (> adherence threshold)
+            const currentAction = decision.action;
+            const gtoFreqForAction = freqs[currentAction] || 0;
+
+            // If GTO says our chosen action has < 10% frequency, switch to GTO recommendation
+            if (gtoFreqForAction < 0.10 && Math.random() < adherence) {
+                const gtoAction = gtoSolution.gto_action;
+                if (gtoAction && gtoAction !== currentAction) {
+                    decision.action = gtoAction as any;
+                    // Adjust amount from GTO raise sizes if available
+                    if ((gtoAction === 'raise' || gtoAction === 'bet') && gtoSolution.raise_sizes) {
+                        const sizes = Object.entries(gtoSolution.raise_sizes);
+                        if (sizes.length > 0) {
+                            // Pick most frequent sizing
+                            sizes.sort((a, b) => (b[1] as number) - (a[1] as number));
+                            const sizeKey = sizes[0][0]; // e.g. 'size_75'
+                            const pctMatch = sizeKey.match(/(\d+)/);
+                            if (pctMatch) {
+                                const pct = parseInt(pctMatch[1]) / 100;
+                                decision.amount = Math.round(state.pot * pct);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch {
+            // GTO enhancement is best-effort — never block decisions
+        }
     }
 
     private async syncStacksToDatabase(players: SeatedPlayer[]): Promise<void> {

@@ -12,12 +12,15 @@
  * - "Entry Variance": Random 10-90s delays for natural appearance
  * - "Invisible Fleet": Horses are indistinguishable from human players
  * 
- * HORSE PROFILES:
- * - FISH: Loose-passive, calls too much (40% of fleet)
- * - REG: Balanced TAG play (30% of fleet)
- * - NIT: Tight-passive, fold equity (15% of fleet)
- * - LAG: Loose-aggressive, wide ranges (10% of fleet)
- * - MANIAC: Ultra-aggressive, high variance (5% of fleet)
+ * HORSE STYLES (ALL winning players — losses come from variance, not mistakes):
+ * - TAG: Tight-Aggressive, solid ABC poker (30% of fleet)
+ * - BALANCED: GTO-oriented, mixed strategies (25% of fleet)
+ * - LAG: Loose-Aggressive, wide ranges, creative (20% of fleet)
+ * - TRICKY: Deceptive, slowplays, check-raises (15% of fleet)
+ * - GRINDER: Disciplined small ball, pot control (10% of fleet)
+ *
+ * NOTE: Decision logic now handled by BotLogic.ts (upgraded brain)
+ * HydraService retains fleet management, seating, and lifecycle only.
  */
 
 import { supabase } from '../lib/supabase';
@@ -97,6 +100,7 @@ const DEFAULT_CONFIG: HydraConfig = {
 };
 
 // Profile action weights (probabilities)
+// TUNED for 3-player shorthanded: lower fold rates, more action
 const PROFILE_WEIGHTS: Record<HorseProfile, {
     fold: number;
     check: number;
@@ -105,11 +109,11 @@ const PROFILE_WEIGHTS: Record<HorseProfile, {
     raise: number;
     allin: number;
 }> = {
-    fish: { fold: 15, check: 20, call: 40, bet: 15, raise: 10, allin: 0 },
-    reg: { fold: 30, check: 25, call: 20, bet: 15, raise: 10, allin: 0 },
-    nit: { fold: 50, check: 25, call: 15, bet: 5, raise: 5, allin: 0 },
-    lag: { fold: 20, check: 15, call: 15, bet: 25, raise: 25, allin: 0 },
-    maniac: { fold: 10, check: 10, call: 15, bet: 30, raise: 35, allin: 0 },
+    fish: { fold: 8, check: 15, call: 40, bet: 20, raise: 15, allin: 2 },
+    reg: { fold: 18, check: 20, call: 25, bet: 20, raise: 15, allin: 2 },
+    nit: { fold: 30, check: 25, call: 25, bet: 10, raise: 8, allin: 2 },
+    lag: { fold: 10, check: 10, call: 15, bet: 30, raise: 30, allin: 5 },
+    maniac: { fold: 5, check: 5, call: 10, bet: 35, raise: 35, allin: 10 },
 };
 
 // Stack size ranges per profile (in BB)
