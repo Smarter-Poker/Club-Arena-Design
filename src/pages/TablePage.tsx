@@ -1199,6 +1199,27 @@ export default function TablePage() {
                     });
                     playWinSound();
 
+                    // Log wallet transactions for each winner (fire-and-forget)
+                    {
+                        const winHandId = handPersistenceService.getCurrentHandId();
+                        for (const winner of event.winners) {
+                            if (winner.amount > 0) {
+                                supabase.from('wallet_transactions').insert({
+                                    user_id: winner.userId,
+                                    wallet_type: 'PLAYER',
+                                    amount: winner.amount,
+                                    type: 'credit',
+                                    category: 'settlement',
+                                    description: `Hand win — pot $${winner.amount.toFixed(2)}`,
+                                    table_id: tableId || null,
+                                    hand_id: winHandId || null,
+                                }).then(({ error: txErr }) => {
+                                    if (txErr) console.warn('[Wallet] Win transaction failed:', txErr.message);
+                                });
+                            }
+                        }
+                    }
+
                     // Trigger achievements for winners
                     for (const winner of event.winners) {
                         achievementTriggerService.onHandComplete(winner.userId, {
@@ -1274,6 +1295,23 @@ export default function TablePage() {
                             true,
                             rakePlayers
                         );
+                    }
+
+                    // Sync player stacks back to table_seats in DB (fire-and-forget)
+                    {
+                        const allPlayers = tableStateRef.current.players;
+                        for (let seatIdx = 0; seatIdx < allPlayers.length; seatIdx++) {
+                            const p = allPlayers[seatIdx];
+                            if (p && p.id) {
+                                supabase.from('table_seats')
+                                    .update({ stack: p.stack })
+                                    .eq('table_id', tableId)
+                                    .eq('seat_number', seatIdx + 1)
+                                    .then(({ error: syncErr }) => {
+                                        if (syncErr) console.warn('[Seats] Stack sync failed:', syncErr.message);
+                                    });
+                            }
+                        }
                     }
                     break;
             }
