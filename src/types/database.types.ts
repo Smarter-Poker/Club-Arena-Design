@@ -292,7 +292,7 @@ export interface Tournament {
 }
 
 export type TournamentType = 'sng' | 'mtt' | 'satellite' | 'spin' | 'bounty' | 'mystery_bounty' | 'progressive_bounty';
-export type TournamentStatus = 'scheduled' | 'registering' | 'late_reg' | 'running' | 'paused' | 'final_table' | 'heads_up' | 'completed' | 'cancelled';
+export type TournamentStatus = 'REGISTERING' | 'RUNNING' | 'COMPLETED' | 'CANCELLED' | 'ANNOUNCED' | 'LATE_REG';
 
 export interface BlindLevel {
     level: number;

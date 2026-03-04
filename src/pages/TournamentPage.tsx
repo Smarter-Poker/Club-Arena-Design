@@ -233,7 +233,7 @@ export default function TournamentPage() {
                 setCanAddOnNow(false);
                 return;
             }
-            if (selectedTournament.status === 'running') {
+            if (selectedTournament.status === 'RUNNING') {
                 const [rebuyCheck, addOnCheck] = await Promise.all([
                     tournamentService.canRebuy(selectedTournament.id, currentUser.id),
                     tournamentService.canAddOn(selectedTournament.id),
@@ -331,8 +331,8 @@ export default function TournamentPage() {
                                 <div className="tourn-header">
                                     <span className="tourn-name">{tourn.name}</span>
                                     <span className={`tourn-status ${tourn.status}`}>
-                                        {tourn.status === 'registering' ? ' Open' :
-                                            tourn.status === 'running' ? ' Running' : ' Soon'}
+                                        {tourn.status === 'REGISTERING' ? ' Open' :
+                                            tourn.status === 'RUNNING' ? ' Running' : ' Soon'}
                                     </span>
                                 </div>
                                 <div className="tourn-info">
@@ -428,7 +428,7 @@ export default function TournamentPage() {
 
                             {/* Actions */}
                             <div className="detail-actions">
-                                {selectedTournament.status === 'registering' || selectedTournament.status === 'scheduled' ? (
+                                {selectedTournament.status === 'REGISTERING' || selectedTournament.status === 'ANNOUNCED' ? (
                                     isRegistered ? (
                                         <button className="btn btn-danger btn-block" onClick={handleUnregister}>
                                             Unregister
@@ -438,7 +438,7 @@ export default function TournamentPage() {
                                             Register (${selectedTournament.buy_in_amount + selectedTournament.buy_in_fee})
                                         </button>
                                     )
-                                ) : selectedTournament.status === 'running' ? (
+                                ) : selectedTournament.status === 'RUNNING' ? (
                                     <>
                                         <button
                                             className="btn btn-primary btn-block"
@@ -474,7 +474,7 @@ export default function TournamentPage() {
                                     </>
                                 ) : null}
 
-                                {isOwner && (selectedTournament.status === 'registering' || selectedTournament.status === 'scheduled') && (
+                                {isOwner && (selectedTournament.status === 'REGISTERING' || selectedTournament.status === 'ANNOUNCED') && (
                                     <button
                                         className="btn btn-warning btn-block"
                                         style={{ marginTop: '1rem' }}

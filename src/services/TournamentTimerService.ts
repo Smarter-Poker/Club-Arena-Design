@@ -104,7 +104,7 @@ class TournamentTimerServiceClass {
         try {
             // Fetch current tournament state
             const tournament = await tournamentService.getTournament(tournamentId);
-            if (!tournament || tournament.status !== 'running') {
+            if (!tournament || tournament.status !== 'RUNNING') {
                 this.stopTimer(tournamentId);
                 return;
             }
@@ -192,7 +192,7 @@ class TournamentTimerServiceClass {
         const breakTimeoutId = setTimeout(async () => {
             await supabase
                 .from('tournaments')
-                .update({ status: 'running' })
+                .update({ status: 'RUNNING' })
                 .eq('id', tournamentId);
 
             this.resumeTimer(tournamentId);
@@ -257,7 +257,7 @@ class TournamentTimerServiceClass {
         const { data: runningTournaments } = await supabase
             .from('tournaments')
             .select('id')
-            .eq('status', 'running');
+            .eq('status', 'RUNNING');
 
         if (runningTournaments) {
             for (const t of runningTournaments) {

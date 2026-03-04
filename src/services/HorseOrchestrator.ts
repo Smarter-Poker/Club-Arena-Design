@@ -712,7 +712,7 @@ class HorseOrchestrator {
                     starting_chips: config.startingStack,
                     max_players: config.maxPlayers,
                     current_players: 0,
-                    status: 'scheduled',
+                    status: 'ANNOUNCED',
                     blind_structure: config.blindStructure,
                     payout_structure: config.payoutStructure || [],
                     start_time: startTime.toISOString(),
@@ -749,7 +749,7 @@ class HorseOrchestrator {
                 .update({
                     current_players: registered,
                     guaranteed_prize: prizePool,
-                    status: 'registering',
+                    status: 'REGISTERING',
                 })
                 .eq('id', tournament.id);
 
@@ -810,7 +810,7 @@ class HorseOrchestrator {
                     starting_chips: config.startingStack,
                     max_players: config.maxPlayers,
                     current_players: 0,
-                    status: 'registering',
+                    status: 'REGISTERING',
                     blind_structure: config.blindStructure,
                     payout_structure: config.payoutStructure || [],
                     late_reg_mins: 0,
@@ -901,7 +901,7 @@ class HorseOrchestrator {
                     starting_chips: config.startingStack,
                     max_players: config.maxPlayers,
                     current_players: 0,
-                    status: 'registering',
+                    status: 'REGISTERING',
                     blind_structure: config.blindStructure,
                     payout_structure: [{ position: 1, percentage: 100 }],
                     late_reg_mins: 0,

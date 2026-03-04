@@ -16,7 +16,7 @@ import SmarterHeader from '../../components/layout/SmarterHeader';
 import { ArenaTrainingController } from '../../services/ArenaTrainingController';
 import styles from './TournamentLobbyPage.module.css';
 
-type TournamentStatus = 'all' | 'upcoming' | 'registering' | 'running' | 'completed';
+type TournamentStatus = 'all' | 'upcoming' | 'REGISTERING' | 'RUNNING' | 'COMPLETED';
 type TournamentType = 'all' | 'freeroll' | 'regular' | 'bounty' | 'satellite';
 
 interface Tournament {
@@ -27,7 +27,7 @@ interface Tournament {
     buyIn: number;
     prizePool: number;
     startTime: string;
-    status: 'scheduled' | 'registering' | 'running' | 'completed' | 'cancelled';
+    status: 'ANNOUNCED' | 'REGISTERING' | 'RUNNING' | 'COMPLETED' | 'CANCELLED';
     currentPlayers: number;
     maxPlayers: number;
     startingChips: number;
@@ -114,13 +114,13 @@ export default function TournamentLobbyPage() {
 
             if (statusFilter !== 'all') {
                 if (statusFilter === 'upcoming') {
-                    query = query.in('status', ['scheduled', 'registering']);
-                } else if (statusFilter === 'registering') {
-                    query = query.eq('status', 'registering');
-                } else if (statusFilter === 'running') {
-                    query = query.eq('status', 'running');
-                } else if (statusFilter === 'completed') {
-                    query = query.eq('status', 'completed');
+                    query = query.in('status', ['ANNOUNCED', 'REGISTERING']);
+                } else if (statusFilter === 'REGISTERING') {
+                    query = query.eq('status', 'REGISTERING');
+                } else if (statusFilter === 'RUNNING') {
+                    query = query.eq('status', 'RUNNING');
+                } else if (statusFilter === 'COMPLETED') {
+                    query = query.eq('status', 'COMPLETED');
                 }
             }
 
@@ -192,8 +192,8 @@ export default function TournamentLobbyPage() {
         return true;
     });
 
-    const upcomingCount = tournaments.filter(t => ['scheduled', 'registering'].includes(t.status)).length;
-    const runningCount = tournaments.filter(t => t.status === 'running').length;
+    const upcomingCount = tournaments.filter(t => ['ANNOUNCED', 'REGISTERING'].includes(t.status)).length;
+    const runningCount = tournaments.filter(t => t.status === 'RUNNING').length;
 
     return (
         <div className={styles.page}>
@@ -233,12 +233,12 @@ export default function TournamentLobbyPage() {
                         <button
                             key={status}
                             className={`${styles.filterBtn} ${statusFilter === status ? styles.active : ''}`}
-                            onClick={() => setStatusFilter(status)}
+                            onClick={() => setStatusFilter(status as TournamentStatus)}
                         >
                             {status === 'all' ? ' All' :
                                 status === 'upcoming' ? ' Upcoming' :
-                                    status === 'registering' ? 'Registering' :
-                                        status === 'running' ? ' Live' :
+                                    status === 'REGISTERING' ? 'Registering' :
+                                        status === 'RUNNING' ? ' Live' :
                                             ' Completed'}
                         </button>
                     ))}
@@ -276,7 +276,7 @@ export default function TournamentLobbyPage() {
                                 maxPlayers: tournament.maxPlayers,
                                 registeredPlayers: tournament.currentPlayers,
                                 startsAt: tournament.startTime,
-                                status: tournament.status === 'completed' ? 'finished' : tournament.status === 'scheduled' ? 'registering' : tournament.status as 'registering' | 'running' | 'cancelled' | 'finished',
+                                status: tournament.status === 'COMPLETED' ? 'finished' : tournament.status === 'ANNOUNCED' ? 'registering' : tournament.status === 'REGISTERING' ? 'registering' : tournament.status === 'RUNNING' ? 'running' : 'cancelled',
                                 blindStructure: `${tournament.blindsUp}m`
                             }}
                             onRegister={() => handleRegister(tournament.id)}

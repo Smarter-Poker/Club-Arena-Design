@@ -330,7 +330,7 @@ class TournamentService {
                 starting_chips: config.startingStack,
                 max_players: config.maxPlayers,
                 current_players: 0,
-                status: 'scheduled',
+                status: 'ANNOUNCED',
                 blind_structure: config.blindStructure,
                 payout_structure: config.payoutStructure,
                 guaranteed_prize: 0,
@@ -357,7 +357,7 @@ class TournamentService {
     ): Promise<TournamentPlayer> {
         const tournament = await this.getTournament(tournamentId);
         if (!tournament) throw new Error('Tournament not found');
-        if (tournament.status !== 'registering' && tournament.status !== 'scheduled') {
+        if (tournament.status !== 'REGISTERING' && tournament.status !== 'ANNOUNCED') {
             throw new Error('Registration is closed');
         }
         if (tournament.max_players && tournament.current_players >= tournament.max_players) {
@@ -454,7 +454,7 @@ class TournamentService {
     async unregisterPlayer(tournamentId: string, userId: string): Promise<void> {
         const tournament = await this.getTournament(tournamentId);
         if (!tournament) throw new Error('Tournament not found');
-        if (tournament.status !== 'registering' && tournament.status !== 'scheduled') {
+        if (tournament.status !== 'REGISTERING' && tournament.status !== 'ANNOUNCED') {
             throw new Error('Cannot unregister after tournament started');
         }
 
@@ -540,7 +540,7 @@ class TournamentService {
                     min_buy_in: 0,
                     max_buy_in: 0,
                     max_players: 9,
-                    status: 'running',
+                    status: 'RUNNING',
                     settings: { auto_muck: true, time_bank_seconds: 30 }
                 })
                 .select()
@@ -574,7 +574,7 @@ class TournamentService {
         const { data, error } = await supabase
             .from('tournaments')
             .update({
-                status: 'running',
+                status: 'RUNNING',
                 started_at: new Date().toISOString(),
             })
             .eq('id', tournamentId)
@@ -708,7 +708,7 @@ class TournamentService {
         timeRemainingSeconds: number;
         levelIndex: number;
     } {
-        if (tournament.status !== 'running' || !tournament.started_at) {
+        if (tournament.status !== 'RUNNING' || !tournament.started_at) {
             return {
                 currentLevel: tournament.blind_structure[0],
                 nextLevel: tournament.blind_structure[1] || null,
@@ -993,7 +993,7 @@ class TournamentService {
                     min_buy_in: 0,
                     max_buy_in: 0,
                     max_players: 9,
-                    status: 'running',
+                    status: 'RUNNING',
                     settings: { auto_muck: true, time_bank_seconds: 45 }
                 })
                 .select()
@@ -1094,7 +1094,7 @@ class TournamentService {
         await supabase
             .from('tournaments')
             .update({
-                status: 'completed',
+                status: 'COMPLETED',
                 ended_at: new Date().toISOString(),
             })
             .eq('id', tournamentId);

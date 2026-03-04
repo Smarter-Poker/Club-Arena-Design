@@ -259,7 +259,7 @@ export default function ClubHomePage() {
                 .from('tournaments')
                 .select('*')
                 .eq('club_id', clubId)
-                .neq('status', 'completed')
+                .neq('status', 'COMPLETED')
                 .order('start_time', { ascending: true });
 
             if (tournamentData) {

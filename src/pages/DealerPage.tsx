@@ -192,7 +192,7 @@ export default function DealerPage() {
             const { data: readyTournaments, error } = await supabase
                 .from('tournaments')
                 .select('id, name, start_time, current_players, status')
-                .in('status', ['registering', 'scheduled'])
+                .in('status', ['REGISTERING', 'ANNOUNCED'])
                 .lte('start_time', now)
                 .gte('current_players', 2);
 
@@ -236,7 +236,7 @@ export default function DealerPage() {
             const { data: runningTournaments } = await supabase
                 .from('tournaments')
                 .select('id, name')
-                .eq('status', 'running');
+                .eq('status', 'RUNNING');
 
             if (runningTournaments) {
                 for (const t of runningTournaments) {
