@@ -300,13 +300,6 @@ export class HeadlessTableEngine {
 
         this.handController = new HandController(config, hcPlayers, dealerSeat);
 
-        // Wire persistence
-        const persistenceUnsub = this.handController.onEvent((event: HandEvent) => {
-            this.handleHandEvent(event, players);
-        });
-
-        this.unsubscribeHands.push(persistenceUnsub);
-
         // Wire persistence service
         handPersistenceService.wireToHandController(this.handController, {
             tableId: this.tableId,
@@ -315,22 +308,48 @@ export class HeadlessTableEngine {
             gameVariant: this.tableInfo.game_variant as 'nlh' | 'plo4' | 'plo5' | 'plo6',
         });
 
-        // Start hand
-        try {
-            this.handController.start();
-        } catch (err) {
-            console.error(`[HeadlessTableEngine:${this.tableId}] Failed to start hand:`, err);
-            this.handController = null;
-        }
+        // Wait for hand to complete before returning
+        return new Promise<void>((resolve) => {
+            const handCompleteTimeout = setTimeout(() => {
+                console.warn(`[HeadlessTableEngine:${this.tableId}] Hand ${handNumber} timed out after 120s`);
+                this.handController = null;
+                resolve();
+            }, 120_000); // 2 minute safety timeout
+
+            // Wire event handler
+            const persistenceUnsub = this.handController!.onEvent((event: HandEvent) => {
+                this.handleHandEvent(event, players);
+
+                // Resolve the promise when hand completes
+                if (event.type === 'HAND_COMPLETE') {
+                    clearTimeout(handCompleteTimeout);
+                    this.handController = null;
+                    resolve();
+                }
+            });
+
+            this.unsubscribeHands.push(persistenceUnsub);
+
+            // Start hand
+            try {
+                this.handController!.start();
+            } catch (err) {
+                console.error(`[HeadlessTableEngine:${this.tableId}] Failed to start hand:`, err);
+                clearTimeout(handCompleteTimeout);
+                this.handController = null;
+                resolve();
+            }
+        });
     }
 
     private handleHandEvent(event: HandEvent, players: SeatedPlayer[]): void {
         switch (event.type) {
             case 'HAND_START':
-                break; // Just log for visibility
+                break;
 
-            case 'PLAYER_ACTION':
-                this.handlePlayerAction(event, players);
+            case 'TURN_CHANGE':
+                // Horse AI: when it's a player's turn, make their decision
+                this.handleTurnChange(event, players);
                 break;
 
             case 'COMMUNITY_CARDS':
@@ -374,18 +393,20 @@ export class HeadlessTableEngine {
         }
     }
 
-    private handlePlayerAction(event: HandEvent, players: SeatedPlayer[]): void {
-        if (event.type !== 'PLAYER_ACTION') return;
+    private handleTurnChange(event: HandEvent, players: SeatedPlayer[]): void {
+        if (event.type !== 'TURN_CHANGE') return;
+        if (!this.handController) return;
 
-        const player = players.find((p, idx) => idx + 1 === event.seat);
-        if (!player || !player.is_horse || !this.handController) return;
+        const seat = event.seat;
+        const player = players.find((p, idx) => idx + 1 === seat);
+        if (!player) return;
 
-        // Get horse profile
+        // All players in HeadlessTableEngine are horses — make AI decision for every seat
         const horseProfile = player.horse_profile || 'reg';
 
-        // Build hand context
+        // Build hand context from current state
         const state = this.handController.getState();
-        const enginePlayer = state.players.find(p => p.seat === event.seat);
+        const enginePlayer = state.players.find(p => p.seat === seat);
         if (!enginePlayer) return;
 
         const activePlayers = state.players.filter(p => !p.is_folded && p.stack > 0).length;
@@ -397,7 +418,7 @@ export class HeadlessTableEngine {
             toCall,
             minRaise: state.minRaise,
             maxRaise: enginePlayer.stack,
-            position: event.seat <= 3 ? 'early' as const : event.seat <= 5 ? 'middle' as const : 'late' as const,
+            position: seat <= 3 ? 'early' as const : seat <= 5 ? 'middle' as const : 'late' as const,
             street: state.stage as 'preflop' | 'flop' | 'turn' | 'river',
             playersInHand: activePlayers,
             stackToPotRatio: state.pot > 0 ? enginePlayer.stack / state.pot : 100,
@@ -413,7 +434,7 @@ export class HeadlessTableEngine {
                 avatar: '',
                 profile: horseProfile as any,
                 stack: enginePlayer.stack,
-                seatNumber: event.seat,
+                seatNumber: seat,
                 status: 'seated',
                 tableId: this.tableId,
                 joinedAt: new Date().toISOString(),
@@ -424,9 +445,9 @@ export class HeadlessTableEngine {
             context
         );
 
-        // Execute after think time
+        // Execute after think time (shortened for headless — 200-800ms instead of full think time)
+        const thinkTime = Math.min(decision.thinkTime, 300 + Math.random() * 500);
         const handControllerRef = this.handController;
-        const seatRef = event.seat;
 
         workerTimeout(() => {
             if (!handControllerRef || !this.running) return;
@@ -454,8 +475,17 @@ export class HeadlessTableEngine {
                 }
             }
 
-            handControllerRef.performAction(seatRef, action as any, amount);
-        }, decision.thinkTime);
+            try {
+                handControllerRef.performAction(seat, action as any, amount);
+            } catch (err) {
+                // If action fails, try folding as fallback
+                try {
+                    handControllerRef.performAction(seat, 'fold');
+                } catch {
+                    // Hand may have already completed
+                }
+            }
+        }, thinkTime);
     }
 
     private async syncStacksToDatabase(players: SeatedPlayer[]): Promise<void> {
