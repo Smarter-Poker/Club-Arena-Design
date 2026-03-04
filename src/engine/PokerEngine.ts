@@ -491,11 +491,16 @@ export function validateAction(
             if (!amount) {
                 return { valid: false, error: 'Raise amount required' };
             }
+            // playerBet = currentBet - toCall (derive from what we have)
+            const playerBet = currentBet - toCall;
+            // Max the player can raise to = their current bet + entire stack
+            const maxRaiseTo = playerBet + playerStack;
             const raiseAmount = amount - currentBet;
-            if (raiseAmount < minRaise && amount < playerStack) {
-                return { valid: false, error: `Minimum raise is ${minRaise}` };
+            // Enforce min raise UNLESS it's an all-in (player committing entire stack)
+            if (raiseAmount < minRaise && amount < maxRaiseTo) {
+                return { valid: false, error: `Minimum raise is ${minRaise} (raise to at least ${currentBet + minRaise})` };
             }
-            if (amount > playerStack + toCall) {
+            if (amount > maxRaiseTo) {
                 return { valid: false, error: 'Insufficient chips' };
             }
             return { valid: true };

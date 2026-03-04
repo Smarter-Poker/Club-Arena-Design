@@ -49,6 +49,7 @@ export interface PersistenceConfig {
 export class HandPersistence {
     private currentHand: HandRecord | null = null;
     private handActions: Record<string, unknown>[] = [];
+    private handWinners: { userId: string; amount: number }[] = [];
     private unsubscribe: (() => void) | null = null;
     private tableId: string;
 
@@ -102,6 +103,7 @@ export class HandPersistence {
         }
         this.currentHand = null;
         this.handActions = [];
+        this.handWinners = [];
     }
 
     /**
@@ -173,6 +175,7 @@ export class HandPersistence {
             started_at: new Date().toISOString(),
         };
         this.handActions = [];
+        this.handWinners = [];
 
         // Insert initial hand record — since events are serialized,
         // no other event can run until this insert completes.
@@ -251,6 +254,7 @@ export class HandPersistence {
     private onWinners(winners: { userId: string; amount: number }[]): void {
         if (!this.currentHand) return;
         this.currentHand.winner_ids = winners.map((w) => w.userId);
+        this.handWinners = winners;
     }
 
     private onPotUpdate(pot: number): void {
@@ -305,9 +309,66 @@ export class HandPersistence {
             }
         }
 
+        // ── Insert hand_players rows ──────────────────────────────────────────
+        // Each player who was dealt into this hand gets a row for analytics/history
+        if (!(this.currentHand as any)._localOnly && this.currentHand.id) {
+            const handId = this.currentHand.id;
+            const playersObj = this.currentHand.players as Record<string, { seat: number; username: string; stack: number }>;
+            const winnerSet = new Set(this.currentHand.winner_ids);
+            const winnerAmounts = new Map(this.handWinners.map(w => [w.userId, w.amount]));
+
+            const handPlayerRows = Object.entries(playersObj).map(([userId, info]) => {
+                const isWinner = winnerSet.has(userId);
+                const chipsWon = winnerAmounts.get(userId) || 0;
+                // Find this player's actions from the recorded actions
+                const playerActions = this.handActions.filter((a: any) => a.seat === info.seat);
+                // Total invested is sum of all bet amounts from actions for this player
+                const totalInvested = playerActions.reduce((sum: number, a: any) => sum + (a.amount || 0), 0);
+
+                return {
+                    hand_id: handId,
+                    user_id: userId,
+                    seat_number: info.seat,
+                    chips_won: isWinner ? chipsWon : 0,
+                    chips_lost: isWinner ? 0 : totalInvested,
+                    is_winner: isWinner,
+                    actions: playerActions,
+                };
+            });
+
+            if (handPlayerRows.length > 0) {
+                const { error: hpError } = await supabase
+                    .from('hand_players')
+                    .insert(handPlayerRows);
+
+                if (hpError) {
+                    console.error(`[HandPersistence:${this.tableId}] Failed to insert hand_players for hand #${handNumber}:`, hpError);
+                }
+            }
+
+            // ── Insert rake_records ──────────────────────────────────────────────
+            // Only insert if rake was actually taken (no flop no drop)
+            if (rake > 0) {
+                const { error: rrError } = await supabase
+                    .from('rake_records')
+                    .insert({
+                        hand_id: handId,
+                        table_id: this.currentHand.table_id,
+                        club_id: this.currentHand.club_id,
+                        amount: rake,
+                        pot_size: this.currentHand.pot,
+                    });
+
+                if (rrError) {
+                    console.error(`[HandPersistence:${this.tableId}] Failed to insert rake_record for hand #${handNumber}:`, rrError);
+                }
+            }
+        }
+
         // Reset state — ready for next hand
         this.currentHand = null;
         this.handActions = [];
+        this.handWinners = [];
     }
 }
 
