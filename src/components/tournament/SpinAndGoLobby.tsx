@@ -66,7 +66,7 @@ export function SpinAndGoLobby({ clubId, onRegister }: SpinAndGoLobbyProps) {
             if (!error && data) {
                 setTournaments(data.map(t => ({
                     id: t.id,
-                    buyIn: t.buy_in,
+                    buyIn: t.buy_in_amount,
                     players: t.player_count || 0,
                     maxPlayers: t.max_players || 3,
                     multipliers: t.multipliers || SPIN_MULTIPLIERS,

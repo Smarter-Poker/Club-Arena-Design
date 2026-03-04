@@ -142,7 +142,7 @@ export default function TournamentLobbyPage() {
                     name: t.name,
                     clubId: t.club_id,
                     clubName: t.clubs?.name || 'Unknown Club',
-                    buyIn: t.buy_in || 0,
+                    buyIn: t.buy_in_amount || 0,
                     prizePool: t.prize_pool || 0,
                     startTime: t.start_time,
                     status: t.status,

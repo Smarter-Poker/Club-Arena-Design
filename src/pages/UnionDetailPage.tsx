@@ -121,7 +121,7 @@ export default function UnionDetailPage() {
                         .from('tournaments')
                         .select('*, clubs(name)')
                         .in('club_id', clubIds)
-                        .order('scheduled_start', { ascending: true });
+                        .order('start_time', { ascending: true });
                     setUnionTournaments(tournaments || []);
                 }
 
@@ -472,9 +472,9 @@ export default function UnionDetailPage() {
                                         </div>
                                         <div className={styles.tableCardDetails}>
                                             <span> {t.clubs?.name || 'Club'}</span>
-                                            <span> ${t.buy_in?.toLocaleString() || 0}</span>
+                                            <span> ${t.buy_in_amount?.toLocaleString() || 0}</span>
                                             <span> {t.current_players || 0}/{t.max_players || 100}</span>
-                                            <span> {new Date(t.scheduled_start).toLocaleDateString()}</span>
+                                            <span> {new Date(t.start_time).toLocaleDateString()}</span>
                                         </div>
                                         <Link to={`/tournaments/${t.id}`} className={styles.joinButton}>
                                             View Details

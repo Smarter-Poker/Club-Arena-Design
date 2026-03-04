@@ -199,7 +199,7 @@ function TournamentCard({ tournament, clubId }: { tournament: Tournament; clubId
             <div className="card-body">
                 <div className="buyin-row">
                     <span className="buyin-label">Buy-in</span>
-                    <span className="buyin-amount">{tournament.buy_in}</span>
+                    <span className="buyin-amount">{tournament.buy_in_amount}</span>
                 </div>
                 <div className="timer-row">
                     <span className="timer-icon">◷</span>

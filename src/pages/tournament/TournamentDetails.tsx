@@ -233,7 +233,7 @@ export default function TournamentDetails() {
             {/* Tournament Description */}
             <div className="tournament-desc">
                 <p>{tournament.name}</p>
-                <p>{tournament.buy_in} CHIPS BUY-IN</p>
+                <p>{tournament.buy_in_amount} CHIPS BUY-IN</p>
                 <p>REBUY / NO ADD-ON</p>
             </div>
 
@@ -285,11 +285,11 @@ export default function TournamentDetails() {
                         </div>
                         <div className="info-row">
                             <span className="info-label">Buy-in:</span>
-                            <span className="info-value">{tournament.buy_in} chips <span className="badge-reentry">Re-entry</span></span>
+                            <span className="info-value">{tournament.buy_in_amount} chips <span className="badge-reentry">Re-entry</span></span>
                         </div>
                         <div className="info-row">
                             <span className="info-label">Prize Pool:</span>
-                            <span className="info-value">{tournament.prize_pool || tournament.buy_in * tournament.current_players}K <span className="badge-gtd">GTD</span></span>
+                            <span className="info-value">{tournament.prize_pool || tournament.buy_in_amount * tournament.current_players}K <span className="badge-gtd">GTD</span></span>
                         </div>
                         <div className="info-row half">
                             <span className="info-label">Entries:</span>
@@ -301,7 +301,7 @@ export default function TournamentDetails() {
                         </div>
                         <div className="info-row half">
                             <span className="info-label">Re-entry:</span>
-                            <span className="info-value">{tournament.buy_in} (x No Limit)</span>
+                            <span className="info-value">{tournament.buy_in_amount} (x No Limit)</span>
                         </div>
                         <div className="info-row half">
                             <span className="info-label">Add-on:</span>
@@ -386,7 +386,7 @@ export default function TournamentDetails() {
                     <div className="prize-pool-display">
                         <span className="prize-label">Total Prize Pool</span>
                         <span className="prize-amount">
-                            {(tournament.prize_pool || tournament.buy_in * tournament.current_players).toLocaleString()} chips
+                            {(tournament.prize_pool || tournament.buy_in_amount * tournament.current_players).toLocaleString()} chips
                         </span>
                     </div>
                     <div className="payout-table">
@@ -401,16 +401,16 @@ export default function TournamentDetails() {
                                     </span>
                                     <span className="payout-percent">{payout.percentage}%</span>
                                     <span className="payout-chips">
-                                        {Math.floor((tournament.prize_pool || tournament.buy_in * tournament.current_players) * payout.percentage / 100).toLocaleString()}
+                                        {Math.floor((tournament.prize_pool || tournament.buy_in_amount * tournament.current_players) * payout.percentage / 100).toLocaleString()}
                                     </span>
                                 </div>
                             ))
                         ) : (
                             /* Default payout structure if none defined */
                             <>
-                                <div className="payout-row"><span className="payout-place">🥇</span><span className="payout-percent">50%</span><span className="payout-chips">{Math.floor((tournament.prize_pool || tournament.buy_in * tournament.current_players) * 0.5).toLocaleString()}</span></div>
-                                <div className="payout-row"><span className="payout-place">🥈</span><span className="payout-percent">30%</span><span className="payout-chips">{Math.floor((tournament.prize_pool || tournament.buy_in * tournament.current_players) * 0.3).toLocaleString()}</span></div>
-                                <div className="payout-row"><span className="payout-place">🥉</span><span className="payout-percent">20%</span><span className="payout-chips">{Math.floor((tournament.prize_pool || tournament.buy_in * tournament.current_players) * 0.2).toLocaleString()}</span></div>
+                                <div className="payout-row"><span className="payout-place">🥇</span><span className="payout-percent">50%</span><span className="payout-chips">{Math.floor((tournament.prize_pool || tournament.buy_in_amount * tournament.current_players) * 0.5).toLocaleString()}</span></div>
+                                <div className="payout-row"><span className="payout-place">🥈</span><span className="payout-percent">30%</span><span className="payout-chips">{Math.floor((tournament.prize_pool || tournament.buy_in_amount * tournament.current_players) * 0.3).toLocaleString()}</span></div>
+                                <div className="payout-row"><span className="payout-place">🥉</span><span className="payout-percent">20%</span><span className="payout-chips">{Math.floor((tournament.prize_pool || tournament.buy_in_amount * tournament.current_players) * 0.2).toLocaleString()}</span></div>
                             </>
                         )}
                     </div>
@@ -460,7 +460,7 @@ export default function TournamentDetails() {
                         <h2>Sign Up</h2>
                         <div className="signup-row">
                             <span className="signup-label">Entry Fee:</span>
-                            <span className="signup-value">{tournament.buy_in} chips</span>
+                            <span className="signup-value">{tournament.buy_in_amount} chips</span>
                         </div>
                         <div className="signup-row">
                             <span className="signup-label">Start time:</span>

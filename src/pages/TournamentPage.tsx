@@ -137,7 +137,7 @@ export default function TournamentPage() {
             setIsRegistered(true);
 
             // Update tournament in list (prize pool = buy_in minus rake)
-            const prizeContribution = selectedTournament.buy_in - (selectedTournament.rake || 0);
+            const prizeContribution = selectedTournament.buy_in_amount - (selectedTournament.buy_in_fee || 0);
             setTournaments(prev => prev.map(t =>
                 t.id === selectedTournament.id
                     ? { ...t, current_players: t.current_players + 1, prize_pool: t.prize_pool + prizeContribution }
@@ -149,7 +149,7 @@ export default function TournamentPage() {
                 prize_pool: prev.prize_pool + prizeContribution,
             } : null);
 
-            toast.success(`Registered! ${selectedTournament.buy_in} chips deducted.`);
+            toast.success(`Registered! ${selectedTournament.buy_in_amount} chips deducted.`);
         } catch (error) {
             toast.error('Registration failed: ' + (error as Error).message);
         }
@@ -203,23 +203,23 @@ export default function TournamentPage() {
             await WalletService.unlockFromTable(
                 currentUser.id,
                 selectedTournament.id,
-                selectedTournament.buy_in
+                selectedTournament.buy_in_amount
             );
 
             setIsRegistered(false);
 
             setTournaments(prev => prev.map(t =>
                 t.id === selectedTournament.id
-                    ? { ...t, current_players: t.current_players - 1, prize_pool: t.prize_pool - t.buy_in }
+                    ? { ...t, current_players: t.current_players - 1, prize_pool: t.prize_pool - t.buy_in_amount }
                     : t
             ));
             setSelectedTournament(prev => prev ? {
                 ...prev,
                 current_players: prev.current_players - 1,
-                prize_pool: prev.prize_pool - prev.buy_in,
+                prize_pool: prev.prize_pool - prev.buy_in_amount,
             } : null);
 
-            toast.success(`Unregistered! ${selectedTournament.buy_in} chips refunded.`);
+            toast.success(`Unregistered! ${selectedTournament.buy_in_amount} chips refunded.`);
         } catch (error) {
             toast.error('Unregister failed: ' + (error as Error).message);
         }
@@ -337,7 +337,7 @@ export default function TournamentPage() {
                                 </div>
                                 <div className="tourn-info">
                                     <span className="tourn-type">{tourn.type.toUpperCase()}</span>
-                                    <span className="tourn-buyin">${tourn.buy_in} + ${tourn.rake}</span>
+                                    <span className="tourn-buyin">${tourn.buy_in_amount} + ${tourn.buy_in_fee}</span>
                                 </div>
                                 <div className="tourn-meta">
                                     <span> {tourn.current_players}/{tourn.max_players}</span>
@@ -362,7 +362,7 @@ export default function TournamentPage() {
                             <div className="detail-stats">
                                 <div className="stat">
                                     <span className="stat-label">Buy-in</span>
-                                    <span className="stat-value">${selectedTournament.buy_in} + ${selectedTournament.rake}</span>
+                                    <span className="stat-value">${selectedTournament.buy_in_amount} + ${selectedTournament.buy_in_fee}</span>
                                 </div>
                                 <div className="stat">
                                     <span className="stat-label">Starting Stack</span>
@@ -435,7 +435,7 @@ export default function TournamentPage() {
                                         </button>
                                     ) : (
                                         <button className="btn btn-primary btn-block" onClick={handleRegister}>
-                                            Register (${selectedTournament.buy_in + selectedTournament.rake})
+                                            Register (${selectedTournament.buy_in_amount + selectedTournament.buy_in_fee})
                                         </button>
                                     )
                                 ) : selectedTournament.status === 'running' ? (
@@ -456,7 +456,7 @@ export default function TournamentPage() {
                                                 onClick={handleRebuy}
                                                 disabled={isProcessingRebuy}
                                             >
-                                                {isProcessingRebuy ? ' Processing...' : ` Rebuy ($${selectedTournament.buy_in})`}
+                                                {isProcessingRebuy ? ' Processing...' : ` Rebuy ($${selectedTournament.buy_in_amount})`}
                                             </button>
                                         )}
 
@@ -468,7 +468,7 @@ export default function TournamentPage() {
                                                 onClick={handleAddOn}
                                                 disabled={isProcessingRebuy}
                                             >
-                                                {isProcessingRebuy ? ' Processing...' : `➕ Add-On ($${selectedTournament.buy_in})`}
+                                                {isProcessingRebuy ? ' Processing...' : `➕ Add-On ($${selectedTournament.buy_in_amount})`}
                                             </button>
                                         )}
                                     </>
