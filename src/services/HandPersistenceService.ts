@@ -143,6 +143,41 @@ class HandPersistenceServiceClass {
 
         if (error) {
             console.error('[HandPersistence] Failed to insert hand:', error);
+            // Retry once — transient errors (network, lock contention) are common
+            try {
+                const { data: retryData, error: retryError } = await supabase
+                    .from('hands')
+                    .insert({
+                        table_id: this.currentHand.table_id,
+                        club_id: this.currentHand.club_id,
+                        hand_number: this.currentHand.hand_number,
+                        game_variant: this.currentHand.game_variant,
+                        stakes: this.currentHand.stakes,
+                        pot: 0,
+                        rake: 0,
+                        community_cards: [],
+                        winner_ids: [],
+                        players: this.currentHand.players,
+                        actions: [],
+                        started_at: this.currentHand.started_at,
+                    })
+                    .select('id')
+                    .single();
+                if (!retryError && retryData) {
+                    this.currentHand.id = retryData.id;
+                    console.log('[HandPersistence] Retry succeeded — hand ID:', retryData.id);
+                } else {
+                    console.error('[HandPersistence] Retry also failed:', retryError);
+                    // Generate a local ID so onHandComplete doesn't silently skip
+                    // Hand won't be in DB but rake waterfall still needs a handId
+                    this.currentHand.id = crypto.randomUUID();
+                    (this.currentHand as any)._localOnly = true;
+                }
+            } catch (e) {
+                console.error('[HandPersistence] Retry exception:', e);
+                this.currentHand.id = crypto.randomUUID();
+                (this.currentHand as any)._localOnly = true;
+            }
         } else if (data) {
             this.currentHand.id = data.id;
         }
@@ -182,7 +217,12 @@ class HandPersistenceServiceClass {
     }
 
     private async onHandComplete(handNumber: number, rake: number): Promise<void> {
-        if (!this.currentHand?.id) return;
+        if (!this.currentHand?.id) {
+            // Still clean up state even if no hand ID
+            this.currentHand = null;
+            this.handActions = [];
+            return;
+        }
 
         console.log('[HandPersistence] HAND_COMPLETE — saving:', {
             id: this.currentHand.id,
@@ -191,23 +231,39 @@ class HandPersistenceServiceClass {
             community_cards: this.currentHand.community_cards,
             winner_ids: this.currentHand.winner_ids,
             actions_count: this.handActions.length,
+            localOnly: !!(this.currentHand as any)._localOnly,
         });
 
-        // Update hand record with final state
-        const { error } = await supabase
-            .from('hands')
-            .update({
-                pot: this.currentHand.pot,
-                rake,
-                community_cards: this.currentHand.community_cards,
-                winner_ids: this.currentHand.winner_ids,
-                actions: this.handActions,
-                ended_at: new Date().toISOString(),
-            })
-            .eq('id', this.currentHand.id);
+        // Skip DB update for local-only hands (insert failed + retry failed)
+        if (!(this.currentHand as any)._localOnly) {
+            const { error } = await supabase
+                .from('hands')
+                .update({
+                    pot: this.currentHand.pot,
+                    rake,
+                    community_cards: this.currentHand.community_cards,
+                    winner_ids: this.currentHand.winner_ids,
+                    actions: this.handActions,
+                    ended_at: new Date().toISOString(),
+                })
+                .eq('id', this.currentHand.id);
 
-        if (error) {
-            console.error('[HandPersistence] Failed to update hand:', error);
+            if (error) {
+                console.error('[HandPersistence] Failed to update hand:', error);
+                // Retry the final update once
+                try {
+                    await supabase.from('hands').update({
+                        pot: this.currentHand.pot,
+                        rake,
+                        community_cards: this.currentHand.community_cards,
+                        winner_ids: this.currentHand.winner_ids,
+                        actions: this.handActions,
+                        ended_at: new Date().toISOString(),
+                    }).eq('id', this.currentHand.id);
+                } catch (e) {
+                    console.error('[HandPersistence] Retry update also failed:', e);
+                }
+            }
         }
 
         // Reset state

@@ -112,6 +112,57 @@ export default function ClubHomePage() {
         }
     }, [clubId]);
 
+    // ── Realtime subscription: live table updates (player counts, status) ──
+    useEffect(() => {
+        if (!clubId) return;
+
+        const channel = supabase
+            .channel(`club-tables-${clubId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'tables',
+                    filter: `club_id=eq.${clubId}`,
+                },
+                (payload) => {
+                    if (payload.eventType === 'UPDATE' && payload.new) {
+                        setTables(prev =>
+                            prev.map(t => t.id === payload.new.id ? { ...t, ...payload.new } : t)
+                        );
+                    } else if (payload.eventType === 'INSERT' && payload.new) {
+                        setTables(prev => [payload.new as any, ...prev]);
+                    } else if (payload.eventType === 'DELETE' && payload.old) {
+                        setTables(prev => prev.filter(t => t.id !== (payload.old as any).id));
+                    }
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'tournaments',
+                    filter: `club_id=eq.${clubId}`,
+                },
+                (payload) => {
+                    if (payload.eventType === 'UPDATE' && payload.new) {
+                        setTournaments(prev =>
+                            prev.map(t => t.id === payload.new.id ? { ...t, ...payload.new } : t)
+                        );
+                    } else if (payload.eventType === 'INSERT' && payload.new) {
+                        setTournaments(prev => [payload.new as any, ...prev]);
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [clubId]);
+
     const loadUserProfile = async () => {
         const { data: { user: authUser } } = await supabase.auth.getUser();
         if (!authUser) return;
