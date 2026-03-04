@@ -74,6 +74,8 @@ export class HeadlessTableEngine {
     private currentHandWentToFlop: boolean = false;
     private currentHandPotSize: number = 0;
     private currentHandPlayers: SeatedPlayer[] = [];
+    // Current hand's dealer seat number (frozen at deal time, not advanced mid-hand)
+    private currentHandDealerSeat: number = 0;
     // Stack sync promise — awaited before loading seats for next hand
     private stackSyncPromise: Promise<void> | null = null;
 
@@ -127,7 +129,7 @@ export class HeadlessTableEngine {
     /**
      * Stop the engine and clean up
      */
-    stop(): void {
+    async stop(): Promise<void> {
         if (!this.running) return;
 
         this.running = false;
@@ -137,6 +139,16 @@ export class HeadlessTableEngine {
         if (this.dealingLoopTimer !== null) {
             clearTimeout(this.dealingLoopTimer as any);
             this.dealingLoopTimer = null;
+        }
+
+        // Await any in-flight stack sync before cleanup (prevents stale DB writes)
+        if (this.stackSyncPromise) {
+            try {
+                await this.stackSyncPromise;
+            } catch {
+                // Sync may fail — we still need to clean up
+            }
+            this.stackSyncPromise = null;
         }
 
         // Clean up hand controller
@@ -370,6 +382,7 @@ export class HeadlessTableEngine {
         // Rotate dealer button properly: cycle through actual seat numbers
         this.dealerSeatIndex = this.dealerSeatIndex % players.length;
         const dealerSeat = players[this.dealerSeatIndex].seat_number;
+        this.currentHandDealerSeat = dealerSeat; // Freeze for broadcast during this hand
         this.dealerSeatIndex++; // Advance for next hand
 
         this.handController = new HandController(config, hcPlayers, dealerSeat);
@@ -450,7 +463,7 @@ export class HeadlessTableEngine {
             community_cards: state.communityCards ?? [],
             current_bet: state.currentBet ?? 0,
             current_player: currentSeatPlayer?.user_id ?? null,
-            dealer_seat: state.dealerSeat ?? this.dealerSeatIndex,
+            dealer_seat: state.dealerSeat ?? this.currentHandDealerSeat,
             stage: state.stage ?? 'preflop',
             players: (state.players ?? []).map((p: any) => ({
                 seat: p.seat,

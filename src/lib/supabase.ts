@@ -116,6 +116,7 @@ export function subscribeToHandState(
         .subscribe();
 
     return () => {
+        channel.unsubscribe().catch(() => {});
         supabase.removeChannel(channel);
     };
 }

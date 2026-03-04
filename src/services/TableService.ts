@@ -202,6 +202,7 @@ class TableService {
                 .eq('table_id', tableId)
                 .eq('seat_number', seatNumber)
                 .eq('user_id', userId)
+                .is('left_at', null)
                 .single();
 
             if (seatError || !seat) {
@@ -216,7 +217,8 @@ class TableService {
                     .from('table_seats')
                     .update({ status: 'sitting_out', leave_pending: true })
                     .eq('table_id', tableId)
-                    .eq('seat_number', seatNumber);
+                    .eq('seat_number', seatNumber)
+                    .is('left_at', null);
 
                 return { success: true, chipsReturned: 0 };
             }

@@ -291,11 +291,12 @@ export const useTableStore = create<TableState>((set, get) => ({
         const unsubHand = tableService.subscribeToHand(
             currentTable.id,
             (hand) => {
+                if (!hand) return;
                 set({
                     currentHand: hand,
-                    communityCards: hand.community_cards,
-                    pot: hand.pot,
-                    currentBet: hand.current_bet,
+                    communityCards: hand.community_cards ?? [],
+                    pot: hand.pot ?? 0,
+                    currentBet: hand.current_bet ?? 0,
                 });
             }
         );

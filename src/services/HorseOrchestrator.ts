@@ -1082,12 +1082,12 @@ class HorseOrchestrator {
                 .update({ status: 'closed', current_players: 0 })
                 .eq('id', tableId);
 
-            // Reset horse statuses
+            // Reset ALL horse statuses to available on shutdown (not just 'seated')
             await supabase
                 .from('profiles')
                 .update({ horse_status: 'available' })
                 .eq('is_horse', true)
-                .eq('horse_status', 'seated');
+                .neq('horse_status', 'available');
 
             table.status = 'stopped';
         }
