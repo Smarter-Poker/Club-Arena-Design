@@ -132,6 +132,23 @@ export class TournamentEngine {
 
     async start(): Promise<void> {
         if (this.running) return;
+
+        // Race condition guard: check if tournament is already RUNNING in DB
+        const { data: statusCheck } = await this.supabase
+            .from('tournaments')
+            .select('status')
+            .eq('id', this.tournamentId)
+            .single();
+
+        if (statusCheck?.status === 'RUNNING') {
+            console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Tournament already RUNNING — skipping start`);
+            return;
+        }
+        if (statusCheck?.status === 'COMPLETED') {
+            console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Tournament already COMPLETED — skipping start`);
+            return;
+        }
+
         this.running = true;
 
         console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Starting tournament...`);
@@ -309,7 +326,10 @@ export class TournamentEngine {
             throw new Error(`Failed to migrate registrations: ${insertError.message}`);
         }
 
-        // Populate local player map
+        // Populate local player map & deduct buy-ins from wallets
+        const clubId = this.tournamentInfo.club_id;
+        const buyInAmount = this.tournamentInfo.buy_in_amount;
+
         for (const r of registrations) {
             this.players.set(r.user_id, {
                 user_id: r.user_id,
@@ -317,9 +337,67 @@ export class TournamentEngine {
                 chips: this.tournamentInfo.starting_chips,
                 status: 'playing',
             });
+
+            // Deduct buy-in from player's wallet (club_members.chip_balance)
+            if (buyInAmount > 0 && clubId) {
+                try {
+                    const { data: memberData } = await this.supabase
+                        .from('club_members')
+                        .select('chip_balance')
+                        .eq('club_id', clubId)
+                        .eq('user_id', r.user_id)
+                        .single();
+
+                    const walletBalance = memberData?.chip_balance || 0;
+                    if (walletBalance >= buyInAmount) {
+                        await this.supabase
+                            .from('club_members')
+                            .update({ chip_balance: walletBalance - buyInAmount })
+                            .eq('club_id', clubId)
+                            .eq('user_id', r.user_id)
+                            .gte('chip_balance', buyInAmount);
+
+                        // Log buy-in transaction
+                        await this.supabase.from('wallet_transactions').insert({
+                            user_id: r.user_id,
+                            wallet_type: 'PLAYER',
+                            amount: -buyInAmount,
+                            type: 'debit',
+                            category: 'buyin',
+                            description: `Tournament buy-in: ${this.tournamentInfo.name}`,
+                            related_entity_id: this.tournamentId,
+                        });
+
+                        await this.supabase.from('chip_transactions').insert({
+                            club_id: clubId,
+                            from_user_id: r.user_id,
+                            amount: buyInAmount,
+                            transaction_type: 'buy_in',
+                            notes: `Tournament buy-in: ${this.tournamentInfo.name}`,
+                        });
+                    } else {
+                        console.warn(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Player ${r.user_id.slice(0, 8)} insufficient funds for buy-in (${walletBalance} < ${buyInAmount})`);
+                    }
+                } catch (err) {
+                    console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Buy-in deduction failed for ${r.user_id.slice(0, 8)}:`, err);
+                }
+            }
         }
 
-        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Migrated ${registrations.length} players`);
+        // Update prize pool based on actual player count (not stale DB value)
+        const actualPrizePool = registrations.length * this.tournamentInfo.buy_in_amount;
+        this.tournamentInfo.prize_pool = actualPrizePool;
+        this.tournamentInfo.current_players = registrations.length;
+
+        await this.supabase
+            .from('tournaments')
+            .update({
+                prize_pool: actualPrizePool,
+                current_players: registrations.length,
+            })
+            .eq('id', this.tournamentId);
+
+        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Migrated ${registrations.length} players — prize pool: $${actualPrizePool.toFixed(2)}`);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -625,17 +703,19 @@ export class TournamentEngine {
         const payoutEntry = this.tournamentInfo.payout_structure.find(p => p.place === position);
         if (!payoutEntry) return 0;
 
-        return Math.floor((this.tournamentInfo.prize_pool * payoutEntry.percentage) / 100 * 100) / 100;
+        return Math.round((this.tournamentInfo.prize_pool * payoutEntry.percentage) / 100 * 100) / 100;
     }
 
     private async creditPrize(userId: string, amount: number): Promise<void> {
         if (!this.tournamentInfo) return;
 
-        // Try direct club_members update (same pattern as leaveTable)
+        const clubId = this.tournamentInfo.club_id;
+
+        // Credit prize to player's club_members.chip_balance
         const { data: member } = await this.supabase
             .from('club_members')
             .select('chip_balance')
-            .eq('club_id', this.tournamentInfo.club_id)
+            .eq('club_id', clubId)
             .eq('user_id', userId)
             .single();
 
@@ -644,8 +724,32 @@ export class TournamentEngine {
             await this.supabase
                 .from('club_members')
                 .update({ chip_balance: newBalance })
-                .eq('club_id', this.tournamentInfo.club_id)
+                .eq('club_id', clubId)
                 .eq('user_id', userId);
+
+            // Log prize in wallet_transactions (full audit trail)
+            await this.supabase.from('wallet_transactions').insert({
+                user_id: userId,
+                wallet_type: 'PLAYER',
+                amount: amount,
+                type: 'credit',
+                category: 'cashout',
+                description: `Tournament prize — ${this.tournamentInfo.name}`,
+                related_entity_id: this.tournamentId,
+            });
+
+            // Log in chip_transactions for club accounting
+            await this.supabase.from('chip_transactions').insert({
+                club_id: clubId,
+                to_user_id: userId,
+                amount: amount,
+                transaction_type: 'cashout',
+                notes: `Tournament prize: ${this.tournamentInfo.name}`,
+            });
+
+            console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Credited $${amount.toFixed(2)} prize to ${userId.slice(0, 8)} (wallet: ${member.chip_balance} → ${newBalance})`);
+        } else {
+            console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] No club membership found for ${userId.slice(0, 8)} — prize $${amount.toFixed(2)} could not be credited`);
         }
     }
 
@@ -691,7 +795,12 @@ export class TournamentEngine {
         const otherTables = this.tables.filter(t => t.tableId !== sourceTable.tableId && t.playerCount > 0);
         if (otherTables.length === 0) return;
 
-        const target = otherTables.reduce((a, b) => a.playerCount < b.playerCount ? a : b);
+        // Select target table with most available room (fewest players = most seats open)
+        const target = otherTables.reduce((a, b) => {
+            const aRoom = 9 - a.playerCount;
+            const bRoom = 9 - b.playerCount;
+            return aRoom > bRoom ? a : b;
+        });
 
         // Move each player
         for (const seat of seats) {

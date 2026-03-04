@@ -398,7 +398,7 @@ export class HeadlessTableEngine {
                 );
 
                 // Auto-rebuy horses with 0 stack
-                this.autoreburyHorses(players).catch(err =>
+                this.autorebuyHorses(players).catch(err =>
                     console.error(`[HeadlessTableEngine:${this.tableId}] Failed to auto-rebuy horses:`, err)
                 );
                 break;
@@ -595,21 +595,114 @@ export class HeadlessTableEngine {
         }
     }
 
-    private async autoreburyHorses(players: SeatedPlayer[]): Promise<void> {
+    private async autorebuyHorses(players: SeatedPlayer[]): Promise<void> {
+        // Only horses (liquidity fleet) get auto-rebuyed — real players must rebuy manually
         const bustHorses = players.filter(p => p.is_horse && p.stack === 0);
+        if (bustHorses.length === 0) return;
+
+        const clubId = this.tableInfo?.club_id;
+        if (!clubId) return;
 
         for (const horse of bustHorses) {
-            // Rebuy to 100BB
-            const rebuyin = this.tableInfo?.big_blind ? this.tableInfo.big_blind * 100 : 200;
-            horse.stack = rebuyin;
+            const rebuyAmount = this.tableInfo?.big_blind ? this.tableInfo.big_blind * 100 : 200;
 
-            await this.supabaseClient
-                .from('table_seats')
-                .update({ stack: rebuyin })
-                .eq('table_id', this.tableId)
-                .eq('user_id', horse.user_id);
+            try {
+                // 1. Check horse's wallet balance (club_members.chip_balance)
+                const { data: memberData, error: memberError } = await this.supabaseClient
+                    .from('club_members')
+                    .select('chip_balance')
+                    .eq('club_id', clubId)
+                    .eq('user_id', horse.user_id)
+                    .single();
 
-            console.log(`[HeadlessTableEngine:${this.tableId}] Rebuyed horse ${horse.username} for ${rebuyin}`);
+                if (memberError || !memberData) {
+                    console.warn(`[HeadlessTableEngine:${this.tableId}] Horse ${horse.username} has no club membership — cannot rebuy`);
+                    await this.markHorseAsLeft(horse.user_id, 'no_membership');
+                    continue;
+                }
+
+                const walletBalance = memberData.chip_balance || 0;
+                if (walletBalance < rebuyAmount) {
+                    console.warn(
+                        `[HeadlessTableEngine:${this.tableId}] Horse ${horse.username} insufficient funds: ` +
+                        `wallet ${walletBalance} < rebuy ${rebuyAmount} — stays busted`
+                    );
+                    await this.markHorseAsLeft(horse.user_id, 'insufficient_funds');
+                    continue;
+                }
+
+                // 2. Deduct from club_members.chip_balance (atomic via RPC or fallback)
+                const newBalance = walletBalance - rebuyAmount;
+                const { error: deductError, count } = await this.supabaseClient
+                    .from('club_members')
+                    .update({ chip_balance: newBalance })
+                    .eq('club_id', clubId)
+                    .eq('user_id', horse.user_id)
+                    .gte('chip_balance', rebuyAmount); // Only deduct if sufficient — prevents race condition
+
+                if (deductError) {
+                    console.error(`[HeadlessTableEngine:${this.tableId}] Wallet deduction failed for ${horse.username}:`, deductError);
+                    continue;
+                }
+
+                // 3. Update stack at table
+                horse.stack = rebuyAmount;
+                await this.supabaseClient
+                    .from('table_seats')
+                    .update({ stack: rebuyAmount })
+                    .eq('table_id', this.tableId)
+                    .eq('user_id', horse.user_id);
+
+                // 4. Log transaction in wallet_transactions (full audit trail)
+                await this.supabaseClient.from('wallet_transactions').insert({
+                    user_id: horse.user_id,
+                    wallet_type: 'PLAYER',
+                    amount: -rebuyAmount,
+                    type: 'debit',
+                    category: 'buyin',
+                    description: `Auto-rebuy ${rebuyAmount} chips (${this.tableInfo?.big_blind || 2}BB x100) at ${this.tableInfo?.small_blind}/${this.tableInfo?.big_blind}`,
+                    table_id: this.tableId,
+                }).then(({ error: txError }) => {
+                    if (txError) console.error(`[HeadlessTableEngine:${this.tableId}] Transaction log failed:`, txError);
+                });
+
+                // 5. Also log in chip_transactions for club-level accounting
+                await this.supabaseClient.from('chip_transactions').insert({
+                    club_id: clubId,
+                    to_user_id: horse.user_id,
+                    amount: rebuyAmount,
+                    transaction_type: 'buy_in',
+                    notes: `Auto-rebuy at table ${this.tableId} (${this.tableInfo?.small_blind}/${this.tableInfo?.big_blind})`,
+                }).then(({ error: chipTxError }) => {
+                    if (chipTxError) console.error(`[HeadlessTableEngine:${this.tableId}] Chip transaction log failed:`, chipTxError);
+                });
+
+                console.log(
+                    `[HeadlessTableEngine:${this.tableId}] Auto-rebuy: ${horse.username} → ${rebuyAmount} chips ` +
+                    `(wallet: ${walletBalance} → ${newBalance})`
+                );
+            } catch (err) {
+                console.error(`[HeadlessTableEngine:${this.tableId}] Auto-rebuy failed for ${horse.username}:`, err);
+            }
+        }
+    }
+
+    /**
+     * Mark a horse as having left the table (set left_at timestamp)
+     * Called when a horse runs out of chips and can't rebuy from wallet
+     */
+    private async markHorseAsLeft(userId: string, reason: string): Promise<void> {
+        const { error } = await this.supabaseClient
+            .from('table_seats')
+            .update({ left_at: new Date().toISOString() })
+            .eq('table_id', this.tableId)
+            .eq('user_id', userId)
+            .is('left_at', null);
+
+        if (error) {
+            console.error(`[HeadlessTableEngine:${this.tableId}] Failed to mark horse as left:`, error);
+        } else {
+            console.log(`[HeadlessTableEngine:${this.tableId}] Horse ${userId} left table — reason: ${reason}`);
         }
     }
 
