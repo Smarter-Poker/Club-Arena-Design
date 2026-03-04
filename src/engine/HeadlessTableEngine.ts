@@ -15,7 +15,7 @@
  * Multiple tables can deal simultaneously.
  */
 
-import { supabase } from '../lib/supabase';
+import { supabase, broadcastHandState } from '../lib/supabase';
 import { HandController, type HandConfig, type HandEvent } from './HandController';
 import { HandPersistence } from '../services/HandPersistenceService';
 import { HydraService, type HorseDecision } from '../services/HydraService';
@@ -429,14 +429,60 @@ export class HeadlessTableEngine {
         });
     }
 
+    /**
+     * Broadcast the current hand state to all TablePage subscribers via Realtime.
+     * Called after every hand event so the UI stays in sync.
+     */
+    private broadcastCurrentState(): void {
+        if (!this.handController || !this.tableInfo) return;
+
+        const state = this.handController.getState();
+
+        // Resolve current player seat number to user_id
+        const currentSeatPlayer = state.players.find(
+            (p: any) => p.seat === state.currentPlayerSeat
+        );
+
+        broadcastHandState(this.tableId, {
+            table_id: this.tableId,
+            hand_number: this.handCount,
+            pot: state.pot ?? 0,
+            community_cards: state.communityCards ?? [],
+            current_bet: state.currentBet ?? 0,
+            current_player: currentSeatPlayer?.user_id ?? null,
+            dealer_seat: state.dealerSeat ?? this.dealerSeatIndex,
+            stage: state.stage ?? 'preflop',
+            players: (state.players ?? []).map((p: any) => ({
+                seat: p.seat,
+                user_id: p.user_id,
+                username: p.username,
+                stack: p.stack,
+                bet: p.bet ?? 0,
+                cards: p.cards ?? [],
+                is_folded: p.is_folded ?? false,
+                is_all_in: p.is_all_in ?? false,
+                is_sitting_out: p.is_sitting_out ?? false,
+            })),
+        });
+    }
+
     private handleHandEvent(event: HandEvent, players: SeatedPlayer[]): void {
         switch (event.type) {
             case 'HAND_START':
+                // Broadcast initial hand state
+                this.broadcastCurrentState();
                 break;
 
             case 'TURN_CHANGE':
                 // Horse AI: when it's a player's turn, make their decision
                 this.handleTurnChange(event, players);
+                // Broadcast updated state (shows whose turn it is)
+                this.broadcastCurrentState();
+                break;
+
+            case 'PLAYER_ACTION':
+                // Broadcast after each player action so UI updates bets/stacks
+                this.broadcastCurrentState();
                 break;
 
             case 'COMMUNITY_CARDS':
@@ -444,6 +490,8 @@ export class HeadlessTableEngine {
                 if (event.stage === 'flop') {
                     this.currentHandWentToFlop = true;
                 }
+                // Broadcast new community cards
+                this.broadcastCurrentState();
                 break;
 
             case 'WINNERS':
@@ -459,6 +507,8 @@ export class HeadlessTableEngine {
                         }
                     }
                 }
+                // Broadcast winners
+                this.broadcastCurrentState();
                 break;
 
             case 'HAND_COMPLETE':

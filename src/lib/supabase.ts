@@ -73,6 +73,53 @@ export function subscribeToTable<T>(
     };
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// REALTIME BROADCAST — Ephemeral hand state (no database table needed)
+// ══════════════════════════════════════════════════════════════════════════════
+// HeadlessTableEngine broadcasts hand state updates to a channel per table.
+// useTableStore subscribes to the same channel to receive live game data.
+// This is much faster than postgres_changes and doesn't require a hand_states table.
+
+/**
+ * Broadcast hand state to all subscribers for a given table.
+ * Called by HeadlessTableEngine on every hand event.
+ */
+export function broadcastHandState(
+    tableId: string,
+    handState: Record<string, unknown>
+): void {
+    const channelName = `hand-state:${tableId}`;
+    const channel = supabase.channel(channelName);
+    channel.send({
+        type: 'broadcast',
+        event: 'hand_state',
+        payload: handState,
+    }).catch((err: unknown) => {
+        console.warn(`[Broadcast] Failed to send hand state for ${tableId}:`, err);
+    });
+}
+
+/**
+ * Subscribe to hand state broadcasts for a given table.
+ * Returns an unsubscribe function.
+ */
+export function subscribeToHandState(
+    tableId: string,
+    callback: (handState: Record<string, unknown>) => void
+): () => void {
+    const channelName = `hand-state:${tableId}`;
+    const channel = supabase
+        .channel(channelName)
+        .on('broadcast', { event: 'hand_state' }, (payload) => {
+            callback(payload.payload as Record<string, unknown>);
+        })
+        .subscribe();
+
+    return () => {
+        supabase.removeChannel(channel);
+    };
+}
+
 // Export type-safe database interface
 export type SupabaseClient = typeof supabase;
 
