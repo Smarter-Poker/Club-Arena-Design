@@ -692,7 +692,7 @@ class AgentServiceClass {
                 from_user_id: fromAgent.userId,
                 to_user_id: toAgent.userId,
                 amount,
-                type: 'agent_transfer',
+                transaction_type: 'agent_transfer',
                 notes: reason || `Agent transfer: ${fromAgent.displayName || fromAgentId} → ${toAgent.displayName || toAgentId}`,
             })
             .select('id')
