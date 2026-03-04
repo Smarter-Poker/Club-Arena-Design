@@ -222,19 +222,48 @@ class TableService {
 
             const chipsToReturn = seat.stack || 0;
 
-            // Return chips to player wallet
+            // Return chips to player wallet (credit club_members.chip_balance)
             if (chipsToReturn > 0) {
-                const { error: walletError } = await supabase.rpc('add_to_player_wallet', {
-                    p_user_id: userId,
-                    p_amount: chipsToReturn,
-                    p_description: 'Chips cashed out from table'
-                });
+                // Get club_id from table for chip credit
+                const { data: tableData } = await supabase
+                    .from('tables')
+                    .select('club_id')
+                    .eq('id', tableId)
+                    .single();
 
-                if (walletError) {
-                    console.error('[TableService] Error returning chips:', walletError);
+                const clubId = tableData?.club_id;
+                if (!clubId) {
+                    console.error('[TableService] Cannot return chips — table has no club_id');
+                    return { success: false, chipsReturned: 0 };
+                }
+
+                // Credit chips back to the player's club membership balance
+                const { data: memberData, error: memberError } = await supabase
+                    .from('club_members')
+                    .select('chip_balance')
+                    .eq('club_id', clubId)
+                    .eq('user_id', userId)
+                    .single();
+
+                if (memberError || !memberData) {
+                    console.error('[TableService] Cannot find club membership:', memberError);
+                    return { success: false, chipsReturned: 0 };
+                }
+
+                const newBalance = (memberData.chip_balance || 0) + chipsToReturn;
+                const { error: updateError } = await supabase
+                    .from('club_members')
+                    .update({ chip_balance: newBalance })
+                    .eq('club_id', clubId)
+                    .eq('user_id', userId);
+
+                if (updateError) {
+                    console.error('[TableService] Error crediting chips back:', updateError);
                     // CRITICAL: Do NOT delete the seat if chip return failed — chips would be lost
                     return { success: false, chipsReturned: 0 };
                 }
+
+                console.log(`[TableService] Returned ${chipsToReturn} chips to wallet for user ${userId}`);
             }
 
             // Clear the seat

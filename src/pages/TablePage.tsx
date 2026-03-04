@@ -1199,26 +1199,9 @@ export default function TablePage() {
                     });
                     playWinSound();
 
-                    // Log wallet transactions for each winner (fire-and-forget)
-                    {
-                        const winHandId = handPersistenceService.getCurrentHandId();
-                        for (const winner of event.winners) {
-                            if (winner.amount > 0) {
-                                supabase.from('wallet_transactions').insert({
-                                    user_id: winner.userId,
-                                    wallet_type: 'PLAYER',
-                                    amount: winner.amount,
-                                    type: 'credit',
-                                    category: 'settlement',
-                                    description: `Hand win — pot $${winner.amount.toFixed(2)}`,
-                                    table_id: tableId || null,
-                                    hand_id: winHandId || null,
-                                }).then(({ error: txErr }) => {
-                                    if (txErr) console.warn('[Wallet] Win transaction failed:', txErr.message);
-                                });
-                            }
-                        }
-                    }
+                    // NOTE: No wallet transactions here — chips stay on the table.
+                    // Wallet transfers only happen on buy-in (debit) and leave-table (credit).
+                    // Winners' chips are added to their table stack via the state update above.
 
                     // Trigger achievements for winners
                     for (const winner of event.winners) {
