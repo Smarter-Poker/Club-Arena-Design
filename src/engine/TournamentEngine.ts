@@ -140,11 +140,11 @@ export class TournamentEngine {
             .eq('id', this.tournamentId)
             .single();
 
-        if (statusCheck?.status === 'RUNNING') {
+        if (statusCheck?.status === 'running') {
             console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Tournament already RUNNING — skipping start`);
             return;
         }
-        if (statusCheck?.status === 'COMPLETED') {
+        if (statusCheck?.status === 'completed') {
             console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Tournament already COMPLETED — skipping start`);
             return;
         }
@@ -289,7 +289,7 @@ export class TournamentEngine {
             console.warn(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] No registrations found — marking COMPLETED`);
             await this.supabase
                 .from('tournaments')
-                .update({ status: 'COMPLETED', current_players: 0 })
+                .update({ status: 'completed', current_players: 0 })
                 .eq('id', this.tournamentId);
             throw new Error(`No registrations found for tournament ${this.tournamentId}`);
         }
@@ -299,7 +299,7 @@ export class TournamentEngine {
             console.warn(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Only ${registrations.length} registration — marking COMPLETED`);
             await this.supabase
                 .from('tournaments')
-                .update({ status: 'COMPLETED', current_players: registrations.length })
+                .update({ status: 'completed', current_players: registrations.length })
                 .eq('id', this.tournamentId);
             throw new Error(`Not enough players (${registrations.length}) for tournament ${this.tournamentId}`);
         }
@@ -515,7 +515,7 @@ export class TournamentEngine {
         const { error } = await this.supabase
             .from('tournaments')
             .update({
-                status: 'RUNNING',
+                status: 'running',
                 started_at: now,
                 current_level: 1,
             })
@@ -907,7 +907,7 @@ export class TournamentEngine {
         await this.supabase
             .from('tournaments')
             .update({
-                status: 'COMPLETED',
+                status: 'completed',
                 ended_at: new Date().toISOString(),
             })
             .eq('id', this.tournamentId);

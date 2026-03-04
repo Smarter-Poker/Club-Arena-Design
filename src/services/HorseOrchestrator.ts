@@ -749,7 +749,7 @@ class HorseOrchestrator {
                 .update({
                     current_players: registered,
                     guaranteed_prize: prizePool,
-                    status: 'REGISTERING',
+                    status: 'registering',
                 })
                 .eq('id', tournament.id);
 
@@ -810,7 +810,7 @@ class HorseOrchestrator {
                     starting_chips: config.startingStack,
                     max_players: config.maxPlayers,
                     current_players: 0,
-                    status: 'REGISTERING',
+                    status: 'registering',
                     blind_structure: JSON.stringify(config.blindStructure),
                     payout_structure: JSON.stringify(config.payoutStructure),
                     late_reg_mins: 0,
@@ -843,7 +843,7 @@ class HorseOrchestrator {
                 .update({
                     current_players: registered,
                     guaranteed_prize: prizePool,
-                    status: registered >= config.minPlayers ? 'RUNNING' : 'REGISTERING',
+                    status: registered >= config.minPlayers ? 'running' : 'registering',
                 })
                 .eq('id', sng.id);
 
@@ -901,7 +901,7 @@ class HorseOrchestrator {
                     starting_chips: config.startingStack,
                     max_players: config.maxPlayers,
                     current_players: 0,
-                    status: 'REGISTERING',
+                    status: 'registering',
                     blind_structure: JSON.stringify(config.blindStructure),
                     payout_structure: JSON.stringify([{ position: 1, percentage: 100 }]),
                     late_reg_mins: 0,
@@ -932,7 +932,7 @@ class HorseOrchestrator {
                 .from('tournaments')
                 .update({
                     current_players: registered,
-                    status: registered >= config.minPlayers ? 'RUNNING' : 'REGISTERING',
+                    status: registered >= config.minPlayers ? 'running' : 'registering',
                 })
                 .eq('id', spin.id);
 

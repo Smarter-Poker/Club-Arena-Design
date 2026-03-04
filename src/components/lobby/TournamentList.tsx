@@ -17,7 +17,7 @@ import './TournamentList.css';
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export type TournamentStatus = 'SCHEDULED' | 'REGISTERING' | 'LATE_REG' | 'RUNNING' | 'BREAK' | 'FINAL_TABLE' | 'COMPLETED' | 'CANCELLED';
+export type TournamentStatus = 'scheduled' | 'registering' | 'late_reg' | 'running' | 'break' | 'final_table' | 'completed' | 'cancelled';
 export type TournamentType = 'MTT' | 'SNG' | 'SATELLITE' | 'FREEROLL';
 
 export interface Tournament {
@@ -125,7 +125,7 @@ function TournamentRow({
         return () => clearInterval(interval);
     }, [tournament.startTime]);
 
-    const canRegister = ['SCHEDULED', 'REGISTERING', 'LATE_REG'].includes(tournament.status);
+    const canRegister = ['scheduled', 'registering', 'late_reg'].includes(tournament.status);
     const isFull = tournament.registeredPlayers >= tournament.maxPlayers;
     const isGuaranteed = tournament.guaranteed > 0;
     const totalBuyIn = tournament.buyIn + tournament.fee;
@@ -133,12 +133,12 @@ function TournamentRow({
     // Status badge color
     const statusColor = useMemo(() => {
         switch (tournament.status) {
-            case 'REGISTERING': return '#3FB950';
-            case 'LATE_REG': return '#FFB800';
-            case 'RUNNING': return '#1877F2';
-            case 'FINAL_TABLE': return '#A855F7';
-            case 'COMPLETED': return '#6E7681';
-            case 'CANCELLED': return '#F85149';
+            case 'registering': return '#3FB950';
+            case 'late_reg': return '#FFB800';
+            case 'running': return '#1877F2';
+            case 'final_table': return '#A855F7';
+            case 'completed': return '#6E7681';
+            case 'cancelled': return '#F85149';
             default: return '#8B949E';
         }
     }, [tournament.status]);
@@ -217,7 +217,7 @@ function TournamentRow({
                         Unregister
                     </button>
                 )}
-                {isRegistered && tournament.status === 'RUNNING' && (
+                {isRegistered && tournament.status === 'running' && (
                     <button className="tournament-row__open-btn" onClick={onViewDetails}>
                         Open
                     </button>
@@ -245,9 +245,9 @@ export function TournamentList({
 }: TournamentListProps) {
     // Group tournaments by status
     const groupedTournaments = useMemo(() => {
-        const running = tournaments.filter((t) => ['RUNNING', 'BREAK', 'FINAL_TABLE'].includes(t.status));
-        const registering = tournaments.filter((t) => ['SCHEDULED', 'REGISTERING', 'LATE_REG'].includes(t.status));
-        const completed = tournaments.filter((t) => ['COMPLETED', 'CANCELLED'].includes(t.status));
+        const running = tournaments.filter((t) => ['running', 'break', 'final_table'].includes(t.status));
+        const registering = tournaments.filter((t) => ['scheduled', 'registering', 'late_reg'].includes(t.status));
+        const completed = tournaments.filter((t) => ['completed', 'cancelled'].includes(t.status));
 
         return { running, registering, completed };
     }, [tournaments]);

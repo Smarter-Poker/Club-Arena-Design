@@ -2150,6 +2150,38 @@ export default function TablePage() {
                                 // Lock chips in escrow for table buy-in
                                 await WalletService.lockForBuyIn(userId, tableId, amount);
                                 console.log('[BuyIn] lockForBuyIn SUCCESS');
+
+                                // ─── INSERT INTO table_seats (critical: engine reads from DB) ───
+                                const { error: seatError } = await supabase
+                                    .from('table_seats')
+                                    .insert({
+                                        table_id: tableId,
+                                        seat_number: selectedSeat,
+                                        user_id: userId,
+                                        stack: amount,
+                                        status: 'active',
+                                        auto_rebuy: autoRebuy || false,
+                                    });
+
+                                if (seatError) {
+                                    console.error('[BuyIn] table_seats insert FAILED:', seatError);
+                                    // Refund chips if seat creation fails — don't leave chips locked
+                                    await WalletService.unlockFromTable(userId, tableId, amount);
+                                    throw new Error('Failed to seat: ' + seatError.message);
+                                }
+                                console.log('[BuyIn] table_seats INSERT success, seat:', selectedSeat);
+
+                                // Update current_players count on the table
+                                const { data: tableData } = await supabase
+                                    .from('tables')
+                                    .select('current_players')
+                                    .eq('id', tableId)
+                                    .single();
+                                await supabase
+                                    .from('tables')
+                                    .update({ current_players: (tableData?.current_players || 0) + 1 })
+                                    .eq('id', tableId);
+
                                 setAccountBalance(prev => prev + amount);
 
                                 // Add player to local table state

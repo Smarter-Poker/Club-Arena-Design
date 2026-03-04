@@ -223,8 +223,8 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
     const tourneyType = detectTourneyType(tournament.name);
     const typeLabel = getTourneyTypeLabel(tourneyType);
     const isFreeroll = tournament.buy_in_amount === 0;
-    const isLive = tournament.status === 'RUNNING';
-    const isReg = tournament.status === 'REGISTERING';
+    const isLive = tournament.status === 'running';
+    const isReg = tournament.status === 'registering';
     const hasGTD = tournament.guaranteed_prize && tournament.guaranteed_prize > 0;
 
     return (
