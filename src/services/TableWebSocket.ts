@@ -93,7 +93,7 @@ export class TableWebSocket {
     private reconnectAttempt = 0;
     private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
-    private lastSequence = 0;
+    private lastSequence = -1;
     private pendingEvents: GameEvent[] = [];
 
     constructor(tableId: string, userId: string, username: string) {

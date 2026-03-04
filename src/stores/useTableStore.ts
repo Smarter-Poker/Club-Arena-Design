@@ -213,13 +213,16 @@ export const useTableStore = create<TableState>((set, get) => ({
                     const newSeats = [...state.seats];
                     const seat = newSeats[mySeat - 1];
                     if (seat) {
-                        newSeats[mySeat - 1] = { ...seat, bet: amount, stack: seat.stack - amount };
+                        // Clamp to available stack to prevent negative balance
+                        const betAmount = Math.min(amount, seat.stack);
+                        newSeats[mySeat - 1] = { ...seat, bet: betAmount, stack: seat.stack - betAmount };
                     }
+                    const effectiveAmount = Math.min(amount, myStack);
                     return {
                         seats: newSeats,
-                        pot: pot + amount,
+                        pot: pot + effectiveAmount,
                         currentBet: amount,
-                        myStack: myStack - amount,
+                        myStack: myStack - effectiveAmount,
                         isMyTurn: false,
                     };
                 });

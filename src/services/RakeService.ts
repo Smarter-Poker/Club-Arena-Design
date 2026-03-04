@@ -379,28 +379,40 @@ export const RakeService = {
             };
         });
 
-        // Update each player's rake_generated in club_members
-        // NOTE: Read-modify-write pattern — low race risk since hands settle sequentially per table.
-        // TODO: Replace with atomic RPC `increment_rake_generated` for multi-table horse safety.
+        // Update each player's rake_generated in club_members.
+        // Try atomic RPC first, fall back to read-modify-write if RPC doesn't exist.
         const clubId = players[0]?.clubId;
         if (clubId) {
-            // Run sequentially to minimize race window for same player across tables
             for (const attr of attributions) {
                 try {
-                    const { data: member } = await supabase
-                        .from('club_members')
-                        .select('rake_generated')
-                        .eq('club_id', clubId)
-                        .eq('user_id', attr.userId)
-                        .maybeSingle();
+                    // Attempt atomic increment via RPC (safest for multi-table horses)
+                    let updated = false;
+                    try {
+                        const { error: rpcError } = await supabase.rpc('increment_rake_generated', {
+                            p_club_id: clubId,
+                            p_user_id: attr.userId,
+                            p_amount: attr.rakeCredit,
+                        });
+                        updated = !rpcError;
+                    } catch { /* RPC may not exist */ }
 
-                    if (member) {
-                        const newRake = (member.rake_generated || 0) + attr.rakeCredit;
-                        await supabase
+                    // Fallback: read-modify-write (acceptable since rake credit is additive)
+                    if (!updated) {
+                        const { data: member } = await supabase
                             .from('club_members')
-                            .update({ rake_generated: newRake })
+                            .select('rake_generated')
                             .eq('club_id', clubId)
-                            .eq('user_id', attr.userId);
+                            .eq('user_id', attr.userId)
+                            .maybeSingle();
+
+                        if (member) {
+                            const newRake = (member.rake_generated || 0) + attr.rakeCredit;
+                            await supabase
+                                .from('club_members')
+                                .update({ rake_generated: newRake })
+                                .eq('club_id', clubId)
+                                .eq('user_id', attr.userId);
+                        }
                     }
                 } catch (e) {
                     console.warn(`[RakeService] Failed to update rake_generated for ${attr.userId.substring(0, 8)}:`, e);
