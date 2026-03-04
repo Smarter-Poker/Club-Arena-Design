@@ -15,7 +15,7 @@ import EliminationOverlay from '../components/tournament/EliminationOverlay';
 import HandReplayViewer from '../components/gameplay/HandReplayViewer';
 import { tableService } from '../services/TableService';
 import TournamentBreakScreen from '../components/table/TournamentBreakScreen';
-import { WalletService } from '../services/WalletService';
+// WalletService not needed — tournament refunds go through club_members.chip_balance
 import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 
@@ -198,14 +198,8 @@ export default function TournamentPage() {
     const handleUnregister = async () => {
         if (!selectedTournament) return;
         try {
+            // unregisterPlayer handles the full refund to club_members.chip_balance
             await tournamentService.unregisterPlayer(selectedTournament.id, currentUser.id);
-
-            // Refund buy-in back to player's wallet
-            await WalletService.unlockFromTable(
-                currentUser.id,
-                selectedTournament.id,
-                selectedTournament.buy_in_amount
-            );
 
             setIsRegistered(false);
 

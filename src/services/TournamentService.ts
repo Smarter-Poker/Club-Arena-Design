@@ -457,18 +457,51 @@ class TournamentService {
             throw new Error('Cannot unregister after tournament started');
         }
 
-        // Calculate refund amount (buy-in + fee)
+        // Calculate refund amount (buy-in + fee — return everything that was deducted)
         const refundAmount = (tournament.buy_in_amount || 0) + (tournament.buy_in_fee || 0);
+        const clubId = tournament.club_id;
+        if (!clubId) throw new Error('Tournament has no club — cannot refund');
 
-        // Refund to player wallet — MUST succeed before unregistering
-        const { error: refundError } = await supabase.rpc('add_to_player_wallet', {
-            p_user_id: userId,
-            p_amount: refundAmount,
-        });
+        // Refund to club_members.chip_balance — MUST succeed before unregistering
+        // Use fn_add_chips RPC (atomic, matches how registration deducts from chip_balance)
+        let refunded = false;
+        try {
+            const { error: rpcError } = await supabase.rpc('fn_add_chips', {
+                p_user_id: userId,
+                p_club_id: clubId,
+                p_amount: refundAmount,
+            });
+            refunded = !rpcError;
+            if (rpcError) {
+                console.warn('[TournamentService] RPC fn_add_chips failed, trying fallback:', rpcError.message);
+            }
+        } catch {
+            // RPC may not exist — use fallback
+        }
 
-        if (refundError) {
-            console.error('[TournamentService] Refund failed, aborting unregistration:', refundError);
-            throw new Error('Refund failed — cannot unregister without refunding buy-in');
+        if (!refunded) {
+            // Fallback: read-modify-write with guard
+            const { data: memberData } = await supabase
+                .from('club_members')
+                .select('chip_balance')
+                .eq('club_id', clubId)
+                .eq('user_id', userId)
+                .single();
+
+            if (!memberData) {
+                throw new Error('Refund failed — player not found in club');
+            }
+
+            const { error: updateError } = await supabase
+                .from('club_members')
+                .update({ chip_balance: (memberData.chip_balance || 0) + refundAmount })
+                .eq('club_id', clubId)
+                .eq('user_id', userId);
+
+            if (updateError) {
+                console.error('[TournamentService] Refund failed, aborting unregistration:', updateError);
+                throw new Error('Refund failed — cannot unregister without refunding buy-in');
+            }
         }
 
         await supabase

@@ -1319,6 +1319,7 @@ export default function TablePage() {
                                     .update({ stack: p.stack })
                                     .eq('table_id', tableId)
                                     .eq('seat_number', seatIdx + 1)
+                                    .is('left_at', null)
                                     .then(({ error: syncErr }) => {
                                         if (syncErr) console.warn('[Seats] Stack sync failed:', syncErr.message);
                                     });
