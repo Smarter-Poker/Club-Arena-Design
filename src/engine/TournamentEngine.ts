@@ -408,7 +408,8 @@ export class TournamentEngine {
                 stack: activePlayers[i].chips,
                 is_sitting_out: false,
                 is_away: false,
-                horse_id: activePlayers[i].user_id, // For horse AI
+                // Note: horse_id omitted — tournament players are registered users, not horses
+                // The horse_id FK constraint would reject non-horse user_ids
             });
         }
 
