@@ -19,6 +19,7 @@ import { supabase } from '../lib/supabase';
 import { HandController, type HandConfig, type HandEvent } from './HandController';
 import { handPersistenceService } from '../services/HandPersistenceService';
 import { HydraService, type HorseDecision } from '../services/HydraService';
+import { RakeService, type DealtInPlayer } from '../services/RakeService';
 import { workerTimeout } from '../hooks/useTabKeepAlive';
 import type { SeatPlayer, GameVariant } from '../types/database.types';
 
@@ -60,6 +61,10 @@ export class HeadlessTableEngine {
     private seatedPlayers: SeatedPlayer[] = [];
     private horseAIHandlers: Map<string, () => void> = new Map();
     private unsubscribeHands: (() => void)[] = [];
+    // Per-hand rake tracking
+    private currentHandWentToFlop: boolean = false;
+    private currentHandPotSize: number = 0;
+    private currentHandPlayers: SeatedPlayer[] = [];
 
     constructor(tableId: string, supabaseClient: typeof supabase) {
         this.tableId = tableId;
@@ -253,6 +258,11 @@ export class HeadlessTableEngine {
         this.handCount++;
         const handNumber = this.handCount;
 
+        // Reset per-hand rake tracking
+        this.currentHandWentToFlop = false;
+        this.currentHandPotSize = 0;
+        this.currentHandPlayers = players;
+
         console.log(`[HeadlessTableEngine:${this.tableId}] Dealing hand ${handNumber} with ${players.length} players`);
 
         // Convert to SeatPlayer format
@@ -318,13 +328,18 @@ export class HeadlessTableEngine {
                 break;
 
             case 'COMMUNITY_CARDS':
-                // Persistence service handles this
+                // Track if we reached the flop for No Flop No Drop
+                if (event.stage === 'flop') {
+                    this.currentHandWentToFlop = true;
+                }
                 break;
 
             case 'WINNERS':
-                // Update player stacks in local array
+                // Capture final pot size for rake calculation
                 if (this.handController) {
                     const state = this.handController.getState();
+                    this.currentHandPotSize = state.pot;
+                    // Update player stacks in local array
                     for (const enginePlayer of state.players) {
                         const localPlayer = players.find(p => p.user_id === enginePlayer.user_id);
                         if (localPlayer) {
@@ -338,6 +353,11 @@ export class HeadlessTableEngine {
                 // Sync stacks back to database
                 this.syncStacksToDatabase(players).catch(err =>
                     console.error(`[HeadlessTableEngine:${this.tableId}] Failed to sync stacks:`, err)
+                );
+
+                // Execute rake waterfall (fire-and-forget, non-blocking)
+                this.executeRakeWaterfall(players).catch(err =>
+                    console.error(`[HeadlessTableEngine:${this.tableId}] Rake waterfall error:`, err)
                 );
 
                 // Auto-rebuy horses with 0 stack
@@ -457,6 +477,72 @@ export class HeadlessTableEngine {
                 .eq('user_id', horse.user_id);
 
             console.log(`[HeadlessTableEngine:${this.tableId}] Rebuyed horse ${horse.username} for ${rebuyin}`);
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // PRIVATE: RAKE WATERFALL
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    private async executeRakeWaterfall(players: SeatedPlayer[]): Promise<void> {
+        if (!this.tableInfo) return;
+
+        const potSize = this.currentHandPotSize;
+        const wentToFlop = this.currentHandWentToFlop;
+
+        // No Flop, No Drop — skip entirely if pot never reached flop
+        if (!wentToFlop) {
+            return;
+        }
+
+        // Minimum pot threshold — don't rake tiny pots
+        if (potSize <= 0) {
+            return;
+        }
+
+        // Look up the most recent hand for this table to get the DB hand ID
+        const { data: latestHand, error: handError } = await this.supabaseClient
+            .from('hands')
+            .select('id')
+            .eq('table_id', this.tableId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+        const handId = latestHand?.id || crypto.randomUUID();
+        if (handError) {
+            console.warn(`[HeadlessTableEngine:${this.tableId}] Could not fetch hand ID for rake, using generated UUID`);
+        }
+
+        // Build dealt-in player list for rake attribution
+        const dealtInPlayers: DealtInPlayer[] = players.map(p => ({
+            userId: p.user_id,
+            clubId: this.tableInfo!.club_id,
+            isSittingOut: false, // All players in HeadlessTableEngine are active
+            hasCards: true,      // All dealt players have cards
+            wentToFlop,
+        }));
+
+        try {
+            const result = await RakeService.executeWaterfall({
+                handId,
+                tableId: this.tableId,
+                clubId: this.tableInfo.club_id,
+                smallBlind: this.tableInfo.small_blind,
+                bigBlind: this.tableInfo.big_blind,
+                potSize,
+                wentToFlop,
+                players: dealtInPlayers,
+            });
+
+            if (result.calculation.cappedRake > 0) {
+                console.log(
+                    `[HeadlessTableEngine:${this.tableId}] Rake: $${result.calculation.cappedRake.toFixed(2)} ` +
+                    `(pot $${potSize.toFixed(2)}, BBJ $${result.calculation.bbjDrop.toFixed(2)})`
+                );
+            }
+        } catch (err) {
+            console.error(`[HeadlessTableEngine:${this.tableId}] RakeService.executeWaterfall failed:`, err);
         }
     }
 
