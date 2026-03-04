@@ -1,17 +1,18 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * DEALER PAGE — Admin Multi-Table Dealer Dashboard
+ * DEALER PAGE — Admin Multi-Table Dealer & Tournament Dashboard
  * ═══════════════════════════════════════════════════════════════════════════════
  *
- * React page that orchestrates simultaneous dealing across ALL tables with 2+ players.
+ * Orchestrates simultaneous dealing across ALL cash tables + tournament tables.
  *
- * Features:
- * - Auto-discovers tables with seated players
- * - Starts HeadlessTableEngine for each table
- * - Real-time monitoring dashboard
- * - Shows table stakes, player count, hands dealt, engine status
- * - Auto-refresh every 5 seconds
- * - Uses useTabKeepAlive to prevent Chrome throttling
+ * Cash Games:
+ * - Auto-discovers tables with 2+ seated players
+ * - Starts HeadlessTableEngine for each
+ *
+ * Tournaments:
+ * - Auto-discovers REGISTERING tournaments past their start time
+ * - Starts TournamentEngine for each (creates tables, seats players, deals)
+ * - Shows tournament status: blind level, remaining players, hands dealt
  *
  * Route: /dealer (no AuthGuard — this is an admin tool)
  */
@@ -19,7 +20,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { HeadlessTableEngine } from '../engine/HeadlessTableEngine';
+import { TournamentEngine } from '../engine/TournamentEngine';
 import { useTabKeepAlive } from '../hooks/useTabKeepAlive';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════════════════════════════════════════════
 
 interface TableEngine {
     tableId: string;
@@ -33,24 +39,40 @@ interface TableEngine {
     error?: string;
 }
 
+interface TournamentStatus {
+    tournamentId: string;
+    name: string;
+    engine: TournamentEngine;
+    playerCount: number;
+    tableCount: number;
+    handCount: number;
+    currentLevel: number;
+    isRunning: boolean;
+    error?: string;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
+
 export default function DealerPage() {
-    // Prevent Chrome from throttling this tab
     useTabKeepAlive();
 
     const [engines, setEngines] = useState<TableEngine[]>([]);
+    const [tournaments, setTournaments] = useState<TournamentStatus[]>([]);
     const [loading, setLoading] = useState(true);
     const [lastRefresh, setLastRefresh] = useState(new Date());
     const enginesRef = useRef<Map<string, HeadlessTableEngine>>(new Map());
+    const tournamentsRef = useRef<Map<string, TournamentEngine>>(new Map());
 
     /**
-     * Discover all tables with 2+ seated players
+     * Discover all cash tables with 2+ seated players (exclude tournament tables)
      */
-    const discoverTables = async () => {
+    const discoverTables = async (): Promise<TableEngine[]> => {
         try {
-            // Query all tables
             const { data: allTables, error: tableError } = await supabase
                 .from('tables')
-                .select('id, name, small_blind, big_blind, game_variant');
+                .select('id, name, small_blind, big_blind, game_variant, game_type, tournament_id');
 
             if (tableError || !allTables) {
                 console.error('Failed to load tables:', tableError);
@@ -59,8 +81,10 @@ export default function DealerPage() {
 
             const tableList: TableEngine[] = [];
 
-            // For each table, count seated players
-            for (const table of allTables) {
+            // Filter out tournament tables — they're managed by TournamentEngine
+            const cashTables = allTables.filter(t => !t.tournament_id && t.game_type !== 'tournament');
+
+            for (const table of cashTables) {
                 const { data: seats, error: seatError } = await supabase
                     .from('table_seats')
                     .select('user_id')
@@ -68,7 +92,6 @@ export default function DealerPage() {
                     .is('left_at', null);
 
                 if (!seatError && seats && seats.length >= 2) {
-                    // Get or create engine for this table
                     let engine = enginesRef.current.get(table.id);
                     let isNewEngine = false;
 
@@ -89,16 +112,12 @@ export default function DealerPage() {
                         isRunning: engine.isRunning(),
                     });
 
-                    // Auto-start if this is a new engine
                     if (isNewEngine && !engine.isRunning()) {
                         console.log(`[DealerPage] Starting engine for ${table.name}`);
                         engine.start().catch(err => {
                             console.error(`Failed to start engine for ${table.id}:`, err);
-                            // Mark error on table entry
                             setEngines(prev => prev.map(e =>
-                                e.tableId === table.id
-                                    ? { ...e, error: err.message }
-                                    : e
+                                e.tableId === table.id ? { ...e, error: err.message } : e
                             ));
                         });
                     }
@@ -113,11 +132,89 @@ export default function DealerPage() {
     };
 
     /**
+     * Discover REGISTERING tournaments past their start time and start them
+     */
+    const discoverTournaments = async (): Promise<TournamentStatus[]> => {
+        try {
+            const now = new Date().toISOString();
+
+            // Find tournaments that should be started
+            const { data: readyTournaments, error } = await supabase
+                .from('tournaments')
+                .select('id, name, start_time, current_players, status')
+                .eq('status', 'REGISTERING')
+                .lte('start_time', now)
+                .gte('current_players', 2);
+
+            if (error) {
+                console.error('Failed to discover tournaments:', error);
+            }
+
+            // Start any ready tournaments
+            if (readyTournaments) {
+                for (const t of readyTournaments) {
+                    if (!tournamentsRef.current.has(t.id)) {
+                        console.log(`[DealerPage] Starting tournament: ${t.name} (${t.current_players} players)`);
+                        const engine = new TournamentEngine(t.id, supabase);
+                        tournamentsRef.current.set(t.id, engine);
+
+                        engine.start().catch(err => {
+                            console.error(`Failed to start tournament ${t.id}:`, err);
+                            setTournaments(prev => prev.map(te =>
+                                te.tournamentId === t.id ? { ...te, error: err.message } : te
+                            ));
+                        });
+                    }
+                }
+            }
+
+            // Also check for already RUNNING tournaments we should track
+            const { data: runningTournaments } = await supabase
+                .from('tournaments')
+                .select('id, name')
+                .eq('status', 'RUNNING');
+
+            if (runningTournaments) {
+                for (const t of runningTournaments) {
+                    if (!tournamentsRef.current.has(t.id)) {
+                        // Tournament was started by something else — just track it
+                        console.log(`[DealerPage] Tracking running tournament: ${t.name}`);
+                    }
+                }
+            }
+
+            // Build status list from all tracked tournaments
+            const statusList: TournamentStatus[] = [];
+            tournamentsRef.current.forEach((engine, id) => {
+                statusList.push({
+                    tournamentId: id,
+                    name: engine.getTournamentName(),
+                    engine,
+                    playerCount: engine.getPlayerCount(),
+                    tableCount: engine.getTableCount(),
+                    handCount: engine.getHandCount(),
+                    currentLevel: engine.getCurrentLevel(),
+                    isRunning: engine.isRunning(),
+                });
+            });
+
+            return statusList;
+        } catch (err) {
+            console.error('Error discovering tournaments:', err);
+            return [];
+        }
+    };
+
+    /**
      * Refresh the dashboard
      */
     const refreshDashboard = async () => {
-        const tables = await discoverTables();
+        const [tables, tournamentStatuses] = await Promise.all([
+            discoverTables(),
+            discoverTournaments(),
+        ]);
         setEngines(tables);
+        setTournaments(tournamentStatuses);
         setLastRefresh(new Date());
     };
 
@@ -136,41 +233,94 @@ export default function DealerPage() {
     // Cleanup on unmount
     useEffect(() => {
         return () => {
-            // Stop all engines on page unload
             enginesRef.current.forEach(engine => {
-                if (engine.isRunning()) {
-                    engine.stop();
-                }
+                if (engine.isRunning()) engine.stop();
+            });
+            tournamentsRef.current.forEach(engine => {
+                if (engine.isRunning()) engine.stop();
             });
         };
     }, []);
 
-    if (loading && engines.length === 0) {
+    if (loading && engines.length === 0 && tournaments.length === 0) {
         return (
             <div style={styles.container}>
                 <h1>Dealer Control Center</h1>
-                <p>Loading tables...</p>
+                <p>Loading tables and tournaments...</p>
             </div>
         );
     }
+
+    const totalHands = engines.reduce((s, e) => s + e.handCount, 0) +
+        tournaments.reduce((s, t) => s + t.handCount, 0);
 
     return (
         <div style={styles.container}>
             <header style={styles.header}>
                 <h1>Dealer Control Center</h1>
                 <div style={styles.headerMeta}>
-                    <span>Tables: {engines.length}</span>
+                    <span>Cash Tables: {engines.length}</span>
                     <span style={styles.separator}>|</span>
-                    <span>Last refresh: {lastRefresh.toLocaleTimeString()}</span>
+                    <span>Tournaments: {tournaments.length}</span>
+                    <span style={styles.separator}>|</span>
+                    <span>Total Hands: {totalHands}</span>
+                    <span style={styles.separator}>|</span>
+                    <span>Refresh: {lastRefresh.toLocaleTimeString()}</span>
                     <button onClick={refreshDashboard} style={styles.refreshBtn}>
                         Refresh Now
                     </button>
                 </div>
             </header>
 
+            {/* ═══════ TOURNAMENTS SECTION ═══════ */}
+            {tournaments.length > 0 && (
+                <>
+                    <h2 style={styles.sectionTitle}>Tournaments</h2>
+                    <div style={styles.grid}>
+                        {tournaments.map(t => (
+                            <div key={t.tournamentId} style={{ ...styles.card, borderLeft: '4px solid #9c27b0' }}>
+                                <div style={styles.cardHeader}>
+                                    <h3>{t.name}</h3>
+                                    <TournamentBadge isRunning={t.isRunning} />
+                                </div>
+                                <div style={styles.cardBody}>
+                                    <div style={styles.row}>
+                                        <span style={styles.label}>Players Left:</span>
+                                        <span style={styles.value}>{t.playerCount}</span>
+                                    </div>
+                                    <div style={styles.row}>
+                                        <span style={styles.label}>Tables:</span>
+                                        <span style={styles.value}>{t.tableCount}</span>
+                                    </div>
+                                    <div style={styles.row}>
+                                        <span style={styles.label}>Blind Level:</span>
+                                        <span style={styles.value}>{t.currentLevel + 1}</span>
+                                    </div>
+                                    <div style={styles.row}>
+                                        <span style={styles.label}>Hands Dealt:</span>
+                                        <span style={styles.value}>{t.handCount}</span>
+                                    </div>
+                                    <div style={styles.row}>
+                                        <span style={styles.label}>Status:</span>
+                                        <span style={{
+                                            ...styles.value,
+                                            color: t.error ? '#d32f2f' : t.isRunning ? '#7b1fa2' : '#ff9800'
+                                        }}>
+                                            {t.error ? `Error: ${t.error}` : t.isRunning ? 'In Progress' : 'Finished'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
+
+            {/* ═══════ CASH TABLES SECTION ═══════ */}
+            <h2 style={styles.sectionTitle}>Cash Tables</h2>
             {engines.length === 0 ? (
                 <div style={styles.noTables}>
-                    <p>No tables with 2+ players found.</p>
+                    <p>No cash tables with 2+ players found.</p>
                     <p style={{ fontSize: '0.9em', color: '#666' }}>
                         Tables will appear here automatically when they have seated players.
                     </p>
@@ -215,7 +365,7 @@ export default function DealerPage() {
             <footer style={styles.footer}>
                 <p>Auto-refresh interval: 5 seconds</p>
                 <p style={{ fontSize: '0.85em', color: '#666' }}>
-                    Tables with 2+ seated players are automatically discovered and dealt.
+                    Cash tables with 2+ seated players are auto-dealt. REGISTERING tournaments past their start time are auto-started.
                 </p>
             </footer>
         </div>
@@ -223,7 +373,7 @@ export default function DealerPage() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// STATUS BADGE COMPONENT
+// BADGE COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function StatusBadge({ isRunning }: { isRunning: boolean }) {
@@ -234,6 +384,18 @@ function StatusBadge({ isRunning }: { isRunning: boolean }) {
         }}>
             <span style={styles.badgeDot} />
             {isRunning ? 'Live' : 'Idle'}
+        </div>
+    );
+}
+
+function TournamentBadge({ isRunning }: { isRunning: boolean }) {
+    return (
+        <div style={{
+            ...styles.badge,
+            backgroundColor: isRunning ? '#9c27b0' : '#616161',
+        }}>
+            <span style={styles.badgeDot} />
+            {isRunning ? 'Running' : 'Done'}
         </div>
     );
 }
@@ -283,6 +445,14 @@ const styles: Record<string, React.CSSProperties> = {
         fontSize: '0.9em',
         fontWeight: 500,
         transition: 'background-color 0.2s',
+    },
+
+    sectionTitle: {
+        fontSize: '1.3em',
+        fontWeight: 600,
+        color: '#333',
+        marginBottom: '1rem',
+        marginTop: '0.5rem',
     },
 
     grid: {
