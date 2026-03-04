@@ -97,16 +97,16 @@ export default function TournamentLobbyPage() {
                     club_id,
                     buy_in,
                     prize_pool,
-                    scheduled_start,
+                    start_time,
                     status,
                     current_players,
                     max_players,
                     starting_chips,
                     blinds_up_minutes,
-                    game_variant,
+                    game_type,
                     clubs(name)
                 `)
-                .order('scheduled_start', { ascending: true });
+                .order('start_time', { ascending: true });
 
             if (clubId) {
                 query = query.eq('club_id', clubId);
@@ -144,7 +144,7 @@ export default function TournamentLobbyPage() {
                     clubName: t.clubs?.name || 'Unknown Club',
                     buyIn: t.buy_in || 0,
                     prizePool: t.prize_pool || 0,
-                    startTime: t.scheduled_start,
+                    startTime: t.start_time,
                     status: t.status,
                     currentPlayers: t.current_players || 0,
                     maxPlayers: t.max_players || 100,

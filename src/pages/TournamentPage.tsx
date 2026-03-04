@@ -137,7 +137,7 @@ export default function TournamentPage() {
             setIsRegistered(true);
 
             // Update tournament in list (prize pool = buy_in minus rake)
-            const prizeContribution = selectedTournament.buy_in - (selectedTournament.fee || 0);
+            const prizeContribution = selectedTournament.buy_in - (selectedTournament.rake || 0);
             setTournaments(prev => prev.map(t =>
                 t.id === selectedTournament.id
                     ? { ...t, current_players: t.current_players + 1, prize_pool: t.prize_pool + prizeContribution }
@@ -337,7 +337,7 @@ export default function TournamentPage() {
                                 </div>
                                 <div className="tourn-info">
                                     <span className="tourn-type">{tourn.type.toUpperCase()}</span>
-                                    <span className="tourn-buyin">${tourn.buy_in} + ${tourn.fee}</span>
+                                    <span className="tourn-buyin">${tourn.buy_in} + ${tourn.rake}</span>
                                 </div>
                                 <div className="tourn-meta">
                                     <span> {tourn.current_players}/{tourn.max_players}</span>
@@ -362,7 +362,7 @@ export default function TournamentPage() {
                             <div className="detail-stats">
                                 <div className="stat">
                                     <span className="stat-label">Buy-in</span>
-                                    <span className="stat-value">${selectedTournament.buy_in} + ${selectedTournament.fee}</span>
+                                    <span className="stat-value">${selectedTournament.buy_in} + ${selectedTournament.rake}</span>
                                 </div>
                                 <div className="stat">
                                     <span className="stat-label">Starting Stack</span>
@@ -412,7 +412,7 @@ export default function TournamentPage() {
                             <div className="payout-structure">
                                 <h3>Payouts</h3>
                                 <div className="payout-list">
-                                    {(selectedTournament.payout_structure || selectedTournament.settings?.payout_structure || []).slice(0, 5).map((payout: any, i: number) => (
+                                    {selectedTournament.payout_structure.slice(0, 5).map((payout, i) => (
                                         <div key={i} className="payout-item">
                                             <span className="payout-place">
                                                 {payout.place === 1 ? '' : payout.place === 2 ? '' : payout.place === 3 ? '' : `${payout.place}th`}
@@ -435,7 +435,7 @@ export default function TournamentPage() {
                                         </button>
                                     ) : (
                                         <button className="btn btn-primary btn-block" onClick={handleRegister}>
-                                            Register (${selectedTournament.buy_in + selectedTournament.fee})
+                                            Register (${selectedTournament.buy_in + selectedTournament.rake})
                                         </button>
                                     )
                                 ) : selectedTournament.status === 'running' ? (

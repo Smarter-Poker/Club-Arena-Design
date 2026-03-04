@@ -191,9 +191,9 @@ export default function DealerPage() {
             // Find tournaments that should be started
             const { data: readyTournaments, error } = await supabase
                 .from('tournaments')
-                .select('id, name, scheduled_start, current_players, status')
+                .select('id, name, start_time, current_players, status')
                 .in('status', ['registering', 'scheduled'])
-                .lte('scheduled_start', now)
+                .lte('start_time', now)
                 .gte('current_players', 2);
 
             if (error) {

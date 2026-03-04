@@ -262,31 +262,37 @@ export interface Tournament {
     id: string;
     club_id: string;
     name: string;
-    type: TournamentType;
-    game_variant?: string;
-    buy_in: number;
-    fee: number;
+    description?: string;
+    game_type: string;           // NLH, PLO4, PLO5, etc.
+    variant?: string;
+    buy_in_amount: number;
+    buy_in_fee: number;
     starting_chips: number;
-    max_players: number;
+    max_players: number | null;
+    min_players?: number;
     current_players: number;
-    status: TournamentStatus;
+    status: string;              // TEXT column: REGISTERING, RUNNING, COMPLETED, etc.
     blind_structure: BlindLevel[];
-    payout_structure?: PayoutEntry[];
+    payout_structure: PayoutEntry[];
     prize_pool: number;
-    settings?: any;
-    scheduled_start?: string;
+    guaranteed_prize: number;
+    start_time: string;
+    late_reg_mins?: number;
+    current_level?: number;
     started_at?: string;
     ended_at?: string;
     created_at: string;
+    updated_at?: string;
     rebuy_cost?: number;
     rebuy_chips?: number;
     addon_cost?: number;
     addon_chips?: number;
+    settings?: any;
     [key: string]: any;
 }
 
 export type TournamentType = 'sng' | 'mtt' | 'satellite' | 'spin' | 'bounty' | 'mystery_bounty' | 'progressive_bounty';
-export type TournamentStatus = 'scheduled' | 'registering' | 'running' | 'paused' | 'finished' | 'cancelled';
+export type TournamentStatus = 'scheduled' | 'registering' | 'late_reg' | 'running' | 'paused' | 'final_table' | 'heads_up' | 'completed' | 'cancelled';
 
 export interface BlindLevel {
     level: number;

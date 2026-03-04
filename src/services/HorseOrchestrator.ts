@@ -704,22 +704,19 @@ class HorseOrchestrator {
                 .insert({
                     club_id: this.clubId,
                     name: config.name,
-                    game_variant: dbGameType,
+                    game_type: dbGameType,
                     variant: config.type, // freezeout/bounty/progressive_bounty/mystery_bounty
-                    buy_in: config.buyIn,
-                    fee: config.rake,
-                    prize_pool: config.guarantee || 0,
+                    buy_in_amount: config.buyIn,
+                    buy_in_fee: config.rake,
+                    guaranteed_prize: config.guarantee || 0,
                     starting_chips: config.startingStack,
                     max_players: config.maxPlayers,
                     current_players: 0,
                     status: 'scheduled',
-                    blind_structure: config.blindStructure,
-                    scheduled_start: startTime.toISOString(),
-                    settings: {
-                        late_registration_levels: 6,
-                        payout_structure: config.payoutStructure || [],
-                        late_reg_mins: 30,
-                    },
+                    blind_structure: JSON.stringify(config.blindStructure),
+                    payout_structure: JSON.stringify(config.payoutStructure),
+                    start_time: startTime.toISOString(),
+                    late_reg_mins: 30,
                 })
                 .select()
                 .single();
@@ -751,7 +748,7 @@ class HorseOrchestrator {
                 .from('tournaments')
                 .update({
                     current_players: registered,
-                    prize_pool: prizePool,
+                    guaranteed_prize: prizePool,
                     status: 'registering',
                 })
                 .eq('id', tournament.id);
@@ -805,20 +802,18 @@ class HorseOrchestrator {
                 .insert({
                     club_id: this.clubId,
                     name: config.name,
-                    game_variant: dbGameType,
+                    game_type: dbGameType,
                     variant: 'SNG',
-                    buy_in: config.buyIn,
-                    fee: config.rake,
-                    prize_pool: null,
+                    buy_in_amount: config.buyIn,
+                    buy_in_fee: config.rake,
+                    guaranteed_prize: null,
                     starting_chips: config.startingStack,
                     max_players: config.maxPlayers,
                     current_players: 0,
                     status: 'registering',
-                    blind_structure: config.blindStructure,
-                    settings: {
-                        payout_structure: config.payoutStructure || [],
-                        late_registration_levels: 0,
-                    },
+                    blind_structure: JSON.stringify(config.blindStructure),
+                    payout_structure: JSON.stringify(config.payoutStructure),
+                    late_reg_mins: 0,
                 })
                 .select()
                 .single();
@@ -847,7 +842,7 @@ class HorseOrchestrator {
                 .from('tournaments')
                 .update({
                     current_players: registered,
-                    prize_pool: prizePool,
+                    guaranteed_prize: prizePool,
                     status: registered >= config.minPlayers ? 'running' : 'registering',
                 })
                 .eq('id', sng.id);
@@ -898,20 +893,18 @@ class HorseOrchestrator {
                 .insert({
                     club_id: this.clubId,
                     name: `${config.name} (${multiplier}x)`,
-                    game_variant: dbGameType,
+                    game_type: dbGameType,
                     variant: 'SPIN',
-                    buy_in: config.buyIn,
-                    fee: config.rake,
-                    prize_pool: prizePool,
+                    buy_in_amount: config.buyIn,
+                    buy_in_fee: config.rake,
+                    guaranteed_prize: prizePool,
                     starting_chips: config.startingStack,
                     max_players: config.maxPlayers,
                     current_players: 0,
                     status: 'registering',
-                    blind_structure: config.blindStructure,
-                    settings: {
-                        payout_structure: [{ position: 1, percentage: 100 }],
-                        late_registration_levels: 0,
-                    },
+                    blind_structure: JSON.stringify(config.blindStructure),
+                    payout_structure: JSON.stringify([{ position: 1, percentage: 100 }]),
+                    late_reg_mins: 0,
                 })
                 .select()
                 .single();

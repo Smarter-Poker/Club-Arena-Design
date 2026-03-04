@@ -51,7 +51,7 @@ export default function TournamentDetails() {
     }, [tournamentId]);
 
     useEffect(() => {
-        if (tournament?.scheduled_start) {
+        if (tournament?.start_time) {
             startCountdown();
         }
     }, [tournament]);
@@ -107,10 +107,10 @@ export default function TournamentDetails() {
         if (timerRef.current) clearInterval(timerRef.current);
 
         const updateCountdown = () => {
-            if (!tournament?.scheduled_start) return;
+            if (!tournament?.start_time) return;
 
             const now = new Date().getTime();
-            const start = new Date(tournament.scheduled_start).getTime();
+            const start = new Date(tournament.start_time).getTime();
             const diff = start - now;
 
             if (diff <= 0) {
@@ -245,7 +245,7 @@ export default function TournamentDetails() {
                             {formatCountdown()}
                         </div>
                         <div className="start-time">
-                            {formatDate(tournament.scheduled_start)}
+                            {formatDate(tournament.start_time)}
                         </div>
                     </div>
 
@@ -349,7 +349,7 @@ export default function TournamentDetails() {
                 <div className="ranking-section">
                     <TournamentBracket
                         tournamentId={tournamentId || ''}
-                        totalPlayers={tournament.max_players}
+                        totalPlayers={tournament.max_players || 0}
                     />
                 </div>
             )}
@@ -464,7 +464,7 @@ export default function TournamentDetails() {
                         </div>
                         <div className="signup-row">
                             <span className="signup-label">Start time:</span>
-                            <span className="signup-value">{formatDate(tournament.scheduled_start)}</span>
+                            <span className="signup-value">{formatDate(tournament.start_time)}</span>
                         </div>
                         <p className="signup-note">Cannot unregister within 1 minute of the start time</p>
                         <div className="signup-actions">

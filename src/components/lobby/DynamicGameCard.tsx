@@ -42,11 +42,11 @@ interface CashTableData {
 interface TournamentData {
     id: string;
     name: string;
-    game_variant: string;
-    buy_in: number;
-    fee: number;
-    prize_pool: number | null;
-    scheduled_start: string;
+    game_type: string;
+    buy_in_amount: number;
+    buy_in_fee: number;
+    guaranteed_prize: number | null;
+    start_time: string;
     status: string;
     current_players: number;
     max_players: number;
@@ -218,14 +218,14 @@ interface TournamentCardProps {
 }
 
 export function TournamentCard({ tournament }: TournamentCardProps) {
-    const variantKey = TOURNEY_VARIANT_MAP[tournament.game_variant] || 'nlh';
+    const variantKey = TOURNEY_VARIANT_MAP[tournament.game_type] || 'nlh';
     const variant = VARIANT_DISPLAY[variantKey] || { label: 'NLH', css: 'nlh' };
     const tourneyType = detectTourneyType(tournament.name);
     const typeLabel = getTourneyTypeLabel(tourneyType);
-    const isFreeroll = tournament.buy_in === 0;
+    const isFreeroll = tournament.buy_in_amount === 0;
     const isLive = tournament.status === 'running';
     const isReg = tournament.status === 'registering';
-    const hasGTD = tournament.prize_pool && tournament.prize_pool > 0;
+    const hasGTD = tournament.guaranteed_prize && tournament.guaranteed_prize > 0;
 
     return (
         <Link to={`/tournaments/${tournament.id}`} className={`dgc dgc--${variant.css} dgc--mtt`}>
@@ -260,7 +260,7 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
                 </div>
                 <div className="dgc__mtt-buyin" style={{ marginTop: '-2px' }}>
                     <span className="dgc__mtt-buyin-value">
-                        {isFreeroll ? 'FREE' : tournament.buy_in + tournament.fee}
+                        {isFreeroll ? 'FREE' : tournament.buy_in_amount + tournament.buy_in_fee}
                     </span>
                 </div>
             </div>
@@ -268,7 +268,7 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
             {/* Timer */}
             <div className="dgc__blinds-section" style={{ flex: 'unset', padding: '0 10px' }}>
                 <span className="dgc__timer">
-                    {isLive ? 'In Progress' : `${Math.max(0, Math.floor((new Date(tournament.scheduled_start).getTime() - Date.now()) / 60000))}min`}
+                    {isLive ? 'In Progress' : `${Math.max(0, Math.floor((new Date(tournament.start_time).getTime() - Date.now()) / 60000))}min`}
                 </span>
             </div>
 
@@ -286,7 +286,7 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
             <div className="dgc__mtt-name">{tournament.name}</div>
             {hasGTD && (
                 <div className="dgc__mtt-gtd">
-                    {isFreeroll ? '🏆' : '💰'} {tournament.prize_pool!.toLocaleString()} GTD
+                    {isFreeroll ? '🏆' : '💰'} {tournament.guaranteed_prize!.toLocaleString()} GTD
                 </div>
             )}
 
@@ -295,9 +295,9 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
 
             {/* Bottom bar */}
             <div className="dgc__bottom">
-                <span className="dgc__date">{formatDate(tournament.scheduled_start)}</span>
+                <span className="dgc__date">{formatDate(tournament.start_time)}</span>
                 <span className="dgc__seat-info">
-                    {tournament.game_variant} {tournament.current_players}/{tournament.max_players}
+                    {tournament.game_type} {tournament.current_players}/{tournament.max_players}
                 </span>
             </div>
         </Link>
@@ -307,7 +307,7 @@ export function TournamentCard({ tournament }: TournamentCardProps) {
 // ─── SNG Card ──────────────────────────────────────────────────────────
 
 export function SNGCard({ tournament }: TournamentCardProps) {
-    const variantKey = TOURNEY_VARIANT_MAP[tournament.game_variant] || 'nlh';
+    const variantKey = TOURNEY_VARIANT_MAP[tournament.game_type] || 'nlh';
     const variant = VARIANT_DISPLAY[variantKey] || { label: 'NLH', css: 'nlh' };
     const isHU = tournament.max_players <= 2;
     const isTurbo = tournament.name.toLowerCase().includes('turbo');
@@ -334,7 +334,7 @@ export function SNGCard({ tournament }: TournamentCardProps) {
             {/* Buy-in */}
             <div className="dgc__blinds-section">
                 <span className="dgc__blinds-label">Buy-in</span>
-                <span className="dgc__blinds-value">{tournament.buy_in + tournament.fee}</span>
+                <span className="dgc__blinds-value">{tournament.buy_in_amount + tournament.buy_in_fee}</span>
                 <span className="dgc__timer">3min</span>
             </div>
 
@@ -356,9 +356,9 @@ export function SNGCard({ tournament }: TournamentCardProps) {
 
             {/* Bottom bar */}
             <div className="dgc__bottom">
-                <span className="dgc__date">{formatDate(tournament.scheduled_start)}</span>
+                <span className="dgc__date">{formatDate(tournament.start_time)}</span>
                 <span className="dgc__seat-info">
-                    {isHU ? 'HEADS-UP' : isTurbo ? `HeadsUp TURBO ${tournament.buy_in + tournament.fee}` : `${variant.label} ${tournament.max_players} Max`}
+                    {isHU ? 'HEADS-UP' : isTurbo ? `HeadsUp TURBO ${tournament.buy_in_amount + tournament.buy_in_fee}` : `${variant.label} ${tournament.max_players} Max`}
                 </span>
             </div>
         </Link>
@@ -368,7 +368,7 @@ export function SNGCard({ tournament }: TournamentCardProps) {
 // ─── Spin Card ─────────────────────────────────────────────────────────
 
 export function SpinCard({ tournament }: TournamentCardProps) {
-    const variantKey = TOURNEY_VARIANT_MAP[tournament.game_variant] || 'nlh';
+    const variantKey = TOURNEY_VARIANT_MAP[tournament.game_type] || 'nlh';
     const variant = VARIANT_DISPLAY[variantKey] || { label: 'NLH', css: 'nlh' };
     const maxMultiplier = 100; // Could be dynamic
 
@@ -389,7 +389,7 @@ export function SpinCard({ tournament }: TournamentCardProps) {
             {/* Buy-in */}
             <div className="dgc__blinds-section">
                 <span className="dgc__blinds-label">Buy-in</span>
-                <span className="dgc__blinds-value">{tournament.buy_in + tournament.fee}</span>
+                <span className="dgc__blinds-value">{tournament.buy_in_amount + tournament.buy_in_fee}</span>
                 <span className="dgc__timer">3min</span>
             </div>
 
@@ -409,7 +409,7 @@ export function SpinCard({ tournament }: TournamentCardProps) {
 
             {/* Bottom bar */}
             <div className="dgc__bottom">
-                <span className="dgc__date">{formatDate(tournament.scheduled_start)}</span>
+                <span className="dgc__date">{formatDate(tournament.start_time)}</span>
                 <span className="dgc__seat-info">
                     {variant.label} {tournament.name.includes('DEEP') ? 'DEEP' : ''}{tournament.name.match(/\(\d+\)/) || ''}
                 </span>

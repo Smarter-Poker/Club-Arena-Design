@@ -51,11 +51,11 @@ interface TableData {
 interface TournamentData {
     id: string;
     name: string;
-    game_variant: string;
-    buy_in: number;
-    fee: number;
-    prize_pool: number | null;
-    scheduled_start: string;
+    game_type: string;
+    buy_in_amount: number;
+    buy_in_fee: number;
+    guaranteed_prize: number | null;
+    start_time: string;
     status: string;
     current_players: number;
     max_players: number;
@@ -260,7 +260,7 @@ export default function ClubHomePage() {
                 .select('*')
                 .eq('club_id', clubId)
                 .neq('status', 'completed')
-                .order('scheduled_start', { ascending: true });
+                .order('start_time', { ascending: true });
 
             if (tournamentData) {
                 setTournaments(tournamentData);

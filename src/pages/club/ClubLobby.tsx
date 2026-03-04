@@ -214,7 +214,7 @@ function TournamentCard({ tournament, clubId }: { tournament: Tournament; clubId
                 <span className="prize-icon">●</span>
                 <span className="tournament-name">{tournament.name}</span>
             </div>
-            <div className="card-date">{formatDate(tournament.scheduled_start ?? null)}</div>
+            <div className="card-date">{formatDate(tournament.start_time ?? null)}</div>
         </Link>
     );
 }
