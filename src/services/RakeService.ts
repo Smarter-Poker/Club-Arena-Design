@@ -434,23 +434,60 @@ export const RakeService = {
         players: DealtInPlayer[];
     }): Promise<boolean> {
         // Guard against division by zero
-        if (params.players.length === 0) return true;
+        if (params.players.length === 0 || params.rakeAmount <= 0) return true;
 
-        // Group players by agent for commission attribution
-        const byAgent = new Map<string, number>();
-        const perPlayer = params.rakeAmount / params.players.length;
+        try {
+            // Group players by agent for commission attribution
+            // Each player contributes an equal share of the rake
+            const byAgent = new Map<string, number>();
+            const perPlayer = params.rakeAmount / params.players.length;
 
-        for (const player of params.players) {
-            if (player.agentId) {
-                const current = byAgent.get(player.agentId) || 0;
-                byAgent.set(player.agentId, current + perPlayer);
+            for (const player of params.players) {
+                if (player.agentId) {
+                    const current = byAgent.get(player.agentId) || 0;
+                    byAgent.set(player.agentId, current + perPlayer);
+                }
             }
-        }
 
-        // Commission queueing is tracked in-memory for now
-        // Settlement happens via commission_history table during weekly settlement
-        // TODO: Create commission_queue table for real-time tracking
-        return true;
+            // No agents at this table — nothing to credit
+            if (byAgent.size === 0) return true;
+
+            // Increment each agent's rake_generated in the agents table
+            // This provides real-time tracking; weekly settlement reads from here
+            for (const [agentId, rakeCredit] of byAgent) {
+                try {
+                    // Try atomic RPC first
+                    const { error: rpcError } = await supabase.rpc('increment_agent_rake', {
+                        p_agent_id: agentId,
+                        p_amount: rakeCredit,
+                    });
+
+                    if (rpcError) {
+                        // Fallback: read-modify-write
+                        const { data: agent } = await supabase
+                            .from('agents')
+                            .select('rake_generated')
+                            .eq('id', agentId)
+                            .single();
+
+                        if (agent) {
+                            await supabase
+                                .from('agents')
+                                .update({ rake_generated: (agent.rake_generated || 0) + rakeCredit })
+                                .eq('id', agentId);
+                        }
+                    }
+                } catch (e) {
+                    // Non-blocking: commission tracking should never break the hand pipeline
+                    console.warn(`[RakeService] Failed to credit agent ${agentId.substring(0, 8)}:`, e);
+                }
+            }
+
+            return true;
+        } catch (err) {
+            console.error('[RakeService] Commission queue error:', err);
+            return false;
+        }
     },
 
     /**
