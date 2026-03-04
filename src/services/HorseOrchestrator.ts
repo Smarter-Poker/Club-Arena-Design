@@ -712,11 +712,14 @@ class HorseOrchestrator {
                     starting_chips: config.startingStack,
                     max_players: config.maxPlayers,
                     current_players: 0,
-                    status: 'ANNOUNCED',
-                    blind_structure: JSON.stringify(config.blindStructure),
-                    payout_structure: JSON.stringify(config.payoutStructure),
-                    start_time: startTime.toISOString(),
-                    late_reg_mins: 30,
+                    status: 'scheduled',
+                    blind_structure: config.blindStructure,
+                    scheduled_start: startTime.toISOString(),
+                    settings: {
+                        late_registration_levels: 6,
+                        payout_structure: config.payoutStructure || [],
+                        late_reg_mins: 30,
+                    },
                 })
                 .select()
                 .single();
@@ -811,9 +814,11 @@ class HorseOrchestrator {
                     max_players: config.maxPlayers,
                     current_players: 0,
                     status: 'registering',
-                    blind_structure: JSON.stringify(config.blindStructure),
-                    payout_structure: JSON.stringify(config.payoutStructure),
-                    late_reg_mins: 0,
+                    blind_structure: config.blindStructure,
+                    settings: {
+                        payout_structure: config.payoutStructure || [],
+                        late_registration_levels: 0,
+                    },
                 })
                 .select()
                 .single();
@@ -902,9 +907,11 @@ class HorseOrchestrator {
                     max_players: config.maxPlayers,
                     current_players: 0,
                     status: 'registering',
-                    blind_structure: JSON.stringify(config.blindStructure),
-                    payout_structure: JSON.stringify([{ position: 1, percentage: 100 }]),
-                    late_reg_mins: 0,
+                    blind_structure: config.blindStructure,
+                    settings: {
+                        payout_structure: [{ position: 1, percentage: 100 }],
+                        late_registration_levels: 0,
+                    },
                 })
                 .select()
                 .single();
