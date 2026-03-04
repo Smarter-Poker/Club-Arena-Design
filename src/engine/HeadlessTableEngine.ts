@@ -462,14 +462,28 @@ export class HeadlessTableEngine {
             if (action === 'call') amount = toCall;
             if (action === 'fold' && toCall === 0) action = 'check';
 
-            // Validate bet/raise
+            // Validate bet/raise — convert to correct action type
             if (action === 'raise' && state.currentBet === 0) action = 'bet';
             if (action === 'bet' && state.currentBet > 0) action = 'raise';
 
-            // Clamp raise amount
-            if ((action === 'raise' || action === 'bet') && amount !== undefined) {
-                const maxRaise = enginePlayer.stack + maxBet;
-                if (amount > maxRaise) {
+            // Clamp bet/raise amounts to valid range
+            // HandController.performAction expects:
+            //   bet: amount >= minRaise (absolute bet size)
+            //   raise: amount >= currentBet + minRaise (raise-TO total)
+            if (action === 'bet' && amount !== undefined) {
+                // Ensure bet meets minimum
+                amount = Math.max(state.minRaise, amount);
+                if (amount >= enginePlayer.stack) {
+                    action = 'all_in';
+                    amount = undefined;
+                }
+            } else if (action === 'raise' && amount !== undefined) {
+                // Ensure raise-to meets minimum (currentBet + minRaise)
+                const minRaiseTo = state.currentBet + state.minRaise;
+                amount = Math.max(minRaiseTo, amount);
+                // Cap at player's stack + their existing bet
+                const maxRaiseTo = enginePlayer.stack + enginePlayer.bet;
+                if (amount >= maxRaiseTo) {
                     action = 'all_in';
                     amount = undefined;
                 }
