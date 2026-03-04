@@ -3,10 +3,11 @@
  * Displays a single table in the lobby grid
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { waitlistService } from '../../services/WaitlistService';
 import { useUserStore } from '../../stores/useUserStore';
+import { supabase } from '../../lib/supabase';
 import styles from './TableCard.module.css';
 import type { PokerTable } from '../../types/database.types';
 import { useToast } from '../common/Toast';
@@ -59,12 +60,40 @@ export default function TableCard({ table }: TableCardProps) {
     const seatsAvailable = seats - players;
     const isFull = seatsAvailable === 0;
 
-    // Waitlist count would come from a separate query in production
-    const waiting = 0;
+    // Live waitlist count from DB
+    const [waiting, setWaiting] = useState(0);
     const hasWaitlist = waiting > 0;
 
-    // Average pot would come from table stats in production
-    const avgPot = 0;
+    // Average pot from recent completed hands
+    const [avgPot, setAvgPot] = useState(0);
+
+    useEffect(() => {
+        // Fetch waitlist count
+        supabase
+            .from('waitlist')
+            .select('id', { count: 'exact', head: true })
+            .eq('table_id', table.id)
+            .eq('status', 'waiting')
+            .then(({ count }) => {
+                if (count !== null) setWaiting(count);
+            });
+
+        // Fetch average pot from last 20 completed hands
+        supabase
+            .from('hands')
+            .select('pot')
+            .eq('table_id', table.id)
+            .eq('status', 'completed')
+            .gt('pot', 0)
+            .order('ended_at', { ascending: false })
+            .limit(20)
+            .then(({ data }) => {
+                if (data && data.length > 0) {
+                    const avg = data.reduce((sum, h) => sum + (h.pot || 0), 0) / data.length;
+                    setAvgPot(Math.round(avg));
+                }
+            });
+    }, [table.id]);
 
     const handleJoin = async () => {
         if (isFull && user?.id) {

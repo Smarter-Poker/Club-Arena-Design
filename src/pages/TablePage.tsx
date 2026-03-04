@@ -59,7 +59,7 @@ import SettingsPanel from '../components/table/SettingsPanel';
 import TableMenu from '../components/table/TableMenu';
 import PresenceIndicator from '../components/social/PresenceIndicator';
 import { useTableStore } from '../stores/useTableStore';
-import { RealtimeChannelService } from '../services/RealtimeChannelService';
+// RealtimeChannelService imported if needed for future use
 import ChipStack from '../components/table/ChipStack';
 import TimerBar from '../components/table/TimerBar';
 import PremiumCard from '../components/table/PremiumCard';
@@ -633,6 +633,25 @@ export default function TablePage() {
             navigate('/lobby');
         }
     };
+
+    // ─── beforeunload: warn user and attempt seat cleanup on tab close/refresh ───
+    useEffect(() => {
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            // Only warn if the player is actually seated
+            if (tableState.heroSeat > 0 && tableId && userId && userId !== 'guest') {
+                // Fire seat cleanup (best-effort, may not complete before tab closes)
+                navigator.sendBeacon?.(
+                    `${import.meta.env.VITE_SUPABASE_URL || ''}/rest/v1/rpc/player_leave_table`,
+                    JSON.stringify({ p_table_id: tableId, p_user_id: userId })
+                );
+                event.preventDefault();
+                event.returnValue = '';
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [tableId, userId, tableState.heroSeat]);
 
     // Subscribe to table updates using TableService
     useEffect(() => {
@@ -1588,7 +1607,7 @@ export default function TablePage() {
             }, 1000);
             return () => clearInterval(timer);
         }
-    }, [tableState.currentPlayerSeat, tableState.heroSeat, actionTimeRemaining, tableState.heroSeat]);
+    }, [tableState.currentPlayerSeat, tableState.heroSeat, actionTimeRemaining]);
 
     return (
         <div className="table-page">
@@ -1600,11 +1619,13 @@ export default function TablePage() {
                     <span className="menu-icon">≡</span>
                 </button>
 
-                <div className="jackpot-banner">
-                    <span className="jackpot-label">JACKPOT</span>
-                    <span className="jackpot-amount">{tableState.jackpotAmount.toLocaleString()}</span>
-                    <span className="jackpot-diamond"></span>
-                </div>
+                {tableState.jackpotAmount > 0 && (
+                    <div className="jackpot-banner">
+                        <span className="jackpot-label">JACKPOT</span>
+                        <span className="jackpot-amount">{tableState.jackpotAmount.toLocaleString()}</span>
+                        <span className="jackpot-diamond"></span>
+                    </div>
+                )}
 
                 <div className="header-actions">
                     <button className="header-btn" title="Help">?</button>

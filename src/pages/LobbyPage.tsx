@@ -4,7 +4,8 @@
  * WITH REAL-TIME UPDATES
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styles from './LobbyPage.module.css';
 import TableCard from '../components/lobby/TableCard';
 import GameTypeTabs from '../components/lobby/GameTypeTabs';
@@ -16,11 +17,13 @@ import type { PokerTable } from '../types/database.types';
 type GameFilter = 'all' | 'nlh' | 'plo' | 'ofc' | 'tournaments';
 
 export default function LobbyPage() {
+    const navigate = useNavigate();
     const [activeFilter, setActiveFilter] = useState<GameFilter>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [tables, setTables] = useState<PokerTable[]>([]);
     const [loading, setLoading] = useState(true);
     const [onlinePlayers, setOnlinePlayers] = useState(0);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Fetch tables and subscribe to real-time updates
     useEffect(() => {
@@ -68,16 +71,13 @@ export default function LobbyPage() {
                     schema: 'public',
                     table: 'table_seats',
                 },
-                (() => {
+                () => {
                     // Debounce seat changes to avoid rapid refetching
-                    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-                    return () => {
-                        if (debounceTimer) clearTimeout(debounceTimer);
-                        debounceTimer = setTimeout(() => {
-                            tableService.getActiveTables().then(setTables);
-                        }, 500);
-                    };
-                })()
+                    if (debounceRef.current) clearTimeout(debounceRef.current);
+                    debounceRef.current = setTimeout(() => {
+                        tableService.getActiveTables().then(setTables);
+                    }, 500);
+                }
             )
             .subscribe();
 
@@ -94,17 +94,21 @@ export default function LobbyPage() {
                 }
             });
 
-        // Cleanup
+        // Cleanup — untrack presence + remove channels + clear debounce
         return () => {
+            presenceChannel.untrack().catch(() => {});
             supabase.removeChannel(channel);
             supabase.removeChannel(presenceChannel);
+            if (debounceRef.current) clearTimeout(debounceRef.current);
         };
     }, []);
 
     const filteredTables = tables.filter(table => {
         if (activeFilter !== 'all') {
-            if (activeFilter === 'nlh' && !['nlh', 'short_deck'].includes(table.game_variant)) return false;
+            if (activeFilter === 'nlh' && !['nlh', 'short_deck', 'flh'].includes(table.game_variant)) return false;
             if (activeFilter === 'plo' && !table.game_variant.startsWith('plo')) return false;
+            if (activeFilter === 'ofc' && !table.game_variant.startsWith('ofc')) return false;
+            if (activeFilter === 'tournaments' && (table as any).game_type !== 'tournament') return false;
         }
         if (searchQuery && !table.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
         return true;
@@ -178,7 +182,7 @@ export default function LobbyPage() {
                         <span className={styles.emptyIcon}></span>
                         <h3>No tables found</h3>
                         <p>Try adjusting your filters or create a new table.</p>
-                        <button className="btn btn-primary">Create Table</button>
+                        <button className="btn btn-primary" onClick={() => navigate('/clubs')}>Create Table</button>
                     </div>
                 )}
             </section>
