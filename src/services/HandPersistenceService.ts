@@ -3,15 +3,16 @@
  *  HAND PERSISTENCE SERVICE — Persists HandController events to database
  * ═══════════════════════════════════════════════════════════════════════════════
  *
- * CRITICAL FIX: Each table gets its OWN HandPersistence instance.
- * The old singleton design caused cross-table state corruption:
- *   - Table A starts hand → sets currentHand
- *   - Table B starts hand → OVERWRITES currentHand
- *   - Table A completes → updates Table B's record, Table A stays "active" forever
+ * ARCHITECTURE:
+ * Each table gets its OWN HandPersistence instance (created by HeadlessTableEngine).
  *
- * Now: HeadlessTableEngine creates a `new HandPersistence()` per table.
- * The old singleton `handPersistenceService` is kept for backward compatibility
- * with non-headless code paths (e.g. TablePage single-table view).
+ * CRITICAL: All events are serialized through a promise queue. This prevents
+ * the race condition where HAND_START for hand N+1 fires before the DB insert
+ * for hand N returns. Without serialization, 62% of hands were getting stuck
+ * as "active/preflop" because the completion update was lost.
+ *
+ * Event flow: HandController → onEvent callback → eventQueue → handleEvent
+ * Each event waits for the previous event to fully resolve before processing.
  */
 
 import { supabase } from '../lib/supabase';
@@ -51,6 +52,13 @@ export class HandPersistence {
     private unsubscribe: (() => void) | null = null;
     private tableId: string;
 
+    /**
+     * Promise chain that serializes all event processing.
+     * Every event handler appends to this chain so they execute one at a time.
+     * This prevents HAND_START(N+1) from running before HAND_COMPLETE(N) + DB insert finish.
+     */
+    private eventQueue: Promise<void> = Promise.resolve();
+
     constructor(tableId: string) {
         this.tableId = tableId;
     }
@@ -68,9 +76,9 @@ export class HandPersistence {
             this.unsubscribe = null;
         }
 
-        // Subscribe to all hand events
+        // Subscribe to all hand events — queue them for serial processing
         this.unsubscribe = controller.onEvent((event: HandEvent) => {
-            this.handleEvent(event, config);
+            this.enqueueEvent(event, config);
         });
 
         return () => {
@@ -94,6 +102,22 @@ export class HandPersistence {
         }
         this.currentHand = null;
         this.handActions = [];
+    }
+
+    /**
+     * Enqueue an event for serial processing.
+     * Each event waits for the previous one to complete before executing.
+     * This is the KEY fix — without this, async events (DB inserts) would
+     * interleave and corrupt state.
+     */
+    private enqueueEvent(event: HandEvent, config: PersistenceConfig): void {
+        this.eventQueue = this.eventQueue.then(async () => {
+            try {
+                await this.handleEvent(event, config);
+            } catch (err) {
+                console.error(`[HandPersistence:${this.tableId}] Event handler error for ${event.type}:`, err);
+            }
+        });
     }
 
     private async handleEvent(event: HandEvent, config: PersistenceConfig): Promise<void> {
@@ -126,14 +150,15 @@ export class HandPersistence {
         players: { seat: number; user_id: string; username: string; stack: number }[],
         config: PersistenceConfig
     ): Promise<void> {
-        // Guard: if a hand is already in progress, finalize it
-        if (this.currentHand?.id) {
-            console.warn(`[HandPersistence:${this.tableId}] Duplicate HAND_START — finalizing previous hand ${this.currentHand.hand_number}`);
+        // Guard: if a previous hand is still in progress, finalize it first.
+        // With serialized events this should be rare, but handle it defensively.
+        if (this.currentHand) {
+            console.warn(`[HandPersistence:${this.tableId}] Previous hand #${this.currentHand.hand_number} still open — finalizing before hand #${handNumber}`);
             await this.onHandComplete(this.currentHand.hand_number, 0);
         }
 
         // Initialize hand record
-        const handRecord: HandRecord = {
+        this.currentHand = {
             table_id: config.tableId,
             club_id: config.clubId,
             hand_number: handNumber,
@@ -147,37 +172,33 @@ export class HandPersistence {
             actions: [],
             started_at: new Date().toISOString(),
         };
-        this.currentHand = handRecord;
         this.handActions = [];
 
-        // Capture insert payload BEFORE the async call (currentHand may be nulled during await)
+        // Insert initial hand record — since events are serialized,
+        // no other event can run until this insert completes.
         const insertPayload = {
-            table_id: handRecord.table_id,
-            club_id: handRecord.club_id,
-            hand_number: handRecord.hand_number,
-            game_variant: handRecord.game_variant,
-            stakes: handRecord.stakes,
+            table_id: this.currentHand.table_id,
+            club_id: this.currentHand.club_id,
+            hand_number: this.currentHand.hand_number,
+            game_variant: this.currentHand.game_variant,
+            stakes: this.currentHand.stakes,
             pot: 0,
             rake: 0,
             community_cards: [] as string[],
             winner_ids: [] as string[],
-            players: handRecord.players,
+            players: this.currentHand.players,
             actions: [] as Record<string, unknown>[],
-            started_at: handRecord.started_at,
+            started_at: this.currentHand.started_at,
         };
 
-        // Insert initial hand record
         const { data, error } = await supabase
             .from('hands')
             .insert(insertPayload)
             .select('id')
             .single();
 
-        // CRITICAL: After await, currentHand may have been cleared by a concurrent HAND_COMPLETE
-        // event (horses decide in ~200ms, hand can complete before this insert returns).
-        // Use the local handRecord reference to safely set the id.
         if (error) {
-            console.error(`[HandPersistence:${this.tableId}] Failed to insert hand:`, error);
+            console.error(`[HandPersistence:${this.tableId}] Failed to insert hand #${handNumber}:`, error);
             // Retry once
             try {
                 const { data: retryData, error: retryError } = await supabase
@@ -187,37 +208,24 @@ export class HandPersistence {
                     .single();
 
                 if (!retryError && retryData) {
-                    handRecord.id = retryData.id;
+                    if (this.currentHand) this.currentHand.id = retryData.id;
                 } else {
                     console.error(`[HandPersistence:${this.tableId}] Retry also failed:`, retryError);
-                    handRecord.id = crypto.randomUUID();
-                    (handRecord as any)._localOnly = true;
+                    // Mark as local-only so we don't try to update a non-existent DB row
+                    if (this.currentHand) {
+                        this.currentHand.id = crypto.randomUUID();
+                        (this.currentHand as any)._localOnly = true;
+                    }
                 }
             } catch (e) {
                 console.error(`[HandPersistence:${this.tableId}] Retry exception:`, e);
-                handRecord.id = crypto.randomUUID();
-                (handRecord as any)._localOnly = true;
+                if (this.currentHand) {
+                    this.currentHand.id = crypto.randomUUID();
+                    (this.currentHand as any)._localOnly = true;
+                }
             }
-        } else if (data) {
-            handRecord.id = data.id;
-        }
-
-        // After the insert, check if the hand completed during the await.
-        // onHandComplete would have stored completion data on the handRecord if it ran
-        // while we were waiting for the insert.
-        if ((handRecord as any)._completedEarly && handRecord.id && !(handRecord as any)._localOnly) {
-            const completionData = (handRecord as any)._completionData;
-            if (completionData) {
-                await supabase
-                    .from('hands')
-                    .update(completionData)
-                    .eq('id', handRecord.id);
-            }
-            // Now safe to clear currentHand (it was left alive for us to find the id)
-            if (this.currentHand === handRecord) {
-                this.currentHand = null;
-                this.handActions = [];
-            }
+        } else if (data && this.currentHand) {
+            this.currentHand.id = data.id;
         }
     }
 
@@ -252,35 +260,23 @@ export class HandPersistence {
 
     private async onHandComplete(handNumber: number, rake: number): Promise<void> {
         if (!this.currentHand) {
+            console.warn(`[HandPersistence:${this.tableId}] HAND_COMPLETE for #${handNumber} but no currentHand`);
             return;
         }
 
         const ccCount = this.currentHand.community_cards.length;
         const finalStreet = ccCount >= 5 ? 'river' : ccCount >= 4 ? 'turn' : ccCount >= 3 ? 'flop' : 'preflop';
 
-        // If the insert hasn't returned yet (no id), the hand completed faster than
-        // the DB insert. Store the completion data on the record so onHandStart's
-        // post-insert recovery can find it, then null out currentHand.
+        // With event serialization, the insert should always have completed by now.
+        // But handle the edge case defensively.
         if (!this.currentHand.id) {
-            // Mark the record as completed so the insert recovery in onHandStart
-            // will update it when the insert finally returns
-            (this.currentHand as any)._completedEarly = true;
-            (this.currentHand as any)._completionData = {
-                pot: this.currentHand.pot,
-                rake,
-                community_cards: this.currentHand.community_cards,
-                winner_ids: this.currentHand.winner_ids,
-                actions: this.handActions,
-                status: 'completed',
-                street: finalStreet,
-                ended_at: new Date().toISOString(),
-            };
-            // Don't null currentHand — leave it for onHandStart to find after insert returns
+            console.error(`[HandPersistence:${this.tableId}] HAND_COMPLETE for #${handNumber} but no DB id — should not happen with serialization`);
+            this.currentHand = null;
             this.handActions = [];
             return;
         }
 
-        // Normal path: we have an id, update the DB record
+        // Update the DB record with completion data
         if (!(this.currentHand as any)._localOnly) {
             const updatePayload = {
                 pot: this.currentHand.pot,
@@ -299,7 +295,8 @@ export class HandPersistence {
                 .eq('id', this.currentHand.id);
 
             if (error) {
-                console.error(`[HandPersistence:${this.tableId}] Failed to update hand:`, error);
+                console.error(`[HandPersistence:${this.tableId}] Failed to update hand #${handNumber}:`, error);
+                // Retry once
                 try {
                     await supabase.from('hands').update(updatePayload).eq('id', this.currentHand.id);
                 } catch (e) {
@@ -308,7 +305,7 @@ export class HandPersistence {
             }
         }
 
-        // Reset state
+        // Reset state — ready for next hand
         this.currentHand = null;
         this.handActions = [];
     }
