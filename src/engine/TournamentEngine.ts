@@ -71,11 +71,11 @@ interface TournamentPlayer {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function resolveBlindStructure(raw: any): BlindLevel[] {
-    if (Array.isArray(raw)) return raw;
+    if (Array.isArray(raw) && raw.length > 0) return raw;
     if (typeof raw === 'string') {
         try {
             const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) return parsed;
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
         } catch { /* not JSON */ }
 
         // Resolve named structures
@@ -84,7 +84,7 @@ function resolveBlindStructure(raw: any): BlindLevel[] {
         if (key === 'regular' || key === 'standard') return BLIND_STRUCTURES.regular;
         if (key === 'deepstack' || key === 'deep') return BLIND_STRUCTURES.deepStack;
     }
-    // Default to regular
+    // Default to regular (covers empty arrays, null, undefined, unrecognized strings)
     return BLIND_STRUCTURES.regular;
 }
 
@@ -268,7 +268,23 @@ export class TournamentEngine {
             .eq('tournament_id', this.tournamentId);
 
         if (error || !registrations || registrations.length === 0) {
+            // No registrations — mark tournament as COMPLETED and bail
+            console.warn(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] No registrations found — marking COMPLETED`);
+            await this.supabase
+                .from('tournaments')
+                .update({ status: 'COMPLETED', current_players: 0 })
+                .eq('id', this.tournamentId);
             throw new Error(`No registrations found for tournament ${this.tournamentId}`);
+        }
+
+        // Need at least 2 players for a tournament
+        if (registrations.length < 2) {
+            console.warn(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Only ${registrations.length} registration — marking COMPLETED`);
+            await this.supabase
+                .from('tournaments')
+                .update({ status: 'COMPLETED', current_players: registrations.length })
+                .eq('id', this.tournamentId);
+            throw new Error(`Not enough players (${registrations.length}) for tournament ${this.tournamentId}`);
         }
 
         console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Migrating ${registrations.length} registrations to tournament_players`);
@@ -315,7 +331,7 @@ export class TournamentEngine {
 
         const activePlayers = Array.from(this.players.values()).filter(p => p.status === 'playing');
         const numTables = Math.max(1, Math.ceil(activePlayers.length / 9));
-        const firstBlinds = this.tournamentInfo.blind_structure[0];
+        const firstBlinds = this.tournamentInfo.blind_structure[0] || { smallBlind: 10, bigBlind: 20, ante: 0 };
 
         console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Creating ${numTables} tournament tables`);
 
