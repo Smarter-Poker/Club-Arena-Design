@@ -550,7 +550,10 @@ export class HandController {
                 ? evaluateOmahaHand
                 : evaluateHand;
 
-            const showdownResults: ShowdownResult[] = activePlayers.map(p => ({
+            // Filter out players with no cards (shouldn't happen, but defensive)
+            const playersWithCards = activePlayers.filter(p => p.cards && p.cards.length > 0);
+
+            const showdownResults: ShowdownResult[] = playersWithCards.map(p => ({
                 seat: p.seat,
                 userId: p.user_id,
                 cards: p.cards,

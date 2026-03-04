@@ -128,6 +128,16 @@ export interface EvaluatedHand {
 export function evaluateHand(holeCards: Card[], communityCards: Card[]): EvaluatedHand {
     const allCards = [...holeCards, ...communityCards];
 
+    // Guard: need at least 5 cards to evaluate a hand
+    if (allCards.length < 5) {
+        return {
+            rank: 0, // High card (worst possible)
+            name: 'No Hand',
+            cards: allCards,
+            kickers: [],
+        };
+    }
+
     // Generate all 5-card combinations
     const combinations = getCombinations(allCards, 5);
 
@@ -140,7 +150,17 @@ export function evaluateHand(holeCards: Card[], communityCards: Card[]): Evaluat
         }
     }
 
-    return bestHand!;
+    // Safety: should never be null if we have 5+ cards, but handle gracefully
+    if (!bestHand) {
+        return {
+            rank: 0,
+            name: 'No Hand',
+            cards: allCards.slice(0, 5),
+            kickers: [],
+        };
+    }
+
+    return bestHand;
 }
 
 function evaluate5Cards(cards: Card[]): EvaluatedHand {

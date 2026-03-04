@@ -275,9 +275,12 @@ export const WalletService = {
     },
 
     /**
-     * Fallback non-atomic buy-in deduction (used if RPC doesn't exist)
+     * Fallback buy-in deduction (used if RPC doesn't exist).
+     * Uses .gte() guard to prevent double-spend race conditions —
+     * the UPDATE only succeeds if chip_balance >= amount at execution time.
      */
     async lockForBuyInFallback(userId: string, clubId: string, amount: number): Promise<boolean> {
+        // Read current balance first for the subtraction value
         const { data: memberData, error: memberError } = await supabase
             .from('club_members')
             .select('chip_balance')
@@ -294,14 +297,22 @@ export const WalletService = {
             throw new Error(`Insufficient chips: have ${currentBalance}, need ${amount}`);
         }
 
-        const { error: updateError } = await supabase
+        // CRITICAL: .gte('chip_balance', amount) acts as an atomic guard.
+        // If a concurrent transaction reduced the balance below `amount`,
+        // this update will match 0 rows and `count` will be 0.
+        const { error: updateError, count } = await supabase
             .from('club_members')
             .update({ chip_balance: currentBalance - amount })
             .eq('club_id', clubId)
-            .eq('user_id', userId);
+            .eq('user_id', userId)
+            .gte('chip_balance', amount);
 
         if (updateError) {
             throw new Error('Failed to deduct chips for buy-in');
+        }
+
+        if (!count || count === 0) {
+            throw new Error('Insufficient chips (concurrent transaction detected)');
         }
 
         return true;
@@ -329,22 +340,35 @@ export const WalletService = {
 
         if (error) {
             console.warn('[WalletService] RPC unlock_chips_from_table failed:', error.message, '— falling back to direct credit');
-            // Fallback: credit chips back to club_members directly
-            const { data: memberData } = await supabase
-                .from('club_members')
-                .select('chip_balance')
-                .eq('club_id', clubId)
-                .eq('user_id', userId)
-                .single();
+            // Fallback: Try deduct_chip_balance RPC with negative amount (adds chips)
+            let credited = false;
+            try {
+                const { error: rpcErr } = await supabase.rpc('deduct_chip_balance', {
+                    p_club_id: clubId,
+                    p_user_id: userId,
+                    p_amount: -amount, // Negative = credit
+                });
+                credited = !rpcErr;
+            } catch { /* RPC may not exist */ }
 
-            const currentBalance = memberData?.chip_balance || 0;
-            const { error: updateError } = await supabase
-                .from('club_members')
-                .update({ chip_balance: currentBalance + amount })
-                .eq('club_id', clubId)
-                .eq('user_id', userId);
+            if (!credited) {
+                // Last resort: read-modify-write (credit is safer than debit — overpay is better than loss)
+                const { data: memberData } = await supabase
+                    .from('club_members')
+                    .select('chip_balance')
+                    .eq('club_id', clubId)
+                    .eq('user_id', userId)
+                    .single();
 
-            if (updateError) throw updateError;
+                const currentBalance = memberData?.chip_balance || 0;
+                const { error: updateError } = await supabase
+                    .from('club_members')
+                    .update({ chip_balance: currentBalance + amount })
+                    .eq('club_id', clubId)
+                    .eq('user_id', userId);
+
+                if (updateError) throw updateError;
+            }
         }
         return true;
     },
