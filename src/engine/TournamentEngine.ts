@@ -134,19 +134,24 @@ export class TournamentEngine {
     async start(): Promise<void> {
         if (this.running) return;
 
-        // Race condition guard: check if tournament is already RUNNING in DB
-        const { data: statusCheck } = await this.supabase
+        // Atomic race condition guard: try to claim this tournament by setting status to STARTING.
+        // If another instance already changed status, the WHERE clause won't match any rows.
+        const { data: claimed, error: claimError } = await this.supabase
             .from('tournaments')
-            .select('status')
+            .update({ status: 'STARTING' })
             .eq('id', this.tournamentId)
+            .eq('status', 'REGISTERING')
+            .select('id')
             .single();
 
-        if (statusCheck?.status === 'RUNNING') {
-            console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Tournament already RUNNING — skipping start`);
-            return;
-        }
-        if (statusCheck?.status === 'COMPLETED') {
-            console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Tournament already COMPLETED — skipping start`);
+        if (claimError || !claimed) {
+            // Another instance already started, or tournament is in wrong state
+            const { data: statusCheck } = await this.supabase
+                .from('tournaments')
+                .select('status')
+                .eq('id', this.tournamentId)
+                .single();
+            console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Cannot start — current status: ${statusCheck?.status || 'unknown'}`);
             return;
         }
 
@@ -564,15 +569,12 @@ export class TournamentEngine {
 
         // Find current level based on elapsed time
         let accumulated = 0;
-        let newLevel = 0;
+        let newLevel = blinds.length - 1; // Default to last level (cap)
         for (let i = 0; i < blinds.length; i++) {
             accumulated += blinds[i].durationMinutes;
             if (elapsedMinutes < accumulated) {
                 newLevel = i;
                 break;
-            }
-            if (i === blinds.length - 1) {
-                newLevel = i; // Cap at last level
             }
         }
 
@@ -700,6 +702,7 @@ export class TournamentEngine {
 
     private calculatePrize(position: number): number {
         if (!this.tournamentInfo) return 0;
+        if (!this.tournamentInfo.payout_structure || !Array.isArray(this.tournamentInfo.payout_structure)) return 0;
 
         const payoutEntry = this.tournamentInfo.payout_structure.find(p => p.place === position);
         if (!payoutEntry) return 0;
@@ -847,10 +850,8 @@ export class TournamentEngine {
                 continue;
             }
 
-            // Insert at target
-            // Note: horse_id omitted — tournament players are registered users, not horses
-            // The horse_id FK constraint would reject non-horse user_ids
-            await this.supabase
+            // Insert at target table
+            const { error: insertErr } = await this.supabase
                 .from('table_seats')
                 .insert({
                     table_id: target.tableId,
@@ -860,6 +861,11 @@ export class TournamentEngine {
                     is_sitting_out: false,
                     is_away: false,
                 });
+
+            if (insertErr) {
+                console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to insert merged seat for ${seat.user_id.slice(0, 8)}:`, insertErr.message);
+                continue;
+            }
 
             target.playerCount++;
 

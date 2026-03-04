@@ -681,7 +681,11 @@ class TournamentService {
         if (seat) {
             const { data: table } = await supabase.from('tables').select('tournament_id').eq('id', seat.table_id).single();
             if (table?.tournament_id === tournamentId) {
-                await supabase.from('table_seats').delete().eq('user_id', userId).eq('table_id', seat.table_id);
+                await supabase.from('table_seats')
+                    .update({ left_at: new Date().toISOString() })
+                    .eq('user_id', userId)
+                    .eq('table_id', seat.table_id)
+                    .is('left_at', null);
             }
         }
     }
