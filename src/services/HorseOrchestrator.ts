@@ -1069,11 +1069,12 @@ class HorseOrchestrator {
         for (const [tableId, table] of this.tables) {
             table.status = 'stopping';
 
-            // Remove all horse seats
+            // Soft-delete all seats (mark as left)
             await supabase
                 .from('table_seats')
-                .delete()
-                .eq('table_id', tableId);
+                .update({ left_at: new Date().toISOString() })
+                .eq('table_id', tableId)
+                .is('left_at', null);
 
             // Close table
             await supabase

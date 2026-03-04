@@ -287,13 +287,14 @@ class TableService {
                 console.log(`[TableService] Returned ${chipsToReturn} chips to wallet for user ${userId}`);
             }
 
-            // Clear the seat — MUST succeed since chips were already returned
+            // Soft-delete the seat — MUST succeed since chips were already returned
             const { error: clearError } = await supabase
                 .from('table_seats')
-                .delete()
+                .update({ left_at: new Date().toISOString() })
                 .eq('table_id', tableId)
                 .eq('seat_number', seatNumber)
-                .eq('user_id', userId);
+                .eq('user_id', userId)
+                .is('left_at', null);
 
             if (clearError) {
                 // Chips were already credited — seat will be orphaned but player won't lose chips

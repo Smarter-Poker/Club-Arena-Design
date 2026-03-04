@@ -1004,13 +1004,14 @@ export class HeadlessTableEngine {
                     } catch { /* Non-blocking — chip credit already succeeded */ }
                 }
 
-                // Remove the seat
+                // Soft-delete the seat (mark as left)
                 await this.supabaseClient
                     .from('table_seats')
-                    .delete()
+                    .update({ left_at: new Date().toISOString(), leave_pending: false })
                     .eq('table_id', this.tableId)
                     .eq('user_id', seat.user_id)
-                    .eq('seat_number', seat.seat_number);
+                    .eq('seat_number', seat.seat_number)
+                    .is('left_at', null);
 
                 console.log(
                     `[HeadlessTableEngine:${this.tableId}] Processed leave_pending for ${seat.user_id} — ` +
