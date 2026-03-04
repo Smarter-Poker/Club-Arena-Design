@@ -412,7 +412,7 @@ export default function TournamentPage() {
                             <div className="payout-structure">
                                 <h3>Payouts</h3>
                                 <div className="payout-list">
-                                    {selectedTournament.payout_structure.slice(0, 5).map((payout, i) => (
+                                    {(selectedTournament.payout_structure || selectedTournament.settings?.payout_structure || []).slice(0, 5).map((payout: any, i: number) => (
                                         <div key={i} className="payout-item">
                                             <span className="payout-place">
                                                 {payout.place === 1 ? '' : payout.place === 2 ? '' : payout.place === 3 ? '' : `${payout.place}th`}

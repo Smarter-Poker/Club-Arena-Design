@@ -324,17 +324,24 @@ class TournamentService {
             .insert({
                 club_id: clubId,
                 name: config.name,
-                game_type: config.type?.toUpperCase() || 'NLH',
-                buy_in_amount: config.buyIn,
-                buy_in_fee: config.rake || 0,
+                game_variant: (config.type?.toLowerCase() || 'nlh') as any,
+                buy_in: config.buyIn,
+                fee: config.rake || 0,
                 starting_chips: config.startingStack,
                 max_players: config.maxPlayers,
                 current_players: 0,
                 status: 'scheduled',
                 blind_structure: config.blindStructure,
-                payout_structure: config.payoutStructure,
-                guaranteed_prize: 0,
-                start_time: config.startTime?.toISOString(),
+                prize_pool: 0,
+                scheduled_start: config.startTime?.toISOString(),
+                settings: {
+                    late_registration_levels: 6,
+                    re_entry_allowed: true,
+                    re_entry_max: 1,
+                    addon_allowed: false,
+                    bounty_enabled: false,
+                    payout_structure: config.payoutStructure || [],
+                },
             })
             .select()
             .single();
@@ -376,8 +383,8 @@ class TournamentService {
         }
 
         // Calculate total cost (buy-in + fee)
-        const buyIn = tournament.buy_in_amount || tournament.buy_in || 0;
-        const fee = tournament.buy_in_fee || tournament.rake || 0;
+        const buyIn = tournament.buy_in || 0;
+        const fee = tournament.fee || 0;
         const totalCost = buyIn + fee;
 
         // ─── Deduct from club_members.chip_balance (matches cash game wallet system) ───
@@ -438,7 +445,7 @@ class TournamentService {
         // Atomically update player count and prize pool
         const { error: countError } = await supabase.from('tournaments').update({
             current_players: tournament.current_players + 1,
-            guaranteed_prize: (tournament.guaranteed_prize || tournament.prize_pool || 0) + buyIn,
+            prize_pool: (tournament.prize_pool || 0) + buyIn,
         }).eq('id', tournamentId);
 
         if (countError) {
@@ -459,7 +466,7 @@ class TournamentService {
         }
 
         // Calculate refund amount (buy-in + fee)
-        const refundAmount = (tournament.buy_in_amount || tournament.buy_in || 0) + (tournament.buy_in_fee || tournament.rake || 0);
+        const refundAmount = (tournament.buy_in || 0) + (tournament.fee || 0);
 
         // Refund to player wallet — MUST succeed before unregistering
         const { error: refundError } = await supabase.rpc('add_to_player_wallet', {
@@ -481,7 +488,7 @@ class TournamentService {
         // Atomically decrement player count and prize pool via direct update
         const { error: countError } = await supabase.from('tournaments').update({
             current_players: Math.max(0, tournament.current_players - 1),
-            guaranteed_prize: Math.max(0, (tournament.guaranteed_prize || tournament.prize_pool || 0) - (tournament.buy_in_amount || tournament.buy_in || 0)),
+            prize_pool: Math.max(0, (tournament.prize_pool || 0) - (tournament.buy_in || 0)),
         }).eq('id', tournamentId);
 
         if (countError) {
@@ -504,7 +511,9 @@ class TournamentService {
         if (!tournament.blind_structure?.length) {
             throw new Error('Tournament has no blind structure defined');
         }
-        if (!tournament.payout_structure?.length) {
+        // Payout structure may be in top-level field or settings.payout_structure
+        const payoutStructure = tournament.payout_structure || tournament.settings?.payout_structure;
+        if (!payoutStructure?.length) {
             throw new Error('Tournament has no payout structure defined');
         }
         if ((tournament.starting_chips || 0) <= 0) {
@@ -607,8 +616,9 @@ class TournamentService {
         const tournament = await this.getTournament(tournamentId);
         if (!tournament) throw new Error('Tournament not found');
 
-        // Calculate prize
-        const payoutEntry = tournament.payout_structure.find(p => p.place === position);
+        // Calculate prize (payout may be in top-level or settings)
+        const tourneyPayouts = tournament.payout_structure || tournament.settings?.payout_structure || [];
+        const payoutEntry = tourneyPayouts.find((p: any) => p.place === position);
         const prize = payoutEntry
             ? Math.floor((tournament.prize_pool * payoutEntry.percentage) / 100)
             : 0;
@@ -795,7 +805,7 @@ class TournamentService {
         // @ts-ignore
         const rebuyChips = tournament.rebuy_chips || tournament.starting_chips;
         // @ts-ignore
-        const rebuyCost = tournament.rebuy_cost || tournament.buy_in_amount || tournament.buy_in;
+        const rebuyCost = tournament.rebuy_cost || tournament.buy_in;
 
         // Process rebuy via RPC
         const { data, error } = await supabase.rpc('process_tournament_rebuy', {
@@ -859,7 +869,7 @@ class TournamentService {
         // @ts-ignore
         const addonChips = tournament.addon_chips || tournament.starting_chips;
         // @ts-ignore
-        const addonCost = tournament.addon_cost || tournament.buy_in_amount || tournament.buy_in;
+        const addonCost = tournament.addon_cost || tournament.buy_in;
 
         const { data, error } = await supabase.rpc('process_tournament_rebuy', {
             p_tournament_id: tournamentId,
@@ -1094,8 +1104,8 @@ class TournamentService {
         await supabase
             .from('tournaments')
             .update({
-                status: 'finished',
-                finished_at: new Date().toISOString(),
+                status: 'completed',
+                ended_at: new Date().toISOString(),
             })
             .eq('id', tournamentId);
 
@@ -1115,10 +1125,11 @@ class TournamentService {
                 // Dynamically import to avoid circular deps
                 const { POYService } = await import('./POYService');
 
-                // Map tournament type to game_type
-                const gameType = tournament.type === 'spin' ? 'spin-n-go'
-                    : tournament.type === 'sng' ? 'sit-n-go'
-                        : tournament.type === 'satellite' ? 'satellite'
+                // Map tournament variant to game_type for POY
+                const variant = tournament.game_variant || tournament.type || '';
+                const gameType = variant === 'spin' ? 'spin-n-go'
+                    : variant === 'sng' ? 'sit-n-go'
+                        : variant === 'satellite' ? 'satellite'
                             : 'tournament';
 
                 // Submit each player's result
@@ -1130,7 +1141,7 @@ class TournamentService {
                         game_id: tournamentId,
                         placement: player.position,
                         total_players: tournament.current_players || players.length,
-                        buy_in: tournament.buy_in_amount || tournament.buy_in || 0,
+                        buy_in: tournament.buy_in || 0,
                         winnings: player.prize || 0,
                     });
                 }

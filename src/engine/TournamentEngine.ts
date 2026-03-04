@@ -40,14 +40,16 @@ interface TournamentInfo {
     id: string;
     name: string;
     club_id: string;
-    game_type: string;
-    buy_in_amount: number;
+    game_variant: string;
+    buy_in: number;
+    fee: number;
     starting_chips: number;
     max_players: number;
     current_players: number;
     prize_pool: number;
     blind_structure: BlindLevel[];
     payout_structure: PayoutEntry[];
+    settings?: any;
     started_at: string;
 }
 
@@ -225,21 +227,25 @@ export class TournamentEngine {
 
         const blinds = resolveBlindStructure(data.blind_structure);
         const playerCount = data.current_players || 0;
-        const payouts = resolvePayoutStructure(data.payout_structure, playerCount);
+        // Payout structure may be top-level (legacy) or in settings (new format)
+        const rawPayouts = data.payout_structure || data.settings?.payout_structure || [];
+        const payouts = resolvePayoutStructure(rawPayouts, playerCount);
 
         this.tournamentInfo = {
             id: data.id,
             name: data.name,
             club_id: data.club_id,
-            game_type: data.game_type || 'NLH',
-            buy_in_amount: data.buy_in_amount || 0,
+            game_variant: data.game_variant || 'nlh',
+            buy_in: data.buy_in || data.buy_in_amount || 0,
+            fee: data.fee || data.buy_in_fee || 0,
             starting_chips: data.starting_chips || 10000,
             max_players: data.max_players || 50,
             current_players: playerCount,
-            prize_pool: data.prize_pool || (playerCount * (data.buy_in_amount || 0)),
+            prize_pool: data.prize_pool || (playerCount * (data.buy_in || data.buy_in_amount || 0)),
             blind_structure: blinds,
             payout_structure: payouts,
-            started_at: '', // Will be set when we transition to RUNNING
+            settings: data.settings,
+            started_at: data.started_at || '',
         };
 
         console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Loaded: ${data.name}, ${playerCount} players, ${blinds.length} blind levels`);
@@ -328,7 +334,7 @@ export class TournamentEngine {
 
         // Populate local player map & deduct buy-ins from wallets
         const clubId = this.tournamentInfo.club_id;
-        const buyInAmount = this.tournamentInfo.buy_in_amount;
+        const buyInAmount = this.tournamentInfo.buy_in;
 
         for (const r of registrations) {
             this.players.set(r.user_id, {
@@ -385,7 +391,7 @@ export class TournamentEngine {
         }
 
         // Update prize pool based on actual player count (not stale DB value)
-        const actualPrizePool = registrations.length * this.tournamentInfo.buy_in_amount;
+        const actualPrizePool = registrations.length * this.tournamentInfo.buy_in;
         this.tournamentInfo.prize_pool = actualPrizePool;
         this.tournamentInfo.current_players = registrations.length;
 
@@ -413,8 +419,8 @@ export class TournamentEngine {
 
         console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Creating ${numTables} tournament tables`);
 
-        // Map game_type to game_variant
-        const gameVariant = this.mapGameVariant(this.tournamentInfo.game_type);
+        // Map game_variant to table game_variant column
+        const gameVariant = this.mapGameVariant(this.tournamentInfo.game_variant);
 
         for (let i = 0; i < numTables; i++) {
             const tableRow = {

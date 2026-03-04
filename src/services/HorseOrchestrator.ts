@@ -704,11 +704,11 @@ class HorseOrchestrator {
                 .insert({
                     club_id: this.clubId,
                     name: config.name,
-                    game_type: dbGameType,
+                    game_variant: dbGameType,
                     variant: config.type, // freezeout/bounty/progressive_bounty/mystery_bounty
-                    buy_in_amount: config.buyIn,
-                    buy_in_fee: config.rake,
-                    guaranteed_prize: config.guarantee || 0,
+                    buy_in: config.buyIn,
+                    fee: config.rake,
+                    prize_pool: config.guarantee || 0,
                     starting_chips: config.startingStack,
                     max_players: config.maxPlayers,
                     current_players: 0,
@@ -748,7 +748,7 @@ class HorseOrchestrator {
                 .from('tournaments')
                 .update({
                     current_players: registered,
-                    guaranteed_prize: prizePool,
+                    prize_pool: prizePool,
                     status: 'registering',
                 })
                 .eq('id', tournament.id);
@@ -802,11 +802,11 @@ class HorseOrchestrator {
                 .insert({
                     club_id: this.clubId,
                     name: config.name,
-                    game_type: dbGameType,
+                    game_variant: dbGameType,
                     variant: 'SNG',
-                    buy_in_amount: config.buyIn,
-                    buy_in_fee: config.rake,
-                    guaranteed_prize: null,
+                    buy_in: config.buyIn,
+                    fee: config.rake,
+                    prize_pool: null,
                     starting_chips: config.startingStack,
                     max_players: config.maxPlayers,
                     current_players: 0,
@@ -842,7 +842,7 @@ class HorseOrchestrator {
                 .from('tournaments')
                 .update({
                     current_players: registered,
-                    guaranteed_prize: prizePool,
+                    prize_pool: prizePool,
                     status: registered >= config.minPlayers ? 'running' : 'registering',
                 })
                 .eq('id', sng.id);
@@ -893,11 +893,11 @@ class HorseOrchestrator {
                 .insert({
                     club_id: this.clubId,
                     name: `${config.name} (${multiplier}x)`,
-                    game_type: dbGameType,
+                    game_variant: dbGameType,
                     variant: 'SPIN',
-                    buy_in_amount: config.buyIn,
-                    buy_in_fee: config.rake,
-                    guaranteed_prize: prizePool,
+                    buy_in: config.buyIn,
+                    fee: config.rake,
+                    prize_pool: prizePool,
                     starting_chips: config.startingStack,
                     max_players: config.maxPlayers,
                     current_players: 0,
