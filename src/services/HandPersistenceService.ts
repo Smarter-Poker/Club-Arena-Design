@@ -355,7 +355,7 @@ export class HandPersistence {
                         hand_id: handId,
                         table_id: this.currentHand.table_id,
                         club_id: this.currentHand.club_id,
-                        amount: rake,
+                        rake_amount: rake,
                         pot_size: this.currentHand.pot,
                     });
 

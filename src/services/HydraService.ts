@@ -384,11 +384,12 @@ export const HydraService = {
 
         const stack = getStackForProfile(horseData.horse_profile as HorseProfile, bigBlind);
 
-        // Find an available seat at the table
+        // Find an available seat at the table (only count active seats, not left players)
         const { data: existingSeats } = await supabase
             .from('table_seats')
             .select('seat_number')
-            .eq('table_id', tableId);
+            .eq('table_id', tableId)
+            .is('left_at', null);
 
         const takenSeats = new Set((existingSeats || []).map(s => s.seat_number));
 
@@ -449,11 +450,11 @@ export const HydraService = {
                 return null;
             }
 
-            // Log buy-in transaction
+            // Log buy-in transaction (debit = positive amount, type indicates direction)
             await supabase.from('wallet_transactions').insert({
                 user_id: horseId,
                 wallet_type: 'PLAYER',
-                amount: -stack,
+                amount: stack,
                 type: 'debit',
                 category: 'buyin',
                 description: `Initial buy-in ${stack} chips at ${bigBlind}BB table`,

@@ -317,11 +317,12 @@ class TableService {
                     .eq('user_id', userId);
             }
 
-            // Update player count
+            // Update player count (only count active seats — not left players)
             const { count } = await supabase
                 .from('table_seats')
                 .select('*', { count: 'exact', head: true })
-                .eq('table_id', tableId);
+                .eq('table_id', tableId)
+                .is('left_at', null);
 
             await this.updatePlayerCount(tableId, count || 0);
 
