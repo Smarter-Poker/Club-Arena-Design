@@ -22,7 +22,7 @@ import { HydraService, type HorseDecision } from '../services/HydraService';
 import { BotLogic, type HorseStyle, type BotDecision } from './BotLogic';
 import { GTOQueryService } from '../services/GTOQueryService';
 import { RakeService, type DealtInPlayer } from '../services/RakeService';
-import { workerTimeout } from '../hooks/useTabKeepAlive';
+import { workerTimeout, cancelWorkerTimeout } from '../hooks/useTabKeepAlive';
 import type { SeatPlayer, GameVariant } from '../types/database.types';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -63,8 +63,10 @@ export class HeadlessTableEngine {
     private seatedPlayers: SeatedPlayer[] = [];
     private horseAIHandlers: Map<string, () => void> = new Map();
     private unsubscribeHands: (() => void)[] = [];
+    private pendingTimerIds: number[] = []; // Track workerTimeout IDs for cleanup
     private persistence: HandPersistence;
     private dealerSeatIndex: number = 0; // Tracks dealer position (rotates each hand)
+    private consecutiveErrors: number = 0; // For exponential backoff on dealing errors
     // Per-hand rake tracking
     private currentHandWentToFlop: boolean = false;
     private currentHandPotSize: number = 0;
@@ -133,6 +135,12 @@ export class HeadlessTableEngine {
         if (this.handController) {
             this.handController = null;
         }
+
+        // Clean up pending horse AI timers (prevents memory leak)
+        for (const timerId of this.pendingTimerIds) {
+            cancelWorkerTimeout(timerId);
+        }
+        this.pendingTimerIds = [];
 
         // Clean up event handlers
         this.unsubscribeHands.forEach(unsub => unsub());
@@ -251,15 +259,24 @@ export class HeadlessTableEngine {
 
                 // Deal hand
                 await this.dealHand(activePlayers);
+                this.consecutiveErrors = 0; // Reset on success
 
                 // Wait 3 seconds before next hand
                 if (this.running) {
                     this.dealingLoopTimer = setTimeout(dealNextHand, 3000) as any;
                 }
             } catch (err) {
-                console.error(`[HeadlessTableEngine:${this.tableId}] Dealing loop error:`, err);
-                if (this.running) {
-                    this.dealingLoopTimer = setTimeout(dealNextHand, 5000) as any;
+                this.consecutiveErrors++;
+                const backoffMs = Math.min(5000 * Math.pow(2, this.consecutiveErrors - 1), 60000);
+                console.error(
+                    `[HeadlessTableEngine:${this.tableId}] Dealing loop error (attempt ${this.consecutiveErrors}, retry in ${backoffMs}ms):`,
+                    err
+                );
+                if (this.running && this.consecutiveErrors < 10) {
+                    this.dealingLoopTimer = setTimeout(dealNextHand, backoffMs) as any;
+                } else if (this.consecutiveErrors >= 10) {
+                    console.error(`[HeadlessTableEngine:${this.tableId}] Too many consecutive errors (${this.consecutiveErrors}) — stopping engine`);
+                    this.running = false;
                 }
             }
         };
@@ -336,10 +353,18 @@ export class HeadlessTableEngine {
                 if (event.type === 'HAND_COMPLETE') {
                     clearTimeout(handCompleteTimeout);
                     this.handController = null;
+                    // Clean up pending horse AI timers for this hand
+                    for (const timerId of this.pendingTimerIds) {
+                        cancelWorkerTimeout(timerId);
+                    }
+                    this.pendingTimerIds = [];
+                    // Clean up unsubscribe from this hand (prevent unbounded growth)
+                    persistenceUnsub();
                     resolve();
                 }
             });
 
+            // Don't accumulate — old hands' unsubs are cleaned in HAND_COMPLETE above
             this.unsubscribeHands.push(persistenceUnsub);
 
             // Start hand
@@ -455,7 +480,7 @@ export class HeadlessTableEngine {
         const thinkTime = Math.min(decision.thinkTime, 200 + Math.random() * 400);
         const handControllerRef = this.handController;
 
-        workerTimeout(() => {
+        const timerId = workerTimeout(() => {
             if (!handControllerRef || !this.running) return;
 
             let action = decision.action as string;
@@ -503,6 +528,7 @@ export class HeadlessTableEngine {
                 }
             }
         }, thinkTime);
+        this.pendingTimerIds.push(timerId);
     }
 
     /**
@@ -631,18 +657,40 @@ export class HeadlessTableEngine {
                     continue;
                 }
 
-                // 2. Deduct from club_members.chip_balance (atomic via RPC or fallback)
-                const newBalance = walletBalance - rebuyAmount;
-                const { error: deductError, count } = await this.supabaseClient
-                    .from('club_members')
-                    .update({ chip_balance: newBalance })
-                    .eq('club_id', clubId)
-                    .eq('user_id', horse.user_id)
-                    .gte('chip_balance', rebuyAmount); // Only deduct if sufficient — prevents race condition
+                // 2. Deduct from club_members.chip_balance using atomic RPC
+                // Attempt RPC first (single SQL statement, no read-then-write race)
+                let deductSuccess = false;
+                try {
+                    const { error: rpcError } = await this.supabaseClient.rpc('deduct_chip_balance', {
+                        p_club_id: clubId,
+                        p_user_id: horse.user_id,
+                        p_amount: rebuyAmount,
+                    });
+                    deductSuccess = !rpcError;
+                    if (rpcError) {
+                        console.warn(`[HeadlessTableEngine:${this.tableId}] RPC deduct failed, using fallback:`, rpcError.message);
+                    }
+                } catch {
+                    // RPC may not exist yet — fall through to manual approach
+                }
 
-                if (deductError) {
-                    console.error(`[HeadlessTableEngine:${this.tableId}] Wallet deduction failed for ${horse.username}:`, deductError);
-                    continue;
+                if (!deductSuccess) {
+                    // Fallback: conditional update with count check
+                    const newBalance = walletBalance - rebuyAmount;
+                    const { error: deductError, count } = await this.supabaseClient
+                        .from('club_members')
+                        .update({ chip_balance: newBalance })
+                        .eq('club_id', clubId)
+                        .eq('user_id', horse.user_id)
+                        .gte('chip_balance', rebuyAmount); // Only deduct if still sufficient
+
+                    if (deductError || !count || count === 0) {
+                        console.error(
+                            `[HeadlessTableEngine:${this.tableId}] Wallet deduction failed for ${horse.username}: ` +
+                            `error=${deductError?.message}, count=${count}`
+                        );
+                        continue;
+                    }
                 }
 
                 // 3. Update stack at table
@@ -679,7 +727,7 @@ export class HeadlessTableEngine {
 
                 console.log(
                     `[HeadlessTableEngine:${this.tableId}] Auto-rebuy: ${horse.username} → ${rebuyAmount} chips ` +
-                    `(wallet: ${walletBalance} → ${newBalance})`
+                    `(wallet: ${walletBalance} → ${walletBalance - rebuyAmount})`
                 );
             } catch (err) {
                 console.error(`[HeadlessTableEngine:${this.tableId}] Auto-rebuy failed for ${horse.username}:`, err);

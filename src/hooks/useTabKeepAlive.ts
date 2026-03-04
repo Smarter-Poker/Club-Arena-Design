@@ -49,6 +49,7 @@ function getTimerWorker(): Worker {
 /**
  * Throttle-proof setTimeout — uses a Web Worker for timing.
  * Drop-in replacement for setTimeout(fn, ms).
+ * Returns an id that can be passed to cancelWorkerTimeout().
  */
 export function workerTimeout(fn: () => void, ms: number): number {
     const id = ++_timerId;
@@ -66,6 +67,15 @@ export function workerTimeout(fn: () => void, ms: number): number {
         }, ms);
     }
     return id;
+}
+
+/**
+ * Cancel a pending workerTimeout by id.
+ * Prevents memory leaks from accumulated closures when hands complete
+ * before think-time timers fire.
+ */
+export function cancelWorkerTimeout(id: number): void {
+    _callbacks.delete(id);
 }
 
 // ─── React Hook ──────────────────────────────────────────────────────────────
