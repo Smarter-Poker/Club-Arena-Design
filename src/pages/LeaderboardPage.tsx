@@ -76,7 +76,7 @@ export default function LeaderboardPage() {
                     {
                         event: '*',
                         schema: 'public',
-                        table: 'leaderboard_cache',
+                        table: 'promotion_leaderboards',
                     },
                     () => {
                         loadLeaderboard(true);
