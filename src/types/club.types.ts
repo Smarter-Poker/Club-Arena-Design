@@ -354,7 +354,7 @@ export interface TournamentEntry {
     user_id: string;
     chips: number;
     position?: number;
-    prize_won?: number;
+    prize?: number;
     reentries: number;
     rebuys: number;
     addon_taken: boolean;

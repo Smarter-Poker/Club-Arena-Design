@@ -51,9 +51,9 @@ export default function TournamentBracket({
                 .from('tournament_players')
                 .select(`
                     user_id,
-                    stack,
+                    chips,
                     status,
-                    finish_position,
+                    position,
                     profiles(display_name, avatar_url)
                 `)
                 .eq('tournament_id', tournamentId);
@@ -64,9 +64,9 @@ export default function TournamentBracket({
                 userId: p.user_id,
                 displayName: p.profiles?.display_name || 'Unknown',
                 avatarUrl: p.profiles?.avatar_url,
-                chips: p.stack || 0,
+                chips: p.chips || 0,
                 eliminated: p.status === 'eliminated',
-                finishPosition: p.finish_position
+                finishPosition: p.position
             }));
 
             // Sort by chips (active) or finish position (eliminated)

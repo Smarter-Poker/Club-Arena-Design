@@ -735,7 +735,7 @@ export class HeadlessTableEngine {
         const updates = players.map(player =>
             this.supabaseClient
                 .from('table_seats')
-                .update({ stack: player.stack })
+                .update({ chips: player.stack })
                 .eq('table_id', this.tableId)
                 .eq('user_id', player.user_id)
         );
@@ -754,7 +754,7 @@ export class HeadlessTableEngine {
         const updates = players.map(player =>
             this.supabaseClient
                 .from('tournament_players')
-                .update({ stack: player.stack })
+                .update({ chips: player.stack })
                 .eq('tournament_id', this.tableInfo!.tournament_id!)
                 .eq('user_id', player.user_id)
         );
@@ -845,7 +845,7 @@ export class HeadlessTableEngine {
                 await this.supabaseClient.from('wallet_transactions').insert({
                     user_id: horse.user_id,
                     wallet_type: 'PLAYER',
-                    amount: -rebuyAmount,
+                    amount: rebuyAmount,
                     type: 'debit',
                     category: 'buyin',
                     description: `Auto-rebuy ${rebuyAmount} chips (${this.tableInfo?.big_blind || 2}BB x100) at ${this.tableInfo?.small_blind}/${this.tableInfo?.big_blind}`,

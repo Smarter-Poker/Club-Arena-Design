@@ -263,14 +263,14 @@ export class TournamentEngine {
             // Load existing players
             const { data: fullPlayers } = await this.supabase
                 .from('tournament_players')
-                .select('user_id, stack, status, horse_id')
+                .select('user_id, chips, status, horse_id')
                 .eq('tournament_id', this.tournamentId);
             if (fullPlayers) {
                 for (const p of fullPlayers) {
                     this.players.set(p.user_id, {
                         user_id: p.user_id,
                         username: p.horse_id || p.user_id.slice(0, 8),
-                        chips: p.stack || this.tournamentInfo.starting_chips,
+                        chips: p.chips || this.tournamentInfo.starting_chips,
                         status: p.status || 'playing',
                     });
                 }
@@ -310,7 +310,7 @@ export class TournamentEngine {
         const playerRows = registrations.map(r => ({
             tournament_id: this.tournamentId,
             user_id: r.user_id,
-            stack: this.tournamentInfo!.starting_chips,
+            chips: this.tournamentInfo!.starting_chips,
             status: 'registered',
             rebuy_count: 0,
             addon_count: 0,
@@ -675,9 +675,9 @@ export class TournamentEngine {
             .from('tournament_players')
             .update({
                 status: 'eliminated',
-                finish_position: position,
-                prize_won: prize,
-                stack: 0,
+                position: position,
+                prize: prize,
+                chips: 0,
                 eliminated_at: new Date().toISOString(),
             })
             .eq('tournament_id', this.tournamentId)
@@ -909,8 +909,8 @@ export class TournamentEngine {
                 .from('tournament_players')
                 .update({
                     status: 'winner',
-                    finish_position: 1,
-                    prize_won: firstPrize,
+                    position: 1,
+                    prize: firstPrize,
                 })
                 .eq('tournament_id', this.tournamentId)
                 .eq('user_id', winner.user_id);
