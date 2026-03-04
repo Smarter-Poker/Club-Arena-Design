@@ -656,16 +656,46 @@ class TournamentService {
             .eq('tournament_id', tournamentId)
             .eq('user_id', userId);
 
-        // Credit prize to player wallet if they won money
+        // Credit prize to club_members.chip_balance (matches how buy-ins are deducted)
         if (prize > 0) {
-            const { error: prizeError } = await supabase.rpc('add_to_player_wallet', {
-                p_user_id: userId,
-                p_amount: prize,
-            });
+            const clubId = tournament.club_id;
+            if (!clubId) {
+                console.error('[TournamentService] CRITICAL: Tournament has no club_id — cannot pay prize');
+                throw new Error('Tournament has no club — cannot credit prize');
+            }
 
-            if (prizeError) {
-                console.error('[TournamentService] CRITICAL: Prize credit failed:', prizeError);
-                throw new Error(`Failed to credit ${ordinal(position)} place prize of $${prize}`);
+            let credited = false;
+            try {
+                const { error: rpcError } = await supabase.rpc('fn_add_chips', {
+                    p_user_id: userId,
+                    p_club_id: clubId,
+                    p_amount: prize,
+                });
+                credited = !rpcError;
+                if (rpcError) {
+                    console.warn('[TournamentService] RPC fn_add_chips prize failed, trying fallback:', rpcError.message);
+                }
+            } catch { /* RPC may not exist */ }
+
+            if (!credited) {
+                // Fallback: read-modify-write
+                const { data: memberData } = await supabase
+                    .from('club_members')
+                    .select('chip_balance')
+                    .eq('club_id', clubId)
+                    .eq('user_id', userId)
+                    .single();
+
+                const { error: updateError } = await supabase
+                    .from('club_members')
+                    .update({ chip_balance: ((memberData?.chip_balance) || 0) + prize })
+                    .eq('club_id', clubId)
+                    .eq('user_id', userId);
+
+                if (updateError) {
+                    console.error('[TournamentService] CRITICAL: Prize credit failed:', updateError);
+                    throw new Error(`Failed to credit ${ordinal(position)} place prize of $${prize}`);
+                }
             }
         }
 
