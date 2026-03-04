@@ -715,6 +715,8 @@ export class TournamentEngine {
             while (usedSeats.has(newSeat) && newSeat <= 9) newSeat++;
 
             // Insert at target
+            // Note: horse_id omitted — tournament players are registered users, not horses
+            // The horse_id FK constraint would reject non-horse user_ids
             await this.supabase
                 .from('table_seats')
                 .insert({
@@ -724,7 +726,6 @@ export class TournamentEngine {
                     stack: seat.stack,
                     is_sitting_out: false,
                     is_away: false,
-                    horse_id: seat.user_id,
                 });
 
             target.playerCount++;

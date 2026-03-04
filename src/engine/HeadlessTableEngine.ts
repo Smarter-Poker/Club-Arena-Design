@@ -17,7 +17,7 @@
 
 import { supabase } from '../lib/supabase';
 import { HandController, type HandConfig, type HandEvent } from './HandController';
-import { handPersistenceService } from '../services/HandPersistenceService';
+import { HandPersistence } from '../services/HandPersistenceService';
 import { HydraService, type HorseDecision } from '../services/HydraService';
 import { BotLogic, type HorseStyle, type BotDecision } from './BotLogic';
 import { GTOQueryService } from '../services/GTOQueryService';
@@ -63,6 +63,7 @@ export class HeadlessTableEngine {
     private seatedPlayers: SeatedPlayer[] = [];
     private horseAIHandlers: Map<string, () => void> = new Map();
     private unsubscribeHands: (() => void)[] = [];
+    private persistence: HandPersistence;
     // Per-hand rake tracking
     private currentHandWentToFlop: boolean = false;
     private currentHandPotSize: number = 0;
@@ -71,6 +72,7 @@ export class HeadlessTableEngine {
     constructor(tableId: string, supabaseClient: typeof supabase) {
         this.tableId = tableId;
         this.supabaseClient = supabaseClient;
+        this.persistence = new HandPersistence(tableId);
         console.log(`[HeadlessTableEngine] Created for table ${tableId}`);
     }
 
@@ -135,6 +137,9 @@ export class HeadlessTableEngine {
         this.unsubscribeHands.forEach(unsub => unsub());
         this.unsubscribeHands = [];
         this.horseAIHandlers.clear();
+
+        // Clean up per-table persistence
+        this.persistence.dispose();
     }
 
     /**
@@ -302,8 +307,8 @@ export class HeadlessTableEngine {
 
         this.handController = new HandController(config, hcPlayers, dealerSeat);
 
-        // Wire persistence service
-        handPersistenceService.wireToHandController(this.handController, {
+        // Wire per-table persistence service (NOT the singleton — each table gets its own)
+        this.persistence.wireToHandController(this.handController, {
             tableId: this.tableId,
             clubId: this.tableInfo.club_id,
             stakes: `${this.tableInfo.small_blind}/${this.tableInfo.big_blind}`,
@@ -623,19 +628,8 @@ export class HeadlessTableEngine {
             return;
         }
 
-        // Look up the most recent hand for this table to get the DB hand ID
-        const { data: latestHand, error: handError } = await this.supabaseClient
-            .from('hands')
-            .select('id')
-            .eq('table_id', this.tableId)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
-
-        const handId = latestHand?.id || crypto.randomUUID();
-        if (handError) {
-            console.warn(`[HeadlessTableEngine:${this.tableId}] Could not fetch hand ID for rake, using generated UUID`);
-        }
+        // Get hand ID directly from per-table persistence (no extra DB query needed)
+        const handId = this.persistence.getCurrentHandId() || crypto.randomUUID();
 
         // Build dealt-in player list for rake attribution
         const dealtInPlayers: DealtInPlayer[] = players.map(p => ({
