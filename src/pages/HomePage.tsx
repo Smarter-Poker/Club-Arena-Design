@@ -189,21 +189,13 @@ export default function HomePage() {
                     .select('*', { count: 'exact', head: true })
                     .eq('club_id', club.id);
 
-                // 2. Real active players: count occupied seats at this club's tables
+                // 2. Real active players: count occupied seats across ALL tables (platform-wide)
                 let activePlayers = 0;
-                const { data: clubTables } = await supabase
-                    .from('tables')
-                    .select('id')
-                    .eq('club_id', club.id);
-
-                if (clubTables && clubTables.length > 0) {
-                    const tableIds = clubTables.map(t => t.id);
-                    const { count: seatCount } = await supabase
-                        .from('table_seats')
-                        .select('*', { count: 'exact', head: true })
-                        .in('table_id', tableIds);
-                    activePlayers = seatCount || 0;
-                }
+                const { count: seatCount } = await supabase
+                    .from('table_seats')
+                    .select('*', { count: 'exact', head: true })
+                    .is('left_at', null);
+                activePlayers = seatCount || 0;
 
                 // 3. Club level — no column exists yet, default to 1
                 const clubLevel = 1;
