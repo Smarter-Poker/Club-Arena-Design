@@ -584,10 +584,23 @@ export default function TablePage() {
         if (tableId && players.length > 0) {
             const clubId = actualClubIdRef.current || players[0]?.clubId || tableId;
             try {
-                await RakeService.executeWaterfall({
+                // Resolve unionId from club → union_clubs join table
+                let unionId: string | undefined;
+                try {
+                    const { data: ucRow } = await supabase
+                        .from('union_clubs')
+                        .select('union_id')
+                        .eq('club_id', clubId)
+                        .limit(1)
+                        .single();
+                    if (ucRow) unionId = ucRow.union_id;
+                } catch { /* club may not be in a union — standalone club */ }
+
+                const waterfallResult = await RakeService.executeWaterfall({
                     handId,
                     tableId,
                     clubId,
+                    unionId,
                     smallBlind,
                     potSize,
                     bigBlind,
@@ -599,29 +612,13 @@ export default function TablePage() {
                         wentToFlop
                     }))
                 });
+
+                // Update local BBJ display from waterfall result
+                if (waterfallResult.bbjContributed && wentToFlop) {
+                    setBbjAmount(prev => prev + BBJService.calculateContribution(bigBlind));
+                }
             } catch (rakeErr) {
                 console.error('[Rake] Waterfall failed:', rakeErr);
-            }
-
-            // Record BBJ contribution (0.5x BB per hand that sees flop)
-            // NOTE: Always attempt if wentToFlop — pool starts at 0 and grows from contributions
-            if (wentToFlop) {
-                try {
-                    const pool = await BBJService.getPool({ clubId });
-                    if (pool) {
-                        await BBJService.recordContribution({
-                            poolId: pool.id,
-                            handId,
-                            tableId,
-                            bigBlind,
-                            currentMainBalance: pool.main_balance,
-                        });
-                        // Update local BBJ display
-                        setBbjAmount(prev => prev + BBJService.calculateContribution(bigBlind));
-                    }
-                } catch (error) {
-                    console.error('[BBJ] Contribution failed:', error);
-                }
             }
         }
     };

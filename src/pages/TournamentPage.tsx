@@ -35,6 +35,7 @@ export default function TournamentPage() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [isRegistered, setIsRegistered] = useState(false);
     const [isOwner, setIsOwner] = useState(false);
+    const [isInUnion, setIsInUnion] = useState(false);
     const [canRebuyNow, setCanRebuyNow] = useState(false);
     const [canAddOnNow, setCanAddOnNow] = useState(false);
     const [isProcessingRebuy, setIsProcessingRebuy] = useState(false);
@@ -62,6 +63,24 @@ export default function TournamentPage() {
         }
         checkOwnership();
     }, [clubId, currentUser.id]);
+
+    // Check if club is in a union (unions manage their own tournaments)
+    useEffect(() => {
+        if (!clubId) return;
+        (async () => {
+            try {
+                const { data } = await supabase
+                    .from('union_clubs')
+                    .select('union_id')
+                    .eq('club_id', clubId)
+                    .limit(1)
+                    .single();
+                if (data) setIsInUnion(true);
+            } catch {
+                // Not in a union
+            }
+        })();
+    }, [clubId]);
 
     // Load tournaments
     useEffect(() => {
@@ -270,9 +289,11 @@ export default function TournamentPage() {
                     <Link to={`/clubs/${clubId}`} className="back-link">← Back to Club</Link>
                     <h1> Tournaments</h1>
                 </div>
-                <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
-                    + Create Tournament
-                </button>
+                {!isInUnion && (
+                    <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
+                        + Create Tournament
+                    </button>
+                )}
             </div>
 
             <div className="tournament-content">

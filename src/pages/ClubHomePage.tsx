@@ -93,6 +93,7 @@ export default function ClubHomePage() {
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
     const [deletingTableId, setDeletingTableId] = useState<string | null>(null);
+    const [isInUnion, setIsInUnion] = useState(false);
 
     // User profile data
     const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
@@ -172,6 +173,22 @@ export default function ClubHomePage() {
                     });
                     setUserRole(memberData.role || 'member');
                 }
+            }
+
+            // Check if this club is inside a union
+            // Clubs inside a union play on UNION tables — they cannot create their own
+            try {
+                const { data: ucRow } = await supabase
+                    .from('union_clubs')
+                    .select('union_id')
+                    .eq('club_id', clubId)
+                    .limit(1)
+                    .single();
+                if (ucRow) {
+                    setIsInUnion(true);
+                }
+            } catch {
+                // Not in a union — standalone club
             }
 
             // Load tables
@@ -369,8 +386,8 @@ export default function ClubHomePage() {
                 GAMES GRID - Tables & Create New Table Button
             ═══════════════════════════════════════════════════════════════════ */}
             <div className="club-home__games">
-                {/* CREATE NEW TABLE - Only visible to owners/admins */}
-                {(isOwner || userRole === 'admin') && (
+                {/* CREATE NEW TABLE - Only visible to owners/admins of STANDALONE clubs (not in a union) */}
+                {(isOwner || userRole === 'admin') && !isInUnion && (
                     <Link to={`/clubs/${clubId}/create-table`} className="create-table-card">
                         <div className="create-table-card__table">
                             <div className="new-badge">NEW</div>

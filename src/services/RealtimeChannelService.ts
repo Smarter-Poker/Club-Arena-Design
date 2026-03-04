@@ -275,15 +275,19 @@ class RealtimeChannelService {
         // Create temporary channel if not subscribed
         if (!subscription) {
             const channel = supabase.channel(channelName);
-            await channel.subscribe();
-
-            await channel.send({
-                type: 'broadcast',
-                event: 'tournament_event',
-                payload: { ...event, timestamp: new Date().toISOString() },
-            });
-
-            await channel.unsubscribe();
+            try {
+                await channel.subscribe();
+                await channel.send({
+                    type: 'broadcast',
+                    event: 'tournament_event',
+                    payload: { ...event, timestamp: new Date().toISOString() },
+                });
+            } catch (e) {
+                console.warn(`[RealtimeChannelService] Tournament broadcast failed for ${tournamentId}:`, e);
+            } finally {
+                // Always clean up — prevents orphaned channels
+                try { await channel.unsubscribe(); } catch { /* best effort */ }
+            }
             return;
         }
 
@@ -348,18 +352,22 @@ class RealtimeChannelService {
      */
     async streamHandReplay(handId: string, events: HandEvent[], speedMs: number = 1000): Promise<void> {
         const channel = supabase.channel(`hand:${handId}`);
-        await channel.subscribe();
-
-        for (const event of events) {
-            await new Promise(resolve => setTimeout(resolve, speedMs));
-            await channel.send({
-                type: 'broadcast',
-                event: 'hand_event',
-                payload: event,
-            });
+        try {
+            await channel.subscribe();
+            for (const event of events) {
+                await new Promise(resolve => setTimeout(resolve, speedMs));
+                await channel.send({
+                    type: 'broadcast',
+                    event: 'hand_event',
+                    payload: event,
+                });
+            }
+        } catch (e) {
+            console.error(`[RealtimeChannelService] Hand replay stream failed for ${handId}:`, e);
+        } finally {
+            // Always clean up — prevents orphaned channels
+            try { await channel.unsubscribe(); } catch { /* best effort */ }
         }
-
-        await channel.unsubscribe();
     }
 
     // ─────────────────────────────────────────────────────────────────────────────

@@ -256,16 +256,43 @@ export const RakeService = {
         // STEP 5: Record BBJ contribution
         let bbjContributed = false;
         if (calculation.bbjDrop > 0) {
-            const pool = await BBJService.getPool({ unionId, clubId });
-            if (pool) {
-                await BBJService.recordContribution({
-                    poolId: pool.id,
-                    handId,
-                    tableId,
-                    bigBlind,
-                    currentMainBalance: pool.main_balance,
-                });
-                bbjContributed = true;
+            try {
+                const pool = await BBJService.getPool({ unionId, clubId });
+                if (pool) {
+                    const result = await BBJService.recordContribution({
+                        poolId: pool.id,
+                        handId,
+                        tableId,
+                        bigBlind,
+                        currentMainBalance: pool.main_balance,
+                    });
+                    bbjContributed = result !== null;
+                    if (!result) {
+                        console.warn(`[RakeService] BBJ contribution returned null for hand ${handId} — pool ${pool.id}`);
+                    }
+                }
+            } catch (e) {
+                console.error(`[RakeService] BBJ contribution failed for hand ${handId}:`, e);
+            }
+        }
+
+        // STEP 6: Update union total_rake if this club belongs to a union
+        if (calculation.cappedRake > 0 && unionId) {
+            try {
+                const { data: unionData } = await supabase
+                    .from('unions')
+                    .select('total_rake')
+                    .eq('id', unionId)
+                    .single();
+
+                if (unionData) {
+                    await supabase
+                        .from('unions')
+                        .update({ total_rake: (unionData.total_rake || 0) + calculation.cappedRake })
+                        .eq('id', unionId);
+                }
+            } catch (e) {
+                console.warn(`[RakeService] Failed to update union total_rake for ${unionId}:`, e);
             }
         }
 
@@ -316,7 +343,10 @@ export const RakeService = {
 
     /**
      * DISTRIBUTE RAKE CREDIT
-     * Split rake evenly among dealt-in players
+     * Split rake evenly among dealt-in players.
+     * NOTE: rake_records INSERT is already handled by executePotDrops().
+     * This method calculates per-player attribution and updates
+     * club_members.rake_generated for each player.
      */
     async distributeHandRake(
         tableId: string,
@@ -334,7 +364,7 @@ export const RakeService = {
         // Calculate equal split using integer arithmetic to avoid floating point loss
         const totalRakeCents = Math.round(totalRake * 100);
         const baseCreditCents = Math.floor(totalRakeCents / activePlayers.length);
-        let remainderCents = totalRakeCents - (baseCreditCents * activePlayers.length);
+        const remainderCents = totalRakeCents - (baseCreditCents * activePlayers.length);
         const timestamp = new Date().toISOString();
 
         // Build attribution records — distribute remainder 1 cent at a time
@@ -349,23 +379,33 @@ export const RakeService = {
             };
         });
 
-        // Persist attributions to rake_records (single record per hand)
-        const { error } = await supabase.from('rake_records').insert({
-            hand_id: handId,
-            table_id: tableId,
-            club_id: players[0]?.clubId || null,
-            rake_amount: totalRake,
-            bbj_contribution: 0, // BBJ tracked separately
-            pot_size: totalRake / 0.10, // Approximate from 10% rake
-            num_players: activePlayers.length,
-            player_contributions: Object.fromEntries(
-                attributions.map(a => [a.userId, a.rakeCredit])
-            ),
-        });
+        // Update each player's rake_generated in club_members
+        // Use Promise.allSettled so one failure doesn't block the others
+        const clubId = players[0]?.clubId;
+        if (clubId) {
+            const updates = attributions.map(async (attr) => {
+                try {
+                    // Fetch current rake_generated
+                    const { data: member } = await supabase
+                        .from('club_members')
+                        .select('rake_generated')
+                        .eq('club_id', clubId)
+                        .eq('user_id', attr.userId)
+                        .single();
 
-        if (error) {
-            console.warn('RakeService.distributeHandRake error:', error);
-            // Don't throw — game should continue even if rake recording fails
+                    if (member) {
+                        const newRake = (member.rake_generated || 0) + attr.rakeCredit;
+                        await supabase
+                            .from('club_members')
+                            .update({ rake_generated: newRake })
+                            .eq('club_id', clubId)
+                            .eq('user_id', attr.userId);
+                    }
+                } catch (e) {
+                    console.warn(`[RakeService] Failed to update rake_generated for ${attr.userId.substring(0,8)}:`, e);
+                }
+            });
+            await Promise.allSettled(updates);
         }
 
         return attributions;
