@@ -116,6 +116,7 @@ export class TournamentEngine {
     private tables: TournamentTable[] = [];
     private players: Map<string, TournamentPlayer> = new Map();
     private running = false;
+    private finishing = false;  // Guard against concurrent finishTournament calls
     private currentLevel = 0;
     private blindCheckInterval: ReturnType<typeof setInterval> | null = null;
     private eliminationCheckInterval: ReturnType<typeof setInterval> | null = null;
@@ -528,7 +529,7 @@ export class TournamentEngine {
         // Update all tournament_players to 'playing'
         await this.supabase
             .from('tournament_players')
-            .update({ status: 'playing', stack: this.tournamentInfo!.starting_chips })
+            .update({ status: 'playing', chips: this.tournamentInfo!.starting_chips })
             .eq('tournament_id', this.tournamentId)
             .eq('status', 'registered');
 
@@ -840,6 +841,12 @@ export class TournamentEngine {
             let newSeat = 1;
             while (usedSeats.has(newSeat) && newSeat <= 9) newSeat++;
 
+            // Guard: if all 9 seats are full, skip this move
+            if (newSeat > 9) {
+                console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Cannot move player — target table ${target.tableId.slice(0, 8)} is full (9/9)`);
+                continue;
+            }
+
             // Insert at target
             // Note: horse_id omitted — tournament players are registered users, not horses
             // The horse_id FK constraint would reject non-horse user_ids
@@ -888,7 +895,8 @@ export class TournamentEngine {
     // ═══════════════════════════════════════════════════════════════════════════
 
     private async finishTournament(winner?: TournamentPlayer): Promise<void> {
-        if (!this.running) return;
+        if (!this.running || this.finishing) return;
+        this.finishing = true;
         this.running = false;
 
         console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] TOURNAMENT COMPLETE!`);

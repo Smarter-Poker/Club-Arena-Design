@@ -386,6 +386,11 @@ export class HeadlessTableEngine {
         return new Promise<void>((resolve) => {
             const handCompleteTimeout = setTimeout(() => {
                 console.warn(`[HeadlessTableEngine:${this.tableId}] Hand ${handNumber} timed out after 120s`);
+                // Clean up pending horse AI timers on timeout
+                for (const timerId of this.pendingTimerIds) {
+                    cancelWorkerTimeout(timerId);
+                }
+                this.pendingTimerIds = [];
                 this.handController = null;
                 resolve();
             }, 120_000); // 2 minute safety timeout
@@ -735,7 +740,7 @@ export class HeadlessTableEngine {
         const updates = players.map(player =>
             this.supabaseClient
                 .from('table_seats')
-                .update({ chips: player.stack })
+                .update({ stack: player.stack })
                 .eq('table_id', this.tableId)
                 .eq('user_id', player.user_id)
         );
