@@ -37,6 +37,8 @@ interface TableInfo {
     game_variant: GameVariant;
     max_players: number;
     ante?: number;
+    game_type?: string;       // 'cash' | 'tournament'
+    tournament_id?: string;   // Set if this table belongs to a tournament
 }
 
 interface SeatedPlayer {
@@ -172,7 +174,7 @@ export class HeadlessTableEngine {
     private async loadTableInfo(): Promise<void> {
         const { data, error } = await this.supabaseClient
             .from('tables')
-            .select('id, club_id, small_blind, big_blind, game_variant, max_players, ante')
+            .select('id, club_id, small_blind, big_blind, game_variant, max_players, ante, game_type, tournament_id')
             .eq('id', this.tableId)
             .single();
 
@@ -181,7 +183,34 @@ export class HeadlessTableEngine {
         }
 
         this.tableInfo = data as TableInfo;
-        console.log(`[HeadlessTableEngine:${this.tableId}] Loaded table: ${data.small_blind}/${data.big_blind} ${data.game_variant}`);
+        const mode = data.tournament_id ? 'TOURNAMENT' : 'CASH';
+        console.log(`[HeadlessTableEngine:${this.tableId}] Loaded table [${mode}]: ${data.small_blind}/${data.big_blind} ${data.game_variant}`);
+    }
+
+    /**
+     * Returns true if this table belongs to a tournament (no auto-rebuy, no rake)
+     */
+    private isTournamentTable(): boolean {
+        return !!(this.tableInfo?.tournament_id || this.tableInfo?.game_type === 'tournament');
+    }
+
+    /**
+     * Refresh blinds from DB (for tournament blind level changes)
+     */
+    private async refreshBlinds(): Promise<void> {
+        if (!this.tableInfo || !this.isTournamentTable()) return;
+
+        const { data } = await this.supabaseClient
+            .from('tables')
+            .select('small_blind, big_blind, ante')
+            .eq('id', this.tableId)
+            .single();
+
+        if (data) {
+            this.tableInfo.small_blind = data.small_blind;
+            this.tableInfo.big_blind = data.big_blind;
+            this.tableInfo.ante = data.ante;
+        }
     }
 
     private async loadSeatedPlayers(): Promise<void> {
@@ -247,8 +276,9 @@ export class HeadlessTableEngine {
             if (!this.running) return;
 
             try {
-                // Reload seated players before each hand
+                // Reload seated players + refresh blinds before each hand
                 await this.loadSeatedPlayers();
+                await this.refreshBlinds();
 
                 const activePlayers = this.seatedPlayers.filter(p => p.stack > 0);
                 if (activePlayers.length < 2) {
@@ -417,15 +447,19 @@ export class HeadlessTableEngine {
                     console.error(`[HeadlessTableEngine:${this.tableId}] Failed to sync stacks:`, err)
                 );
 
-                // Execute rake waterfall (fire-and-forget, non-blocking)
-                this.executeRakeWaterfall(players).catch(err =>
-                    console.error(`[HeadlessTableEngine:${this.tableId}] Rake waterfall error:`, err)
-                );
+                // Execute rake waterfall (cash games only — no rake in tournaments)
+                if (!this.isTournamentTable()) {
+                    this.executeRakeWaterfall(players).catch(err =>
+                        console.error(`[HeadlessTableEngine:${this.tableId}] Rake waterfall error:`, err)
+                    );
+                }
 
-                // Auto-rebuy horses with 0 stack
-                this.autorebuyHorses(players).catch(err =>
-                    console.error(`[HeadlessTableEngine:${this.tableId}] Failed to auto-rebuy horses:`, err)
-                );
+                // Auto-rebuy horses with 0 stack (cash games only — tournaments eliminate)
+                if (!this.isTournamentTable()) {
+                    this.autorebuyHorses(players).catch(err =>
+                        console.error(`[HeadlessTableEngine:${this.tableId}] Failed to auto-rebuy horses:`, err)
+                    );
+                }
                 break;
         }
     }

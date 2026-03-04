@@ -1428,6 +1428,16 @@ export default function TablePage() {
 
     // Handle seat click (sit down at empty seat)
     const handleSeatClick = async (seatNumber: number) => {
+        // Validate seat is empty before showing buy-in modal
+        const seatIdx = seatNumber - 1;
+        if (seatIdx >= 0 && seatIdx < tableState.players.length && tableState.players[seatIdx]) {
+            // Seat is occupied — ignore click
+            return;
+        }
+        // Don't allow sitting if already seated at this table
+        if (tableState.heroSeat > 0) {
+            return;
+        }
         setSelectedSeat(seatNumber);
         setShowBuyInModal(true);
         await updateSeat(seatNumber);
