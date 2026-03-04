@@ -336,10 +336,14 @@ export default function App() {
                                 }
                             />
 
-                            {/* Dealer (Admin) — No AuthGuard */}
+                            {/* Dealer (Admin) — Protected */}
                             <Route
                                 path="dealer"
-                                element={<DealerPage />}
+                                element={
+                                    <AuthGuard>
+                                        <DealerPage />
+                                    </AuthGuard>
+                                }
                             />
 
                             {/* User */}
@@ -595,14 +599,6 @@ export default function App() {
                                 }
                             />
                             <Route
-                                path="clubs/:clubId/create-table"
-                                element={
-                                    <AuthGuard>
-                                        <TableCreationPage />
-                                    </AuthGuard>
-                                }
-                            />
-                            <Route
                                 path="report/:playerId"
                                 element={
                                     <AuthGuard>
@@ -690,6 +686,20 @@ export default function App() {
                                     <AuthGuard>
                                         <PrivacyPolicyPage />
                                     </AuthGuard>
+                                }
+                            />
+
+                            {/* 404 catch-all */}
+                            <Route
+                                path="*"
+                                element={
+                                    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white">
+                                        <h1 className="text-6xl font-bold mb-4">404</h1>
+                                        <p className="text-xl text-gray-400 mb-8">Page not found</p>
+                                        <a href="/lobby" className="px-6 py-3 bg-green-600 rounded-lg hover:bg-green-700 transition-colors">
+                                            Back to Lobby
+                                        </a>
+                                    </div>
                                 }
                             />
                         </Route>
