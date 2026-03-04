@@ -7,11 +7,11 @@
  *
  * Cash Games:
  * - Auto-discovers tables with 2+ seated players
- * - Starts HeadlessTableEngine for each
+ * - Starts HeadlessTableEngine for each (staggered in batches of 5)
  *
  * Tournaments:
  * - Auto-discovers REGISTERING tournaments past their start time
- * - Starts TournamentEngine for each (creates tables, seats players, deals)
+ * - Starts TournamentEngine for each (staggered in batches of 3)
  * - Shows tournament status: blind level, remaining players, hands dealt
  *
  * Route: /dealer (no AuthGuard — this is an admin tool)
@@ -52,6 +52,19 @@ interface TournamentStatus {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Stagger-start engines in batches to avoid overwhelming the browser */
+const CASH_BATCH_SIZE = 5;
+const TOURNAMENT_BATCH_SIZE = 3;
+const BATCH_DELAY_MS = 500;
+
+function sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -61,12 +74,15 @@ export default function DealerPage() {
     const [engines, setEngines] = useState<TableEngine[]>([]);
     const [tournaments, setTournaments] = useState<TournamentStatus[]>([]);
     const [loading, setLoading] = useState(true);
+    const [startupProgress, setStartupProgress] = useState('');
     const [lastRefresh, setLastRefresh] = useState(new Date());
     const enginesRef = useRef<Map<string, HeadlessTableEngine>>(new Map());
     const tournamentsRef = useRef<Map<string, TournamentEngine>>(new Map());
+    const initialStartupDone = useRef(false);
 
     /**
      * Discover all cash tables with 2+ seated players (exclude tournament tables)
+     * Uses a SINGLE seat query instead of N+1 queries per table.
      */
     const discoverTables = async (): Promise<TableEngine[]> => {
         try {
@@ -79,40 +95,68 @@ export default function DealerPage() {
                 return [];
             }
 
-            const tableList: TableEngine[] = [];
-
             // Filter out tournament tables — they're managed by TournamentEngine
             const cashTables = allTables.filter(t => !t.tournament_id && t.game_type !== 'tournament');
 
+            // Single bulk query for ALL seat counts instead of N+1
+            const cashTableIds = cashTables.map(t => t.id);
+            const { data: allSeats, error: seatError } = await supabase
+                .from('table_seats')
+                .select('table_id, user_id')
+                .in('table_id', cashTableIds)
+                .is('left_at', null);
+
+            if (seatError) {
+                console.error('Failed to load seats:', seatError);
+                return [];
+            }
+
+            // Group seats by table_id
+            const seatsByTable = new Map<string, number>();
+            for (const seat of (allSeats || [])) {
+                seatsByTable.set(seat.table_id, (seatsByTable.get(seat.table_id) || 0) + 1);
+            }
+
+            const tableList: TableEngine[] = [];
+            const newEngines: { table: typeof cashTables[0]; engine: HeadlessTableEngine }[] = [];
+
             for (const table of cashTables) {
-                const { data: seats, error: seatError } = await supabase
-                    .from('table_seats')
-                    .select('user_id')
-                    .eq('table_id', table.id)
-                    .is('left_at', null);
+                const seatCount = seatsByTable.get(table.id) || 0;
+                if (seatCount < 2) continue;
 
-                if (!seatError && seats && seats.length >= 2) {
-                    let engine = enginesRef.current.get(table.id);
-                    let isNewEngine = false;
+                let engine = enginesRef.current.get(table.id);
+                let isNewEngine = false;
 
-                    if (!engine) {
-                        engine = new HeadlessTableEngine(table.id, supabase);
-                        enginesRef.current.set(table.id, engine);
-                        isNewEngine = true;
-                    }
+                if (!engine) {
+                    engine = new HeadlessTableEngine(table.id, supabase);
+                    enginesRef.current.set(table.id, engine);
+                    isNewEngine = true;
+                }
 
-                    tableList.push({
-                        tableId: table.id,
-                        tableName: table.name || `Table ${table.id.slice(0, 8)}`,
-                        stakes: `${table.small_blind}/${table.big_blind}`,
-                        gameVariant: table.game_variant || 'nlh',
-                        engine,
-                        playerCount: seats.length,
-                        handCount: engine.getHandCount(),
-                        isRunning: engine.isRunning(),
-                    });
+                tableList.push({
+                    tableId: table.id,
+                    tableName: table.name || `Table ${table.id.slice(0, 8)}`,
+                    stakes: `${table.small_blind}/${table.big_blind}`,
+                    gameVariant: table.game_variant || 'nlh',
+                    engine,
+                    playerCount: seatCount,
+                    handCount: engine.getHandCount(),
+                    isRunning: engine.isRunning(),
+                });
 
-                    if (isNewEngine && !engine.isRunning()) {
+                if (isNewEngine && !engine.isRunning()) {
+                    newEngines.push({ table, engine });
+                }
+            }
+
+            // Stagger-start new engines in batches
+            if (newEngines.length > 0) {
+                console.log(`[DealerPage] Starting ${newEngines.length} cash table engines in batches of ${CASH_BATCH_SIZE}`);
+                for (let i = 0; i < newEngines.length; i += CASH_BATCH_SIZE) {
+                    const batch = newEngines.slice(i, i + CASH_BATCH_SIZE);
+                    setStartupProgress(`Starting cash tables ${i + 1}-${Math.min(i + CASH_BATCH_SIZE, newEngines.length)} of ${newEngines.length}...`);
+
+                    for (const { table, engine } of batch) {
                         console.log(`[DealerPage] Starting engine for ${table.name}`);
                         engine.start().catch(err => {
                             console.error(`Failed to start engine for ${table.id}:`, err);
@@ -120,6 +164,11 @@ export default function DealerPage() {
                                 e.tableId === table.id ? { ...e, error: err.message } : e
                             ));
                         });
+                    }
+
+                    // Wait between batches (skip wait on last batch)
+                    if (i + CASH_BATCH_SIZE < newEngines.length) {
+                        await sleep(BATCH_DELAY_MS);
                     }
                 }
             }
@@ -132,7 +181,8 @@ export default function DealerPage() {
     };
 
     /**
-     * Discover REGISTERING tournaments past their start time and start them
+     * Discover REGISTERING tournaments past their start time and start them.
+     * Stagger-starts in batches to avoid overwhelming the browser.
      */
     const discoverTournaments = async (): Promise<TournamentStatus[]> => {
         try {
@@ -150,20 +200,34 @@ export default function DealerPage() {
                 console.error('Failed to discover tournaments:', error);
             }
 
-            // Start any ready tournaments
+            // Stagger-start any ready tournaments
             if (readyTournaments) {
-                for (const t of readyTournaments) {
-                    if (!tournamentsRef.current.has(t.id)) {
-                        console.log(`[DealerPage] Starting tournament: ${t.name} (${t.current_players} players)`);
-                        const engine = new TournamentEngine(t.id, supabase);
-                        tournamentsRef.current.set(t.id, engine);
+                const newTournaments = readyTournaments.filter(t => !tournamentsRef.current.has(t.id));
 
-                        engine.start().catch(err => {
-                            console.error(`Failed to start tournament ${t.id}:`, err);
-                            setTournaments(prev => prev.map(te =>
-                                te.tournamentId === t.id ? { ...te, error: err.message } : te
-                            ));
-                        });
+                if (newTournaments.length > 0) {
+                    console.log(`[DealerPage] Starting ${newTournaments.length} tournaments in batches of ${TOURNAMENT_BATCH_SIZE}`);
+
+                    for (let i = 0; i < newTournaments.length; i += TOURNAMENT_BATCH_SIZE) {
+                        const batch = newTournaments.slice(i, i + TOURNAMENT_BATCH_SIZE);
+                        setStartupProgress(`Starting tournaments ${i + 1}-${Math.min(i + TOURNAMENT_BATCH_SIZE, newTournaments.length)} of ${newTournaments.length}...`);
+
+                        for (const t of batch) {
+                            console.log(`[DealerPage] Starting tournament: ${t.name} (${t.current_players} players)`);
+                            const engine = new TournamentEngine(t.id, supabase);
+                            tournamentsRef.current.set(t.id, engine);
+
+                            engine.start().catch(err => {
+                                console.error(`Failed to start tournament ${t.id}:`, err);
+                                setTournaments(prev => prev.map(te =>
+                                    te.tournamentId === t.id ? { ...te, error: err.message } : te
+                                ));
+                            });
+                        }
+
+                        // Wait between batches (skip wait on last batch)
+                        if (i + TOURNAMENT_BATCH_SIZE < newTournaments.length) {
+                            await sleep(BATCH_DELAY_MS);
+                        }
                     }
                 }
             }
@@ -177,7 +241,6 @@ export default function DealerPage() {
             if (runningTournaments) {
                 for (const t of runningTournaments) {
                     if (!tournamentsRef.current.has(t.id)) {
-                        // Tournament was started by something else — just track it
                         console.log(`[DealerPage] Tracking running tournament: ${t.name}`);
                     }
                 }
@@ -216,6 +279,10 @@ export default function DealerPage() {
         setEngines(tables);
         setTournaments(tournamentStatuses);
         setLastRefresh(new Date());
+        if (!initialStartupDone.current) {
+            initialStartupDone.current = true;
+            setStartupProgress('');
+        }
     };
 
     // Initial load
@@ -246,7 +313,7 @@ export default function DealerPage() {
         return (
             <div style={styles.container}>
                 <h1>Dealer Control Center</h1>
-                <p>Loading tables and tournaments...</p>
+                <p>{startupProgress || 'Loading tables and tournaments...'}</p>
             </div>
         );
     }
