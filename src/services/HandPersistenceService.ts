@@ -133,7 +133,7 @@ export class HandPersistence {
         }
 
         // Initialize hand record
-        this.currentHand = {
+        const handRecord: HandRecord = {
             table_id: config.tableId,
             club_id: config.clubId,
             hand_number: handNumber,
@@ -147,64 +147,77 @@ export class HandPersistence {
             actions: [],
             started_at: new Date().toISOString(),
         };
+        this.currentHand = handRecord;
         this.handActions = [];
+
+        // Capture insert payload BEFORE the async call (currentHand may be nulled during await)
+        const insertPayload = {
+            table_id: handRecord.table_id,
+            club_id: handRecord.club_id,
+            hand_number: handRecord.hand_number,
+            game_variant: handRecord.game_variant,
+            stakes: handRecord.stakes,
+            pot: 0,
+            rake: 0,
+            community_cards: [] as string[],
+            winner_ids: [] as string[],
+            players: handRecord.players,
+            actions: [] as Record<string, unknown>[],
+            started_at: handRecord.started_at,
+        };
 
         // Insert initial hand record
         const { data, error } = await supabase
             .from('hands')
-            .insert({
-                table_id: this.currentHand.table_id,
-                club_id: this.currentHand.club_id,
-                hand_number: this.currentHand.hand_number,
-                game_variant: this.currentHand.game_variant,
-                stakes: this.currentHand.stakes,
-                pot: 0,
-                rake: 0,
-                community_cards: [],
-                winner_ids: [],
-                players: this.currentHand.players,
-                actions: [],
-                started_at: this.currentHand.started_at,
-            })
+            .insert(insertPayload)
             .select('id')
             .single();
 
+        // CRITICAL: After await, currentHand may have been cleared by a concurrent HAND_COMPLETE
+        // event (horses decide in ~200ms, hand can complete before this insert returns).
+        // Use the local handRecord reference to safely set the id.
         if (error) {
             console.error(`[HandPersistence:${this.tableId}] Failed to insert hand:`, error);
             // Retry once
             try {
                 const { data: retryData, error: retryError } = await supabase
                     .from('hands')
-                    .insert({
-                        table_id: this.currentHand.table_id,
-                        club_id: this.currentHand.club_id,
-                        hand_number: this.currentHand.hand_number,
-                        game_variant: this.currentHand.game_variant,
-                        stakes: this.currentHand.stakes,
-                        pot: 0,
-                        rake: 0,
-                        community_cards: [],
-                        winner_ids: [],
-                        players: this.currentHand.players,
-                        actions: [],
-                        started_at: this.currentHand.started_at,
-                    })
+                    .insert(insertPayload)
                     .select('id')
                     .single();
+
                 if (!retryError && retryData) {
-                    this.currentHand.id = retryData.id;
+                    handRecord.id = retryData.id;
                 } else {
                     console.error(`[HandPersistence:${this.tableId}] Retry also failed:`, retryError);
-                    this.currentHand.id = crypto.randomUUID();
-                    (this.currentHand as any)._localOnly = true;
+                    handRecord.id = crypto.randomUUID();
+                    (handRecord as any)._localOnly = true;
                 }
             } catch (e) {
                 console.error(`[HandPersistence:${this.tableId}] Retry exception:`, e);
-                this.currentHand.id = crypto.randomUUID();
-                (this.currentHand as any)._localOnly = true;
+                handRecord.id = crypto.randomUUID();
+                (handRecord as any)._localOnly = true;
             }
         } else if (data) {
-            this.currentHand.id = data.id;
+            handRecord.id = data.id;
+        }
+
+        // After the insert, check if the hand completed during the await.
+        // onHandComplete would have stored completion data on the handRecord if it ran
+        // while we were waiting for the insert.
+        if ((handRecord as any)._completedEarly && handRecord.id && !(handRecord as any)._localOnly) {
+            const completionData = (handRecord as any)._completionData;
+            if (completionData) {
+                await supabase
+                    .from('hands')
+                    .update(completionData)
+                    .eq('id', handRecord.id);
+            }
+            // Now safe to clear currentHand (it was left alive for us to find the id)
+            if (this.currentHand === handRecord) {
+                this.currentHand = null;
+                this.handActions = [];
+            }
         }
     }
 
@@ -238,16 +251,36 @@ export class HandPersistence {
     }
 
     private async onHandComplete(handNumber: number, rake: number): Promise<void> {
-        if (!this.currentHand?.id) {
-            this.currentHand = null;
-            this.handActions = [];
+        if (!this.currentHand) {
             return;
         }
 
         const ccCount = this.currentHand.community_cards.length;
         const finalStreet = ccCount >= 5 ? 'river' : ccCount >= 4 ? 'turn' : ccCount >= 3 ? 'flop' : 'preflop';
 
-        // Skip DB update for local-only hands (insert failed + retry failed)
+        // If the insert hasn't returned yet (no id), the hand completed faster than
+        // the DB insert. Store the completion data on the record so onHandStart's
+        // post-insert recovery can find it, then null out currentHand.
+        if (!this.currentHand.id) {
+            // Mark the record as completed so the insert recovery in onHandStart
+            // will update it when the insert finally returns
+            (this.currentHand as any)._completedEarly = true;
+            (this.currentHand as any)._completionData = {
+                pot: this.currentHand.pot,
+                rake,
+                community_cards: this.currentHand.community_cards,
+                winner_ids: this.currentHand.winner_ids,
+                actions: this.handActions,
+                status: 'completed',
+                street: finalStreet,
+                ended_at: new Date().toISOString(),
+            };
+            // Don't null currentHand — leave it for onHandStart to find after insert returns
+            this.handActions = [];
+            return;
+        }
+
+        // Normal path: we have an id, update the DB record
         if (!(this.currentHand as any)._localOnly) {
             const updatePayload = {
                 pot: this.currentHand.pot,
