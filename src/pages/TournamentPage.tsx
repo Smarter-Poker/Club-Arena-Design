@@ -104,6 +104,23 @@ export default function TournamentPage() {
         loadTournaments();
     }, [clubId, tournamentId]);
 
+    // ─── Sync registration state when selected tournament changes ───
+    useEffect(() => {
+        if (!selectedTournament || !currentUser.id || currentUser.id === 'guest') {
+            setIsRegistered(false);
+            return;
+        }
+        (async () => {
+            const { data } = await supabase
+                .from('tournament_players')
+                .select('id')
+                .eq('tournament_id', selectedTournament.id)
+                .eq('user_id', currentUser.id)
+                .maybeSingle();
+            setIsRegistered(!!data);
+        })();
+    }, [selectedTournament?.id, currentUser.id]);
+
     // Register for tournament
     const handleRegister = async () => {
         if (!selectedTournament) return;

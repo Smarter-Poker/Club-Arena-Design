@@ -224,10 +224,10 @@ class TableService {
 
             // Return chips to player wallet (credit club_members.chip_balance)
             if (chipsToReturn > 0) {
-                // Get club_id from table for chip credit
+                // Get club_id + tournament_id from table for chip credit + tournament leave
                 const { data: tableData } = await supabase
                     .from('tables')
-                    .select('club_id')
+                    .select('club_id, tournament_id')
                     .eq('id', tableId)
                     .single();
 
@@ -277,6 +277,21 @@ class TableService {
             if (clearError) {
                 console.error('[TableService] Error clearing seat:', clearError);
                 return { success: false, chipsReturned: 0 };
+            }
+
+            // If this is a tournament table, update tournament_players status
+            const { data: tblInfo } = await supabase
+                .from('tables')
+                .select('tournament_id')
+                .eq('id', tableId)
+                .single();
+
+            if (tblInfo?.tournament_id) {
+                await supabase
+                    .from('tournament_players')
+                    .update({ status: 'eliminated', chips: 0 })
+                    .eq('tournament_id', tblInfo.tournament_id)
+                    .eq('user_id', userId);
             }
 
             // Update player count

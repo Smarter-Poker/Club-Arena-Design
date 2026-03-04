@@ -364,24 +364,47 @@ class TournamentService {
             throw new Error('Tournament is full');
         }
 
-        // Calculate total cost (buy-in + fee)
-        const totalCost = (tournament.buy_in_amount || tournament.buy_in || 0) + (tournament.buy_in_fee || tournament.rake || 0);
-
-        // Check player wallet balance
-        const balance = await WalletService.getWalletBalance(userId, 'PLAYER');
-        if (balance.availableBalance < totalCost) {
-            throw new Error(`Insufficient balance. Need $${totalCost}, have $${balance.availableBalance}`);
+        // ─── Duplicate registration check ───
+        const { data: existing } = await supabase
+            .from('tournament_players')
+            .select('id')
+            .eq('tournament_id', tournamentId)
+            .eq('user_id', userId)
+            .maybeSingle();
+        if (existing) {
+            throw new Error('Already registered for this tournament');
         }
 
-        // Deduct buy-in from wallet
-        const deducted = await WalletService.internalTransfer(userId, {
-            fromWallet: 'PLAYER',
-            toWallet: 'PLAYER', // Stays in player wallet but is "locked" via tournament prize pool
-            amount: totalCost,
-            note: `Tournament buy-in: ${tournament.name}`,
-        });
-        if (!deducted) {
-            throw new Error('Failed to deduct buy-in from wallet');
+        // Calculate total cost (buy-in + fee)
+        const buyIn = tournament.buy_in_amount || tournament.buy_in || 0;
+        const fee = tournament.buy_in_fee || tournament.rake || 0;
+        const totalCost = buyIn + fee;
+
+        // ─── Deduct from club_members.chip_balance (matches cash game wallet system) ───
+        const clubId = tournament.club_id;
+        if (!clubId) throw new Error('Tournament has no club');
+
+        const { data: memberData } = await supabase
+            .from('club_members')
+            .select('chip_balance')
+            .eq('club_id', clubId)
+            .eq('user_id', userId)
+            .single();
+
+        if (!memberData || (memberData.chip_balance || 0) < totalCost) {
+            throw new Error(`Insufficient chips. Need ${totalCost}, have ${memberData?.chip_balance || 0}`);
+        }
+
+        // Use .gte() guard to prevent race conditions (same pattern as cash game buy-in)
+        const { error: deductError, count } = await supabase
+            .from('club_members')
+            .update({ chip_balance: (memberData.chip_balance || 0) - totalCost })
+            .eq('club_id', clubId)
+            .eq('user_id', userId)
+            .gte('chip_balance', totalCost);
+
+        if (deductError || !count || count === 0) {
+            throw new Error('Failed to deduct tournament buy-in (concurrent transaction or insufficient balance)');
         }
 
         // Insert player
@@ -398,23 +421,24 @@ class TournamentService {
             .single();
 
         if (error) {
-            // Refund on failure — actually issue the refund
+            // Refund on failure
             console.error('[TournamentService] Registration failed, refunding buy-in:', error);
             try {
-                await supabase.rpc('add_to_player_wallet', {
-                    p_user_id: userId,
-                    p_amount: totalCost,
-                });
+                await supabase
+                    .from('club_members')
+                    .update({ chip_balance: (memberData.chip_balance || 0) })
+                    .eq('club_id', clubId)
+                    .eq('user_id', userId);
             } catch (refundErr) {
                 console.error('[TournamentService] CRITICAL: Refund also failed:', refundErr);
             }
             throw error;
         }
 
-        // Atomically update player count and prize pool via direct update
+        // Atomically update player count and prize pool
         const { error: countError } = await supabase.from('tournaments').update({
             current_players: tournament.current_players + 1,
-            guaranteed_prize: (tournament.guaranteed_prize || tournament.prize_pool || 0) + (tournament.buy_in_amount || tournament.buy_in || 0),
+            guaranteed_prize: (tournament.guaranteed_prize || tournament.prize_pool || 0) + buyIn,
         }).eq('id', tournamentId);
 
         if (countError) {
