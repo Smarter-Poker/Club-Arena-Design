@@ -899,12 +899,12 @@ class TournamentService {
      * Check if tables need balancing
      */
     async checkBalanceNeeded(tournamentId: string): Promise<boolean> {
-        // Get all active tables and their player counts
+        // Get all active tournament tables from the main tables table
         const { data: tables } = await supabase
-            .from('tournament_tables')
+            .from('tables')
             .select('id, current_players')
             .eq('tournament_id', tournamentId)
-            .eq('status', 'active');
+            .neq('status', 'closed');
 
         if (!tables || tables.length < 2) return false;
 
@@ -921,10 +921,10 @@ class TournamentService {
      */
     async checkTableMerge(tournamentId: string): Promise<{ tableMerged: boolean }> {
         const { data: tables } = await supabase
-            .from('tournament_tables')
+            .from('tables')
             .select('id, current_players')
             .eq('tournament_id', tournamentId)
-            .eq('status', 'active')
+            .neq('status', 'closed')
             .order('current_players', { ascending: true });
 
         if (!tables || tables.length < 2) return { tableMerged: false };
@@ -935,20 +935,16 @@ class TournamentService {
         const neededTables = Math.ceil(totalPlayers / playersPerTable);
 
         if (tables.length > neededTables) {
-            // Break the smallest table
+            // Break the smallest table — close it
             const tableToBreak = tables[0];
 
-            await supabase
-                .from('tournament_tables')
-                .update({ status: 'breaking' })
-                .eq('id', tableToBreak.id);
-
-            // Balance will move players
+            // Balance will move players to other tables
             await this.balanceTables(tournamentId);
 
+            // Close the broken table
             await supabase
-                .from('tournament_tables')
-                .update({ status: 'broken' })
+                .from('tables')
+                .update({ status: 'closed' })
                 .eq('id', tableToBreak.id);
 
             return { tableMerged: true };
@@ -969,13 +965,15 @@ class TournamentService {
 
         if (!count || count > 9) return { finalTableId: null };
 
-        // Get or create final table
+        // Get or create final table (look for a table named "Final Table")
         let { data: finalTable } = await supabase
-            .from('tournament_tables')
+            .from('tables')
             .select('id')
             .eq('tournament_id', tournamentId)
-            .eq('is_final_table', true)
-            .single();
+            .ilike('name', '%Final Table%')
+            .neq('status', 'closed')
+            .limit(1)
+            .maybeSingle();
 
         if (!finalTable) {
             const tournament = await this.getTournament(tournamentId);
@@ -1002,14 +1000,6 @@ class TournamentService {
                 .single();
 
             if (newTable) {
-                await supabase
-                    .from('tournament_tables')
-                    .insert({
-                        tournament_id: tournamentId,
-                        table_number: 0,
-                        is_final_table: true,
-                    });
-
                 finalTable = { id: newTable.id };
             }
         }

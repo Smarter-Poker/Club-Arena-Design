@@ -431,7 +431,7 @@ export default function TablePage() {
         }
     };
 
-    // Handle cashier add chips
+    // Handle cashier add chips (deducts from wallet, adds to table stack)
     const handleAddChips = async (amount: number) => {
         if (!userId || userId === 'guest' || !tableId) {
             console.error('Cannot add chips: not authenticated');
@@ -439,7 +439,7 @@ export default function TablePage() {
         }
         try {
             await WalletService.lockForBuyIn(userId, tableId, amount);
-            setAccountBalance(prev => prev + amount);
+            setAccountBalance(prev => Math.max(0, prev - amount));
         } catch (error) {
             console.error('Failed to add chips:', error);
         }
@@ -627,10 +627,20 @@ export default function TablePage() {
     const handleLeaveTable = async () => {
         if (!tableId || !userId) return;
 
-        const result = await tableService.leaveTable(tableId, tableState.heroSeat, userId);
-        if (result.success) {
-            // Navigate back to lobby
-            navigate('/lobby');
+        try {
+            const result = await tableService.leaveTable(tableId, tableState.heroSeat, userId);
+            if (result.success) {
+                console.log(`[Leave] Success — ${result.chipsReturned} chips returned to wallet`);
+                navigate('/lobby');
+            } else {
+                console.error('[Leave] Failed to leave table');
+                // If player is in an active hand, they'll be set to sitting_out
+                // and leave after hand completes — inform them
+                alert('Unable to leave right now. You may be in an active hand — you will leave after it completes.');
+            }
+        } catch (error) {
+            console.error('[Leave] Exception:', error);
+            alert('Error leaving table. Please try again.');
         }
     };
 
@@ -2192,7 +2202,7 @@ export default function TablePage() {
                                     .update({ current_players: (tableData?.current_players || 0) + 1 })
                                     .eq('id', tableId);
 
-                                setAccountBalance(prev => prev + amount);
+                                setAccountBalance(prev => Math.max(0, prev - amount));
 
                                 // Add player to local table state
                                 const newPlayers = [...tableState.players];
@@ -2221,6 +2231,15 @@ export default function TablePage() {
                                 // Player seated successfully
                             } catch (error) {
                                 console.error('[BuyIn] Buy-in FAILED:', error);
+                                // Attempt to refund locked chips
+                                try {
+                                    await WalletService.unlockFromTable(userId, tableId, amount);
+                                    setAccountBalance(prev => prev + amount);
+                                    console.log('[BuyIn] Refunded chips after failed buy-in');
+                                } catch (refundErr) {
+                                    console.error('[BuyIn] CRITICAL — refund also failed:', refundErr);
+                                }
+                                alert('Buy-in failed. Your chips have been refunded.');
                             }
                         } else {
                             console.error('[BuyIn] FELL THROUGH - no branch matched:', {

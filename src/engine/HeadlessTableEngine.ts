@@ -73,6 +73,8 @@ export class HeadlessTableEngine {
     private currentHandWentToFlop: boolean = false;
     private currentHandPotSize: number = 0;
     private currentHandPlayers: SeatedPlayer[] = [];
+    // Stack sync promise — awaited before loading seats for next hand
+    private stackSyncPromise: Promise<void> | null = null;
 
     constructor(tableId: string, supabaseClient: typeof supabase) {
         this.tableId = tableId;
@@ -276,6 +278,12 @@ export class HeadlessTableEngine {
             if (!this.running) return;
 
             try {
+                // Wait for previous hand's stack sync to complete before loading new data
+                if (this.stackSyncPromise) {
+                    await this.stackSyncPromise;
+                    this.stackSyncPromise = null;
+                }
+
                 // Reload seated players + refresh blinds before each hand
                 await this.loadSeatedPlayers();
                 await this.refreshBlinds();
@@ -442,10 +450,32 @@ export class HeadlessTableEngine {
                 break;
 
             case 'HAND_COMPLETE':
-                // Sync stacks back to database
-                this.syncStacksToDatabase(players).catch(err =>
-                    console.error(`[HeadlessTableEngine:${this.tableId}] Failed to sync stacks:`, err)
-                );
+                // Stack sync + post-hand tasks run as fire-and-forget async block
+                // The dealHand() promise resolves when this event fires, so sync completes
+                // before next hand via the stackSyncPromise mechanism
+                this.stackSyncPromise = (async () => {
+                    // Sync stacks back to database — MUST complete before next hand loads from DB
+                    try {
+                        await this.syncStacksToDatabase(players);
+                    } catch (err) {
+                        console.error(`[HeadlessTableEngine:${this.tableId}] Failed to sync stacks:`, err);
+                        // Retry once after brief delay
+                        try {
+                            await new Promise(r => setTimeout(r, 500));
+                            await this.syncStacksToDatabase(players);
+                            console.log(`[HeadlessTableEngine:${this.tableId}] Stack sync retry succeeded`);
+                        } catch (retryErr) {
+                            console.error(`[HeadlessTableEngine:${this.tableId}] Stack sync retry ALSO failed:`, retryErr);
+                        }
+                    }
+                })();
+
+                // Sync tournament player chips (tournament tables only)
+                if (this.isTournamentTable() && this.tableInfo?.tournament_id) {
+                    this.syncTournamentPlayerChips(players).catch(err =>
+                        console.error(`[HeadlessTableEngine:${this.tableId}] Tournament chip sync error:`, err)
+                    );
+                }
 
                 // Execute rake waterfall (cash games only — no rake in tournaments)
                 if (!this.isTournamentTable()) {
@@ -646,13 +676,34 @@ export class HeadlessTableEngine {
     }
 
     private async syncStacksToDatabase(players: SeatedPlayer[]): Promise<void> {
-        for (const player of players) {
-            await this.supabaseClient
+        // Batch all stack updates — each is independent so failures are isolated
+        const updates = players.map(player =>
+            this.supabaseClient
                 .from('table_seats')
                 .update({ stack: player.stack })
                 .eq('table_id', this.tableId)
-                .eq('user_id', player.user_id);
+                .eq('user_id', player.user_id)
+        );
+        const results = await Promise.allSettled(updates);
+        const failures = results.filter(r => r.status === 'rejected');
+        if (failures.length > 0) {
+            console.error(`[HeadlessTableEngine:${this.tableId}] ${failures.length}/${players.length} stack syncs failed`);
         }
+    }
+
+    /**
+     * Sync stacks to tournament_players.chips so tournament engine can track eliminations
+     */
+    private async syncTournamentPlayerChips(players: SeatedPlayer[]): Promise<void> {
+        if (!this.tableInfo?.tournament_id) return;
+        const updates = players.map(player =>
+            this.supabaseClient
+                .from('tournament_players')
+                .update({ chips: player.stack })
+                .eq('tournament_id', this.tableInfo!.tournament_id!)
+                .eq('user_id', player.user_id)
+        );
+        await Promise.allSettled(updates);
     }
 
     private async autorebuyHorses(players: SeatedPlayer[]): Promise<void> {

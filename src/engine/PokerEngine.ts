@@ -131,7 +131,7 @@ export function evaluateHand(holeCards: Card[], communityCards: Card[]): Evaluat
     // Guard: need at least 5 cards to evaluate a hand
     if (allCards.length < 5) {
         return {
-            rank: 0, // High card (worst possible)
+            ranking: 0, // High card (worst possible)
             name: 'No Hand',
             cards: allCards,
             kickers: [],
@@ -153,7 +153,7 @@ export function evaluateHand(holeCards: Card[], communityCards: Card[]): Evaluat
     // Safety: should never be null if we have 5+ cards, but handle gracefully
     if (!bestHand) {
         return {
-            rank: 0,
+            ranking: 0,
             name: 'No Hand',
             cards: allCards.slice(0, 5),
             kickers: [],

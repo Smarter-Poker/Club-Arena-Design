@@ -267,7 +267,7 @@ class TableService {
                 console.log(`[TableService] Returned ${chipsToReturn} chips to wallet for user ${userId}`);
             }
 
-            // Clear the seat
+            // Clear the seat — MUST succeed since chips were already returned
             const { error: clearError } = await supabase
                 .from('table_seats')
                 .delete()
@@ -276,8 +276,10 @@ class TableService {
                 .eq('user_id', userId);
 
             if (clearError) {
-                console.error('[TableService] Error clearing seat:', clearError);
-                return { success: false, chipsReturned: 0 };
+                // Chips were already credited — seat will be orphaned but player won't lose chips
+                // This is the safe failure mode (fail-open: player gets chips, seat gets cleaned up later)
+                console.error('[TableService] Error clearing seat after chip return — seat orphaned:', clearError);
+                // Don't return failure since chips ARE safe
             }
 
             // If this is a tournament table, update tournament_players status
