@@ -57,7 +57,7 @@ class WaitlistServiceClass {
 
         // Fetch the created entry
         const { data: entry } = await supabase
-            .from('table_waitlist')
+            .from('table_waitlists')
             .select('*, poker_tables(name)')
             .eq('table_id', tableId)
             .eq('user_id', userId)
@@ -74,7 +74,7 @@ class WaitlistServiceClass {
      */
     async leave(tableId: string, userId: string): Promise<boolean> {
         const { error } = await supabase
-            .from('table_waitlist')
+            .from('table_waitlists')
             .update({ status: 'left' })
             .eq('table_id', tableId)
             .eq('user_id', userId)
@@ -103,7 +103,7 @@ class WaitlistServiceClass {
 
         // Get total waiting count
         const { count } = await supabase
-            .from('table_waitlist')
+            .from('table_waitlists')
             .select('*', { count: 'exact', head: true })
             .eq('table_id', tableId)
             .eq('status', 'waiting');
@@ -120,7 +120,7 @@ class WaitlistServiceClass {
      */
     async getUserWaitlistEntry(tableId: string, userId: string): Promise<WaitlistEntry | null> {
         const { data, error } = await supabase
-            .from('table_waitlist')
+            .from('table_waitlists')
             .select('*, poker_tables(name)')
             .eq('table_id', tableId)
             .eq('user_id', userId)
@@ -137,7 +137,7 @@ class WaitlistServiceClass {
      */
     async getUserWaitlists(userId: string): Promise<WaitlistEntry[]> {
         const { data, error } = await supabase
-            .from('table_waitlist')
+            .from('table_waitlists')
             .select('*, poker_tables(name)')
             .eq('user_id', userId)
             .eq('status', 'waiting')
@@ -156,7 +156,7 @@ class WaitlistServiceClass {
      */
     async getTableWaitlist(tableId: string): Promise<WaitlistEntry[]> {
         const { data, error } = await supabase
-            .from('table_waitlist')
+            .from('table_waitlists')
             .select('*, profiles(username, display_name)')
             .eq('table_id', tableId)
             .eq('status', 'waiting')
@@ -176,7 +176,7 @@ class WaitlistServiceClass {
     async notifyNextPlayer(tableId: string): Promise<boolean> {
         // Get next waiting player
         const { data: next } = await supabase
-            .from('table_waitlist')
+            .from('table_waitlists')
             .select('*, poker_tables(name)')
             .eq('table_id', tableId)
             .eq('status', 'waiting')
@@ -190,7 +190,7 @@ class WaitlistServiceClass {
 
         // Update status to notified
         await supabase
-            .from('table_waitlist')
+            .from('table_waitlists')
             .update({
                 status: 'notified',
                 notified_at: new Date().toISOString()
@@ -209,7 +209,7 @@ class WaitlistServiceClass {
      */
     async markSeated(tableId: string, userId: string): Promise<boolean> {
         const { error } = await supabase
-            .from('table_waitlist')
+            .from('table_waitlists')
             .update({ status: 'seated' })
             .eq('table_id', tableId)
             .eq('user_id', userId)
@@ -230,7 +230,7 @@ class WaitlistServiceClass {
         const cutoff = new Date(Date.now() - minutesOld * 60 * 1000).toISOString();
 
         const { data, error } = await supabase
-            .from('table_waitlist')
+            .from('table_waitlists')
             .update({ status: 'expired' })
             .eq('status', 'notified')
             .lt('notified_at', cutoff)

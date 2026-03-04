@@ -373,8 +373,7 @@ export class TournamentEngine {
                             from_user_id: r.user_id,
                             to_user_id: null,
                             amount: buyInAmount,
-                            type: 'buy_in',
-                            reference_id: this.tournamentId,
+                            transaction_type: 'buy_in',
                             notes: `Tournament buy-in: ${this.tournamentInfo.name}`,
                         });
                     } else {
@@ -765,8 +764,7 @@ export class TournamentEngine {
             from_user_id: null,
             to_user_id: userId,
             amount: amount,
-            type: 'cash_out',
-            reference_id: this.tournamentId,
+            transaction_type: 'cash_out',
             notes: `Tournament prize: ${this.tournamentInfo.name}`,
         });
 

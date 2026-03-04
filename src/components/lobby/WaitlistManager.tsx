@@ -42,7 +42,7 @@ export function WaitlistManager({ tableId, isAdmin, onSeatPlayer }: WaitlistMana
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
-                table: 'table_waitlist',
+                table: 'table_waitlists',
                 filter: `table_id=eq.${tableId}`
             }, () => loadWaitlist())
             .subscribe();
@@ -54,7 +54,7 @@ export function WaitlistManager({ tableId, isAdmin, onSeatPlayer }: WaitlistMana
         setLoading(true);
         try {
             const { data, error } = await supabase
-                .from('table_waitlist')
+                .from('table_waitlists')
                 .select('*, player:profiles!user_id(username, avatar_url)')
                 .eq('table_id', tableId)
                 .order('position', { ascending: true });
@@ -88,7 +88,7 @@ export function WaitlistManager({ tableId, isAdmin, onSeatPlayer }: WaitlistMana
 
         try {
             const { error } = await supabase
-                .from('table_waitlist')
+                .from('table_waitlists')
                 .insert({
                     table_id: tableId,
                     user_id: user.id,
@@ -108,7 +108,7 @@ export function WaitlistManager({ tableId, isAdmin, onSeatPlayer }: WaitlistMana
 
         try {
             await supabase
-                .from('table_waitlist')
+                .from('table_waitlists')
                 .delete()
                 .eq('table_id', tableId)
                 .eq('user_id', user.id);
@@ -125,7 +125,7 @@ export function WaitlistManager({ tableId, isAdmin, onSeatPlayer }: WaitlistMana
 
         try {
             await supabase
-                .from('table_waitlist')
+                .from('table_waitlists')
                 .delete()
                 .eq('id', entry.id);
 

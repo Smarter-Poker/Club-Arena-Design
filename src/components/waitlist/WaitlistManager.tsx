@@ -47,7 +47,7 @@ export const WaitlistManager: React.FC<WaitlistManagerProps> = ({
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
-                table: 'table_waitlist',
+                table: 'table_waitlists',
                 filter: `table_id=eq.${tableId}`
             }, () => {
                 loadWaitlist();
@@ -62,7 +62,7 @@ export const WaitlistManager: React.FC<WaitlistManagerProps> = ({
     const loadWaitlist = async () => {
         try {
             const { data } = await supabase
-                .from('table_waitlist')
+                .from('table_waitlists')
                 .select(`
                     id,
                     user_id,
@@ -100,7 +100,7 @@ export const WaitlistManager: React.FC<WaitlistManagerProps> = ({
         setJoining(true);
         try {
             const { error } = await supabase
-                .from('table_waitlist')
+                .from('table_waitlists')
                 .insert({
                     table_id: tableId,
                     user_id: currentUserId,
@@ -120,7 +120,7 @@ export const WaitlistManager: React.FC<WaitlistManagerProps> = ({
         if (!currentUserId) return;
         try {
             await supabase
-                .from('table_waitlist')
+                .from('table_waitlists')
                 .delete()
                 .eq('table_id', tableId)
                 .eq('user_id', currentUserId);
@@ -136,14 +136,14 @@ export const WaitlistManager: React.FC<WaitlistManagerProps> = ({
         showToast(`Seating ${entry.displayName}...`, 'info');
         // After seating, remove from waitlist
         await supabase
-            .from('table_waitlist')
+            .from('table_waitlists')
             .delete()
             .eq('id', entry.id);
     };
 
     const handleRemove = async (entry: WaitlistEntry) => {
         await supabase
-            .from('table_waitlist')
+            .from('table_waitlists')
             .delete()
             .eq('id', entry.id);
         showToast(`Removed ${entry.displayName} from waitlist`, 'info');

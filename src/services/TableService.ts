@@ -327,7 +327,7 @@ class TableService {
 
             // Check waitlist and notify next player
             const { data: nextWaiter } = await supabase
-                .from('table_waitlist')
+                .from('table_waitlists')
                 .select('user_id')
                 .eq('table_id', tableId)
                 .order('position', { ascending: true })
@@ -367,8 +367,7 @@ class TableService {
                             from_user_id: null,
                             to_user_id: userId,
                             amount: chipsToReturn,
-                            type: 'cash_out',
-                            reference_id: tableId,
+                            transaction_type: 'cash_out',
                             notes: `Cash-out from table`,
                         });
                 } catch (txErr) {
@@ -439,7 +438,7 @@ class TableService {
      */
     async getWaitlistCount(tableId: string): Promise<number> {
         const { count, error } = await supabase
-            .from('table_waitlist')
+            .from('table_waitlists')
             .select('*', { count: 'exact', head: true })
             .eq('table_id', tableId);
 

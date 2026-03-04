@@ -721,7 +721,7 @@ class AgentServiceClass {
         const { data, error } = await supabase
             .from('chip_transactions')
             .select('id, from_user_id, to_user_id, amount, notes, created_at')
-            .eq('type', 'agent_transfer')
+            .eq('transaction_type', 'agent_transfer')
             .or(`from_user_id.eq.${agent.userId},to_user_id.eq.${agent.userId}`)
             .order('created_at', { ascending: false })
             .limit(limit);

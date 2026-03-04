@@ -943,8 +943,7 @@ export class HeadlessTableEngine {
                             from_user_id: null,
                             to_user_id: seat.user_id,
                             amount: chipsToReturn,
-                            type: 'cash_out',
-                            reference_id: this.tableId,
+                            transaction_type: 'cash_out',
                             notes: `Cash-out from table (leave_pending after hand)`,
                         });
                     } catch { /* Non-blocking — chip credit already succeeded */ }
