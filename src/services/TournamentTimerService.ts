@@ -173,14 +173,8 @@ class TournamentTimerServiceClass {
      * Handle tournament break
      */
     private async handleBreak(tournamentId: string, durationMinutes: number): Promise<void> {
-        // Pause the timer
+        // Pause the timer locally (tournament stays RUNNING in DB — 'paused' is not a valid DB status)
         this.pauseTimer(tournamentId);
-
-        // Update tournament status
-        await supabase
-            .from('tournaments')
-            .update({ status: 'paused' })
-            .eq('id', tournamentId);
 
         // Broadcast break notification
         await this.broadcastEvent(tournamentId, 'BREAK_START', {
@@ -190,11 +184,6 @@ class TournamentTimerServiceClass {
 
         // Schedule resume and store the timeout ID for cleanup
         const breakTimeoutId = setTimeout(async () => {
-            await supabase
-                .from('tournaments')
-                .update({ status: 'RUNNING' })
-                .eq('id', tournamentId);
-
             this.resumeTimer(tournamentId);
 
             // Clear the stored timeout ID

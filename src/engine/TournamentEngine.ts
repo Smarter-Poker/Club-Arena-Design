@@ -371,8 +371,10 @@ export class TournamentEngine {
                         await this.supabase.from('chip_transactions').insert({
                             club_id: clubId,
                             from_user_id: r.user_id,
+                            to_user_id: null,
                             amount: buyInAmount,
-                            transaction_type: 'buy_in',
+                            type: 'buy_in',
+                            reference_id: this.tournamentId,
                             notes: `Tournament buy-in: ${this.tournamentInfo.name}`,
                         });
                     } else {
@@ -712,45 +714,63 @@ export class TournamentEngine {
         const clubId = this.tournamentInfo.club_id;
 
         // Credit prize to player's club_members.chip_balance
-        const { data: member } = await this.supabase
-            .from('club_members')
-            .select('chip_balance')
-            .eq('club_id', clubId)
-            .eq('user_id', userId)
-            .single();
+        // Try atomic RPC first — falls back to read-modify-write
+        let credited = false;
+        try {
+            const { error: rpcError } = await this.supabase.rpc('fn_add_chips', {
+                p_user_id: userId,
+                p_club_id: clubId,
+                p_amount: amount,
+            });
+            credited = !rpcError;
+        } catch {
+            // RPC may not exist — use fallback
+        }
 
-        if (member) {
+        if (!credited) {
+            const { data: member } = await this.supabase
+                .from('club_members')
+                .select('chip_balance')
+                .eq('club_id', clubId)
+                .eq('user_id', userId)
+                .single();
+
+            if (!member) {
+                console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] No club membership found for ${userId.slice(0, 8)} — prize $${amount.toFixed(2)} could not be credited`);
+                return;
+            }
+
             const newBalance = (member.chip_balance || 0) + amount;
             await this.supabase
                 .from('club_members')
                 .update({ chip_balance: newBalance })
                 .eq('club_id', clubId)
                 .eq('user_id', userId);
-
-            // Log prize in wallet_transactions (full audit trail)
-            await this.supabase.from('wallet_transactions').insert({
-                user_id: userId,
-                wallet_type: 'PLAYER',
-                amount: amount,
-                type: 'credit',
-                category: 'cashout',
-                description: `Tournament prize — ${this.tournamentInfo.name}`,
-                related_entity_id: this.tournamentId,
-            });
-
-            // Log in chip_transactions for club accounting
-            await this.supabase.from('chip_transactions').insert({
-                club_id: clubId,
-                to_user_id: userId,
-                amount: amount,
-                transaction_type: 'cashout',
-                notes: `Tournament prize: ${this.tournamentInfo.name}`,
-            });
-
-            console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Credited $${amount.toFixed(2)} prize to ${userId.slice(0, 8)} (wallet: ${member.chip_balance} → ${newBalance})`);
-        } else {
-            console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] No club membership found for ${userId.slice(0, 8)} — prize $${amount.toFixed(2)} could not be credited`);
         }
+
+        // Log prize in wallet_transactions (full audit trail)
+        await this.supabase.from('wallet_transactions').insert({
+            user_id: userId,
+            wallet_type: 'PLAYER',
+            amount: amount,
+            type: 'credit',
+            category: 'cashout',
+            description: `Tournament prize — ${this.tournamentInfo.name}`,
+            related_entity_id: this.tournamentId,
+        });
+
+        // Log in chip_transactions for club accounting
+        await this.supabase.from('chip_transactions').insert({
+            club_id: clubId,
+            from_user_id: null,
+            to_user_id: userId,
+            amount: amount,
+            type: 'cash_out',
+            reference_id: this.tournamentId,
+            notes: `Tournament prize: ${this.tournamentInfo.name}`,
+        });
+
+        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Credited $${amount.toFixed(2)} prize to ${userId.slice(0, 8)}`);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
