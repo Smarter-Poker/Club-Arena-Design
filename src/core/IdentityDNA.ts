@@ -71,7 +71,12 @@ class IdentityDNACore {
         let sessionExpiresAt: string | null = null;
 
         try {
-            const { data: { session }, error } = await supabase.auth.getSession();
+            // Timeout protection — getSession() can hang if navigator.locks contend
+            const sessionPromise = supabase.auth.getSession();
+            const timeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('getSession timeout (8s)')), 8000)
+            );
+            const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]);
 
             if (session && !error) {
                 authenticated = true;

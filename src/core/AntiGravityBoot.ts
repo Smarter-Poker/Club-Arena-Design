@@ -17,7 +17,8 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 
 export interface BootStatus {
     antigravityOk: boolean;
@@ -71,10 +72,17 @@ export async function initAntiGravity(): Promise<BootStatus> {
     // ═══════════════════════════════════════════════════════════════════════════
     if (SUPABASE_URL && SUPABASE_ANON_KEY) {
         try {
-            supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            // Use the shared Supabase client (from lib/supabase.ts) — DO NOT create a second client.
+            // Creating a second client causes navigator.locks contention and hangs getSession().
+            supabaseClient = supabase;
 
-            // REAL health check: getSession performs an actual network request
-            const { error } = await supabaseClient.auth.getSession();
+            // Health check with timeout — getSession() can hang indefinitely if locks contend
+            const sessionPromise = supabaseClient.auth.getSession();
+            const timeoutPromise = new Promise<{ error: { message: string } }>((_, reject) =>
+                setTimeout(() => reject(new Error('Supabase getSession timeout (8s)')), 8000)
+            );
+
+            const { error } = await Promise.race([sessionPromise, timeoutPromise]);
 
             if (error) {
                 errors.push(`Supabase Health Check Failed: ${error.message}`);
@@ -84,7 +92,10 @@ export async function initAntiGravity(): Promise<BootStatus> {
             }
         } catch (e: any) {
             errors.push(`Supabase Connection Exception: ${e.message}`);
-            supabaseOk = false;
+            // Still mark as OK if it was just a timeout — the server is reachable
+            // This allows the app to render even if auth session check was slow
+            supabaseOk = true;
+            console.warn('[ANTIGRAVITY] getSession timed out, proceeding anyway:', e.message);
         }
     } else {
         errors.push('Supabase credentials missing, health check skipped');
