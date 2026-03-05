@@ -517,7 +517,7 @@ class HorseOrchestrator {
 
     // ─── MIDWAY UNION — already exists in DB ────────────────────────────────
     private unionId = 'fade0000-0000-0000-0000-000000000001'; // Midway Union
-    private clubId = 'a0000000-0000-0000-0000-000000000001';  // JAQK Club (linked to Midway)
+    private clubId = 'a41434bb-8d0c-400a-8f0d-e8b3d65afed4';  // Shark Club (linked to Midway)
 
     /** Launch the full orchestrator — ALL horses across ALL tables */
     async launch(configs: TableConfig[] = DEFAULT_TABLES): Promise<{ success: boolean; tablesCreated: number; horsesSeated: number }> {

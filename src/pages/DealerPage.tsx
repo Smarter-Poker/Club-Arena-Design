@@ -22,6 +22,7 @@ import { supabase } from '../lib/supabase';
 import { HeadlessTableEngine } from '../engine/HeadlessTableEngine';
 import { TournamentEngine } from '../engine/TournamentEngine';
 import { useTabKeepAlive } from '../hooks/useTabKeepAlive';
+import { horseOrchestrator } from '../services/HorseOrchestrator';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -74,6 +75,8 @@ export default function DealerPage() {
     const [engines, setEngines] = useState<TableEngine[]>([]);
     const [tournaments, setTournaments] = useState<TournamentStatus[]>([]);
     const [loading, setLoading] = useState(true);
+    const [horseLaunchStatus, setHorseLaunchStatus] = useState<string | null>(null);
+    const [horsesLaunched, setHorsesLaunched] = useState(false);
     const [startupProgress, setStartupProgress] = useState('');
     const [lastRefresh, setLastRefresh] = useState(new Date());
     const enginesRef = useRef<Map<string, HeadlessTableEngine>>(new Map());
@@ -338,6 +341,30 @@ export default function DealerPage() {
                     <button onClick={refreshDashboard} style={styles.refreshBtn}>
                         Refresh Now
                     </button>
+                    {!horsesLaunched && (
+                        <button
+                            onClick={async () => {
+                                setHorseLaunchStatus('Launching horses...');
+                                try {
+                                    const result = await horseOrchestrator.launch();
+                                    setHorseLaunchStatus(`Launched: ${result.tablesCreated} tables, ${result.horsesSeated} horses`);
+                                    setHorsesLaunched(true);
+                                    // Refresh dashboard to pick up new tables
+                                    setTimeout(refreshDashboard, 2000);
+                                } catch (err: any) {
+                                    setHorseLaunchStatus(`Error: ${err.message}`);
+                                }
+                            }}
+                            style={{ ...styles.refreshBtn, background: '#4caf50', marginLeft: '8px' }}
+                        >
+                            Launch 100 Horses
+                        </button>
+                    )}
+                    {horseLaunchStatus && (
+                        <span style={{ color: horseLaunchStatus.includes('Error') ? '#d32f2f' : '#4caf50', marginLeft: '8px', fontSize: '0.85em' }}>
+                            {horseLaunchStatus}
+                        </span>
+                    )}
                 </div>
             </header>
 
