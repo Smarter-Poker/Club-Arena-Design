@@ -76,6 +76,8 @@ export class HeadlessTableEngine {
     private currentHandPlayers: SeatedPlayer[] = [];
     // Current hand's dealer seat number (frozen at deal time, not advanced mid-hand)
     private currentHandDealerSeat: number = 0;
+    // Winner IDs captured from WINNERS event for Horse Brain processing
+    private currentHandWinnerIds: string[] = [];
     // Stack sync promise — awaited before loading seats for next hand
     private stackSyncPromise: Promise<void> | null = null;
 
@@ -512,6 +514,8 @@ export class HeadlessTableEngine {
                 break;
 
             case 'WINNERS':
+                // Capture winner IDs from the event for Horse Brain processing
+                this.currentHandWinnerIds = (event.winners || []).map((w: any) => w.userId || w.user_id || '');
                 // Capture final pot size for rake calculation
                 if (this.handController) {
                     const state = this.handController.getState();
@@ -578,13 +582,12 @@ export class HeadlessTableEngine {
                 }
 
                 // Feed hand result to Horse AI Brain's 32 anti-exploit modules
-                if (HorseBrainAdapter.isBrainAvailable() && this.handController) {
-                    const handState = this.handController.getState() as any;
-                    const winnerIds = ((handState.winners || handState.lastWinners || []) as any[]).map((w: any) => w.user_id || w.userId || w.id);
+                if (HorseBrainAdapter.isBrainAvailable()) {
+                    const stage = this.handController?.getState()?.stage || 'river';
                     HorseBrainAdapter.processHandResult(
                         this.tableId,
                         this.tableInfo?.big_blind || 2,
-                        handState.stage || 'river',
+                        stage,
                         this.currentHandPotSize,
                         players.map(p => ({
                             user_id: p.user_id,
@@ -593,9 +596,11 @@ export class HeadlessTableEngine {
                             folded: false,
                             invested: 0,
                         })),
-                        winnerIds
+                        this.currentHandWinnerIds
                     ).catch(() => {}); // Non-blocking
                 }
+                // Reset per-hand tracking
+                this.currentHandWinnerIds = [];
                 break;
         }
     }
