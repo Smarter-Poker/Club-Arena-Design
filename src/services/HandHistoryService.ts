@@ -70,11 +70,7 @@ class HandHistoryServiceClass {
                     hole_cards,
                     final_hand,
                     result,
-                    is_winner,
-                    profiles:user_id (
-                        username,
-                        avatar_url
-                    )
+                    is_winner
                 ),
                 hand_actions (
                     player_id,
@@ -94,7 +90,11 @@ class HandHistoryServiceClass {
 
         if (error || !data) return null;
 
-        return this.mapHandRecord(data);
+        // Fetch profile names for all players in this hand
+        const userIds = (data.hand_players || []).map((hp: any) => hp.user_id);
+        const profileMap = await this.fetchProfileMap(userIds);
+
+        return this.mapHandRecord(data, profileMap);
     }
 
     /**
@@ -113,7 +113,7 @@ class HandHistoryServiceClass {
                         final_hand,
                         result,
                         is_winner,
-                        profiles:user_id (
+                        profiles!hand_players_profiles_fkey (
                             username,
                             avatar_url
                         )
@@ -131,7 +131,11 @@ class HandHistoryServiceClass {
 
         if (error || !data) return [];
 
-        return data.map((d: any) => this.mapHandRecord(d.hands)).filter(Boolean) as HandRecord[];
+        // Collect all user_ids across all hands
+        const allUserIds = data.flatMap((d: any) => (d.hands?.hand_players || []).map((hp: any) => hp.user_id));
+        const profileMap = await this.fetchProfileMap(allUserIds);
+
+        return data.map((d: any) => this.mapHandRecord(d.hands, profileMap)).filter(Boolean) as HandRecord[];
     }
 
     /**
@@ -148,11 +152,7 @@ class HandHistoryServiceClass {
                     hole_cards,
                     final_hand,
                     result,
-                    is_winner,
-                    profiles:user_id (
-                        username,
-                        avatar_url
-                    )
+                    is_winner
                 ),
                 tables (
                     name,
@@ -166,7 +166,10 @@ class HandHistoryServiceClass {
 
         if (error || !data) return [];
 
-        return data.map(this.mapHandRecord);
+        const allUserIds = data.flatMap((d: any) => (d.hand_players || []).map((hp: any) => hp.user_id));
+        const profileMap = await this.fetchProfileMap(allUserIds);
+
+        return data.map((d: any) => this.mapHandRecord(d, profileMap));
     }
 
     /**
@@ -185,7 +188,7 @@ class HandHistoryServiceClass {
                         final_hand,
                         result,
                         is_winner,
-                        profiles:user_id (
+                        profiles!hand_players_profiles_fkey (
                             username,
                             avatar_url
                         )
@@ -204,7 +207,10 @@ class HandHistoryServiceClass {
 
         if (error || !data) return [];
 
-        return data.map((d: any) => this.mapHandRecord(d.hands)).filter(Boolean) as HandRecord[];
+        const allUserIds = data.flatMap((d: any) => (d.hands?.hand_players || []).map((hp: any) => hp.user_id));
+        const profileMap = await this.fetchProfileMap(allUserIds);
+
+        return data.map((d: any) => this.mapHandRecord(d.hands, profileMap)).filter(Boolean) as HandRecord[];
     }
 
     /**
@@ -229,11 +235,7 @@ class HandHistoryServiceClass {
                     hole_cards,
                     final_hand,
                     result,
-                    is_winner,
-                    profiles:user_id (
-                        username,
-                        avatar_url
-                    )
+                    is_winner
                 ),
                 tables (
                     name,
@@ -266,7 +268,10 @@ class HandHistoryServiceClass {
 
         if (error || !data) return [];
 
-        let results = data.map(this.mapHandRecord);
+        const allUserIds = data.flatMap((d: any) => (d.hand_players || []).map((hp: any) => hp.user_id));
+        const profileMap = await this.fetchProfileMap(allUserIds);
+
+        let results = data.map((d: any) => this.mapHandRecord(d, profileMap));
 
         // Filter by clubId if provided (post-query filter)
         if (filters.clubId) {
@@ -280,19 +285,22 @@ class HandHistoryServiceClass {
     // HELPERS
     // ─────────────────────────────────────────────────────────────────────────────
 
-    private mapHandRecord(data: any): HandRecord {
+    private mapHandRecord(data: any, profileMap?: Map<string, { username: string; avatar_url: string | null }>): HandRecord {
         const table = data.tables || {};
-        const players: HandPlayer[] = (data.hand_players || []).map((hp: any) => ({
-            seat: hp.seat,
-            user_id: hp.user_id,
-            username: hp.profiles?.username || 'Unknown',
-            avatar_url: hp.profiles?.avatar_url || null,
-            position: this.getPositionName(hp.seat, data.button_seat || 1, (data.hand_players || []).length),
-            hole_cards: hp.hole_cards || [],
-            final_hand: hp.final_hand,
-            result: hp.result || 0,
-            is_winner: hp.is_winner || false,
-        }));
+        const players: HandPlayer[] = (data.hand_players || []).map((hp: any) => {
+            const profile = profileMap?.get(hp.user_id);
+            return {
+                seat: hp.seat,
+                user_id: hp.user_id,
+                username: profile?.username || hp.user_id?.slice(0, 8) || 'Unknown',
+                avatar_url: profile?.avatar_url || null,
+                position: this.getPositionName(hp.seat, data.button_seat || 1, (data.hand_players || []).length),
+                hole_cards: hp.hole_cards || [],
+                final_hand: hp.final_hand,
+                result: hp.result || 0,
+                is_winner: hp.is_winner || false,
+            };
+        });
 
         const actions: HandAction[] = (data.hand_actions || []).map((a: any) => ({
             player_id: a.player_id,
@@ -318,6 +326,30 @@ class HandHistoryServiceClass {
             game_type: table.game_type || 'NLH',
             stakes: table.stakes || '1/2',
         };
+    }
+
+    /**
+     * Batch-fetch profiles for a list of user_ids
+     */
+    private async fetchProfileMap(userIds: string[]): Promise<Map<string, { username: string; avatar_url: string | null }>> {
+        const map = new Map<string, { username: string; avatar_url: string | null }>();
+        if (userIds.length === 0) return map;
+
+        try {
+            const unique = [...new Set(userIds)];
+            const { data } = await supabase
+                .from('profiles')
+                .select('id, username, avatar_url')
+                .in('id', unique);
+
+            for (const p of (data || [])) {
+                map.set(p.id, { username: p.username, avatar_url: p.avatar_url });
+            }
+        } catch {
+            // Non-critical — names will fall back to truncated user_id
+        }
+
+        return map;
     }
 
     private getPositionName(

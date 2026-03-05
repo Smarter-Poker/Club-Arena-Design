@@ -106,11 +106,11 @@ class AgentServiceClass {
                 parent:parent_agent_id (
                     id,
                     user_id,
-                    profiles:user_id (
+                    profiles!agents_profiles_fkey (
                         display_name
                     )
                 ),
-                profiles:user_id (
+                profiles!agents_profiles_fkey (
                     display_name,
                     avatar_url
                 )
@@ -159,11 +159,11 @@ class AgentServiceClass {
                 *,
                 parent:parent_agent_id (
                     id,
-                    profiles:user_id (
+                    profiles!agents_profiles_fkey (
                         display_name
                     )
                 ),
-                profiles:user_id (
+                profiles!agents_profiles_fkey (
                     display_name,
                     avatar_url
                 )
@@ -417,7 +417,7 @@ class AgentServiceClass {
                 chip_balance,
                 rakeback_percent,
                 joined_at,
-                profiles:user_id (
+                profiles!club_members_profiles_fkey (
                     display_name,
                     avatar_url,
                     is_online

@@ -63,30 +63,32 @@ export const WaitlistManager: React.FC<WaitlistManagerProps> = ({
         try {
             const { data } = await supabase
                 .from('table_waitlists')
-                .select(`
-                    id,
-                    user_id,
-                    position,
-                    created_at,
-                    profiles:user_id (
-                        username,
-                        display_name,
-                        avatar_url
-                    )
-                `)
+                .select('id, user_id, position, created_at')
                 .eq('table_id', tableId)
                 .order('position', { ascending: true });
 
-            if (data) {
-                setWaitlist(data.map((e: any) => ({
-                    id: e.id,
-                    userId: e.user_id,
-                    username: e.profiles?.username || 'Unknown',
-                    displayName: e.profiles?.display_name || e.profiles?.username || 'Unknown',
-                    avatarUrl: e.profiles?.avatar_url,
-                    position: e.position,
-                    joinedAt: new Date(e.created_at)
-                })));
+            if (data && data.length > 0) {
+                // Fetch profiles separately
+                const userIds = data.map((e: any) => e.user_id);
+                const { data: profiles } = await supabase
+                    .from('profiles')
+                    .select('id, username, full_name, avatar_url')
+                    .in('id', userIds);
+
+                const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
+                setWaitlist(data.map((e: any) => {
+                    const profile = profileMap.get(e.user_id);
+                    return {
+                        id: e.id,
+                        userId: e.user_id,
+                        username: profile?.username || 'Unknown',
+                        displayName: profile?.full_name || profile?.username || 'Unknown',
+                        avatarUrl: profile?.avatar_url,
+                        position: e.position,
+                        joinedAt: new Date(e.created_at)
+                    };
+                }));
             }
         } catch (error) {
             console.error('Failed to load waitlist:', error);

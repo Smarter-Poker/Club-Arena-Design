@@ -101,7 +101,7 @@ export const CreditService = {
     async getCreditAccount(agentId: string): Promise<CreditAccount | null> {
         const { data: agent, error } = await supabase
             .from('agents')
-            .select('id, user_id, credit_limit, agent_wallet_balance, is_prepaid, status, profiles:user_id(display_name)')
+            .select('id, user_id, credit_limit, agent_wallet_balance, is_prepaid, status, profiles!agents_profiles_fkey(display_name)')
             .eq('id', agentId)
             .single();
 
@@ -311,7 +311,7 @@ export const CreditService = {
     async getAgentInvoices(agentId: string): Promise<CreditInvoice[]> {
         const { data, error } = await supabase
             .from('credit_invoices')
-            .select('*, agents:agent_id(profiles:user_id(display_name))')
+            .select('*, agents:agent_id(profiles!agents_profiles_fkey(display_name))')
             .eq('agent_id', agentId)
             .order('created_at', { ascending: false });
 

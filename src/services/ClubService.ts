@@ -170,7 +170,7 @@ class ClubServiceClass {
             .from('club_members')
             .select(`
                 *,
-                profiles:user_id (
+                profiles!club_members_profiles_fkey (
                     display_name,
                     avatar_url
                 )

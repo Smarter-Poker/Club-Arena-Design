@@ -55,16 +55,7 @@ export const OnlinePlayersList: React.FC<OnlinePlayersListProps> = ({
         try {
             let query = supabase
                 .from('player_presence')
-                .select(`
-                    user_id,
-                    status,
-                    current_table_id,
-                    profiles:user_id (
-                        username,
-                        display_name,
-                        avatar_url
-                    )
-                `)
+                .select('user_id, status, current_table_id', { count: 'exact' })
                 .in('status', ['online', 'playing'])
                 .order('last_seen_at', { ascending: false })
                 .limit(limit);
@@ -75,15 +66,27 @@ export const OnlinePlayersList: React.FC<OnlinePlayersListProps> = ({
 
             const { data, count } = await query;
 
-            if (data) {
-                const mapped = data.map((p: any) => ({
-                    id: p.user_id,
-                    username: p.profiles?.username || 'Unknown',
-                    displayName: p.profiles?.display_name || p.profiles?.username || 'Unknown',
-                    avatarUrl: p.profiles?.avatar_url,
-                    status: p.status,
-                    currentTable: p.current_table_id
-                }));
+            if (data && data.length > 0) {
+                // Fetch profiles separately
+                const userIds = data.map((p: any) => p.user_id);
+                const { data: profiles } = await supabase
+                    .from('profiles')
+                    .select('id, username, full_name, avatar_url')
+                    .in('id', userIds);
+
+                const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
+                const mapped = data.map((p: any) => {
+                    const profile = profileMap.get(p.user_id);
+                    return {
+                        id: p.user_id,
+                        username: profile?.username || 'Unknown',
+                        displayName: profile?.full_name || profile?.username || 'Unknown',
+                        avatarUrl: profile?.avatar_url,
+                        status: p.status,
+                        currentTable: p.current_table_id
+                    };
+                });
                 setPlayers(mapped);
                 setOnlineCount(count || mapped.length);
             }

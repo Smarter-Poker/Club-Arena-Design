@@ -110,7 +110,7 @@ export const MembershipService = {
                 invited_by,
                 agent_id,
                 notes,
-                profiles:user_id (
+                profiles!club_members_profiles_fkey (
                     display_name,
                     avatar_url
                 )
@@ -244,7 +244,7 @@ export const MembershipService = {
                 role,
                 status,
                 joined_at,
-                profiles:user_id (
+                profiles!club_members_profiles_fkey (
                     display_name,
                     avatar_url
                 )
