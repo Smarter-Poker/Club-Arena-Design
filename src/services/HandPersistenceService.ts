@@ -40,6 +40,10 @@ export interface PersistenceConfig {
     clubId: string;
     stakes: string;
     gameVariant: 'nlh' | 'plo4' | 'plo5' | 'plo6';
+    smallBlind?: number;
+    bigBlind?: number;
+    ante?: number;
+    dealerSeat?: number;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -179,16 +183,23 @@ export class HandPersistence {
 
         // Insert initial hand record — since events are serialized,
         // no other event can run until this insert completes.
-        const insertPayload = {
+        const insertPayload: Record<string, unknown> = {
             table_id: this.currentHand.table_id,
             club_id: this.currentHand.club_id,
             hand_number: this.currentHand.hand_number,
             game_variant: this.currentHand.game_variant,
+            game_type: 'cash',  // Default; overridden for tournaments
             stakes: this.currentHand.stakes,
+            small_blind: config.smallBlind || 0,
+            big_blind: config.bigBlind || 0,
+            ante: config.ante || 0,
+            dealer_seat: config.dealerSeat || 0,
             pot: 0,
             rake: 0,
             community_cards: [] as string[],
             winner_ids: [] as string[],
+            status: 'active',
+            street: 'preflop',
             players: this.currentHand.players,
             actions: [] as Record<string, unknown>[],
             started_at: this.currentHand.started_at,
@@ -282,6 +293,7 @@ export class HandPersistence {
 
         // Update the DB record with completion data
         if (!(this.currentHand as any)._localOnly) {
+            const now = new Date().toISOString();
             const updatePayload = {
                 pot: this.currentHand.pot,
                 rake,
@@ -290,7 +302,8 @@ export class HandPersistence {
                 actions: this.handActions,
                 status: 'completed',
                 street: finalStreet,
-                ended_at: new Date().toISOString(),
+                ended_at: now,
+                completed_at: now,
             };
 
             const { error } = await supabase
@@ -329,6 +342,8 @@ export class HandPersistence {
                     hand_id: handId,
                     user_id: userId,
                     seat_number: info.seat,
+                    hole_cards: [],    // Cards are private — filled in separately if needed
+                    final_hand: null,  // Best 5-card hand — computed post-showdown
                     chips_won: isWinner ? chipsWon : 0,
                     chips_lost: isWinner ? 0 : totalInvested,
                     is_winner: isWinner,
@@ -349,6 +364,7 @@ export class HandPersistence {
             // ── Insert rake_records ──────────────────────────────────────────────
             // Only insert if rake was actually taken (no flop no drop)
             if (rake > 0) {
+                const playersInHand = Object.keys(this.currentHand.players as Record<string, unknown>).length;
                 const { error: rrError } = await supabase
                     .from('rake_records')
                     .insert({
@@ -357,6 +373,8 @@ export class HandPersistence {
                         club_id: this.currentHand.club_id,
                         rake_amount: rake,
                         pot_size: this.currentHand.pot,
+                        num_players: playersInHand,
+                        bbj_contribution: 0,
                     });
 
                 if (rrError) {

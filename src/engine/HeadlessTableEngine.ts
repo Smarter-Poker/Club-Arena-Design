@@ -393,6 +393,10 @@ export class HeadlessTableEngine {
             clubId: this.tableInfo.club_id,
             stakes: `${this.tableInfo.small_blind}/${this.tableInfo.big_blind}`,
             gameVariant: this.tableInfo.game_variant as 'nlh' | 'plo4' | 'plo5' | 'plo6',
+            smallBlind: this.tableInfo.small_blind,
+            bigBlind: this.tableInfo.big_blind,
+            ante: this.tableInfo.ante || 0,
+            dealerSeat: dealerSeat,
         });
 
         // Wait for hand to complete before returning
