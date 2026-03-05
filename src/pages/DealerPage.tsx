@@ -297,15 +297,17 @@ export default function DealerPage() {
         return () => clearInterval(interval);
     }, []);
 
-    // Cleanup on unmount
+    // Cleanup on unmount — stop all engines and clear refs to prevent duplicates
     useEffect(() => {
         return () => {
             enginesRef.current.forEach(engine => {
                 if (engine.isRunning()) engine.stop();
             });
+            enginesRef.current.clear();
             tournamentsRef.current.forEach(engine => {
                 if (engine.isRunning()) engine.stop();
             });
+            tournamentsRef.current.clear();
         };
     }, []);
 

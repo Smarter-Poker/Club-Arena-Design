@@ -178,7 +178,12 @@ export class TournamentEngine {
 
             // Step 6: Start dealing on each table
             for (const table of this.tables) {
-                await table.engine.start();
+                try {
+                    await table.engine.start();
+                } catch (err) {
+                    console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to start table engine ${table.tableId.slice(0, 8)}:`, err);
+                    // Continue starting other tables — one failure shouldn't block the rest
+                }
             }
 
             // Step 7: Start blind level timer
@@ -808,6 +813,11 @@ export class TournamentEngine {
             .is('left_at', null);
 
         if (!seats || seats.length === 0) {
+            // Close the empty table in DB and remove from engine tracking
+            await this.supabase
+                .from('tables')
+                .update({ status: 'closed', current_players: 0 })
+                .eq('id', sourceTable.tableId);
             this.removeTable(sourceTable);
             return;
         }
