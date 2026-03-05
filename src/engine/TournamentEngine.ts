@@ -441,7 +441,6 @@ export class TournamentEngine {
                 user_id: activePlayers[i].user_id,
                 stack: activePlayers[i].chips,
                 is_sitting_out: false,
-                is_away: false,
                 // Note: horse_id omitted — tournament players are registered users, not horses
                 // The horse_id FK constraint would reject non-horse user_ids
             });
@@ -814,8 +813,7 @@ export class TournamentEngine {
                     user_id: seat.user_id,
                     stack: seat.stack,
                     is_sitting_out: false,
-                    is_away: false,
-                });
+                    });
 
             if (insertErr) {
                 console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to insert merged seat for ${seat.user_id.slice(0, 8)}:`, insertErr.message);

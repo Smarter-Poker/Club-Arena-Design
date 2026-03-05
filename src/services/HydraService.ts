@@ -501,7 +501,6 @@ export const HydraService = {
                 user_id: horseId,
                 stack,
                 is_sitting_out: false,
-                is_away: false,
             });
 
         if (error) {

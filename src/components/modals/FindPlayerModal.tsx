@@ -112,9 +112,9 @@ export default function FindPlayerModal({ isOpen, onClose }: FindPlayerModalProp
                 }
             }
 
-            // Also check tournament registrations
+            // Also check tournament players
             const { data: tournamentData } = await supabase
-                .from('tournament_registrations')
+                .from('tournament_players')
                 .select(`
                     id,
                     tournament_id,
@@ -122,13 +122,13 @@ export default function FindPlayerModal({ isOpen, onClose }: FindPlayerModalProp
                         id,
                         name,
                         status,
-                        buy_in_chips,
+                        buy_in_amount,
                         club_id,
                         clubs:club_id (name)
                     )
                 `)
                 .eq('user_id', player.id)
-                .eq('status', 'registered')
+                .in('status', ['registered', 'playing'])
                 .limit(4 - tables.length);
 
             if (tournamentData && tournamentData.length > 0) {

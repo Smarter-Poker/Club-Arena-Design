@@ -630,7 +630,6 @@ class HorseOrchestrator {
                         seat_number: seated + 1,
                         stack: buyIn,
                         is_sitting_out: false,
-                        is_away: false,
                     });
 
                 if (seatError) {
@@ -726,17 +725,19 @@ class HorseOrchestrator {
                 return { tournamentId: null, registered: 0 };
             }
 
-            // Register horses via tournament_registrations
+            // Register horses via tournament_players
             const horses = await HydraService.getAvailableHorses(config.horsesToRegister);
             let registered = 0;
 
             for (const horse of horses) {
                 const { error: regError } = await supabase
-                    .from('tournament_registrations')
+                    .from('tournament_players')
                     .insert({
                         tournament_id: tournament.id,
                         user_id: horse.id,
-                        display_name: horse.name,
+                        username: horse.name,
+                        status: 'registered',
+                        chips: 0,
                     });
 
                 if (!regError) registered++;
@@ -828,11 +829,13 @@ class HorseOrchestrator {
 
             for (const horse of horses) {
                 const { error: regError } = await supabase
-                    .from('tournament_registrations')
+                    .from('tournament_players')
                     .insert({
                         tournament_id: sng.id,
                         user_id: horse.id,
-                        display_name: horse.name,
+                        username: horse.name,
+                        status: 'registered',
+                        chips: 0,
                     });
                 if (!regError) registered++;
             }
@@ -919,11 +922,13 @@ class HorseOrchestrator {
 
             for (const horse of horses) {
                 const { error: regError } = await supabase
-                    .from('tournament_registrations')
+                    .from('tournament_players')
                     .insert({
                         tournament_id: spin.id,
                         user_id: horse.id,
-                        display_name: horse.name,
+                        username: horse.name,
+                        status: 'registered',
+                        chips: 0,
                     });
                 if (!regError) registered++;
             }

@@ -38,24 +38,24 @@ export function TournamentChipCount({ tournamentId, limit = 10 }: TournamentChip
     const loadChipCounts = async () => {
         try {
             const { data, error } = await supabase
-                .from('tournament_registrations')
-                .select('user_id, chip_count, table_number, player:profiles!user_id(username, avatar_url)')
+                .from('tournament_players')
+                .select('user_id, chips, table_id, seat_number, player:profiles!user_id(username, avatar_url)')
                 .eq('tournament_id', tournamentId)
-                .eq('is_eliminated', false)
-                .order('chip_count', { ascending: false })
+                .neq('status', 'eliminated')
+                .order('chips', { ascending: false })
                 .limit(limit);
 
             if (!error && data) {
                 let total = 0;
-                const mapped = data.map((p, idx) => {
-                    total += p.chip_count || 0;
+                const mapped = data.map((p: any, idx: number) => {
+                    total += p.chips || 0;
                     const player = Array.isArray(p.player) ? p.player[0] : p.player;
                     return {
                         userId: p.user_id,
                         username: player?.username || 'Unknown',
                         avatarUrl: player?.avatar_url || '',
-                        chipCount: p.chip_count || 0,
-                        tableNumber: p.table_number || 0,
+                        chipCount: p.chips || 0,
+                        tableNumber: p.seat_number || 0,
                         rank: idx + 1
                     };
                 });

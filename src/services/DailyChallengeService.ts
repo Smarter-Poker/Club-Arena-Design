@@ -177,7 +177,7 @@ class DailyChallengeServiceClass {
     private async awardRewards(userId: string, challenge: DailyChallenge): Promise<void> {
         // Award chips atomically via RPC (read-modify-write was a race condition)
         if (challenge.chipReward > 0) {
-            const { error: chipError } = await supabase.rpc('add_to_player_wallet', {
+            const { error: chipError } = await supabase.rpc('add_chips', {
                 p_user_id: userId,
                 p_amount: challenge.chipReward,
             });

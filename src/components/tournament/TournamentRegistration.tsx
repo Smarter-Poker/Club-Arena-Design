@@ -44,7 +44,7 @@ export function TournamentRegistration({
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
-                table: 'tournament_registrations',
+                table: 'tournament_players',
                 filter: `tournament_id=eq.${tournamentId}`
             }, () => loadPlayers())
             .subscribe();
@@ -56,21 +56,21 @@ export function TournamentRegistration({
         setLoading(true);
         try {
             const { data, error } = await supabase
-                .from('tournament_registrations')
+                .from('tournament_players')
                 .select('*, player:profiles!user_id(username, avatar_url)')
                 .eq('tournament_id', tournamentId)
-                .order('registered_at', { ascending: true });
+                .order('created_at', { ascending: true });
 
             if (!error && data) {
-                setPlayers(data.map(p => ({
+                setPlayers(data.map((p: any) => ({
                     id: p.user_id,
-                    username: p.player?.username || 'Unknown',
+                    username: p.player?.username || p.username || 'Unknown',
                     avatarUrl: p.player?.avatar_url || '',
-                    registeredAt: new Date(p.registered_at),
-                    tableNumber: p.table_number,
+                    registeredAt: new Date(p.created_at),
+                    tableNumber: p.table_id || null,
                     seatNumber: p.seat_number,
-                    chipCount: p.chip_count,
-                    isEliminated: p.is_eliminated || false
+                    chipCount: p.chips || 0,
+                    isEliminated: p.status === 'eliminated'
                 })));
             }
         } catch (error) {
@@ -84,7 +84,7 @@ export function TournamentRegistration({
 
         try {
             await supabase
-                .from('tournament_registrations')
+                .from('tournament_players')
                 .delete()
                 .eq('tournament_id', tournamentId)
                 .eq('user_id', playerId);
