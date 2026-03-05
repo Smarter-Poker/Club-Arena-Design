@@ -274,13 +274,13 @@ export class TournamentEngine {
             // Load existing players
             const { data: fullPlayers } = await this.supabase
                 .from('tournament_players')
-                .select('user_id, chips, status, horse_id')
+                .select('user_id, chips, status, username')
                 .eq('tournament_id', this.tournamentId);
             if (fullPlayers) {
                 for (const p of fullPlayers) {
                     this.players.set(p.user_id, {
                         user_id: p.user_id,
-                        username: p.horse_id || p.user_id.slice(0, 8),
+                        username: p.username || p.user_id.slice(0, 8),
                         chips: p.chips || this.tournamentInfo.starting_chips,
                         status: p.status || 'playing',
                     });
@@ -289,11 +289,12 @@ export class TournamentEngine {
             return;
         }
 
-        // Load tournament_registrations
+        // Load registered players from tournament_players (inserted by TournamentService.registerPlayer)
         const { data: registrations, error } = await this.supabase
-            .from('tournament_registrations')
-            .select('user_id, display_name')
-            .eq('tournament_id', this.tournamentId);
+            .from('tournament_players')
+            .select('user_id, username, chips, status')
+            .eq('tournament_id', this.tournamentId)
+            .eq('status', 'registered');
 
         if (error || !registrations || registrations.length === 0) {
             // No registrations — mark tournament as COMPLETED and bail
@@ -315,84 +316,28 @@ export class TournamentEngine {
             throw new Error(`Not enough players (${registrations.length}) for tournament ${this.tournamentId}`);
         }
 
-        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Migrating ${registrations.length} registrations to tournament_players`);
+        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Activating ${registrations.length} registered players`);
 
-        // Insert into tournament_players
-        const playerRows = registrations.map(r => ({
-            tournament_id: this.tournamentId,
-            user_id: r.user_id,
-            chips: this.tournamentInfo!.starting_chips,
-            status: 'registered',
-            rebuy_count: 0,
-            addon_count: 0,
-        }));
-
-        const { error: insertError } = await this.supabase
+        // Update tournament_players status to 'playing' and set starting chips
+        const { error: updateError } = await this.supabase
             .from('tournament_players')
-            .insert(playerRows);
+            .update({ status: 'playing', chips: this.tournamentInfo!.starting_chips })
+            .eq('tournament_id', this.tournamentId)
+            .eq('status', 'registered');
 
-        if (insertError) {
-            console.error(`[TournamentEngine] Migration insert error:`, insertError.message);
-            throw new Error(`Failed to migrate registrations: ${insertError.message}`);
+        if (updateError) {
+            console.error(`[TournamentEngine] Player activation error:`, updateError.message);
+            throw new Error(`Failed to activate players: ${updateError.message}`);
         }
 
-        // Populate local player map & deduct buy-ins from wallets
-        const clubId = this.tournamentInfo.club_id;
-        const buyInAmount = this.tournamentInfo.buy_in_amount;
-
+        // Populate local player map (buy-ins already deducted during registration by TournamentService.registerPlayer)
         for (const r of registrations) {
             this.players.set(r.user_id, {
                 user_id: r.user_id,
-                username: r.display_name || r.user_id.slice(0, 8),
+                username: r.username || r.user_id.slice(0, 8),
                 chips: this.tournamentInfo.starting_chips,
                 status: 'playing',
             });
-
-            // Deduct buy-in from player's wallet (club_members.chip_balance)
-            if (buyInAmount > 0 && clubId) {
-                try {
-                    const { data: memberData } = await this.supabase
-                        .from('club_members')
-                        .select('chip_balance')
-                        .eq('club_id', clubId)
-                        .eq('user_id', r.user_id)
-                        .single();
-
-                    const walletBalance = memberData?.chip_balance || 0;
-                    if (walletBalance >= buyInAmount) {
-                        await this.supabase
-                            .from('club_members')
-                            .update({ chip_balance: walletBalance - buyInAmount })
-                            .eq('club_id', clubId)
-                            .eq('user_id', r.user_id)
-                            .gte('chip_balance', buyInAmount);
-
-                        // Log buy-in transaction
-                        await this.supabase.from('wallet_transactions').insert({
-                            user_id: r.user_id,
-                            wallet_type: 'PLAYER',
-                            amount: -buyInAmount,
-                            type: 'debit',
-                            category: 'buyin',
-                            description: `Tournament buy-in: ${this.tournamentInfo.name}`,
-                            related_entity_id: this.tournamentId,
-                        });
-
-                        await this.supabase.from('chip_transactions').insert({
-                            club_id: clubId,
-                            from_user_id: r.user_id,
-                            to_user_id: null,
-                            amount: buyInAmount,
-                            transaction_type: 'buy_in',
-                            notes: `Tournament buy-in: ${this.tournamentInfo.name}`,
-                        });
-                    } else {
-                        console.warn(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Player ${r.user_id.slice(0, 8)} insufficient funds for buy-in (${walletBalance} < ${buyInAmount})`);
-                    }
-                } catch (err) {
-                    console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Buy-in deduction failed for ${r.user_id.slice(0, 8)}:`, err);
-                }
-            }
         }
 
         // Update prize pool based on actual player count (not stale DB value)

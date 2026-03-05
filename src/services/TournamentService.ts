@@ -407,12 +407,13 @@ class TournamentService {
             throw new Error('Failed to deduct tournament buy-in (concurrent transaction or insufficient balance)');
         }
 
-        // Insert player
+        // Insert player (username is NOT NULL in schema — must be provided)
         const { data, error } = await supabase
             .from('tournament_players')
             .insert({
                 tournament_id: tournamentId,
                 user_id: userId,
+                username: username,
                 chips: 0,
                 status: 'registered',
             })
