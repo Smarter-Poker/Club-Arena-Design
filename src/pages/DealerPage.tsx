@@ -80,7 +80,7 @@ export default function DealerPage() {
     const [startupProgress, setStartupProgress] = useState('');
     const [lastRefresh, setLastRefresh] = useState(new Date());
     const enginesRef = useRef<Map<string, HeadlessTableEngine>>(new Map());
-    const tournamentsRef = useRef<Map<string, TournamentEngine>>(new Map());
+    const tournamentsRef = useRef<Map<string, { engine: TournamentEngine; name: string }>>(new Map());
     const initialStartupDone = useRef(false);
 
     /**
@@ -217,7 +217,7 @@ export default function DealerPage() {
                         for (const t of batch) {
                             console.log(`[DealerPage] Starting tournament: ${t.name} (${t.current_players} players)`);
                             const engine = new TournamentEngine(t.id, supabase);
-                            tournamentsRef.current.set(t.id, engine);
+                            tournamentsRef.current.set(t.id, { engine, name: t.name });
 
                             engine.start().catch(err => {
                                 console.error(`Failed to start tournament ${t.id}:`, err);
@@ -245,16 +245,45 @@ export default function DealerPage() {
                 for (const t of runningTournaments) {
                     if (!tournamentsRef.current.has(t.id)) {
                         console.log(`[DealerPage] Tracking running tournament: ${t.name}`);
+                        const engine = new TournamentEngine(t.id, supabase);
+                        tournamentsRef.current.set(t.id, { engine, name: t.name });
+                        engine.start().catch(err => {
+                            console.error(`Failed to start running tournament ${t.id}:`, err);
+                        });
                     }
                 }
             }
 
-            // Build status list from all tracked tournaments
+            // Clean up stale finished engines — stop engine and remove from ref
+            // so the list doesn't accumulate "Unknown/Finished" entries forever
+            const staleIds: string[] = [];
+            tournamentsRef.current.forEach(({ engine }, id) => {
+                if (!engine.isRunning()) staleIds.push(id);
+            });
+            for (const id of staleIds) {
+                const entry = tournamentsRef.current.get(id);
+                if (entry) entry.engine.stop();
+                tournamentsRef.current.delete(id);
+            }
+
+            // Fetch recently finished tournaments (last 2 hours) for display
+            const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+            const { data: recentlyFinished } = await supabase
+                .from('tournaments')
+                .select('id, name, current_players, status, updated_at')
+                .in('status', ['FINISHED', 'COMPLETED'])
+                .gte('updated_at', twoHoursAgo)
+                .order('updated_at', { ascending: false })
+                .limit(10);
+
+            // Build status list from tracked (running) tournaments + recently finished
             const statusList: TournamentStatus[] = [];
-            tournamentsRef.current.forEach((engine, id) => {
+
+            // Active tournaments from engine refs
+            tournamentsRef.current.forEach(({ engine, name }, id) => {
                 statusList.push({
                     tournamentId: id,
-                    name: engine.getTournamentName(),
+                    name: name || engine.getTournamentName(),
                     engine,
                     playerCount: engine.getPlayerCount(),
                     tableCount: engine.getTableCount(),
@@ -263,6 +292,24 @@ export default function DealerPage() {
                     isRunning: engine.isRunning(),
                 });
             });
+
+            // Recently finished tournaments (display-only, no engine)
+            if (recentlyFinished) {
+                for (const t of recentlyFinished) {
+                    // Skip if already in the active list
+                    if (statusList.some(s => s.tournamentId === t.id)) continue;
+                    statusList.push({
+                        tournamentId: t.id,
+                        name: t.name || 'Tournament',
+                        engine: null as any, // No engine for finished tournaments
+                        playerCount: 0,
+                        tableCount: 0,
+                        handCount: 0,
+                        currentLevel: 0,
+                        isRunning: false,
+                    });
+                }
+            }
 
             return statusList;
         } catch (err) {
@@ -307,7 +354,7 @@ export default function DealerPage() {
                 if (engine.isRunning()) engine.stop();
             });
             enginesRef.current.clear();
-            tournamentsRef.current.forEach(engine => {
+            tournamentsRef.current.forEach(({ engine }) => {
                 if (engine.isRunning()) engine.stop();
             });
             tournamentsRef.current.clear();
