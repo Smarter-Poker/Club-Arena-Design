@@ -183,23 +183,27 @@ export class HandPersistence {
 
         // Insert initial hand record — since events are serialized,
         // no other event can run until this insert completes.
+        // MUST match actual DB columns exactly — no extra columns allowed
+        // Actual columns: id, table_id, club_id, hand_number, game_variant, stakes,
+        // pot, rake, community_cards, board, winner_ids, players, actions,
+        // current_player_id, player_cards, player_bets, current_bet, min_raise,
+        // street, status, dealer_position, started_at, ended_at, created_at
         const insertPayload: Record<string, unknown> = {
             table_id: this.currentHand.table_id,
             club_id: this.currentHand.club_id,
             hand_number: this.currentHand.hand_number,
             game_variant: this.currentHand.game_variant,
-            game_type: 'cash',  // Default; overridden for tournaments
             stakes: this.currentHand.stakes,
-            small_blind: config.smallBlind || 0,
-            big_blind: config.bigBlind || 0,
-            ante: config.ante || 0,
-            dealer_seat: config.dealerSeat || 0,
+            dealer_position: config.dealerSeat || 0,
             pot: 0,
             rake: 0,
             community_cards: [] as string[],
+            board: null,
             winner_ids: [] as string[],
             status: 'active',
             street: 'preflop',
+            current_bet: 0,
+            min_raise: 0,
             players: this.currentHand.players,
             actions: [] as Record<string, unknown>[],
             started_at: this.currentHand.started_at,
@@ -298,12 +302,12 @@ export class HandPersistence {
                 pot: this.currentHand.pot,
                 rake,
                 community_cards: this.currentHand.community_cards,
+                board: this.currentHand.community_cards.join(',') || null,
                 winner_ids: this.currentHand.winner_ids,
                 actions: this.handActions,
                 status: 'completed',
                 street: finalStreet,
                 ended_at: now,
-                completed_at: now,
             };
 
             const { error } = await supabase
