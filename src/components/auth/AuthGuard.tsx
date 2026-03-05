@@ -4,14 +4,38 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  * Protects routes that require authentication.
  * Redirects to /auth if not authenticated.
+ *
+ * RESILIENT to navigator.locks deadlock — falls back to localStorage check
+ * if getSession() times out or is aborted.
  */
 
 import { ReactNode, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
+const AUTH_STORAGE_KEY = 'smarter-poker-auth';
+const SESSION_CHECK_TIMEOUT = 3000; // 3s max wait for getSession
+
 interface AuthGuardProps {
     children: ReactNode;
+}
+
+/**
+ * Fast session check from localStorage (bypasses navigator.locks)
+ */
+function hasLocalSession(): boolean {
+    try {
+        const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+        if (!raw) return false;
+        const data = JSON.parse(raw);
+        const token = data?.access_token;
+        if (!token) return false;
+        // Check expiry from JWT payload
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.exp * 1000 > Date.now();
+    } catch {
+        return false;
+    }
 }
 
 export function AuthGuard({ children }: AuthGuardProps) {
@@ -22,23 +46,46 @@ export function AuthGuard({ children }: AuthGuardProps) {
     useEffect(() => {
         let cancelled = false;
 
-        // Check current session
         async function checkAuth() {
+            // FAST PATH: Check localStorage directly (no navigator.locks)
+            if (hasLocalSession()) {
+                // We know there's a session token — try getSession with timeout
+                try {
+                    const sessionPromise = supabase.auth.getSession();
+                    const timeoutPromise = new Promise<never>((_, reject) =>
+                        setTimeout(() => reject(new Error('getSession timeout')), SESSION_CHECK_TIMEOUT)
+                    );
+                    const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
+                    if (!cancelled) {
+                        setIsAuthenticated(!!session);
+                        setIsLoading(false);
+                    }
+                    return;
+                } catch {
+                    // getSession hung or timed out — trust localStorage
+                    if (!cancelled) {
+                        console.warn('[AUTH GUARD] getSession timed out — using localStorage session');
+                        setIsAuthenticated(true);
+                        setIsLoading(false);
+                    }
+                    return;
+                }
+            }
+
+            // NO localStorage session — try getSession with timeout for OAuth callbacks etc.
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                const sessionPromise = supabase.auth.getSession();
+                const timeoutPromise = new Promise<never>((_, reject) =>
+                    setTimeout(() => reject(new Error('getSession timeout')), SESSION_CHECK_TIMEOUT)
+                );
+                const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
                 if (!cancelled) {
                     setIsAuthenticated(!!session);
                     setIsLoading(false);
                 }
-            } catch (error: any) {
-                // AbortError is benign — component unmounted or signal cancelled
-                // Do NOT set isAuthenticated(false) on abort — let onAuthStateChange handle it
-                if (error?.name === 'AbortError' || error?.message?.includes('aborted')) {
-                    console.warn('[AUTH GUARD] Session check aborted (benign)');
-                    return;
-                }
+            } catch {
+                // No session in localStorage AND getSession failed — not authenticated
                 if (!cancelled) {
-                    console.error('[AUTH GUARD] Session check failed:', error);
                     setIsAuthenticated(false);
                     setIsLoading(false);
                 }
@@ -103,16 +150,26 @@ export function GuestGuard({ children }: AuthGuardProps) {
         let cancelled = false;
 
         async function checkAuth() {
+            // Fast path from localStorage
+            if (hasLocalSession()) {
+                if (!cancelled) {
+                    setIsAuthenticated(true);
+                    setIsLoading(false);
+                }
+                return;
+            }
+
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                const sessionPromise = supabase.auth.getSession();
+                const timeoutPromise = new Promise<never>((_, reject) =>
+                    setTimeout(() => reject(new Error('getSession timeout')), SESSION_CHECK_TIMEOUT)
+                );
+                const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
                 if (!cancelled) {
                     setIsAuthenticated(!!session);
                     setIsLoading(false);
                 }
-            } catch (error: any) {
-                if (error?.name === 'AbortError' || error?.message?.includes('aborted')) {
-                    return; // Benign — ignore
-                }
+            } catch {
                 if (!cancelled) {
                     setIsAuthenticated(false);
                     setIsLoading(false);
@@ -122,7 +179,6 @@ export function GuestGuard({ children }: AuthGuardProps) {
 
         checkAuth();
 
-        // Listen for auth changes (e.g. OAuth callback completing)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             (_event, session) => {
                 if (!cancelled) {
@@ -142,7 +198,6 @@ export function GuestGuard({ children }: AuthGuardProps) {
         return null;
     }
 
-    // Redirect to home if already authenticated
     if (isAuthenticated) {
         return <Navigate to="/" replace />;
     }

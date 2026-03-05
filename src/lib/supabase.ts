@@ -30,6 +30,7 @@ export const supabase = createClient(
             persistSession: true,
             detectSessionInUrl: true,
             storageKey: 'smarter-poker-auth', // MUST match Hub for SSO
+            flowType: 'implicit', // Avoids PKCE lock contention
         },
         realtime: {
             params: {
@@ -159,11 +160,7 @@ if (typeof window !== 'undefined') {
         console.error('[SSO] Migration error:', e);
     }
 
-    // Log session status on load for debugging
-    supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-        } else {
-        }
-    });
+    // Session status logged by AntiGravityBoot — no duplicate getSession() here
+    // (duplicate calls cause navigator.locks deadlock)
 }
 
