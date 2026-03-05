@@ -73,13 +73,34 @@ export async function initAntiGravity(): Promise<BootStatus> {
     if (SUPABASE_URL && SUPABASE_ANON_KEY) {
         try {
             // Use the shared Supabase client (from lib/supabase.ts) — DO NOT create a second client.
-            // Creating a second client causes navigator.locks contention and hangs getSession().
             supabaseClient = supabase;
 
-            // Health check with timeout — getSession() can hang indefinitely if locks contend
+            // ─── SESSION BOOTSTRAP ─────────────────────────────────────────────
+            // Read stored session from localStorage and inject it directly via setSession().
+            // This bypasses navigator.locks entirely (getSession uses locks, setSession does not).
+            // Without this, getSession() deadlocks and the client never gets the access token,
+            // causing all RLS-protected queries to fail silently with empty results.
+            const AUTH_KEY = 'smarter-poker-auth';
+            try {
+                const raw = localStorage.getItem(AUTH_KEY);
+                if (raw) {
+                    const stored = JSON.parse(raw);
+                    if (stored?.access_token && stored?.refresh_token) {
+                        await supabaseClient.auth.setSession({
+                            access_token: stored.access_token,
+                            refresh_token: stored.refresh_token,
+                        });
+                        console.log('[ANTIGRAVITY] Session bootstrapped from localStorage');
+                    }
+                }
+            } catch (bootstrapErr) {
+                console.warn('[ANTIGRAVITY] Session bootstrap failed (non-critical):', bootstrapErr);
+            }
+
+            // Health check with timeout — getSession() can still hang if locks contend
             const sessionPromise = supabaseClient.auth.getSession();
             const timeoutPromise = new Promise<{ error: { message: string } }>((_, reject) =>
-                setTimeout(() => reject(new Error('Supabase getSession timeout (8s)')), 8000)
+                setTimeout(() => reject(new Error('Supabase getSession timeout (5s)')), 5000)
             );
 
             const { error } = await Promise.race([sessionPromise, timeoutPromise]);
@@ -93,7 +114,7 @@ export async function initAntiGravity(): Promise<BootStatus> {
         } catch (e: any) {
             errors.push(`Supabase Connection Exception: ${e.message}`);
             // Still mark as OK if it was just a timeout — the server is reachable
-            // This allows the app to render even if auth session check was slow
+            // Session was already bootstrapped above so API calls will work
             supabaseOk = true;
             console.warn('[ANTIGRAVITY] getSession timed out, proceeding anyway:', e.message);
         }
