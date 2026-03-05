@@ -425,6 +425,10 @@ export class TournamentEngine {
         }
 
         // Distribute round-robin across tables
+        if (this.tables.length === 0) {
+            console.error(`[TournamentEngine:${this.tournamentId}] No tables created — cannot seat players`);
+            return;
+        }
         const seatInserts: any[] = [];
         for (let i = 0; i < activePlayers.length; i++) {
             const tableIdx = i % this.tables.length;

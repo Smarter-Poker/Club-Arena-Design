@@ -755,9 +755,9 @@ export class HeadlessTableEngine {
             // Build board string
             const board = (state.communityCards || []).map((c: any) => `${c.rank}${c.suit}`);
 
-            const actionFacing = state.currentBet > 0
+            const actionFacing = state.currentBet > 0 && state.pot > 0
                 ? `bet_${Math.round((state.currentBet / state.pot) * 100)}`
-                : 'check';
+                : state.currentBet > 0 ? 'bet_100' : 'check';
 
             // Query GTO solution (cached in-memory)
             const gtoSolution = await GTOQueryService.getGTOAction(
