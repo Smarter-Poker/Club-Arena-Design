@@ -806,6 +806,7 @@ export class HeadlessTableEngine {
                 .update({ stack: player.stack })
                 .eq('table_id', this.tableId)
                 .eq('user_id', player.user_id)
+                .is('left_at', null)
         );
         const results = await Promise.allSettled(updates);
         const failures = results.filter(r => r.status === 'rejected');
@@ -907,7 +908,8 @@ export class HeadlessTableEngine {
                     .from('table_seats')
                     .update({ stack: rebuyAmount })
                     .eq('table_id', this.tableId)
-                    .eq('user_id', horse.user_id);
+                    .eq('user_id', horse.user_id)
+                    .is('left_at', null);
 
                 // 4. Log transaction in wallet_transactions (full audit trail)
                 await this.supabaseClient.from('wallet_transactions').insert({
@@ -960,7 +962,8 @@ export class HeadlessTableEngine {
             .from('table_seats')
             .select('user_id, stack, seat_number')
             .eq('table_id', this.tableId)
-            .eq('leave_pending', true);
+            .eq('leave_pending', true)
+            .is('left_at', null);
 
         if (error || !pendingSeats || pendingSeats.length === 0) return;
 

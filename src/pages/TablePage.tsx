@@ -726,6 +726,65 @@ export default function TablePage() {
                         setAccountBalance(memberData.chip_balance || 0);
                     }
                 }
+
+                // ─── Load existing seated players from DB (reconnection support) ───
+                // If page reloads while players are seated, we must restore their state
+                const { data: existingSeats } = await supabase
+                    .from('table_seats')
+                    .select('seat_number, user_id, stack, status, horse_id, is_sitting_out')
+                    .eq('table_id', table.id)
+                    .is('left_at', null);
+
+                if (existingSeats && existingSeats.length > 0) {
+                    // Fetch display names for seated players
+                    const userIds = existingSeats.map(s => s.user_id).filter(Boolean);
+                    const { data: profiles } = await supabase
+                        .from('profiles')
+                        .select('id, username, avatar_url, is_horse')
+                        .in('id', userIds);
+
+                    const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+
+                    setTableState(prev => {
+                        const updatedPlayers = [...prev.players];
+                        for (const seat of existingSeats) {
+                            const seatIdx = seat.seat_number - 1;
+                            if (seatIdx < 0 || seatIdx >= updatedPlayers.length) continue;
+                            const profile = profileMap.get(seat.user_id);
+                            const isHero = seat.user_id === userId;
+
+                            updatedPlayers[seatIdx] = {
+                                id: seat.user_id,
+                                name: profile?.username || `Player ${seat.seat_number}`,
+                                avatar: profile?.avatar_url || '',
+                                stack: seat.stack || 0,
+                                status: seat.is_sitting_out ? 'sitting_out' as const : 'active' as const,
+                                isHero,
+                                showCards: isHero,
+                                isHorse: profile?.is_horse || !!seat.horse_id,
+                                horseProfile: undefined,
+                            } as any;
+
+                            // Restore hero seat if this is the current user
+                            if (isHero) {
+                                setTableState(innerPrev => ({
+                                    ...innerPrev,
+                                    heroSeat: seat.seat_number,
+                                }));
+                            }
+                        }
+                        return { ...prev, players: updatedPlayers };
+                    });
+
+                    // If hero is already seated, update hero seat immediately
+                    const heroSeat = existingSeats.find(s => s.user_id === userId);
+                    if (heroSeat) {
+                        setTableState(prev => ({
+                            ...prev,
+                            heroSeat: heroSeat.seat_number,
+                        }));
+                    }
+                }
             }
         }
         loadTableInfo();
