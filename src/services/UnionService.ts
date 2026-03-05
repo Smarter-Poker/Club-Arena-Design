@@ -120,7 +120,7 @@ class UnionServiceClass {
         // Get unions where user is admin
         const { data: adminOf, error: adminError } = await supabase
             .from('union_admins')
-            .select('union_id, unions(*)')
+            .select('union_id')
             .eq('user_id', userId);
 
         if (adminError) throw adminError;
@@ -128,11 +128,20 @@ class UnionServiceClass {
         // Combine and dedupe
         const unionMap = new Map<string, any>();
         (owned || []).forEach(u => unionMap.set(u.id, u));
-        (adminOf || []).forEach(a => {
-            if (a.unions && !unionMap.has((a.unions as any).id)) {
-                unionMap.set((a.unions as any).id, a.unions);
+
+        // Fetch full union data for admin unions not already in the map
+        for (const a of (adminOf || [])) {
+            if (!unionMap.has(a.union_id)) {
+                const { data: unionData } = await supabase
+                    .from('unions')
+                    .select('*')
+                    .eq('id', a.union_id)
+                    .single();
+                if (unionData) {
+                    unionMap.set(unionData.id, unionData);
+                }
             }
-        });
+        }
 
         return Array.from(unionMap.values()).map(this.mapUnion);
     }
@@ -232,26 +241,38 @@ class UnionServiceClass {
     async getAdmins(unionId: string): Promise<UnionAdmin[]> {
         const { data, error } = await supabase
             .from('union_admins')
-            .select(`
-                *,
-                profiles:user_id (
-                    display_name
-                )
-            `)
+            .select('*')
             .eq('union_id', unionId)
             .order('created_at', { ascending: true });
 
         if (error) throw error;
 
-        return (data || []).map(a => ({
-            id: a.id,
-            unionId: a.union_id,
-            userId: a.user_id,
-            role: a.role as 'union_lead' | 'union_admin',
-            permissions: a.permissions || { manageClubs: true, manageSettlements: true },
-            displayName: (a.profiles as any)?.display_name,
-            createdAt: a.created_at,
+        // Fetch display names separately from profiles
+        const admins = await Promise.all((data || []).map(async (a) => {
+            let displayName: string | undefined;
+            try {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('username, full_name')
+                    .eq('id', a.user_id)
+                    .single();
+                displayName = profile?.full_name || profile?.username;
+            } catch {
+                // Silently ignore
+            }
+
+            return {
+                id: a.id,
+                unionId: a.union_id,
+                userId: a.user_id,
+                role: a.role as 'union_lead' | 'union_admin',
+                permissions: a.permissions || { manageClubs: true, manageSettlements: true },
+                displayName,
+                createdAt: a.created_at,
+            };
         }));
+
+        return admins;
     }
 
     /**
@@ -325,10 +346,7 @@ class UnionServiceClass {
                 clubs (
                     id,
                     name,
-                    owner_id,
-                    profiles:owner_id (
-                        display_name
-                    )
+                    owner_id
                 )
             `)
             .eq('union_id', unionId)
@@ -336,24 +354,49 @@ class UnionServiceClass {
 
         if (error) throw error;
 
-        // Get member counts and rake data for each club
+        // Enrich clubs with member counts (skip rake_transactions if empty/slow)
         const enrichedClubs = await Promise.all((data || []).map(async (uc) => {
-            // Get member count
-            const { count: memberCount } = await supabase
-                .from('club_members')
-                .select('*', { count: 'exact', head: true })
-                .eq('club_id', uc.club_id)
-                .eq('status', 'active');
+            let memberCount = 0;
+            let weeklyRake = 0;
 
-            // Get weekly rake from settlement periods (last 7 days)
-            const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-            const { data: rakeData } = await supabase
-                .from('rake_transactions')
-                .select('amount')
-                .eq('club_id', uc.club_id)
-                .gte('created_at', oneWeekAgo);
+            try {
+                const { count } = await supabase
+                    .from('club_members')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('club_id', uc.club_id)
+                    .eq('status', 'active');
+                memberCount = count || 0;
+            } catch {
+                // Silently ignore member count errors
+            }
 
-            const weeklyRake = (rakeData || []).reduce((sum, r) => sum + Number(r.amount || 0), 0);
+            try {
+                const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+                const { data: rakeData } = await supabase
+                    .from('rake_transactions')
+                    .select('amount')
+                    .eq('club_id', uc.club_id)
+                    .gte('created_at', oneWeekAgo);
+                weeklyRake = (rakeData || []).reduce((sum, r) => sum + Number(r.amount || 0), 0);
+            } catch {
+                // Silently ignore rake query errors
+            }
+
+            // Get owner display name from profiles table directly
+            let ownerName: string | undefined;
+            try {
+                const ownerId = (uc.clubs as any)?.owner_id;
+                if (ownerId) {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('username, full_name')
+                        .eq('id', ownerId)
+                        .single();
+                    ownerName = profile?.full_name || profile?.username;
+                }
+            } catch {
+                // Silently ignore profile lookup errors
+            }
 
             return {
                 id: uc.id,
@@ -361,8 +404,8 @@ class UnionServiceClass {
                 clubId: uc.club_id,
                 clubName: (uc.clubs as any)?.name || 'Unknown',
                 ownerId: (uc.clubs as any)?.owner_id,
-                ownerName: (uc.clubs as any)?.profiles?.display_name,
-                memberCount: memberCount || 0,
+                ownerName,
+                memberCount,
                 weeklyRake,
                 joinedAt: uc.joined_at,
             };
@@ -530,11 +573,11 @@ class UnionServiceClass {
      * Update individual club revenue splits
      */
     async updateClubSplits(unionId: string, splits: Record<string, number>): Promise<boolean> {
-        // Update each club's custom split in union_clubs
+        // Update each club's commission rate in union_clubs
         for (const [clubId, splitPercent] of Object.entries(splits)) {
             await supabase
                 .from('union_clubs')
-                .update({ custom_split_percent: splitPercent })
+                .update({ club_commission_rate: splitPercent / 100 })
                 .eq('union_id', unionId)
                 .eq('club_id', clubId);
         }

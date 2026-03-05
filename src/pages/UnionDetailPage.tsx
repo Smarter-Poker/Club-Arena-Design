@@ -76,21 +76,30 @@ export default function UnionDetailPage() {
     });
     const [onlineCount, setOnlineCount] = useState(0);
 
-    // Real-time presence tracking
+    // Real-time presence tracking (non-blocking)
     useEffect(() => {
         if (!unionId) return;
 
         const setupPresence = async () => {
-            const { data: { user: authUser } } = await supabase.auth.getUser();
-            if (!authUser) return;
+            try {
+                // Timeout getUser to prevent hanging
+                const userPromise = supabase.auth.getUser();
+                const timeoutPromise = new Promise<never>((_, reject) =>
+                    setTimeout(() => reject(new Error('getUser timeout')), 5000)
+                );
+                const { data: { user: authUser } } = await Promise.race([userPromise, timeoutPromise]);
+                if (!authUser) return;
 
-            await presenceService.joinUnion(unionId, authUser.id, {
-                onSync: (state) => {
-                    setOnlineCount(Object.keys(state).length);
-                }
-            });
+                await presenceService.joinUnion(unionId, authUser.id, {
+                    onSync: (state) => {
+                        setOnlineCount(Object.keys(state).length);
+                    }
+                });
 
-            setOnlineCount(presenceService.getUnionOnlineCount(unionId));
+                setOnlineCount(presenceService.getUnionOnlineCount(unionId));
+            } catch (err) {
+                console.warn('[UnionDetailPage] Presence setup failed (non-critical):', err);
+            }
         };
 
         setupPresence();
