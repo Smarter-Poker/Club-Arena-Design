@@ -75,29 +75,8 @@ export async function initAntiGravity(): Promise<BootStatus> {
             // Use the shared Supabase client (from lib/supabase.ts) — DO NOT create a second client.
             supabaseClient = supabase;
 
-            // ─── SESSION BOOTSTRAP ─────────────────────────────────────────────
-            // Read stored session from localStorage and inject it directly via setSession().
-            // This bypasses navigator.locks entirely (getSession uses locks, setSession does not).
-            // Without this, getSession() deadlocks and the client never gets the access token,
-            // causing all RLS-protected queries to fail silently with empty results.
-            const AUTH_KEY = 'smarter-poker-auth';
-            try {
-                const raw = localStorage.getItem(AUTH_KEY);
-                if (raw) {
-                    const stored = JSON.parse(raw);
-                    if (stored?.access_token && stored?.refresh_token) {
-                        await supabaseClient.auth.setSession({
-                            access_token: stored.access_token,
-                            refresh_token: stored.refresh_token,
-                        });
-                        console.log('[ANTIGRAVITY] Session bootstrapped from localStorage');
-                    }
-                }
-            } catch (bootstrapErr) {
-                console.warn('[ANTIGRAVITY] Session bootstrap failed (non-critical):', bootstrapErr);
-            }
-
-            // Health check with timeout — getSession() can still hang if locks contend
+            // Health check — with navigator.locks bypassed in supabase.ts,
+            // getSession() should resolve promptly. Keep a safety timeout anyway.
             const sessionPromise = supabaseClient.auth.getSession();
             const timeoutPromise = new Promise<{ error: { message: string } }>((_, reject) =>
                 setTimeout(() => reject(new Error('Supabase getSession timeout (5s)')), 5000)

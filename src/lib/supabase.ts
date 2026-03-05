@@ -31,6 +31,11 @@ export const supabase = createClient(
             detectSessionInUrl: true,
             storageKey: 'smarter-poker-auth', // MUST match Hub for SSO
             flowType: 'implicit', // Avoids PKCE lock contention
+            // CRITICAL: Bypass navigator.locks to prevent getSession() deadlock.
+            // The default lock implementation acquires an exclusive Web Lock that
+            // never releases if the initial getSession() network call is slow,
+            // causing every subsequent auth operation to deadlock permanently.
+            lock: async (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => fn(),
         },
         realtime: {
             params: {
