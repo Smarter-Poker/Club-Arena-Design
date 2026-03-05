@@ -515,9 +515,20 @@ class HorseOrchestrator {
     private totalBBJ = 0;
     private errors: string[] = [];
 
-    // ─── MIDWAY UNION — already exists in DB ────────────────────────────────
+    // ─── MIDWAY UNION — both clubs are members ───────────────────────────────
     private unionId = 'fade0000-0000-0000-0000-000000000001'; // Midway Union
-    private clubId = 'a41434bb-8d0c-400a-8f0d-e8b3d65afed4';  // Shark Club (linked to Midway)
+    private sharkClubId = 'a41434bb-8d0c-400a-8f0d-e8b3d65afed4';  // Shark Club
+    private jaqkClubId  = 'a0000000-0000-0000-0000-000000000001';   // Club JAQK
+    // Tables alternate between clubs for cross-club union settlement testing
+    private clubIds: string[] = [];
+    private clubIndex = 0;
+
+    /** Round-robin club assignment for tables/tournaments */
+    private getNextClubId(): string {
+        const id = this.clubIds[this.clubIndex % this.clubIds.length] || this.sharkClubId;
+        this.clubIndex++;
+        return id;
+    }
 
     /** Launch the full orchestrator — ALL horses across ALL tables */
     async launch(configs: TableConfig[] = DEFAULT_TABLES): Promise<{ success: boolean; tablesCreated: number; horsesSeated: number }> {
@@ -529,18 +540,28 @@ class HorseOrchestrator {
         this.isRunning = true;
         this.startedAt = new Date().toISOString();
 
-        console.log(`[Orchestrator] Launching with ${configs.length} table configs via Midway Union (${this.unionId})`);
+        // Initialize dual-club round-robin for cross-club settlement testing
+        this.clubIds = [this.sharkClubId, this.jaqkClubId];
+        this.clubIndex = 0;
+
+        console.log(`[Orchestrator] Launching with ${configs.length} table configs across Shark Club + Club JAQK via Midway Union (${this.unionId})`);
+
+        // Ensure horses are members of BOTH clubs
+        await this.ensureHorsesInBothClubs();
 
         let tablesCreated = 0;
         let horsesSeated = 0;
 
         for (const config of configs) {
             try {
-                // Create table in Supabase under the union's primary club
+                // Alternate tables between clubs for cross-club union testing
+                const clubId = this.getNextClubId();
+
+                // Create table in Supabase under alternating clubs
                 const { data: table, error } = await supabase
                     .from('tables')
                     .insert({
-                        club_id: this.clubId,
+                        club_id: clubId,
                         name: config.name,
                         game_type: 'cash',
                         game_variant: config.gameVariant || 'nlh',
@@ -701,7 +722,7 @@ class HorseOrchestrator {
             const { data: tournament, error } = await supabase
                 .from('tournaments')
                 .insert({
-                    club_id: this.clubId,
+                    club_id: this.getNextClubId(),
                     name: config.name,
                     game_type: dbGameType,
                     variant: config.type, // freezeout/bounty/progressive_bounty/mystery_bounty
@@ -801,7 +822,7 @@ class HorseOrchestrator {
             const { data: sng, error } = await supabase
                 .from('tournaments')
                 .insert({
-                    club_id: this.clubId,
+                    club_id: this.getNextClubId(),
                     name: config.name,
                     game_type: dbGameType,
                     variant: 'SNG',
@@ -894,7 +915,7 @@ class HorseOrchestrator {
             const { data: spin, error } = await supabase
                 .from('tournaments')
                 .insert({
-                    club_id: this.clubId,
+                    club_id: this.getNextClubId(),
                     name: `${config.name} (${multiplier}x)`,
                     game_type: dbGameType,
                     variant: 'SPIN',
@@ -1098,6 +1119,100 @@ class HorseOrchestrator {
         }
 
         console.log(`[Orchestrator] Shutdown complete. ${this.handCount} hands played, $${this.totalRake.toFixed(2)} rake collected`);
+    }
+
+    /**
+     * Ensure ALL 100 horses are members of BOTH Shark Club AND Club JAQK.
+     * This enables cross-club union settlement testing — each horse plays in
+     * both clubs and their stats/ledgers are tracked independently per club.
+     */
+    private async ensureHorsesInBothClubs(): Promise<void> {
+        try {
+            // Get all horse profile IDs
+            const { data: horses, error: horsesError } = await supabase
+                .from('profiles')
+                .select('id, username')
+                .eq('is_horse', true)
+                .limit(200);
+
+            if (horsesError || !horses?.length) {
+                this.logError(`Failed to fetch horses: ${horsesError?.message || 'No horses found'}`);
+                return;
+            }
+
+            console.log(`[Orchestrator] Ensuring ${horses.length} horses are members of both clubs...`);
+
+            const clubIds = [this.sharkClubId, this.jaqkClubId];
+            let membershipsCreated = 0;
+
+            for (const clubId of clubIds) {
+                // Get existing members for this club
+                const { data: existing } = await supabase
+                    .from('club_members')
+                    .select('user_id')
+                    .eq('club_id', clubId);
+
+                const existingIds = new Set((existing || []).map((m: any) => m.user_id));
+
+                // Find horses not yet in this club
+                const missing = horses.filter(h => !existingIds.has(h.id));
+
+                if (missing.length === 0) {
+                    console.log(`[Orchestrator] All horses already in club ${clubId}`);
+                    continue;
+                }
+
+                // Batch insert missing memberships
+                const rows = missing.map(h => ({
+                    club_id: clubId,
+                    user_id: h.id,
+                    role: 'player',
+                    status: 'active',
+                }));
+
+                // Insert in batches of 50 to avoid payload limits
+                for (let i = 0; i < rows.length; i += 50) {
+                    const batch = rows.slice(i, i + 50);
+                    const { error: insertError } = await supabase
+                        .from('club_members')
+                        .upsert(batch, { onConflict: 'club_id,user_id', ignoreDuplicates: true });
+
+                    if (insertError) {
+                        // If upsert fails (e.g. no unique constraint), try individual inserts
+                        for (const row of batch) {
+                            const { error: singleError } = await supabase
+                                .from('club_members')
+                                .insert(row);
+                            if (!singleError) membershipsCreated++;
+                            // Ignore duplicate key errors silently
+                        }
+                    } else {
+                        membershipsCreated += batch.length;
+                    }
+                }
+
+                console.log(`[Orchestrator] Added ${missing.length} horses to club ${clubId}`);
+            }
+
+            // Update member counts on both clubs
+            for (const clubId of clubIds) {
+                const { count } = await supabase
+                    .from('club_members')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('club_id', clubId);
+
+                if (count !== null) {
+                    await supabase
+                        .from('clubs')
+                        .update({ member_count: count })
+                        .eq('id', clubId);
+                }
+            }
+
+            console.log(`[Orchestrator] Cross-club membership complete: ${membershipsCreated} new memberships created`);
+        } catch (err: any) {
+            this.logError(`ensureHorsesInBothClubs error: ${err.message}`);
+        }
     }
 
     private logError(msg: string): void {
