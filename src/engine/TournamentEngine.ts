@@ -49,6 +49,7 @@ interface TournamentInfo {
     blind_structure: BlindLevel[];
     payout_structure: PayoutEntry[];
     started_at: string;
+    current_level?: number;
 }
 
 interface TournamentTable {
@@ -150,8 +151,20 @@ export class TournamentEngine {
             return;
         }
 
+        if (statusCheck.status === 'RUNNING') {
+            // Already running — resume tracking instead of starting fresh
+            console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Resuming RUNNING tournament...`);
+            try {
+                await this.resumeRunning();
+            } catch (err) {
+                console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to resume:`, err);
+                this.running = false;
+            }
+            return;
+        }
+
         if (statusCheck.status !== 'REGISTERING' && statusCheck.status !== 'ANNOUNCED') {
-            // Already started by another instance or already running/completed
+            // COMPLETED or CANCELLED — nothing to do
             console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Cannot start — current status: ${statusCheck.status}`);
             this.running = false;
             return;
@@ -182,7 +195,6 @@ export class TournamentEngine {
                     await table.engine.start();
                 } catch (err) {
                     console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to start table engine ${table.tableId.slice(0, 8)}:`, err);
-                    // Continue starting other tables — one failure shouldn't block the rest
                 }
             }
 
@@ -220,6 +232,104 @@ export class TournamentEngine {
     getTournamentName(): string { return this.tournamentInfo?.name || 'Unknown'; }
 
     // ═══════════════════════════════════════════════════════════════════════════
+    // RESUME: Pick up an already-RUNNING tournament
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    private async resumeRunning(): Promise<void> {
+        // Step 1: Load tournament info
+        await this.loadTournament();
+        if (!this.tournamentInfo) throw new Error('Failed to load tournament');
+
+        // Step 2: Load existing players from tournament_players
+        const { data: existingPlayers } = await this.supabase
+            .from('tournament_players')
+            .select('user_id, chips, status, username')
+            .eq('tournament_id', this.tournamentId);
+
+        if (existingPlayers) {
+            for (const p of existingPlayers) {
+                this.players.set(p.user_id, {
+                    user_id: p.user_id,
+                    username: p.username || p.user_id.slice(0, 8),
+                    chips: p.chips || this.tournamentInfo.starting_chips,
+                    status: p.status || 'playing',
+                });
+            }
+        }
+
+        const activePlayers = Array.from(this.players.values()).filter(p => p.status === 'playing');
+        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Loaded ${this.players.size} players (${activePlayers.length} active)`);
+
+        // If no active players left, mark as COMPLETED
+        if (activePlayers.length === 0) {
+            console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] No active players — marking COMPLETED`);
+            await this.supabase
+                .from('tournaments')
+                .update({ status: 'COMPLETED', ended_at: new Date().toISOString() })
+                .eq('id', this.tournamentId);
+            this.running = false;
+            return;
+        }
+
+        // Step 3: Find existing tournament tables
+        const { data: existingTables } = await this.supabase
+            .from('tables')
+            .select('id, name, current_players')
+            .eq('tournament_id', this.tournamentId)
+            .eq('status', 'running');
+
+        if (!existingTables || existingTables.length === 0) {
+            // No tables exist — need to create them and seat players
+            console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] No tables found — creating and seating`);
+            await this.createTournamentTables();
+            await this.seatPlayers();
+        } else {
+            // Tables exist — attach engines
+            for (const t of existingTables) {
+                const engine = new HeadlessTableEngine(t.id, this.supabase);
+                this.tables.push({
+                    tableId: t.id,
+                    engine,
+                    playerCount: t.current_players || 0,
+                });
+            }
+            console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Attached to ${this.tables.length} existing tables`);
+
+            // Check if tables have seats — if not, seat players
+            const { data: anySeats } = await this.supabase
+                .from('table_seats')
+                .select('id')
+                .eq('table_id', existingTables[0].id)
+                .limit(1);
+
+            if (!anySeats || anySeats.length === 0) {
+                console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Tables have no seats — seating players`);
+                await this.seatPlayers();
+            }
+        }
+
+        // Step 4: Restore blind level
+        this.currentLevel = this.tournamentInfo.current_level || 1;
+
+        // Step 5: Start dealing on each table
+        for (const table of this.tables) {
+            try {
+                await table.engine.start();
+            } catch (err) {
+                console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to start table engine ${table.tableId.slice(0, 8)}:`, err);
+            }
+        }
+
+        // Step 6: Start blind level timer
+        this.startBlindTimer();
+
+        // Step 7: Start elimination checker
+        this.startEliminationChecker();
+
+        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Resumed — ${activePlayers.length} active players, ${this.tables.length} tables`);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
     // STEP 1: LOAD TOURNAMENT
     // ═══════════════════════════════════════════════════════════════════════════
 
@@ -250,7 +360,8 @@ export class TournamentEngine {
             prize_pool: data.prize_pool || (playerCount * (data.buy_in_amount || 0)),
             blind_structure: blinds,
             payout_structure: payouts,
-            started_at: '', // Will be set when we transition to RUNNING
+            started_at: data.started_at || '',
+            current_level: data.current_level || 1,
         };
 
         console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Loaded: ${data.name}, ${playerCount} players, ${blinds.length} blind levels`);
