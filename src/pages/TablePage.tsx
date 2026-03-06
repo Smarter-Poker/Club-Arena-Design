@@ -1966,15 +1966,11 @@ export default function TablePage() {
                 ) : tableState.currentPlayerSeat === tableState.heroSeat && tableState.isHandInProgress ? (
                     /* Normal Action Buttons - Show dynamically based on game state */
                     (() => {
-                        const heroPlayer = getPlayerAtSeat(tableState.heroSeat);
-                        const heroBet = heroPlayer?.stack || 0; // Current bet tracked in engine
-                        const toCall = tableState.pot > 0 ? Math.max(0, tableState.pot - (heroBet || 0)) : 0;
-                        const bigBlind = parseFloat(tableState.blinds.split('/')[1]) || 2;
-                        // Determine if there's a bet to call by checking currentPlayerSeat state
+                        // Get call amount from hand engine (the authoritative source)
                         const handState = handControllerRef.current?.getState();
                         const currentBet = handState?.currentBet || 0;
                         const myEngineBet = handState?.players.find(p => p.user_id === userId)?.bet || 0;
-                        const callAmount = currentBet - myEngineBet;
+                        const callAmount = Math.max(0, currentBet - myEngineBet);
                         const hasActiveBet = callAmount > 0;
 
                         return (
