@@ -61,6 +61,25 @@
     background: rgba(255, 255, 255, 0.2);
 }
 
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.header-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.back-btn {
+    width: auto;
+    padding: 0 10px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
 .menu-btn {
     width: 40px;
     height: 40px;

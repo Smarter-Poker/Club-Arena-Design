@@ -1747,21 +1747,29 @@ export default function TablePage() {
           HEADER BAR
           ═══════════════════════════════════════════════════════════════════════ */}
             <header className="table-header">
-                <button className="header-btn menu-btn" onClick={toggleSideMenu}>
-                    <span className="menu-icon">≡</span>
-                </button>
+                <div className="header-left">
+                    <button className="header-btn menu-btn" onClick={toggleSideMenu}>
+                        <span className="menu-icon">≡</span>
+                    </button>
+                    <button className="header-btn back-btn" onClick={() => navigate(-1)}>
+                        <span>← Back</span>
+                    </button>
+                </div>
 
-                {tableState.jackpotAmount > 0 && (
-                    <div className="jackpot-banner">
-                        <span className="jackpot-label">JACKPOT</span>
-                        <span className="jackpot-amount">{tableState.jackpotAmount.toLocaleString()}</span>
-                        <span className="jackpot-diamond"></span>
-                    </div>
-                )}
+                <div className="header-center">
+                    {tableState.jackpotAmount > 0 && (
+                        <div className="jackpot-banner">
+                            <span className="jackpot-label">JACKPOT</span>
+                            <span className="jackpot-amount">{tableState.jackpotAmount.toLocaleString()}</span>
+                            <span className="jackpot-diamond"></span>
+                        </div>
+                    )}
+                </div>
 
                 <div className="header-actions">
-                    <button className="header-btn" title="Help">?</button>
-                    <button className="header-btn" title="Info">i</button>
+                    <button className="header-btn" title="Table Info" onClick={() => setShowGameRules(true)}>
+                        <span>i</span>
+                    </button>
                     <button className="header-btn table-id" title="Table ID">
                         {tableState.tableId.slice(0, 8)}
                     </button>
