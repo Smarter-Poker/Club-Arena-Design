@@ -48,6 +48,7 @@ export interface SeatSlotProps {
     lastBetAmount?: number;
     timerProgress?: number; // 0-100
     bigBlind?: number; // For BB display
+    isTournament?: boolean; // Tournament mode — show chips not BB, hide SIT buttons
     onSit?: () => void;
     onAction?: () => void;
     onAvatarClick?: () => void; // For throwables targeting
@@ -177,6 +178,7 @@ export function SeatSlot({
     lastBetAmount,
     timerProgress,
     bigBlind = 2,
+    isTournament = false,
     onSit,
     onAction,
     onAvatarClick,
@@ -206,6 +208,16 @@ export function SeatSlot({
     // ─────────────────────────────────────────────────────────────────────────────
 
     if (!player) {
+        // In tournaments, don't show SIT buttons on empty seats
+        if (isTournament) {
+            return (
+                <div className={containerClasses}>
+                    <div className="seat-slot__empty-marker">
+                        <span className="seat-slot__seat-number">Seat {seatNumber}</span>
+                    </div>
+                </div>
+            );
+        }
         return (
             <div className={containerClasses} onClick={onSit}>
                 <div className="seat-slot__empty-marker">
@@ -269,7 +281,7 @@ export function SeatSlot({
                 {/* Player Info */}
                 <div className="seat-slot__info">
                     <span className="seat-slot__name">{player.name}</span>
-                    <span className="seat-slot__stack">{formatStackAsBB(player.stack, bigBlind)}</span>
+                    <span className="seat-slot__stack">{isTournament ? formatStack(player.stack) : formatStackAsBB(player.stack, bigBlind)}</span>
                 </div>
 
                 {/* Position Chip */}

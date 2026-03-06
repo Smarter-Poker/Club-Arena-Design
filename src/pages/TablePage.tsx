@@ -124,6 +124,7 @@ interface TableState {
     isHandInProgress: boolean;
     positions: PositionBadge[];
     lastActions: LastAction[];
+    isTournament: boolean;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -235,6 +236,7 @@ export default function TablePage() {
         isHandInProgress: false,
         positions: [null, null, null, null, null, null],
         lastActions: [null, null, null, null, null, null],
+        isTournament: false,
     });
 
     const [raiseAmount, setRaiseAmount] = useState(20);
@@ -702,7 +704,8 @@ export default function TablePage() {
                     ...prev,
                     tableId: table.id,
                     tableName: table.name || 'Poker Table',
-                    gameType: table.game_type || 'NLH',
+                    gameType: (table.game_variant || table.game_type || 'NLH') as any,
+                    isTournament: table.game_type === 'tournament' || !!table.tournament_id,
                     blinds: table.stakes || '?/?',
                     maxPlayers: table.max_players || 6,
                     players: createEmptySeats(table.max_players || 6),
@@ -1803,6 +1806,7 @@ export default function TablePage() {
                                 lastAction={tableState.lastActions[idx] || null}
                                 timerProgress={seatNumber === tableState.currentPlayerSeat ? (actionTimeRemaining / 15) * 100 : undefined}
                                 bigBlind={parseFloat(tableState.blinds.split('/')[1]) || 2}
+                                isTournament={tableState.isTournament}
                                 onSit={() => handleSeatClick(seatNumber)}
                                 onAvatarClick={() => {
                                     // Open throwable selector targeting this seat
@@ -1833,7 +1837,7 @@ export default function TablePage() {
                         fontSize: '14px',
                     }}>
                         <span style={{ fontSize: '18px' }}></span>
-                        <span>You are watching — Click a seat to join</span>
+                        <span>{tableState.isTournament ? 'Observing tournament' : 'You are watching — Click a seat to join'}</span>
                     </div>
                 ) : showRaiseSlider ? (
                     /* Raise Slider Mode */
@@ -2150,13 +2154,15 @@ export default function TablePage() {
                 balance={tableState.players[tableState.heroSeat - 1]?.stack || 0}
             />
 
-            {/* Straddle Toggle (UTG only) */}
-            <StraddleToggle
-                isEnabled={isStraddleEnabled}
-                onToggle={setIsStraddleEnabled}
-                amount={straddleAmount}
-                isAvailable={isStraddleAvailable}
-            />
+            {/* Straddle Toggle (UTG only, cash games only) */}
+            {!tableState.isTournament && (
+                <StraddleToggle
+                    isEnabled={isStraddleEnabled}
+                    onToggle={setIsStraddleEnabled}
+                    amount={straddleAmount}
+                    isAvailable={isStraddleAvailable}
+                />
+            )}
 
             {/* Time Bank */}
             <TimeBank
