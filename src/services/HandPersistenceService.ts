@@ -75,21 +75,24 @@ export class HandPersistence {
      */
     async cleanupOrphanedHands(): Promise<void> {
         try {
+            // Only clean up recent orphans (last 24 hours) to avoid timeout on massive tables
+            const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
             const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
             const { error, count } = await supabase
                 .from('hands')
                 .update({ status: 'completed', ended_at: new Date().toISOString(), street: 'aborted' })
                 .eq('table_id', this.tableId)
                 .eq('status', 'active')
+                .gt('started_at', oneDayAgo)
                 .lt('started_at', tenMinutesAgo);
 
             if (error) {
-                console.warn(`[HandPersistence:${this.tableId}] Orphan cleanup error:`, error);
+                // Silently ignore — this is best-effort cleanup
             } else if (count && count > 0) {
                 console.log(`[HandPersistence:${this.tableId}] Cleaned up ${count} orphaned active hands`);
             }
-        } catch (err) {
-            console.warn(`[HandPersistence:${this.tableId}] Orphan cleanup exception:`, err);
+        } catch {
+            // Silently ignore — cleanup is non-critical
         }
     }
 
@@ -327,7 +330,7 @@ export class HandPersistence {
                 pot: this.currentHand.pot,
                 rake,
                 community_cards: this.currentHand.community_cards,
-                board: this.currentHand.community_cards.join(',') || null,
+                board: this.currentHand.community_cards.length > 0 ? this.currentHand.community_cards : null,
                 winner_ids: this.currentHand.winner_ids,
                 actions: this.handActions,
                 status: 'completed',
