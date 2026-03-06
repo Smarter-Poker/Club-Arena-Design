@@ -286,7 +286,7 @@ export default function TournamentDetails() {
             {/* Tournament Description */}
             <div className="tournament-desc">
                 <p>{tournament.name}</p>
-                <p>{tournament.buy_in_amount} CHIPS BUY-IN</p>
+                <p>{tournament.buy_in_amount}+{tournament.buy_in_fee || Math.round(tournament.buy_in_amount * 0.1)} CHIPS BUY-IN</p>
                 <p>REBUY / NO ADD-ON</p>
             </div>
 
@@ -340,23 +340,35 @@ export default function TournamentDetails() {
                     <div className="game-info-section">
                         <div className="info-row">
                             <span className="info-label">Game Type:</span>
-                            <span className="info-value highlight">NLH (9 max)</span>
+                            <span className="info-value highlight">{(tournament.game_type || 'nlh').toUpperCase()} (9 max)</span>
                         </div>
                         <div className="info-row">
                             <span className="info-label">Buy-in:</span>
-                            <span className="info-value">{tournament.buy_in_amount} chips <span className="badge-reentry">Re-entry</span></span>
+                            <span className="info-value">{tournament.buy_in_amount}+{tournament.buy_in_fee || Math.round(tournament.buy_in_amount * 0.1)} chips <span className="badge-reentry">Re-entry</span></span>
                         </div>
-                        <div className="info-row">
-                            <span className="info-label">Prize Pool:</span>
-                            <span className="info-value">{tournament.prize_pool || tournament.buy_in_amount * tournament.current_players}K <span className="badge-gtd">GTD</span></span>
-                        </div>
+                        {(() => {
+                            const entryPrizePool = tournament.buy_in_amount * (entries.length || tournament.current_players || 0);
+                            const hasGuarantee = (tournament.guaranteed_prize || 0) > 0;
+                            const effectivePrizePool = hasGuarantee
+                                ? Math.max(entryPrizePool, tournament.guaranteed_prize || 0)
+                                : entryPrizePool;
+                            return (
+                                <div className="info-row">
+                                    <span className="info-label">Prize Pool:</span>
+                                    <span className="info-value">
+                                        {effectivePrizePool > 0 ? effectivePrizePool.toLocaleString() : 'Based on entries'}
+                                        {hasGuarantee && <> <span className="badge-gtd">{(tournament.guaranteed_prize || 0).toLocaleString()} GTD</span></>}
+                                    </span>
+                                </div>
+                            );
+                        })()}
                         <div className="info-row half">
                             <span className="info-label">Entries:</span>
                             <span className="info-value">{entries.length}</span>
                         </div>
                         <div className="info-row half">
-                            <span className="info-label">Entries Range:</span>
-                            <span className="info-value">5-7K</span>
+                            <span className="info-label">Max Entries:</span>
+                            <span className="info-value">{tournament.max_players || 'Unlimited'}</span>
                         </div>
                         <div className="info-row half">
                             <span className="info-label">Re-entry:</span>
@@ -446,14 +458,25 @@ export default function TournamentDetails() {
                 </div>
             )}
 
-            {activeTab === 'rewards' && (
+            {activeTab === 'rewards' && (() => {
+                const entryCount = entries.length || tournament.current_players || 0;
+                const entryPrizePool = tournament.buy_in_amount * entryCount;
+                const hasGuarantee = (tournament.guaranteed_prize || 0) > 0;
+                const effectivePrizePool = hasGuarantee
+                    ? Math.max(entryPrizePool, tournament.guaranteed_prize || 0)
+                    : entryPrizePool;
+
+                return (
                 <div className="rewards-section">
                     <h3>Payout Structure</h3>
                     <div className="prize-pool-display">
                         <span className="prize-label">Total Prize Pool</span>
                         <span className="prize-amount">
-                            {(tournament.prize_pool || tournament.buy_in_amount * tournament.current_players).toLocaleString()} chips
+                            {effectivePrizePool > 0 ? `${effectivePrizePool.toLocaleString()} chips` : 'Based on entries'}
                         </span>
+                        {hasGuarantee && (
+                            <span className="prize-gtd">{(tournament.guaranteed_prize || 0).toLocaleString()} GTD</span>
+                        )}
                     </div>
                     <div className="payout-table">
                         {(tournament.payout_structure && tournament.payout_structure.length > 0) ? (
@@ -472,7 +495,7 @@ export default function TournamentDetails() {
                                         </span>
                                         <span className="payout-percent">{payout.percentage}%</span>
                                         <span className="payout-chips">
-                                            {Math.floor((tournament.prize_pool || tournament.buy_in_amount * tournament.current_players) * payout.percentage / 100).toLocaleString()}
+                                            {effectivePrizePool > 0 ? Math.floor(effectivePrizePool * payout.percentage / 100).toLocaleString() : '—'}
                                         </span>
                                     </div>
                                 );
@@ -480,9 +503,9 @@ export default function TournamentDetails() {
                         ) : (
                             /* Default payout structure if none defined */
                             <>
-                                <div className="payout-row"><span className="payout-place">🥇</span><span className="payout-percent">50%</span><span className="payout-chips">{Math.floor((tournament.prize_pool || tournament.buy_in_amount * tournament.current_players) * 0.5).toLocaleString()}</span></div>
-                                <div className="payout-row"><span className="payout-place">🥈</span><span className="payout-percent">30%</span><span className="payout-chips">{Math.floor((tournament.prize_pool || tournament.buy_in_amount * tournament.current_players) * 0.3).toLocaleString()}</span></div>
-                                <div className="payout-row"><span className="payout-place">🥉</span><span className="payout-percent">20%</span><span className="payout-chips">{Math.floor((tournament.prize_pool || tournament.buy_in_amount * tournament.current_players) * 0.2).toLocaleString()}</span></div>
+                                <div className="payout-row"><span className="payout-place">🥇</span><span className="payout-percent">50%</span><span className="payout-chips">{effectivePrizePool > 0 ? Math.floor(effectivePrizePool * 0.5).toLocaleString() : '—'}</span></div>
+                                <div className="payout-row"><span className="payout-place">🥈</span><span className="payout-percent">30%</span><span className="payout-chips">{effectivePrizePool > 0 ? Math.floor(effectivePrizePool * 0.3).toLocaleString() : '—'}</span></div>
+                                <div className="payout-row"><span className="payout-place">🥉</span><span className="payout-percent">20%</span><span className="payout-chips">{effectivePrizePool > 0 ? Math.floor(effectivePrizePool * 0.2).toLocaleString() : '—'}</span></div>
                             </>
                         )}
                     </div>
@@ -513,7 +536,8 @@ export default function TournamentDetails() {
                         ) : null;
                     })()}
                 </div>
-            )}
+                );
+            })()}
 
             {/* Footer Actions */}
             <div className="details-footer">
@@ -542,8 +566,16 @@ export default function TournamentDetails() {
                         <button className="modal-close" onClick={() => setShowSignUpModal(false)}>✕</button>
                         <h2>Sign Up</h2>
                         <div className="signup-row">
-                            <span className="signup-label">Entry Fee:</span>
+                            <span className="signup-label">Buy-in:</span>
                             <span className="signup-value">{tournament.buy_in_amount} chips</span>
+                        </div>
+                        <div className="signup-row">
+                            <span className="signup-label">Rake (fee):</span>
+                            <span className="signup-value">{tournament.buy_in_fee || Math.round(tournament.buy_in_amount * 0.1)} chips</span>
+                        </div>
+                        <div className="signup-row total">
+                            <span className="signup-label">Total:</span>
+                            <span className="signup-value">{tournament.buy_in_amount + (tournament.buy_in_fee || Math.round(tournament.buy_in_amount * 0.1))} chips</span>
                         </div>
                         <div className="signup-row">
                             <span className="signup-label">Start time:</span>
