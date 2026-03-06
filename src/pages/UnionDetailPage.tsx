@@ -139,7 +139,15 @@ export default function UnionDetailPage() {
                         .select('*, clubs(name)')
                         .in('club_id', clubIds)
                         .order('start_time', { ascending: true });
-                    setUnionTournaments(tournaments || []);
+                    // Sort: REGISTERING/ANNOUNCED first, then RUNNING, then by start_time desc
+                    const statusOrder: Record<string, number> = { REGISTERING: 0, ANNOUNCED: 1, RUNNING: 2, COMPLETED: 3, CANCELLED: 4 };
+                    const sorted = (tournaments || []).sort((a: Tournament, b: Tournament) => {
+                        const aOrder = statusOrder[a.status] ?? 5;
+                        const bOrder = statusOrder[b.status] ?? 5;
+                        if (aOrder !== bOrder) return aOrder - bOrder;
+                        return new Date(b.start_time).getTime() - new Date(a.start_time).getTime();
+                    });
+                    setUnionTournaments(sorted);
                 }
 
                 // Load financial summary from SettlementService

@@ -193,7 +193,8 @@ export default function TournamentDetails() {
             loadTournament(); // Refresh entries
         } catch (error) {
             console.error('Registration failed:', error);
-            toast.error('Registration failed. Please try again.');
+            const msg = (error as Error).message || 'Unknown error';
+            toast.error(`Registration failed: ${msg}`);
         }
     };
 

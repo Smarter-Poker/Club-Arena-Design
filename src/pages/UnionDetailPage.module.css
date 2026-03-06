@@ -612,6 +612,32 @@
     color: #ef4444;
 }
 
+/* Tournament status badges */
+.REGISTERING {
+    background: rgba(16, 185, 129, 0.2) !important;
+    color: #10b981 !important;
+}
+
+.ANNOUNCED {
+    background: rgba(59, 130, 246, 0.2) !important;
+    color: #3b82f6 !important;
+}
+
+.RUNNING {
+    background: rgba(245, 158, 11, 0.2) !important;
+    color: #f59e0b !important;
+}
+
+.COMPLETED {
+    background: rgba(110, 118, 129, 0.2) !important;
+    color: #6e7681 !important;
+}
+
+.CANCELLED {
+    background: rgba(239, 68, 68, 0.2) !important;
+    color: #ef4444 !important;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .header {
