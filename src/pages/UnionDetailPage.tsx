@@ -226,6 +226,10 @@ export default function UnionDetailPage() {
         }
     };
 
+    // Memoize filtered table arrays BEFORE early returns (React hooks rule)
+    const activeTables = useMemo(() => tables.filter(t => (t.current_players || 0) > 0), [tables]);
+    const emptyTables = useMemo(() => tables.filter(t => (t.current_players || 0) === 0), [tables]);
+
     if (loading) {
         return (
             <div className={styles.loading}>
@@ -243,10 +247,6 @@ export default function UnionDetailPage() {
             </div>
         );
     }
-
-    // Memoize filtered table arrays to avoid re-filtering 199+ tables on every render
-    const activeTables = useMemo(() => tables.filter(t => (t.current_players || 0) > 0), [tables]);
-    const emptyTables = useMemo(() => tables.filter(t => (t.current_players || 0) === 0), [tables]);
 
     return (
         <div className={styles.page}>
