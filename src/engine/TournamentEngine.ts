@@ -381,8 +381,16 @@ export class TournamentEngine {
             .eq('tournament_id', this.tournamentId);
 
         if (existingPlayers && existingPlayers.length > 0) {
-            console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Already has ${existingPlayers.length} tournament_players — skipping migration`);
-            // Load existing players
+            console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Already has ${existingPlayers.length} tournament_players — activating`);
+
+            // Activate any 'registered' players to 'playing' (they haven't been seated yet)
+            await this.supabase
+                .from('tournament_players')
+                .update({ status: 'playing', chips: this.tournamentInfo.starting_chips })
+                .eq('tournament_id', this.tournamentId)
+                .eq('status', 'registered');
+
+            // Load all players with updated status
             const { data: fullPlayers } = await this.supabase
                 .from('tournament_players')
                 .select('user_id, chips, status, username')
@@ -397,6 +405,19 @@ export class TournamentEngine {
                     });
                 }
             }
+
+            // Update prize pool
+            const activeCount = Array.from(this.players.values()).filter(p => p.status === 'playing').length;
+            const actualPrizePool = activeCount * this.tournamentInfo.buy_in_amount;
+            this.tournamentInfo.prize_pool = actualPrizePool;
+            this.tournamentInfo.current_players = existingPlayers.length;
+
+            await this.supabase
+                .from('tournaments')
+                .update({ prize_pool: actualPrizePool, current_players: existingPlayers.length })
+                .eq('id', this.tournamentId);
+
+            console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Activated ${activeCount} players — prize pool: $${actualPrizePool.toFixed(2)}`);
             return;
         }
 
@@ -528,6 +549,12 @@ export class TournamentEngine {
         if (!this.tournamentInfo) return;
 
         const activePlayers = Array.from(this.players.values()).filter(p => p.status === 'playing');
+        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] seatPlayers: ${activePlayers.length} active out of ${this.players.size} total`);
+
+        if (activePlayers.length === 0) {
+            console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] No active players to seat!`);
+            return;
+        }
 
         // Fisher-Yates shuffle
         for (let i = activePlayers.length - 1; i > 0; i--) {
