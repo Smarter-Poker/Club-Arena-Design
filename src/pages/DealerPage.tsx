@@ -480,7 +480,7 @@ export default function DealerPage() {
                             <div style={styles.cardBody}>
                                 <div style={styles.row}>
                                     <span style={styles.label}>Stakes:</span>
-                                    <span style={styles.value}>{table.stakes} ({table.gameVariant.toUpperCase()})</span>
+                                    <span style={styles.value}>{table.stakes} ({(table.gameVariant || 'NLH').toUpperCase()})</span>
                                 </div>
                                 <div style={styles.row}>
                                     <span style={styles.label}>Players:</span>

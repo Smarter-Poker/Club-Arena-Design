@@ -125,7 +125,7 @@ interface CashCardProps {
 }
 
 export function CashGameCard({ table, isAdmin, onDelete }: CashCardProps) {
-    const variant = VARIANT_DISPLAY[table.game_variant] || { label: table.game_variant.toUpperCase(), css: 'nlh' };
+    const variant = VARIANT_DISPLAY[table.game_variant] || { label: (table.game_variant || 'NLH').toUpperCase(), css: 'nlh' };
     const settings = parseSettings(table.settings);
     const hasPlayers = table.current_players > 0;
     const isBombPot = table.name.toLowerCase().includes('bomb pot');

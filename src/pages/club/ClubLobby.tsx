@@ -176,7 +176,7 @@ function TournamentCard({ tournament, clubId }: { tournament: Tournament; clubId
         switch (type) {
             case 'mtt': return 'XMTT';
             case 'sng': return 'SNG';
-            default: return type.toUpperCase();
+            default: return (type || 'MTT').toUpperCase();
         }
     };
 
@@ -207,7 +207,7 @@ function TournamentCard({ tournament, clubId }: { tournament: Tournament; clubId
                 </div>
             </div>
             <div className="card-footer">
-                <span className={`type-badge ${tournament.type}`}>{getTypeLabel(tournament.type)}</span>
+                <span className={`type-badge ${tournament.game_type || tournament.type || 'mtt'}`}>{getTypeLabel(tournament.game_type || tournament.type || 'mtt')}</span>
                 <span className="variant-badge">NLH</span>
             </div>
             <div className="card-name">
@@ -235,7 +235,7 @@ function TableCard({ table, clubId }: { table: PokerTable; clubId: string }) {
                 </div>
             </div>
             <div className="card-footer">
-                <span className="variant-badge">{table.game_variant.toUpperCase()}</span>
+                <span className="variant-badge">{(table.game_variant || 'NLH').toUpperCase()}</span>
                 <span className={`status-badge ${table.status}`}>{table.status}</span>
             </div>
         </Link>
