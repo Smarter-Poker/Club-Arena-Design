@@ -395,16 +395,29 @@ class TournamentService {
             throw new Error(`Insufficient chips. Need ${totalCost}, have ${memberData?.chip_balance || 0}`);
         }
 
-        // Use .gte() guard to prevent race conditions (same pattern as cash game buy-in)
-        const { error: deductError, count } = await supabase
+        // Deduct buy-in from club wallet (with .gte guard for race-condition safety)
+        const newBalance = (memberData.chip_balance || 0) - totalCost;
+        const { error: deductError } = await supabase
             .from('club_members')
-            .update({ chip_balance: (memberData.chip_balance || 0) - totalCost })
+            .update({ chip_balance: newBalance })
             .eq('club_id', clubId)
             .eq('user_id', userId)
             .gte('chip_balance', totalCost);
 
-        if (deductError || !count || count === 0) {
+        if (deductError) {
             throw new Error('Failed to deduct tournament buy-in (concurrent transaction or insufficient balance)');
+        }
+
+        // Verify the deduction actually happened
+        const { data: verifyData } = await supabase
+            .from('club_members')
+            .select('chip_balance')
+            .eq('club_id', clubId)
+            .eq('user_id', userId)
+            .single();
+
+        if (!verifyData || verifyData.chip_balance !== newBalance) {
+            throw new Error('Buy-in deduction failed — balance unchanged (possible race condition)');
         }
 
         // Insert player (username is NOT NULL in schema — must be provided)
