@@ -13,7 +13,7 @@
  * - WebSocket connection for real-time game state
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, startTransition } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { SeatSlot, PotDisplay, CommunityCards } from '../components/table';
 import type { SeatPlayer, Card, LastAction, PositionBadge } from '../components/table/SeatSlot';
@@ -456,12 +456,14 @@ export default function TablePage() {
     const [showCashier, setShowCashier] = useState(false);
     const [accountBalance, setAccountBalance] = useState(0); // Player Wallet balance from wallets table
 
-    // Handle Time Bank activation
+    // Handle Time Bank activation — wrapped in startTransition to avoid INP
     const handleActivateTimeBank = () => {
         if (timeBanksRemaining > 0) {
-            setTimeBankActive(true);
-            setTimeBanksRemaining(prev => prev - 1);
-            setTimeBankTimeRemaining(30);
+            startTransition(() => {
+                setTimeBankActive(true);
+                setTimeBanksRemaining(prev => prev - 1);
+                setTimeBankTimeRemaining(30);
+            });
         }
     };
 
@@ -657,9 +659,13 @@ export default function TablePage() {
         }
     };
 
-    // Handle leave table - cleans up and returns chips
+    // Leave-table notification state (replaces blocking alert())
+    const [leaveNotice, setLeaveNotice] = useState<string | null>(null);
+
+    // Handle leave table - cleans up and returns chips (non-blocking)
     const handleLeaveTable = async () => {
         if (!tableId || !userId) return;
+        setLeaveNotice(null);
 
         try {
             const result = await tableService.leaveTable(tableId, tableState.heroSeat, userId);
@@ -668,13 +674,11 @@ export default function TablePage() {
                 navigate('/');
             } else {
                 console.error('[Leave] Failed to leave table');
-                // If player is in an active hand, they'll be set to sitting_out
-                // and leave after hand completes — inform them
-                alert('Unable to leave right now. You may be in an active hand — you will leave after it completes.');
+                setLeaveNotice('Unable to leave right now. You may be in an active hand — you will leave after it completes.');
             }
         } catch (error) {
             console.error('[Leave] Exception:', error);
-            alert('Error leaving table. Please try again.');
+            setLeaveNotice('Error leaving table. Please try again.');
         }
     };
 
@@ -1681,9 +1685,11 @@ export default function TablePage() {
         }, 500);
     };
 
-    // Side menu toggle
+    // Side menu toggle — wrapped in startTransition to avoid INP
     const toggleSideMenu = () => {
-        setIsSideMenuOpen(!isSideMenuOpen);
+        startTransition(() => {
+            setIsSideMenuOpen(!isSideMenuOpen);
+        });
     };
 
     // Chip animation helpers
@@ -2238,7 +2244,7 @@ export default function TablePage() {
             {!tableState.isTournament && (
                 <StraddleToggle
                     isEnabled={isStraddleEnabled}
-                    onToggle={setIsStraddleEnabled}
+                    onToggle={(v) => startTransition(() => setIsStraddleEnabled(v))}
                     amount={straddleAmount}
                     isAvailable={isStraddleAvailable}
                 />
@@ -2253,6 +2259,22 @@ export default function TablePage() {
                 timeRemaining={timeBankTimeRemaining}
                 onActivate={handleActivateTimeBank}
             />
+
+            {/* Leave Table Notice (non-blocking replacement for alert()) */}
+            {leaveNotice && (
+                <div style={{
+                    position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
+                    background: '#1a1a2e', border: '1px solid #e74c3c', borderRadius: 8,
+                    padding: '12px 20px', color: '#fff', fontSize: 14, zIndex: 9999,
+                    display: 'flex', alignItems: 'center', gap: 12, maxWidth: '90vw',
+                }}>
+                    <span>{leaveNotice}</span>
+                    <button
+                        onClick={() => setLeaveNotice(null)}
+                        style={{ background: '#e74c3c', border: 'none', color: '#fff', borderRadius: 4, padding: '4px 12px', cursor: 'pointer' }}
+                    >OK</button>
+                </div>
+            )}
 
             {/* Cashier Modal */}
             <CashierModal
