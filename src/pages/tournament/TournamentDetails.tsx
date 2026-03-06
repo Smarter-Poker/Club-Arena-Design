@@ -323,11 +323,11 @@ export default function TournamentDetails() {
                         </div>
                         <div className="stat">
                             <span className="stat-label">Remaining</span>
-                            <span className="stat-value">{entries.filter(e => e.status === 'playing' || e.status === 'registered').length}/{entries.length}</span>
+                            <span className="stat-value">{entries.filter(e => e.status === 'playing' || e.status === 'registered').length}/{tournament.max_players || entries.length}</span>
                         </div>
                         <div className="stat">
                             <span className="stat-label">Avg. Stack</span>
-                            <span className="stat-value">{entries.filter(e => e.status === 'playing').length > 0 ? Math.round(entries.filter(e => e.status === 'playing').reduce((s, e) => s + (e.chips || 0), 0) / entries.filter(e => e.status === 'playing').length).toLocaleString() : tournament.starting_chips}</span>
+                            <span className="stat-value">{entries.filter(e => e.status === 'playing').length > 0 ? Math.round(entries.filter(e => e.status === 'playing').reduce((s, e) => s + (e.chips || 0), 0) / entries.filter(e => e.status === 'playing').length).toLocaleString() : (tournament.starting_chips || 10000).toLocaleString()}</span>
                         </div>
                         <div className="stat">
                             <span className="stat-label">Tables</span>
@@ -343,7 +343,7 @@ export default function TournamentDetails() {
                     <div className="game-info-section">
                         <div className="info-row">
                             <span className="info-label">Game Type:</span>
-                            <span className="info-value highlight">{(tournament.game_type || 'nlh').toUpperCase()} (9 max)</span>
+                            <span className="info-value highlight">{(tournament.game_type || 'nlh').toUpperCase()} ({tournament.max_players || 9} max)</span>
                         </div>
                         <div className="info-row">
                             <span className="info-label">Buy-in:</span>
@@ -375,7 +375,7 @@ export default function TournamentDetails() {
                         </div>
                         <div className="info-row half">
                             <span className="info-label">Re-entry:</span>
-                            <span className="info-value">{tournament.buy_in_amount} (x No Limit)</span>
+                            <span className="info-value">{tournament.buy_in_amount}+{Math.round(tournament.buy_in_amount * 0.1)} chips</span>
                         </div>
                         <div className="info-row half">
                             <span className="info-label">Add-on:</span>
@@ -383,7 +383,7 @@ export default function TournamentDetails() {
                         </div>
                         <div className="info-row half">
                             <span className="info-label">Starting Chips:</span>
-                            <span className="info-value">{tournament.starting_chips}K</span>
+                            <span className="info-value">{(tournament.starting_chips || 10000).toLocaleString()}</span>
                         </div>
                         <div className="info-row half">
                             <span className="info-label">Big Blind Ante:</span>
