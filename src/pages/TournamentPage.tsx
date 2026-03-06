@@ -331,7 +331,7 @@ export default function TournamentPage() {
                                     </span>
                                 </div>
                                 <div className="tourn-info">
-                                    <span className="tourn-type">{tourn.type.toUpperCase()}</span>
+                                    <span className="tourn-type">{(tourn.game_type || tourn.variant || 'NLH').toUpperCase()}</span>
                                     <span className="tourn-buyin">${tourn.buy_in_amount} + ${tourn.buy_in_fee}</span>
                                 </div>
                                 <div className="tourn-meta">
@@ -361,7 +361,7 @@ export default function TournamentPage() {
                                 </div>
                                 <div className="stat">
                                     <span className="stat-label">Starting Stack</span>
-                                    <span className="stat-value">{selectedTournament.starting_chips.toLocaleString()}</span>
+                                    <span className="stat-value">{(selectedTournament.starting_chips || 10000).toLocaleString()}</span>
                                 </div>
                                 <div className="stat">
                                     <span className="stat-label">Players</span>
@@ -386,15 +386,15 @@ export default function TournamentPage() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {selectedTournament.blind_structure.slice(0, 5).map((level, i) => (
+                                        {(Array.isArray(selectedTournament.blind_structure) ? selectedTournament.blind_structure : []).slice(0, 5).map((level: any, i: number) => (
                                             <tr key={i}>
                                                 <td>{level.level}</td>
-                                                <td>{level.smallBlind}/{level.bigBlind}</td>
+                                                <td>{level.smallBlind || level.small_blind}/{level.bigBlind || level.big_blind}</td>
                                                 <td>{level.ante || '-'}</td>
-                                                <td>{level.durationMinutes} min</td>
+                                                <td>{level.durationMinutes || level.duration_minutes || 15} min</td>
                                             </tr>
                                         ))}
-                                        {selectedTournament.blind_structure.length > 5 && (
+                                        {Array.isArray(selectedTournament.blind_structure) && selectedTournament.blind_structure.length > 5 && (
                                             <tr className="more-row">
                                                 <td colSpan={4}>+ {selectedTournament.blind_structure.length - 5} more levels</td>
                                             </tr>
@@ -407,17 +407,23 @@ export default function TournamentPage() {
                             <div className="payout-structure">
                                 <h3>Payouts</h3>
                                 <div className="payout-list">
-                                    {selectedTournament.payout_structure.slice(0, 5).map((payout, i) => (
-                                        <div key={i} className="payout-item">
-                                            <span className="payout-place">
-                                                {payout.place === 1 ? '' : payout.place === 2 ? '' : payout.place === 3 ? '' : `${payout.place}th`}
-                                            </span>
-                                            <span className="payout-percent">{payout.percentage}%</span>
-                                            <span className="payout-amount">
-                                                ${Math.floor((selectedTournament.prize_pool * payout.percentage) / 100)}
-                                            </span>
-                                        </div>
-                                    ))}
+                                    {(Array.isArray(selectedTournament.payout_structure)
+                                        ? selectedTournament.payout_structure
+                                        : (() => { try { return typeof selectedTournament.payout_structure === 'string' ? JSON.parse(selectedTournament.payout_structure) : []; } catch { return []; } })()
+                                    ).slice(0, 5).map((payout: any, i: number) => {
+                                        const pos = payout.place || payout.position || (i + 1);
+                                        return (
+                                            <div key={i} className="payout-item">
+                                                <span className="payout-place">
+                                                    {pos === 1 ? '' : pos === 2 ? '' : pos === 3 ? '' : `${pos}th`}
+                                                </span>
+                                                <span className="payout-percent">{payout.percentage}%</span>
+                                                <span className="payout-amount">
+                                                    ${Math.floor((selectedTournament.prize_pool * payout.percentage) / 100)}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
