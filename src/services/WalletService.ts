@@ -339,21 +339,21 @@ export const WalletService = {
         relatedEntityId?: string
     ): Promise<void> {
         try {
-            const { error } = await supabase.from('wallet_transactions').insert({
-                user_id: userId,
-                wallet_type: walletType,
-                amount,
-                type,
-                category,
-                description,
-                table_id: tableId || null,
-                hand_id: handId || null,
-                related_entity_id: relatedEntityId || null,
+            // Use SECURITY DEFINER RPC to bypass RLS on wallet_transactions
+            const { error } = await supabase.rpc('log_wallet_transaction', {
+                p_user_id: userId,
+                p_wallet_type: walletType,
+                p_amount: amount,
+                p_type: type,
+                p_category: category,
+                p_description: description,
+                p_table_id: tableId || null,
+                p_hand_id: handId || null,
+                p_related_entity_id: relatedEntityId || null,
             });
             if (error) {
-                console.error('[WalletService] Transaction log failed:', error.message);
-                // Don't throw — the actual financial operation succeeded, log failure is non-fatal
-                // but should be flagged for reconciliation
+                console.error('[WalletService] Transaction log RPC failed:', error.message);
+                // Non-fatal — financial op succeeded, log for reconciliation
             }
         } catch (err) {
             console.error('[WalletService] Transaction log error:', err);
