@@ -862,40 +862,18 @@ export class TournamentEngine {
 
         const clubId = this.tournamentInfo.club_id;
 
-        // Credit prize to player's club_members.chip_balance
-        // Try atomic RPC first — falls back to read-modify-write
-        let credited = false;
-        try {
-            const { error: rpcError } = await this.supabase.rpc('fn_add_chips', {
-                p_user_id: userId,
-                p_club_id: clubId,
-                p_amount: amount,
-            });
-            credited = !rpcError;
-        } catch {
-            // RPC may not exist — use fallback
+        // Credit prize to Player Wallet via SECURITY DEFINER RPC
+        const { data: creditResult, error: creditError } = await this.supabase.rpc('credit_player_wallet', {
+            p_user_id: userId,
+            p_amount: amount,
+        });
+
+        if (creditError) {
+            console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to credit Player Wallet for ${userId.slice(0, 8)} — prize $${amount.toFixed(2)}:`, creditError);
+            return;
         }
 
-        if (!credited) {
-            const { data: member } = await this.supabase
-                .from('club_members')
-                .select('chip_balance')
-                .eq('club_id', clubId)
-                .eq('user_id', userId)
-                .single();
-
-            if (!member) {
-                console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] No club membership found for ${userId.slice(0, 8)} — prize $${amount.toFixed(2)} could not be credited`);
-                return;
-            }
-
-            const newBalance = (member.chip_balance || 0) + amount;
-            await this.supabase
-                .from('club_members')
-                .update({ chip_balance: newBalance })
-                .eq('club_id', clubId)
-                .eq('user_id', userId);
-        }
+        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Credited ${amount} chips to Player Wallet for ${userId.slice(0, 8)}`);
 
         // Log prize in wallet_transactions (full audit trail)
         await this.supabase.from('wallet_transactions').insert({
@@ -903,7 +881,7 @@ export class TournamentEngine {
             wallet_type: 'PLAYER',
             amount: amount,
             type: 'credit',
-            category: 'cashout',
+            category: 'settlement',
             description: `Tournament prize — ${this.tournamentInfo.name}`,
             related_entity_id: this.tournamentId,
         });
