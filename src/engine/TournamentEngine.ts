@@ -716,7 +716,9 @@ export class TournamentEngine {
     private async checkEliminations(): Promise<void> {
         if (!this.running || !this.tournamentInfo) return;
 
-        // Check each tournament table for players with 0 chips
+        // Check each tournament table for players with 0 chips + sync chip counts
+        const chipUpdates: { userId: string; chips: number }[] = [];
+
         for (const table of this.tables) {
             const { data: seats } = await this.supabase
                 .from('table_seats')
@@ -729,12 +731,27 @@ export class TournamentEngine {
             for (const seat of seats) {
                 if (seat.stack <= 0) {
                     await this.eliminatePlayer(seat.user_id, table.tableId);
+                } else {
+                    // Collect live chip counts for real-time sync
+                    chipUpdates.push({ userId: seat.user_id, chips: seat.stack });
+                    // Also update local player map
+                    const player = this.players.get(seat.user_id);
+                    if (player) player.chips = seat.stack;
                 }
             }
 
             // Update local table player count
             const activeSeats = seats.filter(s => s.stack > 0);
             table.playerCount = activeSeats.length;
+        }
+
+        // Sync live chip counts to tournament_players (real-time updates after every hand)
+        for (const { userId, chips } of chipUpdates) {
+            await this.supabase
+                .from('tournament_players')
+                .update({ chips: Math.round(chips * 100) / 100 })
+                .eq('tournament_id', this.tournamentId)
+                .eq('user_id', userId);
         }
 
         // Update hand count
