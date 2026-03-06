@@ -69,7 +69,7 @@ export const WalletService = {
      */
     async getBalances(userId: string): Promise<WalletBalance[]> {
         const { data, error } = await supabase
-            .from('player_wallets')
+            .from('wallets')
             .select('*')
             .eq('user_id', userId);
 

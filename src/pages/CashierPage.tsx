@@ -29,13 +29,16 @@ export default function CashierPage() {
     const [isProcessing, setIsProcessing] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
+    const [isInUnion, setIsInUnion] = useState(false);
 
-    // Load user's club role for bottom nav
+    // Load user's club role + check if club is in a union (disables minting)
     useEffect(() => {
-        async function loadRole() {
+        async function loadRoleAndUnion() {
             if (!clubId || !user?.id) return;
             try {
                 const { supabase } = await import('../lib/supabase');
+
+                // Get user role
                 const { data } = await supabase
                     .from('club_members')
                     .select('role')
@@ -43,9 +46,17 @@ export default function CashierPage() {
                     .eq('user_id', user.id)
                     .single();
                 if (data?.role) setUserRole(data.role as typeof userRole);
-            } catch { /* keep default 'member' */ }
+
+                // Check if this club belongs to a union (unions handle minting)
+                const { data: unionData } = await supabase
+                    .from('union_clubs')
+                    .select('union_id')
+                    .eq('club_id', clubId)
+                    .limit(1);
+                setIsInUnion(!!(unionData && unionData.length > 0));
+            } catch { /* keep defaults */ }
         }
-        loadRole();
+        loadRoleAndUnion();
     }, [clubId, user?.id]);
 
     // Quick-amount presets only for buy-in / cash-out — Mint is manual input only
@@ -136,9 +147,10 @@ export default function CashierPage() {
 
 
             {/* Action Tabs - Metal Style */}
-            {/* Mint Chips is Union-only — chips flow: Union → Club Bank → Agent Wallet → Player Wallet */}
+            {/* Minting: available for standalone clubs (owner only), disabled when club is in a union */}
+            {/* Chip flow: Union → Club Bank → Agent Wallet → Player Wallet */}
             <div className="action-tabs-metal">
-                {(['buyin', 'cashout', ...(userRole === 'owner' ? ['mint'] as const : [])] as CashierAction[]).map((act) => (
+                {(['buyin', 'cashout', ...((userRole === 'owner' && !isInUnion) ? ['mint'] as const : [])] as CashierAction[]).map((act) => (
                     <MetalButton
                         key={act}
                         variant={action === act ? 'primary' : 'secondary'}
