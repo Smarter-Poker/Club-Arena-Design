@@ -731,9 +731,8 @@ export default function SettingsPage() {
                             <span className={styles.settingDesc}>Show badge for new chat messages</span>
                         </div>
                         <Toggle
-                            checked={settings.chatNotifications}
+                            checked={settings.chatNotifications && settings.chatEnabled}
                             onChange={(v) => updateSetting('chatNotifications', v)}
-                            disabled={!settings.chatEnabled}
                         />
                     </div>
                 </section>
