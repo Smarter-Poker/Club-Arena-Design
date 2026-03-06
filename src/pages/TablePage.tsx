@@ -454,7 +454,7 @@ export default function TablePage() {
 
     // Cashier state
     const [showCashier, setShowCashier] = useState(false);
-    const [accountBalance, setAccountBalance] = useState(0); // Loaded from club_members.chip_balance
+    const [accountBalance, setAccountBalance] = useState(0); // Player Wallet balance from wallets table
 
     // Handle Time Bank activation
     const handleActivateTimeBank = () => {
@@ -748,17 +748,17 @@ export default function TablePage() {
                 // Store actual club_id for persistence and rake
                 actualClubIdRef.current = table.club_id || '';
 
-                // Load user's chip balance from club_members for this table's club
-                if (userId && userId !== 'guest' && table.club_id) {
-                    const { data: memberData } = await supabase
-                        .from('club_members')
-                        .select('chip_balance')
-                        .eq('club_id', table.club_id)
+                // Load user's Player Wallet balance for buy-in
+                if (userId && userId !== 'guest') {
+                    const { data: walletData } = await supabase
+                        .from('wallets')
+                        .select('balance')
                         .eq('user_id', userId)
+                        .eq('wallet_type', 'PLAYER')
                         .single();
 
-                    if (memberData) {
-                        setAccountBalance(memberData.chip_balance || 0);
+                    if (walletData) {
+                        setAccountBalance(walletData.balance || 0);
                     }
                 }
 
