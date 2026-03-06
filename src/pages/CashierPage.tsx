@@ -48,9 +48,9 @@ export default function CashierPage() {
         loadRole();
     }, [clubId, user?.id]);
 
-    const preset = (action === 'buyin' || action === 'cashout')
-        ? [100, 200, 500, 1000, 2000]
-        : [1000, 5000, 10000, 50000];
+    // Quick-amount presets only for buy-in / cash-out — Mint is manual input only
+    const preset = [100, 200, 500, 1000, 2000];
+    const showPresets = action === 'buyin' || action === 'cashout';
 
     const handleAction = async () => {
         const value = parseFloat(amount);
@@ -117,9 +117,9 @@ export default function CashierPage() {
                 <MetalCard size="sm" glow>
                     <div className="balance-card-content">
                         <span className="balance-icon">♠</span>
-                        <div className="balance-label">Available Chips</div>
+                        <div className="balance-label">Player Wallet</div>
                         <div className="balance-value">
-                            ${balances.PLAYER.available.toLocaleString()}
+                            {balances.PLAYER.available.toLocaleString()} chips
                         </div>
                     </div>
                 </MetalCard>
@@ -136,8 +136,9 @@ export default function CashierPage() {
 
 
             {/* Action Tabs - Metal Style */}
+            {/* Mint Chips is Union-only — chips flow: Union → Club Bank → Agent Wallet → Player Wallet */}
             <div className="action-tabs-metal">
-                {(['buyin', 'cashout', 'mint'] as CashierAction[]).map((act) => (
+                {(['buyin', 'cashout', ...(userRole === 'owner' ? ['mint'] as const : [])] as CashierAction[]).map((act) => (
                     <MetalButton
                         key={act}
                         variant={action === act ? 'primary' : 'secondary'}
@@ -171,19 +172,21 @@ export default function CashierPage() {
                         </div>
                     )}
 
-                    {/* Presets */}
-                    <div className="preset-buttons-grid">
-                        {preset.map((val) => (
-                            <MetalButton
-                                key={val}
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setAmount(val.toString())}
-                            >
-                                ${val >= 1000 ? `${val / 1000}K` : val}
-                            </MetalButton>
-                        ))}
-                    </div>
+                    {/* Presets — only for buy-in / cash-out (minting is manual input only) */}
+                    {showPresets && (
+                        <div className="preset-buttons-grid">
+                            {preset.map((val) => (
+                                <MetalButton
+                                    key={val}
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setAmount(val.toString())}
+                                >
+                                    ${val >= 1000 ? `${val / 1000}K` : val}
+                                </MetalButton>
+                            ))}
+                        </div>
+                    )}
 
                     {/* Messages */}
                     {message && (
