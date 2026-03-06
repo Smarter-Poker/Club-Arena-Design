@@ -317,4 +317,26 @@ export function SeatSlot({
     );
 }
 
-export default SeatSlot;
+// Memoize to prevent unnecessary re-renders when parent TablePage state changes
+// Only re-render when seat-relevant props actually change
+export default React.memo(SeatSlot, (prev, next) => {
+    // Return true if props are equal (skip re-render)
+    return (
+        prev.seatNumber === next.seatNumber &&
+        prev.isActive === next.isActive &&
+        prev.lastAction === next.lastAction &&
+        prev.lastBetAmount === next.lastBetAmount &&
+        prev.timerProgress === next.timerProgress &&
+        prev.position === next.position &&
+        prev.isTournament === next.isTournament &&
+        prev.bigBlind === next.bigBlind &&
+        prev.player?.id === next.player?.id &&
+        prev.player?.stack === next.player?.stack &&
+        prev.player?.status === next.player?.status &&
+        prev.player?.showCards === next.player?.showCards &&
+        prev.player?.isHero === next.player?.isHero &&
+        prev.player?.holeCards?.length === next.player?.holeCards?.length &&
+        prev.player?.holeCards?.[0]?.rank === next.player?.holeCards?.[0]?.rank &&
+        prev.player?.holeCards?.[1]?.rank === next.player?.holeCards?.[1]?.rank
+    );
+});

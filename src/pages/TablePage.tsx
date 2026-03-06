@@ -1723,10 +1723,13 @@ export default function TablePage() {
     }, [loadWaitlist]);
 
     // Timer countdown with auto-fold on timeout
+    // NOTE: actionTimeRemaining removed from deps to prevent re-creating interval every second
+    // The setInterval handles its own countdown via the functional state updater
     useEffect(() => {
-        if (tableState.currentPlayerSeat === tableState.heroSeat && actionTimeRemaining > 0) {
+        if (tableState.currentPlayerSeat === tableState.heroSeat) {
             const timer = setInterval(() => {
                 setActionTimeRemaining(prev => {
+                    if (prev <= 0) return 0;
                     const newValue = prev - 1;
                     // Auto-fold when timer expires
                     if (newValue <= 0 && handControllerRef.current) {
@@ -1739,7 +1742,8 @@ export default function TablePage() {
             }, 1000);
             return () => clearInterval(timer);
         }
-    }, [tableState.currentPlayerSeat, tableState.heroSeat, actionTimeRemaining]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tableState.currentPlayerSeat, tableState.heroSeat]);
 
     return (
         <div className="table-page">
