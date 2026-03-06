@@ -301,24 +301,7 @@ export default function TableConfigPage() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
-    // ── Union guard: clubs inside a union cannot create tables ──
-    useEffect(() => {
-        if (!clubId) return;
-        (async () => {
-            try {
-                const { data } = await supabase
-                    .from('union_clubs')
-                    .select('union_id')
-                    .eq('club_id', clubId)
-                    .maybeSingle();
-                if (data) {
-                    navigate(`/clubs/${clubId}`, { replace: true });
-                }
-            } catch {
-                // Query error — allow page to render (fail-open for standalone clubs)
-            }
-        })();
-    }, [clubId, navigate]);
+    // Union clubs can still create tables — union provides cross-club features only
 
     const gameInfo = GAME_TYPE_LABELS[gameType || 'nlh'] || GAME_TYPE_LABELS.nlh;
 
