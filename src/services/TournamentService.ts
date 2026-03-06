@@ -380,30 +380,34 @@ class TournamentService {
         const rake = Math.round(buyIn * 0.1);
         const totalCost = buyIn + rake;
 
-        // ─── Deduct from club_members.chip_balance (matches cash game wallet system) ───
+        // ─── Deduct from Player Wallet (wallets table, not club_members) ───
+        // Chip flow: Union → Club Bank → Agent Wallet → Player Wallet → Game Buy-ins
+        // Players buy into tournaments from their Player Wallet only
         const clubId = tournament.club_id;
-        if (!clubId) throw new Error('Tournament has no club');
 
-        const { data: memberData } = await supabase
-            .from('club_members')
-            .select('chip_balance')
-            .eq('club_id', clubId)
+        // Check player wallet balance first (for better error messages)
+        const { data: walletData } = await supabase
+            .from('wallets')
+            .select('balance')
             .eq('user_id', userId)
+            .eq('wallet_type', 'PLAYER')
             .single();
 
-        if (!memberData || (memberData.chip_balance || 0) < totalCost) {
-            throw new Error(`Insufficient chips. Need ${totalCost}, have ${memberData?.chip_balance || 0}`);
+        if (!walletData || (walletData.balance || 0) < totalCost) {
+            throw new Error(`Insufficient chips in Player Wallet. Need ${totalCost}, have ${walletData?.balance || 0}`);
         }
 
-        // Deduct buy-in from club wallet via RPC (runs with SECURITY DEFINER to bypass RLS)
-        const { error: deductError } = await supabase.rpc('deduct_chip_balance', {
-            p_club_id: clubId,
+        // Atomically deduct from Player Wallet via RPC (SECURITY DEFINER bypasses RLS)
+        const { data: deductResult, error: deductError } = await supabase.rpc('deduct_player_wallet', {
             p_user_id: userId,
             p_amount: totalCost,
         });
 
         if (deductError) {
             throw new Error(`Failed to deduct tournament buy-in: ${deductError.message}`);
+        }
+        if (deductResult === false) {
+            throw new Error('Insufficient chips in Player Wallet for tournament buy-in');
         }
 
         // Insert player (username is NOT NULL in schema — must be provided)
@@ -420,13 +424,12 @@ class TournamentService {
             .single();
 
         if (error) {
-            // Refund on failure via RPC (negative amount = credit)
+            // Refund to Player Wallet on failure
             console.error('[TournamentService] Registration failed, refunding buy-in:', error);
             try {
-                await supabase.rpc('deduct_chip_balance', {
-                    p_club_id: clubId,
+                await supabase.rpc('credit_player_wallet', {
                     p_user_id: userId,
-                    p_amount: -totalCost, // Negative = refund
+                    p_amount: totalCost,
                 });
             } catch (refundErr) {
                 console.error('[TournamentService] CRITICAL: Refund also failed:', refundErr);
@@ -462,49 +465,16 @@ class TournamentService {
         // Calculate refund amount (buy-in + 10% standard rake — return everything that was deducted)
         const buyInAmount = tournament.buy_in_amount || 0;
         const refundAmount = buyInAmount + Math.round(buyInAmount * 0.1);
-        const clubId = tournament.club_id;
-        if (!clubId) throw new Error('Tournament has no club — cannot refund');
 
-        // Refund to club_members.chip_balance — MUST succeed before unregistering
-        // Use fn_add_chips RPC (atomic, matches how registration deducts from chip_balance)
-        let refunded = false;
-        try {
-            const { error: rpcError } = await supabase.rpc('fn_add_chips', {
-                p_user_id: userId,
-                p_club_id: clubId,
-                p_amount: refundAmount,
-            });
-            refunded = !rpcError;
-            if (rpcError) {
-                console.warn('[TournamentService] RPC fn_add_chips failed, trying fallback:', rpcError.message);
-            }
-        } catch {
-            // RPC may not exist — use fallback
-        }
+        // Refund to Player Wallet — MUST succeed before unregistering
+        const { error: refundError } = await supabase.rpc('credit_player_wallet', {
+            p_user_id: userId,
+            p_amount: refundAmount,
+        });
 
-        if (!refunded) {
-            // Fallback: read-modify-write with guard
-            const { data: memberData } = await supabase
-                .from('club_members')
-                .select('chip_balance')
-                .eq('club_id', clubId)
-                .eq('user_id', userId)
-                .single();
-
-            if (!memberData) {
-                throw new Error('Refund failed — player not found in club');
-            }
-
-            const { error: updateError } = await supabase
-                .from('club_members')
-                .update({ chip_balance: (memberData.chip_balance || 0) + refundAmount })
-                .eq('club_id', clubId)
-                .eq('user_id', userId);
-
-            if (updateError) {
-                console.error('[TournamentService] Refund failed, aborting unregistration:', updateError);
-                throw new Error('Refund failed — cannot unregister without refunding buy-in');
-            }
+        if (refundError) {
+            console.error('[TournamentService] Refund to Player Wallet failed:', refundError);
+            throw new Error('Refund failed — cannot unregister without refunding buy-in');
         }
 
         await supabase
@@ -661,46 +631,17 @@ class TournamentService {
             .eq('tournament_id', tournamentId)
             .eq('user_id', userId);
 
-        // Credit prize to club_members.chip_balance (matches how buy-ins are deducted)
+        // Credit prize to Player Wallet
         if (prize > 0) {
-            const clubId = tournament.club_id;
-            if (!clubId) {
-                console.error('[TournamentService] CRITICAL: Tournament has no club_id — cannot pay prize');
-                throw new Error('Tournament has no club — cannot credit prize');
-            }
+            // Credit prize to Player Wallet (not club_members — wallets are separate)
+            const { error: prizeError } = await supabase.rpc('credit_player_wallet', {
+                p_user_id: userId,
+                p_amount: prize,
+            });
 
-            let credited = false;
-            try {
-                const { error: rpcError } = await supabase.rpc('fn_add_chips', {
-                    p_user_id: userId,
-                    p_club_id: clubId,
-                    p_amount: prize,
-                });
-                credited = !rpcError;
-                if (rpcError) {
-                    console.warn('[TournamentService] RPC fn_add_chips prize failed, trying fallback:', rpcError.message);
-                }
-            } catch { /* RPC may not exist */ }
-
-            if (!credited) {
-                // Fallback: read-modify-write
-                const { data: memberData } = await supabase
-                    .from('club_members')
-                    .select('chip_balance')
-                    .eq('club_id', clubId)
-                    .eq('user_id', userId)
-                    .single();
-
-                const { error: updateError } = await supabase
-                    .from('club_members')
-                    .update({ chip_balance: ((memberData?.chip_balance) || 0) + prize })
-                    .eq('club_id', clubId)
-                    .eq('user_id', userId);
-
-                if (updateError) {
-                    console.error('[TournamentService] CRITICAL: Prize credit failed:', updateError);
-                    throw new Error(`Failed to credit ${ordinal(position)} place prize of $${prize}`);
-                }
+            if (prizeError) {
+                console.error('[TournamentService] CRITICAL: Prize credit to Player Wallet failed:', prizeError);
+                throw new Error(`Failed to credit ${ordinal(position)} place prize of $${prize}`);
             }
         }
 
