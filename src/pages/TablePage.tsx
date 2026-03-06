@@ -665,7 +665,7 @@ export default function TablePage() {
             const result = await tableService.leaveTable(tableId, tableState.heroSeat, userId);
             if (result.success) {
                 console.log(`[Leave] Success — ${result.chipsReturned} chips returned to wallet`);
-                navigate('/lobby');
+                navigate('/');
             } else {
                 console.error('[Leave] Failed to leave table');
                 // If player is in an active hand, they'll be set to sitting_out

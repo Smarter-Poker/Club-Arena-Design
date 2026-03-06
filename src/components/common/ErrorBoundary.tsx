@@ -36,6 +36,18 @@ class ErrorBoundary extends Component<Props, State> {
     componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         console.error('ErrorBoundary caught an error:', error, errorInfo);
 
+        // Auto-reload on stale chunk errors (happens after new deployments)
+        if (
+            error.message?.includes('dynamically imported module') ||
+            error.message?.includes('Failed to fetch') ||
+            error.message?.includes('ChunkLoadError') ||
+            error.name === 'ChunkLoadError'
+        ) {
+            console.warn('[ErrorBoundary] Stale chunk detected, reloading...');
+            window.location.reload();
+            return;
+        }
+
         // Capture exception with Sentry and get event ID
         Sentry.withScope((scope) => {
             scope.setContext('react', {
