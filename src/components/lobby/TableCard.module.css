@@ -10,7 +10,9 @@
     background: var(--gradient-card);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-xl);
-    transition: all var(--duration-normal) var(--ease-out-expo);
+    transition: border-color var(--duration-normal) var(--ease-out-expo),
+                transform var(--duration-normal) var(--ease-out-expo),
+                box-shadow var(--duration-normal) var(--ease-out-expo);
 }
 
 .card:hover {
@@ -118,7 +120,9 @@
     border: none;
     border-radius: var(--radius-lg);
     cursor: pointer;
-    transition: all var(--duration-normal) var(--ease-out-expo);
+    transition: border-color var(--duration-normal) var(--ease-out-expo),
+                transform var(--duration-normal) var(--ease-out-expo),
+                box-shadow var(--duration-normal) var(--ease-out-expo);
 }
 
 .joinButton:hover {

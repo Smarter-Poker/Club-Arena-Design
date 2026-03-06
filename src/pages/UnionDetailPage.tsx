@@ -5,7 +5,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { unionService, type Union, type UnionClub } from '../services/UnionService';
 import { tableService } from '../services/TableService';
@@ -244,6 +244,10 @@ export default function UnionDetailPage() {
         );
     }
 
+    // Memoize filtered table arrays to avoid re-filtering 199+ tables on every render
+    const activeTables = useMemo(() => tables.filter(t => (t.current_players || 0) > 0), [tables]);
+    const emptyTables = useMemo(() => tables.filter(t => (t.current_players || 0) === 0), [tables]);
+
     return (
         <div className={styles.page}>
             <SmarterHeader title={union.name} />
@@ -460,13 +464,13 @@ export default function UnionDetailPage() {
                             <p className={styles.emptyText}>No active tables right now.</p>
                         ) : (
                             <>
-                                {tables.filter(t => (t.current_players || 0) > 0).length > 0 && (
+                                {activeTables.length > 0 && (
                                     <>
                                         <h3 style={{ color: '#fff', margin: '0 0 1rem' }}>
-                                            Active Tables ({tables.filter(t => (t.current_players || 0) > 0).length})
+                                            Active Tables ({activeTables.length})
                                         </h3>
                                         <div className={styles.tablesGrid}>
-                                            {tables.filter(t => (t.current_players || 0) > 0).map(table => (
+                                            {activeTables.map(table => (
                                                 <div key={table.id} className={styles.tableCard}>
                                                     <div className={styles.tableCardHeader}>
                                                         <h4>{table.name}</h4>
@@ -485,13 +489,13 @@ export default function UnionDetailPage() {
                                         </div>
                                     </>
                                 )}
-                                {tables.filter(t => (t.current_players || 0) === 0).length > 0 && (
+                                {emptyTables.length > 0 && (
                                     <>
                                         <h3 style={{ color: 'rgba(255,255,255,0.5)', margin: '2rem 0 1rem' }}>
-                                            Empty Tables ({tables.filter(t => (t.current_players || 0) === 0).length})
+                                            Empty Tables ({emptyTables.length})
                                         </h3>
                                         <div className={styles.tablesGrid}>
-                                            {tables.filter(t => (t.current_players || 0) === 0).map(table => (
+                                            {emptyTables.map(table => (
                                                 <div key={table.id} className={styles.tableCard} style={{ opacity: 0.6 }}>
                                                     <div className={styles.tableCardHeader}>
                                                         <h4>{table.name}</h4>
