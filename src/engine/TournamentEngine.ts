@@ -33,6 +33,7 @@ interface BlindLevel {
 
 interface PayoutEntry {
     place: number;
+    position?: number; // DB may use 'position' instead of 'place'
     percentage: number;
 }
 
@@ -90,11 +91,15 @@ function resolveBlindStructure(raw: any): BlindLevel[] {
 }
 
 function resolvePayoutStructure(raw: any, playerCount: number): PayoutEntry[] {
-    if (Array.isArray(raw)) return raw;
+    // Normalize: ensure every entry has 'place' (DB may use 'position' instead)
+    const normalize = (arr: any[]): PayoutEntry[] =>
+        arr.map(p => ({ place: p.place || p.position || 0, position: p.position || p.place || 0, percentage: p.percentage || 0 }));
+
+    if (Array.isArray(raw)) return normalize(raw);
     if (typeof raw === 'string') {
         try {
             const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed)) return parsed;
+            if (Array.isArray(parsed)) return normalize(parsed);
         } catch { /* not JSON */ }
     }
 
@@ -846,7 +851,7 @@ export class TournamentEngine {
         if (!this.tournamentInfo) return 0;
         if (!this.tournamentInfo.payout_structure || !Array.isArray(this.tournamentInfo.payout_structure)) return 0;
 
-        const payoutEntry = this.tournamentInfo.payout_structure.find(p => p.place === position);
+        const payoutEntry = this.tournamentInfo.payout_structure.find(p => (p.place || p.position) === position);
         if (!payoutEntry) return 0;
 
         return Math.round((this.tournamentInfo.prize_pool * payoutEntry.percentage) / 100 * 100) / 100;
