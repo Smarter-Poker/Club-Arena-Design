@@ -73,39 +73,58 @@ export const LeaderboardService = {
     async getClubLeaderboard(
         clubId: string,
         metric: LeaderboardMetric = 'profit',
-        period: LeaderboardPeriod = 'weekly',
+        _period: LeaderboardPeriod = 'weekly',
         limit: number = 10
     ): Promise<LeaderboardEntry[]> {
-        const { data, error } = await supabase.rpc('get_club_leaderboard', {
-            p_club_id: clubId,
-            p_metric: metric,
-            p_period: period,
-            p_limit: limit,
-        });
+        try {
+            // Direct query — player_stats has: total_winnings, total_losses, hands_played, vpip, pfr
+            const orderCol = metric === 'profit' ? 'total_winnings' : metric === 'hands_played' ? 'hands_played' : metric === 'vpip' ? 'vpip' : metric === 'pfr' ? 'pfr' : 'total_winnings';
 
-        if (error) {
-            console.error('LeaderboardService.getClubLeaderboard error:', error);
-            return [];
-        }
+            const { data: statsData, error: statsError } = await supabase
+                .from('player_stats')
+                .select('user_id, hands_played, total_winnings, total_losses, total_rake, vpip, pfr')
+                .eq('club_id', clubId)
+                .order(orderCol, { ascending: false })
+                .limit(limit);
 
-        return (data || []).map((row: any, index: number) => {
-            // Apply VIP 6% score boost for profit metric
-            let value = row.value;
-            if (metric === 'profit' && row.is_vip) {
-                value = Math.round(value * (1 + VIP_GOLD_LIMITS.leaderboardBoost));
+            if (statsError || !statsData) {
+                console.error('LeaderboardService.getClubLeaderboard stats error:', statsError);
+                return [];
             }
 
-            return {
-                rank: index + 1,
-                userId: row.user_id,
-                username: row.username,
-                avatar: row.avatar_url,
-                value,
-                metric,
-                change: row.position_change || 0,
-                isVIP: row.is_vip || false,
-            };
-        });
+            // Get usernames for the user IDs
+            const userIds = statsData.map((s: any) => s.user_id);
+            const { data: profiles } = await supabase
+                .from('profiles')
+                .select('id, username, avatar_url')
+                .in('id', userIds);
+
+            const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
+            return statsData.map((row: any, index: number) => {
+                const profile = profileMap.get(row.user_id) || {} as any;
+                let value = 0;
+                if (metric === 'profit') value = (row.total_winnings || 0) - (row.total_losses || 0);
+                else if (metric === 'hands_played') value = row.hands_played || 0;
+                else if (metric === 'vpip') value = Math.round((row.vpip || 0) * 100);
+                else if (metric === 'pfr') value = Math.round((row.pfr || 0) * 100);
+                else value = (row.total_winnings || 0) - (row.total_losses || 0);
+
+                return {
+                    rank: index + 1,
+                    userId: row.user_id,
+                    username: profile.username || 'Player',
+                    avatar: profile.avatar_url,
+                    value,
+                    metric,
+                    change: 0,
+                    isVIP: false,
+                };
+            });
+        } catch (err) {
+            console.error('LeaderboardService.getClubLeaderboard error:', err);
+            return [];
+        }
     },
 
     /**
@@ -114,38 +133,62 @@ export const LeaderboardService = {
     async getUnionLeaderboard(
         unionId: string,
         metric: LeaderboardMetric = 'profit',
-        period: LeaderboardPeriod = 'weekly',
+        _period: LeaderboardPeriod = 'weekly',
         limit: number = 20
     ): Promise<LeaderboardEntry[]> {
-        const { data, error } = await supabase.rpc('get_union_leaderboard', {
-            p_union_id: unionId,
-            p_metric: metric,
-            p_period: period,
-            p_limit: limit,
-        });
+        try {
+            // Get clubs in this union
+            const { data: unionClubs } = await supabase
+                .from('union_clubs')
+                .select('club_id')
+                .eq('union_id', unionId);
 
-        if (error) {
-            console.error('LeaderboardService.getUnionLeaderboard error:', error);
+            if (!unionClubs || unionClubs.length === 0) return [];
+
+            const clubIds = unionClubs.map((uc: any) => uc.club_id);
+            const orderCol = metric === 'profit' ? 'total_winnings' : metric === 'hands_played' ? 'hands_played' : metric === 'vpip' ? 'vpip' : metric === 'pfr' ? 'pfr' : 'total_winnings';
+
+            const { data: statsData, error: statsError } = await supabase
+                .from('player_stats')
+                .select('user_id, hands_played, total_winnings, total_losses, vpip, pfr')
+                .in('club_id', clubIds)
+                .order(orderCol, { ascending: false })
+                .limit(limit);
+
+            if (statsError || !statsData) return [];
+
+            const userIds = statsData.map((s: any) => s.user_id);
+            const { data: profiles } = await supabase
+                .from('profiles')
+                .select('id, username, avatar_url')
+                .in('id', userIds);
+
+            const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
+            return statsData.map((row: any, index: number) => {
+                const profile = profileMap.get(row.user_id) || {} as any;
+                let value = 0;
+                if (metric === 'profit') value = (row.total_winnings || 0) - (row.total_losses || 0);
+                else if (metric === 'hands_played') value = row.hands_played || 0;
+                else if (metric === 'vpip') value = Math.round((row.vpip || 0) * 100);
+                else if (metric === 'pfr') value = Math.round((row.pfr || 0) * 100);
+                else value = (row.total_winnings || 0) - (row.total_losses || 0);
+
+                return {
+                    rank: index + 1,
+                    userId: row.user_id,
+                    username: profile.username || 'Player',
+                    avatar: profile.avatar_url,
+                    value,
+                    metric,
+                    change: 0,
+                    isVIP: false,
+                };
+            });
+        } catch (err) {
+            console.error('LeaderboardService.getUnionLeaderboard error:', err);
             return [];
         }
-
-        return (data || []).map((row: any, index: number) => {
-            let value = row.value;
-            if (metric === 'profit' && row.is_vip) {
-                value = Math.round(value * (1 + VIP_GOLD_LIMITS.leaderboardBoost));
-            }
-
-            return {
-                rank: index + 1,
-                userId: row.user_id,
-                username: row.username,
-                avatar: row.avatar_url,
-                value,
-                metric,
-                change: row.position_change || 0,
-                isVIP: row.is_vip || false,
-            };
-        });
     },
 
     /**
@@ -170,17 +213,17 @@ export const LeaderboardService = {
 
         return {
             userId: data.user_id,
-            handsPlayed: data.hands_played,
-            profit: data.total_profit,
-            vpip: data.vpip,
-            pfr: data.pfr,
-            threeBet: data.three_bet,
-            wtsd: data.wtsd,
-            wsd: data.wsd,
-            aggFactor: data.agg_factor,
-            roi: data.tournament_roi,
-            tournamentsPlayed: data.tournaments_played,
-            tournamentsWon: data.tournaments_won,
+            handsPlayed: data.hands_played || 0,
+            profit: (data.total_winnings || 0) - (data.total_losses || 0),
+            vpip: data.vpip || 0,
+            pfr: data.pfr || 0,
+            threeBet: data.three_bet || 0,
+            wtsd: data.wtsd || 0,
+            wsd: data.wsd || 0,
+            aggFactor: data.agg_factor || 0,
+            roi: data.tournament_roi || 0,
+            tournamentsPlayed: data.tournaments_played || 0,
+            tournamentsWon: data.tournaments_won || 0,
             lastUpdated: data.updated_at,
         };
     },
@@ -227,26 +270,33 @@ export const LeaderboardService = {
         userId: string,
         clubId: string,
         metric: LeaderboardMetric = 'profit',
-        period: LeaderboardPeriod = 'weekly'
+        _period: LeaderboardPeriod = 'weekly'
     ): Promise<{ rank: number; total: number } | null> {
-        const { data, error } = await supabase.rpc('get_user_leaderboard_rank', {
-            p_user_id: userId,
-            p_club_id: clubId,
-            p_metric: metric,
-            p_period: period,
-        });
+        try {
+            const orderCol = metric === 'profit' ? 'total_winnings' : metric === 'hands_played' ? 'hands_played' : metric === 'vpip' ? 'vpip' : metric === 'pfr' ? 'pfr' : 'total_winnings';
 
-        if (error) {
-            console.error('LeaderboardService.getUserRank error:', error);
+            const { data: allStats, error } = await supabase
+                .from('player_stats')
+                .select('user_id, total_winnings, total_losses, hands_played, vpip, pfr')
+                .eq('club_id', clubId)
+                .order(orderCol, { ascending: false });
+
+            if (error || !allStats) {
+                console.error('LeaderboardService.getUserRank error:', error);
+                return null;
+            }
+
+            const userIndex = allStats.findIndex((s: any) => s.user_id === userId);
+            if (userIndex === -1) return null;
+
+            return {
+                rank: userIndex + 1,
+                total: allStats.length,
+            };
+        } catch (err) {
+            console.error('LeaderboardService.getUserRank error:', err);
             return null;
         }
-
-        if (!data) return null;
-
-        return {
-            rank: data.rank,
-            total: data.total_players,
-        };
     },
 
 

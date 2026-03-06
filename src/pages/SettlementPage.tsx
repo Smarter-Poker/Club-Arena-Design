@@ -115,37 +115,41 @@ export default function SettlementPage() {
                 setPeriods(mappedPeriods);
                 setSelectedPeriod(mappedPeriods[0]);
 
-                // Generate settlements for current period
-                const settlements = await SettlementService.generateSettlements(currentPeriod.id);
+                // Generate settlements for current period (skip if no real period)
+                if (currentPeriod.id && currentPeriod.id !== 'default') {
+                    try {
+                        const settlements = await SettlementService.generateSettlements(currentPeriod.id);
 
-                // Map club settlements to wires
-                const wires: ClubWire[] = settlements.clubSettlements.map(c => ({
-                    clubId: c.clubId,
-                    clubName: c.clubName,
-                    // Calculate net player P/L as inverse of rake collected (players lost this to rake)
-                    netPlayerPL: -(c.totalRakeCollected),
-                    grossRake: c.totalRakeCollected,
-                    unionTax: c.platformFee,
-                    agentCommissions: c.agentCommissions,
-                    finalWire: c.netRevenue,
-                    direction: c.netRevenue >= 0 ? 'COLLECT_FROM_UNION' : 'PAY_TO_UNION',
-                    status: c.status === 'finalized' ? 'processed' : 'pending',
-                }));
-                setClubWires(wires);
+                        // Map club settlements to wires
+                        const wires: ClubWire[] = settlements.clubSettlements.map(c => ({
+                            clubId: c.clubId,
+                            clubName: c.clubName,
+                            netPlayerPL: -(c.totalRakeCollected),
+                            grossRake: c.totalRakeCollected,
+                            unionTax: c.platformFee,
+                            agentCommissions: c.agentCommissions,
+                            finalWire: c.netRevenue,
+                            direction: c.netRevenue >= 0 ? 'COLLECT_FROM_UNION' : 'PAY_TO_UNION',
+                            status: c.status === 'finalized' ? 'processed' : 'pending',
+                        }));
+                        setClubWires(wires);
 
-                // Map agent settlements to payouts
-                const payouts: AgentPayout[] = settlements.agentSettlements.map(a => ({
-                    agentId: a.agentId,
-                    agentName: a.agentName,
-                    rakeGenerated: a.totalRakeGenerated,
-                    commissionRate: a.commissionRate,
-                    grossCommission: a.commissionEarned,
-                    // Calculate player rakeback as portion of rake returned to players (typically 10-20%)
-                    playerRakeback: a.totalRakeGenerated * 0.10, // 10% default rakeback
-                    netPayout: a.netSettlement,
-                    status: a.status as 'pending' | 'approved' | 'paid',
-                }));
-                setAgentPayouts(payouts);
+                        // Map agent settlements to payouts
+                        const payouts: AgentPayout[] = settlements.agentSettlements.map(a => ({
+                            agentId: a.agentId,
+                            agentName: a.agentName,
+                            rakeGenerated: a.totalRakeGenerated,
+                            commissionRate: a.commissionRate,
+                            grossCommission: a.commissionEarned,
+                            playerRakeback: a.totalRakeGenerated * 0.10,
+                            netPayout: a.netSettlement,
+                            status: a.status as 'pending' | 'approved' | 'paid',
+                        }));
+                        setAgentPayouts(payouts);
+                    } catch (settleErr) {
+                        console.warn('[SettlementPage] No settlements to generate for current period');
+                    }
+                }
 
             } catch (error) {
                 console.error('[SettlementPage] Failed to load data:', error);
