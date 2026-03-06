@@ -906,21 +906,21 @@ export class HeadlessTableEngine {
             const rebuyAmount = this.tableInfo?.big_blind ? this.tableInfo.big_blind * 100 : 200;
 
             try {
-                // 1. Check horse's wallet balance (club_members.chip_balance)
-                const { data: memberData, error: memberError } = await this.supabaseClient
-                    .from('club_members')
-                    .select('chip_balance')
-                    .eq('club_id', clubId)
+                // 1. Check horse's Player Wallet balance
+                const { data: walletData, error: walletError } = await this.supabaseClient
+                    .from('wallets')
+                    .select('balance')
                     .eq('user_id', horse.user_id)
+                    .eq('wallet_type', 'PLAYER')
                     .single();
 
-                if (memberError || !memberData) {
-                    console.warn(`[HeadlessTableEngine:${this.tableId}] Horse ${horse.username} has no club membership — cannot rebuy`);
-                    await this.markHorseAsLeft(horse.user_id, 'no_membership');
+                if (walletError || !walletData) {
+                    console.warn(`[HeadlessTableEngine:${this.tableId}] Horse ${horse.username} has no Player Wallet — cannot rebuy`);
+                    await this.markHorseAsLeft(horse.user_id, 'no_wallet');
                     continue;
                 }
 
-                const walletBalance = memberData.chip_balance || 0;
+                const walletBalance = walletData.balance || 0;
                 if (walletBalance < rebuyAmount) {
                     console.warn(
                         `[HeadlessTableEngine:${this.tableId}] Horse ${horse.username} insufficient funds: ` +
@@ -930,40 +930,18 @@ export class HeadlessTableEngine {
                     continue;
                 }
 
-                // 2. Deduct from club_members.chip_balance using atomic RPC
-                // Attempt RPC first (single SQL statement, no read-then-write race)
-                let deductSuccess = false;
-                try {
-                    const { error: rpcError } = await this.supabaseClient.rpc('deduct_chip_balance', {
-                        p_club_id: clubId,
-                        p_user_id: horse.user_id,
-                        p_amount: rebuyAmount,
-                    });
-                    deductSuccess = !rpcError;
-                    if (rpcError) {
-                        console.warn(`[HeadlessTableEngine:${this.tableId}] RPC deduct failed, using fallback:`, rpcError.message);
-                    }
-                } catch {
-                    // RPC may not exist yet — fall through to manual approach
-                }
+                // 2. Deduct from Player Wallet via SECURITY DEFINER RPC
+                const { data: deductResult, error: deductError } = await this.supabaseClient.rpc('deduct_player_wallet', {
+                    p_user_id: horse.user_id,
+                    p_amount: rebuyAmount,
+                });
 
-                if (!deductSuccess) {
-                    // Fallback: conditional update with count check
-                    const newBalance = walletBalance - rebuyAmount;
-                    const { error: deductError, count } = await this.supabaseClient
-                        .from('club_members')
-                        .update({ chip_balance: newBalance })
-                        .eq('club_id', clubId)
-                        .eq('user_id', horse.user_id)
-                        .gte('chip_balance', rebuyAmount); // Only deduct if still sufficient
-
-                    if (deductError || !count || count === 0) {
-                        console.error(
-                            `[HeadlessTableEngine:${this.tableId}] Wallet deduction failed for ${horse.username}: ` +
-                            `error=${deductError?.message}, count=${count}`
-                        );
-                        continue;
-                    }
+                if (deductError) {
+                    console.error(
+                        `[HeadlessTableEngine:${this.tableId}] Player Wallet deduction failed for ${horse.username}:`,
+                        deductError.message
+                    );
+                    continue;
                 }
 
                 // 3. Update stack at table
@@ -1016,7 +994,7 @@ export class HeadlessTableEngine {
      */
     /**
      * Process seats flagged with leave_pending=true after hand completes.
-     * Credits remaining stack back to club_members.chip_balance and removes the seat.
+     * Credits remaining stack back to Player Wallet and removes the seat.
      * This handles the case where a player clicked "Leave" mid-hand.
      */
     private async processLeavePendingPlayers(): Promise<void> {
@@ -1037,36 +1015,17 @@ export class HeadlessTableEngine {
                 const chipsToReturn = seat.stack || 0;
 
                 if (chipsToReturn > 0) {
-                    // Credit chips back using atomic RPC first, fallback to guarded update
-                    let credited = false;
-                    try {
-                        const { error: rpcError } = await this.supabaseClient.rpc('fn_add_chips', {
-                            p_user_id: seat.user_id,
-                            p_club_id: clubId,
-                            p_amount: chipsToReturn,
-                        });
-                        credited = !rpcError;
-                    } catch {
-                        // RPC may not exist — use fallback
-                    }
+                    // Credit chips back to Player Wallet via SECURITY DEFINER RPC
+                    const { data: creditResult, error: creditError } = await this.supabaseClient.rpc('credit_player_wallet', {
+                        p_user_id: seat.user_id,
+                        p_amount: chipsToReturn,
+                    });
 
-                    if (!credited) {
-                        // Fallback: read-then-write with concurrency guard
-                        const { data: member } = await this.supabaseClient
-                            .from('club_members')
-                            .select('chip_balance')
-                            .eq('club_id', clubId)
-                            .eq('user_id', seat.user_id)
-                            .single();
-
-                        if (member) {
-                            const newBalance = (member.chip_balance || 0) + chipsToReturn;
-                            await this.supabaseClient
-                                .from('club_members')
-                                .update({ chip_balance: newBalance })
-                                .eq('club_id', clubId)
-                                .eq('user_id', seat.user_id);
-                        }
+                    if (creditError) {
+                        console.error(
+                            `[HeadlessTableEngine:${this.tableId}] Failed to credit ${chipsToReturn} to Player Wallet for ${seat.user_id}:`,
+                            creditError.message
+                        );
                     }
 
                     // Log the cash-out transaction

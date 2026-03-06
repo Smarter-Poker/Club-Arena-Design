@@ -416,7 +416,7 @@ export const HydraService = {
             return null;
         }
 
-        // ── Deduct buy-in from horse's wallet (club_members.chip_balance) ──
+        // ── Deduct buy-in from horse's Player Wallet ──
         const { data: tableClubData } = await supabase
             .from('tables')
             .select('club_id')
@@ -425,49 +425,18 @@ export const HydraService = {
 
         const clubId = tableClubData?.club_id;
         if (clubId) {
-            // Atomic deduct: use RPC first (single SQL statement, no race condition)
-            let deducted = false;
-            try {
-                const { error: rpcError } = await supabase.rpc('deduct_chip_balance', {
-                    p_club_id: clubId,
-                    p_user_id: horseId,
-                    p_amount: stack,
-                });
-                deducted = !rpcError;
-                if (rpcError) {
-                    console.warn('HydraService.seatHorse RPC deduct failed:', rpcError.message);
-                }
-            } catch {
-                // RPC may not exist — use fallback
+            // Deduct from Player Wallet via SECURITY DEFINER RPC
+            const { data: deductResult, error: deductError } = await supabase.rpc('deduct_player_wallet', {
+                p_user_id: horseId,
+                p_amount: stack,
+            });
+
+            if (deductError) {
+                console.warn(`HydraService.seatHorse: Failed to deduct ${stack} from horse ${horseId} Player Wallet:`, deductError.message);
+                return null;
             }
 
-            if (!deducted) {
-                // Fallback: read-modify-write with gte guard
-                const { data: memberData } = await supabase
-                    .from('club_members')
-                    .select('chip_balance')
-                    .eq('club_id', clubId)
-                    .eq('user_id', horseId)
-                    .single();
-
-                const walletBalance = memberData?.chip_balance || 0;
-                if (walletBalance < stack) {
-                    console.warn(`HydraService.seatHorse: Horse ${horseId} insufficient funds (${walletBalance} < ${stack}) — cannot seat`);
-                    return null;
-                }
-
-                const { error: deductError, count } = await supabase
-                    .from('club_members')
-                    .update({ chip_balance: walletBalance - stack })
-                    .eq('club_id', clubId)
-                    .eq('user_id', horseId)
-                    .gte('chip_balance', stack);
-
-                if (deductError || !count || count === 0) {
-                    console.error('HydraService.seatHorse wallet deduction failed:', deductError?.message || 'no rows updated');
-                    return null;
-                }
-            }
+            console.log(`[HydraService] Deducted ${stack} chips from horse ${horseId} Player Wallet`);
 
             // Log buy-in transaction (debit = positive amount, type indicates direction)
             await supabase.from('wallet_transactions').insert({
@@ -476,7 +445,7 @@ export const HydraService = {
                 amount: stack,
                 type: 'debit',
                 category: 'buyin',
-                description: `Initial buy-in ${stack} chips at ${bigBlind}BB table`,
+                description: `Horse buy-in ${stack} chips at ${bigBlind}BB table`,
                 table_id: tableId,
             });
 
@@ -609,7 +578,7 @@ export const HydraService = {
             return false;
         }
 
-        // 3. Credit remaining stack back to horse's wallet (club_members.chip_balance)
+        // 3. Credit remaining stack back to horse's Player Wallet
         if (remainingStack > 0) {
             const { data: tableClubData } = await supabase
                 .from('tables')
@@ -619,37 +588,18 @@ export const HydraService = {
 
             const clubId = tableClubData?.club_id;
             if (clubId) {
-                // Try atomic RPC first
-                let credited = false;
-                try {
-                    const { error: rpcErr } = await supabase.rpc('fn_add_chips', {
-                        p_user_id: horseId,
-                        p_club_id: clubId,
-                        p_amount: remainingStack,
-                    });
-                    credited = !rpcErr;
-                } catch { /* RPC may not exist */ }
+                // Credit to Player Wallet via SECURITY DEFINER RPC
+                const { data: creditResult, error: creditError } = await supabase.rpc('credit_player_wallet', {
+                    p_user_id: horseId,
+                    p_amount: remainingStack,
+                });
 
-                if (!credited) {
-                    const { data: memberData } = await supabase
-                        .from('club_members')
-                        .select('chip_balance')
-                        .eq('club_id', clubId)
-                        .eq('user_id', horseId)
-                        .single();
-
-                    if (!memberData) {
-                        console.error(`HydraService.removeHorse: No club membership found for horse ${horseId} — ${remainingStack} chips cannot be returned!`);
-                        return false;
-                    }
-
-                    const newBalance = (memberData.chip_balance || 0) + remainingStack;
-                    await supabase
-                        .from('club_members')
-                        .update({ chip_balance: newBalance })
-                        .eq('club_id', clubId)
-                        .eq('user_id', horseId);
+                if (creditError) {
+                    console.error(`HydraService.removeHorse: Failed to credit ${remainingStack} to horse ${horseId} Player Wallet:`, creditError.message);
+                    return false;
                 }
+
+                console.log(`[HydraService] Credited ${remainingStack} chips to horse ${horseId} Player Wallet`);
 
                 // Log cash-out transaction
                 await supabase.from('wallet_transactions').insert({
@@ -658,7 +608,7 @@ export const HydraService = {
                     amount: remainingStack,
                     type: 'credit',
                     category: 'cashout',
-                    description: `Cash-out ${remainingStack} chips from table`,
+                    description: `Horse cash-out ${remainingStack} chips from table`,
                     table_id: tableId,
                 });
 
