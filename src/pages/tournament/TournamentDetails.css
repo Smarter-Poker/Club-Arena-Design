@@ -642,6 +642,55 @@
     margin: 0;
 }
 
+/* Tournament Status Badges */
+.tournament-status-badge {
+    flex: 1;
+    padding: var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: var(--fs-md);
+    font-weight: var(--fw-bold);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tournament-status-badge.running {
+    background: linear-gradient(180deg, rgba(46, 204, 113, 0.2) 0%, rgba(46, 204, 113, 0.1) 100%);
+    color: var(--accent-green);
+    border: 2px solid var(--accent-green);
+}
+
+.tournament-status-badge.completed {
+    background: linear-gradient(180deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 215, 0, 0.1) 100%);
+    color: var(--accent-gold);
+    border: 2px solid var(--accent-gold);
+}
+
+.tournament-status-badge.cancelled {
+    background: linear-gradient(180deg, rgba(231, 76, 60, 0.2) 0%, rgba(231, 76, 60, 0.1) 100%);
+    color: var(--accent-red);
+    border: 2px solid var(--accent-red);
+}
+
+/* Current Blind Level Highlight */
+.blinds-row.current-level {
+    background: rgba(24, 119, 242, 0.15);
+    border-left: 3px solid var(--fb-blue);
+}
+
+.blinds-row.current-level .level-num {
+    color: var(--fb-blue);
+    font-weight: var(--fw-bold);
+}
+
+/* Table Status */
+.table-status {
+    font-size: var(--fs-xs);
+    color: var(--accent-green);
+    margin-top: var(--space-1);
+    text-transform: capitalize;
+}
+
 /* Mobile Responsive */
 @media (max-width: 640px) {
     .details-grid {

@@ -25,6 +25,16 @@ interface TournamentEntry {
     status: 'registered' | 'playing' | 'eliminated' | 'finished';
 }
 
+interface TournamentTable {
+    id: string;
+    name: string;
+    status: string;
+    max_players: number;
+    current_players: number;
+    small_blind: number;
+    big_blind: number;
+}
+
 export default function TournamentDetails() {
     const { tournamentId } = useParams<{ tournamentId: string }>();
     const navigate = useNavigate();
@@ -35,6 +45,7 @@ export default function TournamentDetails() {
     const [activeTab, setActiveTab] = useState<TabId>('detail');
     const [entries, setEntries] = useState<TournamentEntry[]>([]);
     const [isRegistered, setIsRegistered] = useState(false);
+    const [tables, setTables] = useState<TournamentTable[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showSignUpModal, setShowSignUpModal] = useState(false);
     const [countdown, setCountdown] = useState({ hours: 0, minutes: 0, seconds: 0 });
@@ -67,23 +78,25 @@ export default function TournamentDetails() {
                 // Fetch tournament entries from supabase
                 const { data: playersData, error } = await supabase
                     .from('tournament_players')
-                    .select('id, user_id, chips, status, horse_id')
+                    .select('id, user_id, username, chips, status, position')
                     .eq('tournament_id', data.id)
-                    .order('created_at', { ascending: true });
+                    .order('registered_at', { ascending: true });
 
                 if (!error && playersData) {
                     setEntries(playersData.map((e: {
                         id: string;
                         user_id: string;
-                        horse_id?: string | null;
+                        username?: string | null;
                         chips?: number;
                         status: string;
+                        position?: number | null;
                     }) => ({
                         id: e.id,
                         user_id: e.user_id,
-                        username: e.horse_id || 'Player',
+                        username: e.username || 'Player',
                         avatar_url: null,
                         chips: e.chips || data.starting_chips,
+                        position: e.position || undefined,
                         status: e.status as TournamentEntry['status'],
                     })));
 
@@ -94,6 +107,15 @@ export default function TournamentDetails() {
                     }
                 } else {
                     setEntries([]);
+                }
+
+                // Fetch tournament tables
+                if (data.status === 'RUNNING') {
+                    const { data: tablesData } = await supabase
+                        .from('tables')
+                        .select('id, name, status, max_players, current_players, small_blind, big_blind')
+                        .eq('tournament_id', data.id);
+                    setTables((tablesData || []) as TournamentTable[]);
                 }
             }
         } catch (error) {
@@ -106,9 +128,40 @@ export default function TournamentDetails() {
         if (timerRef.current) clearInterval(timerRef.current);
 
         const updateCountdown = () => {
-            if (!tournament?.start_time) return;
+            if (!tournament) return;
 
             const now = new Date().getTime();
+
+            // For RUNNING tournaments, show elapsed time since start
+            if (tournament.status === 'RUNNING' && tournament.started_at) {
+                const started = new Date(tournament.started_at).getTime();
+                const elapsed = now - started;
+
+                const hours = Math.floor(elapsed / (1000 * 60 * 60));
+                const minutes = Math.floor((elapsed % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((elapsed % (1000 * 60)) / 1000);
+
+                setCountdown({ hours, minutes, seconds });
+                return;
+            }
+
+            // For COMPLETED tournaments, show total duration
+            if (tournament.status === 'COMPLETED' && tournament.started_at && tournament.ended_at) {
+                const started = new Date(tournament.started_at).getTime();
+                const ended = new Date(tournament.ended_at).getTime();
+                const duration = ended - started;
+
+                const hours = Math.floor(duration / (1000 * 60 * 60));
+                const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((duration % (1000 * 60)) / 1000);
+
+                setCountdown({ hours, minutes, seconds });
+                if (timerRef.current) clearInterval(timerRef.current);
+                return;
+            }
+
+            // For upcoming tournaments, countdown to start
+            if (!tournament.start_time) return;
             const start = new Date(tournament.start_time).getTime();
             const diff = start - now;
 
@@ -244,35 +297,41 @@ export default function TournamentDetails() {
                             {formatCountdown()}
                         </div>
                         <div className="start-time">
-                            {formatDate(tournament.start_time)}
+                            {tournament.status === 'RUNNING' ? (
+                                <span>Running since {formatDate(tournament.started_at)}</span>
+                            ) : tournament.status === 'COMPLETED' ? (
+                                <span>Completed — Total Duration</span>
+                            ) : (
+                                <span>Starts {formatDate(tournament.start_time)}</span>
+                            )}
                         </div>
                     </div>
 
                     {/* Quick Stats */}
                     <div className="quick-stats">
                         <div className="stat">
-                            <span className="stat-label">Blinds Up</span>
-                            <span className="stat-value">10:00</span>
-                        </div>
-                        <div className="stat">
-                            <span className="stat-label">Late Registration</span>
-                            <span className="stat-value">level 15</span>
+                            <span className="stat-label">Status</span>
+                            <span className="stat-value">{tournament.status}</span>
                         </div>
                         <div className="stat">
                             <span className="stat-label">Current Level</span>
-                            <span className="stat-value">0</span>
+                            <span className="stat-value">{tournament.current_level || 0}</span>
                         </div>
                         <div className="stat">
-                            <span className="stat-label">Remaining Players</span>
-                            <span className="stat-value">{tournament.current_players}/{tournament.max_players}</span>
+                            <span className="stat-label">Remaining</span>
+                            <span className="stat-value">{entries.filter(e => e.status === 'playing' || e.status === 'registered').length}/{entries.length}</span>
                         </div>
                         <div className="stat">
                             <span className="stat-label">Avg. Stack</span>
-                            <span className="stat-value">{tournament.starting_chips}K</span>
+                            <span className="stat-value">{entries.filter(e => e.status === 'playing').length > 0 ? Math.round(entries.filter(e => e.status === 'playing').reduce((s, e) => s + (e.chips || 0), 0) / entries.filter(e => e.status === 'playing').length).toLocaleString() : tournament.starting_chips}</span>
                         </div>
                         <div className="stat">
-                            <span className="stat-label">Early Bird</span>
-                            <span className="stat-value">LVL 2/+20% chips</span>
+                            <span className="stat-label">Tables</span>
+                            <span className="stat-value">{tables.length}</span>
+                        </div>
+                        <div className="stat">
+                            <span className="stat-label">Eliminated</span>
+                            <span className="stat-value">{entries.filter(e => e.status === 'eliminated').length}</span>
                         </div>
                     </div>
 
@@ -356,25 +415,32 @@ export default function TournamentDetails() {
             {activeTab === 'tables' && (
                 <div className="tables-section">
                     <div className="tables-header">
-                        <h3>Active Tables</h3>
-                        <span className="table-balance-indicator">⚖️ Auto-balancing enabled</span>
+                        <h3>Active Tables ({tables.length})</h3>
+                        <span className="table-balance-indicator">Auto-balancing enabled</span>
                     </div>
                     <div className="tables-grid">
-                        {/* Placeholder for active tables - would be fetched from tournament tables */}
-                        <div className="table-card">
-                            <div className="table-num">Table 1</div>
-                            <div className="table-players">9/9 players</div>
-                            <div className="table-blinds">25/50</div>
-                        </div>
-                        <div className="table-card">
-                            <div className="table-num">Table 2</div>
-                            <div className="table-players">8/9 players</div>
-                            <div className="table-blinds">25/50</div>
-                            <span className="needs-balance">⚠️ Needs player</span>
-                        </div>
+                        {tables.length === 0 ? (
+                            <div className="empty-state">
+                                <p>{tournament.status === 'RUNNING' ? 'Loading tables...' : 'Tables will be created when the tournament starts.'}</p>
+                            </div>
+                        ) : (
+                            tables.map((table, idx) => (
+                                <Link
+                                    key={table.id}
+                                    to={`/table/${table.id}`}
+                                    className="table-card"
+                                    style={{ textDecoration: 'none', color: 'inherit' }}
+                                >
+                                    <div className="table-num">{table.name || `Table ${idx + 1}`}</div>
+                                    <div className="table-players">{table.current_players}/{table.max_players} players</div>
+                                    <div className="table-blinds">{table.small_blind}/{table.big_blind}</div>
+                                    <div className="table-status">{table.status}</div>
+                                </Link>
+                            ))
+                        )}
                     </div>
                     <div className="balance-info">
-                        <p>🔄 Tables are automatically balanced when player counts differ by 2+</p>
+                        <p>Tables are automatically balanced when player counts differ by 2+</p>
                     </div>
                 </div>
             )}
@@ -390,20 +456,26 @@ export default function TournamentDetails() {
                     </div>
                     <div className="payout-table">
                         {(tournament.payout_structure && tournament.payout_structure.length > 0) ? (
-                            tournament.payout_structure.map((payout) => (
-                                <div key={payout.place} className="payout-row">
-                                    <span className="payout-place">
-                                        {payout.place === 1 && '🥇'}
-                                        {payout.place === 2 && '🥈'}
-                                        {payout.place === 3 && '🥉'}
-                                        {payout.place > 3 && `#${payout.place}`}
-                                    </span>
-                                    <span className="payout-percent">{payout.percentage}%</span>
-                                    <span className="payout-chips">
-                                        {Math.floor((tournament.prize_pool || tournament.buy_in_amount * tournament.current_players) * payout.percentage / 100).toLocaleString()}
-                                    </span>
-                                </div>
-                            ))
+                            (typeof tournament.payout_structure === 'string'
+                                ? (() => { try { return JSON.parse(tournament.payout_structure); } catch { return []; } })()
+                                : tournament.payout_structure
+                            ).map((payout: { position?: number; place?: number; percentage: number }) => {
+                                const pos = payout.position || payout.place || 0;
+                                return (
+                                    <div key={pos} className="payout-row">
+                                        <span className="payout-place">
+                                            {pos === 1 && '1st'}
+                                            {pos === 2 && '2nd'}
+                                            {pos === 3 && '3rd'}
+                                            {pos > 3 && `#${pos}`}
+                                        </span>
+                                        <span className="payout-percent">{payout.percentage}%</span>
+                                        <span className="payout-chips">
+                                            {Math.floor((tournament.prize_pool || tournament.buy_in_amount * tournament.current_players) * payout.percentage / 100).toLocaleString()}
+                                        </span>
+                                    </div>
+                                );
+                            })
                         ) : (
                             /* Default payout structure if none defined */
                             <>
@@ -413,34 +485,45 @@ export default function TournamentDetails() {
                             </>
                         )}
                     </div>
-                    {tournament.blind_structure && tournament.blind_structure.length > 0 && (
-                        <>
-                            <h3 style={{ marginTop: '24px' }}>Blind Structure</h3>
-                            <div className="blinds-table">
-                                <div className="blinds-header">
-                                    <span>Level</span>
-                                    <span>Blinds</span>
-                                    <span>Ante</span>
-                                    <span>Duration</span>
-                                </div>
-                                {tournament.blind_structure.slice(0, 10).map((level) => (
-                                    <div key={level.level} className="blinds-row">
-                                        <span className="level-num">{level.level}</span>
-                                        <span className="level-blinds">{level.smallBlind}/{level.bigBlind}</span>
-                                        <span className="level-ante">{level.ante || '-'}</span>
-                                        <span className="level-duration">{level.durationMinutes}m</span>
+                    {tournament.blind_structure && (() => {
+                        const blinds = typeof tournament.blind_structure === 'string'
+                            ? (() => { try { return JSON.parse(tournament.blind_structure); } catch { return []; } })()
+                            : tournament.blind_structure;
+                        return blinds.length > 0 ? (
+                            <>
+                                <h3 style={{ marginTop: '24px' }}>Blind Structure</h3>
+                                <div className="blinds-table">
+                                    <div className="blinds-header">
+                                        <span>Level</span>
+                                        <span>Blinds</span>
+                                        <span>Ante</span>
+                                        <span>Duration</span>
                                     </div>
-                                ))}
-                            </div>
-                        </>
-                    )}
+                                    {blinds.slice(0, 10).map((level: any) => (
+                                        <div key={level.level} className={`blinds-row ${tournament.current_level === level.level ? 'current-level' : ''}`}>
+                                            <span className="level-num">{level.level}</span>
+                                            <span className="level-blinds">{level.small_blind || level.smallBlind}/{level.big_blind || level.bigBlind}</span>
+                                            <span className="level-ante">{level.ante || '-'}</span>
+                                            <span className="level-duration">{level.duration_minutes || level.durationMinutes}m</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        ) : null;
+                    })()}
                 </div>
             )}
 
             {/* Footer Actions */}
             <div className="details-footer">
                 <button className="btn btn-share">Share</button>
-                {isRegistered ? (
+                {tournament.status === 'RUNNING' ? (
+                    <span className="tournament-status-badge running">In Progress</span>
+                ) : tournament.status === 'COMPLETED' ? (
+                    <span className="tournament-status-badge completed">Completed</span>
+                ) : tournament.status === 'CANCELLED' ? (
+                    <span className="tournament-status-badge cancelled">Cancelled</span>
+                ) : isRegistered ? (
                     <button className="btn btn-unregister" onClick={handleUnregister}>
                         Unregister
                     </button>

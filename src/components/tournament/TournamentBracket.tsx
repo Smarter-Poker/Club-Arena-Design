@@ -42,6 +42,27 @@ export default function TournamentBracket({
 
     useEffect(() => {
         loadPlayers();
+
+        // Subscribe to realtime updates on tournament_players
+        const channel = supabase
+            .channel(`bracket-${tournamentId}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'tournament_players',
+                filter: `tournament_id=eq.${tournamentId}`,
+            }, () => {
+                loadPlayers();
+            })
+            .subscribe();
+
+        // Also poll every 15s as backup
+        const pollInterval = setInterval(loadPlayers, 15000);
+
+        return () => {
+            supabase.removeChannel(channel);
+            clearInterval(pollInterval);
+        };
     }, [tournamentId]);
 
     const loadPlayers = async () => {
@@ -49,21 +70,15 @@ export default function TournamentBracket({
         try {
             const { data, error } = await supabase
                 .from('tournament_players')
-                .select(`
-                    user_id,
-                    chips,
-                    status,
-                    position,
-                    profiles(display_name, avatar_url)
-                `)
+                .select('user_id, username, chips, status, position')
                 .eq('tournament_id', tournamentId);
 
             if (error) throw error;
 
             const mapped: BracketPlayer[] = (data || []).map((p: any) => ({
                 userId: p.user_id,
-                displayName: p.profiles?.display_name || 'Unknown',
-                avatarUrl: p.profiles?.avatar_url,
+                displayName: p.username || 'Unknown',
+                avatarUrl: undefined,
                 chips: p.chips || 0,
                 eliminated: p.status === 'eliminated',
                 finishPosition: p.position
