@@ -204,9 +204,12 @@ export default function TournamentDetails() {
         try {
             await tournamentService.unregisterPlayer(tournament.id, user.id);
             setIsRegistered(false);
+            toast.success('Unregistered — buy-in refunded to your wallet');
             loadTournament();
         } catch (error) {
             console.error('Unregistration failed:', error);
+            const msg = (error as Error).message || 'Unknown error';
+            toast.error(`Unregister failed: ${msg}`);
         }
     };
 

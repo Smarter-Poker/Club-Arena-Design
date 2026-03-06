@@ -513,10 +513,12 @@ class TournamentService {
             .eq('tournament_id', tournamentId)
             .eq('user_id', userId);
 
-        // Atomically decrement player count and prize pool via direct update
+        // Decrement player count and recalculate prize pool (buy-in × entries, rake excluded)
+        const newPlayerCount = Math.max(0, tournament.current_players - 1);
+        const newPrizePool = (tournament.buy_in_amount || 0) * newPlayerCount;
         const { error: countError } = await supabase.from('tournaments').update({
-            current_players: Math.max(0, tournament.current_players - 1),
-            guaranteed_prize: Math.max(0, (tournament.guaranteed_prize || 0) - (tournament.buy_in_amount || 0)),
+            current_players: newPlayerCount,
+            prize_pool: newPrizePool,
         }).eq('id', tournamentId);
 
         if (countError) {
