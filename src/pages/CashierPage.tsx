@@ -322,7 +322,6 @@ export default function CashierPage() {
                         variant={action === act ? 'primary' : 'secondary'}
                         size="sm"
                         onClick={() => { setAction(act); setMessage(null); }}
-                        fullWidth
                     >
                         {tabLabels[act]}
                     </MetalButton>
