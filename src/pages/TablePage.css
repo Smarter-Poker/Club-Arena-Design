@@ -629,6 +629,8 @@
     z-index: 201;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     animation: slideIn 0.25s ease;
 }
 
