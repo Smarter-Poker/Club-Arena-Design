@@ -413,7 +413,7 @@ class TournamentService {
         // Log transaction for audit trail
         await WalletService.logTransaction(
             userId, 'PLAYER', -totalCost, 'debit', 'buyin',
-            `Tournament buy-in: ${tournament.name} (${buyInAmount}+${rake})`,
+            `Tournament buy-in: ${tournament.name} (${buyIn}+${rake})`,
             undefined, undefined, tournamentId
         );
 
