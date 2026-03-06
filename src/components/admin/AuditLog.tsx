@@ -118,7 +118,7 @@ export const AuditLog: React.FC<AuditLogProps> = ({ clubId }) => {
                 entry.action.toLowerCase().includes(searchLower) ||
                 entry.actor.username.toLowerCase().includes(searchLower) ||
                 entry.details.toLowerCase().includes(searchLower) ||
-                entry.target?.name.toLowerCase().includes(searchLower)
+                entry.target?.name?.toLowerCase()?.includes(searchLower)
             );
         }
         return true;

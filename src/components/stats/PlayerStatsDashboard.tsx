@@ -88,7 +88,7 @@ export const PlayerStatsDashboard: React.FC<{ playerId?: string }> = ({ playerId
             pfr: [15, 22],
             af: [2.5, 4.0],
         };
-        const range = ranges[stat.toLowerCase()];
+        const range = ranges[(stat || '').toLowerCase()];
         if (!range) return 'var(--text-primary)';
         return value >= range[0] && value <= range[1] ? 'var(--accent-green)' : 'var(--accent-orange)';
     };

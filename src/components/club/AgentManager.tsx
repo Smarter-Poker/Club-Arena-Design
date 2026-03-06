@@ -69,8 +69,8 @@ export function AgentManager({
                     {/* Agent Info */}
                     <div className="agent-info">
                         <span className="agent-name">{node.name}</span>
-                        <span className={`agent-badge level-${node.level.toLowerCase().replace(' ', '-')}`}>
-                            {node.level}
+                        <span className={`agent-badge level-${(node.level || 'member').toLowerCase().replace(' ', '-')}`}>
+                            {node.level || 'Member'}
                         </span>
                     </div>
 

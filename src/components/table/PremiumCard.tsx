@@ -56,7 +56,7 @@ function getCardImagePath(card: PremiumCardType): string {
     };
 
     const suit = suitMap[card.suit] || 'spades';
-    const rank = rankMap[card.rank] || card.rank.toLowerCase();
+    const rank = rankMap[card.rank] || (card.rank || 'a').toLowerCase();
 
     return `/cards/${suit}_${rank}.png`;
 }

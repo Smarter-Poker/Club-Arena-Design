@@ -232,7 +232,7 @@ export default function HandReplayerPage() {
                             {/* Action bubble for current step */}
                             {hand.actions[currentStep]?.player === player.name && (
                                 <div className="action-bubble">
-                                    {hand.actions[currentStep].action.toUpperCase()}
+                                    {(hand.actions[currentStep]?.action || '').toUpperCase()}
                                     {hand.actions[currentStep].amount &&
                                         ` ${hand.actions[currentStep].amount}`}
                                 </div>

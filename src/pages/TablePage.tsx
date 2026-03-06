@@ -276,7 +276,7 @@ export default function TablePage() {
 
     // Chat state
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-    const [isChatCollapsed, setIsChatCollapsed] = useState(false);
+    const [isChatCollapsed, setIsChatCollapsed] = useState(true);
 
     // Send chat message via RoomService
     const handleSendChatMessage = (message: string) => {
@@ -1104,7 +1104,7 @@ export default function TablePage() {
                         const seatIndex = event.seat - 1;
 
                         // Map action to display label
-                        const actionLabel = event.action.toUpperCase() as any;
+                        const actionLabel = (event.action || '').toUpperCase() as any;
                         newLastActions[seatIndex] = actionLabel;
 
                         // Update player fold status if folded
