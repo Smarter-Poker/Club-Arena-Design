@@ -121,6 +121,21 @@ export const WalletService = {
         });
 
         if (error) throw error;
+
+        // Log mint transaction
+        // Note: minting goes to club bank, not user wallet — but we record it
+        await this.logTransaction(
+            'system', // System-level operation
+            'BUSINESS',
+            chipAmount,
+            'credit',
+            'mint',
+            `Minted ${chipAmount} chips for club (${diamondCost} diamonds spent)`,
+            undefined,
+            undefined,
+            clubId
+        );
+
         return {
             success: true,
             chipsAdded: chipAmount,
@@ -149,6 +164,12 @@ export const WalletService = {
         });
 
         if (error) throw error;
+
+        // Log both sides of the transfer
+        const desc = request.note || `Transfer ${request.fromWallet} → ${request.toWallet}`;
+        await this.logTransaction(userId, request.fromWallet, -request.amount, 'debit', 'transfer', desc);
+        await this.logTransaction(userId, request.toWallet, request.amount, 'credit', 'transfer', desc);
+
         return true;
     },
 
@@ -185,6 +206,11 @@ export const WalletService = {
         });
 
         if (error) throw error;
+
+        // Log both sides of the user-to-user transfer
+        await this.logTransaction(fromUserId, fromWallet, -amount, 'debit', 'transfer', `Sent ${amount} chips to user`, undefined, undefined, toUserId);
+        await this.logTransaction(toUserId, toWallet, amount, 'credit', 'transfer', `Received ${amount} chips from user`, undefined, undefined, fromUserId);
+
         return true;
     },
 
@@ -236,148 +262,102 @@ export const WalletService = {
 
     /**
      * Lock chips for table buy-in
-     * Deducts from club_members.chip_balance for the user's club membership
+     * Deducts from Player Wallet (wallets table) using atomic RPC
+     * Chip flow: Union → Club Bank → Agent Wallet → Player Wallet → Table Buy-in
      */
     async lockForBuyIn(userId: string, tableId: string, amount: number): Promise<boolean> {
-        // 1. Get the table's club_id
-        const { data: tableData, error: tableError } = await supabase
-            .from('tables')
-            .select('club_id')
-            .eq('id', tableId)
+        // 1. Check Player Wallet balance first
+        const { data: walletData } = await supabase
+            .from('wallets')
+            .select('balance')
+            .eq('user_id', userId)
+            .eq('wallet_type', 'PLAYER')
             .single();
 
-        if (tableError || !tableData?.club_id) {
-            console.error('[WalletService] Failed to get table club_id:', tableError);
-            throw new Error('Table not found');
+        if (!walletData || (walletData.balance || 0) < amount) {
+            throw new Error(`Insufficient chips in Player Wallet. Need ${amount}, have ${walletData?.balance || 0}`);
         }
 
-        // 2. Atomically deduct chips using RPC to prevent race conditions
-        // This single RPC call checks balance AND deducts in one atomic DB operation
-        const { data: rpcResult, error: rpcError } = await supabase.rpc('lock_chips_for_table', {
+        // 2. Atomically deduct from Player Wallet using SECURITY DEFINER RPC
+        const { data: deductResult, error: deductError } = await supabase.rpc('deduct_player_wallet', {
             p_user_id: userId,
-            p_club_id: tableData.club_id,
-            p_table_id: tableId,
             p_amount: amount,
         });
 
-        if (rpcError) {
-            console.warn('[WalletService] RPC lock_chips_for_table failed:', rpcError.message, '— falling back to direct deduction');
-            // RPC failed (permission denied or doesn't exist) — use direct table update fallback
-            return this.lockForBuyInFallback(userId, tableData.club_id, amount);
+        if (deductError) {
+            console.error('[WalletService] deduct_player_wallet RPC failed:', deductError.message);
+            throw new Error(`Buy-in failed: ${deductError.message}`);
         }
 
-        if (rpcResult === false) {
-            throw new Error('Insufficient chips for buy-in');
+        if (deductResult === false) {
+            throw new Error('Insufficient chips in Player Wallet for buy-in');
         }
 
-        console.log(`[WalletService] Buy-in: ${amount} chips deducted atomically for user ${userId}`);
+        // 3. Log the transaction
+        await this.logTransaction(userId, 'PLAYER', -amount, 'debit', 'buyin', `Cash game buy-in at table`, tableId);
+
+        console.log(`[WalletService] Buy-in: ${amount} chips deducted from Player Wallet for user ${userId}`);
         return true;
     },
 
     /**
-     * Fallback buy-in deduction (used if RPC doesn't exist).
-     * Uses .gte() guard to prevent double-spend race conditions —
-     * the UPDATE only succeeds if chip_balance >= amount at execution time.
-     */
-    async lockForBuyInFallback(userId: string, clubId: string, amount: number): Promise<boolean> {
-        // Read current balance first for the subtraction value
-        const { data: memberData, error: memberError } = await supabase
-            .from('club_members')
-            .select('chip_balance')
-            .eq('club_id', clubId)
-            .eq('user_id', userId)
-            .single();
-
-        if (memberError || !memberData) {
-            throw new Error('Not a member of this club');
-        }
-
-        const currentBalance = memberData.chip_balance || 0;
-        if (currentBalance < amount) {
-            throw new Error(`Insufficient chips: have ${currentBalance}, need ${amount}`);
-        }
-
-        // CRITICAL: .gte('chip_balance', amount) acts as an atomic guard.
-        // If a concurrent transaction reduced the balance below `amount`,
-        // this update will match 0 rows and `count` will be 0.
-        // NOTE: Must pass { count: 'exact' } to get row count from Supabase
-        const { error: updateError, count } = await supabase
-            .from('club_members')
-            .update(
-                { chip_balance: currentBalance - amount },
-                { count: 'exact' }
-            )
-            .eq('club_id', clubId)
-            .eq('user_id', userId)
-            .gte('chip_balance', amount);
-
-        if (updateError) {
-            throw new Error('Failed to deduct chips for buy-in');
-        }
-
-        // count=0 means the .gte guard prevented the update (balance dropped)
-        // count=null means the DB didn't return count info — treat as success
-        // since the .eq filters matched and no error was thrown
-        if (count === 0) {
-            throw new Error('Insufficient chips (concurrent transaction detected)');
-        }
-
-        return true;
-    },
-
-    /**
-     * Unlock chips on cash-out from table
+     * Credit chips on cash-out from table
+     * Credits to Player Wallet (wallets table) using atomic RPC
      */
     async unlockFromTable(userId: string, tableId: string, amount: number): Promise<boolean> {
-        // Get club_id from table for the RPC
-        const { data: tableData } = await supabase
-            .from('tables')
-            .select('club_id')
-            .eq('id', tableId)
-            .single();
-
-        const clubId = tableData?.club_id || '';
-
-        const { error } = await supabase.rpc('unlock_chips_from_table', {
+        // Credit to Player Wallet using SECURITY DEFINER RPC
+        const { error: creditError } = await supabase.rpc('credit_player_wallet', {
             p_user_id: userId,
-            p_table_id: tableId,
-            p_club_id: clubId,
             p_amount: amount,
         });
 
-        if (error) {
-            console.warn('[WalletService] RPC unlock_chips_from_table failed:', error.message, '— falling back to direct credit');
-            // Fallback: Try deduct_chip_balance RPC with negative amount (adds chips)
-            let credited = false;
-            try {
-                const { error: rpcErr } = await supabase.rpc('deduct_chip_balance', {
-                    p_club_id: clubId,
-                    p_user_id: userId,
-                    p_amount: -amount, // Negative = credit
-                });
-                credited = !rpcErr;
-            } catch { /* RPC may not exist */ }
-
-            if (!credited) {
-                // Last resort: read-modify-write (credit is safer than debit — overpay is better than loss)
-                const { data: memberData } = await supabase
-                    .from('club_members')
-                    .select('chip_balance')
-                    .eq('club_id', clubId)
-                    .eq('user_id', userId)
-                    .single();
-
-                const currentBalance = memberData?.chip_balance || 0;
-                const { error: updateError } = await supabase
-                    .from('club_members')
-                    .update({ chip_balance: currentBalance + amount })
-                    .eq('club_id', clubId)
-                    .eq('user_id', userId);
-
-                if (updateError) throw updateError;
-            }
+        if (creditError) {
+            console.error('[WalletService] credit_player_wallet RPC failed:', creditError.message);
+            throw new Error(`Cash-out failed: ${creditError.message}`);
         }
+
+        // Log the transaction
+        await this.logTransaction(userId, 'PLAYER', amount, 'credit', 'cashout', `Cash game cash-out from table`, tableId);
+
+        console.log(`[WalletService] Cash-out: ${amount} chips credited to Player Wallet for user ${userId}`);
         return true;
+    },
+
+    /**
+     * Log a wallet transaction for audit trail
+     * All chip movements are recorded as currency-grade transactions
+     */
+    async logTransaction(
+        userId: string,
+        walletType: string,
+        amount: number,
+        type: 'credit' | 'debit',
+        category: string,
+        description: string,
+        tableId?: string,
+        handId?: string,
+        relatedEntityId?: string
+    ): Promise<void> {
+        try {
+            const { error } = await supabase.from('wallet_transactions').insert({
+                user_id: userId,
+                wallet_type: walletType,
+                amount,
+                type,
+                category,
+                description,
+                table_id: tableId || null,
+                hand_id: handId || null,
+                related_entity_id: relatedEntityId || null,
+            });
+            if (error) {
+                console.error('[WalletService] Transaction log failed:', error.message);
+                // Don't throw — the actual financial operation succeeded, log failure is non-fatal
+                // but should be flagged for reconciliation
+            }
+        } catch (err) {
+            console.error('[WalletService] Transaction log error:', err);
+        }
     },
 
     // ─────────────────────────────────────────────────────────────────────────────
@@ -495,20 +475,7 @@ export const WalletService = {
         }
 
         // Record tip transaction
-        const { error: insertError } = await supabase.from('wallet_transactions').insert({
-            user_id: userId,
-            wallet_type: 'PLAYER',
-            type: 'debit',
-            category: 'TIP',
-            amount: -amount,
-            table_id: tableId,
-            description: `Dealer tip at table`,
-        });
-
-        if (insertError) {
-            console.error('[WalletService] Tip transaction record failed:', insertError);
-            // Deduction succeeded but record failed — log for reconciliation
-        }
+        await this.logTransaction(userId, 'PLAYER', -amount, 'debit', 'TIP', 'Dealer tip at table', tableId);
 
         return true;
     },
@@ -546,21 +513,7 @@ export const WalletService = {
         }
 
         // Record insurance transaction
-        const { error: insertError } = await supabase.from('wallet_transactions').insert({
-            user_id: userId,
-            wallet_type: 'PLAYER',
-            type: 'debit',
-            category: 'INSURANCE',
-            amount: -premium,
-            table_id: tableId,
-            hand_id: handId,
-            description: 'Insurance premium',
-        });
-
-        if (insertError) {
-            console.error('[WalletService] Insurance transaction record failed:', insertError);
-            // Deduction succeeded but record failed — log for reconciliation
-        }
+        await this.logTransaction(userId, 'PLAYER', -premium, 'debit', 'INSURANCE', 'Insurance premium', tableId, handId);
 
         return true;
     },

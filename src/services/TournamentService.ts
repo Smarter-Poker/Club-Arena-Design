@@ -410,6 +410,13 @@ class TournamentService {
             throw new Error('Insufficient chips in Player Wallet for tournament buy-in');
         }
 
+        // Log transaction for audit trail
+        await WalletService.logTransaction(
+            userId, 'PLAYER', -totalCost, 'debit', 'buyin',
+            `Tournament buy-in: ${tournament.name} (${buyInAmount}+${rake})`,
+            undefined, undefined, tournamentId
+        );
+
         // Insert player (username is NOT NULL in schema — must be provided)
         const { data, error } = await supabase
             .from('tournament_players')
@@ -476,6 +483,13 @@ class TournamentService {
             console.error('[TournamentService] Refund to Player Wallet failed:', refundError);
             throw new Error('Refund failed — cannot unregister without refunding buy-in');
         }
+
+        // Log refund transaction
+        await WalletService.logTransaction(
+            userId, 'PLAYER', refundAmount, 'credit', 'cashout',
+            `Tournament unregister refund: ${tournament.name}`,
+            undefined, undefined, tournamentId
+        );
 
         await supabase
             .from('tournament_players')
@@ -643,6 +657,13 @@ class TournamentService {
                 console.error('[TournamentService] CRITICAL: Prize credit to Player Wallet failed:', prizeError);
                 throw new Error(`Failed to credit ${ordinal(position)} place prize of $${prize}`);
             }
+
+            // Log prize payout transaction
+            await WalletService.logTransaction(
+                userId, 'PLAYER', prize, 'credit', 'settlement',
+                `Tournament prize: ${ordinal(position)} place`,
+                undefined, undefined, tournamentId
+            );
         }
 
         // Trigger tournament achievement
