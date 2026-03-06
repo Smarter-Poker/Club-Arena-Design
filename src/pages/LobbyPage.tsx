@@ -12,12 +12,14 @@ import GameTypeTabs from '../components/lobby/GameTypeTabs';
 import QuickActions from '../components/lobby/QuickActions';
 import { tableService } from '../services/TableService';
 import { supabase } from '../lib/supabase';
+import { useUserStore } from '../stores/useUserStore';
 import type { PokerTable } from '../types/database.types';
 
 type GameFilter = 'all' | 'nlh' | 'plo' | 'ofc' | 'tournaments';
 
 export default function LobbyPage() {
     const navigate = useNavigate();
+    const { user } = useUserStore();
     const [activeFilter, setActiveFilter] = useState<GameFilter>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [tables, setTables] = useState<PokerTable[]>([]);
@@ -25,11 +27,48 @@ export default function LobbyPage() {
     const [onlinePlayers, setOnlinePlayers] = useState(0);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    // UNION-FIRST: Check if user belongs to a union and redirect to union lobby
+    useEffect(() => {
+        const checkUnionMembership = async () => {
+            if (!user?.id) return;
+            try {
+                // Find clubs the user belongs to
+                const { data: memberships } = await supabase
+                    .from('club_members')
+                    .select('club_id')
+                    .eq('user_id', user.id);
+
+                if (!memberships?.length) return;
+
+                // Check if any of these clubs are in a union
+                const clubIds = memberships.map(m => m.club_id);
+                const { data: unionClub } = await supabase
+                    .from('union_clubs')
+                    .select('union_id')
+                    .in('club_id', clubIds)
+                    .limit(1)
+                    .maybeSingle();
+
+                if (unionClub) {
+                    // User's club is in a union — redirect to union lobby
+                    navigate(`/unions/${unionClub.union_id}`, { replace: true });
+                    return;
+                }
+            } catch (err) {
+                console.warn('[LobbyPage] Union check failed, showing all tables:', err);
+            }
+        };
+
+        checkUnionMembership();
+    }, [user?.id, navigate]);
+
     // Fetch tables and subscribe to real-time updates
     useEffect(() => {
         const fetchTables = async () => {
             try {
                 setLoading(true);
+                // For users in unions, they'll be redirected above.
+                // This fallback shows all tables for standalone (non-union) users.
                 const activeTables = await tableService.getActiveTables();
                 setTables(activeTables);
             } catch (error) {

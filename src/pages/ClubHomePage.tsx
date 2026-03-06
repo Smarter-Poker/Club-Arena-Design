@@ -227,7 +227,7 @@ export default function ClubHomePage() {
             }
 
             // Check if this club is inside a union
-            // Clubs inside a union play on UNION tables — they cannot create their own
+            // Clubs inside a union play on UNION tables — redirect to union lobby
             try {
                 const { data: ucRow, error: ucErr } = await supabase
                     .from('union_clubs')
@@ -237,6 +237,10 @@ export default function ClubHomePage() {
                     .maybeSingle();
                 if (!ucErr && ucRow) {
                     setIsInUnion(true);
+                    // UNION-FIRST ROUTING: Redirect to the union lobby
+                    // All cash games and tournaments run through the union, not individual clubs
+                    navigate(`/unions/${ucRow.union_id}`, { replace: true });
+                    return; // Stop loading club-specific data
                 }
             } catch {
                 // Query error — fail-open for standalone clubs

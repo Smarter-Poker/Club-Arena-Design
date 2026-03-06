@@ -4,10 +4,11 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useParams, Link, useSearchParams } from 'react-router-dom';
+import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { clubService } from '../../services/ClubService';
 import { tableService } from '../../services/TableService';
 import { tournamentService } from '../../services/TournamentService';
+import { supabase } from '../../lib/supabase';
 import type { Club, PokerTable, Tournament } from '../../types/database.types';
 import ClubBottomNav from '../../components/club/ClubBottomNav';
 import './ClubLobby.css';
@@ -16,6 +17,7 @@ type GameFilter = 'ALL' | 'Hold\'em' | 'Omaha' | 'Mixed' | 'MTT' | 'Spin-It' | '
 
 export default function ClubLobby() {
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
     const { clubId: routeClubId } = useParams<{ clubId?: string }>();
     const clubId = routeClubId || searchParams.get('club') || undefined;
     const [club, setClub] = useState<Club | null>(null);
@@ -23,6 +25,27 @@ export default function ClubLobby() {
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [activeFilter, setActiveFilter] = useState<GameFilter>('ALL');
     const [isLoading, setIsLoading] = useState(true);
+
+    // UNION-FIRST: Check if this club is in a union and redirect
+    useEffect(() => {
+        if (!clubId) return;
+        const checkUnion = async () => {
+            try {
+                const { data: ucRow } = await supabase
+                    .from('union_clubs')
+                    .select('union_id')
+                    .eq('club_id', clubId)
+                    .limit(1)
+                    .maybeSingle();
+                if (ucRow) {
+                    navigate(`/unions/${ucRow.union_id}`, { replace: true });
+                }
+            } catch {
+                // Fail-open for standalone clubs
+            }
+        };
+        checkUnion();
+    }, [clubId, navigate]);
 
     useEffect(() => {
         if (!clubId) {

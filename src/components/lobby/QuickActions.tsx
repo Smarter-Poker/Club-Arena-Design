@@ -16,6 +16,7 @@ export default function QuickActions() {
 
     /**
      * Quick Seat — finds a table with open seats and navigates directly to it.
+     * UNION-FIRST: Only searches tables belonging to the user's union.
      * Prioritizes tables with more players (more action) that aren't full.
      */
     const handleQuickSeat = async () => {
@@ -26,13 +27,56 @@ export default function QuickActions() {
         }
 
         try {
-            // Find tables with open seats, sorted by most players (best action)
-            const { data: tables, error } = await supabase
+            // UNION-FIRST: Find the user's union first
+            const { data: memberships } = await supabase
+                .from('club_members')
+                .select('club_id')
+                .eq('user_id', user.id);
+
+            let unionClubIds: string[] = [];
+
+            if (memberships?.length) {
+                const clubIds = memberships.map(m => m.club_id);
+                // Check if any clubs are in a union
+                const { data: unionClubs } = await supabase
+                    .from('union_clubs')
+                    .select('club_id')
+                    .in('club_id', clubIds);
+
+                if (unionClubs?.length) {
+                    // Get ALL clubs in the same union (not just user's club)
+                    const { data: firstUnion } = await supabase
+                        .from('union_clubs')
+                        .select('union_id')
+                        .in('club_id', clubIds)
+                        .limit(1)
+                        .single();
+
+                    if (firstUnion) {
+                        const { data: allUnionClubs } = await supabase
+                            .from('union_clubs')
+                            .select('club_id')
+                            .eq('union_id', firstUnion.union_id);
+
+                        unionClubIds = (allUnionClubs || []).map(c => c.club_id);
+                    }
+                }
+            }
+
+            // Build the query — filtered to union tables if user is in a union
+            let query = supabase
                 .from('tables')
                 .select('id, name, current_players, max_players')
                 .eq('status', 'active')
+                .eq('is_deleted', false)
                 .gt('max_players', 0)
                 .order('current_players', { ascending: false });
+
+            if (unionClubIds.length > 0) {
+                query = query.in('club_id', unionClubIds);
+            }
+
+            const { data: tables, error } = await query;
 
             if (error) throw error;
 
