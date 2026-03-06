@@ -134,28 +134,28 @@ export class TournamentEngine {
     async start(): Promise<void> {
         if (this.running) return;
 
-        // Atomic race condition guard: try to claim this tournament by setting status to STARTING.
-        // If another instance already changed status, the WHERE clause won't match any rows.
-        const { data: claimed, error: claimError } = await this.supabase
+        // Set running immediately to prevent stale cleanup from killing us during async startup
+        this.running = true;
+
+        // Check tournament status — only start if REGISTERING or ANNOUNCED
+        const { data: statusCheck, error: statusErr } = await this.supabase
             .from('tournaments')
-            .update({ status: 'STARTING' })
+            .select('status')
             .eq('id', this.tournamentId)
-            .eq('status', 'REGISTERING')
-            .select('id')
             .single();
 
-        if (claimError || !claimed) {
-            // Another instance already started, or tournament is in wrong state
-            const { data: statusCheck } = await this.supabase
-                .from('tournaments')
-                .select('status')
-                .eq('id', this.tournamentId)
-                .single();
-            console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Cannot start — current status: ${statusCheck?.status || 'unknown'}`);
+        if (statusErr || !statusCheck) {
+            console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Cannot start — tournament not found`);
+            this.running = false;
             return;
         }
 
-        this.running = true;
+        if (statusCheck.status !== 'REGISTERING' && statusCheck.status !== 'ANNOUNCED') {
+            // Already started by another instance or already running/completed
+            console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Cannot start — current status: ${statusCheck.status}`);
+            this.running = false;
+            return;
+        }
 
         console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Starting tournament...`);
 
