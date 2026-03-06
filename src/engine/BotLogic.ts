@@ -469,9 +469,15 @@ export class BotLogic {
             return this.evaluateHoleCards(holeCards);
         }
 
-        // Postflop — use hand evaluator
-        const evaluator = gameVariant.startsWith('plo') ? evaluateOmahaHand : evaluateHand;
-        const myHand = evaluator(holeCards, communityCards);
+        // Postflop — use hand evaluator (with defensive try/catch)
+        let myHand;
+        try {
+            const evaluator = gameVariant.startsWith('plo') ? evaluateOmahaHand : evaluateHand;
+            myHand = evaluator(holeCards, communityCards);
+        } catch {
+            // Graceful fallback if hand evaluation fails (e.g., card count mismatch)
+            return 0.3;
+        }
 
         // Map hand ranking (1=High Card → 10=Royal Flush) to 0-1 score
         // ranking 1 (High Card): 0.05-0.20

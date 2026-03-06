@@ -295,7 +295,18 @@ export function compareHands(a: EvaluatedHand, b: EvaluatedHand): number {
 
 export function evaluateOmahaHand(holeCards: Card[], communityCards: Card[]): EvaluatedHand {
     if (holeCards.length < 4) {
-        throw new Error('Omaha requires 4 hole cards');
+        // Graceful fallback: if fewer than 4 hole cards (edge case from mid-hand join
+        // or card dealing glitch), use standard evaluator with available cards
+        console.warn(`[PokerEngine] evaluateOmahaHand called with ${holeCards.length} hole cards — using fallback`);
+        if (holeCards.length >= 2 && communityCards.length >= 3) {
+            return evaluateHand(holeCards.slice(0, 2), communityCards.slice(0, 5));
+        }
+        return {
+            ranking: 1,
+            name: 'High Card',
+            cards: [...holeCards, ...communityCards],
+            kickers: [],
+        } as EvaluatedHand;
     }
 
     const holeCombos = getCombinations(holeCards, 2);
@@ -330,7 +341,10 @@ export function evaluateOmahaHand(holeCards: Card[], communityCards: Card[]): Ev
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function evaluateOmahaLowHand(holeCards: Card[], communityCards: Card[]): EvaluatedHand | null {
-    if (holeCards.length < 4) throw new Error('Omaha requires 4 hole cards');
+    if (holeCards.length < 4) {
+        console.warn(`[PokerEngine] evaluateOmahaLowHand called with ${holeCards.length} hole cards — skipping`);
+        return null;
+    }
 
     const holeCombos = getCombinations(holeCards, 2);
     const boardCombos = getCombinations(communityCards, 3);

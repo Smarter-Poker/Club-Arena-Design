@@ -100,7 +100,7 @@ export interface PokerTable {
 
 export type GameType = 'cash' | 'tournament' | 'sit_n_go';
 export type GameVariant =
-    | 'nlh' | 'flh' | 'plo4' | 'plo5' | 'plo6'
+    | 'nlh' | 'flh' | 'plo' | 'plo4' | 'plo5' | 'plo6'
     | 'plo_hilo' | 'plo8' | 'short_deck' | 'ofc' | 'ofc_pineapple';
 export type TableStatus = 'waiting' | 'running' | 'paused' | 'closed';
 

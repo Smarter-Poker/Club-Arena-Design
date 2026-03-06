@@ -69,6 +69,31 @@ export class HandPersistence {
     }
 
     /**
+     * Clean up orphaned "active" hands for this table from a previous session.
+     * These are hands that were inserted but never completed (engine crashed/reloaded).
+     * Mark them as 'aborted' so they don't pollute hand history queries.
+     */
+    async cleanupOrphanedHands(): Promise<void> {
+        try {
+            const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+            const { error, count } = await supabase
+                .from('hands')
+                .update({ status: 'completed', ended_at: new Date().toISOString(), street: 'aborted' })
+                .eq('table_id', this.tableId)
+                .eq('status', 'active')
+                .lt('started_at', tenMinutesAgo);
+
+            if (error) {
+                console.warn(`[HandPersistence:${this.tableId}] Orphan cleanup error:`, error);
+            } else if (count && count > 0) {
+                console.log(`[HandPersistence:${this.tableId}] Cleaned up ${count} orphaned active hands`);
+            }
+        } catch (err) {
+            console.warn(`[HandPersistence:${this.tableId}] Orphan cleanup exception:`, err);
+        }
+    }
+
+    /**
      * Wire a HandController to persist its events to the database
      */
     wireToHandController(
@@ -316,12 +341,15 @@ export class HandPersistence {
                 .eq('id', this.currentHand.id);
 
             if (error) {
-                console.error(`[HandPersistence:${this.tableId}] Failed to update hand #${handNumber}:`, error);
+                console.error(`[HandPersistence:${this.tableId}] Failed to update hand #${handNumber}: ${error.message || error.code || JSON.stringify(error)}`);
                 // Retry once
                 try {
-                    await supabase.from('hands').update(updatePayload).eq('id', this.currentHand.id);
+                    const { error: retryErr } = await supabase.from('hands').update(updatePayload).eq('id', this.currentHand.id);
+                    if (retryErr) {
+                        console.error(`[HandPersistence:${this.tableId}] Retry update also failed: ${retryErr.message || retryErr.code}`);
+                    }
                 } catch (e) {
-                    console.error(`[HandPersistence:${this.tableId}] Retry update also failed:`, e);
+                    console.error(`[HandPersistence:${this.tableId}] Retry update exception:`, e);
                 }
             }
         }

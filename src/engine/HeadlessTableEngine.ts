@@ -120,6 +120,9 @@ export class HeadlessTableEngine {
                 await new Promise(resolve => setTimeout(resolve, 10000));
             }
 
+            // Clean up any orphaned hands from previous sessions before dealing
+            this.persistence.cleanupOrphanedHands().catch(() => {});
+
             // Start dealing loop
             this.startDealingLoop();
         } catch (err) {

@@ -258,6 +258,7 @@ export class HandController {
 
     private getCardsPerPlayer(): number {
         switch (this.config.gameVariant) {
+            case 'plo':   // Generic PLO = PLO4
             case 'plo4': return 4;
             case 'plo5': return 5;
             case 'plo6': return 6;
