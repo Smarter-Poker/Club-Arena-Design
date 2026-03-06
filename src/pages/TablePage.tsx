@@ -1074,6 +1074,8 @@ export default function TablePage() {
                 case 'HAND_START':
                     handInProgressRef.current = true;
                     _win.__pokerLocks.handActive = true;
+                    // Reset raise slider on new hand — prevents stale raise panel
+                    setShowRaiseSlider(false);
                     setTableState(prev => ({
                         ...prev,
                         isHandInProgress: true,
@@ -1157,6 +1159,13 @@ export default function TablePage() {
 
                 case 'TURN_CHANGE':
                     setTableState(prev => ({ ...prev, currentPlayerSeat: event.seat }));
+                    // Close raise slider if it's no longer hero's turn
+                    {
+                        const currentState = tableStateRef.current;
+                        if (event.seat !== currentState.heroSeat) {
+                            setShowRaiseSlider(false);
+                        }
+                    }
                     // Play turn alert and reset timer if it's hero's turn
                     {
                         const currentState = tableStateRef.current;
@@ -1337,6 +1346,8 @@ export default function TablePage() {
                     break;
 
                 case 'HAND_COMPLETE':
+                    // Close raise slider on hand complete
+                    setShowRaiseSlider(false);
                     // First, keep cards visible for 3 seconds so players can see showdown
                     setTableState(prev => ({
                         ...prev,
@@ -1550,17 +1561,17 @@ export default function TablePage() {
     // Action handlers - wired to HandController + WebSocket for sync
     const handleFold = async () => {
         const heroSeat = tableState.heroSeat;
-        // Execute action through HandController for local game loop
+        setShowRaiseSlider(false); // Close raise slider on any action
         if (handControllerRef.current) {
             handControllerRef.current.performAction(heroSeat, 'fold');
         }
-        // Broadcast to other players via WebSocket
         await sendAction('fold', { seat: heroSeat });
         soundService.playFold();
     };
 
     const handleCheck = async () => {
         const heroSeat = tableState.heroSeat;
+        setShowRaiseSlider(false);
         if (handControllerRef.current) {
             handControllerRef.current.performAction(heroSeat, 'check');
         }
@@ -1570,6 +1581,7 @@ export default function TablePage() {
 
     const handleCall = async () => {
         const heroSeat = tableState.heroSeat;
+        setShowRaiseSlider(false);
         if (handControllerRef.current) {
             handControllerRef.current.performAction(heroSeat, 'call');
         }
@@ -1587,12 +1599,17 @@ export default function TablePage() {
 
     const handleConfirmRaise = async () => {
         const heroSeat = tableState.heroSeat;
-        if (handControllerRef.current) {
-            handControllerRef.current.performAction(heroSeat, 'raise', raiseAmount);
-        }
-        await sendAction('raise', { seat: heroSeat, amount: raiseAmount });
-        soundService.playChips();
+        // Close slider immediately so it doesn't persist if sendAction fails
         setShowRaiseSlider(false);
+        try {
+            if (handControllerRef.current) {
+                handControllerRef.current.performAction(heroSeat, 'raise', raiseAmount);
+            }
+            await sendAction('raise', { seat: heroSeat, amount: raiseAmount });
+            soundService.playChips();
+        } catch (err) {
+            console.warn('[TablePage] Raise send error (action still applied locally):', err);
+        }
     };
 
     const handleAllIn = async () => {
