@@ -46,6 +46,10 @@ interface UserSettings {
     runItTwiceDefault: boolean;
     straddleDefault: boolean;
 
+    // Chat
+    chatEnabled: boolean;
+    chatNotifications: boolean;
+
     // Notifications
     tournamentReminders: boolean;
     clubActivity: boolean;
@@ -80,6 +84,9 @@ const DEFAULT_SETTINGS: UserSettings = {
     showHandStrength: false,
     runItTwiceDefault: false,
     straddleDefault: false,
+
+    chatEnabled: true,
+    chatNotifications: true,
 
     tournamentReminders: true,
     clubActivity: true,
@@ -699,6 +706,34 @@ export default function SettingsPage() {
                         <Toggle
                             checked={settings.straddleDefault}
                             onChange={(v) => updateSetting('straddleDefault', v)}
+                        />
+                    </div>
+                </section>
+
+                {/* Chat */}
+                <section className={styles.section}>
+                    <h2>Chat</h2>
+
+                    <div className={styles.settingRow}>
+                        <div className={styles.settingInfo}>
+                            <span className={styles.settingLabel}>Table Chat</span>
+                            <span className={styles.settingDesc}>Show chat messages at the table</span>
+                        </div>
+                        <Toggle
+                            checked={settings.chatEnabled}
+                            onChange={(v) => updateSetting('chatEnabled', v)}
+                        />
+                    </div>
+
+                    <div className={styles.settingRow}>
+                        <div className={styles.settingInfo}>
+                            <span className={styles.settingLabel}>Chat Notifications</span>
+                            <span className={styles.settingDesc}>Show badge for new chat messages</span>
+                        </div>
+                        <Toggle
+                            checked={settings.chatNotifications}
+                            onChange={(v) => updateSetting('chatNotifications', v)}
+                            disabled={!settings.chatEnabled}
                         />
                     </div>
                 </section>

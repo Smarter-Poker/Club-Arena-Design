@@ -308,6 +308,7 @@ export default function TablePage() {
     // Chat state
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [isChatCollapsed, setIsChatCollapsed] = useState(true);
+    const [isChatMuted, setIsChatMuted] = useState(false);
 
     // Send chat message via RoomService
     const handleSendChatMessage = (message: string) => {
@@ -1891,7 +1892,7 @@ export default function TablePage() {
                         <span style={{ fontSize: '18px' }}></span>
                         <span>{tableState.isTournament ? 'Observing tournament' : 'You are watching — Click a seat to join'}</span>
                     </div>
-                ) : showRaiseSlider ? (
+                ) : showRaiseSlider && tableState.currentPlayerSeat === tableState.heroSeat && tableState.isHandInProgress ? (
                     /* Raise Slider Mode */
                     <div className="raise-slider-panel">
                         <div className="raise-display">
@@ -1969,18 +1970,7 @@ export default function TablePage() {
                             </div>
                         );
                     })()
-                ) : (
-                    /* Waiting for turn */
-                    <div className="action-buttons" style={{ opacity: 0.5 }}>
-                        <div className="timer-display">
-                            <span className="timer-icon"></span>
-                            <span className="timer-value">--</span>
-                        </div>
-                        <button className="action-btn fold-btn" disabled>Fold</button>
-                        <button className="action-btn check-btn" disabled>Check</button>
-                        <button className="action-btn raise-btn" disabled>Raise</button>
-                    </div>
-                )}
+                ) : null}
             </div>
 
             {/* ═══════════════════════════════════════════════════════════════════════
@@ -2014,6 +2004,11 @@ export default function TablePage() {
                             <span className="menu-item-icon">⋆</span>
                             <span className="menu-item-label">Vibrations</span>
                             <span className="menu-item-toggle on">ON</span>
+                        </button>
+                        <button className="menu-item" onClick={() => setIsChatMuted(!isChatMuted)}>
+                            <span className="menu-item-icon">💬</span>
+                            <span className="menu-item-label">Chat</span>
+                            <span className={`menu-item-toggle ${isChatMuted ? '' : 'on'}`}>{isChatMuted ? 'MUTED' : 'ON'}</span>
                         </button>
                         <button className="menu-item">
                             <span className="menu-item-icon">↗</span>
@@ -2073,6 +2068,7 @@ export default function TablePage() {
                 isCollapsed={isChatCollapsed}
                 onToggleCollapse={() => setIsChatCollapsed(!isChatCollapsed)}
                 placeholder="Say something..."
+                isMuted={isChatMuted}
             />
 
             {/* Player Notes Modal */}

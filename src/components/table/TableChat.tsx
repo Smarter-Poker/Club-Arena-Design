@@ -39,6 +39,7 @@ export interface TableChatProps {
     maxMessages?: number;
     isDisabled?: boolean;
     placeholder?: string;
+    isMuted?: boolean;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -127,6 +128,7 @@ export function TableChat({
     maxMessages = 100,
     isDisabled = false,
     placeholder = 'Type a message...',
+    isMuted = false,
 }: TableChatProps) {
     const [inputValue, setInputValue] = useState('');
     const [showEmojis, setShowEmojis] = useState(false);
@@ -164,11 +166,20 @@ export function TableChat({
         setShowEmojis(false);
     };
 
+    // When muted, don't render the chat at all — just a silent icon
+    if (isMuted) {
+        return (
+            <button className="chat-collapsed chat-collapsed--muted" onClick={onToggleCollapse} title="Chat is muted">
+                <span className="chat-collapsed__icon" style={{ opacity: 0.4 }}>✉</span>
+            </button>
+        );
+    }
+
     if (isCollapsed) {
         return (
             <button className="chat-collapsed" onClick={onToggleCollapse}>
                 <span className="chat-collapsed__icon">✉</span>
-                <span className="chat-collapsed__badge">{messages.length}</span>
+                {messages.length > 0 && <span className="chat-collapsed__badge">{messages.length}</span>}
             </button>
         );
     }
