@@ -147,7 +147,7 @@ function randomInRange(min: number, max: number): number {
 }
 
 function getStackForProfile(profile: HorseProfile, bigBlind: number): number {
-    const [minBB, maxBB] = PROFILE_STACK_RANGES[profile];
+    const [minBB, maxBB] = PROFILE_STACK_RANGES[profile] || PROFILE_STACK_RANGES['reg'];
     const bbCount = randomInRange(minBB, maxBB);
     return bbCount * bigBlind;
 }
@@ -775,7 +775,8 @@ export const HydraService = {
    * Adjust action weights based on context
    */
     getAdjustedWeights(profile: HorseProfile, context: HandContext): Record<string, number> {
-        const base: Record<string, number> = { ...PROFILE_WEIGHTS[profile] };
+        const weights = PROFILE_WEIGHTS[profile] || PROFILE_WEIGHTS['reg'];
+        const base: Record<string, number> = { ...weights };
 
         // Positional adjustments
         if (context.position === 'late') {
@@ -815,7 +816,9 @@ export const HydraService = {
      * Calculate bet sizing for a horse
      */
     getBetSize(profile: HorseProfile, context: HandContext): number {
-        const { pot, minRaise, maxRaise } = context;
+        const pot = context.pot || 0;
+        const minRaise = context.minRaise || 1;
+        const maxRaise = context.maxRaise || pot * 2 || 100;
 
         const sizingFactors: Record<HorseProfile, [number, number]> = {
             fish: [0.3, 1.0],   // Small to pot
@@ -825,7 +828,7 @@ export const HydraService = {
             maniac: [1.0, 2.0], // Big overbets
         };
 
-        const [minFactor, maxFactor] = sizingFactors[profile];
+        const [minFactor, maxFactor] = sizingFactors[profile] || sizingFactors['reg'];
         const targetSize = pot * (minFactor + Math.random() * (maxFactor - minFactor));
 
         return Math.max(minRaise, Math.min(maxRaise, Math.round(targetSize)));
@@ -835,7 +838,7 @@ export const HydraService = {
      * Determine if horse should enter pot preflop
      */
     shouldEnterPot(profile: HorseProfile, position: string): boolean {
-        const ranges = PREFLOP_RANGES[profile];
+        const ranges = PREFLOP_RANGES[profile] || PREFLOP_RANGES['reg'];
         const roll = Math.random() * 100;
 
         // Positional adjustment
@@ -851,7 +854,7 @@ export const HydraService = {
      * Get action weights (for external use)
      */
     getActionWeights(profile: HorseProfile): typeof PROFILE_WEIGHTS.fish {
-        return PROFILE_WEIGHTS[profile];
+        return PROFILE_WEIGHTS[profile] || PROFILE_WEIGHTS['reg'];
     },
 
     // ─────────────────────────────────────────────────────────────────────────────
