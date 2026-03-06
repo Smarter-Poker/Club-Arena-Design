@@ -140,7 +140,7 @@ export default function TournamentLobbyCard({
     const isFull = spotsRemaining <= 0;
 
     return (
-        <div className={styles.card}>
+        <div className={styles.card} onClick={() => navigate(`/tournaments/${tournament.id}`)} style={{ cursor: 'pointer' }}>
             {/* Header */}
             <div className={styles.header}>
                 <span className={styles.type}>{getTypeLabel(tournament.type)}</span>
@@ -200,13 +200,13 @@ export default function TournamentLobbyCard({
             <div className={styles.actions}>
                 {tournament.status === 'registering' && (
                     isRegistered ? (
-                        <button className={styles.unregisterBtn} onClick={handleUnregister}>
+                        <button className={styles.unregisterBtn} onClick={(e) => { e.stopPropagation(); handleUnregister(); }}>
                              Registered - Unregister?
                         </button>
                     ) : (
                         <button
                             className={styles.registerBtn}
-                            onClick={handleRegister}
+                            onClick={(e) => { e.stopPropagation(); handleRegister(); }}
                             disabled={registering || isFull}
                         >
                             {registering ? 'Registering...' : isFull ? 'Tournament Full' : `Register ($${tournament.buyIn})`}
@@ -216,7 +216,7 @@ export default function TournamentLobbyCard({
                 {tournament.status === 'running' && isRegistered && (
                     <button
                         className={styles.playBtn}
-                        onClick={() => navigate(`/tournament/${tournament.id}`)}
+                        onClick={(e) => { e.stopPropagation(); navigate(`/tournaments/${tournament.id}`); }}
                     >
                          Open Tournament
                     </button>

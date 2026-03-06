@@ -170,7 +170,7 @@ export default function FindPlayerModal({ isOpen, onClose }: FindPlayerModalProp
         haptic.success();
         onClose();
         if (table.is_tournament) {
-            navigate(`/tournament/${table.id}`);
+            navigate(`/tournaments/${table.id}`);
         } else {
             navigate(`/table/${table.id}`);
         }

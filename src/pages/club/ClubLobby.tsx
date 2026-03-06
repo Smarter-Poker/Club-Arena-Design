@@ -222,7 +222,7 @@ function TournamentCard({ tournament, clubId }: { tournament: Tournament; clubId
 // Table Card Component
 function TableCard({ table, clubId }: { table: PokerTable; clubId: string }) {
     return (
-        <Link to={`/clubs/${clubId}/table/${table.id}`} className="table-card">
+        <Link to={`/table/${table.id}`} className="table-card">
             <div className="card-header">
                 <div className="table-icon">♠</div>
                 <div className="seats-badge">{table.max_players} Max</div>
