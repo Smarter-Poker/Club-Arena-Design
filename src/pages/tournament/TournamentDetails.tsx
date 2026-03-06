@@ -286,7 +286,7 @@ export default function TournamentDetails() {
             {/* Tournament Description */}
             <div className="tournament-desc">
                 <p>{tournament.name}</p>
-                <p>{tournament.buy_in_amount}+{tournament.buy_in_fee || Math.round(tournament.buy_in_amount * 0.1)} CHIPS BUY-IN</p>
+                <p>{tournament.buy_in_amount}+{Math.round(tournament.buy_in_amount * 0.1)} CHIPS BUY-IN</p>
                 <p>REBUY / NO ADD-ON</p>
             </div>
 
@@ -344,7 +344,7 @@ export default function TournamentDetails() {
                         </div>
                         <div className="info-row">
                             <span className="info-label">Buy-in:</span>
-                            <span className="info-value">{tournament.buy_in_amount}+{tournament.buy_in_fee || Math.round(tournament.buy_in_amount * 0.1)} chips <span className="badge-reentry">Re-entry</span></span>
+                            <span className="info-value">{tournament.buy_in_amount}+{Math.round(tournament.buy_in_amount * 0.1)} chips <span className="badge-reentry">Re-entry</span></span>
                         </div>
                         {(() => {
                             const entryPrizePool = tournament.buy_in_amount * (entries.length || tournament.current_players || 0);
@@ -571,11 +571,11 @@ export default function TournamentDetails() {
                         </div>
                         <div className="signup-row">
                             <span className="signup-label">Rake (fee):</span>
-                            <span className="signup-value">{tournament.buy_in_fee || Math.round(tournament.buy_in_amount * 0.1)} chips</span>
+                            <span className="signup-value">{Math.round(tournament.buy_in_amount * 0.1)} chips</span>
                         </div>
                         <div className="signup-row total">
                             <span className="signup-label">Total:</span>
-                            <span className="signup-value">{tournament.buy_in_amount + (tournament.buy_in_fee || Math.round(tournament.buy_in_amount * 0.1))} chips</span>
+                            <span className="signup-value">{tournament.buy_in_amount + (Math.round(tournament.buy_in_amount * 0.1))} chips</span>
                         </div>
                         <div className="signup-row">
                             <span className="signup-label">Start time:</span>

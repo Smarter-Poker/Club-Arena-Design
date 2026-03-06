@@ -375,10 +375,10 @@ class TournamentService {
             throw new Error('Already registered for this tournament');
         }
 
-        // Calculate total cost (buy-in + fee)
+        // Calculate total cost (buy-in + 10% standard rake — always 10% across all tournament types)
         const buyIn = tournament.buy_in_amount || 0;
-        const fee = tournament.buy_in_fee || 0;
-        const totalCost = buyIn + fee;
+        const rake = Math.round(buyIn * 0.1);
+        const totalCost = buyIn + rake;
 
         // ─── Deduct from club_members.chip_balance (matches cash game wallet system) ───
         const clubId = tournament.club_id;
@@ -448,10 +448,12 @@ class TournamentService {
             throw error;
         }
 
-        // Atomically update player count and prize pool
+        // Atomically update player count and prize pool (only buy-in goes to pool, not rake)
+        const newPlayerCount = (tournament.current_players || 0) + 1;
+        const newPrizePool = buyIn * newPlayerCount;
         const { error: countError } = await supabase.from('tournaments').update({
-            current_players: tournament.current_players + 1,
-            guaranteed_prize: (tournament.guaranteed_prize || tournament.prize_pool || 0) + buyIn,
+            current_players: newPlayerCount,
+            prize_pool: newPrizePool,
         }).eq('id', tournamentId);
 
         if (countError) {
@@ -471,8 +473,9 @@ class TournamentService {
             throw new Error('Cannot unregister after tournament started');
         }
 
-        // Calculate refund amount (buy-in + fee — return everything that was deducted)
-        const refundAmount = (tournament.buy_in_amount || 0) + (tournament.buy_in_fee || 0);
+        // Calculate refund amount (buy-in + 10% standard rake — return everything that was deducted)
+        const buyInAmount = tournament.buy_in_amount || 0;
+        const refundAmount = buyInAmount + Math.round(buyInAmount * 0.1);
         const clubId = tournament.club_id;
         if (!clubId) throw new Error('Tournament has no club — cannot refund');
 
