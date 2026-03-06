@@ -11,7 +11,8 @@
  * - Event-based game state broadcasting
  */
 
-import { createClient, RealtimeChannel, RealtimePresenceState } from '@supabase/supabase-js';
+import { RealtimeChannel, RealtimePresenceState } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -66,19 +67,15 @@ export type ConnectionHandler = (connected: boolean) => void;
 // CONFIGURATION
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
 const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000, 30000]; // Exponential backoff
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // WEBSOCKET CLIENT CLASS
+// Uses the shared Supabase client to avoid "Multiple GoTrueClient instances"
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export class TableWebSocket {
-    private supabase = SUPABASE_URL && SUPABASE_ANON_KEY
-        ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-        : null;
+    private supabase = supabase;
 
     private channel: RealtimeChannel | null = null;
     private tableId: string;
