@@ -95,16 +95,15 @@ export default function TournamentLobbyPage() {
                     id,
                     name,
                     club_id,
-                    buy_in,
+                    buy_in_amount,
+                    buy_in_fee,
                     prize_pool,
                     start_time,
                     status,
                     current_players,
                     max_players,
                     starting_chips,
-                    blinds_up_minutes,
-                    game_type,
-                    clubs(name)
+                    game_type
                 `)
                 .order('start_time', { ascending: true });
 
@@ -141,7 +140,7 @@ export default function TournamentLobbyPage() {
                     id: t.id,
                     name: t.name,
                     clubId: t.club_id,
-                    clubName: t.clubs?.name || 'Unknown Club',
+                    clubName: 'Club',
                     buyIn: t.buy_in_amount || 0,
                     prizePool: t.prize_pool || 0,
                     startTime: t.start_time,
@@ -149,7 +148,7 @@ export default function TournamentLobbyPage() {
                     currentPlayers: t.current_players || 0,
                     maxPlayers: t.max_players || 100,
                     startingChips: t.starting_chips || 10000,
-                    blindsUp: t.blinds_up_minutes || 10,
+                    blindsUp: 10,
                     isRegistered: registrations.includes(t.id),
                     gameType: t.game_type || 'NLH'
                 }));
@@ -229,17 +228,17 @@ export default function TournamentLobbyPage() {
             {/* Filters */}
             <div className={styles.filters}>
                 <div className={styles.filterGroup}>
-                    {(['all', 'upcoming', 'registering', 'running', 'completed'] as TournamentStatus[]).map(status => (
+                    {(['all', 'upcoming', 'REGISTERING', 'RUNNING', 'COMPLETED'] as TournamentStatus[]).map(status => (
                         <button
                             key={status}
                             className={`${styles.filterBtn} ${statusFilter === status ? styles.active : ''}`}
                             onClick={() => setStatusFilter(status as TournamentStatus)}
                         >
-                            {status === 'all' ? ' All' :
-                                status === 'upcoming' ? ' Upcoming' :
+                            {status === 'all' ? 'All' :
+                                status === 'upcoming' ? 'Upcoming' :
                                     status === 'REGISTERING' ? 'Registering' :
-                                        status === 'RUNNING' ? ' Live' :
-                                            ' Completed'}
+                                        status === 'RUNNING' ? 'Live' :
+                                            'Completed'}
                         </button>
                     ))}
                 </div>
