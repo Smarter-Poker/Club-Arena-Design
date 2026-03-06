@@ -765,7 +765,7 @@ export class TournamentEngine {
         console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] syncChipsAfterHand — table ${tableId.slice(0, 8)}, ${playerStacks.length} players`);
 
         // Update local player map + batch DB updates
-        const updates: Promise<any>[] = [];
+        const updates: PromiseLike<any>[] = [];
         let matched = 0;
         let skipped = 0;
 
