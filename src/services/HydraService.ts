@@ -474,31 +474,24 @@ export const HydraService = {
 
         if (error) {
             console.error('HydraService.seatHorse insert error:', error);
-            // Refund wallet if seat insert fails
-            if (clubId) {
-                const { data: refundMember } = await supabase
-                    .from('club_members')
-                    .select('chip_balance')
-                    .eq('club_id', clubId)
-                    .eq('user_id', horseId)
-                    .single();
-                if (refundMember) {
-                    await supabase
-                        .from('club_members')
-                        .update({ chip_balance: (refundMember.chip_balance || 0) + stack })
-                        .eq('club_id', clubId)
-                        .eq('user_id', horseId);
-                    await supabase.from('wallet_transactions').insert({
-                        user_id: horseId,
-                        wallet_type: 'PLAYER',
-                        amount: stack,
-                        type: 'credit',
-                        category: 'refund',
-                        description: `Refund buy-in — seat insert failed at table ${tableId}`,
-                        table_id: tableId,
-                    });
-                }
-                console.log(`HydraService.seatHorse: Refunded ${stack} to ${horseId} wallet after seat insert failure`);
+            // Refund Player Wallet if seat insert fails
+            const { error: refundError } = await supabase.rpc('credit_player_wallet', {
+                p_user_id: horseId,
+                p_amount: stack,
+            });
+            if (!refundError) {
+                await supabase.from('wallet_transactions').insert({
+                    user_id: horseId,
+                    wallet_type: 'PLAYER',
+                    amount: stack,
+                    type: 'credit',
+                    category: 'refund',
+                    description: `Refund buy-in — seat insert failed at table ${tableId}`,
+                    table_id: tableId,
+                });
+                console.log(`[HydraService] Refunded ${stack} to horse ${horseId} Player Wallet after seat insert failure`);
+            } else {
+                console.error(`[HydraService] CRITICAL: Failed to refund ${stack} to horse ${horseId}:`, refundError.message);
             }
             return null;
         }

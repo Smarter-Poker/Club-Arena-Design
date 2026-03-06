@@ -403,30 +403,15 @@ class CashoutServiceClass {
             console.error('[Cashout] Failed to record removal:', txError);
         }
 
-        // Remove chips from player balance via direct update if RPC unavailable
-        try {
-            const { data: member } = await supabase
-                .from('club_members')
-                .select('chip_balance')
-                .eq('user_id', playerId)
-                .eq('club_id', clubId)
-                .single();
+        // Remove chips from Player Wallet via SECURITY DEFINER RPC
+        const { error: balanceError } = await supabase.rpc('deduct_player_wallet', {
+            p_user_id: playerId,
+            p_amount: amount,
+        });
 
-            if (member && Number(member.chip_balance) >= amount) {
-                const { error: balanceError } = await supabase
-                    .from('club_members')
-                    .update({ chip_balance: Number(member.chip_balance) - amount })
-                    .eq('user_id', playerId)
-                    .eq('club_id', clubId);
-
-                if (balanceError) {
-                    console.error('[Cashout] Failed to remove chips:', balanceError);
-                    throw new Error('Failed to remove chips from player');
-                }
-            }
-        } catch (err) {
-            console.error('[Cashout] Failed to remove chips:', err);
-            throw new Error('Failed to remove chips from player');
+        if (balanceError) {
+            console.error('[Cashout] Failed to deduct from Player Wallet:', balanceError);
+            throw new Error('Failed to remove chips from player wallet');
         }
 
         return true;
