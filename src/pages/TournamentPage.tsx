@@ -386,19 +386,29 @@ export default function TournamentPage() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {(Array.isArray(selectedTournament.blind_structure) ? selectedTournament.blind_structure : []).slice(0, 5).map((level: any, i: number) => (
-                                            <tr key={i}>
-                                                <td>{level.level}</td>
-                                                <td>{level.smallBlind || level.small_blind}/{level.bigBlind || level.big_blind}</td>
-                                                <td>{level.ante || '-'}</td>
-                                                <td>{level.durationMinutes || level.duration_minutes || 15} min</td>
-                                            </tr>
-                                        ))}
-                                        {Array.isArray(selectedTournament.blind_structure) && selectedTournament.blind_structure.length > 5 && (
-                                            <tr className="more-row">
-                                                <td colSpan={4}>+ {selectedTournament.blind_structure.length - 5} more levels</td>
-                                            </tr>
-                                        )}
+                                        {(() => {
+                                            let blinds = selectedTournament.blind_structure;
+                                            if (typeof blinds === 'string') { try { blinds = JSON.parse(blinds); } catch { blinds = []; } }
+                                            if (!Array.isArray(blinds)) blinds = [];
+                                            return blinds.slice(0, 5).map((level: any, i: number) => (
+                                                <tr key={i}>
+                                                    <td>{level.level}</td>
+                                                    <td>{level.smallBlind || level.small_blind}/{level.bigBlind || level.big_blind}</td>
+                                                    <td>{level.ante || '-'}</td>
+                                                    <td>{level.durationMinutes || level.duration_minutes || 15} min</td>
+                                                </tr>
+                                            ));
+                                        })()}
+                                        {(() => {
+                                            let blinds = selectedTournament.blind_structure;
+                                            if (typeof blinds === 'string') { try { blinds = JSON.parse(blinds); } catch { blinds = []; } }
+                                            if (!Array.isArray(blinds)) blinds = [];
+                                            return blinds.length > 5 ? (
+                                                <tr className="more-row">
+                                                    <td colSpan={4}>+ {blinds.length - 5} more levels</td>
+                                                </tr>
+                                            ) : null;
+                                        })()}
                                     </tbody>
                                 </table>
                             </div>
