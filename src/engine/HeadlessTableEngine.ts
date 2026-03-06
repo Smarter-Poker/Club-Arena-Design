@@ -449,11 +449,14 @@ export class HeadlessTableEngine {
                             user_id: p.user_id,
                             stack: p.stack,
                         }));
+                        console.log(`[HeadlessTableEngine:${this.tableId}] Firing handCompleteCallback with ${finalStacks.length} players:`, finalStacks.map(s => `${s.user_id.slice(0,8)}=${s.stack}`).join(', '));
                         try {
                             this.handCompleteCallback(this.tableId, finalStacks);
                         } catch (e) {
-                            // Don't let callback errors break the dealing loop
+                            console.error(`[HeadlessTableEngine:${this.tableId}] handCompleteCallback sync error:`, e);
                         }
+                    } else {
+                        console.warn(`[HeadlessTableEngine:${this.tableId}] No handCompleteCallback registered`);
                     }
 
                     resolve();
@@ -855,15 +858,31 @@ export class HeadlessTableEngine {
      * Sync stacks to tournament_players.stack so tournament engine can track eliminations
      */
     private async syncTournamentPlayerChips(players: SeatedPlayer[]): Promise<void> {
-        if (!this.tableInfo?.tournament_id) return;
-        const updates = players.map(player =>
-            this.supabaseClient
-                .from('tournament_players')
-                .update({ chips: player.stack })
-                .eq('tournament_id', this.tableInfo!.tournament_id!)
-                .eq('user_id', player.user_id)
+        if (!this.tableInfo?.tournament_id) {
+            console.warn(`[HeadlessTableEngine:${this.tableId}] syncTournamentPlayerChips skipped — no tournament_id`);
+            return;
+        }
+        console.log(`[HeadlessTableEngine:${this.tableId}] syncTournamentPlayerChips — syncing ${players.length} players to tournament_players`);
+        const results = await Promise.allSettled(
+            players.map(async (player) => {
+                const rounded = Math.round(player.stack * 100) / 100;
+                const { error } = await this.supabaseClient
+                    .from('tournament_players')
+                    .update({ chips: rounded })
+                    .eq('tournament_id', this.tableInfo!.tournament_id!)
+                    .eq('user_id', player.user_id);
+                if (error) {
+                    console.error(`[HeadlessTableEngine:${this.tableId}] Failed to sync chips for ${player.username}: ${error.message}`);
+                } else {
+                    console.log(`[HeadlessTableEngine:${this.tableId}] Synced ${player.username} chips → ${rounded}`);
+                }
+                return { user_id: player.user_id, stack: rounded, error };
+            })
         );
-        await Promise.allSettled(updates);
+        const failed = results.filter(r => r.status === 'rejected');
+        if (failed.length > 0) {
+            console.error(`[HeadlessTableEngine:${this.tableId}] ${failed.length}/${players.length} tournament chip syncs failed`);
+        }
     }
 
     private async autorebuyHorses(players: SeatedPlayer[]): Promise<void> {

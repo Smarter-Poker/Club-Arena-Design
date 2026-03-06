@@ -757,28 +757,52 @@ export class TournamentEngine {
      * Updates tournament_players.chips in the DB so lobby/table pages reflect live stacks.
      */
     private async syncChipsAfterHand(tableId: string, playerStacks: { user_id: string; stack: number }[]): Promise<void> {
-        if (!this.running || !this.tournamentInfo) return;
+        if (!this.running || !this.tournamentInfo) {
+            console.warn(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] syncChipsAfterHand skipped — running=${this.running}, info=${!!this.tournamentInfo}`);
+            return;
+        }
+
+        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] syncChipsAfterHand — table ${tableId.slice(0, 8)}, ${playerStacks.length} players`);
 
         // Update local player map + batch DB updates
-        const updates: PromiseLike<any>[] = [];
+        const updates: Promise<any>[] = [];
+        let matched = 0;
+        let skipped = 0;
 
         for (const { user_id, stack } of playerStacks) {
             const player = this.players.get(user_id);
             if (player && player.status === 'playing') {
                 player.chips = stack;
+                matched++;
+                const rounded = Math.round(stack * 100) / 100;
                 updates.push(
                     this.supabase
                         .from('tournament_players')
-                        .update({ chips: Math.round(stack * 100) / 100 })
+                        .update({ chips: rounded })
                         .eq('tournament_id', this.tournamentId)
                         .eq('user_id', user_id)
+                        .then((result: any) => {
+                            if (result.error) {
+                                console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Chip sync failed for ${player.username}: ${result.error.message}`);
+                            }
+                            return result;
+                        })
                 );
+            } else {
+                skipped++;
             }
         }
 
+        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] syncChipsAfterHand — ${matched} matched, ${skipped} skipped, ${updates.length} DB updates`);
+
         // Fire all updates in parallel for speed
         if (updates.length > 0) {
-            await Promise.all(updates);
+            try {
+                await Promise.all(updates);
+                console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] syncChipsAfterHand — all ${updates.length} updates complete`);
+            } catch (err) {
+                console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] syncChipsAfterHand FAILED:`, err);
+            }
         }
 
         // Update hand count
