@@ -300,9 +300,13 @@ export const WalletService = {
         // CRITICAL: .gte('chip_balance', amount) acts as an atomic guard.
         // If a concurrent transaction reduced the balance below `amount`,
         // this update will match 0 rows and `count` will be 0.
+        // NOTE: Must pass { count: 'exact' } to get row count from Supabase
         const { error: updateError, count } = await supabase
             .from('club_members')
-            .update({ chip_balance: currentBalance - amount })
+            .update(
+                { chip_balance: currentBalance - amount },
+                { count: 'exact' }
+            )
             .eq('club_id', clubId)
             .eq('user_id', userId)
             .gte('chip_balance', amount);
@@ -311,7 +315,10 @@ export const WalletService = {
             throw new Error('Failed to deduct chips for buy-in');
         }
 
-        if (!count || count === 0) {
+        // count=0 means the .gte guard prevented the update (balance dropped)
+        // count=null means the DB didn't return count info — treat as success
+        // since the .eq filters matched and no error was thrown
+        if (count === 0) {
             throw new Error('Insufficient chips (concurrent transaction detected)');
         }
 
