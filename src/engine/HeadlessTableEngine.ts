@@ -882,7 +882,8 @@ export class HeadlessTableEngine {
 
         const results = await Promise.allSettled(
             seats.map(async (seat) => {
-                const rounded = Math.round(seat.stack * 100) / 100;
+                // tournament_players.chips is INTEGER — must round to whole number
+                const rounded = Math.round(seat.stack);
                 const { error } = await this.supabaseClient
                     .from('tournament_players')
                     .update({ chips: rounded })
