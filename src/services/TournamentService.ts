@@ -395,29 +395,15 @@ class TournamentService {
             throw new Error(`Insufficient chips. Need ${totalCost}, have ${memberData?.chip_balance || 0}`);
         }
 
-        // Deduct buy-in from club wallet (with .gte guard for race-condition safety)
-        const newBalance = (memberData.chip_balance || 0) - totalCost;
-        const { error: deductError } = await supabase
-            .from('club_members')
-            .update({ chip_balance: newBalance })
-            .eq('club_id', clubId)
-            .eq('user_id', userId)
-            .gte('chip_balance', totalCost);
+        // Deduct buy-in from club wallet via RPC (runs with SECURITY DEFINER to bypass RLS)
+        const { error: deductError } = await supabase.rpc('deduct_chip_balance', {
+            p_club_id: clubId,
+            p_user_id: userId,
+            p_amount: totalCost,
+        });
 
         if (deductError) {
-            throw new Error('Failed to deduct tournament buy-in (concurrent transaction or insufficient balance)');
-        }
-
-        // Verify the deduction actually happened
-        const { data: verifyData } = await supabase
-            .from('club_members')
-            .select('chip_balance')
-            .eq('club_id', clubId)
-            .eq('user_id', userId)
-            .single();
-
-        if (!verifyData || verifyData.chip_balance !== newBalance) {
-            throw new Error('Buy-in deduction failed — balance unchanged (possible race condition)');
+            throw new Error(`Failed to deduct tournament buy-in: ${deductError.message}`);
         }
 
         // Insert player (username is NOT NULL in schema — must be provided)
@@ -434,14 +420,14 @@ class TournamentService {
             .single();
 
         if (error) {
-            // Refund on failure
+            // Refund on failure via RPC (negative amount = credit)
             console.error('[TournamentService] Registration failed, refunding buy-in:', error);
             try {
-                await supabase
-                    .from('club_members')
-                    .update({ chip_balance: (memberData.chip_balance || 0) })
-                    .eq('club_id', clubId)
-                    .eq('user_id', userId);
+                await supabase.rpc('deduct_chip_balance', {
+                    p_club_id: clubId,
+                    p_user_id: userId,
+                    p_amount: -totalCost, // Negative = refund
+                });
             } catch (refundErr) {
                 console.error('[TournamentService] CRITICAL: Refund also failed:', refundErr);
             }
