@@ -121,7 +121,15 @@ export default function UnionDetailPage() {
 
                 setUnion(unionData);
                 setClubs(clubsData);
-                setTables(tablesData);
+                // Sort tables: active (with players) first, then by player count desc
+                const sortedTables = (tablesData || []).sort((a: PokerTable, b: PokerTable) => {
+                    const aPlayers = a.current_players || 0;
+                    const bPlayers = b.current_players || 0;
+                    if (aPlayers > 0 && bPlayers === 0) return -1;
+                    if (aPlayers === 0 && bPlayers > 0) return 1;
+                    return bPlayers - aPlayers;
+                });
+                setTables(sortedTables);
 
                 // Load union-wide tournaments if enabled
                 if (unionData?.settings?.crossClubTournaments) {
@@ -339,18 +347,23 @@ export default function UnionDetailPage() {
                 {activeTab === 'overview' && (
                     <div className={styles.overviewGrid}>
                         <div className={styles.card}>
-                            <h3> Live Tables</h3>
+                            <h3> Live Tables ({tables.filter(t => (t.current_players || 0) > 0).length} active)</h3>
                             {tables.length === 0 ? (
                                 <p className={styles.emptyText}>No active tables</p>
                             ) : (
                                 <div className={styles.tableList}>
-                                    {tables.slice(0, 5).map(table => (
+                                    {tables.filter(t => (t.current_players || 0) > 0).slice(0, 8).map(table => (
                                         <Link key={table.id} to={`/table/${table.id}`} className={styles.tableRow}>
                                             <span>{table.name}</span>
                                             <span className={styles.stakes}>${table.small_blind}/${table.big_blind}</span>
                                             <span>{table.current_players}/{table.max_players}</span>
                                         </Link>
                                     ))}
+                                    {tables.filter(t => (t.current_players || 0) > 0).length > 8 && (
+                                        <button className={styles.viewAllBtn} onClick={() => setActiveTab('tables')}>
+                                            View all {tables.length} tables →
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -434,26 +447,61 @@ export default function UnionDetailPage() {
 
                 {/* Tables Tab */}
                 {activeTab === 'tables' && (
-                    <div className={styles.tablesGrid}>
+                    <div>
                         {tables.length === 0 ? (
                             <p className={styles.emptyText}>No active tables right now.</p>
                         ) : (
-                            tables.map(table => (
-                                <div key={table.id} className={styles.tableCard}>
-                                    <div className={styles.tableCardHeader}>
-                                        <h4>{table.name}</h4>
-                                        <span className={`${styles.statusDot} ${styles[table.status]}`} />
-                                    </div>
-                                    <div className={styles.tableCardDetails}>
-                                        <span>${table.small_blind}/${table.big_blind}</span>
-                                        <span className={styles.variant}>{table.game_variant}</span>
-                                        <span>{table.current_players}/{table.max_players}</span>
-                                    </div>
-                                    <Link to={`/table/${table.id}`} className={styles.joinButton}>
-                                        Join Table
-                                    </Link>
-                                </div>
-                            ))
+                            <>
+                                {tables.filter(t => (t.current_players || 0) > 0).length > 0 && (
+                                    <>
+                                        <h3 style={{ color: '#fff', margin: '0 0 1rem' }}>
+                                            Active Tables ({tables.filter(t => (t.current_players || 0) > 0).length})
+                                        </h3>
+                                        <div className={styles.tablesGrid}>
+                                            {tables.filter(t => (t.current_players || 0) > 0).map(table => (
+                                                <div key={table.id} className={styles.tableCard}>
+                                                    <div className={styles.tableCardHeader}>
+                                                        <h4>{table.name}</h4>
+                                                        <span className={`${styles.statusDot} ${styles[table.status]}`} />
+                                                    </div>
+                                                    <div className={styles.tableCardDetails}>
+                                                        <span>${table.small_blind}/${table.big_blind}</span>
+                                                        <span className={styles.variant}>{(table as any).game_variant || 'NLH'}</span>
+                                                        <span>{table.current_players}/{table.max_players}</span>
+                                                    </div>
+                                                    <Link to={`/table/${table.id}`} className={styles.joinButton}>
+                                                        View Table
+                                                    </Link>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+                                {tables.filter(t => (t.current_players || 0) === 0).length > 0 && (
+                                    <>
+                                        <h3 style={{ color: 'rgba(255,255,255,0.5)', margin: '2rem 0 1rem' }}>
+                                            Empty Tables ({tables.filter(t => (t.current_players || 0) === 0).length})
+                                        </h3>
+                                        <div className={styles.tablesGrid}>
+                                            {tables.filter(t => (t.current_players || 0) === 0).map(table => (
+                                                <div key={table.id} className={styles.tableCard} style={{ opacity: 0.6 }}>
+                                                    <div className={styles.tableCardHeader}>
+                                                        <h4>{table.name}</h4>
+                                                    </div>
+                                                    <div className={styles.tableCardDetails}>
+                                                        <span>${table.small_blind}/${table.big_blind}</span>
+                                                        <span className={styles.variant}>{(table as any).game_variant || 'NLH'}</span>
+                                                        <span>0/{table.max_players}</span>
+                                                    </div>
+                                                    <Link to={`/table/${table.id}`} className={styles.joinButton}>
+                                                        View Table
+                                                    </Link>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+                            </>
                         )}
                     </div>
                 )}
