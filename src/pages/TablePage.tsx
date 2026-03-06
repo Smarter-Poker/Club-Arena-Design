@@ -2317,7 +2317,15 @@ export default function TablePage() {
                                 await WalletService.lockForBuyIn(userId, tableId, amount);
                                 console.log('[BuyIn] lockForBuyIn SUCCESS');
 
-                                // ─── INSERT INTO table_seats (critical: engine reads from DB) ───
+                                // ─── Clear any stale seat record, then INSERT into table_seats ───
+                                // Stale records (left_at IS NOT NULL) can block due to unique constraint
+                                await supabase
+                                    .from('table_seats')
+                                    .delete()
+                                    .eq('table_id', tableId)
+                                    .eq('seat_number', selectedSeat)
+                                    .not('left_at', 'is', null);
+
                                 const { error: seatError } = await supabase
                                     .from('table_seats')
                                     .insert({
@@ -2331,8 +2339,7 @@ export default function TablePage() {
 
                                 if (seatError) {
                                     console.error('[BuyIn] table_seats insert FAILED:', seatError);
-                                    // Refund chips if seat creation fails — don't leave chips locked
-                                    await WalletService.unlockFromTable(userId, tableId, amount);
+                                    // NOTE: Do NOT refund here — the catch block handles refund
                                     throw new Error('Failed to seat: ' + seatError.message);
                                 }
                                 console.log('[BuyIn] table_seats INSERT success, seat:', selectedSeat);
