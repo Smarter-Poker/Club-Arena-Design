@@ -715,8 +715,13 @@ export class TournamentEngine {
         }, 5_000);
     }
 
+    private eliminationCheckRunning = false;
     private async checkEliminations(): Promise<void> {
         if (!this.running || !this.tournamentInfo) return;
+        // Prevent overlapping elimination checks (async race condition guard)
+        if (this.eliminationCheckRunning) return;
+        this.eliminationCheckRunning = true;
+        try {
 
         // Check each tournament table for players with 0 chips
         for (const table of this.tables) {
@@ -750,6 +755,9 @@ export class TournamentEngine {
 
         // Check if any tables need to be merged (< 3 players)
         await this.checkTableBalance();
+        } finally {
+            this.eliminationCheckRunning = false;
+        }
     }
 
     /**
@@ -757,23 +765,15 @@ export class TournamentEngine {
      * Updates tournament_players.chips in the DB so lobby/table pages reflect live stacks.
      */
     private async syncChipsAfterHand(tableId: string, playerStacks: { user_id: string; stack: number }[]): Promise<void> {
-        if (!this.running || !this.tournamentInfo) {
-            console.warn(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] syncChipsAfterHand skipped — running=${this.running}, info=${!!this.tournamentInfo}`);
-            return;
-        }
-
-        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] syncChipsAfterHand — table ${tableId.slice(0, 8)}, ${playerStacks.length} players`);
+        if (!this.running || !this.tournamentInfo) return;
 
         // Update local player map + batch DB updates
         const updates: PromiseLike<any>[] = [];
-        let matched = 0;
-        let skipped = 0;
 
         for (const { user_id, stack } of playerStacks) {
             const player = this.players.get(user_id);
             if (player && player.status === 'playing') {
                 player.chips = stack;
-                matched++;
                 // tournament_players.chips is INTEGER — round to whole number
                 const rounded = Math.round(stack);
                 updates.push(
@@ -789,21 +789,12 @@ export class TournamentEngine {
                             return result;
                         })
                 );
-            } else {
-                skipped++;
             }
         }
 
-        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] syncChipsAfterHand — ${matched} matched, ${skipped} skipped, ${updates.length} DB updates`);
-
         // Fire all updates in parallel for speed
         if (updates.length > 0) {
-            try {
-                await Promise.all(updates);
-                console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] syncChipsAfterHand — all ${updates.length} updates complete`);
-            } catch (err) {
-                console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] syncChipsAfterHand FAILED:`, err);
-            }
+            await Promise.all(updates);
         }
 
         // Update hand count

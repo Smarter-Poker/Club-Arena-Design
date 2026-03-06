@@ -415,6 +415,7 @@ export class HeadlessTableEngine {
         });
 
         // Wait for hand to complete before returning
+        let persistenceUnsub: (() => void) | null = null;
         return new Promise<void>((resolve) => {
             const handCompleteTimeout = setTimeout(() => {
                 console.warn(`[HeadlessTableEngine:${this.tableId}] Hand ${handNumber} timed out after 120s`);
@@ -424,11 +425,13 @@ export class HeadlessTableEngine {
                 }
                 this.pendingTimerIds = [];
                 this.handController = null;
+                // Clean up event listener on timeout (prevent memory leak)
+                if (persistenceUnsub) persistenceUnsub();
                 resolve();
             }, 120_000); // 2 minute safety timeout
 
             // Wire event handler
-            const persistenceUnsub = this.handController!.onEvent((event: HandEvent) => {
+            persistenceUnsub = this.handController!.onEvent((event: HandEvent) => {
                 this.handleHandEvent(event, players);
 
                 // Resolve the promise when hand completes
@@ -441,7 +444,7 @@ export class HeadlessTableEngine {
                     }
                     this.pendingTimerIds = [];
                     // Clean up unsubscribe from this hand (prevent unbounded growth)
-                    persistenceUnsub();
+                    if (persistenceUnsub) persistenceUnsub();
 
                     // Fire hand-complete callback with final player stacks (tournament chip sync)
                     if (this.handCompleteCallback) {
@@ -449,14 +452,11 @@ export class HeadlessTableEngine {
                             user_id: p.user_id,
                             stack: p.stack,
                         }));
-                        console.log(`[HeadlessTableEngine:${this.tableId}] Firing handCompleteCallback with ${finalStacks.length} players:`, finalStacks.map(s => `${s.user_id.slice(0,8)}=${s.stack}`).join(', '));
                         try {
                             this.handCompleteCallback(this.tableId, finalStacks);
                         } catch (e) {
-                            console.error(`[HeadlessTableEngine:${this.tableId}] handCompleteCallback sync error:`, e);
+                            console.error(`[HeadlessTableEngine:${this.tableId}] handCompleteCallback error:`, e);
                         }
-                    } else {
-                        console.warn(`[HeadlessTableEngine:${this.tableId}] No handCompleteCallback registered`);
                     }
 
                     resolve();
@@ -878,8 +878,6 @@ export class HeadlessTableEngine {
             return;
         }
 
-        console.log(`[HeadlessTableEngine:${this.tableId}] syncTournamentPlayerChips — syncing ${seats.length} players from table_seats to tournament_players`);
-
         const results = await Promise.allSettled(
             seats.map(async (seat) => {
                 // tournament_players.chips is INTEGER — must round to whole number
@@ -890,17 +888,10 @@ export class HeadlessTableEngine {
                     .eq('tournament_id', this.tableInfo!.tournament_id!)
                     .eq('user_id', seat.user_id);
                 if (error) {
-                    console.error(`[HeadlessTableEngine:${this.tableId}] Failed to sync chips for ${seat.user_id.slice(0, 8)}: ${error.message}`);
-                } else {
-                    console.log(`[HeadlessTableEngine:${this.tableId}] Synced ${seat.user_id.slice(0, 8)} chips → ${rounded}`);
+                    console.error(`[HeadlessTableEngine:${this.tableId}] Tournament chip sync error for ${seat.user_id.slice(0, 8)}: ${error.message}`);
                 }
-                return { user_id: seat.user_id, stack: rounded, error };
             })
         );
-        const failed = results.filter(r => r.status === 'rejected');
-        if (failed.length > 0) {
-            console.error(`[HeadlessTableEngine:${this.tableId}] ${failed.length}/${seats.length} tournament chip syncs failed`);
-        }
     }
 
     private async autorebuyHorses(players: SeatedPlayer[]): Promise<void> {
