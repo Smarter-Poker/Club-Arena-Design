@@ -1600,13 +1600,24 @@ export default function TablePage() {
 
     const handleConfirmRaise = async () => {
         const heroSeat = tableState.heroSeat;
+        const hero = getPlayerAtSeat(heroSeat);
+        const heroStack = hero?.stack || 0;
+
+        // Clamp raise to hero's stack (can't bet more than you have)
+        const clampedRaise = Math.min(raiseAmount, heroStack);
+        if (clampedRaise <= 0) return;
+
         // Close slider immediately so it doesn't persist if sendAction fails
         setShowRaiseSlider(false);
         try {
             if (handControllerRef.current) {
-                handControllerRef.current.performAction(heroSeat, 'raise', raiseAmount);
+                const result = handControllerRef.current.performAction(heroSeat, 'raise', clampedRaise);
+                if (result === false) {
+                    console.warn('[TablePage] Raise rejected by engine — amount:', clampedRaise);
+                    return;
+                }
             }
-            await sendAction('raise', { seat: heroSeat, amount: raiseAmount });
+            await sendAction('raise', { seat: heroSeat, amount: clampedRaise });
             soundService.playChips();
         } catch (err) {
             console.warn('[TablePage] Raise send error (action still applied locally):', err);
@@ -1733,9 +1744,17 @@ export default function TablePage() {
                     const newValue = prev - 1;
                     // Auto-fold when timer expires
                     if (newValue <= 0 && handControllerRef.current) {
-                        handControllerRef.current.performAction(tableState.heroSeat, 'fold');
-                        sendAction('fold', { seat: tableState.heroSeat, autoFold: true });
-                        soundService.playFold();
+                        try {
+                            const foldResult = handControllerRef.current.performAction(tableState.heroSeat, 'fold');
+                            if (foldResult !== false) {
+                                sendAction('fold', { seat: tableState.heroSeat, autoFold: true });
+                                soundService.playFold();
+                            } else {
+                                console.warn('[AutoFold] performAction returned false — fold may not have executed');
+                            }
+                        } catch (err) {
+                            console.error('[AutoFold] Error during auto-fold:', err);
+                        }
                     }
                     return Math.max(0, newValue);
                 });
@@ -1920,7 +1939,12 @@ export default function TablePage() {
                             <input
                                 type="range"
                                 className="raise-slider"
-                                min={tableState.pot}
+                                min={(() => {
+                                    const bb = parseFloat(tableState.blinds.split('/')[1]) || 2;
+                                    const hs = handControllerRef.current?.getState();
+                                    const currentBet = hs?.currentBet || 0;
+                                    return Math.max(bb, currentBet > 0 ? currentBet * 2 : bb * 2);
+                                })()}
                                 max={getPlayerAtSeat(tableState.heroSeat)?.stack || 1000}
                                 value={raiseAmount}
                                 onChange={(e) => setRaiseAmount(Number(e.target.value))}
