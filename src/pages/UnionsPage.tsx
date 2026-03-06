@@ -6,12 +6,13 @@
 import './UnionsPage.css';
 
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import CreateUnionModal from '../components/union/CreateUnionModal';
 import { unionService, type Union } from '../services/UnionService';
 import SmarterHeader from '../components/layout/SmarterHeader';
 
 export default function UnionsPage() {
+    const navigate = useNavigate();
     const [unions, setUnions] = useState<Union[]>([]);
     const [loading, setLoading] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
@@ -49,7 +50,7 @@ export default function UnionsPage() {
 
             <div className="unions-grid">
                 {unions.map(union => (
-                    <div key={union.id} className="union-card">
+                    <div key={union.id} className="union-card" onClick={() => navigate(`/unions/${union.id}`)} style={{ cursor: 'pointer' }}>
                         <div className="union-header">
                             <span className="union-icon">{union.avatarUrl || ''}</span>
                             <h3>{union.name}</h3>
