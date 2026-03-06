@@ -187,10 +187,10 @@ export default function TournamentDetails() {
         setShowSignUpModal(false);
 
         try {
-            // Use registerPlayer method with correct signature
             await tournamentService.registerPlayer(tournament.id, user.id, user.username || 'Player');
             setIsRegistered(true);
-            loadTournament(); // Refresh entries
+            // Defer reload so the UI updates instantly (fixes INP)
+            setTimeout(() => loadTournament(), 50);
         } catch (error) {
             console.error('Registration failed:', error);
             const msg = (error as Error).message || 'Unknown error';
@@ -205,7 +205,8 @@ export default function TournamentDetails() {
             await tournamentService.unregisterPlayer(tournament.id, user.id);
             setIsRegistered(false);
             toast.success('Unregistered — buy-in refunded to your wallet');
-            loadTournament();
+            // Defer reload so the UI updates instantly (fixes INP)
+            setTimeout(() => loadTournament(), 50);
         } catch (error) {
             console.error('Unregistration failed:', error);
             const msg = (error as Error).message || 'Unknown error';
