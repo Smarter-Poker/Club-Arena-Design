@@ -287,6 +287,7 @@ export class TournamentEngine {
             // Tables exist — attach engines
             for (const t of existingTables) {
                 const engine = new HeadlessTableEngine(t.id, this.supabase);
+                engine.onHandComplete((tId, players) => this.syncChipsAfterHand(tId, players));
                 this.tables.push({
                     tableId: t.id,
                     engine,
@@ -531,6 +532,7 @@ export class TournamentEngine {
             }
 
             const engine = new HeadlessTableEngine(data.id, this.supabase);
+            engine.onHandComplete((tId, players) => this.syncChipsAfterHand(tId, players));
             this.tables.push({
                 tableId: data.id,
                 engine,
@@ -716,9 +718,7 @@ export class TournamentEngine {
     private async checkEliminations(): Promise<void> {
         if (!this.running || !this.tournamentInfo) return;
 
-        // Check each tournament table for players with 0 chips + sync chip counts
-        const chipUpdates: { userId: string; chips: number }[] = [];
-
+        // Check each tournament table for players with 0 chips
         for (const table of this.tables) {
             const { data: seats } = await this.supabase
                 .from('table_seats')
@@ -731,27 +731,12 @@ export class TournamentEngine {
             for (const seat of seats) {
                 if (seat.stack <= 0) {
                     await this.eliminatePlayer(seat.user_id, table.tableId);
-                } else {
-                    // Collect live chip counts for real-time sync
-                    chipUpdates.push({ userId: seat.user_id, chips: seat.stack });
-                    // Also update local player map
-                    const player = this.players.get(seat.user_id);
-                    if (player) player.chips = seat.stack;
                 }
             }
 
             // Update local table player count
             const activeSeats = seats.filter(s => s.stack > 0);
             table.playerCount = activeSeats.length;
-        }
-
-        // Sync live chip counts to tournament_players (real-time updates after every hand)
-        for (const { userId, chips } of chipUpdates) {
-            await this.supabase
-                .from('tournament_players')
-                .update({ chips: Math.round(chips * 100) / 100 })
-                .eq('tournament_id', this.tournamentId)
-                .eq('user_id', userId);
         }
 
         // Update hand count
@@ -765,6 +750,39 @@ export class TournamentEngine {
 
         // Check if any tables need to be merged (< 3 players)
         await this.checkTableBalance();
+    }
+
+    /**
+     * Real-time chip sync — called by HeadlessTableEngine callback the instant a hand completes.
+     * Updates tournament_players.chips in the DB so lobby/table pages reflect live stacks.
+     */
+    private async syncChipsAfterHand(tableId: string, playerStacks: { user_id: string; stack: number }[]): Promise<void> {
+        if (!this.running || !this.tournamentInfo) return;
+
+        // Update local player map + batch DB updates
+        const updates: PromiseLike<any>[] = [];
+
+        for (const { user_id, stack } of playerStacks) {
+            const player = this.players.get(user_id);
+            if (player && player.status === 'playing') {
+                player.chips = stack;
+                updates.push(
+                    this.supabase
+                        .from('tournament_players')
+                        .update({ chips: Math.round(stack * 100) / 100 })
+                        .eq('tournament_id', this.tournamentId)
+                        .eq('user_id', user_id)
+                );
+            }
+        }
+
+        // Fire all updates in parallel for speed
+        if (updates.length > 0) {
+            await Promise.all(updates);
+        }
+
+        // Update hand count
+        this.handsDealt = this.tables.reduce((sum, t) => sum + t.engine.getHandCount(), 0);
     }
 
     private async eliminatePlayer(userId: string, tableId: string): Promise<void> {

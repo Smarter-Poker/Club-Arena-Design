@@ -80,6 +80,8 @@ export class HeadlessTableEngine {
     private currentHandWinnerIds: string[] = [];
     // Stack sync promise — awaited before loading seats for next hand
     private stackSyncPromise: Promise<void> | null = null;
+    // Callback fired after each hand completes — used by TournamentEngine for real-time chip sync
+    private handCompleteCallback: ((tableId: string, players: { user_id: string; stack: number }[]) => void) | null = null;
 
     constructor(tableId: string, supabaseClient: typeof supabase) {
         this.tableId = tableId;
@@ -191,6 +193,14 @@ export class HeadlessTableEngine {
      */
     getHandCount(): number {
         return this.handCount;
+    }
+
+    /**
+     * Register a callback that fires after each hand completes with final player stacks.
+     * Used by TournamentEngine for real-time chip sync to tournament_players.
+     */
+    onHandComplete(callback: (tableId: string, players: { user_id: string; stack: number }[]) => void): void {
+        this.handCompleteCallback = callback;
     }
 
     // ═════════════════════════════════════════════════════════════════════════════
@@ -432,6 +442,20 @@ export class HeadlessTableEngine {
                     this.pendingTimerIds = [];
                     // Clean up unsubscribe from this hand (prevent unbounded growth)
                     persistenceUnsub();
+
+                    // Fire hand-complete callback with final player stacks (tournament chip sync)
+                    if (this.handCompleteCallback) {
+                        const finalStacks = players.map(p => ({
+                            user_id: p.user_id,
+                            stack: p.stack,
+                        }));
+                        try {
+                            this.handCompleteCallback(this.tableId, finalStacks);
+                        } catch (e) {
+                            // Don't let callback errors break the dealing loop
+                        }
+                    }
+
                     resolve();
                 }
             });
