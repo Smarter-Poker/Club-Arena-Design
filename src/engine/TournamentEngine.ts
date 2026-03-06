@@ -926,6 +926,8 @@ export class TournamentEngine {
             'PLO4': 'plo4',
             'PLO5': 'plo5',
             'PLO6': 'plo6',
+            'PLO8': 'plo8',
+            'OFC_PINEAPPLE': 'ofc_pineapple',
             'SHORT_DECK': 'short_deck',
         };
         return map[gameType?.toUpperCase()] || 'nlh';

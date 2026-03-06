@@ -177,22 +177,22 @@ const HYPER_TURBO_STRUCTURE = [
 ];
 
 const PAYOUT_9_PLACES = [
-    { position: 1, percentage: 30 }, { position: 2, percentage: 20 },
-    { position: 3, percentage: 15 }, { position: 4, percentage: 10 },
-    { position: 5, percentage: 8 },  { position: 6, percentage: 6 },
-    { position: 7, percentage: 5 },  { position: 8, percentage: 3.5 },
-    { position: 9, percentage: 2.5 },
+    { place: 1, percentage: 30 }, { place: 2, percentage: 20 },
+    { place: 3, percentage: 15 }, { place: 4, percentage: 10 },
+    { place: 5, percentage: 8 },  { place: 6, percentage: 6 },
+    { place: 7, percentage: 5 },  { place: 8, percentage: 3.5 },
+    { place: 9, percentage: 2.5 },
 ];
 
 const PAYOUT_5_PLACES = [
-    { position: 1, percentage: 40 }, { position: 2, percentage: 25 },
-    { position: 3, percentage: 18 }, { position: 4, percentage: 10 },
-    { position: 5, percentage: 7 },
+    { place: 1, percentage: 40 }, { place: 2, percentage: 25 },
+    { place: 3, percentage: 18 }, { place: 4, percentage: 10 },
+    { place: 5, percentage: 7 },
 ];
 
 const PAYOUT_3_PLACES = [
-    { position: 1, percentage: 50 }, { position: 2, percentage: 30 },
-    { position: 3, percentage: 20 },
+    { place: 1, percentage: 50 }, { place: 2, percentage: 30 },
+    { place: 3, percentage: 20 },
 ];
 
 const TOURNAMENT_CONFIGS = [
@@ -450,18 +450,18 @@ const SNG_BLIND_9MAX = [
 
 const SNG_CONFIGS = [
     // NLH SNGs
-    { name: '$5 Turbo SNG 6-Max NLH',   type: 'sng' as const, gameVariant: 'nlh',           buyIn: 5,  rake: 0.50, startingStack: 1500, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ position: 1, percentage: 65 }, { position: 2, percentage: 35 }] },
+    { name: '$5 Turbo SNG 6-Max NLH',   type: 'sng' as const, gameVariant: 'nlh',           buyIn: 5,  rake: 0.50, startingStack: 1500, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ place: 1, percentage: 65 }, { place: 2, percentage: 35 }] },
     { name: '$10 SNG 9-Max NLH',         type: 'sng' as const, gameVariant: 'nlh',           buyIn: 10, rake: 1.00, startingStack: 2000, maxPlayers: 9, minPlayers: 9, horsesToRegister: 9, blindStructure: SNG_BLIND_9MAX, payoutStructure: PAYOUT_3_PLACES },
-    { name: '$25 SNG 6-Max NLH',         type: 'sng' as const, gameVariant: 'nlh',           buyIn: 25, rake: 2.50, startingStack: 2000, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ position: 1, percentage: 65 }, { position: 2, percentage: 35 }] },
+    { name: '$25 SNG 6-Max NLH',         type: 'sng' as const, gameVariant: 'nlh',           buyIn: 25, rake: 2.50, startingStack: 2000, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ place: 1, percentage: 65 }, { place: 2, percentage: 35 }] },
     // PLO4 SNGs
-    { name: '$5 Turbo SNG 6-Max PLO4',   type: 'sng' as const, gameVariant: 'plo4',          buyIn: 5,  rake: 0.50, startingStack: 1500, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ position: 1, percentage: 65 }, { position: 2, percentage: 35 }] },
-    { name: '$10 SNG 6-Max PLO4',        type: 'sng' as const, gameVariant: 'plo4',          buyIn: 10, rake: 1.00, startingStack: 2000, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ position: 1, percentage: 65 }, { position: 2, percentage: 35 }] },
+    { name: '$5 Turbo SNG 6-Max PLO4',   type: 'sng' as const, gameVariant: 'plo4',          buyIn: 5,  rake: 0.50, startingStack: 1500, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ place: 1, percentage: 65 }, { place: 2, percentage: 35 }] },
+    { name: '$10 SNG 6-Max PLO4',        type: 'sng' as const, gameVariant: 'plo4',          buyIn: 10, rake: 1.00, startingStack: 2000, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ place: 1, percentage: 65 }, { place: 2, percentage: 35 }] },
     // PLO5 SNGs
-    { name: '$10 SNG 6-Max PLO5',        type: 'sng' as const, gameVariant: 'plo5',          buyIn: 10, rake: 1.00, startingStack: 2000, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ position: 1, percentage: 65 }, { position: 2, percentage: 35 }] },
+    { name: '$10 SNG 6-Max PLO5',        type: 'sng' as const, gameVariant: 'plo5',          buyIn: 10, rake: 1.00, startingStack: 2000, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ place: 1, percentage: 65 }, { place: 2, percentage: 35 }] },
     // PLO8 SNGs
     { name: '$5 SNG 9-Max PLO8',         type: 'sng' as const, gameVariant: 'plo8',          buyIn: 5,  rake: 0.50, startingStack: 2000, maxPlayers: 9, minPlayers: 9, horsesToRegister: 9, blindStructure: SNG_BLIND_9MAX, payoutStructure: PAYOUT_3_PLACES },
     // Pineapple SNGs
-    { name: '$5 SNG 6-Max Pineapple',    type: 'sng' as const, gameVariant: 'ofc_pineapple', buyIn: 5,  rake: 0.50, startingStack: 1500, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ position: 1, percentage: 65 }, { position: 2, percentage: 35 }] },
+    { name: '$5 SNG 6-Max Pineapple',    type: 'sng' as const, gameVariant: 'ofc_pineapple', buyIn: 5,  rake: 0.50, startingStack: 1500, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ place: 1, percentage: 65 }, { place: 2, percentage: 35 }] },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -487,19 +487,19 @@ const SPIN_MULTIPLIERS = [
 
 const SPIN_CONFIGS = [
     // NLH Spins
-    { name: '$1 Spin NLH',    type: 'spin' as const, gameVariant: 'nlh',  buyIn: 1,  rake: 0.10, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ position: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
-    { name: '$3 Spin NLH',    type: 'spin' as const, gameVariant: 'nlh',  buyIn: 3,  rake: 0.30, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ position: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
-    { name: '$5 Spin NLH',    type: 'spin' as const, gameVariant: 'nlh',  buyIn: 5,  rake: 0.50, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ position: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
-    { name: '$10 Spin NLH',   type: 'spin' as const, gameVariant: 'nlh',  buyIn: 10, rake: 1.00, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ position: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
+    { name: '$1 Spin NLH',    type: 'spin' as const, gameVariant: 'nlh',  buyIn: 1,  rake: 0.10, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
+    { name: '$3 Spin NLH',    type: 'spin' as const, gameVariant: 'nlh',  buyIn: 3,  rake: 0.30, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
+    { name: '$5 Spin NLH',    type: 'spin' as const, gameVariant: 'nlh',  buyIn: 5,  rake: 0.50, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
+    { name: '$10 Spin NLH',   type: 'spin' as const, gameVariant: 'nlh',  buyIn: 10, rake: 1.00, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
     // PLO4 Spins
-    { name: '$3 Spin PLO4',   type: 'spin' as const, gameVariant: 'plo4', buyIn: 3,  rake: 0.30, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ position: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
-    { name: '$5 Spin PLO4',   type: 'spin' as const, gameVariant: 'plo4', buyIn: 5,  rake: 0.50, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ position: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
+    { name: '$3 Spin PLO4',   type: 'spin' as const, gameVariant: 'plo4', buyIn: 3,  rake: 0.30, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
+    { name: '$5 Spin PLO4',   type: 'spin' as const, gameVariant: 'plo4', buyIn: 5,  rake: 0.50, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
     // PLO5 Spins
-    { name: '$3 Spin PLO5',   type: 'spin' as const, gameVariant: 'plo5', buyIn: 3,  rake: 0.30, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ position: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
+    { name: '$3 Spin PLO5',   type: 'spin' as const, gameVariant: 'plo5', buyIn: 3,  rake: 0.30, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
     // PLO8 Spins
-    { name: '$3 Spin PLO8',   type: 'spin' as const, gameVariant: 'plo8', buyIn: 3,  rake: 0.30, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ position: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
+    { name: '$3 Spin PLO8',   type: 'spin' as const, gameVariant: 'plo8', buyIn: 3,  rake: 0.30, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
     // Pineapple Spins
-    { name: '$3 Spin Pineapple', type: 'spin' as const, gameVariant: 'ofc_pineapple', buyIn: 3, rake: 0.30, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ position: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
+    { name: '$3 Spin Pineapple', type: 'spin' as const, gameVariant: 'ofc_pineapple', buyIn: 3, rake: 0.30, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -626,6 +626,14 @@ class HorseOrchestrator {
             }
         }
 
+        // Launch today's tournaments (created with near-future start_time so DealerPage picks them up)
+        try {
+            const tournResult = await this.launchTodaysTournaments();
+            console.log(`[Orchestrator] Tournaments launched: ${tournResult.launched} tournaments, ${tournResult.totalRegistered} horses registered`);
+        } catch (err: any) {
+            this.logError(`Tournament launch failed: ${err.message}`);
+        }
+
         // Broadcast launch event
         masterBus.emit('BALANCE_UPDATED', { source: 'orchestrator', tablesCreated, horsesSeated });
 
@@ -703,13 +711,9 @@ class HorseOrchestrator {
         if (!config) return { tournamentId: null, registered: 0 };
 
         try {
-            // Calculate start time based on config
-            const now = new Date();
-            const startTime = new Date();
-            startTime.setHours(config.startHour, 0, 0, 0);
-            if (startTime <= now) {
-                startTime.setDate(startTime.getDate() + 1); // Next day if already past
-            }
+            // Set start_time to 10 seconds from now so DealerPage can discover and start it
+            // (DealerPage discovers tournaments where start_time <= now AND current_players >= 2)
+            const startTime = new Date(Date.now() + 10_000);
 
             // Map game variant to DB format (uppercase)
             const gameTypeMap: Record<string, string> = {
@@ -725,7 +729,7 @@ class HorseOrchestrator {
                     club_id: this.getNextClubId(),
                     name: config.name,
                     game_type: dbGameType,
-                    variant: config.type, // freezeout/bounty/progressive_bounty/mystery_bounty
+                    variant: config.type === 'mtt' ? 'freezeout' : config.type, // freezeout/bounty/progressive_bounty/mystery_bounty
                     buy_in_amount: config.buyIn,
                     buy_in_fee: config.rake,
                     guaranteed_prize: config.guarantee || 0,
@@ -836,6 +840,7 @@ class HorseOrchestrator {
                     blind_structure: config.blindStructure,
                     payout_structure: config.payoutStructure || [],
                     late_reg_mins: 0,
+                    start_time: new Date(Date.now() + 10_000).toISOString(), // Start 10s from now
                 })
                 .select()
                 .single();
@@ -867,7 +872,7 @@ class HorseOrchestrator {
                 .update({
                     current_players: registered,
                     guaranteed_prize: prizePool,
-                    status: registered >= config.minPlayers ? 'running' : 'registering',
+                    status: 'REGISTERING', // DealerPage discovers REGISTERING tournaments and starts them via TournamentEngine
                 })
                 .eq('id', sng.id);
 
@@ -927,8 +932,9 @@ class HorseOrchestrator {
                     current_players: 0,
                     status: 'REGISTERING',
                     blind_structure: config.blindStructure,
-                    payout_structure: [{ position: 1, percentage: 100 }],
+                    payout_structure: [{ place: 1, percentage: 100 }],
                     late_reg_mins: 0,
+                    start_time: new Date(Date.now() + 10_000).toISOString(),
                 })
                 .select()
                 .single();
@@ -958,7 +964,7 @@ class HorseOrchestrator {
                 .from('tournaments')
                 .update({
                     current_players: registered,
-                    status: registered >= config.minPlayers ? 'running' : 'registering',
+                    status: 'REGISTERING',
                 })
                 .eq('id', spin.id);
 
@@ -1002,23 +1008,23 @@ class HorseOrchestrator {
         console.log('[Orchestrator] 🐎 LAUNCHING EVERYTHING — FULL FLEET DEPLOYMENT');
         console.log('═══════════════════════════════════════════════════════════════');
 
-        // 1. Cash games
+        // 1. Cash games + today's tournaments (launch() now includes launchTodaysTournaments())
         const cashResult = await this.launch();
 
-        // 2. Today's tournaments
-        const tourneyResult = await this.launchTodaysTournaments();
-
-        // 3. All SNGs
+        // 2. All SNGs
         const sngResult = await this.launchAllSNGs();
 
-        // 4. All Spins
+        // 3. All Spins
         const spinResult = await this.launchAllSpins();
+
+        // Count today's tournaments (already launched inside launch())
+        const todaysCount = this.getTodaysTournaments().length;
 
         const summary = {
             cashTables: cashResult.tablesCreated,
             cashHorses: cashResult.horsesSeated,
-            tournaments: tourneyResult.launched,
-            tournamentHorses: tourneyResult.totalRegistered,
+            tournaments: todaysCount,
+            tournamentHorses: 0, // Already counted in launch()
             sngs: sngResult.launched,
             sngHorses: sngResult.totalRegistered,
             spins: spinResult.launched,

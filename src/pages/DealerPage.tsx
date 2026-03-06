@@ -394,7 +394,7 @@ export default function DealerPage() {
                                 setHorseLaunchStatus('Launching horses...');
                                 try {
                                     const result = await horseOrchestrator.launch();
-                                    setHorseLaunchStatus(`Launched: ${result.tablesCreated} tables, ${result.horsesSeated} horses`);
+                                    setHorseLaunchStatus(`Launched: ${result.tablesCreated} cash tables, ${result.horsesSeated} horses + tournaments`);
                                     setHorsesLaunched(true);
                                     // Refresh dashboard to pick up new tables
                                     setTimeout(refreshDashboard, 2000);
