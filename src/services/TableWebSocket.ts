@@ -110,6 +110,14 @@ export class TableWebSocket {
         }
 
         try {
+            // Ensure auth session is ready before subscribing to channel
+            const { data: { session } } = await this.supabase.auth.getSession();
+            if (!session) {
+                console.warn('[TableWS] No auth session, scheduling reconnect...');
+                this.scheduleReconnect();
+                return false;
+            }
+
             // Create channel for this table
             this.channel = this.supabase.channel(`table:${this.tableId}`, {
                 config: {
@@ -149,14 +157,18 @@ export class TableWebSocket {
 
                         resolve();
                     } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-                        reject(new Error(`Channel error: ${status}`));
+                        console.warn(`[TableWS] Channel ${status}, will retry...`);
+                        resolve(); // Don't reject — let reconnect handle it gracefully
                     }
                 });
             });
 
+            if (!this.isConnected) {
+                this.scheduleReconnect();
+            }
             return this.isConnected;
         } catch (error) {
-            console.error('[TableWS] Connection error:', error);
+            console.warn('[TableWS] Connection attempt failed, scheduling reconnect...');
             this.scheduleReconnect();
             return false;
         }
