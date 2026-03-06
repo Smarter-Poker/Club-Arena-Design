@@ -103,13 +103,44 @@ function getRakeConfigForBlinds(sb: number, bb: number): { percent: number; cap:
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// GAME VARIANT LABEL HELPER
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const GAME_VARIANT_LABELS: Record<string, string> = {
+    'NLH': 'NO LIMIT HOLD\'EM',
+    'nlh': 'NO LIMIT HOLD\'EM',
+    'PLO4': 'POT LIMIT OMAHA (4)',
+    'plo4': 'POT LIMIT OMAHA (4)',
+    'PLO5': 'POT LIMIT OMAHA (5)',
+    'plo5': 'POT LIMIT OMAHA (5)',
+    'PLO6': 'POT LIMIT OMAHA (6)',
+    'plo6': 'POT LIMIT OMAHA (6)',
+    'PLO8': 'PLO HI-LO (8+)',
+    'plo8': 'PLO HI-LO (8+)',
+    'SHORT_DECK': 'SHORT DECK 6+',
+    'short_deck': 'SHORT DECK 6+',
+    'OFC_PINEAPPLE': 'OFC PINEAPPLE',
+    'ofc_pineapple': 'OFC PINEAPPLE',
+    'FLH': 'FIXED LIMIT HOLD\'EM',
+    'flh': 'FIXED LIMIT HOLD\'EM',
+    'FLO': 'FIXED LIMIT OMAHA',
+    'flo': 'FIXED LIMIT OMAHA',
+    'MIXED': 'MIXED GAME',
+    'mixed': 'MIXED GAME',
+};
+
+function getGameVariantLabel(gameType: string): string {
+    return GAME_VARIANT_LABELS[gameType] || gameType.toUpperCase().replace(/_/g, ' ');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface TableState {
     tableId: string;
     tableName: string;
-    gameType: 'NLH' | 'PLO4' | 'PLO5' | 'PLO6';
+    gameType: 'NLH' | 'PLO4' | 'PLO5' | 'PLO6' | 'PLO8' | 'SHORT_DECK' | 'OFC_PINEAPPLE' | string;
     blinds: string;
     maxPlayers: 6 | 9;
     pot: number;
@@ -1755,7 +1786,7 @@ export default function TablePage() {
                             {/* Game Info */}
                             <div className="game-info">
                                 <span className="game-type">{tableState.gameType}</span>
-                                <span className="game-variant">CLASSIC HOLD'EM  (4)</span>
+                                <span className="game-variant">{getGameVariantLabel(tableState.gameType)}</span>
                                 <span className="game-blinds">Blinds: {tableState.blinds}</span>
                                 {/* Spectator Badge */}
                                 {presence?.observers && presence.observers.length > 0 && (
