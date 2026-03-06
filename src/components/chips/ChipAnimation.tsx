@@ -71,9 +71,7 @@ const getChipValue = (amount: number, index: number): string => {
 };
 
 const formatAmount = (amount: number): string => {
-    if (amount >= 1000000) return `${(amount / 1000000).toFixed(1)}M`;
-    if (amount >= 1000) return `${(amount / 1000).toFixed(1)}K`;
-    return amount.toString();
+    return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
 // Chip Pile Component (static)

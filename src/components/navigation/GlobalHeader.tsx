@@ -23,13 +23,9 @@ import { useWalletStore } from '../../stores/useWalletStore';
 import HamburgerMenu from './HamburgerMenu';
 import styles from './GlobalHeader.module.css';
 
-// Format numbers compactly: 1.1k, 10.1k, 100.1k, 1.1M
+// Format numbers with exact penny-level precision
 const formatCompact = (num: number): string => {
-    if (num < 1000) return num.toString();
-    if (num < 10000) return (num / 1000).toFixed(1) + 'k';   // 1.1k - 9.9k
-    if (num < 100000) return (num / 1000).toFixed(1) + 'k'; // 10.1k - 99.9k
-    if (num < 1000000) return (num / 1000).toFixed(0) + 'k'; // 100k - 999k
-    return (num / 1000000).toFixed(1) + 'M'; // 1.1M+
+    return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
 interface GlobalHeaderProps {

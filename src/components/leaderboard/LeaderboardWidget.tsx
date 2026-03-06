@@ -92,11 +92,9 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
 
     const formatValue = (value: number) => {
         if (selectedType === 'profit') {
-            if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`;
-            return `$${value}`;
+            return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
-        if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
-        return value.toString();
+        return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     const getTypeLabel = (t: LeaderboardType) => {

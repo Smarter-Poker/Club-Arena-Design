@@ -19,9 +19,7 @@ export const ChipBalance: React.FC<ChipBalanceProps> = ({
     onClick
 }) => {
     const formatAmount = (n: number) => {
-        if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
-        if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
-        return n.toLocaleString();
+        return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     return (

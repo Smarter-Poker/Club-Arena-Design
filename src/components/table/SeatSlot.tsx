@@ -73,20 +73,16 @@ const RANK_DISPLAY: Record<string, string> = {
     A: 'A',
 };
 
+// EXACT precision — no abbreviations, no rounding
 function formatStack(amount: number): string {
-    if (amount >= 1000000) {
-        return (amount / 1000000).toFixed(1) + 'M';
-    }
-    if (amount >= 1000) {
-        return (amount / 1000).toFixed(1) + 'K';
-    }
-    return amount.toLocaleString();
+    return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// EXACT precision — no rounding in BB calculation
 function formatStackAsBB(stack: number, bigBlind: number): string {
-    if (bigBlind <= 0) return '0 BB';
-    const bb = Math.round(stack / bigBlind);
-    return `${bb} BB`;
+    if (bigBlind <= 0) return '0.00 BB';
+    const bb = stack / bigBlind;
+    return `${bb.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} BB`;
 }
 
 function getActionLabel(action: LastAction, amount?: number): string {

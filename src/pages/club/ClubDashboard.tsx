@@ -120,13 +120,7 @@ export default function ClubDashboard() {
     };
 
     const formatNumber = (num: number): string => {
-        if (Math.abs(num) >= 1000000) {
-            return (num / 1000000).toFixed(1) + 'M';
-        }
-        if (Math.abs(num) >= 1000) {
-            return (num / 1000).toFixed(1) + 'K';
-        }
-        return num.toLocaleString();
+        return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     if (loading) {

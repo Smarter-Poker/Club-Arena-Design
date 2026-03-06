@@ -9,28 +9,59 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * Format a number as currency
+ * Format a number as currency — EXACT to the penny, zero rounding.
+ * All chip/currency values in the platform must show true, real-time
+ * precision down to the cent. No abbreviations (K, M) allowed.
  */
 export function formatCurrency(amount: number, currency = 'USD'): string {
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency,
-        minimumFractionDigits: 0,
+        minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     }).format(amount);
 }
 
 /**
- * Format chips with compact notation (e.g., 1.5K, 2.3M)
+ * Format chip amounts — EXACT precision, NO rounding, NO abbreviations.
+ *
+ * CRITICAL DIRECTIVE: Every value must be true and 100% real, defined
+ * down to the penny. Zero rounding allowed — not even K/M notation.
+ *
+ * Examples:
+ *   1286.50  → "1,286.50"
+ *   50000.00 → "50,000.00"
+ *   455123   → "455,123.00"
+ *   0.75     → "0.75"
+ *   100      → "100.00"
  */
 export function formatChips(amount: number): string {
-    if (amount >= 1_000_000) {
-        return `${(amount / 1_000_000).toFixed(1)}M`;
+    return amount.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+}
+
+/**
+ * Format chip amount with currency prefix — EXACT precision.
+ */
+export function formatChipsWithCurrency(amount: number, currency: string = ''): string {
+    return `${currency}${formatChips(amount)}`;
+}
+
+/**
+ * Format chip amount as integer when decimals are .00 — still no abbreviations.
+ * Use ONLY for display contexts where the value is guaranteed to be whole chips
+ * (e.g., blind levels, stack sizes in whole chips).
+ */
+export function formatChipsWhole(amount: number): string {
+    if (Number.isInteger(amount)) {
+        return amount.toLocaleString('en-US');
     }
-    if (amount >= 1_000) {
-        return `${(amount / 1_000).toFixed(1)}K`;
-    }
-    return amount.toLocaleString();
+    return amount.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
 }
 
 /**
@@ -130,10 +161,10 @@ export function slugify(str: string): string {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * Format stakes (e.g., "1/2", "5/10")
+ * Format stakes (e.g., "1/2", "5/10") — uses whole-chip display for blinds
  */
 export function formatStakes(smallBlind: number, bigBlind: number): string {
-    return `${formatChips(smallBlind)}/${formatChips(bigBlind)}`;
+    return `${formatChipsWhole(smallBlind)}/${formatChipsWhole(bigBlind)}`;
 }
 
 /**

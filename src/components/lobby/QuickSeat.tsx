@@ -37,10 +37,7 @@ export interface QuickSeatProps {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function formatAmount(amount: number, currency: string = ''): string {
-    if (amount >= 1000) {
-        return `${currency}${(amount / 1000).toFixed(0)}K`;
-    }
-    return `${currency}${amount.toLocaleString()}`;
+    return `${currency}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function getBBLabel(amount: number, bigBlind: number): string {

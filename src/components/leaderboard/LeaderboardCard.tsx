@@ -64,9 +64,7 @@ export default function LeaderboardCard({
     };
 
     const formatScore = (score: number): string => {
-        if (score >= 1000000) return `${(score / 1000000).toFixed(1)}M`;
-        if (score >= 1000) return `${(score / 1000).toFixed(1)}K`;
-        return score.toLocaleString();
+        return score.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     if (loading) {

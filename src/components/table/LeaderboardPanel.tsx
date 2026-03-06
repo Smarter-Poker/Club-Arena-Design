@@ -46,15 +46,9 @@ export interface LeaderboardPanelProps {
 // UTILITIES
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// EXACT precision — no abbreviations, no rounding
 function formatAmount(amount: number, currency: string = ''): string {
-    const absAmount = Math.abs(amount);
-    if (absAmount >= 1000000) {
-        return `${amount < 0 ? '-' : ''}${currency}${(absAmount / 1000000).toFixed(1)}M`;
-    }
-    if (absAmount >= 1000) {
-        return `${amount < 0 ? '-' : ''}${currency}${(absAmount / 1000).toFixed(1)}K`;
-    }
-    return `${amount < 0 ? '-' : ''}${currency}${absAmount.toLocaleString()}`;
+    return `${amount < 0 ? '-' : ''}${currency}${Math.abs(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

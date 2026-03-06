@@ -68,7 +68,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
                             className={`preset-btn ${value === preset ? 'active' : ''}`}
                             onClick={() => handlePreset(preset)}
                         >
-                            {preset >= 1000 ? `${preset / 1000}K` : preset}
+                            {preset.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </button>
                     ))}
                 </div>

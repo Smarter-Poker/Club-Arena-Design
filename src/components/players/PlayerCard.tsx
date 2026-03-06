@@ -60,7 +60,7 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
                         <span className="stat-label">Win Rate</span>
                     </div>
                     <div className="stat">
-                        <span className="stat-value">{(stats.totalWinnings / 1000).toFixed(1)}K</span>
+                        <span className="stat-value">{stats.totalWinnings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         <span className="stat-label">Winnings</span>
                     </div>
                 </div>

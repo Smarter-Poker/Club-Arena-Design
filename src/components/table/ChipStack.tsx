@@ -106,7 +106,7 @@ export default function ChipStack({
                                             className="chip-value"
                                             style={{ color: color.text, fontSize: chipSize * 0.35 }}
                                         >
-                                            {stack.value >= 1000 ? `${stack.value / 1000}K` : stack.value}
+                                            {stack.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </span>
                                     )}
                                 </div>

@@ -248,21 +248,19 @@ export function useCanAfford(amount: number): boolean {
 }
 
 /**
- * Format chip amount with proper notation
+ * Format chip amount — EXACT precision, NO rounding, NO abbreviations.
+ * Every value down to the penny.
  */
 export function useChipFormatter() {
     return useCallback((amount: number, showSign = false): string => {
         const prefix = showSign && amount > 0 ? '+' : '';
         const sign = amount < 0 ? '-' : '';
         const absAmount = Math.abs(amount);
-
-        if (absAmount >= 1000000) {
-            return `${prefix}${sign}$${(absAmount / 1000000).toFixed(2)}M`;
-        }
-        if (absAmount >= 1000) {
-            return `${prefix}${sign}$${(absAmount / 1000).toFixed(1)}K`;
-        }
-        return `${prefix}${sign}$${absAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+        const formatted = absAmount.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        });
+        return `${prefix}${sign}$${formatted}`;
     }, []);
 }
 
@@ -358,7 +356,7 @@ export function useClubSearch() {
  */
 export function useStakesFormatter() {
     return useCallback((smallBlind: number, bigBlind: number): string => {
-        const formatAmount = (n: number) => n >= 1000 ? `${n / 1000}K` : n.toString();
+        const formatAmount = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         return `${formatAmount(smallBlind)}/${formatAmount(bigBlind)}`;
     }, []);
 }

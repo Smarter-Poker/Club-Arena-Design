@@ -37,7 +37,7 @@ export const ChipDenominations: React.FC<ChipDenominationsProps> = ({
                             style={{ backgroundColor: denom.color }}
                         >
                             <span className="chip-value">
-                                {denom.value >= 1000 ? `${denom.value / 1000}K` : denom.value}
+                                {denom.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                         </div>
                         <span className="chip-count">×{denom.count}</span>

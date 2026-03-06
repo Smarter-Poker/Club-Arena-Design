@@ -34,14 +34,9 @@ export interface PotDisplayProps {
 // UTILITIES
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// EXACT precision — no abbreviations, no rounding
 function formatAmount(amount: number, currency: string = ''): string {
-    if (amount >= 1000000) {
-        return `${currency}${(amount / 1000000).toFixed(2)}M`;
-    }
-    if (amount >= 1000) {
-        return `${currency}${(amount / 1000).toFixed(1)}K`;
-    }
-    return `${currency}${amount.toLocaleString()}`;
+    return `${currency}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // Chip denomination colors

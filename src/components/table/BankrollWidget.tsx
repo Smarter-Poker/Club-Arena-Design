@@ -61,9 +61,9 @@ export const BankrollWidget: React.FC<BankrollWidgetProps> = ({
         return `${mins}m`;
     };
 
+    // EXACT precision — no abbreviations, no rounding
     const formatNumber = (n: number) => {
-        if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
-        return n.toLocaleString();
+        return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     return (

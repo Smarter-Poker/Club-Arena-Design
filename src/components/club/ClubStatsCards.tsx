@@ -88,13 +88,11 @@ export default function ClubStatsCards({ clubId }: ClubStatsCardsProps) {
     };
 
     const formatNumber = (num: number): string => {
-        if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-        if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-        return num.toLocaleString();
+        return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     const formatCurrency = (num: number): string => {
-        return `$${formatNumber(num)}`;
+        return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     const statCards = [

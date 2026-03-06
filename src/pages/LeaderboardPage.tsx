@@ -150,14 +150,12 @@ export default function LeaderboardPage() {
 
     const formatValue = (value: number, m: LeaderboardMetric): string => {
         if (m === 'profit') {
-            if (Math.abs(value) >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
-            if (Math.abs(value) >= 1000) return `$${(value / 1000).toFixed(1)}K`;
-            return `$${value.toLocaleString()}`;
+            return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
         if (m === 'vpip' || m === 'roi') {
             return `${value.toFixed(1)}%`;
         }
-        return value.toLocaleString();
+        return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     const getRankBadge = (rank: number): string => {

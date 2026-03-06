@@ -422,7 +422,7 @@ export default function CashierPage() {
                                         size="sm"
                                         onClick={() => setAmount(val.toString())}
                                     >
-                                        ${val >= 1000 ? `${val / 1000}K` : val}
+                                        ${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </MetalButton>
                                 ))}
                             </div>

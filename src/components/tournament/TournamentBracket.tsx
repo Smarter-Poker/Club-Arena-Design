@@ -102,9 +102,7 @@ export default function TournamentBracket({
     };
 
     const formatChips = (chips: number): string => {
-        if (chips >= 1000000) return `${(chips / 1000000).toFixed(1)}M`;
-        if (chips >= 1000) return `${(chips / 1000).toFixed(0)}K`;
-        return chips.toLocaleString();
+        return chips.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     const getPositionBadge = (pos?: number): string => {
