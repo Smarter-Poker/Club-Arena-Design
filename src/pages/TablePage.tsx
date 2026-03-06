@@ -1770,7 +1770,11 @@ export default function TablePage() {
             {/* ═══════════════════════════════════════════════════════════════════════
           ADD CHIPS BUTTON (Left side)
           ═══════════════════════════════════════════════════════════════════════ */}
-            <button className="add-chips-btn" title="Add Chips">
+            <button className="add-chips-btn" title="Add Chips" onClick={() => {
+                if (tableState.players[tableState.heroSeat - 1]) {
+                    setShowBuyInModal(true);
+                }
+            }}>
                 <span>+</span>
             </button>
 
@@ -1991,7 +1995,7 @@ export default function TablePage() {
                             <span className="menu-item-label">Cashier</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
-                        <button className="menu-item">
+                        <button className="menu-item" onClick={() => { setShowBuyInModal(true); setIsSideMenuOpen(false); }}>
                             <span className="menu-item-icon">+</span>
                             <span className="menu-item-label">Top Up</span>
                             <span className="menu-item-arrow">›</span>
