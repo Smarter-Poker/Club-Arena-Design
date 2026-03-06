@@ -150,6 +150,16 @@ export default function App() {
                             }
                         />
 
+                        {/* Table — Standalone without AppLayout shell (full-screen immersive) */}
+                        <Route
+                            path="table/:tableId"
+                            element={
+                                <AuthGuard>
+                                    <TablePage />
+                                </AuthGuard>
+                            }
+                        />
+
                         {/* Protected routes with AppLayout shell */}
                         <Route element={<AppLayout />}>
                             {/* Lobby */}
@@ -322,16 +332,6 @@ export default function App() {
                                 element={
                                     <AuthGuard>
                                         <SettlementPage />
-                                    </AuthGuard>
-                                }
-                            />
-
-                            {/* Table */}
-                            <Route
-                                path="table/:tableId"
-                                element={
-                                    <AuthGuard>
-                                        <TablePage />
                                     </AuthGuard>
                                 }
                             />
