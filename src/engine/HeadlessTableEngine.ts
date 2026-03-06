@@ -581,14 +581,17 @@ export class HeadlessTableEngine {
                             console.error(`[HeadlessTableEngine:${this.tableId}] Stack sync retry ALSO failed:`, retryErr);
                         }
                     }
-                })();
 
-                // Sync tournament player chips (tournament tables only)
-                if (this.isTournamentTable() && this.tableInfo?.tournament_id) {
-                    this.syncTournamentPlayerChips(players).catch(err =>
-                        console.error(`[HeadlessTableEngine:${this.tableId}] Tournament chip sync error:`, err)
-                    );
-                }
+                    // Sync tournament player chips AFTER table_seats are written (tournament tables only)
+                    // This reads from table_seats (DB source of truth) and writes to tournament_players
+                    if (this.isTournamentTable() && this.tableInfo?.tournament_id) {
+                        try {
+                            await this.syncTournamentPlayerChips(players);
+                        } catch (err) {
+                            console.error(`[HeadlessTableEngine:${this.tableId}] Tournament chip sync error:`, err);
+                        }
+                    }
+                })();
 
                 // Execute rake waterfall (cash games only — no rake in tournaments)
                 if (!this.isTournamentTable()) {
@@ -857,31 +860,45 @@ export class HeadlessTableEngine {
     /**
      * Sync stacks to tournament_players.stack so tournament engine can track eliminations
      */
-    private async syncTournamentPlayerChips(players: SeatedPlayer[]): Promise<void> {
+    private async syncTournamentPlayerChips(_players: SeatedPlayer[]): Promise<void> {
         if (!this.tableInfo?.tournament_id) {
             console.warn(`[HeadlessTableEngine:${this.tableId}] syncTournamentPlayerChips skipped — no tournament_id`);
             return;
         }
-        console.log(`[HeadlessTableEngine:${this.tableId}] syncTournamentPlayerChips — syncing ${players.length} players to tournament_players`);
+
+        // Read authoritative stacks directly from table_seats (DB source of truth)
+        // because in-memory player stacks may not reflect final post-hand values
+        const { data: seats, error: seatErr } = await this.supabaseClient
+            .from('table_seats')
+            .select('user_id, stack')
+            .eq('table_id', this.tableId);
+
+        if (seatErr || !seats || seats.length === 0) {
+            console.warn(`[HeadlessTableEngine:${this.tableId}] syncTournamentPlayerChips — no seats found or error: ${seatErr?.message}`);
+            return;
+        }
+
+        console.log(`[HeadlessTableEngine:${this.tableId}] syncTournamentPlayerChips — syncing ${seats.length} players from table_seats to tournament_players`);
+
         const results = await Promise.allSettled(
-            players.map(async (player) => {
-                const rounded = Math.round(player.stack * 100) / 100;
+            seats.map(async (seat) => {
+                const rounded = Math.round(seat.stack * 100) / 100;
                 const { error } = await this.supabaseClient
                     .from('tournament_players')
                     .update({ chips: rounded })
                     .eq('tournament_id', this.tableInfo!.tournament_id!)
-                    .eq('user_id', player.user_id);
+                    .eq('user_id', seat.user_id);
                 if (error) {
-                    console.error(`[HeadlessTableEngine:${this.tableId}] Failed to sync chips for ${player.username}: ${error.message}`);
+                    console.error(`[HeadlessTableEngine:${this.tableId}] Failed to sync chips for ${seat.user_id.slice(0, 8)}: ${error.message}`);
                 } else {
-                    console.log(`[HeadlessTableEngine:${this.tableId}] Synced ${player.username} chips → ${rounded}`);
+                    console.log(`[HeadlessTableEngine:${this.tableId}] Synced ${seat.user_id.slice(0, 8)} chips → ${rounded}`);
                 }
-                return { user_id: player.user_id, stack: rounded, error };
+                return { user_id: seat.user_id, stack: rounded, error };
             })
         );
         const failed = results.filter(r => r.status === 'rejected');
         if (failed.length > 0) {
-            console.error(`[HeadlessTableEngine:${this.tableId}] ${failed.length}/${players.length} tournament chip syncs failed`);
+            console.error(`[HeadlessTableEngine:${this.tableId}] ${failed.length}/${seats.length} tournament chip syncs failed`);
         }
     }
 
