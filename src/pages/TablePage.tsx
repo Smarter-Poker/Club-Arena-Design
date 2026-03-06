@@ -2048,7 +2048,7 @@ export default function TablePage() {
                             <span className="menu-item-label">Wait List</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
-                        <button className="menu-item exit" onClick={() => navigate(-1)}>
+                        <button className="menu-item exit" onClick={() => { setIsSideMenuOpen(false); handleLeaveTable(); }}>
                             <span className="menu-item-icon">←</span>
                             <span className="menu-item-label">Leave Table</span>
                             <span className="menu-item-arrow">›</span>
