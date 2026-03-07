@@ -8,7 +8,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { tournamentService } from '../../services/TournamentService';
 import { supabase } from '../../lib/supabase';
 import type { Tournament } from '../../types/database.types';
-import { useUserStore } from '../../stores/useUserStore';
+import { useAuthUser } from '../../hooks/useAuthUser';
 import TournamentBracket from '../../components/tournament/TournamentBracket';
 import './TournamentDetails.css';
 import { useToast } from '../../components/common/Toast';
@@ -38,7 +38,7 @@ interface TournamentTable {
 export default function TournamentDetails() {
     const { tournamentId } = useParams<{ tournamentId: string }>();
     const navigate = useNavigate();
-    const { user } = useUserStore();
+    const { user, isHydrating } = useAuthUser();
     const toast = useToast();
 
     const [tournament, setTournament] = useState<Tournament | null>(null);
@@ -66,6 +66,14 @@ export default function TournamentDetails() {
             startCountdown();
         }
     }, [tournament]);
+
+    // Re-check registration status when user hydrates after tournament loaded
+    useEffect(() => {
+        if (user && tournament && entries.length > 0) {
+            const registered = entries.some(e => e.user_id === user.id);
+            setIsRegistered(registered);
+        }
+    }, [user, entries]);
 
     const loadTournament = async () => {
         if (!tournamentId) return;
@@ -183,7 +191,11 @@ export default function TournamentDetails() {
     };
 
     const handleRegister = async () => {
-        if (!tournament || !user) return;
+        if (!tournament) return;
+        if (!user) {
+            toast.error('Loading your profile... please try again in a moment');
+            return;
+        }
         setShowSignUpModal(false);
 
         try {
@@ -199,7 +211,11 @@ export default function TournamentDetails() {
     };
 
     const handleUnregister = async () => {
-        if (!tournament || !user) return;
+        if (!tournament) return;
+        if (!user) {
+            toast.error('Loading your profile... please try again in a moment');
+            return;
+        }
 
         try {
             await tournamentService.unregisterPlayer(tournament.id, user.id);
