@@ -89,9 +89,9 @@ export default function TournamentLobbyPage() {
     const loadTournaments = async () => {
         setLoading(true);
         try {
-            let query = supabase
-                .from('tournaments')
-                .select(`
+            // Fetch active tournaments first (REGISTERING/RUNNING/ANNOUNCED), then completed
+            // Two queries to ensure active tournaments always appear regardless of limit
+            const fields = `
                     id,
                     name,
                     club_id,
@@ -104,26 +104,41 @@ export default function TournamentLobbyPage() {
                     max_players,
                     starting_chips,
                     game_type
-                `)
+                `;
+
+            let activeQuery = supabase.from('tournaments').select(fields)
+                .in('status', ['ANNOUNCED', 'REGISTERING', 'RUNNING'])
                 .order('start_time', { ascending: true });
 
+            let completedQuery = supabase.from('tournaments').select(fields)
+                .in('status', ['COMPLETED', 'CANCELLED'])
+                .order('start_time', { ascending: false })
+                .limit(30);
+
             if (clubId) {
-                query = query.eq('club_id', clubId);
+                activeQuery = activeQuery.eq('club_id', clubId);
+                completedQuery = completedQuery.eq('club_id', clubId);
             }
 
-            if (statusFilter !== 'all') {
-                if (statusFilter === 'upcoming') {
-                    query = query.in('status', ['ANNOUNCED', 'REGISTERING']);
-                } else if (statusFilter === 'REGISTERING') {
-                    query = query.eq('status', 'REGISTERING');
-                } else if (statusFilter === 'RUNNING') {
-                    query = query.eq('status', 'RUNNING');
-                } else if (statusFilter === 'COMPLETED') {
-                    query = query.eq('status', 'COMPLETED');
-                }
+            // Apply status filter
+            let data: any[] = [];
+            let error: any = null;
+            if (statusFilter === 'all' || statusFilter === 'upcoming') {
+                const [activeRes, completedRes] = await Promise.all([activeQuery, completedQuery]);
+                error = activeRes.error || completedRes.error;
+                const active = activeRes.data || [];
+                const completed = statusFilter === 'upcoming' ? [] : (completedRes.data || []);
+                data = [...active, ...completed];
+            } else if (statusFilter === 'REGISTERING') {
+                const res = await supabase.from('tournaments').select(fields).eq('status', 'REGISTERING').order('start_time', { ascending: true }).limit(50);
+                data = res.data || []; error = res.error;
+            } else if (statusFilter === 'RUNNING') {
+                const res = await supabase.from('tournaments').select(fields).eq('status', 'RUNNING').order('start_time', { ascending: true }).limit(50);
+                data = res.data || []; error = res.error;
+            } else if (statusFilter === 'COMPLETED') {
+                const res = await supabase.from('tournaments').select(fields).eq('status', 'COMPLETED').order('start_time', { ascending: false }).limit(50);
+                data = res.data || []; error = res.error;
             }
-
-            const { data, error } = await query.limit(50);
 
             if (!error && data) {
                 // Check which tournaments user is registered for

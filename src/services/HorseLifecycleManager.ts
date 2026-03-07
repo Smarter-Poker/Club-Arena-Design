@@ -249,11 +249,22 @@ class HorseLifecycleManagerCore {
 
       let forcedResets = 0;
 
-      // Check each stuck horse to see if it has an active tournament
-      // NOTE: table_seats are managed in-memory by HeadlessTableEngine (no DB table)
-      // So we can only verify tournament participation via DB
+      // Check each stuck horse for active table seats or tournaments
       for (const horse of stuckHorses) {
         try {
+          // Check if horse still has active table seat (table_seats uses joined_at, not created_at)
+          const { data: activeSeat } = await supabase
+            .from('table_seats')
+            .select('table_id')
+            .eq('user_id', horse.id)
+            .is('left_at', null)
+            .maybeSingle();
+
+          if (activeSeat) {
+            // Has active seat — don't force reset
+            continue;
+          }
+
           // Check if horse is in active tournament
           const { data: activeTournament } = await supabase
             .from('tournament_players')
@@ -537,8 +548,41 @@ class HorseLifecycleManagerCore {
    * NOTE: table_seats is managed in-memory by HeadlessTableEngine, no DB table exists
    */
   async cleanupStaleSeats(): Promise<void> {
-    // Seats are managed in-memory, not persisted to Supabase — nothing to clean up
-    return;
+    try {
+      const thresholdMs = this.staleSeatThreshold * 60 * 60 * 1000;
+      const thresholdTime = new Date(Date.now() - thresholdMs).toISOString();
+
+      // Find stale seats — still active (left_at is null) but joined long ago
+      // Column is 'joined_at' (not 'created_at')
+      const { data: staleSeats, error: seatError } = await supabase
+        .from('table_seats')
+        .select('id, table_id, user_id, joined_at')
+        .is('left_at', null)
+        .lt('joined_at', thresholdTime);
+
+      if (seatError || !staleSeats || staleSeats.length === 0) return;
+
+      let cleaned = 0;
+      for (const seat of staleSeats) {
+        try {
+          await supabase
+            .from('table_seats')
+            .update({ left_at: new Date().toISOString(), status: 'left' })
+            .eq('id', seat.id);
+          cleaned++;
+
+          // If user is a horse, reset to available
+          const { data: profile } = await supabase.from('profiles').select('is_horse').eq('id', seat.user_id).single();
+          if (profile?.is_horse) {
+            await this.resetHorse(seat.user_id);
+          }
+        } catch { /* skip individual errors */ }
+      }
+
+      if (cleaned > 0) {
+        console.log('[LifecycleManager] Cleaned up ' + cleaned + ' stale table seats');
+      }
+    } catch { /* non-critical cleanup */ }
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

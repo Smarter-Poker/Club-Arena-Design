@@ -989,6 +989,14 @@ export class TournamentEngine {
                 continue;
             }
 
+            // First clear any existing record at this seat (left-over from previous occupant)
+            await this.supabase
+                .from('table_seats')
+                .update({ left_at: new Date().toISOString(), status: 'left' })
+                .eq('table_id', target.tableId)
+                .eq('seat_number', newSeat)
+                .is('left_at', null);
+
             // Insert at target table
             const { error: insertErr } = await this.supabase
                 .from('table_seats')
