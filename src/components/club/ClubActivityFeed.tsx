@@ -133,7 +133,7 @@ export default function ClubActivityFeed({
             case 'big_hand': return '♠';
             case 'announcement': return '✱';
             case 'agent_action': return '★';
-            case 'payout': return '$';
+            case 'payout': return '◉';
             default: return '○';
         }
     };

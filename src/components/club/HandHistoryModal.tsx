@@ -39,7 +39,7 @@ export function HandHistoryModal({
     isOpen,
     onClose,
     hands,
-    currency = '$',
+    currency = '',
     onReplay,
     onShare,
 }: HandHistoryModalProps) {
@@ -148,8 +148,8 @@ export function HandHistoryModal({
                                     <pre className="raw-text">
                                         {`PokerStars Hand #${selectedHand.handNumber}: ${selectedHand.variant} (${selectedHand.stakes}) - ${selectedHand.timestamp}
 Table '${selectedHand.variant}' 6-max Seat #1 is the button
-Seat 1: Player1 ($100 in chips)
-Seat 2: Player2 ($120 in chips)
+Seat 1: Player1 (100 in chips)
+Seat 2: Player2 (120 in chips)
 ...
 *** HOLE CARDS ***
 Dealt to Hero [${selectedHand.holeCards.join(' ')}]

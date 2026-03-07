@@ -25,7 +25,7 @@ export function TipDealer({
     isOpen,
     onClose,
     onTip,
-    currency = '$',
+    currency = '',
     defaultAmounts = [1, 5, 25, 100],
     balance,
 }: TipDealerProps) {
@@ -52,7 +52,7 @@ export function TipDealer({
         <div className="tip-overlay" onClick={onClose}>
             <div className="tip-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="tip-modal__header">
-                    <span className="tip-modal__icon">$</span>
+                    <span className="tip-modal__icon">◉</span>
                     <h3 className="tip-modal__title">Tip Dealer</h3>
                     <button className="tip-modal__close" onClick={onClose}>×</button>
                 </div>

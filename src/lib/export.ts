@@ -62,11 +62,11 @@ export async function exportSettlementPDF(data: {
     <div class="summary">
         <div class="summary-row">
             <span class="summary-label">Total Rake Collected</span>
-            <span class="summary-value">$${data.totalRake.toLocaleString()}</span>
+            <span class="summary-value">${data.totalRake.toLocaleString()}</span>
         </div>
         <div class="summary-row">
             <span class="summary-label">Total BBJ Contribution</span>
-            <span class="summary-value">$${data.totalBBJ.toLocaleString()}</span>
+            <span class="summary-value">${data.totalBBJ.toLocaleString()}</span>
         </div>
     </div>
 
@@ -87,11 +87,11 @@ export async function exportSettlementPDF(data: {
             ${data.clubWires.map(club => `
                 <tr>
                     <td>${club.clubName}</td>
-                    <td class="${club.netPlayerPL >= 0 ? 'positive' : 'negative'}">$${club.netPlayerPL.toLocaleString()}</td>
-                    <td>$${club.grossRake.toLocaleString()}</td>
-                    <td>$${club.unionTax.toLocaleString()}</td>
-                    <td>$${club.agentCommissions.toLocaleString()}</td>
-                    <td><strong>$${Math.abs(club.finalWire).toLocaleString()}</strong></td>
+                    <td class="${club.netPlayerPL >= 0 ? 'positive' : 'negative'}">${club.netPlayerPL.toLocaleString()}</td>
+                    <td>${club.grossRake.toLocaleString()}</td>
+                    <td>${club.unionTax.toLocaleString()}</td>
+                    <td>${club.agentCommissions.toLocaleString()}</td>
+                    <td><strong>${Math.abs(club.finalWire).toLocaleString()}</strong></td>
                     <td>${club.direction === 'PAY_TO_UNION' ? '→ Pay to Union' : '← Collect from Union'}</td>
                 </tr>
             `).join('')}
@@ -113,10 +113,10 @@ export async function exportSettlementPDF(data: {
             ${data.agentPayouts.map(agent => `
                 <tr>
                     <td>${agent.agentName}</td>
-                    <td>$${agent.rakeGenerated.toLocaleString()}</td>
+                    <td>${agent.rakeGenerated.toLocaleString()}</td>
                     <td>${(agent.commissionRate * 100).toFixed(1)}%</td>
-                    <td>$${agent.grossCommission.toLocaleString()}</td>
-                    <td><strong class="positive">$${agent.netPayout.toLocaleString()}</strong></td>
+                    <td>${agent.grossCommission.toLocaleString()}</td>
+                    <td><strong class="positive">${agent.netPayout.toLocaleString()}</strong></td>
                 </tr>
             `).join('')}
         </tbody>
@@ -176,7 +176,7 @@ export async function exportHandHistoryPDF(data: {
 
     <div class="section">
         <strong>Players:</strong>
-        ${data.players.map(p => `<div>${p.position}: ${p.name} ($${p.stack})</div>`).join('')}
+        ${data.players.map(p => `<div>${p.position}: ${p.name} (${p.stack})</div>`).join('')}
     </div>
 
     <div class="section">
@@ -189,7 +189,7 @@ export async function exportHandHistoryPDF(data: {
         ${data.actions.map(a => `
             <div class="action">
                 <span class="action-player">${a.player}</span>: 
-                <span class="action-${a.action.toLowerCase()}">${a.action}${a.amount ? ` $${a.amount}` : ''}</span>
+                <span class="action-${a.action.toLowerCase()}">${a.action}${a.amount ? ` ${a.amount}` : ''}</span>
                 (${a.street})
             </div>
         `).join('')}
@@ -197,7 +197,7 @@ export async function exportHandHistoryPDF(data: {
 
     <div class="section">
         <strong>Result:</strong>
-        <div class="winner">${data.result.winners.join(', ')} wins $${data.result.pot}</div>
+        <div class="winner">${data.result.winners.join(', ')} wins ${data.result.pot}</div>
     </div>
 </body>
 </html>

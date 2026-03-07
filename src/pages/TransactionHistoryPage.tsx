@@ -145,7 +145,7 @@ export default function TransactionHistoryPage() {
     const getCurrencySymbol = (currency: string): string => {
         switch (currency) {
             case 'diamonds': return '◆';
-            case 'usd': return '$';
+            case 'usd': return '';
             default: return '♠';
         }
     };

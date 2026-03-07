@@ -311,7 +311,7 @@ export default function UnionDetailPage() {
                 </div>
                 {financialSummary && (
                     <div className={styles.statCard}>
-                        <span className={styles.statValue}>${financialSummary.unionRevenue.toLocaleString()}</span>
+                        <span className={styles.statValue}>{financialSummary.unionRevenue.toLocaleString()}</span>
                         <span className={styles.statLabel}>This Period</span>
                     </div>
                 )}
@@ -367,7 +367,7 @@ export default function UnionDetailPage() {
                                     {tables.filter(t => (t.current_players || 0) > 0).slice(0, 8).map(table => (
                                         <Link key={table.id} to={`/table/${table.id}`} className={styles.tableRow}>
                                             <span>{table.name}</span>
-                                            <span className={styles.stakes}>${table.small_blind}/${table.big_blind}</span>
+                                            <span className={styles.stakes}>{table.small_blind}/{table.big_blind}</span>
                                             <span>{table.current_players}/{table.max_players}</span>
                                         </Link>
                                     ))}
@@ -401,11 +401,11 @@ export default function UnionDetailPage() {
                                 <div className={styles.financialQuick}>
                                     <div>
                                         <span>Total Rake</span>
-                                        <strong>${financialSummary.totalRakeThisPeriod.toLocaleString()}</strong>
+                                        <strong>{financialSummary.totalRakeThisPeriod.toLocaleString()}</strong>
                                     </div>
                                     <div>
                                         <span>Union Revenue</span>
-                                        <strong className={styles.positive}>${financialSummary.unionRevenue.toLocaleString()}</strong>
+                                        <strong className={styles.positive}>{financialSummary.unionRevenue.toLocaleString()}</strong>
                                     </div>
                                     <div>
                                         <span>Pending</span>
@@ -414,7 +414,7 @@ export default function UnionDetailPage() {
                                     {financialSummary.overdueAmount > 0 && (
                                         <div>
                                             <span>Overdue</span>
-                                            <strong className={styles.negative}>${financialSummary.overdueAmount.toLocaleString()}</strong>
+                                            <strong className={styles.negative}>{financialSummary.overdueAmount.toLocaleString()}</strong>
                                         </div>
                                     )}
                                 </div>
@@ -477,7 +477,7 @@ export default function UnionDetailPage() {
                                                         <span className={`${styles.statusDot} ${styles[table.status]}`} />
                                                     </div>
                                                     <div className={styles.tableCardDetails}>
-                                                        <span>${table.small_blind}/${table.big_blind}</span>
+                                                        <span>{table.small_blind}/{table.big_blind}</span>
                                                         <span className={styles.variant}>{(table as any).game_variant || 'NLH'}</span>
                                                         <span>{table.current_players}/{table.max_players}</span>
                                                     </div>
@@ -501,7 +501,7 @@ export default function UnionDetailPage() {
                                                         <h4>{table.name}</h4>
                                                     </div>
                                                     <div className={styles.tableCardDetails}>
-                                                        <span>${table.small_blind}/${table.big_blind}</span>
+                                                        <span>{table.small_blind}/{table.big_blind}</span>
                                                         <span className={styles.variant}>{(table as any).game_variant || 'NLH'}</span>
                                                         <span>0/{table.max_players}</span>
                                                     </div>
@@ -541,7 +541,7 @@ export default function UnionDetailPage() {
                                         </div>
                                         <div className={styles.tableCardDetails}>
                                             <span> {t.clubs?.name || 'Club'}</span>
-                                            <span> ${t.buy_in_amount?.toLocaleString() || 0}</span>
+                                            <span> {t.buy_in_amount?.toLocaleString() || 0}</span>
                                             <span> {t.current_players || 0}/{t.max_players || 100}</span>
                                             <span> {new Date(t.start_time).toLocaleDateString()}</span>
                                         </div>
@@ -563,14 +563,14 @@ export default function UnionDetailPage() {
                             <div className={styles.financialCard}>
                                 <span className={styles.financialIcon}>%</span>
                                 <div>
-                                    <span className={styles.financialValue}>${financialSummary.totalRakeThisPeriod.toLocaleString()}</span>
+                                    <span className={styles.financialValue}>{financialSummary.totalRakeThisPeriod.toLocaleString()}</span>
                                     <span className={styles.financialLabel}>Total Rake This Period</span>
                                 </div>
                             </div>
                             <div className={styles.financialCard}>
-                                <span className={styles.financialIcon}>$</span>
+                                <span className={styles.financialIcon}>◉</span>
                                 <div>
-                                    <span className={`${styles.financialValue} ${styles.positive}`}>${financialSummary.unionRevenue.toLocaleString()}</span>
+                                    <span className={`${styles.financialValue} ${styles.positive}`}>{financialSummary.unionRevenue.toLocaleString()}</span>
                                     <span className={styles.financialLabel}>Union Revenue (10%)</span>
                                 </div>
                             </div>
@@ -585,7 +585,7 @@ export default function UnionDetailPage() {
                                 <div className={`${styles.financialCard} ${styles.overdue}`}>
                                     <span className={styles.financialIcon}>!</span>
                                     <div>
-                                        <span className={`${styles.financialValue} ${styles.negative}`}>${financialSummary.overdueAmount.toLocaleString()}</span>
+                                        <span className={`${styles.financialValue} ${styles.negative}`}>{financialSummary.overdueAmount.toLocaleString()}</span>
                                         <span className={styles.financialLabel}>Overdue</span>
                                     </div>
                                 </div>
@@ -610,8 +610,8 @@ export default function UnionDetailPage() {
                                         <tr key={s.id}>
                                             <td>{new Date(s.periodStart).toLocaleDateString()} - {new Date(s.periodEnd).toLocaleDateString()}</td>
                                             <td>{s.clubName}</td>
-                                            <td>${s.rakeGenerated.toLocaleString()}</td>
-                                            <td className={styles.positive}>${s.unionShare.toLocaleString()}</td>
+                                            <td>{s.rakeGenerated.toLocaleString()}</td>
+                                            <td className={styles.positive}>{s.unionShare.toLocaleString()}</td>
                                             <td>
                                                 <span className={`${styles.statusBadge} ${styles[s.status]}`}>
                                                     {s.status}

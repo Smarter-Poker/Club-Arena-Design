@@ -190,7 +190,7 @@ function generateNotation(hand: NotationHand, currency: string): string {
 export function HandNotation({
     hand,
     onClose,
-    currency = '$',
+    currency = '',
 }: HandNotationProps) {
     const [copied, setCopied] = useState(false);
 

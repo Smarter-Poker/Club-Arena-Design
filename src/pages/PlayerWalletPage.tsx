@@ -101,7 +101,7 @@ export default function PlayerWalletPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                     <div>
                         <span style={{ fontSize: '0.85rem', color: '#8899aa', textTransform: 'uppercase', letterSpacing: '1px' }}>Total Balance</span>
-                        <div style={{ fontSize: '2rem', fontWeight: 700, color: '#00d4ff', fontFamily: 'monospace' }}>${totalBalance.toLocaleString()}</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 700, color: '#00d4ff', fontFamily: 'monospace' }}>{totalBalance.toLocaleString()}</div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ fontSize: '1.5rem' }}>◆</span>
@@ -189,15 +189,15 @@ export default function PlayerWalletPage() {
                                     borderTop: '1px solid rgba(255,255,255,0.1)'
                                 }}>
                                     <div style={{ textAlign: 'center' }}>
-                                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#00d4ff' }}>${balances[type].available.toLocaleString()}</div>
+                                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#00d4ff' }}>{balances[type].available.toLocaleString()}</div>
                                         <div style={{ fontSize: '0.7rem', color: '#6a7a8a', textTransform: 'uppercase' }}>Available</div>
                                     </div>
                                     <div style={{ textAlign: 'center' }}>
-                                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ff9500' }}>${balances[type].locked.toLocaleString()}</div>
+                                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ff9500' }}>{balances[type].locked.toLocaleString()}</div>
                                         <div style={{ fontSize: '0.7rem', color: '#6a7a8a', textTransform: 'uppercase' }}>Locked</div>
                                     </div>
                                     <div style={{ textAlign: 'center' }}>
-                                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>${balances[type].total.toLocaleString()}</div>
+                                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>{balances[type].total.toLocaleString()}</div>
                                         <div style={{ fontSize: '0.7rem', color: '#6a7a8a', textTransform: 'uppercase' }}>Total</div>
                                     </div>
                                 </div>

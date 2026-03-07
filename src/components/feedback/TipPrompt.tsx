@@ -21,7 +21,7 @@ export const TipPrompt: React.FC<TipPromptProps> = ({
     return (
         <div className="tip-prompt-overlay">
             <div className="tip-prompt">
-                <div className="tip-icon">$</div>
+                <div className="tip-icon">◉</div>
                 <h3>Nice Win!</h3>
                 <p>Would you like to tip {dealerName}?</p>
 

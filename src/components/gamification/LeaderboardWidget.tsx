@@ -82,7 +82,7 @@ export function LeaderboardWidget({
 
     const getMetricIcon = () => {
         switch (metric) {
-            case 'profit': return '$';
+            case 'profit': return '';
             case 'hands': return '♠';
             case 'rake': return '%';
             default: return '≡';

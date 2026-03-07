@@ -22,7 +22,7 @@ export interface BadBeatJackpotProps {
 
 export function BadBeatJackpot({
     amount,
-    currency = '$',
+    currency = '',
     qualifyingHand,
     isHit = false,
 }: BadBeatJackpotProps) {

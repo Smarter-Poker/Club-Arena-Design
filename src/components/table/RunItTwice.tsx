@@ -122,7 +122,7 @@ export function RunItTwiceBoard({
     potAmount,
     playerName,
     opponentName,
-    currency = '$',
+    currency = '',
 }: RunItTwiceBoardProps) {
     // Calculate pot splits
     const potSplit = useMemo(() => {

@@ -91,7 +91,7 @@ export const RakeReports: React.FC<RakeReportsProps> = ({ clubId }) => {
             {/* Summary Cards */}
             <div className="summary-cards">
                 <div className="summary-card">
-                    <span className="card-value">${data.totalRake.toLocaleString()}</span>
+                    <span className="card-value">{data.totalRake.toLocaleString()}</span>
                     <span className="card-label">Total Rake</span>
                 </div>
                 <div className="summary-card">
@@ -99,7 +99,7 @@ export const RakeReports: React.FC<RakeReportsProps> = ({ clubId }) => {
                     <span className="card-label">Hands Played</span>
                 </div>
                 <div className="summary-card">
-                    <span className="card-value">${data.avgRakePerHand.toFixed(2)}</span>
+                    <span className="card-value">{data.avgRakePerHand.toFixed(2)}</span>
                     <span className="card-label">Avg per Hand</span>
                 </div>
             </div>
@@ -117,7 +117,7 @@ export const RakeReports: React.FC<RakeReportsProps> = ({ clubId }) => {
                                 />
                             </div>
                             <span className="bar-label">{day.date}</span>
-                            <span className="bar-value">${day.rake}</span>
+                            <span className="bar-value">{day.rake}</span>
                         </div>
                     ))}
                 </div>
@@ -132,7 +132,7 @@ export const RakeReports: React.FC<RakeReportsProps> = ({ clubId }) => {
                             <span className="game-rank">#{index + 1}</span>
                             <span className="game-name">{game.game}</span>
                             <div className="game-stats">
-                                <span className="game-rake">${game.rake.toLocaleString()}</span>
+                                <span className="game-rake">{game.rake.toLocaleString()}</span>
                                 <span className="game-hands">{game.hands.toLocaleString()} hands</span>
                             </div>
                         </div>

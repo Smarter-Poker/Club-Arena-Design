@@ -46,7 +46,7 @@ export const VIPUpgradeModal: React.FC<VIPUpgradeModalProps> = ({
 
                             <h3>{tier.name}</h3>
                             <div className="tier-price">
-                                <span className="price">${tier.price}</span>
+                                <span className="price">{tier.price}</span>
                                 <span className="period">/{tier.period}</span>
                             </div>
 

@@ -82,7 +82,7 @@ const PAYMENT_METHODS: PaymentMethodInfo[] = [
         id: 'cashapp',
         icon: '',
         label: 'Cash App',
-        description: '$ClubArena',
+        description: 'ClubArena',
         minAmount: 10,
         maxAmount: 5000,
         fee: 3,
@@ -227,7 +227,7 @@ export default function DepositWithdrawModal({
                 {/* Current Balance */}
                 <div className={styles.balanceBar}>
                     <span>Current Balance</span>
-                    <span className={styles.balanceValue}>${currentBalance.toLocaleString()}</span>
+                    <span className={styles.balanceValue}>{currentBalance.toLocaleString()}</span>
                 </div>
 
                 {/* Error */}
@@ -262,7 +262,6 @@ export default function DepositWithdrawModal({
                         </div>
 
                         <div className={styles.amountInput}>
-                            <span className={styles.currency}>$</span>
                             <input
                                 type="number"
                                 placeholder="0.00"
@@ -279,14 +278,14 @@ export default function DepositWithdrawModal({
                                     onClick={() => setAmount(qa.toString())}
                                     className={numericAmount === qa ? styles.active : ''}
                                 >
-                                    ${qa}
+                                    {qa}
                                 </button>
                             ))}
                         </div>
 
                         <div className={styles.limits}>
-                            <span>Min: ${currentMethod.minAmount}</span>
-                            <span>Max: ${currentMethod.maxAmount.toLocaleString()}</span>
+                            <span>Min: {currentMethod.minAmount}</span>
+                            <span>Max: {currentMethod.maxAmount.toLocaleString()}</span>
                         </div>
 
                         {mode === 'withdraw' && (
@@ -323,18 +322,18 @@ export default function DepositWithdrawModal({
                         <div className={styles.summary}>
                             <div className={styles.summaryRow}>
                                 <span>Amount</span>
-                                <span>${numericAmount.toLocaleString()}</span>
+                                <span>{numericAmount.toLocaleString()}</span>
                             </div>
                             {feeAmount > 0 && (
                                 <div className={styles.summaryRow}>
                                     <span>Fee ({currentMethod.fee}%)</span>
-                                    <span>-${feeAmount.toFixed(2)}</span>
+                                    <span>-{feeAmount.toFixed(2)}</span>
                                 </div>
                             )}
                             <div className={`${styles.summaryRow} ${styles.total}`}>
                                 <span>{mode === 'deposit' ? 'You Pay' : 'You Receive'}</span>
                                 <span>
-                                    ${mode === 'deposit' ?
+                                    {mode === 'deposit' ?
                                         numericAmount.toLocaleString() :
                                         (numericAmount - feeAmount).toFixed(2)}
                                 </span>
@@ -351,7 +350,7 @@ export default function DepositWithdrawModal({
                             <div className={styles.instructions}>
                                 <p>After clicking confirm:</p>
                                 <ol>
-                                    <li>Send ${numericAmount.toLocaleString()} to <strong>{currentMethod.description}</strong></li>
+                                    <li>Send {numericAmount.toLocaleString()} to <strong>{currentMethod.description}</strong></li>
                                     <li>Include your reference ID in the memo</li>
                                     <li>Funds will be credited within {currentMethod.processingTime}</li>
                                 </ol>
@@ -376,7 +375,7 @@ export default function DepositWithdrawModal({
 
                         {mode === 'deposit' && (
                             <>
-                                <p>Send exactly <strong>${numericAmount.toLocaleString()}</strong> to:</p>
+                                <p>Send exactly <strong>{numericAmount.toLocaleString()}</strong> to:</p>
                                 <div className={styles.paymentDetails}>
                                     <span className={styles.destination}>{currentMethod?.description}</span>
                                 </div>

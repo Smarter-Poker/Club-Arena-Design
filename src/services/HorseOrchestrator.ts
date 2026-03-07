@@ -198,7 +198,7 @@ const PAYOUT_3_PLACES = [
 const TOURNAMENT_CONFIGS = [
     // ─── MONDAY: FREEROLL FIESTA ─────────────────────────────────────────────
     {
-        name: '$0 FREEROLL — Monday Kickoff (NLH)',
+        name: 'FREEROLL — Monday Kickoff (NLH)',
         type: 'mtt' as const, gameVariant: 'nlh',
         buyIn: 0, rake: 0, guarantee: 100,
         startingStack: 3000, maxPlayers: 100, minPlayers: 10,
@@ -209,7 +209,7 @@ const TOURNAMENT_CONFIGS = [
         startHour: 19,
     },
     {
-        name: '$0 FREEROLL — PLO4 Welcome',
+        name: 'FREEROLL — PLO4 Welcome',
         type: 'mtt' as const, gameVariant: 'plo4',
         buyIn: 0, rake: 0, guarantee: 50,
         startingStack: 3000, maxPlayers: 50, minPlayers: 6,
@@ -222,7 +222,7 @@ const TOURNAMENT_CONFIGS = [
 
     // ─── TUESDAY: FREEZEOUT FEST ─────────────────────────────────────────────
     {
-        name: '$5 Freezeout — NLH Deep Stack',
+        name: '5 Chip Freezeout — NLH Deep Stack',
         type: 'mtt' as const, gameVariant: 'nlh',
         buyIn: 5, rake: 0.50, guarantee: 200,
         startingStack: 5000, maxPlayers: 100, minPlayers: 10,
@@ -233,7 +233,7 @@ const TOURNAMENT_CONFIGS = [
         startHour: 19,
     },
     {
-        name: '$10 Freezeout — PLO5 Action',
+        name: '10 Chip Freezeout — PLO5 Action',
         type: 'mtt' as const, gameVariant: 'plo5',
         buyIn: 10, rake: 1, guarantee: 300,
         startingStack: 5000, maxPlayers: 50, minPlayers: 8,
@@ -246,7 +246,7 @@ const TOURNAMENT_CONFIGS = [
 
     // ─── WEDNESDAY: BOUNTY BONANZA ───────────────────────────────────────────
     {
-        name: '$10 Bounty Hunter — NLH ($5 Bounty)',
+        name: '10 Chip Bounty Hunter — NLH (5 Chip Bounty)',
         type: 'bounty' as const, gameVariant: 'nlh',
         buyIn: 10, rake: 1, guarantee: 500,
         startingStack: 5000, maxPlayers: 100, minPlayers: 10,
@@ -257,7 +257,7 @@ const TOURNAMENT_CONFIGS = [
         startHour: 19,
     },
     {
-        name: '$25 Bounty Hunter — PLO4 ($12 Bounty)',
+        name: '25 Chip Bounty Hunter — PLO4 (12 Chip Bounty)',
         type: 'bounty' as const, gameVariant: 'plo4',
         buyIn: 25, rake: 2.50, guarantee: 1000,
         startingStack: 10000, maxPlayers: 50, minPlayers: 10,
@@ -270,7 +270,7 @@ const TOURNAMENT_CONFIGS = [
 
     // ─── THURSDAY: PKO (PROGRESSIVE KNOCKOUT) ────────────────────────────────
     {
-        name: '$15 PKO — NLH Progressive Bounty',
+        name: '15 Chip PKO — NLH Progressive Bounty',
         type: 'progressive_bounty' as const, gameVariant: 'nlh',
         buyIn: 15, rake: 1.50, guarantee: 750,
         startingStack: 7500, maxPlayers: 100, minPlayers: 10,
@@ -281,7 +281,7 @@ const TOURNAMENT_CONFIGS = [
         startHour: 19,
     },
     {
-        name: '$20 PKO — PLO8 Hi-Lo Bounty',
+        name: '20 Chip PKO — PLO8 Hi-Lo Bounty',
         type: 'progressive_bounty' as const, gameVariant: 'plo8',
         buyIn: 20, rake: 2, guarantee: 500,
         startingStack: 7500, maxPlayers: 50, minPlayers: 8,
@@ -294,7 +294,7 @@ const TOURNAMENT_CONFIGS = [
 
     // ─── FRIDAY: MYSTERY BOUNTY MADNESS ──────────────────────────────────────
     {
-        name: '$25 Mystery Bounty — NLH (Random $5-$500 Bounties!)',
+        name: '25 Chip Mystery Bounty — NLH (Random 5-500 Chip Bounties!)',
         type: 'mystery_bounty' as const, gameVariant: 'nlh',
         buyIn: 25, rake: 2.50, guarantee: 1500,
         startingStack: 10000, maxPlayers: 100, minPlayers: 15,
@@ -305,7 +305,7 @@ const TOURNAMENT_CONFIGS = [
         startHour: 20,
     },
     {
-        name: '$10 Mystery Bounty — Pineapple OFC',
+        name: '10 Chip Mystery Bounty — Pineapple OFC',
         type: 'mystery_bounty' as const, gameVariant: 'ofc_pineapple',
         buyIn: 10, rake: 1, guarantee: 250,
         startingStack: 5000, maxPlayers: 30, minPlayers: 6,
@@ -318,7 +318,7 @@ const TOURNAMENT_CONFIGS = [
 
     // ─── SATURDAY: TURBO MARATHON + BIG GUARANTEE ────────────────────────────
     {
-        name: '$50 Saturday Major — NLH $5K GTD',
+        name: '50 Chip Saturday Major — NLH 5K GTD',
         type: 'mtt' as const, gameVariant: 'nlh',
         buyIn: 50, rake: 5, guarantee: 5000,
         startingStack: 15000, maxPlayers: 200, minPlayers: 20,
@@ -329,7 +329,7 @@ const TOURNAMENT_CONFIGS = [
         startHour: 18,
     },
     {
-        name: '$5 Turbo Bounty — NLH Fast Action',
+        name: '5 Chip Turbo Bounty — NLH Fast Action',
         type: 'bounty' as const, gameVariant: 'nlh',
         buyIn: 5, rake: 0.50, guarantee: 150,
         startingStack: 3000, maxPlayers: 50, minPlayers: 10,
@@ -340,7 +340,7 @@ const TOURNAMENT_CONFIGS = [
         startHour: 20,
     },
     {
-        name: '$10 Turbo PLO4 — Saturday Night Action',
+        name: '10 Chip Turbo PLO4 — Saturday Night Action',
         type: 'mtt' as const, gameVariant: 'plo4',
         buyIn: 10, rake: 1, guarantee: 300,
         startingStack: 5000, maxPlayers: 50, minPlayers: 8,
@@ -353,7 +353,7 @@ const TOURNAMENT_CONFIGS = [
 
     // ─── SUNDAY: CHAMPIONSHIP SUNDAY ─────────────────────────────────────────
     {
-        name: '$100 Sunday Championship — NLH $10K GTD',
+        name: '100 Chip Sunday Championship — NLH 10K GTD',
         type: 'mtt' as const, gameVariant: 'nlh',
         buyIn: 100, rake: 10, guarantee: 10000,
         startingStack: 20000, maxPlayers: 200, minPlayers: 25,
@@ -364,7 +364,7 @@ const TOURNAMENT_CONFIGS = [
         startHour: 17,
     },
     {
-        name: '$50 Sunday PLO4 Championship — $3K GTD',
+        name: '50 Chip Sunday PLO4 Championship — 3K GTD',
         type: 'mtt' as const, gameVariant: 'plo4',
         buyIn: 50, rake: 5, guarantee: 3000,
         startingStack: 15000, maxPlayers: 100, minPlayers: 15,
@@ -375,7 +375,7 @@ const TOURNAMENT_CONFIGS = [
         startHour: 19,
     },
     {
-        name: '$25 PKO — Sunday Night Showdown',
+        name: '25 Chip PKO — Sunday Night Showdown',
         type: 'progressive_bounty' as const, gameVariant: 'nlh',
         buyIn: 25, rake: 2.50, guarantee: 1500,
         startingStack: 10000, maxPlayers: 100, minPlayers: 15,
@@ -386,7 +386,7 @@ const TOURNAMENT_CONFIGS = [
         startHour: 21,
     },
     {
-        name: '$0 FREEROLL — Sunday Night Freebie (NLH)',
+        name: 'FREEROLL — Sunday Night Freebie (NLH)',
         type: 'mtt' as const, gameVariant: 'nlh',
         buyIn: 0, rake: 0, guarantee: 200,
         startingStack: 3000, maxPlayers: 100, minPlayers: 10,
@@ -399,7 +399,7 @@ const TOURNAMENT_CONFIGS = [
 
     // ─── DAILY RECURRING (EVERY DAY) ─────────────────────────────────────────
     {
-        name: '$0 Daily Freeroll — NLH (Every Day)',
+        name: 'Daily Freeroll — NLH (Every Day)',
         type: 'mtt' as const, gameVariant: 'nlh',
         buyIn: 0, rake: 0, guarantee: 50,
         startingStack: 2000, maxPlayers: 100, minPlayers: 6,
@@ -410,7 +410,7 @@ const TOURNAMENT_CONFIGS = [
         startHour: 12,
     },
     {
-        name: '$10 Daily Grinder — NLH $250 GTD',
+        name: '10 Chip Daily Grinder — NLH 250 GTD',
         type: 'mtt' as const, gameVariant: 'nlh',
         buyIn: 10, rake: 1, guarantee: 250,
         startingStack: 5000, maxPlayers: 100, minPlayers: 10,
@@ -450,18 +450,18 @@ const SNG_BLIND_9MAX = [
 
 const SNG_CONFIGS = [
     // NLH SNGs
-    { name: '$5 Turbo SNG 6-Max NLH',   type: 'sng' as const, gameVariant: 'nlh',           buyIn: 5,  rake: 0.50, startingStack: 1500, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ place: 1, percentage: 65 }, { place: 2, percentage: 35 }] },
-    { name: '$10 SNG 9-Max NLH',         type: 'sng' as const, gameVariant: 'nlh',           buyIn: 10, rake: 1.00, startingStack: 2000, maxPlayers: 9, minPlayers: 9, horsesToRegister: 9, blindStructure: SNG_BLIND_9MAX, payoutStructure: PAYOUT_3_PLACES },
-    { name: '$25 SNG 6-Max NLH',         type: 'sng' as const, gameVariant: 'nlh',           buyIn: 25, rake: 2.50, startingStack: 2000, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ place: 1, percentage: 65 }, { place: 2, percentage: 35 }] },
+    { name: '5 Chip Turbo SNG 6-Max NLH',   type: 'sng' as const, gameVariant: 'nlh',           buyIn: 5,  rake: 0.50, startingStack: 1500, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ place: 1, percentage: 65 }, { place: 2, percentage: 35 }] },
+    { name: '10 Chip SNG 9-Max NLH',         type: 'sng' as const, gameVariant: 'nlh',           buyIn: 10, rake: 1.00, startingStack: 2000, maxPlayers: 9, minPlayers: 9, horsesToRegister: 9, blindStructure: SNG_BLIND_9MAX, payoutStructure: PAYOUT_3_PLACES },
+    { name: '25 Chip SNG 6-Max NLH',         type: 'sng' as const, gameVariant: 'nlh',           buyIn: 25, rake: 2.50, startingStack: 2000, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ place: 1, percentage: 65 }, { place: 2, percentage: 35 }] },
     // PLO4 SNGs
-    { name: '$5 Turbo SNG 6-Max PLO4',   type: 'sng' as const, gameVariant: 'plo4',          buyIn: 5,  rake: 0.50, startingStack: 1500, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ place: 1, percentage: 65 }, { place: 2, percentage: 35 }] },
-    { name: '$10 SNG 6-Max PLO4',        type: 'sng' as const, gameVariant: 'plo4',          buyIn: 10, rake: 1.00, startingStack: 2000, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ place: 1, percentage: 65 }, { place: 2, percentage: 35 }] },
+    { name: '5 Chip Turbo SNG 6-Max PLO4',   type: 'sng' as const, gameVariant: 'plo4',          buyIn: 5,  rake: 0.50, startingStack: 1500, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ place: 1, percentage: 65 }, { place: 2, percentage: 35 }] },
+    { name: '10 Chip SNG 6-Max PLO4',        type: 'sng' as const, gameVariant: 'plo4',          buyIn: 10, rake: 1.00, startingStack: 2000, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ place: 1, percentage: 65 }, { place: 2, percentage: 35 }] },
     // PLO5 SNGs
-    { name: '$10 SNG 6-Max PLO5',        type: 'sng' as const, gameVariant: 'plo5',          buyIn: 10, rake: 1.00, startingStack: 2000, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ place: 1, percentage: 65 }, { place: 2, percentage: 35 }] },
+    { name: '10 Chip SNG 6-Max PLO5',        type: 'sng' as const, gameVariant: 'plo5',          buyIn: 10, rake: 1.00, startingStack: 2000, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ place: 1, percentage: 65 }, { place: 2, percentage: 35 }] },
     // PLO8 SNGs
-    { name: '$5 SNG 9-Max PLO8',         type: 'sng' as const, gameVariant: 'plo8',          buyIn: 5,  rake: 0.50, startingStack: 2000, maxPlayers: 9, minPlayers: 9, horsesToRegister: 9, blindStructure: SNG_BLIND_9MAX, payoutStructure: PAYOUT_3_PLACES },
+    { name: '5 Chip SNG 9-Max PLO8',         type: 'sng' as const, gameVariant: 'plo8',          buyIn: 5,  rake: 0.50, startingStack: 2000, maxPlayers: 9, minPlayers: 9, horsesToRegister: 9, blindStructure: SNG_BLIND_9MAX, payoutStructure: PAYOUT_3_PLACES },
     // Pineapple SNGs
-    { name: '$5 SNG 6-Max Pineapple',    type: 'sng' as const, gameVariant: 'ofc_pineapple', buyIn: 5,  rake: 0.50, startingStack: 1500, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ place: 1, percentage: 65 }, { place: 2, percentage: 35 }] },
+    { name: '5 Chip SNG 6-Max Pineapple',    type: 'sng' as const, gameVariant: 'ofc_pineapple', buyIn: 5,  rake: 0.50, startingStack: 1500, maxPlayers: 6, minPlayers: 6, horsesToRegister: 6, blindStructure: SNG_BLIND_6MAX, payoutStructure: [{ place: 1, percentage: 65 }, { place: 2, percentage: 35 }] },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -487,19 +487,19 @@ const SPIN_MULTIPLIERS = [
 
 const SPIN_CONFIGS = [
     // NLH Spins
-    { name: '$1 Spin NLH',    type: 'spin' as const, gameVariant: 'nlh',  buyIn: 1,  rake: 0.10, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
-    { name: '$3 Spin NLH',    type: 'spin' as const, gameVariant: 'nlh',  buyIn: 3,  rake: 0.30, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
-    { name: '$5 Spin NLH',    type: 'spin' as const, gameVariant: 'nlh',  buyIn: 5,  rake: 0.50, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
-    { name: '$10 Spin NLH',   type: 'spin' as const, gameVariant: 'nlh',  buyIn: 10, rake: 1.00, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
+    { name: '1 Chip Spin NLH',    type: 'spin' as const, gameVariant: 'nlh',  buyIn: 1,  rake: 0.10, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
+    { name: '3 Chip Spin NLH',    type: 'spin' as const, gameVariant: 'nlh',  buyIn: 3,  rake: 0.30, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
+    { name: '5 Chip Spin NLH',    type: 'spin' as const, gameVariant: 'nlh',  buyIn: 5,  rake: 0.50, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
+    { name: '10 Chip Spin NLH',   type: 'spin' as const, gameVariant: 'nlh',  buyIn: 10, rake: 1.00, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
     // PLO4 Spins
-    { name: '$3 Spin PLO4',   type: 'spin' as const, gameVariant: 'plo4', buyIn: 3,  rake: 0.30, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
-    { name: '$5 Spin PLO4',   type: 'spin' as const, gameVariant: 'plo4', buyIn: 5,  rake: 0.50, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
+    { name: '3 Chip Spin PLO4',   type: 'spin' as const, gameVariant: 'plo4', buyIn: 3,  rake: 0.30, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
+    { name: '5 Chip Spin PLO4',   type: 'spin' as const, gameVariant: 'plo4', buyIn: 5,  rake: 0.50, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
     // PLO5 Spins
-    { name: '$3 Spin PLO5',   type: 'spin' as const, gameVariant: 'plo5', buyIn: 3,  rake: 0.30, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
+    { name: '3 Chip Spin PLO5',   type: 'spin' as const, gameVariant: 'plo5', buyIn: 3,  rake: 0.30, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
     // PLO8 Spins
-    { name: '$3 Spin PLO8',   type: 'spin' as const, gameVariant: 'plo8', buyIn: 3,  rake: 0.30, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
+    { name: '3 Chip Spin PLO8',   type: 'spin' as const, gameVariant: 'plo8', buyIn: 3,  rake: 0.30, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
     // Pineapple Spins
-    { name: '$3 Spin Pineapple', type: 'spin' as const, gameVariant: 'ofc_pineapple', buyIn: 3, rake: 0.30, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
+    { name: '3 Chip Spin Pineapple', type: 'spin' as const, gameVariant: 'ofc_pineapple', buyIn: 3, rake: 0.30, startingStack: 500, maxPlayers: 3, minPlayers: 3, horsesToRegister: 3, blindStructure: SPIN_BLIND_STRUCTURE, payoutStructure: [{ place: 1, percentage: 100 }], spinMultipliers: SPIN_MULTIPLIERS },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════

@@ -2019,7 +2019,7 @@ export default function TablePage() {
                     <div className="menu-overlay" onClick={toggleSideMenu} />
                     <nav className="side-menu">
                         <button className="menu-item" onClick={() => navigate('/cashier')}>
-                            <span className="menu-item-icon">$</span>
+                            <span className="menu-item-icon">◉</span>
                             <span className="menu-item-label">Cashier</span>
                             <span className="menu-item-arrow">›</span>
                         </button>
@@ -2149,7 +2149,7 @@ export default function TablePage() {
                 isOpen={showGameRules}
                 onClose={() => setShowGameRules(false)}
                 variant="No Limit Hold'em"
-                stakes="$1/$2"
+                stakes="1/2"
                 minBuyIn={(() => { const bb = parseFloat(tableState.blinds.split('/')[1]) || 2; return bb * 40; })()}
                 maxBuyIn={(() => { const bb = parseFloat(tableState.blinds.split('/')[1]) || 2; return bb * 100; })()}
                 rakePercentage={5}

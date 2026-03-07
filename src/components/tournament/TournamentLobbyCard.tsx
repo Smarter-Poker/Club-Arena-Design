@@ -159,11 +159,11 @@ export default function TournamentLobbyCard({
             <div className={styles.info}>
                 <div className={styles.infoItem}>
                     <span className={styles.infoLabel}>Buy-in</span>
-                    <span className={styles.infoValue}>${tournament.buyIn}</span>
+                    <span className={styles.infoValue}>{tournament.buyIn}</span>
                 </div>
                 <div className={styles.infoItem}>
                     <span className={styles.infoLabel}>Prize Pool</span>
-                    <span className={styles.infoValue}>${tournament.prizePool.toLocaleString()}</span>
+                    <span className={styles.infoValue}>{tournament.prizePool.toLocaleString()}</span>
                 </div>
                 <div className={styles.infoItem}>
                     <span className={styles.infoLabel}>Players</span>

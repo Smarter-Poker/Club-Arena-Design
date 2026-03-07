@@ -85,7 +85,7 @@ export default function ChipAnimation({
             ))}
 
             {/* Amount label */}
-            <span className={styles.amount}>${formatAmount(amount)}</span>
+            <span className={styles.amount}>{formatAmount(amount)}</span>
         </div>
     );
 }

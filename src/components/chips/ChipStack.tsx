@@ -18,7 +18,7 @@ export const ChipStack: React.FC<ChipStackProps> = ({
 }) => {
     return (
         <div className={`chip-stack size-${size} ${animated ? 'animated' : ''}`}>
-            <span className="chip-icon">$</span>
+            <span className="chip-icon">◉</span>
             <span className="chip-amount">{formatChips(amount)}</span>
         </div>
     );

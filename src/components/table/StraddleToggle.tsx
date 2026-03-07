@@ -23,7 +23,7 @@ export function StraddleToggle({
     isEnabled,
     onToggle,
     amount,
-    currency = '$',
+    currency = '',
     isAvailable,
 }: StraddleToggleProps) {
     if (!isAvailable) return null;

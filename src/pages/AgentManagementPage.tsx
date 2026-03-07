@@ -293,14 +293,14 @@ export default function AgentManagementPage() {
                 <div className={styles.summaryCard}>
                     <span className={styles.summaryIcon}></span>
                     <div>
-                        <span className={styles.summaryValue}>${formatMoney(weeklyRake)}</span>
+                        <span className={styles.summaryValue}>{formatMoney(weeklyRake)}</span>
                         <span className={styles.summaryLabel}>Weekly Rake</span>
                     </div>
                 </div>
                 <div className={styles.summaryCard}>
                     <span className={styles.summaryIcon}></span>
                     <div>
-                        <span className={styles.summaryValue}>${formatMoney(totalCreditExtended)}</span>
+                        <span className={styles.summaryValue}>{formatMoney(totalCreditExtended)}</span>
                         <span className={styles.summaryLabel}>Credit Extended</span>
                     </div>
                 </div>
@@ -436,29 +436,29 @@ export default function AgentManagementPage() {
                                     </div>
                                     <div className={styles.statItem}>
                                         <span className={styles.statLabel}>Weekly Rake</span>
-                                        <span className={styles.statValue}>${formatMoney(agent.weeklyRakeGenerated)}</span>
+                                        <span className={styles.statValue}>{formatMoney(agent.weeklyRakeGenerated)}</span>
                                     </div>
                                 </div>
 
                                 <div className={styles.walletRow}>
                                     <div className={styles.walletItem}>
                                         <span className={styles.walletIcon}>◈</span>
-                                        <span>${formatMoney(agent.businessBalance)}</span>
+                                        <span>{formatMoney(agent.businessBalance)}</span>
                                     </div>
                                     <div className={styles.walletItem}>
                                         <span className={styles.walletIcon}></span>
-                                        <span>${formatMoney(agent.playerBalance)}</span>
+                                        <span>{formatMoney(agent.playerBalance)}</span>
                                     </div>
                                     <div className={styles.walletItem}>
                                         <span className={styles.walletIcon}></span>
-                                        <span>${formatMoney(agent.promoBalance)}</span>
+                                        <span>{formatMoney(agent.promoBalance)}</span>
                                     </div>
                                 </div>
 
                                 {!agent.isPrepaid && (
                                     <div className={styles.creditBar}>
                                         <div className={styles.creditHeader}>
-                                            <span>Credit Line: ${formatMoney(agent.creditUsed)} / ${formatMoney(agent.creditLimit)}</span>
+                                            <span>Credit Line: {formatMoney(agent.creditUsed)} / {formatMoney(agent.creditLimit)}</span>
                                             <span className={`${styles.utilBadge} ${styles[getUtilizationStatus(agent)]}`}>
                                                 {getCreditUtilization(agent).toFixed(0)}% Used
                                             </span>
@@ -559,10 +559,10 @@ export default function AgentManagementPage() {
                                                     autoFocus
                                                 />
                                             ) : (
-                                                <span className={styles.limitAmount}>${formatMoney(agent.creditLimit)}</span>
+                                                <span className={styles.limitAmount}>{formatMoney(agent.creditLimit)}</span>
                                             )}
                                         </td>
-                                        <td>${formatMoney(agent.creditUsed)}</td>
+                                        <td>{formatMoney(agent.creditUsed)}</td>
                                         <td>
                                             <span className={`${styles.utilBadge} ${styles[getUtilizationStatus(agent)]}`}>
                                                 {getCreditUtilization(agent).toFixed(0)}%
@@ -704,9 +704,9 @@ export default function AgentManagementPage() {
                                         return (
                                             <tr key={agent.id}>
                                                 <td>{agent.displayName}</td>
-                                                <td>${formatMoney(agent.weeklyRakeGenerated)}</td>
-                                                <td>${formatMoney(commission)}</td>
-                                                <td className={styles.netPayout}>${formatMoney(netPayout)}</td>
+                                                <td>{formatMoney(agent.weeklyRakeGenerated)}</td>
+                                                <td>{formatMoney(commission)}</td>
+                                                <td className={styles.netPayout}>{formatMoney(netPayout)}</td>
                                                 <td><span className={`${styles.badge} ${styles.pending}`}>Pending</span></td>
                                             </tr>
                                         );
@@ -847,7 +847,7 @@ export default function AgentManagementPage() {
                             <div className={styles.formGroup}>
                                 <label>Credit Limit * <span className={styles.formHint}>(required)</span></label>
                                 <div className={styles.creditInputGroup}>
-                                    <span className={styles.currencySymbol}>$</span>
+                                    <span className={styles.currencySymbol}>◉</span>
                                     <input
                                         type="number"
                                         min="0"
@@ -868,7 +868,7 @@ export default function AgentManagementPage() {
                                     <div>Role: <strong>{newAgentForm.role.replace('_', ' ')}</strong></div>
                                     <div>Commission: <strong>{newAgentForm.commissionRate}%</strong></div>
                                     <div>Rakeback: <strong>{newAgentForm.playerRakebackRate}%</strong></div>
-                                    <div>Credit Limit: <strong>${newAgentForm.creditLimit.toLocaleString()}</strong></div>
+                                    <div>Credit Limit: <strong>{newAgentForm.creditLimit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
                                 </div>
                             </div>
                         </div>

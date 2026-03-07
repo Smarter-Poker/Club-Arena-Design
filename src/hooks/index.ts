@@ -260,7 +260,7 @@ export function useChipFormatter() {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         });
-        return `${prefix}${sign}$${formatted}`;
+        return `${prefix}${sign}${formatted}`;
     }, []);
 }
 

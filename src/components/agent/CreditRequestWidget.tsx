@@ -85,7 +85,7 @@ export default function CreditRequestWidget({
     const handleApprove = async (request: CreditRequest) => {
         try {
             await creditRequestService.approveRequest(request.id, agentId);
-            toast.success(`Approved $${request.requestedAmount.toLocaleString()} for ${request.requesterName}`);
+            toast.success(`Approved ${request.requestedAmount.toLocaleString()} for ${request.requesterName}`);
             loadRequests();
         } catch (error) {
             toast.error('Failed to approve request');
@@ -131,8 +131,8 @@ export default function CreditRequestWidget({
                     />
                 </div>
                 <div className="credit-info">
-                    <span>${currentCreditUsed.toLocaleString()} used</span>
-                    <span>of ${currentCreditLimit.toLocaleString()}</span>
+                    <span>{currentCreditUsed.toLocaleString()} used</span>
+                    <span>of {currentCreditLimit.toLocaleString()}</span>
                 </div>
             </div>
 
@@ -171,7 +171,7 @@ export default function CreditRequestWidget({
                         <div key={req.id} className="approval-card">
                             <div className="approval-info">
                                 <span className="requester">{req.requesterName}</span>
-                                <span className="amount">${req.requestedAmount.toLocaleString()}</span>
+                                <span className="amount">{req.requestedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 <span className="reason">{req.reason}</span>
                             </div>
                             <div className="approval-actions">
@@ -189,7 +189,7 @@ export default function CreditRequestWidget({
                     <h4>My Requests</h4>
                     {requests.slice(0, 5).map(req => (
                         <div key={req.id} className="request-row">
-                            <span className="request-amount">${req.requestedAmount.toLocaleString()}</span>
+                            <span className="request-amount">{req.requestedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             {getStatusBadge(req.status)}
                             <span className="request-date">
                                 {new Date(req.createdAt).toLocaleDateString()}

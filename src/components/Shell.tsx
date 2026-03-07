@@ -165,7 +165,7 @@ function ShellContent() {
                             <span className="diamond-amount">{diamonds.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                         <div className="shell-chips">
-                            <span className="chip-icon">$</span>
+                            <span className="chip-icon">◉</span>
                             <span className="chip-amount">{user ? totalChips.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</span>
                         </div>
                         <button className="shell-avatar" onClick={() => navigate('/profile')}>

@@ -408,7 +408,7 @@ export function ShareHand({
 
                     <div className="share-hand__pot">
                         <span className="share-hand__pot-label">Pot</span>
-                        <span className="share-hand__pot-value">${hand.potTotal.toLocaleString()}</span>
+                        <span className="share-hand__pot-value">{hand.potTotal.toLocaleString()}</span>
                     </div>
                 </div>
 

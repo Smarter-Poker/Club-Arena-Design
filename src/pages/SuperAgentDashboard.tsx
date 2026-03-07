@@ -156,9 +156,9 @@ export default function SuperAgentDashboard() {
                     </div>
                 </div>
                 <div className="stat-card highlight">
-                    <span className="stat-icon">$</span>
+                    <span className="stat-icon">◉</span>
                     <div className="stat-info">
-                        <span className="stat-value">${agent.weeklyRakeGenerated.toLocaleString()}</span>
+                        <span className="stat-value">{agent.weeklyRakeGenerated.toLocaleString()}</span>
                         <span className="stat-label">Weekly Rake</span>
                     </div>
                 </div>
@@ -184,15 +184,15 @@ export default function SuperAgentDashboard() {
                         <div className="balance-cards">
                             <div className="balance-card">
                                 <span className="label">Business Balance</span>
-                                <span className="value">${agent.businessBalance.toLocaleString()}</span>
+                                <span className="value">{agent.businessBalance.toLocaleString()}</span>
                             </div>
                             <div className="balance-card">
                                 <span className="label">Player Balance</span>
-                                <span className="value">${agent.playerBalance.toLocaleString()}</span>
+                                <span className="value">{agent.playerBalance.toLocaleString()}</span>
                             </div>
                             <div className="balance-card">
                                 <span className="label">Credit Used</span>
-                                <span className="value">${agent.creditUsed.toLocaleString()} / ${agent.creditLimit.toLocaleString()}</span>
+                                <span className="value">{agent.creditUsed.toLocaleString()} / {agent.creditLimit.toLocaleString()}</span>
                             </div>
                         </div>
                         <div className="rates-card">
@@ -235,7 +235,7 @@ export default function SuperAgentDashboard() {
                                         </div>
                                         <div className="agent-stats">
                                             <span>{sub.totalPlayers} players</span>
-                                            <span className="rake">${sub.weeklyRakeGenerated.toLocaleString()}</span>
+                                            <span className="rake">{sub.weeklyRakeGenerated.toLocaleString()}</span>
                                         </div>
                                     </div>
                                 ))}
@@ -285,7 +285,7 @@ export default function SuperAgentDashboard() {
                             </div>
                             <div className="commission-row total">
                                 <span>Net Margin</span>
-                                <span className="value">${spread.netMargin.toLocaleString()}</span>
+                                <span className="value">{spread.netMargin.toLocaleString()}</span>
                             </div>
                         </div>
                     </div>

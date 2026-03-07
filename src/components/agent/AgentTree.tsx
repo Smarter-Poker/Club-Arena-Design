@@ -139,7 +139,7 @@ function TreeNode({ node, depth, onToggle, onAgentClick, onTransferClick }: Tree
                         <span className={styles.statLabel}>Sub-Agents</span>
                     </div>
                     <div className={styles.statItem}>
-                        <span className={styles.statValue}>${formatCurrency(node.businessBalance)}</span>
+                        <span className={styles.statValue}>{formatCurrency(node.businessBalance)}</span>
                         <span className={styles.statLabel}>Balance</span>
                     </div>
                     <div className={styles.statItem}>

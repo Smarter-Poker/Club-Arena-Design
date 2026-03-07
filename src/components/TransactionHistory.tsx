@@ -64,7 +64,7 @@ export default function TransactionHistory({
     if (transactions.length === 0) {
         return (
             <div className="tx-empty">
-                <span className="tx-empty-icon">$</span>
+                <span className="tx-empty-icon">◉</span>
                 <p>No transactions yet</p>
             </div>
         );
@@ -92,7 +92,7 @@ export default function TransactionHistory({
                             </td>
                             <td>
                                 <span className={`tx-amount ${isPositive(tx.type, userId) ? 'positive' : 'negative'}`}>
-                                    {isPositive(tx.type, userId) ? '+' : '-'}${tx.amount.toLocaleString()}
+                                    {isPositive(tx.type, userId) ? '+' : '-'}{tx.amount.toLocaleString()}
                                 </span>
                             </td>
                             {!compact && (
@@ -119,7 +119,7 @@ function getTypeIcon(type: string): string {
         deposit: '+',
         withdrawal: '-',
         buy_in: '▦',
-        cash_out: '$',
+        cash_out: '◉',
         agent_transfer: '→',
         rake: '%',
         bonus: '★',

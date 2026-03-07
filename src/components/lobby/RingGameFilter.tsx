@@ -60,10 +60,10 @@ const TABLE_SIZE_LABELS: Record<TableSize, string> = {
 
 const STAKES_LABELS: Record<StakesRange, string> = {
     ALL: 'All Stakes',
-    MICRO: 'Micro ($0.01-$0.10)',
-    LOW: 'Low ($0.25-$1)',
-    MID: 'Mid ($2-$10)',
-    HIGH: 'High ($25+)',
+    MICRO: 'Micro (0.01-0.10)',
+    LOW: 'Low (0.25-1)',
+    MID: 'Mid (2-10)',
+    HIGH: 'High (25+)',
 };
 
 const DEFAULT_FILTERS: RingGameFilterState = {

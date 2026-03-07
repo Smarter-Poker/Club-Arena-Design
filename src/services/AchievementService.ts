@@ -57,9 +57,9 @@ export const ACHIEVEMENTS: Achievement[] = [
     { id: 'clubs_3', name: 'Club Hopper', description: 'Join 3 clubs', icon: '', category: 'social', rarity: 'common', requirement: 3, chipReward: 0 },
 
     // Financial
-    { id: 'profit_1000', name: 'In the Green', description: 'Profit $1,000', icon: '', category: 'financial', rarity: 'rare', requirement: 1000, chipReward: 0 },
-    { id: 'profit_10000', name: 'High Roller', description: 'Profit $10,000', icon: '', category: 'financial', rarity: 'epic', requirement: 10000, chipReward: 0 },
-    { id: 'biggest_pot_500', name: 'Big Pot', description: 'Win a $500+ pot', icon: '', category: 'financial', rarity: 'rare', requirement: 500, chipReward: 0 },
+    { id: 'profit_1000', name: 'In the Green', description: 'Profit 1,000 chips', icon: '', category: 'financial', rarity: 'rare', requirement: 1000, chipReward: 0 },
+    { id: 'profit_10000', name: 'High Roller', description: 'Profit 10,000 chips', icon: '', category: 'financial', rarity: 'epic', requirement: 10000, chipReward: 0 },
+    { id: 'biggest_pot_500', name: 'Big Pot', description: 'Win a 500+ chip pot', icon: '', category: 'financial', rarity: 'rare', requirement: 500, chipReward: 0 },
 
     // Tournament
     { id: 'tourney_win_1', name: 'Champion', description: 'Win a tournament', icon: '', category: 'tournament', rarity: 'epic', requirement: 1, chipReward: 0 },

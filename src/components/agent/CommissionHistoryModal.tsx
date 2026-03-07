@@ -139,7 +139,7 @@ export default function CommissionHistoryModal({
 
     const formatAmount = (amount: number, type: string) => {
         const sign = type === 'payout' ? '-' : '+';
-        return `${sign}$${Math.abs(amount).toLocaleString()}`;
+        return `${sign}${Math.abs(amount).toLocaleString()}`;
     };
 
     const formatDate = (dateStr: string) => {
@@ -166,15 +166,15 @@ export default function CommissionHistoryModal({
                 {/* Summary Cards */}
                 <div className={styles.summary}>
                     <div className={styles.summaryCard}>
-                        <span className={styles.summaryValue}>${summary.totalEarned.toLocaleString()}</span>
+                        <span className={styles.summaryValue}>{summary.totalEarned.toLocaleString()}</span>
                         <span className={styles.summaryLabel}>Total Earned</span>
                     </div>
                     <div className={styles.summaryCard}>
-                        <span className={styles.summaryValue}>${summary.totalPaid.toLocaleString()}</span>
+                        <span className={styles.summaryValue}>{summary.totalPaid.toLocaleString()}</span>
                         <span className={styles.summaryLabel}>Total Paid Out</span>
                     </div>
                     <div className={`${styles.summaryCard} ${styles.highlight}`}>
-                        <span className={styles.summaryValue}>${summary.pending.toLocaleString()}</span>
+                        <span className={styles.summaryValue}>{summary.pending.toLocaleString()}</span>
                         <span className={styles.summaryLabel}>Pending</span>
                     </div>
                 </div>
@@ -183,11 +183,11 @@ export default function CommissionHistoryModal({
                 <div className={styles.comparison}>
                     <div className={styles.compCard}>
                         <span className={styles.compLabel}>This Month</span>
-                        <span className={styles.compValue}>${summary.thisMonth.toLocaleString()}</span>
+                        <span className={styles.compValue}>{summary.thisMonth.toLocaleString()}</span>
                     </div>
                     <div className={styles.compCard}>
                         <span className={styles.compLabel}>Last Month</span>
-                        <span className={styles.compValue}>${summary.lastMonth.toLocaleString()}</span>
+                        <span className={styles.compValue}>{summary.lastMonth.toLocaleString()}</span>
                     </div>
                     {summary.thisMonth > summary.lastMonth && (
                         <span className={styles.trend}> +{Math.round((summary.thisMonth - summary.lastMonth) / Math.max(summary.lastMonth, 1) * 100)}%</span>

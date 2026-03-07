@@ -662,7 +662,7 @@ export default function ClubDetailPage() {
                                             </div>
                                             <div className={styles.agentStat}>
                                                 <span className={styles.statLabel}>Lifetime</span>
-                                                <span className={styles.statValue}>${agent.lifetimeEarnings.toLocaleString()}</span>
+                                                <span className={styles.statValue}>{agent.lifetimeEarnings.toLocaleString()}</span>
                                             </div>
                                         </div>
                                     </div>

@@ -311,7 +311,7 @@ export default function HandReplayViewer({
                         const player = hand.players.find(p => p.id === w.playerId);
                         return (
                             <span key={i}>
-                                {player?.name || 'Unknown'} wins ${w.amount.toLocaleString()}
+                                {player?.name || 'Unknown'} wins {w.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                         );
                     }).reduce((prev, curr) => <>{prev}, {curr}</>)}

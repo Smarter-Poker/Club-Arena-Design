@@ -180,8 +180,8 @@ export default function ChipTransferModal({
 
             if (txError) throw txError;
 
-            setSuccess(`Successfully transferred $${transferAmount.toLocaleString()}`);
-            toast.success(`Transferred $${transferAmount.toLocaleString()} successfully`);
+            setSuccess(`Successfully transferred ${transferAmount.toLocaleString()}`);
+            toast.success(`Transferred ${transferAmount.toLocaleString()} successfully`);
             setAmount('');
             setNote('');
             setSelectedPlayer('');
@@ -227,7 +227,7 @@ export default function ChipTransferModal({
 
                 <div className="agent-balance">
                     <span>Available Balance:</span>
-                    <span className="balance-amount">${agentBalance.toLocaleString()}</span>
+                    <span className="balance-amount">{agentBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
 
                 <div className="chip-transfer-form">
@@ -246,7 +246,7 @@ export default function ChipTransferModal({
                                     <option value="">Select a player</option>
                                     {players.map((player) => (
                                         <option key={player.id} value={player.id}>
-                                            {player.username} (Balance: ${player.current_balance.toLocaleString()})
+                                            {player.username} (Balance: {player.current_balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
                                         </option>
                                     ))}
                                 </select>
@@ -258,7 +258,7 @@ export default function ChipTransferModal({
                     <div className="form-group">
                         <label>Amount</label>
                         <div className="amount-input-wrapper">
-                            <span className="currency-symbol">$</span>
+                            <span className="currency-symbol">◉</span>
                             <input
                                 type="number"
                                 value={amount}
@@ -270,9 +270,9 @@ export default function ChipTransferModal({
                             />
                         </div>
                         <div className="quick-amounts">
-                            <button type="button" onClick={() => setAmount('50')}>$50</button>
-                            <button type="button" onClick={() => setAmount('100')}>$100</button>
-                            <button type="button" onClick={() => setAmount('500')}>$500</button>
+                            <button type="button" onClick={() => setAmount('50')}>50</button>
+                            <button type="button" onClick={() => setAmount('100')}>100</button>
+                            <button type="button" onClick={() => setAmount('500')}>500</button>
                             <button type="button" onClick={() => setAmount(String(agentBalance))}>Max</button>
                         </div>
                     </div>

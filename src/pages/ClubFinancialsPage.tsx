@@ -196,7 +196,7 @@ export default function ClubFinancialsPage() {
             {summary && (
                 <div className="summary-cards">
                     <div className="summary-card revenue">
-                        <span className="card-value">${summary.rake_collected.toLocaleString()}</span>
+                        <span className="card-value">{summary.rake_collected.toLocaleString()}</span>
                         <span className="card-label">Rake Collected</span>
                     </div>
                     <div className="summary-row">
@@ -211,7 +211,7 @@ export default function ClubFinancialsPage() {
                     </div>
                     <div className="summary-card net">
                         <span className={`card-value ${summary.net_revenue >= 0 ? 'positive' : 'negative'}`}>
-                            {summary.net_revenue >= 0 ? '+' : ''}${summary.net_revenue.toLocaleString()}
+                            {summary.net_revenue >= 0 ? '+' : ''}{summary.net_revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                         <span className="card-label">Net Revenue</span>
                     </div>
@@ -249,7 +249,7 @@ export default function ClubFinancialsPage() {
                                     <span className="tx-date">{formatDate(tx.created_at)}</span>
                                 </div>
                                 <span className={`tx-amount ${tx.amount >= 0 ? 'positive' : 'negative'}`}>
-                                    {tx.amount >= 0 ? '+' : ''}${Math.abs(tx.amount).toLocaleString()}
+                                    {tx.amount >= 0 ? '+' : ''}{Math.abs(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </span>
                             </div>
                         ))}

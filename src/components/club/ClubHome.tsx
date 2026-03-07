@@ -101,11 +101,11 @@ export function ClubHome({
                 </div>
                 <div className="club-stat-card">
                     <span className="club-stat-card__label">Total Chips</span>
-                    <span className="club-stat-card__value">{currency}{stats.totalChips.toLocaleString()}</span>
+                    <span className="club-stat-card__value">{stats.totalChips.toLocaleString()}</span>
                 </div>
                 <div className="club-stat-card club-stat-card--highlight">
                     <span className="club-stat-card__label">Jackpot</span>
-                    <span className="club-stat-card__value">{currency}{stats.jackpotBalance.toLocaleString()}</span>
+                    <span className="club-stat-card__value">{stats.jackpotBalance.toLocaleString()}</span>
                 </div>
             </div>
 
@@ -119,7 +119,7 @@ export function ClubHome({
                             <span className="club-menu-item__label">Members</span>
                         </button>
                         <button className="club-menu-item" onClick={onCashier}>
-                            <span className="club-menu-item__icon">$</span>
+                            <span className="club-menu-item__icon">◉</span>
                             <span className="club-menu-item__label">Cashier</span>
                         </button>
                         <button className="club-menu-item">

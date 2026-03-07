@@ -29,7 +29,7 @@ const METRIC_OPTIONS: { value: LeaderboardMetric; label: string; icon: string; d
     { value: 'profit', label: 'Profit', icon: '💰', description: 'Total profit earned' },
     { value: 'hands_played', label: 'Hands Played', icon: '🃏', description: 'Total hands dealt in' },
     { value: 'tournaments_won', label: 'Tournaments Won', icon: '🏆', description: 'Tournament victories' },
-    { value: 'vpip', label: 'VPIP', icon: '📊', description: 'Voluntarily put $ in pot %' },
+    { value: 'vpip', label: 'VPIP', icon: '📊', description: 'Voluntarily put chips in pot %' },
     { value: 'roi', label: 'ROI', icon: '📈', description: 'Return on investment %' },
 ];
 

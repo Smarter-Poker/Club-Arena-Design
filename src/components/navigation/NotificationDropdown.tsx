@@ -140,7 +140,7 @@ export default function NotificationDropdown({ onNavigate }: NotificationDropdow
             case 'message': return '◈';
             case 'tournament': return 'T';
             case 'table_invite': return '♠';
-            case 'payment': return '$';
+            case 'payment': return '◉';
             case 'club': return '♛';
             default: return '○';
         }

@@ -78,7 +78,7 @@ export const PlayerStatsDashboard: React.FC<{ playerId?: string }> = ({ playerId
         { stat: 'PFR', value: stats.pfr, fullMark: 30 },
         { stat: 'AF', value: stats.af * 10, fullMark: 50 },
         { stat: 'WTSD', value: stats.wtsd, fullMark: 40 },
-        { stat: 'W$SD', value: stats.wsd, fullMark: 100 },
+        { stat: 'WSD', value: stats.wsd, fullMark: 100 },
     ];
 
     const getStatColor = (stat: string, value: number) => {

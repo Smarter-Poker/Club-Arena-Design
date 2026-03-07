@@ -193,7 +193,7 @@ export default function SettlementPage() {
     const totalAgentPayouts = agentPayouts.reduce((sum, a) => sum + a.netPayout, 0);
 
     const formatMoney = (amount: number) => {
-        const prefix = amount < 0 ? '-$' : '$';
+        const prefix = amount < 0 ? '-' : '';
         return prefix + Math.abs(amount).toLocaleString('en-US', { minimumFractionDigits: 2 });
     };
 

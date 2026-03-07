@@ -123,7 +123,7 @@ export default function LeaderboardCard({
                                 <div className={styles.scoreCol}>
                                     <span className={styles.score}>{formatScore(entry.score)}</span>
                                     {entry.prize && (
-                                        <span className={styles.prize}> ${entry.prize.toLocaleString()}</span>
+                                        <span className={styles.prize}> {entry.prize.toLocaleString()}</span>
                                     )}
                                 </div>
                             </div>

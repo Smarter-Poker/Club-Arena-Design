@@ -72,7 +72,7 @@ export function InsuranceModal({
     onDecline,
     offer,
     timeRemaining = 15,
-    currency = '$',
+    currency = '',
 }: InsuranceModalProps) {
     const [coverageAmount, setCoverageAmount] = useState(offer.maxCoverage);
 

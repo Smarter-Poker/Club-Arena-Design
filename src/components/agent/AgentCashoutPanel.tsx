@@ -121,7 +121,7 @@ export default function AgentCashoutPanel({ clubId, onCashoutProcessed }: AgentC
 
             {cashouts.length === 0 ? (
                 <div className="empty-state">
-                    <span className="empty-icon">$</span>
+                    <span className="empty-icon">◉</span>
                     <p>No pending cashout requests</p>
                 </div>
             ) : (

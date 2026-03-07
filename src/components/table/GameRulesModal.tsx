@@ -57,7 +57,7 @@ export function GameRulesModal({
     isRunItTwiceEnabled = false,
     isInsuranceEnabled = false,
     ante = 0,
-    currency = '$',
+    currency = '',
     customRules = [],
 }: GameRulesModalProps) {
     if (!isOpen) return null;

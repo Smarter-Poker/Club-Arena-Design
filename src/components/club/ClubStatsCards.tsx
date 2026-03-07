@@ -92,7 +92,7 @@ export default function ClubStatsCards({ clubId }: ClubStatsCardsProps) {
     };
 
     const formatCurrency = (num: number): string => {
-        return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     const statCards = [

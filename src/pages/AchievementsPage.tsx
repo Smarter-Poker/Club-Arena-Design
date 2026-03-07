@@ -49,8 +49,8 @@ const ACHIEVEMENTS: Omit<Achievement, 'progress' | 'unlocked' | 'unlockedAt'>[] 
 
     // Financial achievements  
     { id: 'first_win', name: 'Winner', description: 'Win your first pot', icon: '', category: 'financial', rarity: 'common', requirement: 'Win 1 pot' },
-    { id: 'big_winner', name: 'Big Winner', description: 'Win a pot over $1,000', icon: '', category: 'financial', rarity: 'rare', requirement: 'Win $1K+ pot' },
-    { id: 'profitable', name: 'Profitable', description: 'Reach $10,000 lifetime profit', icon: '', category: 'financial', rarity: 'epic', requirement: '$10K profit' },
+    { id: 'big_winner', name: 'Big Winner', description: 'Win a pot over 1,000 chips', icon: '', category: 'financial', rarity: 'rare', requirement: 'Win 1K+ pot' },
+    { id: 'profitable', name: 'Profitable', description: 'Reach 10,000 lifetime profit', icon: '', category: 'financial', rarity: 'epic', requirement: '10K profit' },
 
     // Tournament achievements
     { id: 'first_tourney', name: 'Tournament Player', description: 'Play in a tournament', icon: '', category: 'tournament', rarity: 'common', requirement: 'Enter 1 tournament' },

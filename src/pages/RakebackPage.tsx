@@ -105,7 +105,7 @@ export default function RakebackPage() {
                 <div className="summary-card main">
                     <span className="card-icon"></span>
                     <div className="card-content">
-                        <span className="card-value">${totalEarned.toLocaleString()}</span>
+                        <span className="card-value">{totalEarned.toLocaleString()}</span>
                         <span className="card-label">Total Earned</span>
                     </div>
                 </div>
@@ -115,7 +115,7 @@ export default function RakebackPage() {
                         <span className="card-label">Your Rate</span>
                     </div>
                     <div className="summary-card pending">
-                        <span className="card-value">${pendingAmount.toLocaleString()}</span>
+                        <span className="card-value">{pendingAmount.toLocaleString()}</span>
                         <span className="card-label">Pending</span>
                     </div>
                 </div>

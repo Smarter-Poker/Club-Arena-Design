@@ -332,11 +332,11 @@ export default function TournamentPage() {
                                 </div>
                                 <div className="tourn-info">
                                     <span className="tourn-type">{(tourn.game_type || tourn.variant || 'NLH').toUpperCase()}</span>
-                                    <span className="tourn-buyin">${tourn.buy_in_amount} + ${tourn.buy_in_fee}</span>
+                                    <span className="tourn-buyin">{tourn.buy_in_amount} + {tourn.buy_in_fee}</span>
                                 </div>
                                 <div className="tourn-meta">
                                     <span> {tourn.current_players}/{tourn.max_players}</span>
-                                    <span> ${tourn.prize_pool}</span>
+                                    <span> {tourn.prize_pool}</span>
                                 </div>
                             </div>
                         ))
@@ -357,7 +357,7 @@ export default function TournamentPage() {
                             <div className="detail-stats">
                                 <div className="stat">
                                     <span className="stat-label">Buy-in</span>
-                                    <span className="stat-value">${selectedTournament.buy_in_amount} + ${selectedTournament.buy_in_fee}</span>
+                                    <span className="stat-value">{selectedTournament.buy_in_amount} + {selectedTournament.buy_in_fee}</span>
                                 </div>
                                 <div className="stat">
                                     <span className="stat-label">Starting Stack</span>
@@ -369,7 +369,7 @@ export default function TournamentPage() {
                                 </div>
                                 <div className="stat highlight">
                                     <span className="stat-label">Prize Pool</span>
-                                    <span className="stat-value gold">${selectedTournament.prize_pool}</span>
+                                    <span className="stat-value gold">{selectedTournament.prize_pool}</span>
                                 </div>
                             </div>
 

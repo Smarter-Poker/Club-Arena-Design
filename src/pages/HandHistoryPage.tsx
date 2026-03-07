@@ -250,7 +250,7 @@ export default function HandHistoryPage() {
                                 <div className="hand-body">
                                     <div className="pot-info">
                                         <span className="pot-label">Pot</span>
-                                        <span className="pot-value">${hand.main_pot.toLocaleString()}</span>
+                                        <span className="pot-value">{hand.main_pot.toLocaleString()}</span>
                                     </div>
                                     <div className={`result-info ${result >= 0 ? 'positive' : 'negative'}`}>
                                         <span className="result-label">Result</span>
