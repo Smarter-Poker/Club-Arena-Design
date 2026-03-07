@@ -175,8 +175,8 @@ class HorseBugReporterService {
         // Broadcast via MasterBus so dashboard can update
         masterBus.emit('HORSE_BUG_REPORT', report);
 
-        // Persist critical/high to Supabase (fire and forget)
-        if (report.severity === 'critical' || report.severity === 'high') {
+        // Persist critical/high/medium to Supabase (fire and forget)
+        if (report.severity === 'critical' || report.severity === 'high' || report.severity === 'medium') {
             this.persistToSupabase(report).catch(() => {});
         }
 

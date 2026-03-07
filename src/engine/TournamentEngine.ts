@@ -854,7 +854,9 @@ export class TournamentEngine {
         const payoutEntry = this.tournamentInfo.payout_structure.find(p => (p.place || p.position) === position);
         if (!payoutEntry) return 0;
 
-        return Math.round((this.tournamentInfo.prize_pool * payoutEntry.percentage) / 100 * 100) / 100;
+        // Exact penny precision — use cent-based arithmetic to avoid floating point errors
+        const prizeCents = Math.trunc((this.tournamentInfo.prize_pool * payoutEntry.percentage) / 100 * 100);
+        return prizeCents / 100;
     }
 
     private async creditPrize(userId: string, amount: number): Promise<void> {

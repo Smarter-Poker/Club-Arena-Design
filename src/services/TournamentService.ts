@@ -375,9 +375,9 @@ class TournamentService {
             throw new Error('Already registered for this tournament');
         }
 
-        // Calculate total cost (buy-in + 10% standard rake — always 10% across all tournament types)
+        // Calculate total cost (buy-in + fee — exact penny values from DB, NO rounding)
         const buyIn = tournament.buy_in_amount || 0;
-        const rake = Math.round(buyIn * 0.1);
+        const rake = tournament.buy_in_fee || 0;
         const totalCost = buyIn + rake;
 
         // ─── Deduct from Player Wallet (wallets table, not club_members) ───
@@ -469,9 +469,9 @@ class TournamentService {
             throw new Error('Cannot unregister after tournament started');
         }
 
-        // Calculate refund amount (buy-in + 10% standard rake — return everything that was deducted)
+        // Calculate refund amount (buy-in + fee — exact penny values from DB, NO rounding)
         const buyInAmount = tournament.buy_in_amount || 0;
-        const refundAmount = buyInAmount + Math.round(buyInAmount * 0.1);
+        const refundAmount = buyInAmount + (tournament.buy_in_fee || 0);
 
         // Refund to Player Wallet — MUST succeed before unregistering
         const { error: refundError } = await supabase.rpc('credit_player_wallet', {

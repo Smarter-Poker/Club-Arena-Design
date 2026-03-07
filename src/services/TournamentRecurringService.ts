@@ -721,7 +721,7 @@ class TournamentRecurringService {
 
             const dbGameType = gameTypeMap[config.gameVariant] || 'NLH';
 
-            // Create tournament (buy_in_amount and buy_in_fee are INTEGER columns)
+            // Create tournament (buy_in_amount and buy_in_fee are DECIMAL(15,2) — exact penny precision, NO rounding)
             const { data: tournament, error } = await supabase
                 .from('tournaments')
                 .insert({
@@ -729,8 +729,8 @@ class TournamentRecurringService {
                     name: config.name,
                     game_type: dbGameType,
                     variant: config.type === 'mtt' ? 'freezeout' : config.type,
-                    buy_in_amount: Math.round(config.buyIn),
-                    buy_in_fee: Math.round(config.rake),
+                    buy_in_amount: config.buyIn,
+                    buy_in_fee: config.rake,
                     guaranteed_prize: config.guarantee || 0,
                     starting_chips: config.startingStack,
                     max_players: config.maxPlayers,
@@ -792,8 +792,8 @@ class TournamentRecurringService {
                     name: config.name,
                     game_type: dbGameType,
                     variant: 'sng',
-                    buy_in_amount: Math.round(config.buyIn),
-                    buy_in_fee: Math.round(config.rake),
+                    buy_in_amount: config.buyIn,
+                    buy_in_fee: config.rake,
                     guaranteed_prize: 0,
                     starting_chips: config.startingStack,
                     max_players: config.maxPlayers,
@@ -857,9 +857,9 @@ class TournamentRecurringService {
                     name: `${config.name} (${multiplier}x)`,
                     game_type: dbGameType,
                     variant: 'spin',
-                    buy_in_amount: Math.round(config.buyIn),
-                    buy_in_fee: Math.round(config.rake),
-                    guaranteed_prize: Math.round(prizePool),
+                    buy_in_amount: config.buyIn,
+                    buy_in_fee: config.rake,
+                    guaranteed_prize: prizePool,
                     starting_chips: config.startingStack,
                     max_players: config.maxPlayers,
                     current_players: 0,

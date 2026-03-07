@@ -429,7 +429,7 @@ export default function TournamentPage() {
                                                 </span>
                                                 <span className="payout-percent">{payout.percentage}%</span>
                                                 <span className="payout-amount">
-                                                    ${Math.floor((selectedTournament.prize_pool * payout.percentage) / 100)}
+                                                    {Math.trunc((selectedTournament.prize_pool * payout.percentage) / 100 * 100) / 100}
                                                 </span>
                                             </div>
                                         );
