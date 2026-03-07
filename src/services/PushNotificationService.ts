@@ -323,7 +323,7 @@ class PushNotificationServiceClass {
     ): Promise<boolean> {
         return this.sendToUser(userId, {
             title: ' Payout Received!',
-            message: `$${amount.toLocaleString()} credited for ${periodLabel}`,
+            message: `${amount.toLocaleString()} chips credited for ${periodLabel}`,
             category: 'settlement',
             url: '/wallet',
         });

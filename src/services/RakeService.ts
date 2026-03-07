@@ -510,7 +510,7 @@ export const RakeService = {
      */
     getScalingMatrix(): { stakeLevel: string; bigBlind: number; rakeCap: number; bbjDrop: number; mainBBJ: number; backupBBJ: number; promo: number }[] {
         return RAKE_CHART.map(t => ({
-            stakeLevel: `$${t.sb} / $${t.bb}`,
+            stakeLevel: `${t.sb} / ${t.bb}`,
             bigBlind: t.bb,
             rakeCap: t.maxAmount,
             bbjDrop: t.bbjRakeBB * t.bb,
