@@ -15,6 +15,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
+import { getLocalStorage, setLocalStorage } from '../../lib/storage';
 import ClubStatsCards from '../../components/club/ClubStatsCards';
 import ClubActivityFeed from '../../components/club/ClubActivityFeed';
 import LeaderboardCard from '../../components/leaderboard/LeaderboardCard';
@@ -47,8 +48,10 @@ export default function ClubDashboard() {
     const [club, setClub] = useState<ClubInfo | null>(null);
     const [topPlayers, setTopPlayers] = useState<TopPlayer[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'players' | 'tables'>('overview');
-    const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'all'>('week');
+    const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'players' | 'tables'>(() => getLocalStorage('ca_dashboard_tab', 'overview'));
+    const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'all'>(() => getLocalStorage('ca_dashboard_range', 'week'));
+    useEffect(() => { setLocalStorage('ca_dashboard_tab', activeTab); }, [activeTab]);
+    useEffect(() => { setLocalStorage('ca_dashboard_range', dateRange); }, [dateRange]);
     const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
 
     useEffect(() => {

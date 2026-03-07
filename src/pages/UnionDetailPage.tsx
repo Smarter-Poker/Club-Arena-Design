@@ -7,6 +7,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { getLocalStorage, setLocalStorage } from '../lib/storage';
 import { unionService, type Union, type UnionClub } from '../services/UnionService';
 import { tableService } from '../services/TableService';
 import { clubService } from '../services/ClubService';
@@ -57,7 +58,8 @@ export default function UnionDetailPage() {
     const [tables, setTables] = useState<PokerTable[]>([]);
     const [unionTournaments, setUnionTournaments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'overview' | 'clubs' | 'tables' | 'tournaments' | 'financials' | 'settings'>('overview');
+    const [activeTab, setActiveTabRaw] = useState<'overview' | 'clubs' | 'tables' | 'tournaments' | 'financials' | 'settings'>(() => getLocalStorage('ca_union_detail_tab', 'overview'));
+    const setActiveTab = (t: typeof activeTab) => { setActiveTabRaw(t); setLocalStorage('ca_union_detail_tab', t); };
 
     // Financial state - starts empty, no demo data
     const [settlements, setSettlements] = useState<SettlementRecord[]>([]);

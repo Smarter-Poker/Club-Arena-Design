@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import styles from './ClubDetailPage.module.css';
+import { getLocalStorage, setLocalStorage } from '../lib/storage';
 import ClubHome from '../components/club/ClubHome';
 import CurrencyStore from '../components/club/CurrencyStore';
 
@@ -151,7 +152,8 @@ export default function ClubDetailPage() {
     const { clubId } = useParams();
     const navigate = useNavigate();
     const toast = useToast();
-    const [activeTab, setActiveTab] = useState<'overview' | 'tables' | 'members' | 'agents' | 'settings'>('overview');
+    const [activeTab, setActiveTabRaw] = useState<'overview' | 'tables' | 'members' | 'agents' | 'settings'>(() => getLocalStorage('ca_club_detail_tab', 'overview'));
+    const setActiveTab = (t: typeof activeTab) => { setActiveTabRaw(t); setLocalStorage('ca_club_detail_tab', t); };
     const [club, setClub] = useState<ClubData | null>(null);
     const [members, setMembers] = useState<ClubMember[]>([]);
     const [filteredMembers, setFilteredMembers] = useState<ClubMember[]>([]);

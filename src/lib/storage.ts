@@ -160,6 +160,14 @@ export const STORAGE_KEYS = {
     // Cache
     LOBBY_CACHE: 'club_arena_lobby_cache',
     PLAYER_STATS_CACHE: 'club_arena_player_stats',
+
+    // Filter Persistence (localStorage backup for UX)
+    LOBBY_FILTER: 'club_arena_lobby_filter',         // game type filter (ALL, NLH, PLO, etc.)
+    LOBBY_SORT: 'club_arena_lobby_sort',             // sort preference (players, stakes, name)
+    HAND_HISTORY_FILTER: 'club_arena_hh_filter',     // { period, resultFilter, gameType }
+    LEADERBOARD_PREFS: 'club_arena_leaderboard',     // { metric, sortDir }
+    CHAT_PREFS: 'club_arena_chat_prefs',             // { mutedRooms: string[] }
+    TOURNAMENT_FILTER: 'club_arena_tournament_filter', // tournament status filter
 } as const;
 
 // ═══════════════════════════════════════════════════════════════════════════════
