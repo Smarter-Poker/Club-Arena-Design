@@ -36,7 +36,8 @@ export type BusEventType =
     | 'WALLET_REFRESHED'
     | 'REALTIME_CONNECTED'
     | 'REALTIME_DISCONNECTED'
-    | 'SYSTEM_ERROR';
+    | 'SYSTEM_ERROR'
+    | 'HORSE_BUG_REPORT';
 
 export interface BusEvent<T = unknown> {
     type: BusEventType;

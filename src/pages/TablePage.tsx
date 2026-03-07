@@ -74,6 +74,7 @@ import { achievementTriggerService } from '../services/AchievementTriggerService
 import SpectatorBadge from '../components/table/SpectatorBadge';
 import HandStrengthIndicator from '../components/table/HandStrengthIndicator';
 import SessionTimer from '../components/table/SessionTimer';
+import { horseBugReporter } from '../services/HorseBugReporter';
 import './TablePage.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -253,6 +254,10 @@ export default function TablePage() {
             setIsLoading(false);
         }
         initUser();
+
+        // Start Horse Mini-Agent bug reporting system
+        horseBugReporter.startCapturing();
+        return () => horseBugReporter.stopCapturing();
     }, []);
 
     // WebSocket connection for real-time game state
@@ -1296,7 +1301,30 @@ export default function TablePage() {
                                         }
                                     }
 
-                                    handControllerRef.current.performAction(event.seat, finalAction as any, finalAmount);
+                                    // Capture stack before action for bug validation
+                                    const stackBefore = hcStateNow.players?.find((p: any) => p.seat === event.seat)?.stack || 0;
+
+                                    const result = handControllerRef.current.performAction(event.seat, finalAction as any, finalAmount);
+
+                                    // Horse mini-agent: validate chip integrity after action
+                                    const hcStateAfter = handControllerRef.current.getState();
+                                    const stackAfter = hcStateAfter.players?.find((p: any) => p.seat === event.seat)?.stack || 0;
+                                    const horseName = actingPlayer?.name || horseInfo?.name || `Seat ${event.seat}`;
+
+                                    horseBugReporter.validateChips(
+                                        horseName, actingPlayer?.id || '', tableId || '',
+                                        currentState.tableId || '', 0,
+                                        stackBefore, stackAfter, finalAction, finalAmount || 0
+                                    );
+
+                                    // Report if action was rejected
+                                    if (result === false) {
+                                        horseBugReporter.reportActionRejected(
+                                            horseName, actingPlayer?.id || '', tableId || '',
+                                            currentState.tableId || '', 0,
+                                            finalAction, finalAmount, 'HandController rejected action'
+                                        );
+                                    }
                                 }
                             }, decision.thinkTime);
                         }
@@ -1646,11 +1674,16 @@ export default function TablePage() {
         const heroSeat = tableState.heroSeat;
         const hero = getPlayerAtSeat(heroSeat);
         const heroStack = hero?.stack || 0;
-        if (handControllerRef.current) {
-            handControllerRef.current.performAction(heroSeat, 'all_in');
+        if (heroStack <= 0) return;
+        try {
+            if (handControllerRef.current) {
+                handControllerRef.current.performAction(heroSeat, 'all_in');
+            }
+            await sendAction('allin', { seat: heroSeat, amount: heroStack });
+            soundService.playChips();
+        } catch (err) {
+            console.warn('[TablePage] All-in send error:', err);
         }
-        await sendAction('allin', { seat: heroSeat, amount: heroStack });
-        soundService.playChips();
 
         // Check for all-in scenario triggers (after slight delay to let state update)
         workerTimeout(() => {
