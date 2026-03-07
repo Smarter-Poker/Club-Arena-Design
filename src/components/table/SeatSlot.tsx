@@ -14,6 +14,7 @@
 
 import React, { useMemo } from 'react';
 import './SeatSlot.css';
+import { CardImage, CardBack } from './CardImage';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -114,26 +115,16 @@ function HoleCard({ card, hidden = false, index }: HoleCardProps) {
                 className="seat-slot__card seat-slot__card--hidden"
                 style={{ transform: `rotate(${index === 0 ? -8 : 8}deg)` }}
             >
-                <div className="seat-slot__card-back">
-                    <span className="seat-slot__card-pattern">♠</span>
-                </div>
+                <CardBack size="sm" style="classic_blue" />
             </div>
         );
     }
-
-    const suit = SUIT_SYMBOLS[card.suit];
-    const rank = RANK_DISPLAY[card.rank] || card.rank;
-
     return (
         <div
-            className="seat-slot__card"
-            style={{
-                transform: `rotate(${index === 0 ? -8 : 8}deg)`,
-                color: suit.color
-            }}
+            className="seat-slot__card seat-slot__card--face"
+            style={{ transform: `rotate(${index === 0 ? -8 : 8}deg)` }}
         >
-            <span className="seat-slot__card-rank">{rank}</span>
-            <span className="seat-slot__card-suit">{suit.symbol}</span>
+            <CardImage card={card} deckStyle="4color" size="sm" />
         </div>
     );
 }

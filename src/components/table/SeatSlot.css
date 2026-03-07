@@ -318,15 +318,27 @@
 .seat-slot__card {
     width: 40px;
     height: 56px;
-    background: linear-gradient(180deg, #FFFFFF 0%, #F0F0F0 100%);
     border-radius: 6px;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    border: 2px solid rgba(0, 0, 0, 0.15);
     transition: transform 0.2s ease;
+    overflow: hidden;
+}
+
+.seat-slot__card--face {
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+.seat-slot__card--face .card-image,
+.seat-slot__card--face .card-image__img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 4px;
 }
 
 /* Hero gets larger cards */
@@ -334,8 +346,11 @@
     width: 52px;
     height: 72px;
     border-radius: 8px;
-    border: 2px solid #D4A84B;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+
+.seat-slot--hero .seat-slot__card--face {
+    border: 2px solid #D4A84B;
 }
 
 .seat-slot__card--hidden {

@@ -185,6 +185,20 @@ const SEAT_POSITIONS_9MAX = [
     { x: 97, y: 65 },  // Seat 9 (right middle)
 ];
 
+// HORSE AVATARS — Assign custom avatars to horse players
+const HORSE_AVATARS: Record<string, string> = {
+    'Solver Steve': '/avatars/animals/owl.png',
+    'SmallBlind': '/avatars/animals/shark.png',
+    'SlowRoll Sid': '/avatars/animals/fox.png',
+    'KingFish': '/avatars/animals/lion.png',
+    'TAG Tyler': '/avatars/animals/eagle.png',
+    'Maniac Mike': '/avatars/animals/wolf.png',
+    'NitNat': '/avatars/animals/penguin.png',
+    'Bluff Queen': '/avatars/animals/tiger.png',
+    'AceHigh': '/avatars/animals/rabbit.png',
+    'TiltMaster': '/avatars/animals/octopus.png',
+};
+
 // Create empty player slots for a table
 const createEmptySeats = (count: 6 | 9): (SeatPlayer | null)[] => {
     return Array(count).fill(null);
@@ -951,7 +965,7 @@ export default function TablePage() {
                         updatedPlayers[seatIdx] = {
                             id: horse.id,
                             name: horse.name || `Player ${horse.playerNumber || seatIdx + 1}`,
-                            avatar: horse.avatar || '',
+                            avatar: horse.avatar || HORSE_AVATARS[horse.name] || `/avatars/animals/shark.png`,
                             stack,
                             status: 'active' as const,
                             isHero: false,
@@ -1820,6 +1834,7 @@ export default function TablePage() {
           TABLE AREA
           ═══════════════════════════════════════════════════════════════════════ */}
             <div className="table-container">
+                <div className="table-scaler">
                 {/* Table Felt */}
                 <div className="table-felt">
                     <div className="table-rail">
@@ -1907,6 +1922,7 @@ export default function TablePage() {
                         </div>
                     );
                 })}
+                </div>
             </div>
 
             {/* ═══════════════════════════════════════════════════════════════════════
