@@ -423,7 +423,7 @@ export class TournamentEngine {
                 .update({ prize_pool: actualPrizePool, current_players: existingPlayers.length })
                 .eq('id', this.tournamentId);
 
-            console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Activated ${activeCount} players — prize pool: $${actualPrizePool.toFixed(2)}`);
+            console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Activated ${activeCount} players — prize pool: ${actualPrizePool.toFixed(2)}`);
             return;
         }
 
@@ -491,7 +491,7 @@ export class TournamentEngine {
             })
             .eq('id', this.tournamentId);
 
-        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Migrated ${registrations.length} players — prize pool: $${actualPrizePool.toFixed(2)}`);
+        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Migrated ${registrations.length} players — prize pool: ${actualPrizePool.toFixed(2)}`);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -818,7 +818,7 @@ export class TournamentEngine {
         // Calculate prize
         const prize = this.calculatePrize(position);
 
-        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] ELIMINATED: ${player.username} in ${position}${this.getOrdinal(position)} place${prize > 0 ? ` — wins $${prize.toFixed(2)}` : ''}`);
+        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] ELIMINATED: ${player.username} in ${position}${this.getOrdinal(position)} place${prize > 0 ? ` — wins ${prize.toFixed(2)}` : ''}`);
 
         // Update tournament_players
         await this.supabase
@@ -860,6 +860,13 @@ export class TournamentEngine {
     private async creditPrize(userId: string, amount: number): Promise<void> {
         if (!this.tournamentInfo) return;
 
+        // Validate userId — skip zero UUIDs or invalid IDs
+        const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
+        if (!userId || userId === ZERO_UUID || userId.length < 8 || userId.replace(/0/g, '').replace(/-/g, '').length === 0) {
+            console.warn(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Skipping prize credit — invalid userId: ${userId}`);
+            return;
+        }
+
         const clubId = this.tournamentInfo.club_id;
 
         // Credit prize to Player Wallet via SECURITY DEFINER RPC
@@ -869,7 +876,7 @@ export class TournamentEngine {
         });
 
         if (creditError) {
-            console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to credit Player Wallet for ${userId.slice(0, 8)} — prize $${amount.toFixed(2)}:`, creditError);
+            console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to credit Player Wallet for ${userId.slice(0, 8)} — prize ${amount.toFixed(2)}:`, creditError);
             return;
         }
 
@@ -896,7 +903,7 @@ export class TournamentEngine {
             notes: `Tournament prize: ${this.tournamentInfo.name}`,
         });
 
-        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Credited $${amount.toFixed(2)} prize to ${userId.slice(0, 8)}`);
+        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Credited ${amount.toFixed(2)} prize to ${userId.slice(0, 8)}`);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -1046,7 +1053,7 @@ export class TournamentEngine {
             winner.status = 'winner';
             const firstPrize = this.calculatePrize(1);
 
-            console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] WINNER: ${winner.username} — $${firstPrize.toFixed(2)}`);
+            console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] WINNER: ${winner.username} — ${firstPrize.toFixed(2)}`);
 
             await this.supabase
                 .from('tournament_players')

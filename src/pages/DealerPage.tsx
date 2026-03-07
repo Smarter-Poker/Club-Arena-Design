@@ -81,6 +81,7 @@ export default function DealerPage() {
     const [loading, setLoading] = useState(true);
     const [horseLaunchStatus, setHorseLaunchStatus] = useState<string | null>(null);
     const [horsesLaunched, setHorsesLaunched] = useState(false);
+    const [isLaunching, setIsLaunching] = useState(false);
     const [startupProgress, setStartupProgress] = useState('');
     const [lastRefresh, setLastRefresh] = useState(new Date());
     const enginesRef = useRef<Map<string, HeadlessTableEngine>>(new Map());
@@ -423,7 +424,10 @@ export default function DealerPage() {
                     </button>
                     {!horsesLaunched && (
                         <button
+                            disabled={isLaunching}
                             onClick={async () => {
+                                if (isLaunching) return; // Guard against double-clicks
+                                setIsLaunching(true);
                                 setHorseLaunchStatus('Launching horses...');
                                 try {
                                     const result = await horseOrchestrator.launch();
@@ -433,11 +437,12 @@ export default function DealerPage() {
                                     setTimeout(refreshDashboard, 2000);
                                 } catch (err: any) {
                                     setHorseLaunchStatus(`Error: ${err.message}`);
+                                    setIsLaunching(false); // Re-enable on error so user can retry
                                 }
                             }}
-                            style={{ ...styles.refreshBtn, background: '#4caf50', marginLeft: '8px' }}
+                            style={{ ...styles.refreshBtn, background: isLaunching ? '#888' : '#4caf50', marginLeft: '8px', opacity: isLaunching ? 0.6 : 1 }}
                         >
-                            Launch 100 Horses
+                            {isLaunching ? 'Launching...' : 'Launch 100 Horses'}
                         </button>
                     )}
                     {horseLaunchStatus && (
