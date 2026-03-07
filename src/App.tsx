@@ -37,7 +37,6 @@ const TournamentPage = lazy(() => import('./pages/TournamentPage'));
 const TournamentDetails = lazy(() => import('./pages/tournament/TournamentDetails'));
 const TournamentLobbyPage = lazy(() => import('./pages/tournament/TournamentLobbyPage'));
 const TablePage = lazy(() => import('./pages/TablePage'));
-const DealerPage = lazy(() => import('./pages/DealerPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const UnionsPage = lazy(() => import('./pages/UnionsPage'));
@@ -336,15 +335,6 @@ export default function App() {
                                 }
                             />
 
-                            {/* Dealer (Admin) — Protected */}
-                            <Route
-                                path="dealer"
-                                element={
-                                    <AuthGuard>
-                                        <DealerPage />
-                                    </AuthGuard>
-                                }
-                            />
 
                             {/* User */}
                             <Route

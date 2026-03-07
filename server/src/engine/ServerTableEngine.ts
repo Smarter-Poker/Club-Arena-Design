@@ -1,0 +1,474 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * SERVER TABLE ENGINE — Server-Side Dealer for a Single Table
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * Runs the complete dealing pipeline for one table on the SERVER.
+ * NO browser. NO React. NO window. Pure Node.js.
+ *
+ * - Loads table config, seated players, and horses from Supabase
+ * - Manages HandController lifecycle
+ * - Executes horse AI decisions with millisecond-level think times
+ * - Auto-rebuys busted horses from Player Wallet
+ * - Broadcasts hand state via Supabase Realtime
+ * - Multiple instances run simultaneously (one per table)
+ */
+
+import { HandController } from './HandController.js';
+import { HorseLogic } from './HorseLogic.js';
+import {
+    broadcastHandState, loadTable, loadSeatedPlayers, syncStacks,
+    syncTournamentChips, updateTableStatus, autoRebuyHorse,
+    markSeatAsLeft, processLeavePending,
+} from '../services/supabase.js';
+import type {
+    SeatPlayer, GameVariant, HandConfig, HandEvent, SeatedPlayer,
+    TableInfo, HorseStyle, HorseDecision, RakeConfig,
+} from '../types.js';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SERVER TABLE ENGINE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export class ServerTableEngine {
+    private tableId: string;
+    private running: boolean = false;
+    private handCount: number = 0;
+    private handController: HandController | null = null;
+    private tableInfo: TableInfo | null = null;
+    private seatedPlayers: SeatedPlayer[] = [];
+    private dealerSeatIndex: number = 0;
+    private consecutiveErrors: number = 0;
+    // Per-hand tracking
+    private currentHandWentToFlop: boolean = false;
+    private currentHandPotSize: number = 0;
+    private currentHandDealerSeat: number = 0;
+    private currentHandWinnerIds: string[] = [];
+    // Hand complete callback for tournament chip sync
+    private handCompleteCallback: ((tableId: string, players: { user_id: string; stack: number }[]) => void) | null = null;
+
+    constructor(tableId: string) {
+        this.tableId = tableId;
+        console.log(`[ServerTableEngine] Created for table ${tableId}`);
+    }
+
+    /**
+     * Start the dealing pipeline
+     */
+    async start(): Promise<void> {
+        if (this.running) return;
+        this.running = true;
+        console.log(`[ServerTableEngine:${this.tableId}] Starting...`);
+
+        try {
+            const tableData = await loadTable(this.tableId);
+            this.tableInfo = tableData as TableInfo;
+
+            // Wait for minimum 2 players
+            while (this.running) {
+                this.seatedPlayers = await loadSeatedPlayers(this.tableId);
+                if (this.seatedPlayers.length >= 2) break;
+                console.log(`[ServerTableEngine:${this.tableId}] Waiting for players... (${this.seatedPlayers.length}/2)`);
+                await this.sleep(5000);
+            }
+
+            // Start dealing loop
+            this.dealingLoop();
+        } catch (err) {
+            console.error(`[ServerTableEngine:${this.tableId}] Failed to start:`, err);
+            this.running = false;
+        }
+    }
+
+    /**
+     * Stop the engine
+     */
+    async stop(): Promise<void> {
+        if (!this.running) return;
+        this.running = false;
+        this.handController = null;
+        console.log(`[ServerTableEngine:${this.tableId}] Stopped. Dealt ${this.handCount} hands.`);
+    }
+
+    isRunning(): boolean { return this.running; }
+    getHandCount(): number { return this.handCount; }
+
+    onHandComplete(callback: (tableId: string, players: { user_id: string; stack: number }[]) => void): void {
+        this.handCompleteCallback = callback;
+    }
+
+    private isTournamentTable(): boolean {
+        return !!(this.tableInfo?.tournament_id || this.tableInfo?.game_type === 'tournament');
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // DEALING LOOP — Millisecond-level performance
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    private async dealingLoop(): Promise<void> {
+        while (this.running) {
+            try {
+                // Reload players + refresh blinds before each hand
+                this.seatedPlayers = await loadSeatedPlayers(this.tableId);
+                await this.refreshBlinds();
+
+                const activePlayers = this.seatedPlayers.filter(p => p.stack > 0);
+                if (activePlayers.length < 2) {
+                    await this.sleep(3000);
+                    continue;
+                }
+
+                // Deal hand
+                await this.dealHand(activePlayers);
+                this.consecutiveErrors = 0;
+
+                // Brief pause between hands (1-2 seconds for server — fast!)
+                if (this.running) {
+                    await this.sleep(1000 + Math.floor(Math.random() * 1000));
+                }
+            } catch (err) {
+                this.consecutiveErrors++;
+                const backoffMs = Math.min(3000 * Math.pow(2, this.consecutiveErrors - 1), 30000);
+                console.error(`[ServerTableEngine:${this.tableId}] Error (attempt ${this.consecutiveErrors}):`, err);
+                if (this.consecutiveErrors >= 10) {
+                    console.error(`[ServerTableEngine:${this.tableId}] Too many errors — stopping`);
+                    this.running = false;
+                } else {
+                    await this.sleep(backoffMs);
+                }
+            }
+        }
+    }
+
+    private async refreshBlinds(): Promise<void> {
+        if (!this.tableInfo || !this.isTournamentTable()) return;
+        const data = await loadTable(this.tableId);
+        if (data) {
+            this.tableInfo.small_blind = data.small_blind;
+            this.tableInfo.big_blind = data.big_blind;
+            this.tableInfo.ante = data.ante;
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // DEAL HAND — Complete hand lifecycle
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    private async dealHand(players: SeatedPlayer[]): Promise<void> {
+        if (!this.tableInfo) return;
+
+        this.handCount++;
+        const handNumber = this.handCount;
+        this.currentHandWentToFlop = false;
+        this.currentHandPotSize = 0;
+        this.currentHandWinnerIds = [];
+
+        console.log(`[ServerTableEngine:${this.tableId}] Hand #${handNumber} — ${players.length} players`);
+
+        // Convert to SeatPlayer format
+        const hcPlayers: SeatPlayer[] = players.map(p => ({
+            seat: p.seat_number,
+            user_id: p.user_id,
+            username: p.username,
+            stack: p.stack,
+            bet: 0,
+            totalInvested: 0,
+            cards: [],
+            is_folded: false,
+            is_all_in: false,
+            is_sitting_out: false,
+        }));
+
+        // Rotate dealer
+        this.dealerSeatIndex = this.dealerSeatIndex % players.length;
+        const dealerSeat = players[this.dealerSeatIndex].seat_number;
+        this.currentHandDealerSeat = dealerSeat;
+        this.dealerSeatIndex++;
+
+        const config: HandConfig = {
+            tableId: this.tableId,
+            handNumber,
+            gameVariant: this.tableInfo.game_variant as GameVariant,
+            smallBlind: this.tableInfo.small_blind,
+            bigBlind: this.tableInfo.big_blind,
+            ante: this.tableInfo.ante,
+            rakeConfig: this.getRakeConfig(this.tableInfo.small_blind, this.tableInfo.big_blind),
+        };
+
+        this.handController = new HandController(config, hcPlayers, dealerSeat);
+
+        // Wait for hand to complete
+        return new Promise<void>((resolve) => {
+            const handTimeout = setTimeout(() => {
+                console.warn(`[ServerTableEngine:${this.tableId}] Hand ${handNumber} timed out after 60s`);
+                this.handController = null;
+                resolve();
+            }, 60_000);
+
+            const unsub = this.handController!.onEvent((event: HandEvent) => {
+                this.handleHandEvent(event, players);
+
+                if (event.type === 'HAND_COMPLETE') {
+                    clearTimeout(handTimeout);
+                    unsub();
+
+                    // Fire hand-complete callback for tournament chip sync
+                    if (this.handCompleteCallback) {
+                        const finalStacks = players.map(p => ({
+                            user_id: p.user_id,
+                            stack: p.stack,
+                        }));
+                        try {
+                            this.handCompleteCallback(this.tableId, finalStacks);
+                        } catch (e) {
+                            console.error(`[ServerTableEngine:${this.tableId}] handCompleteCallback error:`, e);
+                        }
+                    }
+
+                    this.handController = null;
+                    resolve();
+                }
+            });
+
+            // Start the hand!
+            try {
+                this.handController!.start();
+            } catch (err) {
+                console.error(`[ServerTableEngine:${this.tableId}] Failed to start hand:`, err);
+                clearTimeout(handTimeout);
+                unsub();
+                this.handController = null;
+                resolve();
+            }
+        });
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // EVENT HANDLING
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    private handleHandEvent(event: HandEvent, players: SeatedPlayer[]): void {
+        switch (event.type) {
+            case 'HAND_START':
+                this.broadcastCurrentState();
+                break;
+
+            case 'TURN_CHANGE':
+                this.handleTurnChange(event, players);
+                this.broadcastCurrentState();
+                break;
+
+            case 'PLAYER_ACTION':
+                this.broadcastCurrentState();
+                break;
+
+            case 'COMMUNITY_CARDS':
+                if (event.stage === 'flop') this.currentHandWentToFlop = true;
+                this.broadcastCurrentState();
+                break;
+
+            case 'WINNERS':
+                this.currentHandWinnerIds = (event.winners || []).map((w: any) => w.userId || w.user_id || '');
+                if (this.handController) {
+                    const state = this.handController.getState();
+                    this.currentHandPotSize = state.pot;
+                    for (const enginePlayer of state.players) {
+                        const localPlayer = players.find(p => p.user_id === enginePlayer.user_id);
+                        if (localPlayer) localPlayer.stack = enginePlayer.stack;
+                    }
+                }
+                this.broadcastCurrentState();
+                break;
+
+            case 'HAND_COMPLETE':
+                // Async post-hand tasks (fire and forget)
+                this.postHandTasks(players).catch(err =>
+                    console.error(`[ServerTableEngine:${this.tableId}] Post-hand error:`, err)
+                );
+                this.currentHandWinnerIds = [];
+                break;
+        }
+    }
+
+    /**
+     * Handle horse AI turn — INSTANT decisions, no browser timers needed
+     */
+    private handleTurnChange(event: HandEvent, players: SeatedPlayer[]): void {
+        if (event.type !== 'TURN_CHANGE' || !this.handController) return;
+
+        const seat = event.seat;
+        const player = players.find(p => p.seat_number === seat);
+        if (!player) return;
+
+        const state = this.handController.getState();
+        const enginePlayer = state.players.find(p => p.seat === seat);
+        if (!enginePlayer) return;
+
+        // Only horses get auto-played — real players use WebSocket actions
+        if (!player.is_horse) return;
+
+        const toCall = Math.max(0, state.currentBet - enginePlayer.bet);
+
+        const styleMap: Record<string, HorseStyle> = {
+            'tag': 'tag', 'lag': 'lag', 'balanced': 'balanced',
+            'tricky': 'tricky', 'grinder': 'grinder',
+            'reg': 'tag', 'fish': 'balanced', 'nit': 'grinder', 'maniac': 'lag',
+        };
+        const horseStyle: HorseStyle = styleMap[player.horse_profile || 'balanced'] || 'balanced';
+
+        const gameState = {
+            players: state.players,
+            communityCards: state.communityCards,
+            pot: state.pot,
+            currentBet: state.currentBet,
+            minRaise: state.minRaise,
+            stage: state.stage,
+            gameVariant: (this.tableInfo?.game_variant || 'nlh') as string,
+            bigBlind: this.tableInfo?.big_blind || 2,
+        };
+
+        // Get decision — SYNCHRONOUS, instant
+        const decision = HorseLogic.decide(enginePlayer, gameState as any, horseStyle);
+
+        // Apply think time delay (50-300ms server-side — fast!)
+        const thinkTime = Math.min(decision.thinkTime, 200);
+        const handControllerRef = this.handController;
+
+        setTimeout(() => {
+            if (!handControllerRef || !this.running) return;
+
+            let action = decision.action as string;
+            let amount = decision.amount;
+
+            // Normalize actions
+            if (action === 'allin') action = 'all_in';
+            if (action === 'check' && toCall > 0) action = 'call';
+            if (action === 'call' && toCall === 0) action = 'check';
+            if (action === 'call') amount = toCall;
+            if (action === 'fold' && toCall === 0) action = 'check';
+            if (action === 'raise' && state.currentBet === 0) action = 'bet';
+            if (action === 'bet' && state.currentBet > 0) action = 'raise';
+
+            // Clamp amounts
+            if (action === 'bet' && amount !== undefined) {
+                amount = Math.max(state.minRaise, amount);
+                if (amount >= enginePlayer.stack) { action = 'all_in'; amount = undefined; }
+            } else if (action === 'raise' && amount !== undefined) {
+                const minRaiseTo = state.currentBet + state.minRaise;
+                amount = Math.max(minRaiseTo, amount);
+                const maxRaiseTo = enginePlayer.stack + enginePlayer.bet;
+                if (amount >= maxRaiseTo) { action = 'all_in'; amount = undefined; }
+            }
+
+            try {
+                handControllerRef.performAction(seat, action as any, amount);
+            } catch {
+                try { handControllerRef.performAction(seat, 'fold'); } catch { /* Hand done */ }
+            }
+        }, thinkTime);
+    }
+
+    /**
+     * Broadcast current hand state to all table viewers
+     */
+    private broadcastCurrentState(): void {
+        if (!this.handController || !this.tableInfo) return;
+
+        const state = this.handController.getState();
+        const currentSeatPlayer = state.players.find(p => p.seat === state.currentPlayerSeat);
+
+        broadcastHandState(this.tableId, {
+            table_id: this.tableId,
+            hand_number: this.handCount,
+            pot: state.pot ?? 0,
+            community_cards: state.communityCards ?? [],
+            current_bet: state.currentBet ?? 0,
+            current_player: currentSeatPlayer?.user_id ?? null,
+            dealer_seat: state.dealerSeat ?? this.currentHandDealerSeat,
+            stage: state.stage ?? 'preflop',
+            players: (state.players ?? []).map(p => ({
+                seat: p.seat,
+                user_id: p.user_id,
+                username: p.username,
+                stack: p.stack,
+                bet: p.bet ?? 0,
+                cards: p.cards ?? [],
+                is_folded: p.is_folded ?? false,
+                is_all_in: p.is_all_in ?? false,
+                is_sitting_out: p.is_sitting_out ?? false,
+            })),
+        });
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // POST-HAND TASKS
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    private async postHandTasks(players: SeatedPlayer[]): Promise<void> {
+        // 1. Sync stacks to database
+        await syncStacks(this.tableId, players.map(p => ({ user_id: p.user_id, stack: p.stack })));
+
+        // 2. Tournament chip sync
+        if (this.isTournamentTable() && this.tableInfo?.tournament_id) {
+            await syncTournamentChips(this.tableId, this.tableInfo.tournament_id);
+        }
+
+        // 3. Auto-rebuy busted horses (cash games only)
+        if (!this.isTournamentTable()) {
+            const bustHorses = players.filter(p => p.is_horse && p.stack === 0);
+            for (const horse of bustHorses) {
+                const rebuyAmount = this.tableInfo?.big_blind ? this.tableInfo.big_blind * 100 : 200;
+                const success = await autoRebuyHorse(
+                    this.tableId, horse.user_id, rebuyAmount, this.tableInfo?.club_id || ''
+                );
+                if (success) {
+                    horse.stack = rebuyAmount;
+                    console.log(`[ServerTableEngine:${this.tableId}] Auto-rebuy: ${horse.username} -> ${rebuyAmount} chips`);
+                } else {
+                    await markSeatAsLeft(this.tableId, horse.user_id);
+                    console.log(`[ServerTableEngine:${this.tableId}] Horse ${horse.username} left — insufficient funds`);
+                }
+            }
+        }
+
+        // 4. Process leave-pending players (cash games only)
+        if (!this.isTournamentTable()) {
+            await processLeavePending(this.tableId, this.tableInfo?.club_id || '');
+        }
+
+        // 5. Update table status
+        await updateTableStatus(this.tableId, players.filter(p => p.stack > 0).length);
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // RAKE CONFIG
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    private getRakeConfig(sb: number, bb: number): RakeConfig {
+        const CAPS: [number, number, number][] = [
+            [0.10, 0.20, 3], [0.20, 0.40, 3], [0.25, 0.50, 3],
+            [0.30, 0.60, 5], [0.50, 1.00, 5], [1.00, 2.00, 5],
+            [2.00, 4.00, 7.50], [2.00, 5.00, 7.50], [5.00, 5.00, 7.50],
+            [3.00, 6.00, 8], [4.00, 8.00, 10], [5.00, 10.0, 12.50],
+            [10.0, 20.0, 15], [10.0, 25.0, 15],
+        ];
+
+        const exact = CAPS.find(([s, b]) => s === sb && b === bb);
+        if (exact) return { percent: 10, cap: exact[2], noFlop: true };
+
+        let closest = CAPS[0];
+        let minDiff = Math.abs(bb - closest[1]);
+        for (const tier of CAPS) {
+            const diff = Math.abs(bb - tier[1]);
+            if (diff < minDiff) { minDiff = diff; closest = tier; }
+        }
+        return { percent: 10, cap: closest[2], noFlop: true };
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // UTILITY
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    private sleep(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+}
