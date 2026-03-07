@@ -247,17 +247,28 @@ export function SeatSlot({
                     }}
                     style={{ cursor: onAvatarClick && !player.isHero ? 'pointer' : undefined }}
                 >
-                    {player.avatar ? (
+                    {(player.avatar || !player.isHero) ? (
                         <img
-                            src={player.avatar}
+                            src={player.avatar || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(player.name)}&backgroundColor=b6e3f4`}
                             alt={player.name}
                             className="seat-slot__avatar"
+                            onError={(e) => {
+                                // Fallback to initial on load error
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const fallback = target.parentElement?.querySelector('.seat-slot__avatar--fallback');
+                                if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                            }}
                         />
-                    ) : (
+                    ) : null}
+                    {player.isHero && !player.avatar ? (
                         <div className="seat-slot__avatar seat-slot__avatar--default">
                             {player.name.charAt(0).toUpperCase()}
                         </div>
-                    )}
+                    ) : null}
+                    <div className="seat-slot__avatar seat-slot__avatar--default seat-slot__avatar--fallback" style={{ display: 'none' }}>
+                        {player.name.charAt(0).toUpperCase()}
+                    </div>
 
                     {/* Status Indicator */}
                     {player.status !== 'active' && player.status !== 'folded' && (
