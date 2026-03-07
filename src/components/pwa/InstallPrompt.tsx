@@ -1,6 +1,13 @@
 /**
  * ♠ CLUB ARENA — PWA Install Prompt
  * Smart add-to-homescreen prompt for mobile users
+ *
+ * Dismissal persistence:
+ *  - 1st "Later" → 30-day cooldown before showing again
+ *  - 2nd "Later" → permanently dismissed (never shows again)
+ *  - "Install" clicked → permanently stored as installed
+ *  - Also listens for browser 'appinstalled' event as backup
+ *  - Detects standalone/installed mode to avoid redundant prompts
  */
 
 import React, { useState, useEffect } from 'react';
@@ -17,21 +24,33 @@ export const InstallPrompt: React.FC = () => {
     const [isIOS, setIsIOS] = useState(false);
 
     useEffect(() => {
-        // Check if already installed
-        if (window.matchMedia('(display-mode: standalone)').matches) {
-            return; // Already installed as PWA
+        try {
+            // Already installed (user clicked Install or appinstalled fired)
+            if (localStorage.getItem('pwa_installed')) return;
+
+            // Check if already installed as PWA
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+                localStorage.setItem('pwa_installed', 'true');
+                return;
+            }
+
+            // Escalating dismissal logic
+            const dismissCount = parseInt(localStorage.getItem('pwa_dismiss_count') || '0');
+            if (dismissCount >= 2) return; // Permanently dismissed after 2nd "Later"
+
+            const dismissedAt = localStorage.getItem('pwa_prompt_dismissed');
+            if (dismissedAt) {
+                const cooldown = 30 * 24 * 60 * 60 * 1000; // 30 days
+                if (Date.now() - parseInt(dismissedAt) < cooldown) return;
+            }
+        } catch {
+            // localStorage disabled (Safari private browsing, quota exceeded) — don't show
+            return;
         }
 
         // Detect iOS
         const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
         setIsIOS(isIOSDevice);
-
-        // Check if we've already prompted recently
-        const lastPrompt = localStorage.getItem('pwaPromptDismissed');
-        if (lastPrompt) {
-            const daysSince = (Date.now() - parseInt(lastPrompt)) / (1000 * 60 * 60 * 24);
-            if (daysSince < 7) return; // Don't show again for 7 days
-        }
 
         // Listen for beforeinstallprompt event (Android/Desktop Chrome)
         const handleBeforeInstall = (e: Event) => {
@@ -53,20 +72,41 @@ export const InstallPrompt: React.FC = () => {
         };
     }, []);
 
+    // Listen for the browser 'appinstalled' event (fires after actual install)
+    useEffect(() => {
+        const onInstalled = () => {
+            try { localStorage.setItem('pwa_installed', 'true'); } catch { /* ignore */ }
+            setShowPrompt(false);
+        };
+        window.addEventListener('appinstalled', onInstalled);
+        return () => window.removeEventListener('appinstalled', onInstalled);
+    }, []);
+
     const handleInstall = async () => {
         if (deferredPrompt) {
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-                setShowPrompt(false);
-            }
             setDeferredPrompt(null);
+            setShowPrompt(false);
+            try {
+                if (outcome === 'accepted') {
+                    localStorage.setItem('pwa_installed', 'true');
+                } else {
+                    const count = parseInt(localStorage.getItem('pwa_dismiss_count') || '0') + 1;
+                    localStorage.setItem('pwa_dismiss_count', count.toString());
+                    localStorage.setItem('pwa_prompt_dismissed', Date.now().toString());
+                }
+            } catch { /* localStorage disabled */ }
         }
     };
 
     const handleDismiss = () => {
-        localStorage.setItem('pwaPromptDismissed', Date.now().toString());
         setShowPrompt(false);
+        try {
+            const count = parseInt(localStorage.getItem('pwa_dismiss_count') || '0') + 1;
+            localStorage.setItem('pwa_dismiss_count', count.toString());
+            localStorage.setItem('pwa_prompt_dismissed', Date.now().toString());
+        } catch { /* localStorage disabled */ }
     };
 
     if (!showPrompt) return null;
@@ -107,3 +147,4 @@ export const InstallPrompt: React.FC = () => {
 };
 
 export default InstallPrompt;
+

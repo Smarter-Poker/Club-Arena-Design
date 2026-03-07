@@ -195,7 +195,8 @@ export default function ClubLobby() {
 
 // Tournament Card Component
 function TournamentCard({ tournament, clubId }: { tournament: Tournament; clubId: string }) {
-    const getTypeLabel = (type: string) => {
+    const getTypeLabel = (type: string | undefined) => {
+        if (!type) return 'MTT';
         switch (type) {
             case 'mtt': return 'XMTT';
             case 'sng': return 'SNG';

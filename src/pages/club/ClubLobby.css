@@ -6,7 +6,8 @@
 .club-lobby {
     min-height: 100vh;
     background: linear-gradient(180deg, #0a0e1a 0%, #141828 50%, #0a0e1a 100%);
-    padding-bottom: calc(var(--bottom-nav-height) + var(--space-4));
+    padding-bottom: calc(var(--bottom-nav-height) + var(--space-8));
+    overflow-y: auto;
 }
 
 .club-lobby.loading,
@@ -32,7 +33,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-3) var(--space-4);
+    padding: var(--space-1) var(--space-3);
     background: rgba(10, 14, 26, 0.9);
     position: sticky;
     top: 0;
@@ -108,8 +109,8 @@
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    margin: var(--space-3) var(--space-4);
-    padding: var(--space-3) var(--space-4);
+    margin: var(--space-1) var(--space-3);
+    padding: var(--space-2) var(--space-3);
     background: linear-gradient(135deg, rgba(30, 40, 60, 0.8) 0%, rgba(20, 30, 50, 0.9) 100%);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: var(--radius-lg);
@@ -197,8 +198,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin: 0 var(--space-4) var(--space-3);
-    padding: var(--space-2) var(--space-3);
+    margin: 0 var(--space-3) var(--space-1);
+    padding: var(--space-1) var(--space-2);
     background: rgba(24, 119, 242, 0.1);
     border: 1px solid rgba(24, 119, 242, 0.3);
     border-radius: var(--radius-md);
@@ -222,8 +223,8 @@
 .filter-tabs {
     display: flex;
     gap: var(--space-1);
-    padding: 0 var(--space-4);
-    margin-bottom: var(--space-4);
+    padding: 0 var(--space-3);
+    margin-bottom: var(--space-2);
     overflow-x: auto;
     scrollbar-width: none;
 }
@@ -271,8 +272,8 @@
 .tournament-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-3);
-    padding: 0 var(--space-4);
+    gap: var(--space-2);
+    padding: 0 var(--space-3) var(--space-4);
 }
 
 @media (max-width: 400px) {
@@ -324,12 +325,12 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-2) var(--space-3);
+    padding: var(--space-1) var(--space-2);
     background: rgba(0, 0, 0, 0.2);
 }
 
 .trophy-icon {
-    font-size: 1.5rem;
+    font-size: 2rem;
 }
 
 .seats-badge {
@@ -337,15 +338,15 @@
     color: var(--fb-blue-light);
     padding: var(--space-1) var(--space-2);
     border-radius: var(--radius-sm);
-    font-size: var(--fs-xs);
+    font-size: var(--fs-sm);
     font-weight: var(--fw-bold);
 }
 
 .tournament-card .card-body {
-    padding: var(--space-3);
+    padding: var(--space-2);
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
+    gap: var(--space-1);
 }
 
 .buyin-row {
@@ -360,7 +361,7 @@
 }
 
 .buyin-amount {
-    font-size: var(--fs-2xl);
+    font-size: var(--fs-xl);
     font-weight: var(--fw-bold);
     color: var(--text-primary);
 }
@@ -369,19 +370,19 @@
     display: flex;
     align-items: center;
     gap: var(--space-1);
-    font-size: var(--fs-sm);
+    font-size: var(--fs-base);
     color: var(--text-secondary);
 }
 
 .tournament-card .card-footer {
     display: flex;
     gap: var(--space-1);
-    padding: 0 var(--space-3) var(--space-2);
+    padding: 0 var(--space-2) var(--space-1);
 }
 
 .type-badge {
     padding: var(--space-1) var(--space-2);
-    font-size: var(--fs-xs);
+    font-size: var(--fs-sm);
     font-weight: var(--fw-bold);
     border-radius: var(--radius-sm);
 }
@@ -400,7 +401,7 @@
     background: var(--fb-blue);
     color: white;
     padding: var(--space-1) var(--space-2);
-    font-size: var(--fs-xs);
+    font-size: var(--fs-sm);
     font-weight: var(--fw-bold);
     border-radius: var(--radius-sm);
 }
@@ -409,13 +410,13 @@
     display: flex;
     align-items: center;
     gap: var(--space-1);
-    padding: 0 var(--space-3);
-    font-size: var(--fs-sm);
+    padding: 0 var(--space-2);
+    font-size: var(--fs-base);
     color: var(--text-primary);
 }
 
 .prize-icon {
-    font-size: var(--fs-base);
+    font-size: var(--fs-lg);
 }
 
 .tournament-name {
@@ -425,8 +426,8 @@
 }
 
 .card-date {
-    padding: var(--space-2) var(--space-3);
-    font-size: var(--fs-xs);
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--fs-sm);
     color: var(--text-muted);
 }
 
