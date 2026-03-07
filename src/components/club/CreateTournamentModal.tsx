@@ -100,7 +100,7 @@ export default function CreateTournamentModal({ clubId, onClose, onSuccess }: Pr
                     <div className={styles.row}>
                         <div className={styles.col}>
                             <div className={styles.formGroup}>
-                                <label>Buy-in ($)</label>
+                                <label>Buy-in</label>
                                 <input
                                     type="number"
                                     className={styles.input}
@@ -112,7 +112,7 @@ export default function CreateTournamentModal({ clubId, onClose, onSuccess }: Pr
                         </div>
                         <div className={styles.col}>
                             <div className={styles.formGroup}>
-                                <label>Fee ($)</label>
+                                <label>Fee</label>
                                 <input
                                     type="number"
                                     className={styles.input}

@@ -128,7 +128,7 @@ export default function CreateTableModal({ clubId, onClose, onSuccess }: CreateT
 
                         <div className={styles['form-row']}>
                             <div className={styles['form-group']}>
-                                <label>Small Blind ($)</label>
+                                <label>Small Blind</label>
                                 <input
                                     type="number"
                                     className="input"
@@ -140,7 +140,7 @@ export default function CreateTableModal({ clubId, onClose, onSuccess }: CreateT
                                 />
                             </div>
                             <div className={styles['form-group']}>
-                                <label>Big Blind ($)</label>
+                                <label>Big Blind</label>
                                 <input
                                     type="number"
                                     className="input"

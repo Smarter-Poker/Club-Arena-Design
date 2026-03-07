@@ -779,7 +779,7 @@ class HorseOrchestrator {
                 })
                 .eq('id', tournament.id);
 
-            console.log(`[Orchestrator] Tournament "${config.name}" created: ${tournament.id} — ${registered} horses, $${prizePool} prize pool (GTD: $${config.guarantee || 0})`);
+            console.log(`[Orchestrator] Tournament "${config.name}" created: ${tournament.id} — ${registered} horses, ${prizePool} prize pool (GTD: ${config.guarantee || 0})`);
             return { tournamentId: tournament.id, registered };
         } catch (err: any) {
             this.logError(`Tournament launch error: ${err.message}`);
@@ -968,7 +968,7 @@ class HorseOrchestrator {
                 })
                 .eq('id', spin.id);
 
-            console.log(`[Orchestrator] Spin "${config.name}" (${multiplier}x = $${prizePool}) created with ${registered} horses`);
+            console.log(`[Orchestrator] Spin "${config.name}" (${multiplier}x = ${prizePool}) created with ${registered} horses`);
             return { tournamentId: spin.id, registered, multiplier };
         } catch (err: any) {
             this.logError(`Spin launch error: ${err.message}`);
@@ -1124,7 +1124,7 @@ class HorseOrchestrator {
             table.status = 'stopped';
         }
 
-        console.log(`[Orchestrator] Shutdown complete. ${this.handCount} hands played, $${this.totalRake.toFixed(2)} rake collected`);
+        console.log(`[Orchestrator] Shutdown complete. ${this.handCount} hands played, ${this.totalRake.toFixed(2)} rake collected`);
     }
 
     /**

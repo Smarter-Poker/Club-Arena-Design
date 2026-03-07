@@ -215,7 +215,7 @@ export function HandReplayPlayer({
             case 'ACTION':
                 if (step.action) {
                     const actionText = step.action.amount
-                        ? `${step.action.action} $${step.action.amount}`
+                        ? `${step.action.action} ${step.action.amount}`
                         : step.action.action;
                     setActiveAction({ seat: step.seat!, text: actionText });
                     if (step.action.amount) {

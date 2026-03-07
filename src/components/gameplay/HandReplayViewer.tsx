@@ -178,10 +178,10 @@ export default function HandReplayViewer({
         switch (action.action) {
             case 'fold': return { text: 'Folds', color: '#6b7280' };
             case 'check': return { text: 'Checks', color: '#3b82f6' };
-            case 'call': return { text: `Calls $${action.amount}`, color: '#10b981' };
-            case 'bet': return { text: `Bets $${action.amount}`, color: '#f59e0b' };
-            case 'raise': return { text: `Raises to $${action.amount}`, color: '#ef4444' };
-            case 'all-in': return { text: `All-In $${action.amount}`, color: '#a855f7' };
+            case 'call': return { text: `Calls ${action.amount}`, color: '#10b981' };
+            case 'bet': return { text: `Bets ${action.amount}`, color: '#f59e0b' };
+            case 'raise': return { text: `Raises to ${action.amount}`, color: '#ef4444' };
+            case 'all-in': return { text: `All-In ${action.amount}`, color: '#a855f7' };
             default: return { text: action.action, color: '#ffffff' };
         }
     };
