@@ -249,22 +249,11 @@ class HorseLifecycleManagerCore {
 
       let forcedResets = 0;
 
-      // Check each stuck horse to see if it has an active table/tournament
+      // Check each stuck horse to see if it has an active tournament
+      // NOTE: table_seats are managed in-memory by HeadlessTableEngine (no DB table)
+      // So we can only verify tournament participation via DB
       for (const horse of stuckHorses) {
         try {
-          // Check if horse still has active table seat
-          const { data: activeSeat } = await supabase
-            .from('table_seats')
-            .select('table_id')
-            .eq('user_id', horse.id)
-            .is('left_at', null)
-            .single();
-
-          if (activeSeat) {
-            // Has active seat - don't force reset
-            continue;
-          }
-
           // Check if horse is in active tournament
           const { data: activeTournament } = await supabase
             .from('tournament_players')
@@ -290,7 +279,7 @@ class HorseLifecycleManagerCore {
               tableName: 'System',
               handNumber: 0,
               category: 'state_desync',
-              severity: 'medium',
+              severity: 'low',
               title: 'Stuck horse force-reset',
               description: 'Horse was stuck in ' + horse.horse_status + ' state for ' + this.stuckHorseThreshold + ' hours. Force-reset to available.',
               context: { horseId: horse.id, previousStatus: horse.horse_status, updatedAt: horse.updated_at },
@@ -545,76 +534,11 @@ class HorseLifecycleManagerCore {
 
   /**
    * Clean up stale table_seats records
+   * NOTE: table_seats is managed in-memory by HeadlessTableEngine, no DB table exists
    */
   async cleanupStaleSeats(): Promise<void> {
-    try {
-      const thresholdMs = this.staleSeatThreshold * 60 * 60 * 1000;
-      const thresholdTime = new Date(Date.now() - thresholdMs).toISOString();
-
-      // Find stale seats that are still "active" but tables don't exist
-      const { data: staleSeats, error: seatError } = await supabase
-        .from('table_seats')
-        .select('id, table_id, user_id, created_at')
-        .is('left_at', null)
-        .lt('created_at', thresholdTime);
-
-      if (seatError) {
-        console.error('[LifecycleManager] Failed to fetch stale seats:', seatError);
-        return;
-      }
-
-      if (!staleSeats || staleSeats.length === 0) {
-        return;
-      }
-
-      let orphanedSeats = 0;
-
-      // Check each stale seat
-      for (const seat of staleSeats) {
-        try {
-          // Check if table still exists
-          const { data: table } = await supabase.from('tables').select('id').eq('id', seat.table_id).single();
-
-          if (!table) {
-            // Table doesn't exist - mark seat as left
-            await supabase
-              .from('table_seats')
-              .update({ left_at: new Date().toISOString() })
-              .eq('id', seat.id);
-
-            orphanedSeats++;
-
-            // If user is a horse, reset to available
-            const { data: profile } = await supabase.from('profiles').select('is_horse').eq('id', seat.user_id).single();
-
-            if (profile?.is_horse) {
-              await this.resetHorse(seat.user_id);
-            }
-          }
-        } catch (err) {
-          console.error('[LifecycleManager] Error processing stale seat ' + seat.id + ':', err);
-        }
-      }
-
-      if (orphanedSeats > 0) {
-        horseBugReporter.report({
-          horseName: 'LifecycleManager',
-          horseId: 'system',
-          tableId: 'system',
-          tableName: 'System',
-          handNumber: 0,
-          category: 'state_desync',
-          severity: 'info',
-          title: 'Stale table seats cleaned up',
-          description: 'Closed ' + orphanedSeats + ' orphaned table seats from non-existent tables',
-          context: { orphanedSeatCount: orphanedSeats },
-        });
-
-        console.log('[LifecycleManager] Cleaned up ' + orphanedSeats + ' orphaned table seats');
-      }
-    } catch (err) {
-      console.error('[LifecycleManager] Error in cleanupStaleSeats:', err);
-    }
+    // Seats are managed in-memory, not persisted to Supabase — nothing to clean up
+    return;
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
