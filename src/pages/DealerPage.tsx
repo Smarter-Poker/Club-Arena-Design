@@ -352,10 +352,18 @@ export default function DealerPage() {
         return () => clearInterval(interval);
     }, []);
 
-    // Start 24/7 horse services when horses are launched
-    useEffect(() => {
-        if (!horsesLaunched) return;
+    // Auto-detect existing horse infrastructure and start services
+    // This ensures services run even after page refresh (no need to re-click Launch)
+    const servicesStarted = useRef(false);
 
+    useEffect(() => {
+        if (servicesStarted.current) return;
+
+        // Start services if horses were just launched OR if we detect existing infrastructure
+        const shouldStart = horsesLaunched || engines.length > 5 || tournaments.length > 0;
+        if (!shouldStart) return;
+
+        servicesStarted.current = true;
         console.log('[DealerPage] Starting 24/7 horse services...');
 
         // Start bug reporter for global error capture
@@ -379,7 +387,7 @@ export default function DealerPage() {
             horseBugReporter.stopCapturing();
             console.log('[DealerPage] 24/7 horse services stopped');
         };
-    }, [horsesLaunched]);
+    }, [horsesLaunched, engines.length, tournaments.length]);
 
     // Cleanup on unmount — stop all engines and clear refs to prevent duplicates
     useEffect(() => {

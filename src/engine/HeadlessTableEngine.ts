@@ -333,9 +333,10 @@ export class HeadlessTableEngine {
                 await this.dealHand(activePlayers);
                 this.consecutiveErrors = 0; // Reset on success
 
-                // Wait 3 seconds before next hand
+                // Wait 3-5 seconds before next hand (jitter prevents Supabase request spikes)
                 if (this.running) {
-                    this.dealingLoopTimer = setTimeout(dealNextHand, 3000) as any;
+                    const jitter = 3000 + Math.floor(Math.random() * 2000);
+                    this.dealingLoopTimer = setTimeout(dealNextHand, jitter) as any;
                 }
             } catch (err) {
                 this.consecutiveErrors++;
