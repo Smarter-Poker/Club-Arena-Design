@@ -352,19 +352,12 @@ export default function DealerPage() {
         return () => clearInterval(interval);
     }, []);
 
-    // Auto-detect existing horse infrastructure and start services
-    // This ensures services run even after page refresh (no need to re-click Launch)
-    const servicesStarted = useRef(false);
-
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 24/7 AUTO-RUN — Services start IMMEDIATELY on DealerPage load, always.
+    // No conditions, no waiting — tournaments and horses run non-stop.
+    // ═══════════════════════════════════════════════════════════════════════════
     useEffect(() => {
-        if (servicesStarted.current) return;
-
-        // Start services if horses were just launched OR if we detect existing infrastructure
-        const shouldStart = horsesLaunched || engines.length > 5 || tournaments.length > 0;
-        if (!shouldStart) return;
-
-        servicesStarted.current = true;
-        console.log('[DealerPage] Starting 24/7 horse services...');
+        console.log('[DealerPage] Starting 24/7 services IMMEDIATELY...');
 
         // Start bug reporter for global error capture
         horseBugReporter.startCapturing();
@@ -378,16 +371,16 @@ export default function DealerPage() {
         // Start lifecycle cleanup (every 60 secs)
         HorseLifecycleManager.start();
 
-        console.log('[DealerPage] All 24/7 horse services ACTIVE');
+        console.log('[DealerPage] All 24/7 services ACTIVE — tournaments auto-run until winner');
 
         return () => {
             tournamentRecurringService.stop();
             AutoRebuyService.stop();
             HorseLifecycleManager.stop();
             horseBugReporter.stopCapturing();
-            console.log('[DealerPage] 24/7 horse services stopped');
+            console.log('[DealerPage] 24/7 services stopped');
         };
-    }, [horsesLaunched, engines.length, tournaments.length]);
+    }, []);
 
     // Cleanup on unmount — stop all engines and clear refs to prevent duplicates
     useEffect(() => {
