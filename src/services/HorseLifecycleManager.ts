@@ -1,0 +1,743 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * HORSE LIFECYCLE MANAGER — Status Tracking + Tournament Cleanup
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * Manages the complete lifecycle of horses:
+ * - Tracks status transitions (available → seated → tournament → leaving → available)
+ * - Cleans up after tournaments complete (reset horse status)
+ * - Detects stuck/orphaned horses and resets them
+ * - Provides health dashboard data
+ * - Maintains horse fleet integrity
+ */
+
+import { supabase } from '../lib/supabase';
+import { horseBugReporter } from './HorseBugReporter';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface FleetHealth {
+  total: number;
+  available: number;
+  seated: number;
+  inTournament: number;
+  leaving: number;
+  stuck: number;
+  busted: number;
+}
+
+export interface LifecycleConfig {
+  monitoringInterval: number; // ms between checks (default: 60000)
+  stuckHorseThreshold: number; // hours - consider horse stuck if in non-available state > this (default: 2)
+  staleSngThreshold: number; // hours - cancel SNGs older than this that never started (default: 2)
+  staleSeatThreshold: number; // hours - cleanup table_seats older than this (default: 4)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SERVICE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class HorseLifecycleManagerCore {
+  private isRunning = false;
+  private monitoringInterval: number;
+  private stuckHorseThreshold: number;
+  private staleSngThreshold: number;
+  private staleSeatThreshold: number;
+  private intervalHandle: ReturnType<typeof setInterval> | null = null;
+
+  constructor(config: Partial<LifecycleConfig> = {}) {
+    this.monitoringInterval = config.monitoringInterval ?? 60000;
+    this.stuckHorseThreshold = config.stuckHorseThreshold ?? 2;
+    this.staleSngThreshold = config.staleSngThreshold ?? 2;
+    this.staleSeatThreshold = config.staleSeatThreshold ?? 4;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // START / STOP
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Start lifecycle monitoring
+   */
+  start(): void {
+    if (this.isRunning) {
+      console.warn('[LifecycleManager] Already running');
+      return;
+    }
+
+    this.isRunning = true;
+    console.log('[LifecycleManager] Starting monitoring (interval: ' + this.monitoringInterval + 'ms)');
+
+    // Initial check
+    this.performMaintenanceCycle();
+
+    // Recurring checks
+    this.intervalHandle = setInterval(() => {
+      this.performMaintenanceCycle();
+    }, this.monitoringInterval);
+  }
+
+  /**
+   * Stop lifecycle monitoring
+   */
+  stop(): void {
+    if (!this.isRunning) {
+      console.warn('[LifecycleManager] Not running');
+      return;
+    }
+
+    this.isRunning = false;
+    if (this.intervalHandle) {
+      clearInterval(this.intervalHandle);
+      this.intervalHandle = null;
+    }
+
+    console.log('[LifecycleManager] Stopped monitoring');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // MAIN MAINTENANCE CYCLE
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Run full maintenance cycle
+   */
+  private async performMaintenanceCycle(): Promise<void> {
+    try {
+      console.log('[LifecycleManager] Starting maintenance cycle');
+
+      // Run all cleanup tasks in parallel
+      await Promise.all([
+        this.cleanupFinishedTournaments(),
+        this.detectStuckHorses(),
+        this.cleanupStaleSNGs(),
+        this.cleanupStaleSeats(),
+      ]);
+
+      console.log('[LifecycleManager] Maintenance cycle completed');
+    } catch (err) {
+      console.error('[LifecycleManager] Fatal error in maintenance cycle:', err);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // TOURNAMENT CLEANUP
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Clean up horses from finished tournaments
+   */
+  async cleanupFinishedTournaments(): Promise<void> {
+    try {
+      // Find all finished tournaments
+      const { data: tournaments, error: tourError } = await supabase
+        .from('tournaments')
+        .select('id, name')
+        .in('status', ['FINISHED', 'CANCELLED']);
+
+      if (tourError) {
+        console.error('[LifecycleManager] Failed to fetch finished tournaments:', tourError);
+        return;
+      }
+
+      if (!tournaments || tournaments.length === 0) {
+        return;
+      }
+
+      let horsesReset = 0;
+
+      // Process each tournament
+      for (const tournament of tournaments) {
+        try {
+          // Get all horses registered in this tournament
+          const { data: players, error: playerError } = await supabase
+            .from('tournament_players')
+            .select('player_id')
+            .eq('tournament_id', tournament.id);
+
+          if (playerError) {
+            console.error('[LifecycleManager] Failed to fetch tournament players for ' + tournament.id + ':', playerError);
+            continue;
+          }
+
+          if (!players || players.length === 0) {
+            continue;
+          }
+
+          // Filter for horses only
+          const playerIds = players.map(p => p.player_id);
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id')
+            .in('id', playerIds)
+            .eq('is_horse', true);
+
+          if (!profiles || profiles.length === 0) {
+            continue;
+          }
+
+          // Reset each horse to available
+          for (const profile of profiles) {
+            const reset = await this.resetHorse(profile.id);
+            if (reset) {
+              horsesReset++;
+            }
+          }
+
+          // Delete stale tournament_players entries for these horses
+          await supabase
+            .from('tournament_players')
+            .delete()
+            .eq('tournament_id', tournament.id)
+            .in('player_id', profiles.map(p => p.id));
+        } catch (err) {
+          console.error('[LifecycleManager] Error processing tournament ' + tournament.id + ':', err);
+        }
+      }
+
+      if (horsesReset > 0) {
+        horseBugReporter.report({
+          horseName: 'LifecycleManager',
+          horseId: 'system',
+          tableId: 'system',
+          tableName: 'System',
+          handNumber: 0,
+          category: 'tournament_bug',
+          severity: 'info',
+          title: 'Tournament cleanup completed',
+          description: 'Reset ' + horsesReset + ' horses from ' + tournaments.length + ' finished tournaments',
+          context: { tournamentCount: tournaments.length, horsesReset },
+        });
+
+        console.log('[LifecycleManager] Reset ' + horsesReset + ' horses from finished tournaments');
+      }
+    } catch (err) {
+      console.error('[LifecycleManager] Error in cleanupFinishedTournaments:', err);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // STUCK HORSE DETECTION
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Detect and reset horses stuck in non-available state
+   */
+  async detectStuckHorses(): Promise<void> {
+    try {
+      const thresholdMs = this.stuckHorseThreshold * 60 * 60 * 1000;
+      const thresholdTime = new Date(Date.now() - thresholdMs).toISOString();
+
+      // Find horses stuck in 'leaving' or 'seated' status for too long
+      const { data: stuckHorses, error: stuckError } = await supabase
+        .from('profiles')
+        .select('id, display_name, horse_status, updated_at')
+        .eq('is_horse', true)
+        .neq('horse_status', 'available')
+        .lt('updated_at', thresholdTime);
+
+      if (stuckError) {
+        console.error('[LifecycleManager] Failed to fetch stuck horses:', stuckError);
+        return;
+      }
+
+      if (!stuckHorses || stuckHorses.length === 0) {
+        return;
+      }
+
+      let forcedResets = 0;
+
+      // Check each stuck horse to see if it has an active table/tournament
+      for (const horse of stuckHorses) {
+        try {
+          // Check if horse still has active table seat
+          const { data: activeSeat } = await supabase
+            .from('table_seats')
+            .select('table_id')
+            .eq('user_id', horse.id)
+            .is('left_at', null)
+            .single();
+
+          if (activeSeat) {
+            // Has active seat - don't force reset
+            continue;
+          }
+
+          // Check if horse is in active tournament
+          const { data: activeTournament } = await supabase
+            .from('tournament_players')
+            .select('tournament_id')
+            .eq('player_id', horse.id)
+            .eq('status', 'in_progress')
+            .single();
+
+          if (activeTournament) {
+            // In active tournament - don't force reset
+            continue;
+          }
+
+          // No active seat or tournament - force reset
+          const reset = await this.resetHorse(horse.id);
+          if (reset) {
+            forcedResets++;
+
+            horseBugReporter.report({
+              horseName: horse.display_name || 'Horse',
+              horseId: horse.id,
+              tableId: 'system',
+              tableName: 'System',
+              handNumber: 0,
+              category: 'state_desync',
+              severity: 'medium',
+              title: 'Stuck horse force-reset',
+              description: 'Horse was stuck in ' + horse.horse_status + ' state for ' + this.stuckHorseThreshold + ' hours. Force-reset to available.',
+              context: { horseId: horse.id, previousStatus: horse.horse_status, updatedAt: horse.updated_at },
+            });
+          }
+        } catch (err) {
+          console.error('[LifecycleManager] Error processing stuck horse ' + horse.id + ':', err);
+        }
+      }
+
+      if (forcedResets > 0) {
+        console.log('[LifecycleManager] Force-reset ' + forcedResets + ' stuck horses');
+      }
+    } catch (err) {
+      console.error('[LifecycleManager] Error in detectStuckHorses:', err);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // HORSE RESET
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Force reset a horse to available status
+   */
+  async resetHorse(horseId: string): Promise<boolean> {
+    try {
+      // Step 1: Clear any stale seat records
+      await supabase
+        .from('table_seats')
+        .update({ left_at: new Date().toISOString() })
+        .eq('user_id', horseId)
+        .is('left_at', null);
+
+      // Step 2: Update profile status to available
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ horse_status: 'available', updated_at: new Date().toISOString() })
+        .eq('id', horseId);
+
+      if (updateError) {
+        console.error('[LifecycleManager] Failed to reset horse ' + horseId + ':', updateError);
+        return false;
+      }
+
+      console.log('[LifecycleManager] Reset horse ' + horseId + ' to available');
+      return true;
+    } catch (err) {
+      console.error('[LifecycleManager] Error in resetHorse:', err);
+      return false;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // WINNINGS & ELIMINATIONS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Process tournament winnings for a horse
+   */
+  async processWinnings(horseId: string, amount: number, tournamentId: string): Promise<boolean> {
+    try {
+      // Credit wallet via RPC
+      const { error: creditError } = await supabase.rpc('credit_player_wallet', {
+        p_user_id: horseId,
+        p_amount: amount,
+      });
+
+      if (creditError) {
+        console.error('[LifecycleManager] Failed to credit winnings to horse ' + horseId + ':', creditError);
+        horseBugReporter.report({
+          horseName: 'LifecycleManager',
+          horseId,
+          tableId: 'tournament',
+          tableName: 'Tournament',
+          handNumber: 0,
+          category: 'wallet_sync',
+          severity: 'high',
+          title: 'Tournament winnings credit failed',
+          description: 'Could not credit ' + amount + ' tournament winnings to horse wallet',
+          context: { horseId, amount, tournamentId },
+        });
+        return false;
+      }
+
+      // Log transaction
+      await supabase.from('wallet_transactions').insert({
+        user_id: horseId,
+        wallet_type: 'PLAYER',
+        amount,
+        type: 'credit',
+        category: 'tournament_winnings',
+        description: 'Tournament winnings: ' + amount + ' credits',
+      });
+
+      console.log('[LifecycleManager] Credited ' + amount + ' tournament winnings to horse ' + horseId);
+      return true;
+    } catch (err) {
+      console.error('[LifecycleManager] Error in processWinnings:', err);
+      return false;
+    }
+  }
+
+  /**
+   * Process horse elimination from tournament
+   */
+  async processElimination(horseId: string, tournamentId: string): Promise<boolean> {
+    try {
+      // Update tournament_players status
+      const { error: elimError } = await supabase
+        .from('tournament_players')
+        .update({ status: 'eliminated', updated_at: new Date().toISOString() })
+        .eq('player_id', horseId)
+        .eq('tournament_id', tournamentId);
+
+      if (elimError) {
+        console.error('[LifecycleManager] Failed to mark horse as eliminated:', elimError);
+        return false;
+      }
+
+      // Reset horse to available
+      const reset = await this.resetHorse(horseId);
+
+      horseBugReporter.report({
+        horseName: 'LifecycleManager',
+        horseId,
+        tableId: 'tournament',
+        tableName: 'Tournament',
+        handNumber: 0,
+        category: 'tournament_bug',
+        severity: 'info',
+        title: 'Horse eliminated from tournament',
+        description: 'Horse marked as eliminated and reset to available',
+        context: { horseId, tournamentId },
+      });
+
+      console.log('[LifecycleManager] Processed elimination for horse ' + horseId);
+      return reset;
+    } catch (err) {
+      console.error('[LifecycleManager] Error in processElimination:', err);
+      return false;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // STALE DATA CLEANUP
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Clean up stale SNGs that never started
+   */
+  async cleanupStaleSNGs(): Promise<void> {
+    try {
+      const thresholdMs = this.staleSngThreshold * 60 * 60 * 1000;
+      const thresholdTime = new Date(Date.now() - thresholdMs).toISOString();
+
+      // Find SNGs older than threshold that never started
+      const { data: staleSNGs, error: sngError } = await supabase
+        .from('tournaments')
+        .select('id, name, created_at')
+        .eq('tournament_type', 'SNG')
+        .neq('status', 'STARTED')
+        .neq('status', 'FINISHED')
+        .neq('status', 'CANCELLED')
+        .lt('created_at', thresholdTime);
+
+      if (sngError) {
+        console.error('[LifecycleManager] Failed to fetch stale SNGs:', sngError);
+        return;
+      }
+
+      if (!staleSNGs || staleSNGs.length === 0) {
+        return;
+      }
+
+      let cancelled = 0;
+
+      // Cancel and refund each stale SNG
+      for (const sng of staleSNGs) {
+        try {
+          // Get all registered players
+          const { data: players } = await supabase
+            .from('tournament_players')
+            .select('player_id, buy_in_amount')
+            .eq('tournament_id', sng.id);
+
+          if (players && players.length > 0) {
+            // Refund each player
+            for (const player of players) {
+              if (player.buy_in_amount > 0) {
+                await supabase.rpc('credit_player_wallet', {
+                  p_user_id: player.player_id,
+                  p_amount: player.buy_in_amount,
+                });
+
+                // Log refund
+                await supabase.from('wallet_transactions').insert({
+                  user_id: player.player_id,
+                  wallet_type: 'PLAYER',
+                  amount: player.buy_in_amount,
+                  type: 'credit',
+                  category: 'refund',
+                  description: 'SNG cancelled refund: ' + player.buy_in_amount + ' chips',
+                });
+              }
+            }
+          }
+
+          // Update SNG status to CANCELLED
+          await supabase
+            .from('tournaments')
+            .update({ status: 'CANCELLED', updated_at: new Date().toISOString() })
+            .eq('id', sng.id);
+
+          cancelled++;
+
+          console.log('[LifecycleManager] Cancelled stale SNG ' + sng.name);
+        } catch (err) {
+          console.error('[LifecycleManager] Error cancelling SNG ' + sng.id + ':', err);
+        }
+      }
+
+      if (cancelled > 0) {
+        horseBugReporter.report({
+          horseName: 'LifecycleManager',
+          horseId: 'system',
+          tableId: 'system',
+          tableName: 'System',
+          handNumber: 0,
+          category: 'tournament_bug',
+          severity: 'info',
+          title: 'Stale SNGs cancelled',
+          description: 'Cancelled ' + cancelled + ' SNGs that never started and were older than ' + this.staleSngThreshold + ' hours',
+          context: { cancelledCount: cancelled },
+        });
+
+        console.log('[LifecycleManager] Cancelled ' + cancelled + ' stale SNGs');
+      }
+    } catch (err) {
+      console.error('[LifecycleManager] Error in cleanupStaleSNGs:', err);
+    }
+  }
+
+  /**
+   * Clean up stale table_seats records
+   */
+  async cleanupStaleSeats(): Promise<void> {
+    try {
+      const thresholdMs = this.staleSeatThreshold * 60 * 60 * 1000;
+      const thresholdTime = new Date(Date.now() - thresholdMs).toISOString();
+
+      // Find stale seats that are still "active" but tables don't exist
+      const { data: staleSeats, error: seatError } = await supabase
+        .from('table_seats')
+        .select('id, table_id, user_id, created_at')
+        .is('left_at', null)
+        .lt('created_at', thresholdTime);
+
+      if (seatError) {
+        console.error('[LifecycleManager] Failed to fetch stale seats:', seatError);
+        return;
+      }
+
+      if (!staleSeats || staleSeats.length === 0) {
+        return;
+      }
+
+      let orphanedSeats = 0;
+
+      // Check each stale seat
+      for (const seat of staleSeats) {
+        try {
+          // Check if table still exists
+          const { data: table } = await supabase.from('tables').select('id').eq('id', seat.table_id).single();
+
+          if (!table) {
+            // Table doesn't exist - mark seat as left
+            await supabase
+              .from('table_seats')
+              .update({ left_at: new Date().toISOString() })
+              .eq('id', seat.id);
+
+            orphanedSeats++;
+
+            // If user is a horse, reset to available
+            const { data: profile } = await supabase.from('profiles').select('is_horse').eq('id', seat.user_id).single();
+
+            if (profile?.is_horse) {
+              await this.resetHorse(seat.user_id);
+            }
+          }
+        } catch (err) {
+          console.error('[LifecycleManager] Error processing stale seat ' + seat.id + ':', err);
+        }
+      }
+
+      if (orphanedSeats > 0) {
+        horseBugReporter.report({
+          horseName: 'LifecycleManager',
+          horseId: 'system',
+          tableId: 'system',
+          tableName: 'System',
+          handNumber: 0,
+          category: 'state_desync',
+          severity: 'info',
+          title: 'Stale table seats cleaned up',
+          description: 'Closed ' + orphanedSeats + ' orphaned table seats from non-existent tables',
+          context: { orphanedSeatCount: orphanedSeats },
+        });
+
+        console.log('[LifecycleManager] Cleaned up ' + orphanedSeats + ' orphaned table seats');
+      }
+    } catch (err) {
+      console.error('[LifecycleManager] Error in cleanupStaleSeats:', err);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // FLEET HEALTH MONITORING
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Get fleet health statistics
+   */
+  async getFleetHealth(): Promise<FleetHealth> {
+    try {
+      // Get all horses with their statuses
+      const { data: horses, error: horseError } = await supabase
+        .from('profiles')
+        .select('id, horse_status, updated_at')
+        .eq('is_horse', true);
+
+      if (horseError) {
+        console.error('[LifecycleManager] Failed to fetch fleet health:', horseError);
+        return {
+          total: 0,
+          available: 0,
+          seated: 0,
+          inTournament: 0,
+          leaving: 0,
+          stuck: 0,
+          busted: 0,
+        };
+      }
+
+      if (!horses || horses.length === 0) {
+        return {
+          total: 0,
+          available: 0,
+          seated: 0,
+          inTournament: 0,
+          leaving: 0,
+          stuck: 0,
+          busted: 0,
+        };
+      }
+
+      const thresholdMs = this.stuckHorseThreshold * 60 * 60 * 1000;
+      const thresholdTime = new Date(Date.now() - thresholdMs);
+
+      let available = 0;
+      let seated = 0;
+      let leaving = 0;
+      let stuck = 0;
+      let inTournament = 0;
+      let busted = 0;
+
+      for (const horse of horses) {
+        if (horse.horse_status === 'available') {
+          available++;
+        } else if (horse.horse_status === 'seated') {
+          seated++;
+        } else if (horse.horse_status === 'leaving') {
+          leaving++;
+        } else if (horse.horse_status === 'disabled') {
+          busted++;
+        }
+
+        // Check if stuck (non-available for too long)
+        if (horse.horse_status !== 'available' && new Date(horse.updated_at) < thresholdTime) {
+          stuck++;
+        }
+
+        // Check if in tournament (query tournament_players table)
+        const { data: tournamentReg } = await supabase
+          .from('tournament_players')
+          .select('id')
+          .eq('player_id', horse.id)
+          .eq('status', 'in_progress')
+          .single();
+
+        if (tournamentReg) {
+          inTournament++;
+        }
+      }
+
+      return {
+        total: horses.length,
+        available,
+        seated,
+        inTournament,
+        leaving,
+        stuck,
+        busted,
+      };
+    } catch (err) {
+      console.error('[LifecycleManager] Error in getFleetHealth:', err);
+      return {
+        total: 0,
+        available: 0,
+        seated: 0,
+        inTournament: 0,
+        leaving: 0,
+        stuck: 0,
+        busted: 0,
+      };
+    }
+  }
+
+  /**
+   * Get status information
+   */
+  getStatus(): {
+    isRunning: boolean;
+    config: {
+      monitoringInterval: number;
+      stuckHorseThreshold: number;
+      staleSngThreshold: number;
+      staleSeatThreshold: number;
+    };
+  } {
+    return {
+      isRunning: this.isRunning,
+      config: {
+        monitoringInterval: this.monitoringInterval,
+        stuckHorseThreshold: this.stuckHorseThreshold,
+        staleSngThreshold: this.staleSngThreshold,
+        staleSeatThreshold: this.staleSeatThreshold,
+      },
+    };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EXPORTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const HorseLifecycleManager = new HorseLifecycleManagerCore();
+
+export default HorseLifecycleManager;

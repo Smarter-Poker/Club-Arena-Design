@@ -1,0 +1,464 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * AUTO-REBUY SERVICE — Keeps Horses Funded and Playing
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * Monitors horse stacks across all tables and automatically rebuys when:
+ * - Horse stack drops to 0 (busted)
+ * - Horse stack drops below 20 BB (short-stacked)
+ * - Horse is removed from table but should be re-seated
+ *
+ * Also handles:
+ * - Topping up horse wallets when running low
+ * - Reseating horses that got disconnected
+ * - Maintaining minimum horse count per table
+ */
+
+import { supabase } from '../lib/supabase';
+import { HydraService } from './HydraService';
+import { horseBugReporter } from './HorseBugReporter';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface AutoRebuyConfig {
+  monitoringInterval: number; // ms between checks (default: 30000)
+  minStackBB: number; // trigger rebuy if stack < minStackBB (default: 20)
+  rebuyStackBB: number; // rebuy to this many BB (default: 100)
+  minHorsesPerTable: number; // seed more if below this (default: 2)
+  minWalletBalance: number; // top up wallet if below this (default: 50000)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SERVICE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class AutoRebuyServiceCore {
+  private isRunning = false;
+  private monitoringInterval: number;
+  private minStackBB: number;
+  private rebuyStackBB: number;
+  private minHorsesPerTable: number;
+  private minWalletBalance: number;
+  private intervalHandle: ReturnType<typeof setInterval> | null = null;
+
+  constructor(config: Partial<AutoRebuyConfig> = {}) {
+    this.monitoringInterval = config.monitoringInterval ?? 30000;
+    this.minStackBB = config.minStackBB ?? 20;
+    this.rebuyStackBB = config.rebuyStackBB ?? 100;
+    this.minHorsesPerTable = config.minHorsesPerTable ?? 2;
+    this.minWalletBalance = config.minWalletBalance ?? 50000;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // START / STOP
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Start auto-rebuy monitoring
+   */
+  start(): void {
+    if (this.isRunning) {
+      console.warn('[AutoRebuy] Already running');
+      return;
+    }
+
+    this.isRunning = true;
+    console.log('[AutoRebuy] Starting monitoring (interval: ' + this.monitoringInterval + 'ms)');
+
+    // Initial check
+    this.checkAllTables();
+
+    // Recurring checks
+    this.intervalHandle = setInterval(() => {
+      this.checkAllTables();
+    }, this.monitoringInterval);
+  }
+
+  /**
+   * Stop auto-rebuy monitoring
+   */
+  stop(): void {
+    if (!this.isRunning) {
+      console.warn('[AutoRebuy] Not running');
+      return;
+    }
+
+    this.isRunning = false;
+    if (this.intervalHandle) {
+      clearInterval(this.intervalHandle);
+      this.intervalHandle = null;
+    }
+
+    console.log('[AutoRebuy] Stopped monitoring');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // MAIN MONITORING LOGIC
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Check all active tables and process rebuys
+   */
+  private async checkAllTables(): Promise<void> {
+    try {
+      // Get all active tables
+      const { data: tables, error: tableError } = await supabase
+        .from('tables')
+        .select('id, big_blind')
+        .eq('status', 'active');
+
+      if (tableError) {
+        console.error('[AutoRebuy] Failed to fetch active tables:', tableError);
+        return;
+      }
+
+      if (!tables || tables.length === 0) {
+        return;
+      }
+
+      // Process each table
+      for (const table of tables) {
+        try {
+          await this.processTable(table.id, table.big_blind);
+        } catch (err) {
+          console.error('[AutoRebuy] Error processing table ' + table.id + ':', err);
+        }
+      }
+    } catch (err) {
+      console.error('[AutoRebuy] Fatal error in checkAllTables:', err);
+    }
+  }
+
+  /**
+   * Process a single table for rebuys and maintenance
+   */
+  private async processTable(tableId: string, bigBlind: number): Promise<void> {
+    // Step 1: Check horse stacks and process rebuys
+    const horseStacks = await this.getTableHorseStacks(tableId);
+
+    for (const horse of horseStacks) {
+      const stackInBB = horse.stack / bigBlind;
+
+      if (horse.stack === 0) {
+        // Horse is busted - reseat with fresh stack
+        await this.reseatHorse(horse.horseId, tableId);
+      } else if (stackInBB < this.minStackBB) {
+        // Horse is short-stacked - top up stack
+        const topupAmount = this.rebuyStackBB * bigBlind - horse.stack;
+        await this.rebuyHorse(horse.horseId, tableId, topupAmount);
+      }
+    }
+
+    // Step 2: Ensure minimum horses at table
+    await this.ensureMinimumHorses(tableId, this.minHorsesPerTable);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // REBUY / RESEAT LOGIC
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Rebuy a horse (top up stack via wallet)
+   */
+  async rebuyHorse(horseId: string, tableId: string, amount: number): Promise<boolean> {
+    try {
+      // Step 1: Deduct from wallet
+      const { data: deductResult, error: deductError } = await supabase.rpc('deduct_player_wallet', {
+        p_user_id: horseId,
+        p_amount: amount,
+      });
+
+      if (deductError) {
+        console.error('[AutoRebuy] Wallet deduction failed for horse ' + horseId + ':', deductError.message);
+        horseBugReporter.report({
+          horseName: 'AutoRebuy',
+          horseId,
+          tableId,
+          tableName: tableId,
+          handNumber: 0,
+          category: 'wallet_sync',
+          severity: 'high',
+          title: 'Auto-rebuy wallet deduction failed',
+          description: 'Could not deduct ' + amount + ' from horse wallet: ' + (deductError.message || 'unknown error'),
+          context: { horseId, tableId, amount },
+        });
+        return false;
+      }
+
+      // Step 2: Update table_seats with new stack
+      const { error: stackError } = await supabase
+        .from('table_seats')
+        .update({ stack: supabase.rpc('add', { a: supabase.from('table_seats').select('stack'), b: amount }) })
+        .eq('table_id', tableId)
+        .eq('user_id', horseId)
+        .is('left_at', null);
+
+      // If RPC-based update fails, use fetch + update pattern
+      if (stackError) {
+        const { data: seatData } = await supabase
+          .from('table_seats')
+          .select('stack')
+          .eq('table_id', tableId)
+          .eq('user_id', horseId)
+          .is('left_at', null)
+          .single();
+
+        if (seatData) {
+          const newStack = (seatData.stack || 0) + amount;
+          await supabase
+            .from('table_seats')
+            .update({ stack: newStack })
+            .eq('table_id', tableId)
+            .eq('user_id', horseId)
+            .is('left_at', null);
+        }
+      }
+
+      // Log transaction
+      await supabase.from('wallet_transactions').insert({
+        user_id: horseId,
+        wallet_type: 'PLAYER',
+        amount,
+        type: 'debit',
+        category: 'rebuy',
+        description: 'Auto-rebuy: topup ' + amount + ' chips',
+        table_id: tableId,
+      });
+
+      horseBugReporter.report({
+        horseName: 'AutoRebuy',
+        horseId,
+        tableId,
+        tableName: tableId,
+        handNumber: 0,
+        category: 'chip_integrity',
+        severity: 'info',
+        title: 'Auto-rebuy completed',
+        description: 'Horse topped up with ' + amount + ' chips',
+        context: { horseId, tableId, amount },
+      });
+
+      console.log('[AutoRebuy] Rebought horse ' + horseId + ' for ' + amount + ' at table ' + tableId);
+      return true;
+    } catch (err) {
+      console.error('[AutoRebuy] Error in rebuyHorse:', err);
+      return false;
+    }
+  }
+
+  /**
+   * Reseat a busted horse with fresh stack
+   */
+  async reseatHorse(horseId: string, tableId: string): Promise<boolean> {
+    try {
+      // Get table info for BB
+      const { data: tableData } = await supabase.from('tables').select('big_blind').eq('id', tableId).single();
+
+      if (!tableData) {
+        console.error('[AutoRebuy] Table not found:', tableId);
+        return false;
+      }
+
+      const bigBlind = tableData.big_blind || 2;
+
+      // Random delay before reseating (5-15 seconds)
+      const delay = 5000 + Math.random() * 10000;
+      await new Promise(resolve => setTimeout(resolve, delay));
+
+      // Step 1: Remove the busted horse
+      const removed = await HydraService.removeHorse(tableId, horseId);
+      if (!removed) {
+        console.error('[AutoRebuy] Failed to remove busted horse ' + horseId);
+        return false;
+      }
+
+      // Step 2: Check wallet balance and top up if needed
+      await this.topUpWallet(horseId, this.rebuyStackBB * bigBlind);
+
+      // Step 3: Reseat the horse
+      const seated = await HydraService.seatHorse(horseId, tableId, bigBlind);
+      if (!seated) {
+        console.error('[AutoRebuy] Failed to reseat horse ' + horseId);
+        return false;
+      }
+
+      horseBugReporter.report({
+        horseName: 'AutoRebuy',
+        horseId,
+        tableId,
+        tableName: tableId,
+        handNumber: 0,
+        category: 'gameplay_anomaly',
+        severity: 'info',
+        title: 'Horse reseated after bust',
+        description: 'Busted horse removed and re-seated with fresh ' + this.rebuyStackBB * bigBlind + ' chip stack',
+        context: { horseId, tableId, newStack: this.rebuyStackBB * bigBlind },
+      });
+
+      console.log('[AutoRebuy] Reseated horse ' + horseId + ' at table ' + tableId);
+      return true;
+    } catch (err) {
+      console.error('[AutoRebuy] Error in reseatHorse:', err);
+      return false;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // WALLET & SEATING MAINTENANCE
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Ensure minimum horses at table (seed if needed)
+   */
+  async ensureMinimumHorses(tableId: string, minCount: number): Promise<void> {
+    try {
+      const horses = await HydraService.getActiveHorses(tableId);
+      const currentHorseCount = horses.length;
+
+      if (currentHorseCount < minCount) {
+        const needToAdd = minCount - currentHorseCount;
+
+        // Get table info
+        const { data: tableData } = await supabase.from('tables').select('big_blind').eq('id', tableId).single();
+
+        if (!tableData) {
+          console.error('[AutoRebuy] Table not found:', tableId);
+          return;
+        }
+
+        const bigBlind = tableData.big_blind || 2;
+
+        // Seed additional horses
+        const seeded = await HydraService.seedTable(tableId, bigBlind);
+        if (seeded.length > 0) {
+          console.log('[AutoRebuy] Seeded ' + seeded.length + ' horses at table ' + tableId);
+        }
+      }
+    } catch (err) {
+      console.error('[AutoRebuy] Error in ensureMinimumHorses:', err);
+    }
+  }
+
+  /**
+   * Top up horse wallet if balance is low
+   */
+  async topUpWallet(horseId: string, requiredAmount: number): Promise<boolean> {
+    try {
+      // Get current wallet balance
+      const { data: walletData, error: walletError } = await supabase
+        .from('player_wallets')
+        .select('available_balance')
+        .eq('user_id', horseId)
+        .single();
+
+      if (walletError) {
+        console.warn('[AutoRebuy] Could not fetch wallet for horse ' + horseId + ':', walletError);
+        return false;
+      }
+
+      const currentBalance = walletData?.available_balance || 0;
+
+      // If balance is sufficient, no topup needed
+      if (currentBalance >= requiredAmount) {
+        return true;
+      }
+
+      // Calculate topup amount
+      const topupAmount = this.minWalletBalance - currentBalance;
+
+      // Credit wallet via RPC
+      const { data: creditResult, error: creditError } = await supabase.rpc('credit_player_wallet', {
+        p_user_id: horseId,
+        p_amount: topupAmount,
+      });
+
+      if (creditError) {
+        console.error('[AutoRebuy] Wallet topup failed for horse ' + horseId + ':', creditError.message);
+        horseBugReporter.report({
+          horseName: 'AutoRebuy',
+          horseId,
+          tableId: 'unknown',
+          tableName: 'Unknown',
+          handNumber: 0,
+          category: 'wallet_sync',
+          severity: 'high',
+          title: 'Auto-rebuy wallet topup failed',
+          description: 'Could not credit ' + topupAmount + ' to horse wallet: ' + (creditError.message || 'unknown error'),
+          context: { horseId, topupAmount },
+        });
+        return false;
+      }
+
+      // Log transaction
+      await supabase.from('wallet_transactions').insert({
+        user_id: horseId,
+        wallet_type: 'PLAYER',
+        amount: topupAmount,
+        type: 'credit',
+        category: 'topup',
+        description: 'Auto-rebuy: wallet topup ' + topupAmount + ' credits',
+      });
+
+      console.log('[AutoRebuy] Topped up horse ' + horseId + ' wallet with ' + topupAmount + ' credits');
+      return true;
+    } catch (err) {
+      console.error('[AutoRebuy] Error in topUpWallet:', err);
+      return false;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // DATA QUERIES
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Get all horses and their current stacks at a table
+   */
+  async getTableHorseStacks(tableId: string): Promise<Array<{ horseId: string; stack: number }>> {
+    try {
+      const horses = await HydraService.getActiveHorses(tableId);
+      return horses.map(h => ({
+        horseId: h.id,
+        stack: h.stack,
+      }));
+    } catch (err) {
+      console.error('[AutoRebuy] Error in getTableHorseStacks:', err);
+      return [];
+    }
+  }
+
+  /**
+   * Get status information
+   */
+  getStatus(): {
+    isRunning: boolean;
+    config: {
+      monitoringInterval: number;
+      minStackBB: number;
+      rebuyStackBB: number;
+      minHorsesPerTable: number;
+      minWalletBalance: number;
+    };
+  } {
+    return {
+      isRunning: this.isRunning,
+      config: {
+        monitoringInterval: this.monitoringInterval,
+        minStackBB: this.minStackBB,
+        rebuyStackBB: this.rebuyStackBB,
+        minHorsesPerTable: this.minHorsesPerTable,
+        minWalletBalance: this.minWalletBalance,
+      },
+    };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EXPORTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const AutoRebuyService = new AutoRebuyServiceCore();
+
+export default AutoRebuyService;

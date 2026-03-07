@@ -23,6 +23,10 @@ import { HeadlessTableEngine } from '../engine/HeadlessTableEngine';
 import { TournamentEngine } from '../engine/TournamentEngine';
 import { useTabKeepAlive } from '../hooks/useTabKeepAlive';
 import { horseOrchestrator } from '../services/HorseOrchestrator';
+import { tournamentRecurringService } from '../services/TournamentRecurringService';
+import { AutoRebuyService } from '../services/AutoRebuyService';
+import { HorseLifecycleManager } from '../services/HorseLifecycleManager';
+import { horseBugReporter } from '../services/HorseBugReporter';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -346,6 +350,35 @@ export default function DealerPage() {
         const interval = setInterval(refreshDashboard, 5000);
         return () => clearInterval(interval);
     }, []);
+
+    // Start 24/7 horse services when horses are launched
+    useEffect(() => {
+        if (!horsesLaunched) return;
+
+        console.log('[DealerPage] Starting 24/7 horse services...');
+
+        // Start bug reporter for global error capture
+        horseBugReporter.startCapturing();
+
+        // Start recurring tournament creation (every 5 mins)
+        tournamentRecurringService.start();
+
+        // Start auto-rebuy monitoring (every 30 secs)
+        AutoRebuyService.start();
+
+        // Start lifecycle cleanup (every 60 secs)
+        HorseLifecycleManager.start();
+
+        console.log('[DealerPage] All 24/7 horse services ACTIVE');
+
+        return () => {
+            tournamentRecurringService.stop();
+            AutoRebuyService.stop();
+            HorseLifecycleManager.stop();
+            horseBugReporter.stopCapturing();
+            console.log('[DealerPage] 24/7 horse services stopped');
+        };
+    }, [horsesLaunched]);
 
     // Cleanup on unmount — stop all engines and clear refs to prevent duplicates
     useEffect(() => {
