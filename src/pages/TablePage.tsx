@@ -186,18 +186,18 @@ const SEAT_POSITIONS_9MAX = [
     { x: 97, y: 65 },  // Seat 9 (right middle)
 ];
 
-// HORSE AVATARS — Assign custom avatars to horse players
+// HORSE AVATARS — Assign custom avatars to horse players using DiceBear API
 const HORSE_AVATARS: Record<string, string> = {
-    'Solver Steve': '/avatars/animals/owl.png',
-    'SmallBlind': '/avatars/animals/shark.png',
-    'SlowRoll Sid': '/avatars/animals/fox.png',
-    'KingFish': '/avatars/animals/lion.png',
-    'TAG Tyler': '/avatars/animals/eagle.png',
-    'Maniac Mike': '/avatars/animals/wolf.png',
-    'NitNat': '/avatars/animals/penguin.png',
-    'Bluff Queen': '/avatars/animals/tiger.png',
-    'AceHigh': '/avatars/animals/rabbit.png',
-    'TiltMaster': '/avatars/animals/octopus.png',
+    'Solver Steve': 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=SolverSteve&backgroundColor=b6e3f4',
+    'SmallBlind': 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=SmallBlind&backgroundColor=c0aede',
+    'SlowRoll Sid': 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=SlowRollSid&backgroundColor=d1d4f9',
+    'KingFish': 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=KingFish&backgroundColor=ffd5dc',
+    'TAG Tyler': 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=TAGTyler&backgroundColor=ffdfbf',
+    'Maniac Mike': 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=ManiacMike&backgroundColor=ff9999',
+    'NitNat': 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=NitNat&backgroundColor=c1f0c1',
+    'Bluff Queen': 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=BluffQueen&backgroundColor=e8c1f0',
+    'AceHigh': 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=AceHigh&backgroundColor=f0e6c1',
+    'TiltMaster': 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=TiltMaster&backgroundColor=f0c1c1',
 };
 
 // Create empty player slots for a table
@@ -970,7 +970,7 @@ export default function TablePage() {
                         updatedPlayers[seatIdx] = {
                             id: horse.id,
                             name: horse.name || `Player ${horse.playerNumber || seatIdx + 1}`,
-                            avatar: horse.avatar || HORSE_AVATARS[horse.name] || `/avatars/animals/shark.png`,
+                            avatar: horse.avatar || HORSE_AVATARS[horse.name] || `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(horse.name || 'default')}&backgroundColor=b6e3f4`,
                             stack,
                             status: 'active' as const,
                             isHero: false,
