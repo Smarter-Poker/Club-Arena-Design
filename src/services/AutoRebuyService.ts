@@ -187,32 +187,26 @@ class AutoRebuyServiceCore {
         return false;
       }
 
-      // Step 2: Update table_seats with new stack
-      const { error: stackError } = await supabase
+      // Step 2: Fetch current stack and update table_seats
+      const { data: seatData } = await supabase
         .from('table_seats')
-        .update({ stack: supabase.rpc('add', { a: supabase.from('table_seats').select('stack'), b: amount }) })
+        .select('stack')
         .eq('table_id', tableId)
         .eq('user_id', horseId)
-        .is('left_at', null);
+        .is('left_at', null)
+        .single();
 
-      // If RPC-based update fails, use fetch + update pattern
-      if (stackError) {
-        const { data: seatData } = await supabase
+      if (seatData) {
+        const newStack = (seatData.stack || 0) + amount;
+        const { error: stackError } = await supabase
           .from('table_seats')
-          .select('stack')
+          .update({ stack: newStack })
           .eq('table_id', tableId)
           .eq('user_id', horseId)
-          .is('left_at', null)
-          .single();
+          .is('left_at', null);
 
-        if (seatData) {
-          const newStack = (seatData.stack || 0) + amount;
-          await supabase
-            .from('table_seats')
-            .update({ stack: newStack })
-            .eq('table_id', tableId)
-            .eq('user_id', horseId)
-            .is('left_at', null);
+        if (stackError) {
+          console.error('[AutoRebuy] Stack update failed for horse ' + horseId + ':', stackError.message);
         }
       }
 

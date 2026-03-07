@@ -675,14 +675,14 @@ class TournamentRecurringService {
             let query = supabase
                 .from('tournaments')
                 .select('id', { count: 'exact', head: true })
-                .in('status', ['ANNOUNCED', 'REGISTERING']);
+                .in('status', ['ANNOUNCED', 'REGISTERING', 'RUNNING']);
 
             if (type === 'mtt' || type === 'bounty' || type === 'progressive_bounty' || type === 'mystery_bounty') {
                 query = query.in('variant', ['freezeout', 'bounty', 'progressive_bounty', 'mystery_bounty']);
             } else if (type === 'sng') {
-                query = query.eq('type', 'sng');
+                query = query.eq('variant', 'sng');
             } else if (type === 'spin') {
-                query = query.eq('type', 'spin');
+                query = query.eq('variant', 'spin');
             }
 
             if (name) {
@@ -740,7 +740,6 @@ class TournamentRecurringService {
                     payout_structure: config.payoutStructure || [],
                     start_time: startTime.toISOString(),
                     late_reg_mins: 30,
-                    type: 'mtt',
                 })
                 .select()
                 .single();
@@ -792,9 +791,10 @@ class TournamentRecurringService {
                     club_id: this.getNextClubId(),
                     name: config.name,
                     game_type: dbGameType,
-                    type: 'sng',
+                    variant: 'sng',
                     buy_in_amount: config.buyIn,
                     buy_in_fee: config.rake,
+                    guaranteed_prize: 0,
                     starting_chips: config.startingStack,
                     max_players: config.maxPlayers,
                     current_players: 0,
@@ -802,7 +802,7 @@ class TournamentRecurringService {
                     blind_structure: config.blindStructure,
                     payout_structure: config.payoutStructure || [],
                     start_time: startTime.toISOString(),
-                    late_reg_mins: 0,
+                    late_reg_mins: 30,
                 })
                 .select()
                 .single();
@@ -856,9 +856,10 @@ class TournamentRecurringService {
                     club_id: this.getNextClubId(),
                     name: config.name,
                     game_type: dbGameType,
-                    type: 'spin',
+                    variant: 'spin',
                     buy_in_amount: config.buyIn,
                     buy_in_fee: config.rake,
+                    guaranteed_prize: prizePool,
                     starting_chips: config.startingStack,
                     max_players: config.maxPlayers,
                     current_players: 0,
@@ -866,9 +867,8 @@ class TournamentRecurringService {
                     blind_structure: config.blindStructure,
                     payout_structure: config.payoutStructure || [],
                     start_time: startTime.toISOString(),
-                    late_reg_mins: 0,
+                    late_reg_mins: 30,
                     spin_multiplier: multiplier,
-                    guaranteed_prize: prizePool,
                 })
                 .select()
                 .single();
