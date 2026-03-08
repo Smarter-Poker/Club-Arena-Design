@@ -13,6 +13,8 @@
 
 import { supabase } from '../lib/supabase';
 import { notificationService } from './NotificationService';
+import { WalletService } from './WalletService';
+import { ChipFlowService } from './ChipFlowService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -180,6 +182,13 @@ class CashoutServiceClass {
             throw new Error('Cannot reject: chip return failed. Cashout remains pending.');
         }
 
+        // Log wallet transaction for audit trail
+        await WalletService.logTransaction(
+            cashout.playerId, 'PLAYER', cashout.amount, 'credit', 'refund',
+            `Cashout rejected by agent — chips returned`,
+            undefined, undefined, cashoutId
+        );
+
         // STEP 2: Update status to rejected (chips already returned)
         const { error: updateError } = await supabase
             .from('cashout_requests')
@@ -313,6 +322,7 @@ class CashoutServiceClass {
 
     /**
      * Agent: Send chips to player (with 10-min reversal window)
+     * Uses ChipFlowService for proper atomic wallet debit/credit with audit trail.
      */
     async sendChipsToPlayer(
         agentId: string,
@@ -321,19 +331,13 @@ class CashoutServiceClass {
         amount: number,
         notes?: string
     ): Promise<boolean> {
-        // STEP 1: Credit Player Wallet FIRST — must succeed before recording transaction
-        const { error: balanceError } = await supabase
-            .rpc('credit_player_wallet', {
-                p_user_id: playerId,
-                p_amount: amount
-            });
+        // Use ChipFlowService for proper atomic transfer (deducts from agent, credits player)
+        await ChipFlowService.transfer(
+            agentId, playerId, amount, 'transfer',
+            notes || 'Agent sent chips to player via Cashier'
+        );
 
-        if (balanceError) {
-            console.error('[Cashout] Failed to credit Player Wallet:', balanceError);
-            throw new Error('Failed to add chips to player wallet');
-        }
-
-        // STEP 2: Record transaction (with 10-minute reversal window)
+        // Record reversal window metadata in chip_transactions
         const reversibleUntil = new Date();
         reversibleUntil.setMinutes(reversibleUntil.getMinutes() + 10);
 
@@ -350,8 +354,7 @@ class CashoutServiceClass {
             });
 
         if (txError) {
-            console.error('[Cashout] Failed to record transaction (chips already sent):', txError);
-            // Don't throw — chips were successfully sent, transaction record is just metadata
+            console.warn('[Cashout] Failed to record reversal metadata (transfer succeeded):', txError);
         }
 
         return true;
@@ -359,6 +362,7 @@ class CashoutServiceClass {
 
     /**
      * Agent: Remove chips from player (only within 10-min window)
+     * Reverses the transfer: deducts from player, credits back to agent.
      */
     async removeChipsFromPlayer(
         agentId: string,
@@ -373,6 +377,12 @@ class CashoutServiceClass {
             throw new Error('Cannot remove chips: Outside 10-minute window or insufficient reversible amount');
         }
 
+        // Use ChipFlowService for proper atomic transfer (deducts from player, credits agent)
+        await ChipFlowService.transfer(
+            playerId, agentId, amount, 'refund',
+            notes || 'Agent reversed chip send within 10-minute window'
+        );
+
         // Mark original transaction as reversed via metadata
         const { error: reverseError } = await supabase
             .from('chip_transactions')
@@ -384,10 +394,10 @@ class CashoutServiceClass {
             .limit(1);
 
         if (reverseError) {
-            console.error('[Cashout] Failed to mark reversal:', reverseError);
+            console.warn('[Cashout] Failed to mark reversal metadata:', reverseError);
         }
 
-        // Record removal transaction
+        // Record removal in chip_transactions for reversal tracking
         const { error: txError } = await supabase
             .from('chip_transactions')
             .insert({
@@ -400,18 +410,7 @@ class CashoutServiceClass {
             });
 
         if (txError) {
-            console.error('[Cashout] Failed to record removal:', txError);
-        }
-
-        // Remove chips from Player Wallet via SECURITY DEFINER RPC
-        const { error: balanceError } = await supabase.rpc('deduct_player_wallet', {
-            p_user_id: playerId,
-            p_amount: amount,
-        });
-
-        if (balanceError) {
-            console.error('[Cashout] Failed to deduct from Player Wallet:', balanceError);
-            throw new Error('Failed to remove chips from player wallet');
+            console.warn('[Cashout] Failed to record removal metadata:', txError);
         }
 
         return true;
