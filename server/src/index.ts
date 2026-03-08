@@ -348,6 +348,15 @@ class TournamentManager {
     private eliminationTimer: NodeJS.Timeout | null = null;
     private tableEngines: Map<string, ServerTableEngine> = new Map();
     private currentLevel: number = 0;
+    // Add-on period
+    private addOnPeriodTriggered: boolean = false;
+    // Hand-for-hand bubble
+    private handForHandActive: boolean = false;
+    private handForHandAnnounced: boolean = false;
+    // Late reg finalization
+    private prizePoolFinalized: boolean = false;
+    // Tournament metadata cache
+    private tournamentCache: any = null;
 
     constructor(tournamentId: string, gameServer: GameServer) {
         this.tournamentId = tournamentId;
@@ -368,6 +377,70 @@ class TournamentManager {
                 .single();
 
             if (!tournament) throw new Error('Tournament not found');
+            this.tournamentCache = tournament;
+            this.prizePoolFinalized = tournament.prize_pool_finalized || false;
+
+            // Enforce minimum 3 players
+            const { count: regCount } = await supabase
+                .from('tournament_players')
+                .select('*', { count: 'exact', head: true })
+                .eq('tournament_id', this.tournamentId)
+                .eq('status', 'registered');
+
+            if ((regCount || 0) < 3) {
+                console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] Only ${regCount} player(s) — cancelling (minimum 3)`);
+                // Refund all registered players
+                const { data: regPlayers } = await supabase
+                    .from('tournament_players')
+                    .select('user_id')
+                    .eq('tournament_id', this.tournamentId)
+                    .eq('status', 'registered');
+                const refundAmt = (tournament.buy_in_amount || 0) + (tournament.buy_in_fee || 0);
+                for (const p of regPlayers || []) {
+                    await supabase.rpc('credit_player_wallet', { p_user_id: p.user_id, p_amount: refundAmt });
+                    await supabase.rpc('log_wallet_transaction', {
+                        p_user_id: p.user_id, p_wallet_type: 'PLAYER', p_amount: refundAmt,
+                        p_type: 'credit', p_category: 'refund',
+                        p_description: `Tournament cancelled (insufficient players): ${tournament.name}`,
+                        p_table_id: null, p_hand_id: null, p_related_entity_id: this.tournamentId,
+                    });
+                }
+                await supabase.from('tournament_players').delete().eq('tournament_id', this.tournamentId);
+                await supabase.from('tournaments').update({ status: 'CANCELLED' }).eq('id', this.tournamentId);
+                this.running = false;
+                return;
+            }
+
+            // Spin & Go: roll multiplier at game start
+            if (tournament.variant === 'spin' || tournament.tournament_type === 'SPIN') {
+                const SPIN_MULTIPLIERS = [
+                    { multiplier: 2, weight: 750000 },
+                    { multiplier: 3, weight: 200000 },
+                    { multiplier: 5, weight: 40000 },
+                    { multiplier: 10, weight: 8000 },
+                    { multiplier: 25, weight: 1500 },
+                    { multiplier: 100, weight: 400 },
+                    { multiplier: 1000, weight: 100 },
+                ];
+                const totalWeight = SPIN_MULTIPLIERS.reduce((s, m) => s + m.weight, 0);
+                let roll = Math.random() * totalWeight;
+                let spinMultiplier = 2;
+                for (const tier of SPIN_MULTIPLIERS) {
+                    roll -= tier.weight;
+                    if (roll <= 0) { spinMultiplier = tier.multiplier; break; }
+                }
+                const netBuyIn = (tournament.buy_in_amount || 0) - (tournament.buy_in_fee || 0);
+                const prizePool = Math.trunc(netBuyIn * (regCount || 3) * spinMultiplier * 100) / 100;
+
+                await supabase.from('tournaments').update({
+                    prize_pool: prizePool,
+                    spin_multiplier: spinMultiplier,
+                    is_premium_spin: spinMultiplier >= 100,
+                }).eq('id', this.tournamentId);
+
+                tournament.prize_pool = prizePool;
+                console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] SPIN MULTIPLIER: ${spinMultiplier}x — Prize Pool: ${prizePool}`);
+            }
 
             // Migrate registrations (registered -> playing)
             await supabase
@@ -418,6 +491,8 @@ class TournamentManager {
                 .single();
 
             if (!tournament) throw new Error('Tournament not found');
+            this.tournamentCache = tournament;
+            this.prizePoolFinalized = tournament.prize_pool_finalized || false;
 
             // Find existing tables
             const { data: tables } = await supabase
@@ -531,36 +606,153 @@ class TournamentManager {
     private startBlindTimer(blindStructure: any[]): void {
         if (blindStructure.length === 0) return;
 
-        const advanceBlinds = async () => {
+        // Use a recursive timeout pattern to handle per-level durations
+        const scheduleNextLevel = () => {
             if (!this.running) return;
-            this.currentLevel++;
+            const currentLevelData = blindStructure[this.currentLevel] || blindStructure[0];
+            const durationMs = (currentLevelData?.durationMinutes || 10) * 60 * 1000;
 
-            if (this.currentLevel >= blindStructure.length) return; // Stay at max
+            this.blindTimer = setTimeout(async () => {
+                if (!this.running) return;
+                const prevLevel = this.currentLevel;
+                this.currentLevel++;
 
-            const level = blindStructure[this.currentLevel];
-            console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] Level ${this.currentLevel}: ${level.smallBlind}/${level.bigBlind}`);
+                if (this.currentLevel >= blindStructure.length) {
+                    this.currentLevel = blindStructure.length - 1; // Stay at max
+                    return;
+                }
 
-            for (const tableId of this.tableEngines.keys()) {
+                const level = blindStructure[this.currentLevel];
+                console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] Level ${this.currentLevel}: ${level.smallBlind}/${level.bigBlind} ante ${level.ante || 0}`);
+
+                for (const tableId of this.tableEngines.keys()) {
+                    await supabase
+                        .from('tables')
+                        .update({
+                            small_blind: level.smallBlind,
+                            big_blind: level.bigBlind,
+                            ante: level.ante || 0,
+                        })
+                        .eq('id', tableId);
+                }
+
                 await supabase
-                    .from('tables')
-                    .update({
-                        small_blind: level.smallBlind,
-                        big_blind: level.bigBlind,
-                        ante: level.ante || 0,
-                    })
-                    .eq('id', tableId);
-            }
+                    .from('tournaments')
+                    .update({ current_level: this.currentLevel })
+                    .eq('id', this.tournamentId);
 
-            await supabase
-                .from('tournaments')
-                .update({ current_level: this.currentLevel })
-                .eq('id', this.tournamentId);
+                // ── ADD-ON PERIOD TRIGGER ──
+                // When blind level passes rebuy_levels cap and add-on is available
+                if (this.tournamentCache?.add_on_available && !this.addOnPeriodTriggered) {
+                    const rebuyLevelCap = this.tournamentCache.rebuy_levels || 4;
+                    if (prevLevel < rebuyLevelCap && this.currentLevel >= rebuyLevelCap) {
+                        await this.triggerAddOnPeriod();
+                    }
+                }
+
+                // ── LATE REG FINALIZATION ──
+                if (!this.prizePoolFinalized && this.tournamentCache?.late_reg_mins > 0) {
+                    const startedAt = new Date(this.tournamentCache.started_at || Date.now()).getTime();
+                    const lateRegEnd = startedAt + (this.tournamentCache.late_reg_mins * 60 * 1000);
+                    if (Date.now() > lateRegEnd) {
+                        this.prizePoolFinalized = true;
+                        // Recalculate and finalize
+                        const { data: freshT } = await supabase
+                            .from('tournaments')
+                            .select('prize_pool')
+                            .eq('id', this.tournamentId)
+                            .single();
+                        if (freshT) {
+                            await supabase.from('tournaments').update({
+                                prize_pool: freshT.prize_pool,
+                                prize_pool_finalized: true,
+                            } as any).eq('id', this.tournamentId);
+                            console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] Late reg closed — prize pool finalized: ${freshT.prize_pool}`);
+                        }
+                    }
+                }
+
+                // Schedule the next level
+                scheduleNextLevel();
+            }, durationMs);
         };
 
-        const currentLevelData = blindStructure[this.currentLevel] || blindStructure[0];
-        const durationMs = (currentLevelData?.durationMinutes || 10) * 60 * 1000;
+        scheduleNextLevel();
+    }
 
-        this.blindTimer = setInterval(advanceBlinds, durationMs);
+    private async triggerAddOnPeriod(): Promise<void> {
+        if (this.addOnPeriodTriggered) return;
+        this.addOnPeriodTriggered = true;
+
+        const addonCost = this.tournamentCache?.addon_cost || this.tournamentCache?.buy_in_amount || 0;
+        const addonChips = this.tournamentCache?.addon_chips || this.tournamentCache?.starting_chips || 0;
+
+        console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] ADD-ON PERIOD START — 60s, cost: ${addonCost}, chips: ${addonChips}`);
+
+        // Broadcast ADDON_PERIOD_START via Supabase Realtime
+        try {
+            const chan = supabase.channel(`t-break-${this.tournamentId}`);
+            await chan.subscribe();
+            await chan.send({
+                type: 'broadcast',
+                event: 'tournament_event',
+                payload: {
+                    type: 'ADDON_PERIOD_START',
+                    payload: { addOnCost: addonCost, addOnChips: addonChips, durationSeconds: 60 },
+                },
+            });
+            setTimeout(async () => { try { await chan.unsubscribe(); } catch { } }, 5000);
+        } catch (e) {
+            console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Addon broadcast failed:`, e);
+        }
+
+        // Also broadcast on addon-specific channel
+        try {
+            const addonChan = supabase.channel(`t-addon-${this.tournamentId}`);
+            await addonChan.subscribe();
+            await addonChan.send({
+                type: 'broadcast',
+                event: 'addon_event',
+                payload: {
+                    type: 'ADDON_PERIOD_START',
+                    addOnCost: addonCost,
+                    addOnChips: addonChips,
+                    durationSeconds: 60,
+                },
+            });
+            setTimeout(async () => { try { await addonChan.unsubscribe(); } catch { } }, 5000);
+        } catch (e) { /* noop */ }
+
+        // Wait 60 seconds
+        await new Promise<void>(resolve => setTimeout(resolve, 60_000));
+
+        console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] ADD-ON PERIOD ENDED — resuming`);
+
+        // Finalize prize pool after add-on
+        this.prizePoolFinalized = true;
+        const { data: freshT } = await supabase
+            .from('tournaments')
+            .select('prize_pool')
+            .eq('id', this.tournamentId)
+            .single();
+        if (freshT) {
+            await supabase.from('tournaments').update({
+                prize_pool: freshT.prize_pool,
+                prize_pool_finalized: true,
+            } as any).eq('id', this.tournamentId);
+        }
+
+        // Broadcast ADDON_PERIOD_END
+        try {
+            const chan = supabase.channel(`t-break-${this.tournamentId}`);
+            await chan.subscribe();
+            await chan.send({
+                type: 'broadcast',
+                event: 'tournament_event',
+                payload: { type: 'ADDON_PERIOD_END', payload: {} },
+            });
+            setTimeout(async () => { try { await chan.unsubscribe(); } catch { } }, 5000);
+        } catch (e) { /* noop */ }
     }
 
     private isProcessingEliminations = false;
@@ -640,6 +832,61 @@ class TournamentManager {
                 }
 
                 await this.checkTableBalance();
+
+                // ── HAND-FOR-HAND BUBBLE MODE ──
+                // Multi-table tournaments only (not Spin/SNG single-table)
+                if (this.tableEngines.size > 1 && this.tournamentCache) {
+                    const isSpin = this.tournamentCache.variant === 'spin' || this.tournamentCache.tournament_type === 'SPIN';
+                    if (!isSpin) {
+                        const { count: playingNow } = await supabase
+                            .from('tournament_players')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('tournament_id', this.tournamentId)
+                            .eq('status', 'playing');
+
+                        let payoutCount = 0;
+                        if (this.tournamentCache.payout_structure) {
+                            let payouts = this.tournamentCache.payout_structure;
+                            if (typeof payouts === 'string') {
+                                try { payouts = JSON.parse(payouts); } catch { payouts = []; }
+                            }
+                            if (Array.isArray(payouts)) payoutCount = payouts.length;
+                        }
+
+                        if (payoutCount > 0 && (playingNow || 0) === payoutCount + 1 && !this.handForHandActive) {
+                            this.handForHandActive = true;
+                            if (!this.handForHandAnnounced) {
+                                this.handForHandAnnounced = true;
+                                console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] HAND-FOR-HAND — ${playingNow} players, ${payoutCount} paid`);
+                                // Broadcast hand-for-hand event
+                                try {
+                                    const chan = supabase.channel(`t-break-${this.tournamentId}`);
+                                    await chan.subscribe();
+                                    await chan.send({
+                                        type: 'broadcast',
+                                        event: 'tournament_event',
+                                        payload: { type: 'hand_for_hand', payload: { active: true, playersRemaining: playingNow, paidPositions: payoutCount } },
+                                    });
+                                    setTimeout(async () => { try { await chan.unsubscribe(); } catch { } }, 3000);
+                                } catch (e) { /* noop */ }
+                            }
+                        } else if (this.handForHandActive && (playingNow || 0) <= payoutCount) {
+                            // Bubble burst
+                            this.handForHandActive = false;
+                            console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] BUBBLE BURST — ${playingNow} players ITM`);
+                            try {
+                                const chan = supabase.channel(`t-break-${this.tournamentId}`);
+                                await chan.subscribe();
+                                await chan.send({
+                                    type: 'broadcast',
+                                    event: 'tournament_event',
+                                    payload: { type: 'bubble_burst', payload: { playersRemaining: playingNow } },
+                                });
+                                setTimeout(async () => { try { await chan.unsubscribe(); } catch { } }, 3000);
+                            } catch (e) { /* noop */ }
+                        }
+                    }
+                }
             } catch (err) {
                 console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Elimination check error:`, err);
             } finally {
