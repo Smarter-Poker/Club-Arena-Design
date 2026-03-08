@@ -454,7 +454,11 @@ export class TournamentRecurringService {
             }
 
             const registered = await this.registerHorses(tournament.id, config.horsesToRegister);
-            const prizePool = config.buyIn * registered;
+            const entriesPool = config.buyIn * registered;
+            // Honor guaranteed prize: prize pool = max(entries * buy-in, guarantee)
+            const prizePool = config.guarantee
+                ? Math.max(entriesPool, config.guarantee)
+                : entriesPool;
 
             await supabase
                 .from('tournaments')

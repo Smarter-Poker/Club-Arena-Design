@@ -237,7 +237,7 @@ class GameServer {
                 // Find REGISTERING tournaments ready to start
                 const { data: registering } = await supabase
                     .from('tournaments')
-                    .select('id, name, start_time, current_players')
+                    .select('id, name, start_time, current_players, min_players, max_players, variant, buy_in_amount, buy_in_fee, guaranteed_prize')
                     .eq('status', 'REGISTERING');
 
                 for (const tournament of registering || []) {
@@ -245,8 +245,35 @@ class GameServer {
 
                     const startTime = new Date(tournament.start_time).getTime();
                     const now = Date.now();
+                    const minPlayers = tournament.min_players || 2;
 
-                    if (startTime <= now && tournament.current_players >= 2) {
+                    // Auto-cancel: if 30+ mins past start time and not enough players
+                    if (startTime <= now - 30 * 60 * 1000 && tournament.current_players < minPlayers) {
+                        console.log(`[GameServer] Cancelling tournament: ${tournament.name} — only ${tournament.current_players}/${minPlayers} players after 30min`);
+                        // Refund all registered players
+                        const { data: players } = await supabase
+                            .from('tournament_players')
+                            .select('user_id')
+                            .eq('tournament_id', tournament.id)
+                            .eq('status', 'registered');
+
+                        const refundAmount = (tournament.buy_in_amount || 0) + (tournament.buy_in_fee || 0);
+                        for (const p of players || []) {
+                            await supabase.rpc('credit_player_wallet', { p_user_id: p.user_id, p_amount: refundAmount });
+                            await supabase.rpc('log_wallet_transaction', {
+                                p_user_id: p.user_id, p_wallet_type: 'PLAYER', p_amount: refundAmount,
+                                p_type: 'credit', p_category: 'refund',
+                                p_description: `Tournament cancelled (insufficient players): ${tournament.name}`,
+                                p_table_id: null, p_hand_id: null, p_related_entity_id: tournament.id,
+                            });
+                        }
+                        await supabase.from('tournament_players').delete().eq('tournament_id', tournament.id);
+                        await supabase.from('tournaments').update({ status: 'CANCELLED' }).eq('id', tournament.id);
+                        continue;
+                    }
+
+                    // Start if past start_time AND minimum players met
+                    if (startTime <= now && tournament.current_players >= minPlayers) {
                         console.log(`[GameServer] Starting tournament: ${tournament.name} (${tournament.current_players} players)`);
                         const tm = new TournamentManager(tournament.id, this);
                         this.tournamentEngines.set(tournament.id, tm);
@@ -536,24 +563,47 @@ class TournamentManager {
         this.blindTimer = setInterval(advanceBlinds, durationMs);
     }
 
+    private isProcessingEliminations = false;
+
     private startEliminationChecker(): void {
         this.eliminationTimer = setInterval(async () => {
-            if (!this.running) return;
+            if (!this.running || this.isProcessingEliminations) return;
+            this.isProcessingEliminations = true;
 
             try {
-                // Find eliminated players (0 chips)
-                const { data: eliminated } = await supabase
+                // Find ALL busted players (0 chips) in a single query
+                const { data: busted } = await supabase
                     .from('tournament_players')
-                    .select('user_id')
+                    .select('user_id, chips')
                     .eq('tournament_id', this.tournamentId)
                     .eq('status', 'playing')
                     .lte('chips', 0);
 
-                for (const player of eliminated || []) {
-                    await this.eliminatePlayer(player.user_id);
+                if (busted && busted.length > 0) {
+                    // Get current remaining count BEFORE processing any eliminations
+                    const { count: playingCount } = await supabase
+                        .from('tournament_players')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('tournament_id', this.tournamentId)
+                        .eq('status', 'playing');
+
+                    const { count: totalCount } = await supabase
+                        .from('tournament_players')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('tournament_id', this.tournamentId);
+
+                    // All busted players in same batch get the SAME position
+                    // (like being eliminated on the same hand — they split the position)
+                    // Position = number of players still playing (including the busted ones about to be removed)
+                    const position = playingCount || busted.length;
+
+                    // Process each busted player at the same position
+                    for (const player of busted) {
+                        await this.eliminatePlayer(player.user_id, position);
+                    }
                 }
 
-                // Check remaining players
+                // Check remaining players AFTER all eliminations processed
                 const { count: remainingCount } = await supabase
                     .from('tournament_players')
                     .select('*', { count: 'exact', head: true })
@@ -561,38 +611,55 @@ class TournamentManager {
                     .eq('status', 'playing');
 
                 if ((remainingCount || 0) <= 1) {
+                    // Use maybeSingle to handle edge case where 0 players remain
                     const { data: winner } = await supabase
                         .from('tournament_players')
                         .select('user_id')
                         .eq('tournament_id', this.tournamentId)
                         .eq('status', 'playing')
-                        .single();
+                        .maybeSingle();
 
                     if (winner) {
                         await this.finishTournament(winner.user_id);
+                    } else if ((remainingCount || 0) === 0) {
+                        // All players busted simultaneously — pick the last eliminated as winner
+                        const { data: lastEliminated } = await supabase
+                            .from('tournament_players')
+                            .select('user_id')
+                            .eq('tournament_id', this.tournamentId)
+                            .eq('status', 'eliminated')
+                            .order('eliminated_at', { ascending: false })
+                            .limit(1)
+                            .maybeSingle();
+
+                        if (lastEliminated) {
+                            console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] All busted simultaneously — last eliminated wins`);
+                            await this.finishTournament(lastEliminated.user_id);
+                        }
                     }
                 }
 
                 await this.checkTableBalance();
             } catch (err) {
                 console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Elimination check error:`, err);
+            } finally {
+                this.isProcessingEliminations = false;
             }
         }, 5000);
     }
 
-    private async eliminatePlayer(userId: string): Promise<void> {
-        const { count: eliminatedCount } = await supabase
+    private async eliminatePlayer(userId: string, position: number): Promise<void> {
+        // Guard: check if already eliminated (prevents double-processing)
+        const { data: playerCheck } = await supabase
             .from('tournament_players')
-            .select('*', { count: 'exact', head: true })
+            .select('status')
             .eq('tournament_id', this.tournamentId)
-            .eq('status', 'eliminated');
+            .eq('user_id', userId)
+            .single();
 
-        const { count: totalCount } = await supabase
-            .from('tournament_players')
-            .select('*', { count: 'exact', head: true })
-            .eq('tournament_id', this.tournamentId);
-
-        const position = (totalCount || 0) - (eliminatedCount || 0);
+        if (playerCheck?.status === 'eliminated' || playerCheck?.status === 'winner') {
+            return; // Already processed
+        }
 
         const { data: tournament } = await supabase
             .from('tournaments')
@@ -603,7 +670,6 @@ class TournamentManager {
         let prize = 0;
         if (tournament?.payout_structure) {
             let payouts = tournament.payout_structure;
-            // Handle string-encoded JSON
             if (typeof payouts === 'string') {
                 try { payouts = JSON.parse(payouts); } catch { payouts = []; }
             }
@@ -625,26 +691,31 @@ class TournamentManager {
                 eliminated_at: new Date().toISOString(),
             })
             .eq('tournament_id', this.tournamentId)
-            .eq('user_id', userId);
+            .eq('user_id', userId)
+            .eq('status', 'playing'); // Only update if still playing (prevents double-processing)
 
         if (prize > 0) {
-            await supabase.rpc('credit_player_wallet', {
+            const { error: creditErr } = await supabase.rpc('credit_player_wallet', {
                 p_user_id: userId,
                 p_amount: prize,
             });
 
-            // Log prize payout via RPC (SECURITY DEFINER bypasses RLS)
-            await supabase.rpc('log_wallet_transaction', {
-                p_user_id: userId,
-                p_wallet_type: 'PLAYER',
-                p_amount: prize,
-                p_type: 'credit',
-                p_category: 'prize',
-                p_description: `Tournament prize: position ${position}`,
-                p_table_id: null,
-                p_hand_id: null,
-                p_related_entity_id: this.tournamentId,
-            });
+            if (creditErr) {
+                console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] CRITICAL: Prize credit failed for ${userId.slice(0, 8)}: ${creditErr.message}`);
+            } else {
+                // Log prize payout via RPC (SECURITY DEFINER bypasses RLS)
+                await supabase.rpc('log_wallet_transaction', {
+                    p_user_id: userId,
+                    p_wallet_type: 'PLAYER',
+                    p_amount: prize,
+                    p_type: 'credit',
+                    p_category: 'prize',
+                    p_description: `Tournament prize: position ${position}`,
+                    p_table_id: null,
+                    p_hand_id: null,
+                    p_related_entity_id: this.tournamentId,
+                });
+            }
         }
 
         await supabase
@@ -656,14 +727,26 @@ class TournamentManager {
         console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] Eliminated: ${userId.slice(0, 8)} at position ${position} (prize: ${prize})`);
     }
 
+    private tournamentFinished = false;
+
     private async finishTournament(winnerId: string): Promise<void> {
+        // Guard: prevent double-finishing (race between elimination checker cycles)
+        if (this.tournamentFinished) return;
+        this.tournamentFinished = true;
+
         console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] COMPLETE! Winner: ${winnerId.slice(0, 8)}`);
 
         const { data: tournament } = await supabase
             .from('tournaments')
-            .select('payout_structure, prize_pool, buy_in_fee, current_players, club_id, name')
+            .select('payout_structure, prize_pool, buy_in_fee, current_players, club_id, name, status')
             .eq('id', this.tournamentId)
             .single();
+
+        // Guard: don't process already completed tournaments
+        if (tournament?.status === 'COMPLETED' || tournament?.status === 'CANCELLED') {
+            console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] Already ${tournament.status}, skipping`);
+            return;
+        }
 
         if (tournament?.payout_structure) {
             let payouts = tournament.payout_structure;
@@ -799,12 +882,21 @@ class TournamentManager {
 
                     const { data: seats } = await supabase
                         .from('table_seats')
-                        .select('user_id, stack')
+                        .select('user_id, stack, seat_number')
                         .eq('table_id', tc.tableId)
                         .is('left_at', null);
 
                     let nextSeat = target.count + 1;
                     for (const seat of seats || []) {
+                        // Mark old seat as left FIRST to prevent duplicate active seats
+                        await supabase
+                            .from('table_seats')
+                            .update({ left_at: new Date().toISOString() })
+                            .eq('table_id', tc.tableId)
+                            .eq('user_id', seat.user_id)
+                            .is('left_at', null);
+
+                        // Then insert new seat at target table
                         await supabase.from('table_seats').insert({
                             table_id: target.tableId,
                             user_id: seat.user_id,
@@ -813,12 +905,12 @@ class TournamentManager {
                             joined_at: new Date().toISOString(),
                         });
 
+                        // Update tournament_players table_id
                         await supabase
-                            .from('table_seats')
-                            .update({ left_at: new Date().toISOString() })
-                            .eq('table_id', tc.tableId)
-                            .eq('user_id', seat.user_id)
-                            .is('left_at', null);
+                            .from('tournament_players')
+                            .update({ table_id: target.tableId })
+                            .eq('tournament_id', this.tournamentId)
+                            .eq('user_id', seat.user_id);
                     }
 
                     const engine = this.tableEngines.get(tc.tableId);
