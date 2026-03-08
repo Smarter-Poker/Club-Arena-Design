@@ -762,13 +762,138 @@
     50% { box-shadow: 0 0 16px rgba(255, 107, 0, 0.6); }
 }
 
-/* Mobile Responsive */
-@media (max-width: 640px) {
+/* ═══════ TABLET ═══════ */
+@media (max-width: 768px) {
+    .tournament-details {
+        padding: 0.75rem;
+        padding-bottom: 90px;
+    }
+
     .details-grid {
         grid-template-columns: 1fr;
     }
 
+    .quick-stats {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+    }
+
+    .details-footer {
+        padding: 0.75rem;
+    }
+
+    .signup-modal {
+        max-width: calc(100vw - 32px);
+    }
+}
+
+/* ═══════ PHONE ═══════ */
+@media (max-width: 480px) {
+    .tournament-details {
+        padding: 0.5rem;
+        padding-bottom: 80px;
+    }
+
+    .quick-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+    }
+
+    .quick-stats .stat-card {
+        padding: 0.6rem 0.5rem;
+    }
+
+    .quick-stats .stat-value {
+        font-size: 1rem;
+    }
+
+    .quick-stats .stat-label {
+        font-size: 0.6rem;
+    }
+
     .prizes-grid {
         grid-template-columns: 1fr 1fr;
+    }
+
+    .payout-row {
+        grid-template-columns: 40px 1fr 1fr;
+        font-size: 0.8rem;
+        padding: 6px 8px;
+    }
+
+    .blinds-table th,
+    .blinds-table td {
+        padding: 6px 4px;
+        font-size: 0.75rem;
+    }
+
+    .blinds-header {
+        grid-template-columns: 40px 1fr 60px 60px;
+    }
+
+    .blind-row {
+        grid-template-columns: 40px 1fr 60px 60px;
+    }
+
+    .details-footer {
+        padding: 0.5rem 0.75rem;
+        gap: 0.5rem;
+    }
+
+    .details-footer button {
+        font-size: 0.8rem;
+        padding: 8px 12px;
+    }
+
+    .signup-modal {
+        max-width: calc(100vw - 24px);
+        padding: 1rem;
+    }
+
+    .entry-list .entry-row {
+        padding: 8px;
+        gap: 6px;
+    }
+
+    .tables-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .tab-nav button {
+        font-size: 0.7rem;
+        padding: 6px 8px;
+    }
+}
+
+/* ═══════ SMALL PHONE ═══════ */
+@media (max-width: 380px) {
+    .quick-stats {
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+    }
+
+    .quick-stats .stat-value {
+        font-size: 0.9rem;
+    }
+
+    .payout-row {
+        font-size: 0.7rem;
+    }
+
+    .blinds-header,
+    .blind-row {
+        grid-template-columns: 32px 1fr 50px 50px;
+        font-size: 0.7rem;
+    }
+
+    .details-footer {
+        flex-direction: column;
+    }
+}
+
+/* ═══════ REDUCED MOTION ═══════ */
+@media (prefers-reduced-motion: reduce) {
+    .btn.btn-register.late-reg {
+        animation: none;
     }
 }

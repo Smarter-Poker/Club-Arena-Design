@@ -154,8 +154,8 @@
     transform: scale(1.05);
 }
 
-/* Responsive */
-@media (max-width: 640px) {
+/* ═══════ TABLET ═══════ */
+@media (max-width: 768px) {
     .quickStats {
         gap: 1rem;
         padding: 1rem;
@@ -163,5 +163,51 @@
 
     .statValue {
         font-size: 1.25rem;
+    }
+}
+
+/* ═══════ PHONE ═══════ */
+@media (max-width: 480px) {
+    .quickStats {
+        gap: 0.5rem;
+        padding: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .statValue {
+        font-size: 1rem;
+    }
+
+    .statLabel {
+        font-size: 0.6rem;
+    }
+
+    .filters {
+        gap: 4px;
+        padding: 0 0.5rem;
+    }
+
+    .filterBtn {
+        font-size: 0.7rem;
+        padding: 5px 8px;
+    }
+
+    .createBtn {
+        padding: 0.6rem 1rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* ═══════ SMALL PHONE ═══════ */
+@media (max-width: 380px) {
+    .quickStats {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .filterBtn {
+        font-size: 0.6rem;
+        padding: 4px 6px;
     }
 }

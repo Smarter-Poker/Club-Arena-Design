@@ -214,6 +214,7 @@ export default function TournamentDetails() {
             }
         } catch (error) {
             console.error('Failed to load tournament:', error);
+            toast.error('Failed to load tournament details');
         }
         setIsLoading(false);
     };
@@ -565,7 +566,7 @@ export default function TournamentDetails() {
                                 <div className="entry-avatar"></div>
                                 <div className="entry-info">
                                     <span className="entry-name">{entry.username}</span>
-                                    <span className="entry-chips">{entry.chips || tournament.starting_chips} chips</span>
+                                    <span className="entry-chips">{(entry.chips || tournament.starting_chips || 0).toLocaleString()} chips</span>
                                 </div>
                                 <span className={`entry-status ${entry.status}`}>{entry.status}</span>
                             </div>

@@ -103,7 +103,8 @@ export default function TournamentLobbyPage() {
                     current_players,
                     max_players,
                     starting_chips,
-                    game_type
+                    game_type,
+                    clubs!club_id(name)
                 `;
 
             let activeQuery = supabase.from('tournaments').select(fields)
@@ -155,7 +156,7 @@ export default function TournamentLobbyPage() {
                     id: t.id,
                     name: t.name,
                     clubId: t.club_id,
-                    clubName: 'Club',
+                    clubName: (t.clubs as any)?.name || 'Club',
                     buyIn: t.buy_in_amount || 0,
                     prizePool: t.prize_pool || 0,
                     startTime: t.start_time,
@@ -233,7 +234,7 @@ export default function TournamentLobbyPage() {
             <div className={styles.searchBar}>
                 <input
                     type="text"
-                    placeholder=" Search tournaments..."
+                    placeholder="Search tournaments..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className={styles.searchInput}
