@@ -644,6 +644,22 @@ export default function App() {
                                     </AuthGuard>
                                 }
                             />
+                            <Route
+                                path="clubs-list"
+                                element={
+                                    <AuthGuard>
+                                        <ClubsPage />
+                                    </AuthGuard>
+                                }
+                            />
+                            <Route
+                                path="clubs/:clubId/table-creation"
+                                element={
+                                    <AuthGuard>
+                                        <TableCreationPage />
+                                    </AuthGuard>
+                                }
+                            />
 
                             {/* Legal Pages */}
                             <Route
