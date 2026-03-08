@@ -162,12 +162,12 @@ export default function RakebackPage() {
                                     <span>{formatDate(period.period_start)} - {formatDate(period.period_end)}</span>
                                 </div>
                                 <div className="period-details">
-                                    <span className="rake-generated">Rake: ${period.rake_generated.toLocaleString()}</span>
+                                    <span className="rake-generated">Rake: {period.rake_generated.toLocaleString()}</span>
                                     <span className="rakeback-rate">{(period.rakeback_rate * 100).toFixed(1)}%</span>
                                 </div>
                                 <div className="period-earned">
                                     <span className={`amount ${period.status}`}>
-                                        ${period.rakeback_earned.toLocaleString()}
+                                        {period.rakeback_earned.toLocaleString()}
                                     </span>
                                     <span className={`status ${period.status}`}>
                                         {period.status === 'paid' ? ' Paid' : ' Pending'}

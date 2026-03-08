@@ -890,7 +890,7 @@ export class TournamentEngine {
             wallet_type: 'PLAYER',
             amount: amount,
             type: 'credit',
-            category: 'settlement',
+            category: 'prize',
             description: `Tournament prize — ${this.tournamentInfo.name}`,
             related_entity_id: this.tournamentId,
         });

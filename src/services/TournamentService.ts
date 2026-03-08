@@ -604,6 +604,82 @@ class TournamentService {
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
+    // Tournament Cancellation
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Cancel a tournament and refund ALL registered players' buy-ins.
+     * Only allowed for ANNOUNCED or REGISTERING tournaments (not RUNNING).
+     * For running tournaments, use endTournament instead.
+     */
+    async cancelTournament(tournamentId: string, reason: string = 'Tournament cancelled'): Promise<{ refunded: number; playersRefunded: number }> {
+        const tournament = await this.getTournament(tournamentId);
+        if (!tournament) throw new Error('Tournament not found');
+
+        if (tournament.status !== 'ANNOUNCED' && tournament.status !== 'REGISTERING') {
+            throw new Error('Can only cancel tournaments that have not started yet');
+        }
+
+        // Get all registered players
+        const { data: players } = await supabase
+            .from('tournament_players')
+            .select('user_id, username')
+            .eq('tournament_id', tournamentId);
+
+        let totalRefunded = 0;
+        let playersRefunded = 0;
+        const refundAmount = (tournament.buy_in_amount || 0) + (tournament.buy_in_fee || 0);
+
+        // Refund each player's buy-in to their Player Wallet
+        if (players && players.length > 0 && refundAmount > 0) {
+            for (const player of players) {
+                try {
+                    const { error: refundError } = await supabase.rpc('credit_player_wallet', {
+                        p_user_id: player.user_id,
+                        p_amount: refundAmount,
+                    });
+
+                    if (refundError) {
+                        console.error(`[TournamentService] Failed to refund ${player.user_id}:`, refundError);
+                        continue;
+                    }
+
+                    // Log refund transaction
+                    await WalletService.logTransaction(
+                        player.user_id, 'PLAYER', refundAmount, 'credit', 'refund',
+                        `Tournament cancelled: ${tournament.name} — ${reason}`,
+                        undefined, undefined, tournamentId
+                    );
+
+                    totalRefunded += refundAmount;
+                    playersRefunded++;
+                } catch (err) {
+                    console.error(`[TournamentService] Refund error for ${player.user_id}:`, err);
+                }
+            }
+        }
+
+        // Delete all tournament_players entries
+        await supabase
+            .from('tournament_players')
+            .delete()
+            .eq('tournament_id', tournamentId);
+
+        // Update tournament status to CANCELLED
+        await supabase
+            .from('tournaments')
+            .update({
+                status: 'CANCELLED',
+                current_players: 0,
+                prize_pool: 0,
+            })
+            .eq('id', tournamentId);
+
+        console.log(`[TournamentService] Cancelled tournament ${tournament.name}: refunded ${playersRefunded} players, ${totalRefunded} chips`);
+        return { refunded: totalRefunded, playersRefunded };
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
     // Tournament Operations
     // ─────────────────────────────────────────────────────────────────────────────
 
@@ -937,12 +1013,24 @@ class TournamentService {
         // @ts-ignore
         const rebuyCost = tournament.rebuy_cost || tournament.buy_in_amount;
 
-        // Deduct wallet for rebuy cost
-        const { error: walletError } = await supabase.rpc('deduct_player_wallet', {
+        // Pre-validate wallet balance (better error messages)
+        const { data: walletData } = await supabase
+            .from('wallets')
+            .select('balance')
+            .eq('user_id', userId)
+            .eq('wallet_type', 'PLAYER')
+            .single();
+
+        if (!walletData || (walletData.balance || 0) < rebuyCost) {
+            throw new Error(`Insufficient chips for rebuy. Need ${rebuyCost}, have ${walletData?.balance || 0}`);
+        }
+
+        // Atomically deduct wallet for rebuy cost
+        const { data: deductResult, error: walletError } = await supabase.rpc('deduct_player_wallet', {
             p_user_id: userId,
             p_amount: rebuyCost,
         });
-        if (walletError) throw new Error('Insufficient balance for rebuy');
+        if (walletError || deductResult === false) throw new Error('Insufficient balance for rebuy');
 
         // Log transaction for audit trail
         await WalletService.logTransaction(
@@ -1015,12 +1103,24 @@ class TournamentService {
         // @ts-ignore
         const addonCost = tournament.addon_cost || tournament.buy_in_amount;
 
-        // Deduct wallet for add-on cost
-        const { error: walletError } = await supabase.rpc('deduct_player_wallet', {
+        // Pre-validate wallet balance (better error messages)
+        const { data: addonWallet } = await supabase
+            .from('wallets')
+            .select('balance')
+            .eq('user_id', userId)
+            .eq('wallet_type', 'PLAYER')
+            .single();
+
+        if (!addonWallet || (addonWallet.balance || 0) < addonCost) {
+            throw new Error(`Insufficient chips for add-on. Need ${addonCost}, have ${addonWallet?.balance || 0}`);
+        }
+
+        // Atomically deduct wallet for add-on cost
+        const { data: addonDeductResult, error: walletError } = await supabase.rpc('deduct_player_wallet', {
             p_user_id: userId,
             p_amount: addonCost,
         });
-        if (walletError) throw new Error('Insufficient balance for add-on');
+        if (walletError || addonDeductResult === false) throw new Error('Insufficient balance for add-on');
 
         // Log transaction for audit trail
         await WalletService.logTransaction(
