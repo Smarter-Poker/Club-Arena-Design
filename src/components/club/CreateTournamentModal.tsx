@@ -101,6 +101,30 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
         setIsSubmitting(true);
 
         try {
+            // ── Bounty validation (defense-in-depth) ──
+            if (isBountyFormat) {
+                const ba = parseFloat(bountyAmount);
+                if (!ba || ba <= 0) {
+                    toast.error('Bounty amount is required for bounty tournaments');
+                    setIsSubmitting(false);
+                    return;
+                }
+                if (format === 'mystery_bounty') {
+                    const min = parseFloat(mysteryBountyMin);
+                    const max = parseFloat(mysteryBountyMax);
+                    if (!min || min <= 0 || !max || max <= 0) {
+                        toast.error('Mystery bounty min and max multipliers are required');
+                        setIsSubmitting(false);
+                        return;
+                    }
+                    if (max <= min) {
+                        toast.error('Mystery bounty max multiplier must be greater than min');
+                        setIsSubmitting(false);
+                        return;
+                    }
+                }
+            }
+
             const parsedBuyIn = parseFloat(buyIn);
             const parsedRake = parseFloat(rake);
 
@@ -140,16 +164,28 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                 bountyConfig: (format === 'bounty' || format === 'progressive_bounty' || format === 'mystery_bounty') ? {
                     bountyType: format === 'bounty' ? 'fixed' : format === 'progressive_bounty' ? 'progressive' : 'mystery',
                     baseBounty: parseFloat(bountyAmount) || 5,
-                    ...(format === 'mystery_bounty' ? {
-                        mysteryTiers: [
-                            { minMultiplier: 1, maxMultiplier: 1, probability: 60 },
-                            { minMultiplier: 2, maxMultiplier: 2, probability: 25 },
-                            { minMultiplier: 5, maxMultiplier: 5, probability: 10 },
-                            { minMultiplier: 10, maxMultiplier: 10, probability: 4 },
-                            { minMultiplier: 50, maxMultiplier: 50, probability: 0.9 },
-                            { minMultiplier: 500, maxMultiplier: 500, probability: 0.1 },
-                        ],
-                    } : {}),
+                    ...(format === 'mystery_bounty' ? (() => {
+                        const minMult = parseFloat(mysteryBountyMin) || 1;
+                        const maxMult = parseFloat(mysteryBountyMax) || 100;
+                        // Generate tiers from min to max with probability distribution
+                        // Bottom tier (most common), middle tiers, top tier (rarest)
+                        const tiers: Array<{ minMultiplier: number; maxMultiplier: number; probability: number }> = [];
+                        tiers.push({ minMultiplier: minMult, maxMultiplier: minMult, probability: 60 });
+                        if (maxMult >= minMult * 2) {
+                            tiers.push({ minMultiplier: minMult * 2, maxMultiplier: minMult * 2, probability: 25 });
+                        }
+                        if (maxMult >= minMult * 5) {
+                            tiers.push({ minMultiplier: minMult * 5, maxMultiplier: minMult * 5, probability: 10 });
+                        }
+                        if (maxMult >= minMult * 10) {
+                            tiers.push({ minMultiplier: minMult * 10, maxMultiplier: minMult * 10, probability: 4 });
+                        }
+                        if (maxMult >= minMult * 50) {
+                            tiers.push({ minMultiplier: Math.min(minMult * 50, maxMult), maxMultiplier: Math.min(minMult * 50, maxMult), probability: 0.9 });
+                        }
+                        tiers.push({ minMultiplier: maxMult, maxMultiplier: maxMult, probability: 0.1 });
+                        return { mysteryTiers: tiers };
+                    })() : {}),
                 } : undefined,
             });
             toast.success('Tournament created');
@@ -163,6 +199,21 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
     };
 
     const isBountyFormat = format === 'bounty' || format === 'progressive_bounty' || format === 'mystery_bounty';
+
+    // ── Validation: bounty fields required for bounty formats ──
+    const bountyValid = (() => {
+        if (!isBountyFormat) return true;
+        const ba = parseFloat(bountyAmount);
+        if (!ba || ba <= 0) return false;
+        if (format === 'mystery_bounty') {
+            const min = parseFloat(mysteryBountyMin);
+            const max = parseFloat(mysteryBountyMax);
+            if (!min || min <= 0 || !max || max <= 0 || max <= min) return false;
+        }
+        return true;
+    })();
+
+    const canSubmit = !!name && bountyValid && !isSubmitting;
 
     return (
         <div className={styles.modalOverlay} onClick={onClose}>
@@ -352,11 +403,12 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                         <div className={styles.sectionDivider}>
                             <span className={styles.sectionLabel}>
                                 {format === 'bounty' ? 'Bounty' : format === 'progressive_bounty' ? 'PKO' : 'Mystery Bounty'} Settings
+                                <span style={{ color: '#ef4444', marginLeft: 4 }}>*</span>
                             </span>
                             <div className={styles.row}>
                                 <div className={styles.col}>
                                     <div className={styles.formGroup}>
-                                        <label>{format === 'mystery_bounty' ? 'Base Bounty' : 'Bounty Per KO'}</label>
+                                        <label>{format === 'mystery_bounty' ? 'Base Bounty (chips)' : 'Bounty Per KO (chips)'} <span style={{ color: '#ef4444' }}>*</span></label>
                                         <input
                                             type="number"
                                             className={styles.input}
@@ -364,44 +416,70 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                                             onChange={e => setBountyAmount(e.target.value)}
                                             min="0.01"
                                             step="0.01"
+                                            required
+                                            style={(!bountyAmount || parseFloat(bountyAmount) <= 0) ? { borderColor: '#ef4444' } : undefined}
                                         />
+                                        <span className={styles.helperText}>Amount awarded for each knockout</span>
                                     </div>
                                 </div>
                                 {format === 'mystery_bounty' && (
                                     <>
                                         <div className={styles.col}>
                                             <div className={styles.formGroup}>
-                                                <label>Min Mystery</label>
+                                                <label>Min Multiplier <span style={{ color: '#ef4444' }}>*</span></label>
                                                 <input
                                                     type="number"
                                                     className={styles.input}
                                                     value={mysteryBountyMin}
                                                     onChange={e => setMysteryBountyMin(e.target.value)}
-                                                    min="0.01"
-                                                    step="0.01"
+                                                    min="1"
+                                                    step="1"
+                                                    required
+                                                    style={(!mysteryBountyMin || parseFloat(mysteryBountyMin) <= 0) ? { borderColor: '#ef4444' } : undefined}
                                                 />
+                                                <span className={styles.helperText}>Lowest multiplier (e.g. 1x)</span>
                                             </div>
                                         </div>
                                         <div className={styles.col}>
                                             <div className={styles.formGroup}>
-                                                <label>Max Mystery</label>
+                                                <label>Max Multiplier <span style={{ color: '#ef4444' }}>*</span></label>
                                                 <input
                                                     type="number"
                                                     className={styles.input}
                                                     value={mysteryBountyMax}
                                                     onChange={e => setMysteryBountyMax(e.target.value)}
-                                                    min="0.01"
-                                                    step="0.01"
+                                                    min="2"
+                                                    step="1"
+                                                    required
+                                                    style={(parseFloat(mysteryBountyMax) <= parseFloat(mysteryBountyMin)) ? { borderColor: '#ef4444' } : undefined}
                                                 />
+                                                <span className={styles.helperText}>Highest multiplier (e.g. 100x)</span>
                                             </div>
                                         </div>
                                     </>
                                 )}
                             </div>
+                            {format === 'bounty' && (
+                                <span className={styles.helperText}>
+                                    Full bounty amount is awarded to the knocker on each elimination
+                                </span>
+                            )}
                             {format === 'progressive_bounty' && (
                                 <span className={styles.helperText}>
                                     50% of bounty goes to knocker, 50% added to knocker's own bounty
                                 </span>
+                            )}
+                            {format === 'mystery_bounty' && (
+                                <span className={styles.helperText}>
+                                    Mystery bounty is randomly assigned at registration between {mysteryBountyMin}x and {mysteryBountyMax}x the base bounty, revealed on knockout
+                                </span>
+                            )}
+                            {!bountyValid && (
+                                <p style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: 6 }}>
+                                    {(!bountyAmount || parseFloat(bountyAmount) <= 0)
+                                        ? 'Bounty amount is required and must be greater than 0'
+                                        : 'Mystery max multiplier must be greater than min multiplier'}
+                                </p>
                             )}
                         </div>
                     )}
@@ -573,7 +651,7 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                         <button
                             type="submit"
                             className={styles.createBtn}
-                            disabled={!name || isSubmitting}
+                            disabled={!canSubmit}
                         >
                             {isSubmitting ? 'Creating...' : 'Create Tournament'}
                         </button>
