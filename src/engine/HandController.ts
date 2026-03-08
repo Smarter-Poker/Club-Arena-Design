@@ -583,16 +583,18 @@ export class HandController {
         const totalWinnings = this.state.pot - rake;
         const totalWinnerAmount = winners.reduce((sum, w) => sum + w.amount, 0);
 
-        // Proportionally reduce each winner's amount, distributing remainder chips
-        const adjustedAmounts = winners.map(w =>
-            Math.trunc(w.amount * (totalWinnings / (totalWinnerAmount || 1)) * 100) / 100
+        // Integer-cents arithmetic to prevent floating-point distribution errors
+        const totalCents = Math.trunc(totalWinnings * 100);
+        const totalWinnerCents = Math.trunc(totalWinnerAmount * 100) || 1;
+        const adjustedCents = winners.map(w =>
+            Math.trunc(Math.trunc(w.amount * 100) * totalCents / totalWinnerCents)
         );
-        let remainder = totalWinnings - adjustedAmounts.reduce((s, a) => s + a, 0);
-        // Give remainder chips to winners in order (prevents chip loss from rounding)
-        for (let i = 0; i < adjustedAmounts.length && remainder > 0; i++) {
-            adjustedAmounts[i]++;
-            remainder--;
+        let remainderCents = totalCents - adjustedCents.reduce((s, a) => s + a, 0);
+        for (let i = 0; i < adjustedCents.length && remainderCents > 0; i++) {
+            adjustedCents[i]++;
+            remainderCents--;
         }
+        const adjustedAmounts = adjustedCents.map(c => c / 100);
         const adjustedWinners = winners.map((w, i) => ({
             ...w,
             amount: adjustedAmounts[i],
