@@ -311,8 +311,8 @@ export async function processLeavePending(tableId: string, clubId: string): Prom
 }
 
 /**
- * Log rake collection — every penny documented.
- * Splits rake to club/union per configured revenue share.
+ * Log rake collection — every chip documented.
+ * Rake is taken from the pot; club wallet receives chips from rake.
  */
 export async function logRakeCollection(
     tableId: string,
@@ -334,10 +334,10 @@ export async function logRakeCollection(
     });
     if (rakeErr) console.warn(`[DB] Failed to log rake for hand #${handNumber}:`, rakeErr.message);
 
-    // Credit the club's rake wallet
+    // Credit the club wallet with chips from rake
     const { error: txErr } = await supabase.from('wallet_transactions').insert({
         user_id: clubId,
-        wallet_type: 'CLUB_RAKE',
+        wallet_type: 'CLUB',
         amount: rakeAmount,
         type: 'credit',
         category: 'rake',

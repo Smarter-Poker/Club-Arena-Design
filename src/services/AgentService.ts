@@ -35,7 +35,7 @@ export interface Agent {
 
     // Commission Rates (MANDATORY when creating)
     commissionRate: number;      // Rate they receive from club/parent (max 70%)
-    playerRakebackRate: number;  // Rate they give to players (max 50%)
+    playerRakebackRate: number;  // Rakeback rate — % of rake players receive back as chips (max 50%)
 
     // Credit (MANDATORY when creating)
     creditLimit: number;

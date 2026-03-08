@@ -163,7 +163,7 @@ export interface Agent {
     promo_wallet_balance: number;
     credit_limit: number;
     is_prepaid: boolean;
-    commission_rate: number; // % of rake returned to players
+    commission_rate: number; // % commission agent earns from club
     player_count: number;
     is_active: boolean;
     created_at: string;

@@ -694,7 +694,7 @@ export default function AgentManagementPage() {
                         <div className={styles.spreadExample}>
                             <h3> Example Spread Calculation</h3>
                             <p>
-                                Agent receives <strong>50%</strong> from club, gives <strong>30%</strong> to players.
+                                Agent receives <strong>50%</strong> commission from club. Players get <strong>30%</strong> rakeback (chips).
                                 <br />
                                 Agent's net margin: <strong className={styles.highlight}>20%</strong> of all rake generated.
                             </p>
@@ -893,7 +893,7 @@ export default function AgentManagementPage() {
                                     />
                                     <span className={styles.sliderValue}>{newAgentForm.playerRakebackRate}%</span>
                                 </div>
-                                <p className={styles.fieldDesc}>Percentage of rake agent gives back to players</p>
+                                <p className={styles.fieldDesc}>Rakeback rate — percentage of rake players receive back as chips</p>
                             </div>
 
                             {/* Credit Limit */}

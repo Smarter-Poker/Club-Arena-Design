@@ -103,7 +103,15 @@ ALTER TABLE hand_history ADD COLUMN IF NOT EXISTS actions JSONB DEFAULT '[]';
 ALTER TABLE hand_history ADD COLUMN IF NOT EXISTS summary TEXT;
 ALTER TABLE rake_history ADD COLUMN IF NOT EXISTS collected_at TIMESTAMPTZ DEFAULT NOW();
 
--- 6. Expanded wallet_transactions category constraint
+-- 6. Fix pot_size column type (original table had INTEGER, needs DECIMAL for exact values)
+ALTER TABLE hand_history ALTER COLUMN pot_size TYPE DECIMAL(12,2) USING pot_size::DECIMAL(12,2);
+
+-- 7. Ensure wallet_type constraint includes CLUB
+ALTER TABLE wallet_transactions DROP CONSTRAINT IF EXISTS wallet_transactions_wallet_type_check;
+ALTER TABLE wallet_transactions ADD CONSTRAINT wallet_transactions_wallet_type_check
+CHECK (wallet_type IN ('PLAYER', 'CLUB', 'UNION', 'PLATFORM'));
+
+-- 8. Expanded wallet_transactions category constraint
 ALTER TABLE wallet_transactions DROP CONSTRAINT IF EXISTS wallet_transactions_category_check;
 ALTER TABLE wallet_transactions ADD CONSTRAINT wallet_transactions_category_check
 CHECK (category IN (
