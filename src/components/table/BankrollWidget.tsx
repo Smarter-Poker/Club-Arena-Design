@@ -47,7 +47,7 @@ export const BankrollWidget: React.FC<BankrollWidgetProps> = ({
                 setAnimatedProfit(profit);
                 clearInterval(interval);
             } else {
-                setAnimatedProfit(Math.round(current));
+                setAnimatedProfit(Math.trunc(current * 100) / 100);
             }
         }, duration / steps);
 

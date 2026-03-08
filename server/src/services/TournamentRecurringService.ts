@@ -476,10 +476,11 @@ export class TournamentRecurringService {
                 ? Math.max(entriesPool, config.guarantee)
                 : entriesPool;
 
-            await supabase
+            const { error: updateErr } = await supabase
                 .from('tournaments')
                 .update({ current_players: registered, prize_pool: prizePool, status: 'REGISTERING' })
                 .eq('id', tournament.id);
+            if (updateErr) console.error(`[TournamentRecurring] Tournament state update failed for ${tournament.id.slice(0, 8)}: ${updateErr.message}`);
 
             return { tournamentId: tournament.id, registered };
         } catch (err: any) {
@@ -529,10 +530,11 @@ export class TournamentRecurringService {
             const registered = await this.registerHorses(sng.id, config.horsesToRegister);
             const prizePool = config.buyIn * registered;
 
-            await supabase
+            const { error: sngUpdateErr } = await supabase
                 .from('tournaments')
                 .update({ current_players: registered, prize_pool: prizePool, status: 'REGISTERING' })
                 .eq('id', sng.id);
+            if (sngUpdateErr) console.error(`[TournamentRecurring] SNG state update failed for ${sng.id.slice(0, 8)}: ${sngUpdateErr.message}`);
 
             return { tournamentId: sng.id, registered };
         } catch (err: any) {
@@ -584,10 +586,11 @@ export class TournamentRecurringService {
 
             const registered = await this.registerHorses(spin.id, config.horsesToRegister);
 
-            await supabase
+            const { error: spinUpdateErr } = await supabase
                 .from('tournaments')
                 .update({ current_players: registered, prize_pool: prizePool, status: 'REGISTERING' })
                 .eq('id', spin.id);
+            if (spinUpdateErr) console.error(`[TournamentRecurring] Spin state update failed for ${spin.id.slice(0, 8)}: ${spinUpdateErr.message}`);
 
             return { tournamentId: spin.id, registered };
         } catch (err: any) {

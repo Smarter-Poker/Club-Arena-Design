@@ -152,7 +152,7 @@ export function PlayerStats({
                         <div className="player-stats__session-row">
                             <span className="player-stats__session-label">Stack</span>
                             <span className="player-stats__session-value">
-                                ${sessionStats.currentStack.toLocaleString()}
+                                {sessionStats.currentStack.toLocaleString()}
                             </span>
                         </div>
                         <div className="player-stats__session-row">

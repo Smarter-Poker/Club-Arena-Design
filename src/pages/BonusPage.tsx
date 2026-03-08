@@ -120,7 +120,13 @@ export default function BonusPage() {
         setClaiming(true);
         try {
             // Update streak and claim bonus
-            await supabase.rpc('claim_daily_bonus', { user_id: user?.id });
+            const { error: claimErr } = await supabase.rpc('claim_daily_bonus', { user_id: user?.id });
+            if (claimErr) {
+                console.error('[BonusPage] claim_daily_bonus failed:', claimErr.message);
+                toast.error('Failed to claim bonus');
+                setClaiming(false);
+                return;
+            }
             toast.success('Daily bonus claimed!');
             loadBonuses();
         } catch (error) {

@@ -354,10 +354,11 @@ export class HorseFleetManager {
 
             if (seatError) {
                 // Refund the buy-in
-                await supabase.rpc('credit_player_wallet', {
+                const { error: refundErr } = await supabase.rpc('credit_player_wallet', {
                     p_user_id: horseId,
                     p_amount: buyIn,
                 });
+                if (refundErr) console.error(`[HorseFleet] Seat-fail refund FAILED for horse ${horseId.slice(0, 8)}: ${refundErr.message}`);
                 await supabase.from('wallet_transactions').insert({
                     user_id: horseId,
                     wallet_type: 'PLAYER',

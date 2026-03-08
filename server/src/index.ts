@@ -279,12 +279,13 @@ class GameServer {
                                     console.error(`[GameServer] Refund FAILED for ${p.user_id.slice(0, 8)} in ${tournament.name}: ${creditErr.message}`);
                                     continue; // Skip log for this player but keep refunding others
                                 }
-                                await supabase.rpc('log_wallet_transaction', {
+                                const { error: logErr } = await supabase.rpc('log_wallet_transaction', {
                                     p_user_id: p.user_id, p_wallet_type: 'PLAYER', p_amount: refundAmount,
                                     p_type: 'credit', p_category: 'refund',
                                     p_description: `Tournament cancelled (insufficient players): ${tournament.name}`,
                                     p_table_id: null, p_hand_id: null, p_related_entity_id: tournament.id,
                                 });
+                                if (logErr) console.error(`[GameServer] Refund log FAILED for ${p.user_id.slice(0, 8)}: ${logErr.message}`);
                             } catch (refundErr) {
                                 console.error(`[GameServer] Refund exception for ${p.user_id.slice(0, 8)}:`, refundErr);
                             }
@@ -468,12 +469,13 @@ class TournamentManager {
                             console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Refund FAILED for ${p.user_id.slice(0, 8)}: ${creditErr.message}`);
                             continue;
                         }
-                        await supabase.rpc('log_wallet_transaction', {
+                        const { error: logErr } = await supabase.rpc('log_wallet_transaction', {
                             p_user_id: p.user_id, p_wallet_type: 'PLAYER', p_amount: refundAmt,
                             p_type: 'credit', p_category: 'refund',
                             p_description: `Tournament cancelled (insufficient players): ${tournament.name}`,
                             p_table_id: null, p_hand_id: null, p_related_entity_id: this.tournamentId,
                         });
+                        if (logErr) console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Refund log FAILED for ${p.user_id.slice(0, 8)}: ${logErr.message}`);
                     } catch (refundErr) {
                         console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Refund exception for ${p.user_id.slice(0, 8)}:`, refundErr);
                     }
@@ -1031,7 +1033,7 @@ class TournamentManager {
                 if (attempt < 3) await new Promise(r => setTimeout(r, attempt * 1000));
             }
             if (creditSuccess) {
-                await supabase.rpc('log_wallet_transaction', {
+                const { error: prizeLogErr } = await supabase.rpc('log_wallet_transaction', {
                     p_user_id: userId,
                     p_wallet_type: 'PLAYER',
                     p_amount: prize,
@@ -1042,6 +1044,7 @@ class TournamentManager {
                     p_hand_id: null,
                     p_related_entity_id: this.tournamentId,
                 });
+                if (prizeLogErr) console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Prize log FAILED for ${userId.slice(0, 8)}: ${prizeLogErr.message}`);
             } else {
                 console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] CRITICAL: Prize credit FAILED after 3 retries for ${userId.slice(0, 8)} — ${prize} chips lost`);
             }
@@ -1276,7 +1279,7 @@ class TournamentManager {
             return;
         }
 
-        await supabase.rpc('log_wallet_transaction', {
+        const { error: bountyLogErr } = await supabase.rpc('log_wallet_transaction', {
             p_user_id: knockerUserId,
             p_wallet_type: 'PLAYER',
             p_amount: amount,
@@ -1287,6 +1290,7 @@ class TournamentManager {
             p_hand_id: null,
             p_related_entity_id: this.tournamentId,
         });
+        if (bountyLogErr) console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Bounty log FAILED for ${knockerUserId.slice(0, 8)}: ${bountyLogErr.message}`);
     }
 
     private tournamentFinished = false;

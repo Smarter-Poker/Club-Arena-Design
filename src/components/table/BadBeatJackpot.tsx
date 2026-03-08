@@ -61,7 +61,7 @@ export function BadBeatJackpot({
             >
                 <div className="bbj-widget__label">BAD BEAT JACKPOT</div>
                 <div className="bbj-widget__amount">
-                    {currency}{Math.floor(displayAmount).toLocaleString()}
+                    {currency}{(Math.trunc(displayAmount * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
 
                 {/* Info Popover */}

@@ -110,7 +110,8 @@ export default function InvitePage() {
             if (joinError) throw joinError;
 
             // Update member count
-            await supabase.rpc('increment_member_count', { club_id: club.id });
+            const { error: countErr } = await supabase.rpc('increment_member_count', { club_id: club.id });
+            if (countErr) console.error('[InvitePage] increment_member_count failed:', countErr.message);
 
             toast.success(`Welcome to ${club.name}!`);
             navigate(`/clubs/${club.id}`);

@@ -108,11 +108,12 @@ export function DailyBonusWheel({ isOpen, onClose, onReward }: DailyBonusWheelPr
                 });
 
                 // Grant reward
-                await supabase.rpc('fn_grant_daily_reward', {
+                const { error: rewardErr } = await supabase.rpc('fn_grant_daily_reward', {
                     p_user_id: user.id,
                     p_reward_type: prize.type,
                     p_reward_amount: prize.amount
                 });
+                if (rewardErr) console.error('[DailyBonusWheel] fn_grant_daily_reward failed:', rewardErr.message);
 
                 toast.success(` You won ${prize.label}!`);
                 onReward?.(prize);

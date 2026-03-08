@@ -264,10 +264,11 @@ export class HorseLifecycleManager {
 
                     if (players && players.length > 0 && buyInAmount > 0) {
                         for (const player of players) {
-                            await supabase.rpc('credit_player_wallet', {
+                            const { error: refundErr } = await supabase.rpc('credit_player_wallet', {
                                 p_user_id: player.user_id,
                                 p_amount: buyInAmount,
                             });
+                            if (refundErr) console.error(`[HorseLifecycle] SNG cancel refund FAILED for ${player.user_id.slice(0, 8)}: ${refundErr.message}`);
                         }
                     }
 
