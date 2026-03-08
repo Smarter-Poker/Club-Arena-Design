@@ -536,10 +536,32 @@ class TournamentManager {
             await this.createTablesAndSeatPlayers(tournament);
 
             // Set tournament to RUNNING
+            // Guard: only transition REGISTERING → RUNNING (prevents re-starting)
             await supabase
                 .from('tournaments')
                 .update({ status: 'RUNNING', started_at: new Date().toISOString() })
-                .eq('id', this.tournamentId);
+                .eq('id', this.tournamentId)
+                .eq('status', 'REGISTERING');
+
+            // Validate payout structure sums to 100% (or close enough to prevent chip leak)
+            if (this.tournamentCache?.payout_structure) {
+                let payouts = this.tournamentCache.payout_structure;
+                if (typeof payouts === 'string') {
+                    try { payouts = JSON.parse(payouts); } catch { payouts = []; }
+                }
+                if (Array.isArray(payouts) && payouts.length > 0) {
+                    const totalPct = payouts.reduce((sum: number, p: any) => sum + (p.percentage || 0), 0);
+                    if (totalPct < 99 || totalPct > 101) {
+                        console.warn(`[Tournament:${this.tournamentId.slice(0, 8)}] WARNING: Payout percentages sum to ${totalPct}% (expected ~100%). Adjusting place 1 to compensate.`);
+                        // Auto-fix: adjust 1st place to make sum exactly 100%
+                        const firstPlace = payouts.find((p: any) => p.place === 1);
+                        if (firstPlace) {
+                            firstPlace.percentage += (100 - totalPct);
+                            await supabase.from('tournaments').update({ payout_structure: payouts }).eq('id', this.tournamentId);
+                        }
+                    }
+                }
+            }
 
             // Start table engines
             for (const [tableId, engine] of this.tableEngines) {
@@ -1378,11 +1400,17 @@ class TournamentManager {
                     if (union?.owner_id) {
                         rakeRecipientId = union.owner_id;
                         rakeDescription = `Tournament rake held by ${union.name || 'Union'}: ${tournament.name || 'tournament'} (${totalEntries} entries x ${rakePerEntry}) — ${club.name || 'club'}`;
+                    } else {
+                        console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] CRITICAL: Union ${club.union_id} has no owner_id — ${totalRake} rake LOST`);
                     }
                 } else {
                     // Standalone club — rake goes directly to club owner
-                    rakeRecipientId = club.owner_id;
-                    rakeDescription = `Tournament rake: ${tournament.name || 'tournament'} (${totalEntries} entries x ${rakePerEntry})`;
+                    if (club.owner_id) {
+                        rakeRecipientId = club.owner_id;
+                        rakeDescription = `Tournament rake: ${tournament.name || 'tournament'} (${totalEntries} entries x ${rakePerEntry})`;
+                    } else {
+                        console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] CRITICAL: Club ${tournament.club_id} has no owner_id — ${totalRake} rake LOST`);
+                    }
                 }
 
                 if (rakeRecipientId) {
@@ -1416,7 +1444,8 @@ class TournamentManager {
                 ended_at: new Date().toISOString(),
                 total_rake: totalRake,
             })
-            .eq('id', this.tournamentId);
+            .eq('id', this.tournamentId)
+            .eq('status', 'COMPLETING'); // Guard: only COMPLETING → COMPLETED
 
         for (const [tableId, engine] of this.tableEngines) {
             await engine.stop();

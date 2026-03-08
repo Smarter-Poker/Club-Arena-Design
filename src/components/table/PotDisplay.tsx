@@ -156,7 +156,7 @@ export function PotDisplay({
                 setIsAnimating(false);
                 clearInterval(timer);
             } else {
-                setDisplayPot(Math.round(current));
+                setDisplayPot(Math.trunc(current * 100) / 100);
             }
         }, 25);
 
