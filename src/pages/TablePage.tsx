@@ -768,11 +768,10 @@ export default function TablePage() {
                         name: sp.username || existing?.name || `Seat ${sp.seat}`,
                         stack: sp.stack,
                         bet: sp.bet || 0,
-                        cards: isHero ? (sp.cards || existing?.cards || []) : (existing?.cards || []),
+                        holeCards: isHero ? (sp.cards || existing?.holeCards || []) : (existing?.holeCards || []),
                         status: sp.is_folded ? 'folded' : sp.is_all_in ? 'all_in' : sp.is_sitting_out ? 'sitting_out' : 'active',
                         isHero,
                         showCards: isHero,
-                        isHorse: existing?.isHorse || false,
                     } as any;
                 }
 
