@@ -118,22 +118,64 @@ function getTypeIcon(type: string): string {
     const icons: Record<string, string> = {
         deposit: '+',
         withdrawal: '-',
+        buyin: '▦',
         buy_in: '▦',
+        cashout: '◉',
         cash_out: '◉',
+        transfer: '→',
         agent_transfer: '→',
         rake: '%',
         bonus: '★',
         refund: '↻',
+        mint: '◆',
+        settlement: '≡',
+        commission: '◈',
+        TIP: '♥',
+        INSURANCE: '⊕',
+        prize: '★',
+        rebuy: '↺',
+        addon: '⊞',
+        funding: '→',
+        promotion: '↑',
+        promo: '★',
+        bbj: '♣',
+        horse_refill: '↺',
+        tournament_buyin: '▦',
+        tournament_winnings: '★',
+        tournament_cashout: '◉',
     };
     return icons[type] || '●';
 }
 
 function formatType(type: string): string {
-    return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const labels: Record<string, string> = {
+        buyin: 'Buy-In',
+        cashout: 'Cash-Out',
+        rake: 'Rake',
+        prize: 'Prize',
+        rebuy: 'Rebuy',
+        addon: 'Add-On',
+        mint: 'Mint',
+        settlement: 'Settlement',
+        commission: 'Commission',
+        TIP: 'Dealer Tip',
+        INSURANCE: 'Insurance',
+        funding: 'Funding',
+        promotion: 'Promotion',
+        promo: 'Promo',
+        bbj: 'Bad Beat Jackpot',
+        horse_refill: 'Auto Refill',
+        transfer: 'Transfer',
+        deposit: 'Deposit',
+        withdrawal: 'Withdrawal',
+        refund: 'Refund',
+        bonus: 'Bonus',
+    };
+    return labels[type] || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
 
 function isPositive(type: string, userId?: string): boolean {
-    const positiveTypes = ['deposit', 'cash_out', 'bonus', 'refund'];
+    const positiveTypes = ['deposit', 'cashout', 'cash_out', 'bonus', 'refund', 'prize', 'settlement', 'commission', 'rake', 'mint', 'funding', 'promotion', 'promo', 'bbj', 'tournament_winnings'];
     return positiveTypes.includes(type);
 }
 

@@ -48,7 +48,7 @@ export interface CashierModalProps {
 
 // EXACT precision — no abbreviations, no rounding
 function formatAmount(amount: number, currency: string = ''): string {
-    return `${currency}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `${amount.toLocaleString()}`;
 }
 
 function formatTime(date: Date): string {

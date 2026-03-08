@@ -79,7 +79,7 @@ export function CashierModal({
                 <div className="cashier-balance-card">
                     <span className="cashier-balance-label">Current Balance</span>
                     <span className="cashier-balance-value">
-                        {currency}{balance.toLocaleString()}
+                        {balance.toLocaleString()}
                     </span>
                 </div>
 
@@ -113,7 +113,7 @@ export function CashierModal({
                                 {activeTab === 'deposit' ? 'Purchase Amount' : 'Withdrawal Amount'}
                             </label>
                             <div className="cashier-input-wrapper">
-                                <span className="cashier-currency">{currency}</span>
+                                <span className="cashier-currency"></span>
                                 <input
                                     type="number"
                                     className="cashier-input"
@@ -160,7 +160,7 @@ export function CashierModal({
                                         <div className="tx-amount-group">
                                             <span className={`tx-amount ${tx.type === 'withdrawal' || tx.type === 'rake' ? 'neg' : 'pos'}`}>
                                                 {tx.type === 'withdrawal' || tx.type === 'rake' ? '-' : '+'}
-                                                {currency}{tx.amount.toLocaleString()}
+                                                {tx.amount.toLocaleString()}
                                             </span>
                                             <span className={`tx-status tx-status--${tx.status}`}>{tx.status}</span>
                                         </div>

@@ -1,21 +1,35 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- *  CASHIER PAGE — Buy-in / Cash-out / Transfer / Transactions (Metal UI)
+ *  CASHIER PAGE — Universal Chip Transfer Hub (Metal UI)
  * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ *  ALL chip movements happen through the Cashier via respective wallets.
+ *
  *  Chip Flow: Union → Club Bank → Agent Wallet → Player Wallet → Games
- *  All transactions are recorded and tracked as currency-grade operations.
+ *
+ *  Roles & Actions:
+ *  - Union Owner: Mint, Send to clubs, Send to agents/players, History
+ *  - Club Owner (standalone): Mint, Send to agents/players, History
+ *  - Club Owner (in union): Send to agents/players, History (no mint)
+ *  - Agent/Super Agent: Send to sub-agents/players, History
+ *  - Sub Agent: Send to players, History
+ *  - Player: Buy-in, Cash-out, History
+ *
+ *  Every single chip transaction is recorded with full audit trail.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { useWalletStore } from '../stores/useWalletStore';
 import { useUserStore } from '../stores/useUserStore';
 import { WalletService } from '../services/WalletService';
+import { ChipFlowService } from '../services/ChipFlowService';
+import { supabase } from '../lib/supabase';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import { MetalFrame, MetalButton, MetalInput, MetalCard } from '../components/metal-ui';
 import './CashierPage.css';
 
-type CashierAction = 'buyin' | 'cashout' | 'transfer' | 'mint' | 'history';
+type CashierAction = 'send' | 'buyin' | 'cashout' | 'mint' | 'history';
 
 interface Transaction {
     id: string;
@@ -27,6 +41,30 @@ interface Transaction {
     created_at: string;
 }
 
+interface Recipient {
+    id: string;
+    username: string;
+    role: string;
+    balance: number;
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+    buyin: 'Buy-In', cashout: 'Cash-Out', rake: 'Rake', prize: 'Prize',
+    rebuy: 'Rebuy', addon: 'Add-On', mint: 'Mint', settlement: 'Settlement',
+    commission: 'Commission', TIP: 'Dealer Tip', INSURANCE: 'Insurance',
+    funding: 'Funding', promotion: 'Promotion', promo: 'Promo Bonus',
+    bbj: 'Bad Beat Jackpot', horse_refill: 'Auto Refill', transfer: 'Transfer',
+    deposit: 'Deposit', withdrawal: 'Withdrawal', refund: 'Refund', bonus: 'Bonus',
+};
+
+const CATEGORY_ICONS: Record<string, string> = {
+    buyin: '▦', cashout: '◉', rake: '%', prize: '★', rebuy: '↺',
+    addon: '⊞', mint: '◆', settlement: '≡', commission: '◈',
+    TIP: '♥', INSURANCE: '⊕', funding: '→', promotion: '↑',
+    promo: '★', bbj: '♣', horse_refill: '↺', transfer: '→',
+    deposit: '+', withdrawal: '-', refund: '↻', bonus: '★',
+};
+
 export default function CashierPage() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -37,67 +75,155 @@ export default function CashierPage() {
     const { user } = useUserStore();
     const { balances, diamonds, mintChips, loadBalances } = useWalletStore();
 
-    const [action, setAction] = useState<CashierAction>('buyin');
+    const [action, setAction] = useState<CashierAction>('send');
     const [amount, setAmount] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
-    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-    const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
+    const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+
+    // Role state
+    const [userRole, setUserRole] = useState<string>('member');
     const [isInUnion, setIsInUnion] = useState(false);
-    const [isAgent, setIsAgent] = useState(false);
-    const [agentBalance, setAgentBalance] = useState(0);
+    const [isUnionOwner, setIsUnionOwner] = useState(false);
+    const [clubName, setClubName] = useState('');
+
+    // Send chips state
+    const [recipients, setRecipients] = useState<Recipient[]>([]);
+    const [selectedRecipient, setSelectedRecipient] = useState('');
+    const [loadingRecipients, setLoadingRecipients] = useState(false);
 
     // Transaction history state
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loadingTx, setLoadingTx] = useState(false);
+    const [txFilter, setTxFilter] = useState('all');
 
-    // Load user's club role + check if club is in a union + check agent status
+    // ─────────────────────────────────────────────────────────────────────────────
+    // LOAD ROLE, UNION STATUS, AND RECIPIENTS
+    // ─────────────────────────────────────────────────────────────────────────────
+
     useEffect(() => {
-        async function loadRoleAndUnion() {
-            if (!clubId || !user?.id) return;
-            try {
-                const { supabase } = await import('../lib/supabase');
-
-                // Get user role
-                const { data } = await supabase
-                    .from('club_members')
-                    .select('role')
-                    .eq('club_id', clubId)
-                    .eq('user_id', user.id)
-                    .single();
-                if (data?.role) setUserRole(data.role as typeof userRole);
-
-                // Check if this club belongs to a union (unions handle minting)
-                const { data: unionData } = await supabase
-                    .from('union_clubs')
-                    .select('union_id')
-                    .eq('club_id', clubId)
-                    .limit(1);
-                setIsInUnion(!!(unionData && unionData.length > 0));
-
-                // Check if user is an agent (has agent wallet)
-                const { data: agentData } = await supabase
-                    .from('agents')
-                    .select('id, business_balance, player_balance')
-                    .eq('user_id', user.id)
-                    .eq('club_id', clubId)
-                    .eq('status', 'active')
-                    .single();
-
-                if (agentData) {
-                    setIsAgent(true);
-                    setAgentBalance(agentData.business_balance || 0);
-                }
-            } catch { /* keep defaults */ }
-        }
-        loadRoleAndUnion();
+        if (!clubId || !user?.id) return;
+        loadUserContext();
     }, [clubId, user?.id]);
 
-    // Load transaction history
+    const loadUserContext = async () => {
+        if (!clubId || !user?.id) return;
+        try {
+            // Get user's role in this club
+            const { data: memberData } = await supabase
+                .from('club_members')
+                .select('role')
+                .eq('club_id', clubId)
+                .eq('user_id', user.id)
+                .single();
+            const role = memberData?.role || 'member';
+            setUserRole(role);
+
+            // Get club name
+            const { data: clubData } = await supabase
+                .from('clubs')
+                .select('name')
+                .eq('id', clubId)
+                .single();
+            setClubName(clubData?.name || '');
+
+            // Check if club is in a union
+            const { data: unionClub } = await supabase
+                .from('union_clubs')
+                .select('union_id, unions!inner(owner_id)')
+                .eq('club_id', clubId)
+                .single();
+
+            if (unionClub) {
+                setIsInUnion(true);
+                setIsUnionOwner((unionClub as any).unions?.owner_id === user.id);
+            } else {
+                setIsInUnion(false);
+                setIsUnionOwner(false);
+            }
+        } catch {
+            // Keep defaults
+        }
+    };
+
+    // Load recipients when "Send" tab is active
+    useEffect(() => {
+        if (action === 'send' && user?.id && clubId) {
+            loadRecipients();
+        }
+    }, [action, user?.id, clubId]);
+
+    const loadRecipients = async () => {
+        if (!user?.id || !clubId) return;
+        setLoadingRecipients(true);
+        try {
+            let query = supabase
+                .from('club_members')
+                .select(`
+                    user_id,
+                    role,
+                    users:user_id (id, username)
+                `)
+                .eq('club_id', clubId)
+                .neq('user_id', user.id);
+
+            // Filter based on role hierarchy
+            if (userRole === 'owner' || isUnionOwner) {
+                // Owner/Union owner can send to anyone
+                query = query.in('role', ['agent', 'super_agent', 'sub_agent', 'member', 'player']);
+            } else if (userRole === 'agent' || userRole === 'super_agent') {
+                query = query.in('role', ['sub_agent', 'member', 'player']);
+            } else if (userRole === 'sub_agent') {
+                query = query.in('role', ['member', 'player']);
+            } else {
+                // Regular members can't send chips
+                setRecipients([]);
+                setLoadingRecipients(false);
+                return;
+            }
+
+            const { data } = await query;
+
+            // Get wallet balances for all recipients
+            const recipientIds = (data || []).map((m: any) => m.users?.id).filter(Boolean);
+            const { data: wallets } = await supabase
+                .from('wallets')
+                .select('user_id, balance')
+                .in('user_id', recipientIds.length > 0 ? recipientIds : ['none'])
+                .eq('wallet_type', 'PLAYER');
+
+            const walletMap: Record<string, number> = {};
+            (wallets || []).forEach((w: any) => {
+                walletMap[w.user_id] = w.balance;
+            });
+
+            const list: Recipient[] = (data || [])
+                .filter((m: any) => m.users?.id)
+                .map((m: any) => ({
+                    id: m.users.id,
+                    username: m.users.username || 'Unknown',
+                    role: m.role,
+                    balance: walletMap[m.users.id] || 0,
+                }))
+                .sort((a: Recipient, b: Recipient) => {
+                    const order: Record<string, number> = { agent: 0, super_agent: 0, sub_agent: 1, member: 2, player: 2 };
+                    return (order[a.role] || 3) - (order[b.role] || 3);
+                });
+
+            setRecipients(list);
+        } catch (err) {
+            console.error('Failed to load recipients:', err);
+        }
+        setLoadingRecipients(false);
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // LOAD TRANSACTIONS
+    // ─────────────────────────────────────────────────────────────────────────────
+
     const loadTransactions = useCallback(async () => {
         if (!user?.id) return;
         setLoadingTx(true);
         try {
-            const { supabase } = await import('../lib/supabase');
             const { data, error } = await supabase
                 .from('wallet_transactions')
                 .select('*')
@@ -105,73 +231,73 @@ export default function CashierPage() {
                 .order('created_at', { ascending: false })
                 .limit(50);
 
-            if (!error && data) {
-                setTransactions(data);
-            }
+            if (!error && data) setTransactions(data);
         } catch { /* silent */ }
         setLoadingTx(false);
     }, [user?.id]);
 
     useEffect(() => {
-        if (action === 'history') {
-            loadTransactions();
-        }
+        if (action === 'history') loadTransactions();
     }, [action, loadTransactions]);
 
-    // Refresh balances on mount + Realtime subscription for live wallet updates
+    // ─────────────────────────────────────────────────────────────────────────────
+    // REALTIME WALLET SUBSCRIPTION
+    // ─────────────────────────────────────────────────────────────────────────────
+
     useEffect(() => {
         if (!user?.id) return;
         loadBalances(user.id);
 
-        // Subscribe to wallet changes for this user — live balance updates
-        const importAndSubscribe = async () => {
-            const { supabase } = await import('../lib/supabase');
-            const channel = supabase
-                .channel(`cashier-wallet-${user.id}`)
-                .on(
-                    'postgres_changes',
-                    {
-                        event: '*',
-                        schema: 'public',
-                        table: 'wallet_transactions',
-                        filter: `user_id=eq.${user.id}`,
-                    },
-                    () => {
-                        // Reload balances and transactions on any wallet change
-                        loadBalances(user.id);
-                        if (action === 'history') loadTransactions();
-                    }
-                )
-                .on(
-                    'postgres_changes',
-                    {
-                        event: 'UPDATE',
-                        schema: 'public',
-                        table: 'wallets',
-                        filter: `user_id=eq.${user.id}`,
-                    },
-                    () => {
-                        loadBalances(user.id);
-                    }
-                )
-                .subscribe();
+        const channel = supabase
+            .channel(`cashier-wallet-${user.id}`)
+            .on('postgres_changes', {
+                event: '*', schema: 'public', table: 'wallet_transactions',
+                filter: `user_id=eq.${user.id}`,
+            }, () => {
+                loadBalances(user.id);
+                if (action === 'history') loadTransactions();
+            })
+            .on('postgres_changes', {
+                event: 'UPDATE', schema: 'public', table: 'wallets',
+                filter: `user_id=eq.${user.id}`,
+            }, () => { loadBalances(user.id); })
+            .subscribe();
 
-            return () => {
-                supabase.removeChannel(channel);
-            };
-        };
-
-        let cleanup: (() => void) | undefined;
-        importAndSubscribe().then(fn => { cleanup = fn; });
-
-        return () => {
-            cleanup?.();
-        };
+        return () => { supabase.removeChannel(channel); };
     }, [user?.id, loadBalances, action, loadTransactions]);
 
-    // Quick-amount presets only for buy-in / cash-out
-    const preset = [100, 200, 500, 1000, 2000];
-    const showPresets = action === 'buyin' || action === 'cashout';
+    // ─────────────────────────────────────────────────────────────────────────────
+    // DETERMINE AVAILABLE TABS
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    const canSend = userRole === 'owner' || isUnionOwner || userRole === 'agent' ||
+        userRole === 'super_agent' || userRole === 'sub_agent';
+    const canMint = (userRole === 'owner' && !isInUnion) || isUnionOwner;
+
+    const tabs = useMemo(() => {
+        const t: CashierAction[] = [];
+        if (canSend) t.push('send');
+        t.push('buyin', 'cashout');
+        if (canMint) t.push('mint');
+        t.push('history');
+        return t;
+    }, [canSend, canMint]);
+
+    const tabLabels: Record<CashierAction, string> = {
+        send: 'Send',
+        buyin: 'Buy-In',
+        cashout: 'Cash-Out',
+        mint: 'Mint',
+        history: 'History',
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // HANDLE ACTIONS
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    const selectedRecipientData = useMemo(() => {
+        return recipients.find(r => r.id === selectedRecipient);
+    }, [recipients, selectedRecipient]);
 
     const handleAction = async () => {
         const value = parseFloat(amount);
@@ -179,85 +305,66 @@ export default function CashierPage() {
             setMessage({ type: 'error', text: 'Please enter a valid amount' });
             return;
         }
+        if (!user?.id) return;
 
         setIsProcessing(true);
         setMessage(null);
 
         try {
-            if (action === 'mint') {
+            if (action === 'send') {
+                // ─── SEND CHIPS ───
+                if (!selectedRecipient) {
+                    setMessage({ type: 'error', text: 'Please select a recipient' });
+                    setIsProcessing(false);
+                    return;
+                }
+                if (balances.PLAYER.available < value) {
+                    setMessage({ type: 'error', text: `Insufficient balance. Available: ${balances.PLAYER.available.toLocaleString()}` });
+                    setIsProcessing(false);
+                    return;
+                }
+
+                const recipient = selectedRecipientData;
+                const recipientIsAgent = recipient?.role === 'agent' || recipient?.role === 'super_agent';
+                const recipientIsSubAgent = recipient?.role === 'sub_agent';
+
+                if (userRole === 'owner' && recipientIsAgent) {
+                    await ChipFlowService.clubToAgent(
+                        user.id, selectedRecipient, clubId!, value,
+                        recipient?.username || 'Agent', clubName
+                    );
+                } else if (userRole === 'owner' || isUnionOwner) {
+                    await ChipFlowService.clubToPlayer(
+                        user.id, selectedRecipient, value,
+                        recipient?.username || 'Player', clubName
+                    );
+                } else {
+                    await ChipFlowService.agentToPlayer(
+                        user.id, selectedRecipient, value,
+                        user.username || 'Agent',
+                        recipient?.username || 'Player', clubName
+                    );
+                }
+
+                setMessage({ type: 'success', text: `Sent ${value.toLocaleString()} chips to ${recipient?.username}` });
+                loadBalances(user.id);
+                loadRecipients(); // Refresh balances
+                setSelectedRecipient('');
+
+            } else if (action === 'mint') {
+                // ─── MINT CHIPS ───
                 await mintChips('default', value);
-                setMessage({ type: 'success', text: `Minted ${value.toLocaleString()} chips!` });
-                if (user?.id) loadBalances(user.id);
-            } else if (action === 'transfer') {
-                // Agent → Player wallet transfer
-                if (!isAgent) {
-                    setMessage({ type: 'error', text: 'Only agents can transfer from Agent Wallet' });
-                    setIsProcessing(false);
-                    return;
-                }
-                if (agentBalance < value) {
-                    setMessage({ type: 'error', text: `Insufficient Agent Wallet balance. Have ${agentBalance.toLocaleString()}, need ${value.toLocaleString()}` });
-                    setIsProcessing(false);
-                    return;
-                }
-                if (!user?.id || !clubId) {
-                    setMessage({ type: 'error', text: 'Missing user or club context' });
-                    setIsProcessing(false);
-                    return;
-                }
+                setMessage({ type: 'success', text: `Minted ${value.toLocaleString()} chips` });
+                loadBalances(user.id);
 
-                // Deduct from agent business_balance and credit Player Wallet
-                const { supabase } = await import('../lib/supabase');
-
-                // 1. Deduct from agents table
-                const { error: agentDeductErr } = await supabase
-                    .from('agents')
-                    .update({ business_balance: agentBalance - value })
-                    .eq('user_id', user.id)
-                    .eq('club_id', clubId)
-                    .eq('status', 'active');
-
-                if (agentDeductErr) {
-                    throw new Error('Failed to deduct from Agent Wallet');
-                }
-
-                // 2. Credit to Player Wallet via RPC
-                const { error: creditErr } = await supabase.rpc('credit_player_wallet', {
-                    p_user_id: user.id,
-                    p_amount: value,
-                });
-
-                if (creditErr) {
-                    // Rollback agent deduction
-                    await supabase
-                        .from('agents')
-                        .update({ business_balance: agentBalance })
-                        .eq('user_id', user.id)
-                        .eq('club_id', clubId);
-                    throw new Error('Failed to credit Player Wallet');
-                }
-
-                // 3. Log both sides of the transfer
-                await WalletService.logTransaction(
-                    user.id, 'BUSINESS', -value, 'debit', 'transfer',
-                    `Agent → Player wallet transfer`
-                );
-                await WalletService.logTransaction(
-                    user.id, 'PLAYER', value, 'credit', 'transfer',
-                    `Agent → Player wallet transfer`
-                );
-
-                setAgentBalance(agentBalance - value);
-                setMessage({ type: 'success', text: `Transferred ${value.toLocaleString()} chips to Player Wallet!` });
-                if (user?.id) loadBalances(user.id);
             } else if (action === 'buyin') {
+                // ─── TABLE BUY-IN ───
                 if (balances.PLAYER.available < value) {
                     setMessage({ type: 'error', text: 'Insufficient chip balance for buy-in' });
                     setIsProcessing(false);
                     return;
                 }
-
-                if (!user?.id || !tableId) {
+                if (!tableId) {
                     setMessage({ type: 'error', text: 'No table selected for buy-in.' });
                     setIsProcessing(false);
                     return;
@@ -270,8 +377,10 @@ export default function CashierPage() {
                 } else {
                     setMessage({ type: 'error', text: 'Buy-in failed. Please try again.' });
                 }
+
             } else if (action === 'cashout') {
-                if (!user?.id || !tableId) {
+                // ─── CASH OUT ───
+                if (!tableId) {
                     setMessage({ type: 'error', text: 'No table selected for cash-out.' });
                     setIsProcessing(false);
                     return;
@@ -293,36 +402,19 @@ export default function CashierPage() {
     };
 
     const DIAMOND_RATE = 38 / 100;
+    const preset = [100, 500, 1000, 5000];
 
-    // Build the available tabs based on role/agent status
-    const tabs: CashierAction[] = [
-        'buyin',
-        'cashout',
-        ...(isAgent ? ['transfer' as const] : []),
-        ...((userRole === 'owner' && !isInUnion) ? ['mint' as const] : []),
-        'history',
-    ];
+    const filteredTransactions = txFilter === 'all'
+        ? transactions
+        : txFilter === 'credit'
+            ? transactions.filter(t => t.type === 'credit')
+            : txFilter === 'debit'
+                ? transactions.filter(t => t.type === 'debit')
+                : transactions.filter(t => t.category === txFilter);
 
-    const tabLabels: Record<CashierAction, string> = {
-        buyin: 'Buy-In',
-        cashout: 'Cash-Out',
-        transfer: 'Transfer',
-        mint: 'Mint',
-        history: 'History',
-    };
-
-    const CATEGORY_ICONS: Record<string, string> = {
-        buyin: '♠',
-        cashout: '♦',
-        transfer: '↔',
-        mint: '⊕',
-        settlement: '★',
-        commission: '⚙',
-        rake: '♣',
-        promo: '🎁',
-        TIP: '💰',
-        INSURANCE: '🛡',
-    };
+    // ─────────────────────────────────────────────────────────────────────────────
+    // RENDER
+    // ─────────────────────────────────────────────────────────────────────────────
 
     return (
         <div className="cashier-page" style={{ padding: '16px', paddingBottom: '100px' }}>
@@ -337,27 +429,15 @@ export default function CashierPage() {
                         </div>
                     </div>
                 </MetalCard>
-                {isAgent ? (
-                    <MetalCard size="sm" glow>
-                        <div className="balance-card-content">
-                            <span className="balance-icon">⚙</span>
-                            <div className="balance-label">Agent Wallet</div>
-                            <div className="balance-value">
-                                {agentBalance.toLocaleString()} chips
-                            </div>
+                <MetalCard size="sm" glow>
+                    <div className="balance-card-content">
+                        <span className="balance-icon">◆</span>
+                        <div className="balance-label">Diamonds</div>
+                        <div className="balance-value">
+                            {diamonds.toLocaleString()}
                         </div>
-                    </MetalCard>
-                ) : (
-                    <MetalCard size="sm" glow>
-                        <div className="balance-card-content">
-                            <span className="balance-icon">◆</span>
-                            <div className="balance-label">Diamonds</div>
-                            <div className="balance-value">
-                                {diamonds.toLocaleString()}
-                            </div>
-                        </div>
-                    </MetalCard>
-                )}
+                    </div>
+                </MetalCard>
             </div>
 
             {/* Action Tabs */}
@@ -374,70 +454,98 @@ export default function CashierPage() {
                 ))}
             </div>
 
-            {/* Transaction History View */}
-            {action === 'history' ? (
-                <MetalFrame title="TRANSACTION HISTORY" variant="form" size="md">
-                    <div className="transaction-history-cashier">
-                        {loadingTx ? (
-                            <div className="tx-loading">Loading transactions...</div>
-                        ) : transactions.length === 0 ? (
-                            <div className="tx-empty">No transactions recorded yet</div>
-                        ) : (
-                            <div className="tx-list">
-                                {transactions.map((tx) => (
-                                    <div key={tx.id} className={`tx-row ${tx.type}`}>
-                                        <span className="tx-icon">
-                                            {CATEGORY_ICONS[tx.category] || '📄'}
-                                        </span>
-                                        <div className="tx-details">
-                                            <span className="tx-category">
-                                                {(tx.category || tx.type || '').replace(/_/g, ' ').toUpperCase()}
-                                            </span>
-                                            <span className="tx-desc">{tx.description}</span>
-                                        </div>
-                                        <div className="tx-amounts">
-                                            <span className={`tx-amount ${tx.amount >= 0 ? 'positive' : 'negative'}`}>
-                                                {tx.amount >= 0 ? '+' : ''}{Math.abs(tx.amount).toLocaleString()}
-                                            </span>
-                                            <span className="tx-wallet">{tx.wallet_type}</span>
-                                        </div>
-                                        <span className="tx-time">
-                                            {new Date(tx.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                                            {' '}
-                                            {new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </span>
-                                    </div>
-                                ))}
+            {/* ═══ SEND CHIPS ═══ */}
+            {action === 'send' && (
+                <MetalFrame title="SEND CHIPS" variant="form" size="md">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div className="cashier-message info">
+                            Send chips from your wallet to {userRole === 'owner' ? 'agents, sub-agents, and players' :
+                            userRole === 'agent' || userRole === 'super_agent' ? 'sub-agents and players' : 'players'}
+                        </div>
+
+                        {/* Recipient Select */}
+                        <div className="cashier-form-group">
+                            <label className="cashier-form-label">SEND TO:</label>
+                            {loadingRecipients ? (
+                                <div style={{ color: '#6a7a8a', fontSize: '0.8rem' }}>Loading...</div>
+                            ) : (
+                                <select
+                                    className="cashier-select"
+                                    value={selectedRecipient}
+                                    onChange={(e) => setSelectedRecipient(e.target.value)}
+                                >
+                                    <option value="">Select recipient</option>
+                                    {recipients.map((r) => (
+                                        <option key={r.id} value={r.id}>
+                                            {r.role === 'agent' || r.role === 'super_agent' ? '[Agent] ' :
+                                             r.role === 'sub_agent' ? '[Sub-Agent] ' : ''}
+                                            {r.username} (Bal: {r.balance.toLocaleString()})
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
+                        </div>
+
+                        <MetalInput
+                            label="AMOUNT:"
+                            type="number"
+                            placeholder="0"
+                            value={amount}
+                            onChange={(e) => setAmount(e.target.value)}
+                        />
+
+                        {/* Quick amounts */}
+                        <div className="preset-buttons-grid">
+                            {preset.map((val) => (
+                                <MetalButton key={val} variant="ghost" size="sm" onClick={() => setAmount(val.toString())}>
+                                    {val.toLocaleString()}
+                                </MetalButton>
+                            ))}
+                            <MetalButton variant="ghost" size="sm" onClick={() => setAmount(String(balances.PLAYER.available))}>
+                                Max
+                            </MetalButton>
+                        </div>
+
+                        {/* Preview */}
+                        {selectedRecipientData && amount && parseFloat(amount) > 0 && (
+                            <div className="cashier-message info">
+                                You: {balances.PLAYER.available.toLocaleString()} → {Math.max(0, balances.PLAYER.available - parseFloat(amount)).toLocaleString()} chips
+                                <br />
+                                {selectedRecipientData.username}: {selectedRecipientData.balance.toLocaleString()} → {(selectedRecipientData.balance + parseFloat(amount)).toLocaleString()} chips
                             </div>
                         )}
+
+                        {message && <div className={`cashier-message ${message.type}`}>{message.text}</div>}
+
+                        <div className="cashier-confirm-button">
+                            <MetalButton
+                                variant="primary"
+                                fullWidth
+                                onClick={handleAction}
+                                disabled={isProcessing || !amount || !selectedRecipient}
+                                loading={isProcessing}
+                            >
+                                CONFIRM SEND
+                            </MetalButton>
+                        </div>
                     </div>
                 </MetalFrame>
-            ) : (
-                /* Main Form */
+            )}
+
+            {/* ═══ BUY-IN / CASH-OUT / MINT ═══ */}
+            {(action === 'buyin' || action === 'cashout' || action === 'mint') && (
                 <MetalFrame
                     title={
                         action === 'buyin' ? 'TABLE BUY-IN' :
                         action === 'cashout' ? 'CASH OUT' :
-                        action === 'transfer' ? 'AGENT → PLAYER TRANSFER' :
                         'MINT CHIPS'
                     }
                     variant="form"
                     size="md"
                 >
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        {/* Transfer info banner */}
-                        {action === 'transfer' && (
-                            <div className="cashier-message info">
-                                Transfer chips from your Agent Wallet to your Player Wallet to play at tables and tournaments.
-                            </div>
-                        )}
-
                         <MetalInput
-                            label={
-                                action === 'mint' ? 'CHIPS TO MINT:' :
-                                action === 'transfer' ? 'TRANSFER AMOUNT:' :
-                                'AMOUNT:'
-                            }
+                            label={action === 'mint' ? 'CHIPS TO MINT:' : 'AMOUNT:'}
                             type="number"
                             placeholder="0"
                             value={amount}
@@ -450,38 +558,17 @@ export default function CashierPage() {
                             </div>
                         )}
 
-                        {action === 'transfer' && amount && (
-                            <div className="cashier-message info">
-                                Agent Wallet: {agentBalance.toLocaleString()} → {Math.max(0, agentBalance - parseFloat(amount || '0')).toLocaleString()} chips
-                                <br />
-                                Player Wallet: {balances.PLAYER.available.toLocaleString()} → {(balances.PLAYER.available + parseFloat(amount || '0')).toLocaleString()} chips
-                            </div>
-                        )}
+                        {/* Presets */}
+                        <div className="preset-buttons-grid">
+                            {preset.map((val) => (
+                                <MetalButton key={val} variant="ghost" size="sm" onClick={() => setAmount(val.toString())}>
+                                    {val.toLocaleString()}
+                                </MetalButton>
+                            ))}
+                        </div>
 
-                        {/* Presets — only for buy-in / cash-out */}
-                        {showPresets && (
-                            <div className="preset-buttons-grid">
-                                {preset.map((val) => (
-                                    <MetalButton
-                                        key={val}
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setAmount(val.toString())}
-                                    >
-                                        ${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </MetalButton>
-                                ))}
-                            </div>
-                        )}
+                        {message && <div className={`cashier-message ${message.type}`}>{message.text}</div>}
 
-                        {/* Messages */}
-                        {message && (
-                            <div className={`cashier-message ${message.type}`}>
-                                {message.text}
-                            </div>
-                        )}
-
-                        {/* Action Button */}
                         <div className="cashier-confirm-button">
                             <MetalButton
                                 variant="primary"
@@ -491,16 +578,79 @@ export default function CashierPage() {
                                 loading={isProcessing}
                             >
                                 {action === 'buyin' ? 'CONFIRM BUY-IN' :
-                                    action === 'cashout' ? 'CONFIRM CASH-OUT' :
-                                    action === 'transfer' ? 'CONFIRM TRANSFER' :
-                                    'CONFIRM MINT'}
+                                 action === 'cashout' ? 'CONFIRM CASH-OUT' :
+                                 'CONFIRM MINT'}
                             </MetalButton>
                         </div>
 
                         {tableId && (
-                            <p className="table-context-info">
-                                Returning to table after transaction
-                            </p>
+                            <p className="table-context-info">Returning to table after transaction</p>
+                        )}
+                    </div>
+                </MetalFrame>
+            )}
+
+            {/* ═══ TRANSACTION HISTORY ═══ */}
+            {action === 'history' && (
+                <MetalFrame title="TRANSACTION HISTORY" variant="form" size="md">
+                    <div className="transaction-history-cashier">
+                        {/* Filter */}
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                            {['all', 'credit', 'debit', 'transfer', 'buyin', 'cashout', 'rake', 'prize'].map(f => (
+                                <button
+                                    key={f}
+                                    className={`tx-filter-btn ${txFilter === f ? 'active' : ''}`}
+                                    onClick={() => setTxFilter(f)}
+                                    style={{
+                                        padding: '4px 10px',
+                                        borderRadius: '12px',
+                                        border: txFilter === f ? '1px solid #00d4ff' : '1px solid rgba(255,255,255,0.1)',
+                                        background: txFilter === f ? 'rgba(0,212,255,0.15)' : 'rgba(255,255,255,0.03)',
+                                        color: txFilter === f ? '#00d4ff' : '#8a9aaa',
+                                        fontSize: '0.65rem',
+                                        fontWeight: 700,
+                                        cursor: 'pointer',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '1px',
+                                    }}
+                                >
+                                    {f === 'all' ? 'All' : f === 'credit' ? 'Credits' : f === 'debit' ? 'Debits' :
+                                     CATEGORY_LABELS[f] || f}
+                                </button>
+                            ))}
+                        </div>
+
+                        {loadingTx ? (
+                            <div className="tx-loading">Loading transactions...</div>
+                        ) : filteredTransactions.length === 0 ? (
+                            <div className="tx-empty">No transactions recorded yet</div>
+                        ) : (
+                            <div className="tx-list">
+                                {filteredTransactions.map((tx) => (
+                                    <div key={tx.id} className={`tx-row ${tx.type}`}>
+                                        <span className="tx-icon">
+                                            {CATEGORY_ICONS[tx.category] || '●'}
+                                        </span>
+                                        <div className="tx-details">
+                                            <span className="tx-category">
+                                                {CATEGORY_LABELS[tx.category] || (tx.category || tx.type || '').replace(/_/g, ' ').toUpperCase()}
+                                            </span>
+                                            <span className="tx-desc">{tx.description}</span>
+                                        </div>
+                                        <div className="tx-amounts">
+                                            <span className={`tx-amount ${tx.type === 'credit' ? 'positive' : 'negative'}`}>
+                                                {tx.type === 'credit' ? '+' : '-'}{Math.abs(tx.amount).toLocaleString()}
+                                            </span>
+                                            <span className="tx-wallet">{tx.wallet_type}</span>
+                                        </div>
+                                        <span className="tx-time">
+                                            {new Date(tx.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                            {' '}
+                                            {new Date(tx.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
                         )}
                     </div>
                 </MetalFrame>

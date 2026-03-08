@@ -1,27 +1,39 @@
 /**
- *  CHIP TRANSFER MODAL — Agent Credit Distribution
- * Allows agents to transfer chips to players or other agents
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  CHIP TRANSFER MODAL — Cashier-Based Chip Distribution
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * ALL chip movements happen through the Cashier via respective wallets.
+ * Uses ChipFlowService for atomic transfers with full audit trail.
+ *
+ * Supports:
+ * - Union Owner → Club Owner
+ * - Club Owner → Agent
+ * - Agent → Sub-Agent
+ * - Agent → Player
+ * - Club Owner → Player (direct)
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
 import { useToast } from '../common/Toast';
+import { ChipFlowService } from '../../services/ChipFlowService';
 import './ChipTransferModal.css';
 
-interface Player {
+interface Recipient {
     id: string;
     username: string;
     avatar_url: string;
-    current_balance: number;
+    role: string;
+    balance: number;
 }
 
 interface ChipTransferModalProps {
     isOpen: boolean;
     onClose: () => void;
     clubId: string;
-    recipientId?: string; // Pre-selected recipient
-    recipientType: 'player' | 'agent';
+    recipientId?: string;
     onTransferComplete?: () => void;
 }
 
@@ -30,103 +42,172 @@ export default function ChipTransferModal({
     onClose,
     clubId,
     recipientId,
-    recipientType,
     onTransferComplete
 }: ChipTransferModalProps) {
     const { user } = useUserStore();
     const toast = useToast();
-    const [players, setPlayers] = useState<Player[]>([]);
-    const [selectedPlayer, setSelectedPlayer] = useState<string>(recipientId || '');
+
+    const [recipients, setRecipients] = useState<Recipient[]>([]);
+    const [selectedRecipient, setSelectedRecipient] = useState<string>(recipientId || '');
     const [amount, setAmount] = useState<string>('');
     const [note, setNote] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
-    const [isLoadingPlayers, setIsLoadingPlayers] = useState(false);
+    const [isLoadingRecipients, setIsLoadingRecipients] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
-    const [agentBalance, setAgentBalance] = useState<number>(0);
+    const [senderBalance, setSenderBalance] = useState<number>(0);
+    const [senderRole, setSenderRole] = useState<string>('member');
+    const [clubName, setClubName] = useState<string>('');
 
-    // Load players under this agent
+    // Load sender's wallet balance and role
     useEffect(() => {
-        if (isOpen && user?.id && !recipientId) {
-            loadPlayers();
-        }
-        if (recipientId) {
-            setSelectedPlayer(recipientId);
-        }
-    }, [isOpen, user?.id, clubId, recipientId]);
-
-    // Load agent's available balance
-    useEffect(() => {
-        if (isOpen && user?.id) {
-            loadAgentBalance();
-        }
+        if (!isOpen || !user?.id) return;
+        loadSenderInfo();
     }, [isOpen, user?.id, clubId]);
 
-    const loadPlayers = async () => {
-        if (!user?.id) return;
-        setIsLoadingPlayers(true);
-
-        try {
-            // Load players assigned to this agent in this club
-            const { data, error } = await supabase
-                .from('club_members')
-                .select(`
-                    user_id,
-                    users:user_id (
-                        id,
-                        username,
-                        avatar_url
-                    ),
-                    player_balance
-                `)
-                .eq('club_id', clubId)
-                .eq('agent_id', user.id)
-                .eq('role', 'player');
-
-            if (error) throw error;
-
-            const playerList = (data || []).map((m: any) => ({
-                id: m.users.id,
-                username: m.users.username || 'Unknown',
-                avatar_url: m.users.avatar_url || '',
-                current_balance: m.player_balance || 0
-            }));
-
-            setPlayers(playerList);
-        } catch (err) {
-            console.error('Error loading players:', err);
-            toast.error('Failed to load players');
+    // Load recipients when modal opens
+    useEffect(() => {
+        if (!isOpen || !user?.id) return;
+        if (recipientId) {
+            setSelectedRecipient(recipientId);
         }
+        loadRecipients();
+    }, [isOpen, user?.id, clubId, recipientId]);
 
-        setIsLoadingPlayers(false);
+    const loadSenderInfo = async () => {
+        if (!user?.id) return;
+        try {
+            // Get sender's PLAYER wallet balance
+            const { data: wallet } = await supabase
+                .from('wallets')
+                .select('balance')
+                .eq('user_id', user.id)
+                .eq('wallet_type', 'PLAYER')
+                .single();
+            setSenderBalance(wallet?.balance || 0);
+
+            // Get sender's role in this club
+            const { data: member } = await supabase
+                .from('club_members')
+                .select('role')
+                .eq('club_id', clubId)
+                .eq('user_id', user.id)
+                .single();
+            setSenderRole(member?.role || 'member');
+
+            // Get club name
+            const { data: club } = await supabase
+                .from('clubs')
+                .select('name')
+                .eq('id', clubId)
+                .single();
+            setClubName(club?.name || '');
+        } catch (err) {
+            console.error('Failed to load sender info:', err);
+        }
     };
 
-    const loadAgentBalance = async () => {
+    const loadRecipients = async () => {
         if (!user?.id) return;
-
+        setIsLoadingRecipients(true);
         try {
-            const { data, error } = await supabase
+            // Get the sender's role to determine who they can send to
+            const { data: senderMember } = await supabase
                 .from('club_members')
-                .select('agent_credit_limit, agent_credit_used')
+                .select('role')
                 .eq('club_id', clubId)
                 .eq('user_id', user.id)
                 .single();
 
-            if (error) throw error;
+            const role = senderMember?.role || 'member';
+            let query = supabase
+                .from('club_members')
+                .select(`
+                    user_id,
+                    role,
+                    users:user_id (
+                        id,
+                        username,
+                        avatar_url
+                    )
+                `)
+                .eq('club_id', clubId)
+                .neq('user_id', user.id);
 
-            // Available balance = credit limit - used
-            const available = (data?.agent_credit_limit || 0) - (data?.agent_credit_used || 0);
-            setAgentBalance(available);
+            // Filter recipients based on sender's role in the hierarchy
+            if (role === 'owner') {
+                // Owner can send to agents, sub-agents, and players
+                query = query.in('role', ['agent', 'sub_agent', 'member', 'player']);
+            } else if (role === 'agent' || role === 'super_agent') {
+                // Agents can send to their sub-agents and players
+                query = query.in('role', ['sub_agent', 'member', 'player']);
+            } else if (role === 'sub_agent') {
+                // Sub-agents can only send to their players
+                query = query.in('role', ['member', 'player']);
+            }
+
+            const { data, error: queryError } = await query;
+            if (queryError) throw queryError;
+
+            // Get wallet balances for all recipients
+            const recipientIds = (data || []).map((m: any) => m.users?.id).filter(Boolean);
+            const { data: wallets } = await supabase
+                .from('wallets')
+                .select('user_id, balance')
+                .in('user_id', recipientIds)
+                .eq('wallet_type', 'PLAYER');
+
+            const walletMap: Record<string, number> = {};
+            (wallets || []).forEach((w: any) => {
+                walletMap[w.user_id] = w.balance;
+            });
+
+            const recipientList: Recipient[] = (data || [])
+                .filter((m: any) => m.users?.id)
+                .map((m: any) => ({
+                    id: m.users.id,
+                    username: m.users.username || 'Unknown',
+                    avatar_url: m.users.avatar_url || '',
+                    role: m.role,
+                    balance: walletMap[m.users.id] || 0,
+                }))
+                .sort((a: Recipient, b: Recipient) => {
+                    // Sort: agents first, then players
+                    const roleOrder: Record<string, number> = { agent: 0, super_agent: 0, sub_agent: 1, member: 2, player: 2 };
+                    return (roleOrder[a.role] || 3) - (roleOrder[b.role] || 3);
+                });
+
+            setRecipients(recipientList);
         } catch (err) {
-            console.error('Error loading agent balance:', err);
+            console.error('Error loading recipients:', err);
+            toast.error('Failed to load recipients');
         }
+        setIsLoadingRecipients(false);
+    };
+
+    const selectedRecipientData = useMemo(() => {
+        return recipients.find(r => r.id === selectedRecipient);
+    }, [recipients, selectedRecipient]);
+
+    const getTransferDescription = () => {
+        const recipientData = selectedRecipientData;
+        if (!recipientData) return '';
+        const recipientLabel = recipientData.role === 'agent' || recipientData.role === 'super_agent'
+            ? `Agent ${recipientData.username}`
+            : recipientData.role === 'sub_agent'
+                ? `Sub-Agent ${recipientData.username}`
+                : recipientData.username;
+
+        if (senderRole === 'owner') {
+            return `${clubName} → ${recipientLabel}: chip allocation`;
+        }
+        return `Agent → ${recipientLabel}: player funding (${clubName})`;
     };
 
     const handleTransfer = async () => {
         const transferAmount = parseFloat(amount);
 
-        // Validation
-        if (!selectedPlayer) {
+        if (!selectedRecipient) {
             setError('Please select a recipient');
             return;
         }
@@ -134,76 +215,58 @@ export default function ChipTransferModal({
             setError('Please enter a valid amount');
             return;
         }
-        if (transferAmount > agentBalance) {
-            setError('Insufficient balance');
+        if (transferAmount > senderBalance) {
+            setError(`Insufficient balance. Available: ${senderBalance.toLocaleString()}`);
             return;
         }
+        if (!user?.id) return;
 
         setIsLoading(true);
         setError(null);
 
         try {
-            // 1. Update agent's credit used
-            const { error: agentError } = await supabase
-                .from('club_members')
-                .update({
-                    agent_credit_used: supabase.rpc('increment', { x: transferAmount })
-                })
-                .eq('club_id', clubId)
-                .eq('user_id', user?.id);
+            const recipientData = selectedRecipientData;
+            const description = note || getTransferDescription();
 
-            if (agentError) throw agentError;
-
-            // 2. Update player's balance
-            const { error: playerError } = await supabase
-                .from('club_members')
-                .update({
-                    player_balance: supabase.rpc('increment', { x: transferAmount })
-                })
-                .eq('club_id', clubId)
-                .eq('user_id', selectedPlayer);
-
-            if (playerError) throw playerError;
-
-            // 3. Record the transaction
-            const { error: txError } = await supabase
-                .from('club_transactions')
-                .insert({
-                    club_id: clubId,
-                    from_user_id: user?.id,
-                    to_user_id: selectedPlayer,
-                    amount: transferAmount,
-                    transaction_type: recipientType === 'player' ? 'agent_to_player' : 'agent_to_agent',
-                    note: note || null,
-                    status: 'completed'
-                });
-
-            if (txError) throw txError;
-
-            setSuccess(`Successfully transferred ${transferAmount.toLocaleString()}`);
-            toast.success(`Transferred ${transferAmount.toLocaleString()} successfully`);
-            setAmount('');
-            setNote('');
-            setSelectedPlayer('');
-
-            // Refresh balance
-            await loadAgentBalance();
-
-            if (onTransferComplete) {
-                onTransferComplete();
+            // Use ChipFlowService for proper atomic wallet transfer
+            if (senderRole === 'owner' && (recipientData?.role === 'agent' || recipientData?.role === 'super_agent')) {
+                await ChipFlowService.clubToAgent(
+                    user.id, selectedRecipient, clubId, transferAmount,
+                    recipientData?.username || 'Agent', clubName
+                );
+            } else if (senderRole === 'owner') {
+                await ChipFlowService.clubToPlayer(
+                    user.id, selectedRecipient, transferAmount,
+                    recipientData?.username || 'Player', clubName
+                );
+            } else {
+                // Agent → Player or Agent → Sub-Agent
+                await ChipFlowService.agentToPlayer(
+                    user.id, selectedRecipient, transferAmount,
+                    user.username || 'Agent',
+                    recipientData?.username || 'Player',
+                    clubName
+                );
             }
 
-            // Auto-close after success
+            setSuccess(`Transferred ${transferAmount.toLocaleString()} to ${recipientData?.username}`);
+            toast.success(`Transferred ${transferAmount.toLocaleString()} chips`);
+            setAmount('');
+            setNote('');
+
+            // Refresh sender balance
+            await loadSenderInfo();
+
+            if (onTransferComplete) onTransferComplete();
+
             setTimeout(() => {
                 onClose();
                 setSuccess(null);
-            }, 2000);
-
+            }, 1500);
         } catch (err: any) {
             console.error('Transfer error:', err);
             setError(err.message || 'Transfer failed. Please try again.');
         }
-
         setIsLoading(false);
     };
 
@@ -217,36 +280,40 @@ export default function ChipTransferModal({
 
     if (!isOpen) return null;
 
+    const quickAmounts = [100, 500, 1000, 5000];
+
     return (
         <div className="chip-transfer-overlay" onClick={handleClose}>
             <div className="chip-transfer-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="chip-transfer-header">
-                    <h2> Transfer Credits</h2>
-                    <button className="close-btn" onClick={handleClose}>×</button>
+                    <h2>Cashier Transfer</h2>
+                    <button className="close-btn" onClick={handleClose}>x</button>
                 </div>
 
                 <div className="agent-balance">
-                    <span>Available Balance:</span>
-                    <span className="balance-amount">{agentBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span>Your Balance:</span>
+                    <span className="balance-amount">{senderBalance.toLocaleString()}</span>
                 </div>
 
                 <div className="chip-transfer-form">
                     {/* Recipient Selection */}
                     {!recipientId && (
                         <div className="form-group">
-                            <label>Recipient</label>
-                            {isLoadingPlayers ? (
-                                <div className="loading-text">Loading players...</div>
+                            <label>Send To</label>
+                            {isLoadingRecipients ? (
+                                <div className="loading-text">Loading...</div>
                             ) : (
                                 <select
-                                    value={selectedPlayer}
-                                    onChange={(e) => setSelectedPlayer(e.target.value)}
+                                    value={selectedRecipient}
+                                    onChange={(e) => setSelectedRecipient(e.target.value)}
                                     className="player-select"
                                 >
-                                    <option value="">Select a player</option>
-                                    {players.map((player) => (
-                                        <option key={player.id} value={player.id}>
-                                            {player.username} (Balance: {player.current_balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                                    <option value="">Select recipient</option>
+                                    {recipients.map((r) => (
+                                        <option key={r.id} value={r.id}>
+                                            {r.role === 'agent' || r.role === 'super_agent' ? '[Agent] ' :
+                                             r.role === 'sub_agent' ? '[Sub-Agent] ' : ''}
+                                            {r.username} (Bal: {r.balance.toLocaleString()})
                                         </option>
                                     ))}
                                 </select>
@@ -263,19 +330,35 @@ export default function ChipTransferModal({
                                 type="number"
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
-                                placeholder="0.00"
+                                placeholder="0"
                                 min="0"
-                                max={agentBalance}
-                                step="0.01"
+                                max={senderBalance}
+                                step="1"
                             />
                         </div>
                         <div className="quick-amounts">
-                            <button type="button" onClick={() => setAmount('50')}>50</button>
-                            <button type="button" onClick={() => setAmount('100')}>100</button>
-                            <button type="button" onClick={() => setAmount('500')}>500</button>
-                            <button type="button" onClick={() => setAmount(String(agentBalance))}>Max</button>
+                            {quickAmounts.map(val => (
+                                <button key={val} type="button" onClick={() => setAmount(String(val))}>
+                                    {val.toLocaleString()}
+                                </button>
+                            ))}
+                            <button type="button" onClick={() => setAmount(String(senderBalance))}>Max</button>
                         </div>
                     </div>
+
+                    {/* Preview */}
+                    {selectedRecipientData && amount && parseFloat(amount) > 0 && (
+                        <div className="transfer-preview">
+                            <div className="preview-row">
+                                <span>You:</span>
+                                <span>{senderBalance.toLocaleString()} → {Math.max(0, senderBalance - parseFloat(amount)).toLocaleString()}</span>
+                            </div>
+                            <div className="preview-row">
+                                <span>{selectedRecipientData.username}:</span>
+                                <span>{selectedRecipientData.balance.toLocaleString()} → {(selectedRecipientData.balance + parseFloat(amount)).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Note Input */}
                     <div className="form-group">
@@ -284,7 +367,7 @@ export default function ChipTransferModal({
                             type="text"
                             value={note}
                             onChange={(e) => setNote(e.target.value)}
-                            placeholder="e.g., Initial deposit, bonus, etc."
+                            placeholder="e.g., Weekly allocation, player funding..."
                         />
                     </div>
 
@@ -296,9 +379,9 @@ export default function ChipTransferModal({
                     <button
                         className="transfer-btn"
                         onClick={handleTransfer}
-                        disabled={isLoading || !selectedPlayer || !amount}
+                        disabled={isLoading || !selectedRecipient || !amount}
                     >
-                        {isLoading ? 'Processing...' : 'Transfer Credits'}
+                        {isLoading ? 'Processing...' : 'Confirm Transfer'}
                     </button>
                 </div>
             </div>

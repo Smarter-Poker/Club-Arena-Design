@@ -17,32 +17,82 @@ interface TransactionHistoryProps {
 
 interface Transaction {
     id: string;
-    type: 'deposit' | 'withdrawal' | 'transfer' | 'rake' | 'bonus' | 'refund' | 'purchase';
+    type: 'credit' | 'debit';
+    category: string;
     amount: number;
     balance: number;
     description: string;
     createdAt: Date;
-    status: 'pending' | 'completed' | 'failed';
+    walletType: string;
 }
 
-const TYPE_ICONS: Record<string, string> = {
-    deposit: '',
-    withdrawal: '',
-    transfer: '',
-    rake: '',
-    bonus: '',
-    refund: '',
-    purchase: ''
+const CATEGORY_LABELS: Record<string, string> = {
+    buyin: 'Buy-In',
+    cashout: 'Cash-Out',
+    rake: 'Rake',
+    prize: 'Prize',
+    rebuy: 'Rebuy',
+    addon: 'Add-On',
+    mint: 'Mint',
+    settlement: 'Settlement',
+    commission: 'Commission',
+    TIP: 'Dealer Tip',
+    INSURANCE: 'Insurance',
+    funding: 'Funding',
+    promotion: 'Promotion',
+    promo: 'Promo Bonus',
+    bbj: 'Bad Beat Jackpot',
+    horse_refill: 'Auto Refill',
+    transfer: 'Transfer',
+    deposit: 'Deposit',
+    withdrawal: 'Withdrawal',
+    refund: 'Refund',
+    bonus: 'Bonus',
 };
 
-const TYPE_COLORS: Record<string, string> = {
+const CATEGORY_COLORS: Record<string, string> = {
+    buyin: '#f59e0b',
+    cashout: '#22c55e',
+    rake: '#ef4444',
+    prize: '#22c55e',
+    rebuy: '#f59e0b',
+    addon: '#f59e0b',
+    mint: '#a855f7',
+    settlement: '#3b82f6',
+    commission: '#3b82f6',
+    TIP: '#f59e0b',
+    INSURANCE: '#f59e0b',
+    funding: '#22c55e',
+    transfer: '#3b82f6',
     deposit: '#22c55e',
     withdrawal: '#f59e0b',
-    transfer: '#3b82f6',
-    rake: '#ef4444',
-    bonus: '#a855f7',
     refund: '#22c55e',
-    purchase: '#f59e0b'
+    bonus: '#a855f7',
+    promo: '#a855f7',
+};
+
+const CATEGORY_ICONS: Record<string, string> = {
+    buyin: '▦',
+    cashout: '◉',
+    rake: '%',
+    prize: '★',
+    rebuy: '↺',
+    addon: '⊞',
+    mint: '◆',
+    settlement: '≡',
+    commission: '◈',
+    TIP: '♥',
+    INSURANCE: '⊕',
+    funding: '→',
+    promotion: '↑',
+    promo: '★',
+    bbj: '♣',
+    horse_refill: '↺',
+    transfer: '→',
+    deposit: '+',
+    withdrawal: '-',
+    refund: '↻',
+    bonus: '★',
 };
 
 export function TransactionHistory({ walletId, limit = 20 }: TransactionHistoryProps) {
@@ -81,12 +131,13 @@ export function TransactionHistory({ walletId, limit = 20 }: TransactionHistoryP
             if (!error && data) {
                 setTransactions(data.map(t => ({
                     id: t.id,
-                    type: t.type,
+                    type: t.type,          // credit or debit
+                    category: t.category,   // buyin, cashout, rake, prize, etc.
                     amount: t.amount,
                     balance: t.balance_after || 0,
                     description: t.description || '',
                     createdAt: new Date(t.created_at),
-                    status: t.status || 'completed'
+                    walletType: t.wallet_type || 'PLAYER',
                 })));
             }
         } catch (error) {
@@ -97,7 +148,11 @@ export function TransactionHistory({ walletId, limit = 20 }: TransactionHistoryP
 
     const filteredTransactions = filter === 'all'
         ? transactions
-        : transactions.filter(t => t.type === filter);
+        : filter === 'credit'
+            ? transactions.filter(t => t.type === 'credit')
+            : filter === 'debit'
+                ? transactions.filter(t => t.type === 'debit')
+                : transactions.filter(t => t.category === filter);
 
     if (loading) {
         return <div className="transaction-history loading">Loading...</div>;
@@ -109,10 +164,14 @@ export function TransactionHistory({ walletId, limit = 20 }: TransactionHistoryP
                 <h3> Transaction History</h3>
                 <select value={filter} onChange={e => setFilter(e.target.value)}>
                     <option value="all">All</option>
-                    <option value="deposit">Deposits</option>
-                    <option value="withdrawal">Withdrawals</option>
-                    <option value="transfer">Transfers</option>
+                    <option value="credit">Credits</option>
+                    <option value="debit">Debits</option>
+                    <option value="buyin">Buy-Ins</option>
+                    <option value="cashout">Cash-Outs</option>
                     <option value="rake">Rake</option>
+                    <option value="prize">Prizes</option>
+                    <option value="transfer">Transfers</option>
+                    <option value="funding">Funding</option>
                     <option value="bonus">Bonuses</option>
                 </select>
             </div>
@@ -123,17 +182,16 @@ export function TransactionHistory({ walletId, limit = 20 }: TransactionHistoryP
                 <div className="transaction-list">
                     {filteredTransactions.map(tx => (
                         <div key={tx.id} className={`transaction-row ${tx.type}`}>
-                            <span className="icon">{TYPE_ICONS[tx.type] || '📄'}</span>
+                            <span className="icon">{CATEGORY_ICONS[tx.category] || '●'}</span>
                             <div className="details">
-                                <span className="type">{tx.type.charAt(0).toUpperCase() + tx.type.slice(1)}</span>
+                                <span className="type" style={{ color: CATEGORY_COLORS[tx.category] || '#94a3b8' }}>
+                                    {CATEGORY_LABELS[tx.category] || tx.category}
+                                </span>
                                 <span className="description">{tx.description}</span>
                             </div>
                             <div className="amounts">
-                                <span
-                                    className={`amount ${tx.amount >= 0 ? 'positive' : 'negative'}`}
-                                    style={{ color: TYPE_COLORS[tx.type] }}
-                                >
-                                    {tx.amount >= 0 ? '+' : ''}{tx.amount.toLocaleString()}
+                                <span className={`amount ${tx.type === 'credit' ? 'positive' : 'negative'}`}>
+                                    {tx.type === 'credit' ? '+' : '-'}{tx.amount.toLocaleString()}
                                 </span>
                                 <span className="balance">Bal: {tx.balance.toLocaleString()}</span>
                             </div>

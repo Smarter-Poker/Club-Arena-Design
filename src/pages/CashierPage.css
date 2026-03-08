@@ -369,3 +369,74 @@
     letter-spacing: 1px !important;
     white-space: nowrap;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CASHIER FORM ELEMENTS — Send Chips
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.cashier-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.cashier-form-label {
+    font-family: 'Orbitron', 'Rajdhani', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #6a7a8a;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.cashier-select {
+    width: 100%;
+    padding: 12px 14px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(0, 212, 255, 0.15);
+    border-radius: 8px;
+    color: #e0e8f0;
+    font-family: 'Rajdhani', 'Roboto Condensed', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300d4ff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.cashier-select:focus {
+    outline: none;
+    border-color: #00d4ff;
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+}
+
+.cashier-select option {
+    background: #0d1520;
+    color: #e0e8f0;
+    padding: 8px;
+}
+
+.transfer-preview {
+    background: rgba(0, 212, 255, 0.05);
+    border: 1px solid rgba(0, 212, 255, 0.15);
+    border-radius: 8px;
+    padding: 12px 14px;
+}
+
+.transfer-preview .preview-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 0.8rem;
+    color: #8a9aaa;
+}
+
+.transfer-preview .preview-row span:last-child {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    color: #00d4ff;
+}

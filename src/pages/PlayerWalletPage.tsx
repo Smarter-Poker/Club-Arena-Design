@@ -155,7 +155,7 @@ export default function PlayerWalletPage() {
                         <span style={{ fontSize: '1.25rem', fontWeight: 600, color: '#fff' }}>{diamonds.toLocaleString()}</span>
                     </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
                     <MetalButton variant="primary" size="sm" onClick={() => setShowDepositModal(true)}>
                         Deposit
                     </MetalButton>
@@ -163,7 +163,7 @@ export default function PlayerWalletPage() {
                         Withdraw
                     </MetalButton>
                     <MetalButton variant="ghost" size="sm" onClick={() => navigate('/rakeback')}>
-                        Rakeback
+                        Rake Back
                     </MetalButton>
                     <MetalButton variant="ghost" size="sm" onClick={() => navigate('/transactions')}>
                         History
