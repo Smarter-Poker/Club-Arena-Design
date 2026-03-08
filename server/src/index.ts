@@ -650,6 +650,27 @@ class TournamentManager {
                     .update({ current_level: this.currentLevel })
                     .eq('id', this.tournamentId);
 
+                // Broadcast level_up event to all table pages
+                try {
+                    const chan = supabase.channel(`t-break-${this.tournamentId}`);
+                    await chan.subscribe();
+                    await chan.send({
+                        type: 'broadcast',
+                        event: 'tournament_event',
+                        payload: {
+                            type: 'level_up',
+                            payload: {
+                                level: this.currentLevel,
+                                blinds: `${level.smallBlind}/${level.bigBlind}`,
+                                smallBlind: level.smallBlind,
+                                bigBlind: level.bigBlind,
+                                ante: level.ante || 0,
+                            },
+                        },
+                    });
+                    setTimeout(async () => { try { await chan.unsubscribe(); } catch { } }, 3000);
+                } catch (e) { /* noop */ }
+
                 // ── ADD-ON PERIOD TRIGGER ──
                 // When blind level passes rebuy_levels cap and add-on is available
                 if (this.tournamentCache?.add_on_available && !this.addOnPeriodTriggered) {
@@ -678,6 +699,18 @@ class TournamentManager {
                             } as any).eq('id', this.tournamentId);
                             console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] Late reg closed — prize pool finalized: ${freshT.prize_pool}`);
                         }
+
+                        // Broadcast late_reg_closed so clients update UI
+                        try {
+                            const chan = supabase.channel(`t-break-${this.tournamentId}`);
+                            await chan.subscribe();
+                            await chan.send({
+                                type: 'broadcast',
+                                event: 'tournament_event',
+                                payload: { type: 'late_reg_closed', payload: { prizePool: freshT?.prize_pool || 0 } },
+                            });
+                            setTimeout(async () => { try { await chan.unsubscribe(); } catch { } }, 3000);
+                        } catch (e) { /* noop */ }
                     }
                 }
 
@@ -1021,6 +1054,21 @@ class TournamentManager {
             .update({ left_at: new Date().toISOString() })
             .eq('user_id', userId)
             .is('left_at', null);
+
+        // Broadcast player_eliminated event to all table pages
+        try {
+            const chan = supabase.channel(`t-break-${this.tournamentId}`);
+            await chan.subscribe();
+            await chan.send({
+                type: 'broadcast',
+                event: 'tournament_event',
+                payload: {
+                    type: 'player_eliminated',
+                    payload: { userId, position, prize },
+                },
+            });
+            setTimeout(async () => { try { await chan.unsubscribe(); } catch { } }, 3000);
+        } catch (e) { /* noop */ }
 
         console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] Eliminated: ${userId.slice(0, 8)} at position ${position} (prize: ${prize})`);
     }
@@ -1399,6 +1447,25 @@ class TournamentManager {
                     if (engine) await engine.stop();
                     this.tableEngines.delete(tc.tableId);
                     await supabase.from('tables').update({ status: 'closed' }).eq('id', tc.tableId);
+
+                    // Broadcast table_rebalance so clients refresh seats
+                    try {
+                        const chan = supabase.channel(`t-break-${this.tournamentId}`);
+                        await chan.subscribe();
+                        await chan.send({
+                            type: 'broadcast',
+                            event: 'tournament_event',
+                            payload: {
+                                type: 'table_rebalance',
+                                payload: {
+                                    closedTableId: tc.tableId,
+                                    targetTableId: target.tableId,
+                                    movedPlayers: (seats || []).length,
+                                },
+                            },
+                        });
+                        setTimeout(async () => { try { await chan.unsubscribe(); } catch { } }, 3000);
+                    } catch (e) { /* noop */ }
 
                     break; // One merge per cycle
                 }
