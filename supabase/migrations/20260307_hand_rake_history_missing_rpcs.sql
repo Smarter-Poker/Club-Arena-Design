@@ -79,7 +79,22 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 5. Expanded wallet_transactions category constraint
+-- 5. Ensure all hand_history columns exist (existing table may have subset)
+ALTER TABLE hand_history ADD COLUMN IF NOT EXISTS table_id UUID;
+ALTER TABLE hand_history ADD COLUMN IF NOT EXISTS tournament_id UUID;
+ALTER TABLE hand_history ADD COLUMN IF NOT EXISTS hand_number INTEGER;
+ALTER TABLE hand_history ADD COLUMN IF NOT EXISTS game_variant TEXT DEFAULT 'nlh';
+ALTER TABLE hand_history ADD COLUMN IF NOT EXISTS small_blind DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE hand_history ADD COLUMN IF NOT EXISTS big_blind DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE hand_history ADD COLUMN IF NOT EXISTS rake_amount DECIMAL(12,2) DEFAULT 0;
+ALTER TABLE hand_history ADD COLUMN IF NOT EXISTS community_cards TEXT[];
+ALTER TABLE hand_history ADD COLUMN IF NOT EXISTS winners JSONB;
+ALTER TABLE hand_history ADD COLUMN IF NOT EXISTS players JSONB DEFAULT '[]';
+ALTER TABLE hand_history ADD COLUMN IF NOT EXISTS actions JSONB DEFAULT '[]';
+ALTER TABLE hand_history ADD COLUMN IF NOT EXISTS summary TEXT;
+ALTER TABLE rake_history ADD COLUMN IF NOT EXISTS collected_at TIMESTAMPTZ DEFAULT NOW();
+
+-- 6. Expanded wallet_transactions category constraint
 ALTER TABLE wallet_transactions DROP CONSTRAINT IF EXISTS wallet_transactions_category_check;
 ALTER TABLE wallet_transactions ADD CONSTRAINT wallet_transactions_category_check
 CHECK (category IN (

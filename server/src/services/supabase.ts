@@ -344,6 +344,42 @@ export async function logRakeCollection(
 }
 
 /**
+ * Log hand history — every hand documented for audit and replay.
+ */
+export async function logHandHistory(params: {
+    tableId: string;
+    tournamentId?: string;
+    handNumber: number;
+    gameVariant: string;
+    smallBlind: number;
+    bigBlind: number;
+    potSize: number;
+    rakeAmount: number;
+    communityCards: string[];
+    winners: { userId: string; amount: number }[];
+    players: { userId: string; username: string; seat: number; stack: number; cards: string[] }[];
+    actions: { seat: number; action: string; amount?: number; stage: string }[];
+}): Promise<void> {
+    const { error } = await supabase.from('hand_history').insert({
+        table_id: params.tableId,
+        tournament_id: params.tournamentId || null,
+        hand_number: params.handNumber,
+        game_variant: params.gameVariant,
+        small_blind: params.smallBlind,
+        big_blind: params.bigBlind,
+        pot_size: params.potSize,
+        rake_amount: params.rakeAmount,
+        community_cards: params.communityCards,
+        winners: params.winners,
+        players: params.players,
+        actions: params.actions,
+    });
+    if (error) {
+        console.warn(`[DB] Failed to log hand history #${params.handNumber}:`, error.message);
+    }
+}
+
+/**
  * Ensure a horse's wallet is properly funded.
  * Called during fleet startup to top up horses that ran low.
  */

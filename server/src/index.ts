@@ -595,9 +595,16 @@ class TournamentManager {
 
         let prize = 0;
         if (tournament?.payout_structure) {
-            const payoutEntry = tournament.payout_structure.find((p: any) => p.place === position);
-            if (payoutEntry) {
-                prize = Math.trunc((tournament.prize_pool || 0) * payoutEntry.percentage / 100);
+            let payouts = tournament.payout_structure;
+            // Handle string-encoded JSON
+            if (typeof payouts === 'string') {
+                try { payouts = JSON.parse(payouts); } catch { payouts = []; }
+            }
+            if (Array.isArray(payouts)) {
+                const payoutEntry = payouts.find((p: any) => p.place === position);
+                if (payoutEntry) {
+                    prize = Math.trunc((tournament.prize_pool || 0) * payoutEntry.percentage / 100);
+                }
             }
         }
 

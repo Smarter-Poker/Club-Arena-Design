@@ -18,7 +18,8 @@ import { HorseLogic } from './HorseLogic.js';
 import {
     broadcastHandState, loadTable, loadSeatedPlayers, syncStacks,
     syncTournamentChips, updateTableStatus, autoRebuyHorse,
-    markSeatAsLeft, processLeavePending,
+    markSeatAsLeft, processLeavePending, logRakeCollection,
+    logHandHistory, cleanupChannel,
 } from '../services/supabase.js';
 import type {
     SeatPlayer, GameVariant, HandConfig, HandEvent, SeatedPlayer,
@@ -43,6 +44,10 @@ export class ServerTableEngine {
     private currentHandPotSize: number = 0;
     private currentHandDealerSeat: number = 0;
     private currentHandWinnerIds: string[] = [];
+    private currentHandRake: number = 0;
+    private currentHandCommunityCards: string[] = [];
+    private currentHandActions: { seat: number; action: string; amount?: number; stage: string }[] = [];
+    private currentHandWinners: { userId: string; amount: number }[] = [];
     // Hand complete callback for tournament chip sync
     private handCompleteCallback: ((tableId: string, players: { user_id: string; stack: number }[]) => void) | null = null;
 
@@ -86,6 +91,7 @@ export class ServerTableEngine {
         if (!this.running) return;
         this.running = false;
         this.handController = null;
+        cleanupChannel(this.tableId);
         console.log(`[ServerTableEngine:${this.tableId}] Stopped. Dealt ${this.handCount} hands.`);
     }
 
@@ -161,6 +167,10 @@ export class ServerTableEngine {
         this.currentHandWentToFlop = false;
         this.currentHandPotSize = 0;
         this.currentHandWinnerIds = [];
+        this.currentHandRake = 0;
+        this.currentHandCommunityCards = [];
+        this.currentHandActions = [];
+        this.currentHandWinners = [];
 
         console.log(`[ServerTableEngine:${this.tableId}] Hand #${handNumber} — ${players.length} players`);
 
@@ -258,19 +268,37 @@ export class ServerTableEngine {
                 break;
 
             case 'PLAYER_ACTION':
+                // Track action for hand history
+                if (event.seat !== undefined && event.action) {
+                    const stage = this.handController?.getState()?.stage || 'preflop';
+                    this.currentHandActions.push({
+                        seat: event.seat,
+                        action: event.action,
+                        amount: event.amount,
+                        stage,
+                    });
+                }
                 this.broadcastCurrentState();
                 break;
 
             case 'COMMUNITY_CARDS':
                 if (event.stage === 'flop') this.currentHandWentToFlop = true;
+                if (event.cards) {
+                    this.currentHandCommunityCards = event.cards;
+                }
                 this.broadcastCurrentState();
                 break;
 
             case 'WINNERS':
                 this.currentHandWinnerIds = (event.winners || []).map((w: any) => w.userId || w.user_id || '');
+                this.currentHandWinners = (event.winners || []).map((w: any) => ({
+                    userId: w.userId || w.user_id || '',
+                    amount: w.amount || 0,
+                }));
                 if (this.handController) {
                     const state = this.handController.getState();
                     this.currentHandPotSize = state.pot;
+                    this.currentHandRake = (state as any).rake || 0;
                     for (const enginePlayer of state.players) {
                         const localPlayer = players.find(p => p.user_id === enginePlayer.user_id);
                         if (localPlayer) localPlayer.stack = enginePlayer.stack;
@@ -280,6 +308,10 @@ export class ServerTableEngine {
                 break;
 
             case 'HAND_COMPLETE':
+                // Capture rake from hand completion event
+                if ((event as any).rake !== undefined) {
+                    this.currentHandRake = (event as any).rake;
+                }
                 // Async post-hand tasks (fire and forget)
                 this.postHandTasks(players).catch(err =>
                     console.error(`[ServerTableEngine:${this.tableId}] Post-hand error:`, err)
@@ -407,12 +439,47 @@ export class ServerTableEngine {
         // 1. Sync stacks to database
         await syncStacks(this.tableId, players.map(p => ({ user_id: p.user_id, stack: p.stack })));
 
-        // 2. Tournament chip sync
+        // 2. Log rake collection — every penny documented
+        if (!this.isTournamentTable() && this.currentHandRake > 0 && this.tableInfo?.club_id) {
+            await logRakeCollection(
+                this.tableId,
+                this.tableInfo.club_id,
+                this.handCount,
+                this.currentHandRake,
+                this.currentHandPotSize
+            );
+        }
+
+        // 3. Log hand history — complete audit trail
+        if (this.tableInfo) {
+            await logHandHistory({
+                tableId: this.tableId,
+                tournamentId: this.tableInfo.tournament_id || undefined,
+                handNumber: this.handCount,
+                gameVariant: this.tableInfo.game_variant || 'nlh',
+                smallBlind: this.tableInfo.small_blind,
+                bigBlind: this.tableInfo.big_blind,
+                potSize: this.currentHandPotSize,
+                rakeAmount: this.currentHandRake,
+                communityCards: this.currentHandCommunityCards,
+                winners: this.currentHandWinners,
+                players: players.map(p => ({
+                    userId: p.user_id,
+                    username: p.username,
+                    seat: p.seat_number,
+                    stack: p.stack,
+                    cards: [],
+                })),
+                actions: this.currentHandActions,
+            });
+        }
+
+        // 4. Tournament chip sync
         if (this.isTournamentTable() && this.tableInfo?.tournament_id) {
             await syncTournamentChips(this.tableId, this.tableInfo.tournament_id);
         }
 
-        // 3. Auto-rebuy busted horses (cash games only)
+        // 5. Auto-rebuy busted horses (cash games only)
         if (!this.isTournamentTable()) {
             const bustHorses = players.filter(p => p.is_horse && p.stack === 0);
             for (const horse of bustHorses) {
@@ -430,12 +497,12 @@ export class ServerTableEngine {
             }
         }
 
-        // 4. Process leave-pending players (cash games only)
+        // 6. Process leave-pending players (cash games only)
         if (!this.isTournamentTable()) {
             await processLeavePending(this.tableId, this.tableInfo?.club_id || '');
         }
 
-        // 5. Update table status
+        // 7. Update table status
         await updateTableStatus(this.tableId, players.filter(p => p.stack > 0).length);
     }
 
