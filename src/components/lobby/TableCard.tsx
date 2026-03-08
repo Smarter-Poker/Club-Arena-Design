@@ -90,7 +90,7 @@ export default function TableCard({ table }: TableCardProps) {
             .then(({ data }) => {
                 if (data && data.length > 0) {
                     const avg = data.reduce((sum, h) => sum + (h.pot || 0), 0) / data.length;
-                    setAvgPot(Math.round(avg));
+                    setAvgPot(Math.trunc(avg * 100) / 100);
                 }
             });
     }, [table.id]);

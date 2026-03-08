@@ -316,19 +316,19 @@ export class BotLogic {
                 return { action: 'check', thinkTime: 0 };
             }
             // Value bet — 60-80% pot
-            const betSize = Math.floor(pot * (0.60 + Math.random() * 0.20) * sizeMult);
+            const betSize = Math.trunc(pot * (0.60 + Math.random() * 0.20) * sizeMult);
             return { action: 'bet', amount: Math.min(stack, Math.max(betSize, gs.minRaise)), thinkTime: 0 };
         }
 
         // Facing bet with nuts
         // Check-raise (style-dependent)
         if (Math.random() < params.checkRaiseFreq * 1.5) {
-            const raiseSize = Math.min(stack, toCall + (pot + toCall) * (0.8 + Math.random() * 0.4) * sizeMult);
+            const raiseSize = Math.trunc(Math.min(stack, toCall + (pot + toCall) * (0.8 + Math.random() * 0.4) * sizeMult) * 100) / 100;
             return { action: 'raise', amount: raiseSize, thinkTime: 0 };
         }
         // Raise for value
         if (strength > 0.90) {
-            const raiseSize = Math.min(stack, currentBet * (2.5 + Math.random() * 0.5));
+            const raiseSize = Math.trunc(Math.min(stack, currentBet * (2.5 + Math.random() * 0.5)) * 100) / 100;
             return { action: 'raise', amount: raiseSize, thinkTime: 0 };
         }
         // Call to keep opponent in
@@ -351,7 +351,7 @@ export class BotLogic {
 
         if (!facingBet) {
             // Bet for value — 45-65% pot
-            const betSize = Math.floor(pot * (0.45 + Math.random() * 0.20) * sizeMult);
+            const betSize = Math.trunc(pot * (0.45 + Math.random() * 0.20) * sizeMult);
             return { action: 'bet', amount: Math.min(stack, Math.max(betSize, gs.minRaise)), thinkTime: 0 };
         }
 
@@ -360,7 +360,7 @@ export class BotLogic {
 
         // Raise top of strong range
         if (strength > 0.70 && Math.random() < 0.35) {
-            const raiseSize = Math.min(stack, currentBet * (2.2 + Math.random() * 0.6));
+            const raiseSize = Math.trunc(Math.min(stack, currentBet * (2.2 + Math.random() * 0.6)) * 100) / 100;
             return { action: 'raise', amount: raiseSize, thinkTime: 0 };
         }
 
@@ -396,7 +396,7 @@ export class BotLogic {
             }
             // Thin value bet / blocking bet
             if (strength > 0.45 && Math.random() < params.cbetFreq * 0.6) {
-                const betSize = Math.floor(pot * (0.30 + Math.random() * 0.15) * sizeMult);
+                const betSize = Math.trunc(pot * (0.30 + Math.random() * 0.15) * sizeMult);
                 return { action: 'bet', amount: Math.min(stack, Math.max(betSize, gs.minRaise)), thinkTime: 0 };
             }
             return { action: 'check', thinkTime: 0 };
@@ -412,7 +412,7 @@ export class BotLogic {
 
         // Semi-bluff raise with draws (top of marginal range)
         if (strength > 0.45 && Math.random() < params.bluffFreq * 0.5) {
-            const raiseSize = Math.min(stack, currentBet * 2.5 * sizeMult);
+            const raiseSize = Math.trunc(Math.min(stack, currentBet * 2.5 * sizeMult) * 100) / 100;
             return { action: 'raise', amount: raiseSize, thinkTime: 0 };
         }
 
@@ -435,7 +435,7 @@ export class BotLogic {
         if (!facingBet) {
             // Bluff with air at style-specific frequency
             if (Math.random() < params.bluffFreq) {
-                const betSize = Math.floor(pot * (0.50 + Math.random() * 0.25) * params.sizingMultiplier);
+                const betSize = Math.trunc(pot * (0.50 + Math.random() * 0.25) * params.sizingMultiplier);
                 return { action: 'bet', amount: Math.min(stack, Math.max(betSize, gs.minRaise)), thinkTime: 0 };
             }
             return { action: 'check', thinkTime: 0 };

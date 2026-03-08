@@ -613,7 +613,7 @@ export function determineWinners(
         const qualifyingLowPlayers = eligible.filter(ph => ph.lowHand !== null);
 
         if (isHiLo && qualifyingLowPlayers.length > 0) {
-            loPotAmount = Math.floor(pot.amount / 2);
+            loPotAmount = Math.trunc(pot.amount / 2 * 100) / 100;
             hiPotAmount = pot.amount - loPotAmount;
         }
 
@@ -655,7 +655,7 @@ function distributePot(
     amount: number,
     type: 'High' | 'Low'
 ) {
-    const share = Math.floor(amount / roundWinners.length);
+    const share = Math.trunc(amount / roundWinners.length * 100) / 100;
     const remainder = amount % roundWinners.length;
 
     roundWinners.forEach((pw, i) => {

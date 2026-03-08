@@ -176,7 +176,7 @@ export default function CashoutRequestModal({
                                         <button
                                             key={pct}
                                             className="quick-btn"
-                                            onClick={() => setAmount(Math.floor(currentBalance * pct / 100).toString())}
+                                            onClick={() => setAmount((Math.trunc(currentBalance * pct / 100 * 100) / 100).toString())}
                                         >
                                             {pct}%
                                         </button>

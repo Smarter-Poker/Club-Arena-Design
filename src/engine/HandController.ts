@@ -585,7 +585,7 @@ export class HandController {
 
         // Proportionally reduce each winner's amount, distributing remainder chips
         const adjustedAmounts = winners.map(w =>
-            Math.floor(w.amount * (totalWinnings / (totalWinnerAmount || 1)))
+            Math.trunc(w.amount * (totalWinnings / (totalWinnerAmount || 1)) * 100) / 100
         );
         let remainder = totalWinnings - adjustedAmounts.reduce((s, a) => s + a, 0);
         // Give remainder chips to winners in order (prevents chip loss from rounding)

@@ -764,7 +764,7 @@ export const HydraService = {
         const targetSize = pot * (minFactor + Math.random() * (maxFactor - minFactor));
 
         // Exact penny precision — no rounding on monetary values
-        const precise = Math.floor(targetSize * 100) / 100;
+        const precise = Math.trunc(targetSize * 100) / 100;
         return Math.max(minRaise, Math.min(maxRaise, precise));
     },
 
