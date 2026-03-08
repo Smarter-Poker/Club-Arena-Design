@@ -633,15 +633,17 @@ class TournamentManager {
                 p_amount: prize,
             });
 
-            // Log transaction for audit trail
-            await supabase.from('wallet_transactions').insert({
-                user_id: userId,
-                entity_type: 'PLAYER',
-                amount: prize,
-                type: 'credit',
-                category: 'prize',
-                description: `Tournament prize: position ${position}`,
-                tournament_id: this.tournamentId,
+            // Log prize payout via RPC (SECURITY DEFINER bypasses RLS)
+            await supabase.rpc('log_wallet_transaction', {
+                p_user_id: userId,
+                p_wallet_type: 'PLAYER',
+                p_amount: prize,
+                p_type: 'credit',
+                p_category: 'prize',
+                p_description: `Tournament prize: position ${position}`,
+                p_table_id: null,
+                p_hand_id: null,
+                p_related_entity_id: this.tournamentId,
             });
         }
 
@@ -659,7 +661,7 @@ class TournamentManager {
 
         const { data: tournament } = await supabase
             .from('tournaments')
-            .select('payout_structure, prize_pool')
+            .select('payout_structure, prize_pool, buy_in_fee, current_players, club_id, name')
             .eq('id', this.tournamentId)
             .single();
 
@@ -677,15 +679,17 @@ class TournamentManager {
                     p_amount: prize,
                 });
 
-                // Log transaction for audit trail
-                await supabase.from('wallet_transactions').insert({
-                    user_id: winnerId,
-                    entity_type: 'PLAYER',
-                    amount: prize,
-                    type: 'credit',
-                    category: 'prize',
-                    description: `Tournament winner prize: 1st place`,
-                    tournament_id: this.tournamentId,
+                // Log winner prize via RPC (SECURITY DEFINER bypasses RLS)
+                await supabase.rpc('log_wallet_transaction', {
+                    p_user_id: winnerId,
+                    p_wallet_type: 'PLAYER',
+                    p_amount: prize,
+                    p_type: 'credit',
+                    p_category: 'prize',
+                    p_description: `Tournament winner prize: 1st place`,
+                    p_table_id: null,
+                    p_hand_id: null,
+                    p_related_entity_id: this.tournamentId,
                 });
 
                 await supabase
@@ -696,9 +700,74 @@ class TournamentManager {
             }
         }
 
+        // ── TOURNAMENT RAKE SETTLEMENT ──
+        // Rake is held by union (if club is in a union) or by standalone club owner.
+        // Union distributes 90% rake back to clubs weekly. Union holds all BBJ & promo.
+        const rakePerEntry = tournament?.buy_in_fee || 0;
+        const totalEntries = tournament?.current_players || 0;
+        const totalRake = Math.trunc(rakePerEntry * totalEntries * 100) / 100;
+
+        if (totalRake > 0 && tournament?.club_id) {
+            // Get club + union info
+            const { data: club } = await supabase
+                .from('clubs')
+                .select('owner_id, name, union_id')
+                .eq('id', tournament.club_id)
+                .single();
+
+            if (club) {
+                let rakeRecipientId: string | null = null;
+                let rakeDescription = '';
+
+                if (club.union_id) {
+                    // Club is in a union — rake goes to union owner (held until weekly settlement)
+                    const { data: union } = await supabase
+                        .from('unions')
+                        .select('owner_id, name')
+                        .eq('id', club.union_id)
+                        .single();
+
+                    if (union?.owner_id) {
+                        rakeRecipientId = union.owner_id;
+                        rakeDescription = `Tournament rake held by ${union.name || 'Union'}: ${tournament.name || 'tournament'} (${totalEntries} entries x ${rakePerEntry}) — ${club.name || 'club'}`;
+                    }
+                } else {
+                    // Standalone club — rake goes directly to club owner
+                    rakeRecipientId = club.owner_id;
+                    rakeDescription = `Tournament rake: ${tournament.name || 'tournament'} (${totalEntries} entries x ${rakePerEntry})`;
+                }
+
+                if (rakeRecipientId) {
+                    await supabase.rpc('credit_player_wallet', {
+                        p_user_id: rakeRecipientId,
+                        p_amount: totalRake,
+                    });
+
+                    await supabase.rpc('log_wallet_transaction', {
+                        p_user_id: rakeRecipientId,
+                        p_wallet_type: 'PLAYER',
+                        p_amount: totalRake,
+                        p_type: 'credit',
+                        p_category: 'rake',
+                        p_description: rakeDescription,
+                        p_table_id: null,
+                        p_hand_id: null,
+                        p_related_entity_id: this.tournamentId,
+                    });
+
+                    console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] Rake settled: ${totalRake} to ${club.union_id ? 'union' : 'club'} owner ${rakeRecipientId.slice(0, 8)}`);
+                }
+            }
+        }
+
+        // Update tournament with total_rake and mark completed
         await supabase
             .from('tournaments')
-            .update({ status: 'COMPLETED', ended_at: new Date().toISOString() })
+            .update({
+                status: 'COMPLETED',
+                ended_at: new Date().toISOString(),
+                total_rake: totalRake,
+            })
             .eq('id', this.tournamentId);
 
         for (const [tableId, engine] of this.tableEngines) {

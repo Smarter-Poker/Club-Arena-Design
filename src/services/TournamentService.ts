@@ -418,12 +418,23 @@ class TournamentService {
             throw new Error('Insufficient chips in Player Wallet for tournament buy-in');
         }
 
-        // Log transaction for audit trail
-        await WalletService.logTransaction(
-            userId, 'PLAYER', -totalCost, 'debit', 'buyin',
-            `Tournament buy-in: ${tournament.name} (${buyIn}+${rake})`,
-            undefined, undefined, tournamentId
-        );
+        // Log buy-in transaction (just the buy-in amount that feeds prize pool)
+        if (buyIn > 0) {
+            await WalletService.logTransaction(
+                userId, 'PLAYER', -buyIn, 'debit', 'buyin',
+                `Tournament buy-in: ${tournament.name}`,
+                undefined, undefined, tournamentId
+            );
+        }
+
+        // Log rake/fee separately for clean audit trail
+        if (rake > 0) {
+            await WalletService.logTransaction(
+                userId, 'PLAYER', -rake, 'debit', 'rake',
+                `Tournament fee: ${tournament.name}`,
+                undefined, undefined, tournamentId
+            );
+        }
 
         // Insert player (username is NOT NULL in schema — must be provided)
         const { data, error } = await supabase
@@ -565,7 +576,7 @@ class TournamentService {
 
         // Log refund transaction
         await WalletService.logTransaction(
-            userId, 'PLAYER', refundAmount, 'credit', 'cashout',
+            userId, 'PLAYER', refundAmount, 'credit', 'refund',
             `Tournament unregister refund: ${tournament.name}`,
             undefined, undefined, tournamentId
         );
@@ -746,13 +757,13 @@ class TournamentService {
 
             if (prizeError) {
                 console.error('[TournamentService] CRITICAL: Prize credit to Player Wallet failed:', prizeError);
-                throw new Error(`Failed to credit ${ordinal(position)} place prize of $${prize}`);
+                throw new Error(`Failed to credit ${ordinal(position)} place prize of ${prize}`);
             }
 
             // Log prize payout transaction
             await WalletService.logTransaction(
-                userId, 'PLAYER', prize, 'credit', 'settlement',
-                `Tournament prize: ${ordinal(position)} place`,
+                userId, 'PLAYER', prize, 'credit', 'prize',
+                `Tournament prize: ${ordinal(position)} place — ${tournament.name}`,
                 undefined, undefined, tournamentId
             );
         }

@@ -312,7 +312,8 @@ export async function processLeavePending(tableId: string, clubId: string): Prom
 
 /**
  * Log rake collection — every chip documented.
- * Rake is taken from the pot; club wallet receives chips from rake.
+ * Rake goes to union owner (if club is in a union) or club owner (standalone).
+ * Union holds all rake and distributes 90% back to clubs weekly.
  */
 export async function logRakeCollection(
     tableId: string,
@@ -323,7 +324,7 @@ export async function logRakeCollection(
 ): Promise<void> {
     if (rakeAmount <= 0) return;
 
-    // Log to rake_history (hand-level rake record)
+    // Log to rake_history (hand-level rake record — always)
     const { error: rakeErr } = await supabase.from('rake_history').insert({
         table_id: tableId,
         club_id: clubId,
@@ -334,9 +335,60 @@ export async function logRakeCollection(
     });
     if (rakeErr) console.warn(`[DB] Failed to log rake for hand #${handNumber}:`, rakeErr.message);
 
-    // rake_history IS the audit trail for club rake.
-    // Club totals are computed from SUM(rake_history.rake_amount) WHERE club_id = X.
-    // No wallet_transactions entry needed — club_id is not in auth.users (FK constraint).
+    // Credit rake to the correct wallet: union owner or standalone club owner
+    try {
+        const { data: club } = await supabase
+            .from('clubs')
+            .select('owner_id, union_id, name')
+            .eq('id', clubId)
+            .single();
+
+        if (!club) return;
+
+        let rakeRecipientId: string | null = null;
+        let rakeDesc = '';
+
+        if (club.union_id) {
+            // Club is in a union — rake held by union owner until weekly settlement
+            const { data: union } = await supabase
+                .from('unions')
+                .select('owner_id, name')
+                .eq('id', club.union_id)
+                .single();
+
+            if (union?.owner_id) {
+                rakeRecipientId = union.owner_id;
+                rakeDesc = `Cash game rake held by ${union.name || 'Union'}: hand #${handNumber} (${club.name || 'club'})`;
+            }
+        } else {
+            // Standalone club — rake goes directly to club owner
+            rakeRecipientId = club.owner_id;
+            rakeDesc = `Cash game rake: hand #${handNumber}`;
+        }
+
+        if (rakeRecipientId) {
+            // Credit to recipient's PLAYER wallet
+            await supabase.rpc('credit_player_wallet', {
+                p_user_id: rakeRecipientId,
+                p_amount: rakeAmount,
+            });
+
+            // Log wallet transaction
+            await supabase.rpc('log_wallet_transaction', {
+                p_user_id: rakeRecipientId,
+                p_wallet_type: 'PLAYER',
+                p_amount: rakeAmount,
+                p_type: 'credit',
+                p_category: 'rake',
+                p_description: rakeDesc,
+                p_table_id: tableId,
+                p_hand_id: null,
+                p_related_entity_id: clubId,
+            });
+        }
+    } catch (e) {
+        console.warn(`[DB] Rake wallet credit failed for hand #${handNumber}:`, e);
+    }
 }
 
 /**

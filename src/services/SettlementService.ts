@@ -379,6 +379,104 @@ export const SettlementService = {
     },
 
     // ─────────────────────────────────────────────────────────────────────────────
+    // UNION RAKE BACK — Weekly 90% Distribution
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Execute weekly union settlement: distribute 90% of collected rake back to clubs.
+     * Union keeps 10% and holds ALL BBJ and Promotional chips.
+     *
+     * FLOW:
+     * 1. Query all rake_history for this period, grouped by club
+     * 2. For each club in a union: compute 90% rake back
+     * 3. Credit 90% to club owner's wallet from union owner's wallet
+     * 4. Log all transactions with full audit trail
+     */
+    async executeUnionRakeBack(unionId: string, periodStart: string, periodEnd: string): Promise<{
+        clubsPaid: number;
+        totalRakeBack: number;
+        unionRetained: number;
+    }> {
+        // Get union info
+        const { data: union } = await supabase
+            .from('unions')
+            .select('owner_id, name')
+            .eq('id', unionId)
+            .single();
+
+        if (!union?.owner_id) throw new Error('Union not found');
+
+        // Get all clubs in this union
+        const { data: clubs } = await supabase
+            .from('clubs')
+            .select('id, name, owner_id')
+            .eq('union_id', unionId);
+
+        if (!clubs || clubs.length === 0) return { clubsPaid: 0, totalRakeBack: 0, unionRetained: 0 };
+
+        let clubsPaid = 0;
+        let totalRakeBack = 0;
+        let totalCollected = 0;
+
+        for (const club of clubs) {
+            // Sum rake collected for this club in the period
+            const { data: rakeData } = await supabase
+                .from('rake_history')
+                .select('rake_amount')
+                .eq('club_id', club.id)
+                .gte('collected_at', periodStart)
+                .lt('collected_at', periodEnd);
+
+            const clubRake = (rakeData || []).reduce((sum, r) => sum + Number(r.rake_amount), 0);
+            if (clubRake <= 0) continue;
+
+            totalCollected += clubRake;
+
+            // 90% goes back to club owner
+            const rakeBack = Math.trunc(clubRake * 0.90 * 100) / 100;
+
+            if (rakeBack > 0 && club.owner_id) {
+                // Deduct from union owner
+                const { data: deductResult } = await supabase.rpc('deduct_player_wallet', {
+                    p_user_id: union.owner_id,
+                    p_amount: rakeBack,
+                });
+
+                if (deductResult === false) {
+                    console.error(`[Settlement] Union owner insufficient balance for rake back to ${club.name}`);
+                    continue;
+                }
+
+                // Credit to club owner
+                await supabase.rpc('credit_player_wallet', {
+                    p_user_id: club.owner_id,
+                    p_amount: rakeBack,
+                });
+
+                // Log both sides
+                await WalletService.logTransaction(
+                    union.owner_id, 'PLAYER', -rakeBack, 'debit', 'settlement',
+                    `Weekly rake back to ${club.name}: 90% of ${clubRake}`,
+                    undefined, undefined, club.id
+                );
+
+                await WalletService.logTransaction(
+                    club.owner_id, 'PLAYER', rakeBack, 'credit', 'settlement',
+                    `Weekly rake back from ${union.name}: 90% of ${clubRake} collected`,
+                    undefined, undefined, unionId
+                );
+
+                clubsPaid++;
+                totalRakeBack += rakeBack;
+            }
+        }
+
+        const unionRetained = Math.trunc((totalCollected - totalRakeBack) * 100) / 100;
+
+        return { clubsPaid, totalRakeBack, unionRetained };
+    },
+
+    // ─────────────────────────────────────────────────────────────────────────────
     // REPORTING
     // ─────────────────────────────────────────────────────────────────────────────
 
