@@ -531,9 +531,10 @@ class TournamentManager {
     }
 
     stop(): void {
+        // Clear intervals FIRST to prevent them firing during teardown
+        if (this.blindTimer) { clearTimeout(this.blindTimer); this.blindTimer = null; }
+        if (this.eliminationTimer) { clearInterval(this.eliminationTimer); this.eliminationTimer = null; }
         this.running = false;
-        if (this.blindTimer) clearInterval(this.blindTimer);
-        if (this.eliminationTimer) clearInterval(this.eliminationTimer);
         for (const engine of this.tableEngines.values()) {
             engine.stop();
         }
@@ -1231,24 +1232,30 @@ class TournamentManager {
             const firstPlace = Array.isArray(payouts) ? payouts.find((p: any) => p.place === 1) : null;
             if (firstPlace) {
                 // Exact cent-precision: truncate sub-cent fractions
-                const prize = Math.trunc((tournament.prize_pool || 0) * firstPlace.percentage / 100 * 100) / 100;
-                await supabase.rpc('credit_player_wallet', {
+                const prizeRaw = (tournament.prize_pool || 0) * firstPlace.percentage / 100;
+                const prize = Math.trunc(prizeRaw * 100) / 100;
+
+                const { error: creditErr } = await supabase.rpc('credit_player_wallet', {
                     p_user_id: winnerId,
                     p_amount: prize,
                 });
 
-                // Log winner prize via RPC (SECURITY DEFINER bypasses RLS)
-                await supabase.rpc('log_wallet_transaction', {
-                    p_user_id: winnerId,
-                    p_wallet_type: 'PLAYER',
-                    p_amount: prize,
-                    p_type: 'credit',
-                    p_category: 'prize',
-                    p_description: `Tournament winner prize: 1st place`,
-                    p_table_id: null,
-                    p_hand_id: null,
-                    p_related_entity_id: this.tournamentId,
-                });
+                if (creditErr) {
+                    console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] CRITICAL: Winner prize credit FAILED for ${winnerId.slice(0, 8)}: ${creditErr.message}`);
+                } else {
+                    // Log winner prize via RPC (SECURITY DEFINER bypasses RLS)
+                    await supabase.rpc('log_wallet_transaction', {
+                        p_user_id: winnerId,
+                        p_wallet_type: 'PLAYER',
+                        p_amount: prize,
+                        p_type: 'credit',
+                        p_category: 'prize',
+                        p_description: `Tournament winner prize: 1st place`,
+                        p_table_id: null,
+                        p_hand_id: null,
+                        p_related_entity_id: this.tournamentId,
+                    });
+                }
 
                 await supabase
                     .from('tournament_players')

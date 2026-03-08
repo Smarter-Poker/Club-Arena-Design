@@ -166,6 +166,11 @@ interface TableState {
     bountyMap: Record<string, number>; // userId → current bounty value (for KO/PKO display)
     isBountyTournament: boolean;
     spinMultiplier?: number;
+    handForHand?: boolean;
+    bubbleInfo?: { playersRemaining: number; paidPositions: number };
+    lateRegOpen?: boolean;
+    currentLevel?: number;
+    refreshTrigger?: number;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -993,6 +998,66 @@ export default function TablePage() {
                                 })();
                             } else if (data?.type === 'ADDON_PERIOD_END') {
                                 setAddOnPeriod(prev => ({ ...prev, active: false }));
+                            } else if (data?.type === 'hand_for_hand') {
+                                // Bubble mode — hand-for-hand play activated
+                                setTableState(prev => ({
+                                    ...prev,
+                                    handForHand: data.payload?.active || false,
+                                    bubbleInfo: data.payload ? {
+                                        playersRemaining: data.payload.playersRemaining,
+                                        paidPositions: data.payload.paidPositions,
+                                    } : undefined,
+                                }));
+                                if (data.payload?.active) {
+                                    toast?.info?.('Hand-for-hand play activated — bubble approaching');
+                                }
+                            } else if (data?.type === 'bubble_burst') {
+                                // Bubble burst — players are now in the money
+                                setTableState(prev => ({
+                                    ...prev,
+                                    handForHand: false,
+                                    bubbleInfo: undefined,
+                                }));
+                                toast?.success?.('Bubble burst — you are in the money!');
+                            } else if (data?.type === 'player_eliminated') {
+                                // A player was eliminated from the tournament
+                                const elimData = data.payload || {};
+                                console.log(`[TablePage] Player eliminated: ${elimData.userId?.slice(0, 8)} at position ${elimData.position}`);
+                                // Refresh seated players to reflect elimination
+                                if (elimData.userId) {
+                                    setTableState(prev => ({
+                                        ...prev,
+                                        players: prev.players.map((seat: any) =>
+                                            seat?.userId === elimData.userId
+                                                ? { ...seat, status: 'eliminated' }
+                                                : seat
+                                        ),
+                                    }));
+                                }
+                            } else if (data?.type === 'table_rebalance') {
+                                // Players moved between tables — force refresh
+                                console.log('[TablePage] Table rebalance detected — refreshing seats');
+                                setTableState(prev => ({ ...prev, refreshTrigger: Date.now() }));
+                            } else if (data?.type === 'late_reg_closed') {
+                                // Late registration window has closed
+                                setTableState(prev => ({
+                                    ...prev,
+                                    lateRegOpen: false,
+                                }));
+                            } else if (data?.type === 'rebuy') {
+                                // A player rebuyed — refresh their stack
+                                const rebuyData = data.payload || {};
+                                if (rebuyData.userId) {
+                                    console.log(`[TablePage] Rebuy: ${rebuyData.userId.slice(0, 8)} +${rebuyData.chips} chips`);
+                                }
+                            } else if (data?.type === 'level_up') {
+                                // Blind level increased
+                                const levelData = data.payload || {};
+                                setTableState(prev => ({
+                                    ...prev,
+                                    currentLevel: levelData.level,
+                                    blinds: levelData.blinds,
+                                }));
                             }
                         })
                         .subscribe();
