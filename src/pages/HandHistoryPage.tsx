@@ -12,6 +12,7 @@ import type { HandRecord } from '../services/HandHistoryService';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import { exportToCSV } from '../lib/export';
+import { supabase } from '../lib/supabase';
 import HandReplay from '../components/replay/HandReplay';
 import SmarterHeader from '../components/layout/SmarterHeader';
 import ReplayActions from '../components/table/ReplayActions';
@@ -43,6 +44,31 @@ export default function HandHistoryPage() {
             loadHands(true);
         }
     }, [user?.id, filter]);
+
+    // ── Realtime subscription: refresh hands on new entries ──
+    useEffect(() => {
+        if (!user?.id) return;
+
+        const channel = supabase
+            .channel(`hand-history-${user.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'hand_history',
+                },
+                () => {
+                    // New hand added, refresh the hand list
+                    loadHands(true);
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user?.id]);
 
     const loadHands = async (reset = false, overridePage?: number) => {
         if (!user?.id) return;

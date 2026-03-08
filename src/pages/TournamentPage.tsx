@@ -104,6 +104,64 @@ export default function TournamentPage() {
         loadTournaments();
     }, [clubId, tournamentId]);
 
+    // ── Realtime subscription: live tournament updates ──
+    useEffect(() => {
+        if (!clubId) return;
+
+        const channel = supabase
+            .channel(`tournament-page-${clubId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'tournaments',
+                    filter: `club_id=eq.${clubId}`,
+                },
+                (payload) => {
+                    // Refresh tournaments on any change
+                    (async () => {
+                        try {
+                            const data = await tournamentService.getTournaments(clubId);
+                            setTournaments(data);
+                            // Update selected tournament if it changed
+                            const updated = data.find(t => t.id === selectedTournament?.id);
+                            if (updated) setSelectedTournament(updated);
+                        } catch (error) {
+                            console.error('Failed to refresh tournaments:', error);
+                        }
+                    })();
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'tournament_players',
+                },
+                (payload) => {
+                    // Refresh tournaments when players change
+                    (async () => {
+                        try {
+                            const data = await tournamentService.getTournaments(clubId);
+                            setTournaments(data);
+                            // Update selected tournament if it changed
+                            const updated = data.find(t => t.id === selectedTournament?.id);
+                            if (updated) setSelectedTournament(updated);
+                        } catch (error) {
+                            console.error('Failed to refresh tournaments:', error);
+                        }
+                    })();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [clubId, selectedTournament?.id]);
+
     // ─── Sync registration state when selected tournament changes ───
     useEffect(() => {
         if (!selectedTournament || !currentUser.id || currentUser.id === 'guest') {

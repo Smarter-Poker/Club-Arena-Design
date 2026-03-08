@@ -47,6 +47,43 @@ export default function ClubFinancialsPage() {
         if (clubId) loadFinancials();
     }, [clubId, period]);
 
+    // ── Realtime subscription: live financial data updates ──
+    useEffect(() => {
+        if (!clubId) return;
+
+        const channel = supabase
+            .channel(`club-financials-${clubId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'wallet_transactions',
+                    filter: `club_id=eq.${clubId}`,
+                },
+                () => {
+                    loadFinancials();
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'rake_history',
+                    filter: `club_id=eq.${clubId}`,
+                },
+                () => {
+                    loadFinancials();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [clubId]);
+
     const loadFinancials = async () => {
         setLoading(true);
         try {

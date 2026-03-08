@@ -223,6 +223,55 @@ export default function ClubDetailPage() {
         };
     }, [clubId]);
 
+    // Supabase Realtime subscriptions for auto-updates
+    useEffect(() => {
+        if (!clubId) return;
+
+        const channel = supabase
+            .channel(`club-detail-${clubId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'clubs',
+                    filter: `id=eq.${clubId}`,
+                },
+                () => {
+                    loadClubData();
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'club_members',
+                    filter: `club_id=eq.${clubId}`,
+                },
+                () => {
+                    loadClubData();
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'tables',
+                    filter: `club_id=eq.${clubId}`,
+                },
+                () => {
+                    loadClubData();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [clubId]);
+
     const loadClubData = async () => {
         if (!clubId) {
             setLoading(false);

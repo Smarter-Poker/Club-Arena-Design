@@ -12,6 +12,7 @@ import styles from './AgentManagementPage.module.css';
 import { AgentService, type Agent } from '@/services/AgentService';
 import { MembershipService, type ClubMembership } from '@/services/MembershipService';
 import { useUserStore } from '@/stores/useUserStore';
+import { supabase } from '@/lib/supabase';
 import ChipTransferModal from '@/components/agent/ChipTransferModal';
 import AgentTree from '@/components/agent/AgentTree';
 import CommissionHistoryModal from '@/components/agent/CommissionHistoryModal';
@@ -95,6 +96,58 @@ export default function AgentManagementPage() {
             })
             .finally(() => setIsLoadingMembers(false));
     }, [showAddModal, clubId]);
+
+    // Realtime subscription: auto-update on club_members and wallet_transactions changes
+    useEffect(() => {
+        if (!clubId) return;
+
+        const loadAgentsData = async () => {
+            setIsLoading(true);
+            try {
+                const data = await AgentService.getAgents(clubId);
+                setAgents(data);
+                setError(null);
+            } catch (err) {
+                console.error('Failed to reload agents:', err);
+                setError(err instanceof Error ? err.message : 'Failed to reload agents');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        const channel = supabase
+            .channel(`agent-mgmt-${clubId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'club_members',
+                    filter: `club_id=eq.${clubId}`,
+                },
+                (payload) => {
+                    // Agents are club members with agent roles - reload on any change
+                    loadAgentsData();
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'wallet_transactions',
+                },
+                (payload) => {
+                    // Commission tracking - reload on any transaction change
+                    loadAgentsData();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [clubId]);
 
     // Stats summary
     const totalAgents = agents.length;
