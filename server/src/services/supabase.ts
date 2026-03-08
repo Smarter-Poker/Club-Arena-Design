@@ -230,8 +230,8 @@ export async function autoRebuyHorse(
         .eq('user_id', userId)
         .is('left_at', null);
 
-    // Log transaction (fire and forget)
-    supabase.from('wallet_transactions').insert({
+    // Log transaction
+    const { error: txErr } = await supabase.from('wallet_transactions').insert({
         user_id: userId,
         wallet_type: 'PLAYER',
         amount: rebuyAmount,
@@ -239,7 +239,8 @@ export async function autoRebuyHorse(
         category: 'buyin',
         description: `Auto-rebuy ${rebuyAmount} chips`,
         table_id: tableId,
-    }).then(() => {});
+    });
+    if (txErr) console.warn(`[DB] Failed to log rebuy transaction:`, txErr.message);
 
     return true;
 }
@@ -323,24 +324,26 @@ export async function logRakeCollection(
     if (rakeAmount <= 0) return;
 
     // Log to rake_history (hand-level rake record)
-    await supabase.from('rake_history').insert({
+    const { error: rakeErr } = await supabase.from('rake_history').insert({
         table_id: tableId,
         club_id: clubId,
         hand_number: handNumber,
         rake_amount: rakeAmount,
         pot_amount: potAmount,
         collected_at: new Date().toISOString(),
-    }).then(() => {});
+    });
+    if (rakeErr) console.warn(`[DB] Failed to log rake for hand #${handNumber}:`, rakeErr.message);
 
     // Credit the club's rake wallet
-    await supabase.from('wallet_transactions').insert({
+    const { error: txErr } = await supabase.from('wallet_transactions').insert({
         user_id: clubId,
         wallet_type: 'CLUB_RAKE',
         amount: rakeAmount,
         type: 'credit',
         category: 'rake',
         description: `Rake: ${rakeAmount} from hand #${handNumber} (pot: ${potAmount})`,
-    }).then(() => {});
+    });
+    if (txErr) console.warn(`[DB] Failed to log rake transaction for hand #${handNumber}:`, txErr.message);
 }
 
 /**

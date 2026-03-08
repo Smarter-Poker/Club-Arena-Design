@@ -56,26 +56,35 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 4. fn_toggle_message_reaction (alias for toggle_message_reaction)
+-- Code calls with p_reaction, table column is "reaction" not "emoji"
 CREATE OR REPLACE FUNCTION fn_toggle_message_reaction(
   p_message_id UUID,
-  p_user_id UUID,
-  p_emoji TEXT
+  p_reaction VARCHAR(32),
+  p_user_id UUID
 ) RETURNS JSONB AS $$
 DECLARE
   v_existing UUID;
   v_result JSONB;
 BEGIN
   SELECT id INTO v_existing FROM message_reactions
-  WHERE message_id = p_message_id AND user_id = p_user_id AND emoji = p_emoji;
+  WHERE message_id = p_message_id AND user_id = p_user_id AND reaction = p_reaction;
   IF v_existing IS NOT NULL THEN
     DELETE FROM message_reactions WHERE id = v_existing;
-    v_result := jsonb_build_object('action', 'removed', 'emoji', p_emoji);
+    v_result := jsonb_build_object('action', 'removed', 'reaction', p_reaction);
   ELSE
-    INSERT INTO message_reactions (message_id, user_id, emoji)
-    VALUES (p_message_id, p_user_id, p_emoji);
-    v_result := jsonb_build_object('action', 'added', 'emoji', p_emoji);
+    INSERT INTO message_reactions (message_id, user_id, reaction)
+    VALUES (p_message_id, p_user_id, p_reaction);
+    v_result := jsonb_build_object('action', 'added', 'reaction', p_reaction);
   END IF;
   RETURN v_result;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 4b. Generic increment() RPC function for atomic field increments
+CREATE OR REPLACE FUNCTION increment(x DECIMAL)
+RETURNS DECIMAL AS $$
+BEGIN
+  RETURN x;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

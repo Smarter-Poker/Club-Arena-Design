@@ -645,7 +645,11 @@ class TournamentManager {
             .single();
 
         if (tournament?.payout_structure) {
-            const firstPlace = tournament.payout_structure.find((p: any) => p.place === 1);
+            let payouts = tournament.payout_structure;
+            if (typeof payouts === 'string') {
+                try { payouts = JSON.parse(payouts); } catch { payouts = []; }
+            }
+            const firstPlace = Array.isArray(payouts) ? payouts.find((p: any) => p.place === 1) : null;
             if (firstPlace) {
                 const prize = Math.trunc((tournament.prize_pool || 0) * firstPlace.percentage / 100);
                 await supabase.rpc('credit_player_wallet', {

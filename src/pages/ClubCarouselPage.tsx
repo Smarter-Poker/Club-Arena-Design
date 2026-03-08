@@ -85,6 +85,16 @@ export default function ClubCarouselPage() {
         loadUserData();
     }, []);
 
+    // Realtime: refresh when club data changes
+    useEffect(() => {
+        const channel = supabase
+            .channel('club-carousel-live')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'club_members' }, () => loadUserData())
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'clubs' }, () => loadUserData())
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }, []);
+
     const loadUserData = async () => {
         setLoading(true);
         try {

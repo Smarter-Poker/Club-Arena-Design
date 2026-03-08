@@ -91,6 +91,14 @@ export default function ClubsPage() {
             }
         }
         loadMyClubs();
+
+        // Realtime: refresh clubs when membership data changes
+        const channel = supabase
+            .channel('clubs-page-live')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'club_members' }, () => loadMyClubs())
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'clubs' }, () => loadMyClubs())
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
     }, []);
 
     // Join club by ID
