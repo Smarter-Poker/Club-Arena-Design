@@ -61,6 +61,92 @@ export default function TournamentDetails() {
         };
     }, [tournamentId]);
 
+    // ── Realtime subscription: live tournament updates ──
+    useEffect(() => {
+        if (!tournamentId) return;
+
+        const channel = supabase
+            .channel(`tournament-${tournamentId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'tournaments',
+                    filter: `id=eq.${tournamentId}`,
+                },
+                (payload) => {
+                    if (payload.eventType === 'UPDATE' && payload.new) {
+                        setTournament(prev => prev ? { ...prev, ...payload.new } : null);
+                    }
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'tournament_players',
+                    filter: `tournament_id=eq.${tournamentId}`,
+                },
+                (payload) => {
+                    if (payload.eventType === 'INSERT' && payload.new) {
+                        // New player registered
+                        const newPlayer = payload.new as {
+                            id: string;
+                            user_id: string;
+                            username?: string | null;
+                            chips?: number;
+                            status: string;
+                            position?: number | null;
+                        };
+                        setEntries(prev => [
+                            ...prev,
+                            {
+                                id: newPlayer.id,
+                                user_id: newPlayer.user_id,
+                                username: newPlayer.username || 'Player',
+                                avatar_url: null,
+                                chips: newPlayer.chips || tournament?.starting_chips || 10000,
+                                position: newPlayer.position || undefined,
+                                status: newPlayer.status as TournamentEntry['status'],
+                            }
+                        ]);
+                    } else if (payload.eventType === 'UPDATE' && payload.new) {
+                        // Player status or chips updated
+                        const updatedPlayer = payload.new as {
+                            id: string;
+                            user_id: string;
+                            username?: string | null;
+                            chips?: number;
+                            status: string;
+                            position?: number | null;
+                        };
+                        setEntries(prev =>
+                            prev.map(e =>
+                                e.id === updatedPlayer.id
+                                    ? {
+                                        ...e,
+                                        chips: updatedPlayer.chips,
+                                        status: updatedPlayer.status as TournamentEntry['status'],
+                                        position: updatedPlayer.position || undefined,
+                                    }
+                                    : e
+                            )
+                        );
+                    } else if (payload.eventType === 'DELETE' && payload.old) {
+                        // Player unregistered or eliminated
+                        setEntries(prev => prev.filter(e => e.id !== (payload.old as any).id));
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [tournamentId, tournament?.starting_chips]);
+
     useEffect(() => {
         if (tournament?.start_time) {
             startCountdown();

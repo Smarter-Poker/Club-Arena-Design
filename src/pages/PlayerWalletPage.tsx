@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { useWalletStore } from '../stores/useWalletStore';
 import { useUserStore } from '../stores/useUserStore';
 import TransactionHistory from '../components/TransactionHistory';
@@ -45,6 +46,52 @@ export default function PlayerWalletPage() {
             loadBalances(user.id);
             loadDiamonds(user.id);
         }
+    }, [user?.id, loadBalances, loadDiamonds]);
+
+    // ── Realtime subscription: live wallet balance updates ──
+    useEffect(() => {
+        if (!user?.id) return;
+
+        const channel = supabase
+            .channel(`user-wallet-${user.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'wallets',
+                    filter: `user_id=eq.${user.id}`,
+                },
+                (payload) => {
+                    // On any wallet change, refetch the balances
+                    if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+                        loadBalances(user.id);
+                        loadDiamonds(user.id);
+                    }
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'wallet_transactions',
+                    filter: `user_id=eq.${user.id}`,
+                },
+                (payload) => {
+                    // On any wallet transaction, refetch balances and let TransactionHistory handle updates
+                    if (payload.eventType === 'INSERT') {
+                        loadBalances(user.id);
+                        loadDiamonds(user.id);
+                    }
+                }
+            )
+            .subscribe();
+
+        // Cleanup on unmount
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [user?.id, loadBalances, loadDiamonds]);
 
     const totalBalance = balances.BUSINESS.total + balances.PLAYER.total + balances.PROMO.total;

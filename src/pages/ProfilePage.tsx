@@ -241,6 +241,106 @@ export default function ProfilePage() {
         loadProfile();
     }, []);
 
+    // Setup Supabase Realtime subscription for profile updates
+    useEffect(() => {
+        async function setupRealtimeSubscription() {
+            try {
+                const { data: { user: authUser } } = await supabase.auth.getUser();
+                if (!authUser) return;
+
+                // Create a channel for profile changes
+                const channel = supabase.channel(`profile-${authUser.id}`);
+
+                // Subscribe to profile changes
+                channel
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: '*',
+                            schema: 'public',
+                            table: 'profiles',
+                            filter: `id=eq.${authUser.id}`,
+                        },
+                        async (payload) => {
+                            console.log('[PROFILE] Profile updated:', payload);
+                            // Refetch profile data
+                            const { data: updatedProfile } = await supabase
+                                .from('profiles')
+                                .select('*')
+                                .eq('id', authUser.id)
+                                .single();
+
+                            if (updatedProfile) {
+                                setUser({
+                                    id: updatedProfile.id,
+                                    username: updatedProfile.username || 'Player',
+                                    displayName: updatedProfile.display_name || updatedProfile.username || 'Player',
+                                    playerNumber: updatedProfile.player_number || Math.floor(Math.random() * 9999) + 1,
+                                    avatarUrl: updatedProfile.avatar_url || '',
+                                    vipLevel: updatedProfile.vip_level || 'bronze',
+                                    memberSince: updatedProfile.created_at,
+                                });
+
+                                setDiamonds(updatedProfile.diamonds || 0);
+                                setIsVIP(updatedProfile.is_vip || false);
+
+                                if (updatedProfile.stats) {
+                                    setStats({
+                                        totalHands: updatedProfile.stats.total_hands || 0,
+                                        vpip: updatedProfile.stats.vpip || 0,
+                                        pfr: updatedProfile.stats.pfr || 0,
+                                        threeBet: updatedProfile.stats.three_bet || 0,
+                                        aggression: updatedProfile.stats.aggression_factor || 0,
+                                        bbPer100: updatedProfile.stats.bb_per_100 || 0,
+                                        biggestPot: updatedProfile.stats.biggest_pot || 0,
+                                        totalProfit: updatedProfile.stats.total_profit || 0,
+                                        winRate: updatedProfile.stats.win_rate || 0,
+                                        tournamentsPlayed: updatedProfile.stats.tournaments_played || 0,
+                                        tournamentsWon: updatedProfile.stats.tournaments_won || 0,
+                                        bountyKOs: updatedProfile.stats.bounty_kos || 0,
+                                    });
+                                }
+                            }
+                        }
+                    )
+                    // Subscribe to wallet changes for diamonds
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: '*',
+                            schema: 'public',
+                            table: 'wallets',
+                            filter: `user_id=eq.${authUser.id}`,
+                        },
+                        async (payload) => {
+                            console.log('[PROFILE] Wallet updated:', payload);
+                            // Refetch profile to get updated diamonds
+                            const { data: updatedProfile } = await supabase
+                                .from('profiles')
+                                .select('diamonds, is_vip')
+                                .eq('id', authUser.id)
+                                .single();
+
+                            if (updatedProfile) {
+                                setDiamonds(updatedProfile.diamonds || 0);
+                                setIsVIP(updatedProfile.is_vip || false);
+                            }
+                        }
+                    )
+                    .subscribe();
+
+                // Cleanup function
+                return () => {
+                    supabase.removeChannel(channel);
+                };
+            } catch (err) {
+                console.error('[PROFILE] Realtime subscription failed:', err);
+            }
+        }
+
+        setupRealtimeSubscription();
+    }, []);
+
     if (isLoading) {
         return <LoadingState message="Loading profile..." />;
     }

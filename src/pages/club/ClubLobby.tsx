@@ -3,7 +3,7 @@
  * PokerBros-style club interface with tournaments, tables, and navigation
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { clubService } from '../../services/ClubService';
 import { tableService } from '../../services/TableService';
@@ -53,6 +53,59 @@ export default function ClubLobby() {
             return;
         }
         loadClubData();
+    }, [clubId]);
+
+    // ── Realtime subscription: live table and tournament updates ──
+    useEffect(() => {
+        if (!clubId) return;
+
+        const channel = supabase
+            .channel(`club-lobby-${clubId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'tables',
+                    filter: `club_id=eq.${clubId}`,
+                },
+                (payload) => {
+                    if (payload.eventType === 'UPDATE' && payload.new) {
+                        setTables(prev =>
+                            prev.map(t => t.id === payload.new.id ? { ...t, ...payload.new } : t)
+                        );
+                    } else if (payload.eventType === 'INSERT' && payload.new) {
+                        setTables(prev => [payload.new as any, ...prev]);
+                    } else if (payload.eventType === 'DELETE' && payload.old) {
+                        setTables(prev => prev.filter(t => t.id !== (payload.old as any).id));
+                    }
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'tournaments',
+                    filter: `club_id=eq.${clubId}`,
+                },
+                (payload) => {
+                    if (payload.eventType === 'UPDATE' && payload.new) {
+                        setTournaments(prev =>
+                            prev.map(t => t.id === payload.new.id ? { ...t, ...payload.new } : t)
+                        );
+                    } else if (payload.eventType === 'INSERT' && payload.new) {
+                        setTournaments(prev => [payload.new as any, ...prev]);
+                    } else if (payload.eventType === 'DELETE' && payload.old) {
+                        setTournaments(prev => prev.filter(t => t.id !== (payload.old as any).id));
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [clubId]);
 
     const loadClubData = async () => {

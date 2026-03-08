@@ -175,6 +175,54 @@ export default function SettlementPage() {
                     loadSettlementData();
                 }
             )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'club_wires',
+                },
+                (payload) => {
+                    // Update club wires state directly for faster UI updates
+                    if (payload.eventType === 'UPDATE' && payload.new) {
+                        setClubWires(prev =>
+                            prev.map(wire =>
+                                wire.clubId === (payload.new as any).club_id
+                                    ? {
+                                        ...wire,
+                                        status: (payload.new as any).status === 'finalized' ? 'processed' : 'pending',
+                                        finalWire: (payload.new as any).final_amount || wire.finalWire,
+                                    }
+                                    : wire
+                            )
+                        );
+                    }
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'agent_settlements',
+                },
+                (payload) => {
+                    // Update agent payouts state directly for faster UI updates
+                    if (payload.eventType === 'UPDATE' && payload.new) {
+                        setAgentPayouts(prev =>
+                            prev.map(payout =>
+                                payout.agentId === (payload.new as any).agent_id
+                                    ? {
+                                        ...payout,
+                                        status: (payload.new as any).status as 'pending' | 'approved' | 'paid',
+                                        netPayout: (payload.new as any).net_settlement || payout.netPayout,
+                                    }
+                                    : payout
+                            )
+                        );
+                    }
+                }
+            )
             .subscribe();
 
         return () => {

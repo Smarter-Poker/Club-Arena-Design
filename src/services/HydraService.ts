@@ -774,7 +774,9 @@ export const HydraService = {
         const [minFactor, maxFactor] = sizingFactors[profile] || sizingFactors['reg'];
         const targetSize = pot * (minFactor + Math.random() * (maxFactor - minFactor));
 
-        return Math.max(minRaise, Math.min(maxRaise, Math.round(targetSize)));
+        // Exact penny precision — no rounding on monetary values
+        const precise = Math.floor(targetSize * 100) / 100;
+        return Math.max(minRaise, Math.min(maxRaise, precise));
     },
 
     /**
