@@ -370,6 +370,9 @@ class TournamentManager {
     private prizePoolFinalized: boolean = false;
     // Tournament metadata cache
     private tournamentCache: any = null;
+    // Reusable broadcast channel (prevents memory leak from creating per-event)
+    private broadcastChannel: any = null;
+    private broadcastReady: boolean = false;
 
     constructor(tournamentId: string, gameServer: GameServer) {
         this.tournamentId = tournamentId;
@@ -377,6 +380,36 @@ class TournamentManager {
     }
 
     isRunning(): boolean { return this.running; }
+
+    /** Reusable broadcast — single channel per tournament lifecycle */
+    private async broadcast(eventType: string, payload: any): Promise<void> {
+        try {
+            if (!this.broadcastChannel) {
+                this.broadcastChannel = supabase.channel(`t-break-${this.tournamentId}`);
+                await this.broadcastChannel.subscribe();
+                this.broadcastReady = true;
+            }
+            await this.broadcastChannel.send({
+                type: 'broadcast',
+                event: 'tournament_event',
+                payload: { type: eventType, payload },
+            });
+        } catch (e) {
+            console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Broadcast ${eventType} failed:`, e);
+            // Reset channel on error so next call re-creates
+            this.broadcastChannel = null;
+            this.broadcastReady = false;
+        }
+    }
+
+    /** Clean up broadcast channel when tournament ends */
+    private async cleanupBroadcastChannel(): Promise<void> {
+        if (this.broadcastChannel) {
+            try { await this.broadcastChannel.unsubscribe(); } catch { }
+            this.broadcastChannel = null;
+            this.broadcastReady = false;
+        }
+    }
 
     async start(): Promise<void> {
         this.running = true;
@@ -567,6 +600,12 @@ class TournamentManager {
             engine.stop();
         }
         this.tableEngines.clear();
+        // Best-effort cleanup of broadcast channel (non-async in sync stop)
+        if (this.broadcastChannel) {
+            try { this.broadcastChannel.unsubscribe(); } catch { }
+            this.broadcastChannel = null;
+            this.broadcastReady = false;
+        }
     }
 
     private async createTablesAndSeatPlayers(tournament: any): Promise<void> {
@@ -679,25 +718,13 @@ class TournamentManager {
                     .eq('id', this.tournamentId);
 
                 // Broadcast level_up event to all table pages
-                try {
-                    const chan = supabase.channel(`t-break-${this.tournamentId}`);
-                    await chan.subscribe();
-                    await chan.send({
-                        type: 'broadcast',
-                        event: 'tournament_event',
-                        payload: {
-                            type: 'level_up',
-                            payload: {
-                                level: this.currentLevel,
-                                blinds: `${level.smallBlind}/${level.bigBlind}`,
-                                smallBlind: level.smallBlind,
-                                bigBlind: level.bigBlind,
-                                ante: level.ante || 0,
-                            },
-                        },
-                    });
-                    setTimeout(async () => { try { await chan.unsubscribe(); } catch { } }, 3000);
-                } catch (e) { /* noop */ }
+                await this.broadcast('level_up', {
+                    level: this.currentLevel,
+                    blinds: `${level.smallBlind}/${level.bigBlind}`,
+                    smallBlind: level.smallBlind,
+                    bigBlind: level.bigBlind,
+                    ante: level.ante || 0,
+                });
 
                 // ── ADD-ON PERIOD TRIGGER ──
                 // When blind level passes rebuy_levels cap and add-on is available
@@ -729,16 +756,7 @@ class TournamentManager {
                         }
 
                         // Broadcast late_reg_closed so clients update UI
-                        try {
-                            const chan = supabase.channel(`t-break-${this.tournamentId}`);
-                            await chan.subscribe();
-                            await chan.send({
-                                type: 'broadcast',
-                                event: 'tournament_event',
-                                payload: { type: 'late_reg_closed', payload: { prizePool: freshT?.prize_pool || 0 } },
-                            });
-                            setTimeout(async () => { try { await chan.unsubscribe(); } catch { } }, 3000);
-                        } catch (e) { /* noop */ }
+                        await this.broadcast('late_reg_closed', { prizePool: freshT?.prize_pool || 0 });
                     }
                 }
 
@@ -760,38 +778,7 @@ class TournamentManager {
         console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] ADD-ON PERIOD START — 60s, cost: ${addonCost}, chips: ${addonChips}`);
 
         // Broadcast ADDON_PERIOD_START via Supabase Realtime
-        try {
-            const chan = supabase.channel(`t-break-${this.tournamentId}`);
-            await chan.subscribe();
-            await chan.send({
-                type: 'broadcast',
-                event: 'tournament_event',
-                payload: {
-                    type: 'ADDON_PERIOD_START',
-                    payload: { addOnCost: addonCost, addOnChips: addonChips, durationSeconds: 60 },
-                },
-            });
-            setTimeout(async () => { try { await chan.unsubscribe(); } catch { } }, 5000);
-        } catch (e) {
-            console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Addon broadcast failed:`, e);
-        }
-
-        // Also broadcast on addon-specific channel
-        try {
-            const addonChan = supabase.channel(`t-addon-${this.tournamentId}`);
-            await addonChan.subscribe();
-            await addonChan.send({
-                type: 'broadcast',
-                event: 'addon_event',
-                payload: {
-                    type: 'ADDON_PERIOD_START',
-                    addOnCost: addonCost,
-                    addOnChips: addonChips,
-                    durationSeconds: 60,
-                },
-            });
-            setTimeout(async () => { try { await addonChan.unsubscribe(); } catch { } }, 5000);
-        } catch (e) { /* noop */ }
+        await this.broadcast('ADDON_PERIOD_START', { addOnCost: addonCost, addOnChips: addonChips, durationSeconds: 60 });
 
         // Wait 60 seconds
         await new Promise<void>(resolve => setTimeout(resolve, 60_000));
@@ -813,16 +800,7 @@ class TournamentManager {
         }
 
         // Broadcast ADDON_PERIOD_END
-        try {
-            const chan = supabase.channel(`t-break-${this.tournamentId}`);
-            await chan.subscribe();
-            await chan.send({
-                type: 'broadcast',
-                event: 'tournament_event',
-                payload: { type: 'ADDON_PERIOD_END', payload: {} },
-            });
-            setTimeout(async () => { try { await chan.unsubscribe(); } catch { } }, 5000);
-        } catch (e) { /* noop */ }
+        await this.broadcast('ADDON_PERIOD_END', {});
     }
 
     private isProcessingEliminations = false;
@@ -929,31 +907,13 @@ class TournamentManager {
                                 this.handForHandAnnounced = true;
                                 console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] HAND-FOR-HAND — ${playingNow} players, ${payoutCount} paid`);
                                 // Broadcast hand-for-hand event
-                                try {
-                                    const chan = supabase.channel(`t-break-${this.tournamentId}`);
-                                    await chan.subscribe();
-                                    await chan.send({
-                                        type: 'broadcast',
-                                        event: 'tournament_event',
-                                        payload: { type: 'hand_for_hand', payload: { active: true, playersRemaining: playingNow, paidPositions: payoutCount } },
-                                    });
-                                    setTimeout(async () => { try { await chan.unsubscribe(); } catch { } }, 3000);
-                                } catch (e) { /* noop */ }
+                                await this.broadcast('hand_for_hand', { active: true, playersRemaining: playingNow, paidPositions: payoutCount });
                             }
                         } else if (this.handForHandActive && (playingNow || 0) <= payoutCount) {
                             // Bubble burst
                             this.handForHandActive = false;
                             console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] BUBBLE BURST — ${playingNow} players ITM`);
-                            try {
-                                const chan = supabase.channel(`t-break-${this.tournamentId}`);
-                                await chan.subscribe();
-                                await chan.send({
-                                    type: 'broadcast',
-                                    event: 'tournament_event',
-                                    payload: { type: 'bubble_burst', payload: { playersRemaining: playingNow } },
-                                });
-                                setTimeout(async () => { try { await chan.unsubscribe(); } catch { } }, 3000);
-                            } catch (e) { /* noop */ }
+                            await this.broadcast('bubble_burst', { playersRemaining: playingNow });
                         }
                     }
                 }
@@ -1084,19 +1044,7 @@ class TournamentManager {
             .is('left_at', null);
 
         // Broadcast player_eliminated event to all table pages
-        try {
-            const chan = supabase.channel(`t-break-${this.tournamentId}`);
-            await chan.subscribe();
-            await chan.send({
-                type: 'broadcast',
-                event: 'tournament_event',
-                payload: {
-                    type: 'player_eliminated',
-                    payload: { userId, position, prize },
-                },
-            });
-            setTimeout(async () => { try { await chan.unsubscribe(); } catch { } }, 3000);
-        } catch (e) { /* noop */ }
+        await this.broadcast('player_eliminated', { userId, position, prize });
 
         console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] Eliminated: ${userId.slice(0, 8)} at position ${position} (prize: ${prize})`);
     }
@@ -1424,6 +1372,9 @@ class TournamentManager {
             await supabase.from('tables').update({ status: 'closed' }).eq('id', tableId);
         }
 
+        // Clean up the reusable broadcast channel
+        await this.cleanupBroadcastChannel();
+
         this.stop();
     }
 
@@ -1485,23 +1436,11 @@ class TournamentManager {
                     await supabase.from('tables').update({ status: 'closed' }).eq('id', tc.tableId);
 
                     // Broadcast table_rebalance so clients refresh seats
-                    try {
-                        const chan = supabase.channel(`t-break-${this.tournamentId}`);
-                        await chan.subscribe();
-                        await chan.send({
-                            type: 'broadcast',
-                            event: 'tournament_event',
-                            payload: {
-                                type: 'table_rebalance',
-                                payload: {
-                                    closedTableId: tc.tableId,
-                                    targetTableId: target.tableId,
-                                    movedPlayers: (seats || []).length,
-                                },
-                            },
-                        });
-                        setTimeout(async () => { try { await chan.unsubscribe(); } catch { } }, 3000);
-                    } catch (e) { /* noop */ }
+                    await this.broadcast('table_rebalance', {
+                        closedTableId: tc.tableId,
+                        targetTableId: target.tableId,
+                        movedPlayers: (seats || []).length,
+                    });
 
                     break; // One merge per cycle
                 }
