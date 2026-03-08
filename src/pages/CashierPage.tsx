@@ -118,10 +118,56 @@ export default function CashierPage() {
         }
     }, [action, loadTransactions]);
 
-    // Refresh balances on mount
+    // Refresh balances on mount + Realtime subscription for live wallet updates
     useEffect(() => {
-        if (user?.id) loadBalances(user.id);
-    }, [user?.id, loadBalances]);
+        if (!user?.id) return;
+        loadBalances(user.id);
+
+        // Subscribe to wallet changes for this user — live balance updates
+        const importAndSubscribe = async () => {
+            const { supabase } = await import('../lib/supabase');
+            const channel = supabase
+                .channel(`cashier-wallet-${user.id}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'wallet_transactions',
+                        filter: `user_id=eq.${user.id}`,
+                    },
+                    () => {
+                        // Reload balances and transactions on any wallet change
+                        loadBalances(user.id);
+                        if (action === 'history') loadTransactions();
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'wallets',
+                        filter: `user_id=eq.${user.id}`,
+                    },
+                    () => {
+                        loadBalances(user.id);
+                    }
+                )
+                .subscribe();
+
+            return () => {
+                supabase.removeChannel(channel);
+            };
+        };
+
+        let cleanup: (() => void) | undefined;
+        importAndSubscribe().then(fn => { cleanup = fn; });
+
+        return () => {
+            cleanup?.();
+        };
+    }, [user?.id, loadBalances, action, loadTransactions]);
 
     // Quick-amount presets only for buy-in / cash-out
     const preset = [100, 200, 500, 1000, 2000];
