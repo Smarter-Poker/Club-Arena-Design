@@ -73,7 +73,12 @@ export default function TournamentBracket({
                 .select('user_id, username, chips, status, position')
                 .eq('tournament_id', tournamentId);
 
-            if (error) throw error;
+            if (error) {
+                console.error('[TournamentBracket] Failed to load players:', error.message);
+                setPlayers([]);
+                setLoading(false);
+                return;
+            }
 
             const mapped: BracketPlayer[] = (data || []).map((p: any) => ({
                 userId: p.user_id,

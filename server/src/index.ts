@@ -1322,6 +1322,18 @@ class TournamentManager {
         eliminatedUserId: string,
         knockerUserId: string
     ): Promise<void> {
+        // Guard against duplicate bounty collection (race condition)
+        const { data: existingBounty } = await supabase
+            .from('tournament_bounties')
+            .select('id')
+            .eq('tournament_id', this.tournamentId)
+            .eq('eliminated_user_id', eliminatedUserId)
+            .maybeSingle();
+        if (existingBounty) {
+            console.warn(`[Tournament:${this.tournamentId.slice(0, 8)}] Bounty already collected for ${eliminatedUserId.slice(0, 8)} — skipping duplicate`);
+            return;
+        }
+
         const baseBounty = tournament.bounty_amount || 0;
 
         // Get eliminated player's current bounty (may be higher than base for PKO)
@@ -1337,8 +1349,10 @@ class TournamentManager {
         if (tournament.is_pko) {
             // ── PROGRESSIVE KO ──
             // 50% to knocker immediately, 50% added to knocker's bounty head
-            const knockerPortion = Math.trunc(bountyValue * 100 / 2) / 100;
-            const addedToHead = Math.trunc((bountyValue - knockerPortion) * 100) / 100;
+            const totalBountyCents = Math.trunc(bountyValue * 100);
+            const knockerCents = Math.floor(totalBountyCents / 2);
+            const knockerPortion = knockerCents / 100;
+            const addedToHead = (totalBountyCents - knockerCents) / 100;
 
             // Get knocker's current bounty
             const { data: knocker } = await supabase

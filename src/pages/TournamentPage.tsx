@@ -3,7 +3,7 @@
  * Register and view upcoming tournaments
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { tournamentService, BLIND_STRUCTURES, PAYOUT_STRUCTURES } from '../services/TournamentService';
 import type { Tournament } from '../types/database.types';
@@ -38,6 +38,10 @@ export default function TournamentPage() {
     const [canRebuyNow, setCanRebuyNow] = useState(false);
     const [canAddOnNow, setCanAddOnNow] = useState(false);
     const [isProcessingRebuy, setIsProcessingRebuy] = useState(false);
+    const selectedTournamentRef = useRef<Tournament | null>(null);
+
+    // Keep ref in sync with state
+    useEffect(() => { selectedTournamentRef.current = selectedTournament; }, [selectedTournament]);
 
     // Check club ownership
     useEffect(() => {
@@ -124,7 +128,7 @@ export default function TournamentPage() {
                             const data = await tournamentService.getTournaments(clubId);
                             setTournaments(data);
                             // Update selected tournament if it changed
-                            const updated = data.find(t => t.id === selectedTournament?.id);
+                            const updated = data.find(t => t.id === selectedTournamentRef.current?.id);
                             if (updated) setSelectedTournament(updated);
                         } catch (error) {
                             console.error('Failed to refresh tournaments:', error);
@@ -207,19 +211,27 @@ export default function TournamentPage() {
     const handleJoinTable = async () => {
         if (!selectedTournament || !currentUser.id) return;
         try {
-            const { data: tables } = await supabase.from('tables').select('id').eq('tournament_id', selectedTournament.id);
+            const { data: tables, error: tablesErr } = await supabase.from('tables').select('id').eq('tournament_id', selectedTournament.id);
+            if (tablesErr) {
+                toast.error('Failed to load tables');
+                return;
+            }
             if (!tables?.length) {
                 toast.warning('No tables found for this tournament');
                 return;
             }
 
             const tableIds = tables.map(t => t.id);
-            const { data: seat } = await supabase.from('table_seats')
+            const { data: seat, error: seatErr } = await supabase.from('table_seats')
                 .select('table_id')
                 .eq('user_id', currentUser.id)
                 .in('table_id', tableIds)
                 .is('left_at', null)
                 .maybeSingle();
+            if (seatErr) {
+                toast.error('Failed to check seat status');
+                return;
+            }
 
             if (seat) {
                 navigate(`/clubs/${clubId}/table/${seat.table_id}`);
@@ -238,15 +250,16 @@ export default function TournamentPage() {
 
             setIsRegistered(false);
 
+            const prizeContribution = selectedTournament.buy_in_amount - (selectedTournament.buy_in_fee || 0);
             setTournaments(prev => prev.map(t =>
                 t.id === selectedTournament.id
-                    ? { ...t, current_players: t.current_players - 1, prize_pool: t.prize_pool - t.buy_in_amount }
+                    ? { ...t, current_players: t.current_players - 1, prize_pool: t.prize_pool - prizeContribution }
                     : t
             ));
             setSelectedTournament(prev => prev ? {
                 ...prev,
                 current_players: prev.current_players - 1,
-                prize_pool: prev.prize_pool - prev.buy_in_amount,
+                prize_pool: prev.prize_pool - prizeContribution,
             } : null);
 
             toast.success(`Unregistered! ${selectedTournament.buy_in_amount} chips refunded.`);

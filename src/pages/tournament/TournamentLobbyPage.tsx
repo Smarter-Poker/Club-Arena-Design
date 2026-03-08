@@ -5,7 +5,7 @@
  * Central hub for discovering and joining tournaments across all clubs
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
@@ -58,6 +58,12 @@ export default function TournamentLobbyPage() {
     const [typeFilter, setTypeFilter] = useState<TournamentTypeFilter>('all');
     const [searchQuery, setSearchQuery] = useState('');
 
+    // Ref to avoid stale closure in subscription callback
+    const statusFilterRef = useRef(statusFilter);
+    statusFilterRef.current = statusFilter;
+
+    const loadTournamentsRef = useRef<() => void>(() => {});
+
     useEffect(() => {
         loadTournaments();
     }, [clubId, statusFilter]);
@@ -87,8 +93,8 @@ export default function TournamentLobbyPage() {
                                 : t
                         ));
                     } else if (payload.eventType === 'INSERT') {
-                        // Reload to get new tournament with club name
-                        loadTournaments();
+                        // Reload to get new tournament with club name (uses ref to get current filter)
+                        loadTournamentsRef.current();
                     }
                 }
             )
@@ -100,6 +106,7 @@ export default function TournamentLobbyPage() {
     }, [clubId]);
 
     const loadTournaments = async () => {
+        loadTournamentsRef.current = loadTournaments;
         setLoading(true);
         try {
             // Fetch active tournaments first (REGISTERING/RUNNING/ANNOUNCED), then completed

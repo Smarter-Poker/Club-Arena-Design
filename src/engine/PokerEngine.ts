@@ -613,8 +613,10 @@ export function determineWinners(
         const qualifyingLowPlayers = eligible.filter(ph => ph.lowHand !== null);
 
         if (isHiLo && qualifyingLowPlayers.length > 0) {
-            loPotAmount = Math.trunc(pot.amount / 2 * 100) / 100;
-            hiPotAmount = pot.amount - loPotAmount;
+            const potCents = Math.trunc(pot.amount * 100);
+            const loCents = Math.floor(potCents / 2);
+            loPotAmount = loCents / 100;
+            hiPotAmount = (potCents - loCents) / 100;
         }
 
         // ─── HIGH HALF ───
