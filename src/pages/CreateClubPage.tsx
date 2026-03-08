@@ -496,6 +496,8 @@ export default function CreateClubPage() {
         setError(null);
     };
 
+    const [nameChecking, setNameChecking] = useState(false);
+
     const validateStep = (): boolean => {
         switch (step) {
             case 1:
@@ -505,6 +507,10 @@ export default function CreateClubPage() {
                 }
                 if (form.name.length < 3) {
                     setError('Club name must be at least 3 characters');
+                    return false;
+                }
+                if (form.name.length > 30) {
+                    setError('Club name must be 30 characters or less');
                     return false;
                 }
                 break;
@@ -540,6 +546,23 @@ export default function CreateClubPage() {
 
         setCreating(true);
         setError(null);
+
+        // Check for duplicate club name
+        try {
+            const { data: existing } = await supabase
+                .from('clubs')
+                .select('id')
+                .ilike('name', form.name.trim())
+                .limit(1);
+
+            if (existing && existing.length > 0) {
+                setError('A club with this name already exists. Please choose a different name.');
+                setCreating(false);
+                return;
+            }
+        } catch {
+            // Non-blocking — proceed even if check fails
+        }
 
         try {
             // Generate 6-digit club ID

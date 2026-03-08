@@ -55,6 +55,8 @@ interface UserSettings {
     clubActivity: boolean;
     handWonNotifications: boolean;
     achievementNotifications: boolean;
+    friendAlerts: boolean;
+    settlementAlerts: boolean;
 
     // Privacy
     showOnlineStatus: boolean;
@@ -92,6 +94,8 @@ const DEFAULT_SETTINGS: UserSettings = {
     clubActivity: true,
     handWonNotifications: false,
     achievementNotifications: true,
+    friendAlerts: true,
+    settlementAlerts: true,
 
     showOnlineStatus: true,
     allowFriendRequests: true,
@@ -484,6 +488,19 @@ export default function SettingsPage() {
                     .from('profiles')
                     .update({ settings: settings })
                     .eq('id', user.id);
+
+                // Sync notification preferences to dedicated table (used by push service)
+                await supabase
+                    .from('user_notification_preferences')
+                    .upsert({
+                        user_id: user.id,
+                        table_alerts: settings.handWonNotifications ?? true,
+                        tournament_reminders: settings.tournamentReminders ?? true,
+                        achievement_alerts: settings.achievementNotifications ?? true,
+                        friend_alerts: settings.friendAlerts ?? true,
+                        club_announcements: settings.clubActivity ?? true,
+                        settlement_alerts: settings.settlementAlerts ?? true,
+                    }, { onConflict: 'user_id' });
             }
 
             setHasChanges(false);
@@ -770,6 +787,28 @@ export default function SettingsPage() {
                         <Toggle
                             checked={settings.achievementNotifications}
                             onChange={(v) => updateSetting('achievementNotifications', v)}
+                        />
+                    </div>
+
+                    <div className={styles.settingRow}>
+                        <div className={styles.settingInfo}>
+                            <span className={styles.settingLabel}>Friend Alerts</span>
+                            <span className={styles.settingDesc}>Friend requests, status changes</span>
+                        </div>
+                        <Toggle
+                            checked={settings.friendAlerts}
+                            onChange={(v) => updateSetting('friendAlerts', v)}
+                        />
+                    </div>
+
+                    <div className={styles.settingRow}>
+                        <div className={styles.settingInfo}>
+                            <span className={styles.settingLabel}>Settlement Alerts</span>
+                            <span className={styles.settingDesc}>Chip settlement and transfer notifications</span>
+                        </div>
+                        <Toggle
+                            checked={settings.settlementAlerts}
+                            onChange={(v) => updateSetting('settlementAlerts', v)}
                         />
                     </div>
 

@@ -103,6 +103,22 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
             return;
         }
 
+        // Check for duplicate club name
+        try {
+            const { data: existing } = await supabase
+                .from('clubs')
+                .select('id')
+                .ilike('name', clubName.trim())
+                .limit(1);
+
+            if (existing && existing.length > 0) {
+                toast.error('A club with this name already exists');
+                return;
+            }
+        } catch {
+            // Non-blocking
+        }
+
         setIsCreating(true);
 
         try {
