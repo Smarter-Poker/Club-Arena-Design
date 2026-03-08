@@ -274,31 +274,35 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
 
                     <div className={styles.row}>
                         {/* Max Players — ONLY for SNG and Spin (they need a fixed table size to start) */}
-                        {isSngOrSpin && (
+                        {format === 'spin' && (
+                            <div className={styles.col}>
+                                <div className={styles.formGroup}>
+                                    <label>Players</label>
+                                    <input
+                                        type="text"
+                                        className={styles.input}
+                                        value="3 Players (Fixed)"
+                                        disabled
+                                        style={{ opacity: 0.7 }}
+                                    />
+                                    <span className={styles.helperText}>Spins always start with 3 players</span>
+                                </div>
+                            </div>
+                        )}
+                        {format === 'sng' && (
                             <div className={styles.col}>
                                 <div className={styles.formGroup}>
                                     <label>Max Players <span style={{ color: '#ef4444' }}>*</span></label>
-                                    {format === 'spin' ? (
-                                        <select
-                                            className={styles.select}
-                                            value={maxPlayers}
-                                            onChange={e => setMaxPlayers(e.target.value)}
-                                        >
-                                            <option value="3">3 Players</option>
-                                            <option value="2">Heads Up (2)</option>
-                                        </select>
-                                    ) : (
-                                        <select
-                                            className={styles.select}
-                                            value={maxPlayers}
-                                            onChange={e => setMaxPlayers(e.target.value)}
-                                        >
-                                            <option value="6">6-Max</option>
-                                            <option value="9">Full Ring (9)</option>
-                                            <option value="3">3 Players</option>
-                                            <option value="2">Heads Up (2)</option>
-                                        </select>
-                                    )}
+                                    <select
+                                        className={styles.select}
+                                        value={maxPlayers}
+                                        onChange={e => setMaxPlayers(e.target.value)}
+                                    >
+                                        <option value="2">Heads Up (2)</option>
+                                        <option value="3">3 Players</option>
+                                        <option value="6">6-Max</option>
+                                        <option value="9">Full Ring (9)</option>
+                                    </select>
                                 </div>
                             </div>
                         )}

@@ -1021,7 +1021,7 @@ export default function TablePage() {
             userId,
             tableState.players[tableState.heroSeat - 1]?.name || 'Player',
             tableState.heroSeat,
-            tableState.players[tableState.heroSeat - 1]?.stack || 10000
+            tableState.players[tableState.heroSeat - 1]?.stack || 0
         );
 
         // Subscribe to room messages

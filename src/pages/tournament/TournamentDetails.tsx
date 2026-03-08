@@ -22,7 +22,7 @@ interface TournamentEntry {
     avatar_url: string | null;
     position?: number;
     chips?: number;
-    status: 'registered' | 'playing' | 'eliminated' | 'finished';
+    status: 'registered' | 'playing' | 'eliminated' | 'finished' | 'winner';
 }
 
 interface TournamentTable {
@@ -149,7 +149,7 @@ export default function TournamentDetails() {
                                 user_id: newPlayer.user_id,
                                 username: newPlayer.username || 'Player',
                                 avatar_url: null,
-                                chips: newPlayer.chips || tournament?.starting_chips || 10000,
+                                chips: newPlayer.chips || tournament?.starting_chips || 0,
                                 position: newPlayer.position || undefined,
                                 status: newPlayer.status as TournamentEntry['status'],
                             }
@@ -585,7 +585,7 @@ export default function TournamentDetails() {
                         </div>
                         <div className="stat">
                             <span className="stat-label">Avg. Stack</span>
-                            <span className="stat-value">{entries.filter(e => e.status === 'playing').length > 0 ? Math.trunc(entries.filter(e => e.status === 'playing').reduce((s, e) => s + (e.chips || 0), 0) / entries.filter(e => e.status === 'playing').length).toLocaleString() : (tournament.starting_chips || 10000).toLocaleString()}</span>
+                            <span className="stat-value">{entries.filter(e => e.status === 'playing').length > 0 ? Math.trunc(entries.filter(e => e.status === 'playing').reduce((s, e) => s + (e.chips || 0), 0) / entries.filter(e => e.status === 'playing').length).toLocaleString() : (tournament.starting_chips ? tournament.starting_chips.toLocaleString() : '—')}</span>
                         </div>
                         <div className="stat">
                             <span className="stat-label">Tables</span>
@@ -652,7 +652,7 @@ export default function TournamentDetails() {
                         </div>
                         <div className="info-row half">
                             <span className="info-label">Starting Chips:</span>
-                            <span className="info-value">{(tournament.starting_chips || 10000).toLocaleString()}</span>
+                            <span className="info-value">{tournament.starting_chips ? tournament.starting_chips.toLocaleString() : '—'}</span>
                         </div>
                         <div className="info-row half">
                             <span className="info-label">Big Blind Ante:</span>
@@ -677,7 +677,7 @@ export default function TournamentDetails() {
                                 <span className="info-value" style={{ color: '#f87171' }}>
                                     {(tournament as any).bounty_amount || 0} chips per knockout
                                     {(tournament as any).is_pko && ' (Progressive: 50% to knocker, 50% added to bounty)'}
-                                    {(tournament as any).is_mystery_bounty && ` (Mystery: ${(tournament as any).mystery_bounty_min || 1}x - ${(tournament as any).mystery_bounty_max || 100}x)`}
+                                    {(tournament as any).is_mystery_bounty && (tournament as any).mystery_bounty_min != null && ` (Mystery: ${(tournament as any).mystery_bounty_min}x - ${(tournament as any).mystery_bounty_max}x)`}
                                 </span>
                             </div>
                         )}
@@ -716,33 +716,83 @@ export default function TournamentDetails() {
                 </>
             )}
 
-            {activeTab === 'entries' && (
+            {activeTab === 'entries' && (() => {
+                const isRunning = tournament.status === 'RUNNING';
+                // Sort: playing players by chips (desc), then eliminated by position (asc), then registered
+                const sorted = [...entries].sort((a, b) => {
+                    const statusOrder: Record<string, number> = { playing: 0, registered: 1, winner: -1, eliminated: 2 };
+                    const aOrder = statusOrder[a.status] ?? 3;
+                    const bOrder = statusOrder[b.status] ?? 3;
+                    if (aOrder !== bOrder) return aOrder - bOrder;
+                    if (a.status === 'playing' || a.status === 'registered') return (b.chips || 0) - (a.chips || 0);
+                    if (a.status === 'eliminated') return (a.position || 999) - (b.position || 999);
+                    return 0;
+                });
+
+                // ITM (in the money) calculation
+                const payoutCount = tournament.payout_structure
+                    ? (typeof tournament.payout_structure === 'string'
+                        ? (() => { try { return JSON.parse(tournament.payout_structure).length; } catch { return 0; } })()
+                        : Array.isArray(tournament.payout_structure) ? tournament.payout_structure.length : 0)
+                    : 0;
+                const playingCount = entries.filter(e => e.status === 'playing').length;
+                const isBubble = isRunning && payoutCount > 0 && playingCount === payoutCount + 1;
+
+                return (
                 <div className="entries-list">
-                    {entries.length === 0 ? (
+                    {isRunning && (
+                        <div className="chip-leader-header" style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', fontSize: 12, color: 'var(--text-muted)', borderBottom: '1px solid var(--border-subtle)' }}>
+                            <span>Rank</span>
+                            <span>Player</span>
+                            <span>Chips</span>
+                            <span>Status</span>
+                        </div>
+                    )}
+                    {isBubble && (
+                        <div style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', padding: '8px 12px', fontSize: 13, textAlign: 'center', borderRadius: 8, margin: '8px 0' }}>
+                            BUBBLE — {playingCount} players left, {payoutCount} get paid
+                        </div>
+                    )}
+                    {sorted.length === 0 ? (
                         <div className="empty-state">
                             <p>No entries yet. Be the first to register!</p>
                         </div>
                     ) : (
-                        entries.map((entry, idx) => (
-                            <div key={entry.id} className="entry-row">
-                                <span className="entry-rank">{idx + 1}</span>
-                                <div className="entry-avatar"></div>
-                                <div className="entry-info">
-                                    <span className="entry-name">{entry.username}</span>
-                                    <span className="entry-chips">{(entry.chips || tournament.starting_chips || 0).toLocaleString()} chips</span>
+                        sorted.map((entry, idx) => {
+                            const isPlaying = entry.status === 'playing';
+                            const rank = isPlaying ? idx + 1 : entry.position || '—';
+                            return (
+                                <div key={entry.id} className={`entry-row ${entry.status === 'eliminated' ? 'eliminated-row' : ''}`} style={entry.status === 'eliminated' ? { opacity: 0.5 } : undefined}>
+                                    <span className="entry-rank" style={isPlaying && idx === 0 ? { color: '#fbbf24', fontWeight: 700 } : undefined}>
+                                        {rank}
+                                    </span>
+                                    <div className="entry-avatar"></div>
+                                    <div className="entry-info">
+                                        <span className="entry-name">{entry.username}</span>
+                                        <span className="entry-chips">
+                                            {isPlaying
+                                                ? `${(entry.chips || 0).toLocaleString()} chips`
+                                                : entry.status === 'eliminated'
+                                                    ? `Eliminated ${entry.position ? `#${entry.position}` : ''}`
+                                                    : entry.status === 'winner'
+                                                        ? 'WINNER'
+                                                        : 'Registered'}
+                                        </span>
+                                    </div>
+                                    <span className={`entry-status ${entry.status}`}>{entry.status}</span>
                                 </div>
-                                <span className={`entry-status ${entry.status}`}>{entry.status}</span>
-                            </div>
-                        ))
+                            );
+                        })
                     )}
                 </div>
-            )}
+                );
+            })()}
 
             {activeTab === 'ranking' && (
                 <div className="ranking-section">
                     <TournamentBracket
                         tournamentId={tournamentId || ''}
-                        totalPlayers={tournament.max_players || 0}
+                        totalPlayers={tournament.max_players || entries.length || tournament.current_players || 0}
                     />
                 </div>
             )}
@@ -853,12 +903,9 @@ export default function TournamentDetails() {
                                 );
                             })
                         ) : (
-                            /* Default payout structure if none defined */
-                            <>
-                                <div className="payout-row"><span className="payout-place">🥇</span><span className="payout-percent">50%</span><span className="payout-chips">{effectivePrizePool > 0 ? (Math.trunc(effectivePrizePool * 50) / 100).toLocaleString() : '—'}</span></div>
-                                <div className="payout-row"><span className="payout-place">🥈</span><span className="payout-percent">30%</span><span className="payout-chips">{effectivePrizePool > 0 ? (Math.trunc(effectivePrizePool * 30) / 100).toLocaleString() : '—'}</span></div>
-                                <div className="payout-row"><span className="payout-place">🥉</span><span className="payout-percent">20%</span><span className="payout-chips">{effectivePrizePool > 0 ? (Math.trunc(effectivePrizePool * 20) / 100).toLocaleString() : '—'}</span></div>
-                            </>
+                            <div className="payout-row" style={{ justifyContent: 'center', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                                <span>Payout structure will be determined based on entries</span>
+                            </div>
                         )}
                     </div>
                     {tournament.blind_structure && (() => {

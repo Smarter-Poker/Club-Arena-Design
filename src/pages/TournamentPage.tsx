@@ -419,11 +419,11 @@ export default function TournamentPage() {
                                 </div>
                                 <div className="stat">
                                     <span className="stat-label">Starting Stack</span>
-                                    <span className="stat-value">{(selectedTournament.starting_chips || 10000).toLocaleString()}</span>
+                                    <span className="stat-value">{selectedTournament.starting_chips ? selectedTournament.starting_chips.toLocaleString() : '—'}</span>
                                 </div>
                                 <div className="stat">
                                     <span className="stat-label">Players</span>
-                                    <span className="stat-value">{selectedTournament.current_players}/{selectedTournament.max_players}</span>
+                                    <span className="stat-value">{selectedTournament.current_players}{selectedTournament.max_players ? `/${selectedTournament.max_players}` : ''}</span>
                                 </div>
                                 <div className="stat highlight">
                                     <span className="stat-label">Prize Pool</span>

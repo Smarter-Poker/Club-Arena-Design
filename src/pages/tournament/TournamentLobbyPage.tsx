@@ -207,8 +207,8 @@ export default function TournamentLobbyPage() {
                     startTime: t.start_time,
                     status: t.status,
                     currentPlayers: t.current_players || 0,
-                    maxPlayers: t.max_players || 100,
-                    startingChips: t.starting_chips || 10000,
+                    maxPlayers: t.max_players || 0, // 0 = unlimited (only SNG/Spin have caps)
+                    startingChips: t.starting_chips || 0,
                     blindsUp: 10,
                     isRegistered: registrations.includes(t.id),
                     gameType: t.game_type || 'NLH',

@@ -399,8 +399,8 @@ export class TournamentEngine {
             club_id: data.club_id,
             game_type: data.game_type || 'NLH',
             buy_in_amount: data.buy_in_amount || 0,
-            starting_chips: data.starting_chips || 10000,
-            max_players: data.max_players || 50,
+            starting_chips: data.starting_chips || 0,
+            max_players: data.max_players || 0,
             current_players: playerCount,
             prize_pool: data.prize_pool || (playerCount * (data.buy_in_amount || 0)),
             blind_structure: blinds,
@@ -769,12 +769,28 @@ export class TournamentEngine {
     }
 
     private eliminationCheckRunning = false;
+    private prizePoolRefreshCounter = 0;
     private async checkEliminations(): Promise<void> {
         if (!this.running || !this.tournamentInfo) return;
         // Prevent overlapping elimination checks (async race condition guard)
         if (this.eliminationCheckRunning) return;
         this.eliminationCheckRunning = true;
         try {
+
+        // Refresh prize pool from DB every ~30s (6 ticks × 5s) to catch late reg additions
+        this.prizePoolRefreshCounter++;
+        if (this.prizePoolRefreshCounter % 6 === 0) {
+            const { data: freshT } = await this.supabase
+                .from('tournaments')
+                .select('prize_pool, current_players')
+                .eq('id', this.tournamentId)
+                .single();
+            if (freshT && freshT.prize_pool !== this.tournamentInfo.prize_pool) {
+                console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Prize pool updated: ${this.tournamentInfo.prize_pool} → ${freshT.prize_pool} (late reg)`);
+                this.tournamentInfo.prize_pool = freshT.prize_pool;
+                this.tournamentInfo.current_players = freshT.current_players;
+            }
+        }
 
         // Check each tournament table for players with 0 chips
         for (const table of this.tables) {
@@ -1008,16 +1024,33 @@ export class TournamentEngine {
     private async checkTableBalance(): Promise<void> {
         if (this.tables.length <= 1) return;
 
-        // Find tables with too few players
+        // Find tables with active players
         const activeTables = this.tables.filter(t => t.playerCount > 0);
         if (activeTables.length <= 1) return;
 
-        // Find the smallest table
-        const smallest = activeTables.reduce((a, b) => a.playerCount < b.playerCount ? a : b);
+        // Clean up empty tables first (0 players)
+        const emptyTables = activeTables.filter(t => t.playerCount === 0);
+        for (const empty of emptyTables) {
+            empty.engine.stop();
+            await this.supabase.from('tables').update({ status: 'closed', current_players: 0 }).eq('id', empty.tableId);
+            this.removeTable(empty);
+        }
 
-        // If smallest table has < 3 players, merge into other tables
-        if (smallest.playerCount < 3 && activeTables.length > 1) {
-            await this.mergeTable(smallest);
+        // Re-check active tables after cleanup
+        const remainingTables = this.tables.filter(t => t.playerCount > 0);
+        if (remainingTables.length <= 1) return;
+
+        // Sort by player count ascending — merge smallest first
+        remainingTables.sort((a, b) => a.playerCount - b.playerCount);
+
+        // Merge tables that are too small (< 3 players) into larger ones
+        // Also merge if total remaining players can fit at fewer tables
+        const totalPlayers = remainingTables.reduce((s, t) => s + t.playerCount, 0);
+        const minTablesNeeded = Math.ceil(totalPlayers / 9);
+
+        if (remainingTables.length > minTablesNeeded || remainingTables[0].playerCount < 3) {
+            // Merge the smallest table
+            await this.mergeTable(remainingTables[0]);
         }
     }
 

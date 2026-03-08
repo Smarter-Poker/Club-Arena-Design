@@ -182,7 +182,7 @@ export default function TournamentLobbyCard({
                 </div>
                 <div className={styles.infoItem}>
                     <span className={styles.infoLabel}>Starting Chips</span>
-                    <span className={styles.infoValue}>{(tournament.startingChips || 10000).toLocaleString()}</span>
+                    <span className={styles.infoValue}>{tournament.startingChips ? tournament.startingChips.toLocaleString() : '—'}</span>
                 </div>
                 {tournament.gameType && (
                     <div className={styles.infoItem}>

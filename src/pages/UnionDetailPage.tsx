@@ -661,7 +661,7 @@ export default function UnionDetailPage() {
                                         <div className={styles.tableCardDetails}>
                                             <span> {t.clubs?.name || 'Club'}</span>
                                             <span> {t.buy_in_amount?.toLocaleString() || 0}</span>
-                                            <span> {t.current_players || 0}/{t.max_players || 100}</span>
+                                            <span> {t.current_players || 0}{t.max_players ? `/${t.max_players}` : ''}</span>
                                             <span> {new Date(t.start_time).toLocaleDateString()}</span>
                                         </div>
                                         <Link to={`/tournaments/${t.id}`} className={styles.joinButton}>
