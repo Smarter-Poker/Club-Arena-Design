@@ -2050,7 +2050,7 @@ export default function TablePage() {
             if (activePlayers.length === 0 && allInPlayers.length >= 2) {
                 const opponent = allInPlayers.find(p => p?.id !== hero?.id);
                 const potSize = tableState.pot;
-                const maxCoverage = Math.floor(potSize * 0.8); // 80% of pot coverage
+                const maxCoverage = Math.trunc(potSize * 0.8 * 100) / 100; // 80% of pot coverage
 
                 // Convert board cards to proper format
                 const boardCards = tableState.communityCards.map(c => ({

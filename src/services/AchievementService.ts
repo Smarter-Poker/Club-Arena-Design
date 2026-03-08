@@ -218,11 +218,12 @@ class AchievementServiceClass {
     private async awardRewards(userId: string, achievement: Achievement): Promise<void> {
         // Award chips
         if (achievement.chipReward && achievement.chipReward > 0) {
-            await supabase.rpc('add_to_promo_wallet', {
+            const { error: rewardErr } = await supabase.rpc('add_to_promo_wallet', {
                 p_user_id: userId,
                 p_amount: achievement.chipReward,
                 p_description: `Achievement: ${achievement.name}`
             });
+            if (rewardErr) console.error(`[AchievementService] Reward failed for ${userId.slice(0, 8)}: ${rewardErr.message}`);
         }
 
         // Create notification

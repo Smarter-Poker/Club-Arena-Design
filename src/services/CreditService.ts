@@ -397,11 +397,12 @@ export const CreditService = {
             if (method === 'wallet') {
                 try {
                     const periodId = (await SettlementService.getCurrentPeriod()).id;
-                    await supabase.rpc('credit_agent_commission', {
+                    const { error: rollbackErr2 } = await supabase.rpc('credit_agent_commission', {
                         p_agent_id: invoice.agent_id,
                         p_amount: amount,
                         p_period_id: periodId,
                     });
+                    if (rollbackErr2) console.error(`[CreditService] CRITICAL: Commission rollback failed for agent ${invoice.agent_id}: ${rollbackErr2.message}`);
                 } catch (rollbackErr) {
                     console.error('[CreditService] Rollback failed:', rollbackErr);
                 }

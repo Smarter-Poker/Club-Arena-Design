@@ -294,7 +294,7 @@ export function useBetSlider(options: {
     }, [minBet]);
 
     const setPercentOfPot = useCallback((percent: number) => {
-        const amount = Math.floor(potSize * (percent / 100));
+        const amount = Math.trunc(potSize * (percent / 100) * 100) / 100;
         setBetAmount(Math.min(maxBet, Math.max(minBet, amount)));
     }, [potSize, minBet, maxBet]);
 
