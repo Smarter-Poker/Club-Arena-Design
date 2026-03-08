@@ -37,6 +37,7 @@ const AgentManagementPage = lazy(() => import('./pages/AgentManagementPage'));
 const TournamentPage = lazy(() => import('./pages/TournamentPage'));
 const TournamentDetails = lazy(() => import('./pages/tournament/TournamentDetails'));
 const TournamentLobbyPage = lazy(() => import('./pages/tournament/TournamentLobbyPage'));
+const TournamentResultsPage = lazy(() => import('./pages/tournament/TournamentResultsPage'));
 const TablePage = lazy(() => import('./pages/TablePage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
@@ -281,6 +282,14 @@ export default function App() {
                                 element={
                                     <AuthGuard>
                                         <TournamentLobbyPage />
+                                    </AuthGuard>
+                                }
+                            />
+                            <Route
+                                path="tournament-results"
+                                element={
+                                    <AuthGuard>
+                                        <TournamentResultsPage />
                                     </AuthGuard>
                                 }
                             />
