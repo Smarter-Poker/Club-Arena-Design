@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { tournamentService, BLIND_STRUCTURES, PAYOUT_STRUCTURES } from '../../services/TournamentService';
+import { tournamentService, BLIND_STRUCTURES, PAYOUT_STRUCTURES, SPIN_MULTIPLIERS } from '../../services/TournamentService';
 import styles from './CreateTournamentModal.module.css';
 import { useToast } from '../common/Toast';
 
@@ -48,6 +48,9 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
     // ── Mystery Bounty Config ──
     const [mysteryBountyMin, setMysteryBountyMin] = useState('1');
     const [mysteryBountyMax, setMysteryBountyMax] = useState('100');
+
+    // ── Spin Config ──
+    const [spinType, setSpinType] = useState<'standard' | 'hyper'>('standard');
 
     // ── Multi-Day Config ──
     const [isMultiDay, setIsMultiDay] = useState(false);
@@ -191,6 +194,10 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                         return { mysteryTiers: tiers };
                     })() : {}),
                 } : undefined,
+                spinType: format === 'spin' ? spinType : undefined,
+                spinConfig: format === 'spin' ? {
+                    possibleMultipliers: SPIN_MULTIPLIERS[spinType] || SPIN_MULTIPLIERS.standard,
+                } : undefined,
             });
             toast.success('Tournament created');
             onSuccess();
@@ -286,6 +293,22 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                                         style={{ opacity: 0.7 }}
                                     />
                                     <span className={styles.helperText}>Spins always start with 3 players</span>
+                                </div>
+                            </div>
+                        )}
+                        {format === 'spin' && (
+                            <div className={styles.col}>
+                                <div className={styles.formGroup}>
+                                    <label>Spin Type</label>
+                                    <select
+                                        className={styles.select}
+                                        value={spinType}
+                                        onChange={e => setSpinType(e.target.value as 'standard' | 'hyper')}
+                                    >
+                                        <option value="standard">Standard (EV: 2.24x)</option>
+                                        <option value="hyper">Hyper (EV: 2.33x)</option>
+                                    </select>
+                                    <span className={styles.helperText}>Hyper spins have higher variance multipliers</span>
                                 </div>
                             </div>
                         )}

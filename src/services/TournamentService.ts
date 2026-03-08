@@ -100,6 +100,7 @@ export interface TournamentConfig {
 
     // Spin Configuration
     spinConfig?: SpinConfig;
+    spinType?: 'standard' | 'hyper';
 
     // Satellite Target
     satelliteTarget?: {
@@ -396,6 +397,8 @@ class TournamentService {
                 total_days: config.totalDays || 1,
                 day_number: 1,
                 flight_number: 1,
+                // Spin type (standard vs hyper) — server reads this to pick multiplier table
+                spin_type: config.type === 'spin' ? (config.spinType || 'standard') : null,
                 // XMTT (Union Tournament)
                 is_xmtt: config.isXmtt || false,
                 union_id: config.unionId || null,

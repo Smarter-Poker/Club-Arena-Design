@@ -418,9 +418,9 @@ class TournamentManager {
 
             // Spin & Go: roll multiplier at game start
             if (tournament.variant === 'spin' || tournament.tournament_type === 'SPIN') {
-                // Profitable spin multiplier table — E[multiplier] = 2.2415 (< 3.0)
+                // Profitable spin multiplier tables — E[multiplier] < 3.0
                 // Prize pool = buy_in * multiplier. Club profit = 3*buy_in - prize + 3*fee
-                const SPIN_MULTIPLIERS = [
+                const SPIN_STANDARD = [
                     { multiplier: 2, weight: 925000 },   // 92.50% → EV 1.8500
                     { multiplier: 3, weight: 50000 },    //  5.00% → EV 0.1500
                     { multiplier: 5, weight: 18000 },    //  1.80% → EV 0.0900
@@ -429,6 +429,18 @@ class TournamentManager {
                     { multiplier: 100, weight: 400 },    //  0.04% → EV 0.0400
                     { multiplier: 240, weight: 100 },    //  0.01% → EV 0.0240
                 ];                                        // TOTAL EV: 2.2415
+
+                const SPIN_HYPER = [
+                    { multiplier: 2, weight: 910000 },   // 91.00% → EV 1.8200
+                    { multiplier: 3, weight: 55000 },    //  5.50% → EV 0.1650
+                    { multiplier: 5, weight: 22000 },    //  2.20% → EV 0.1100
+                    { multiplier: 10, weight: 8000 },    //  0.80% → EV 0.0800
+                    { multiplier: 25, weight: 3500 },    //  0.35% → EV 0.0875
+                    { multiplier: 100, weight: 400 },    //  0.04% → EV 0.0400
+                    { multiplier: 240, weight: 100 },    //  0.01% → EV 0.0240
+                ];                                        // TOTAL EV: 2.3265
+
+                const SPIN_MULTIPLIERS = tournament.spin_type === 'hyper' ? SPIN_HYPER : SPIN_STANDARD;
                 const totalWeight = SPIN_MULTIPLIERS.reduce((s, m) => s + m.weight, 0);
                 let roll = Math.random() * totalWeight;
                 let spinMultiplier = 2;
