@@ -11,6 +11,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { WalletService } from './WalletService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -306,6 +307,257 @@ class AgentServiceClass {
                 .update({ role: newRole })
                 .eq('id', agent.membership_id);
         }
+
+        return true;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // AGENT PROMOTION
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Promote a player to agent status.
+     *
+     * Agents handle player chip buy-ins and cash-outs. They collect payments from
+     * players IRL and manage their chip accounts.
+     *
+     * REQUIRED at promotion time:
+     * - commissionRate: Rake back percentage the agent receives (40-70% in 5% steps)
+     *   Valid values: 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70
+     * - isPrepaid: Whether the agent is pre-paid or on credit
+     * - creditLimit: If on credit (isPrepaid=false), the credit line amount (manually entered)
+     *   If pre-paid, creditLimit should be 0
+     *
+     * When a player becomes an agent they receive:
+     * - Agent record in the agents table with commission rates and credit settings
+     * - BUSINESS wallet (commission/rake back earnings)
+     * - PROMO wallet (for distributing bonuses to their players)
+     * - Their PLAYER wallet stays intact for gameplay
+     * - Their club_members role is upgraded to 'agent'
+     * - A player_number is assigned (if not already set) — used as referral code
+     *
+     * Players join under an agent by entering the agent's player_number
+     * when signing up for a club or with smarter.poker.
+     */
+    async promoteToAgent(input: {
+        userId: string;
+        clubId: string;
+        role?: AgentRole;
+        parentAgentId?: string;
+        commissionRate: number;        // REQUIRED: rake back % (0.40 - 0.70, 5% steps)
+        playerRakebackRate: number;    // REQUIRED: rakeback % agent gives to their players
+        creditLimit: number;           // REQUIRED: credit line amount (0 if pre-paid)
+        isPrepaid: boolean;            // REQUIRED: pre-paid or credit
+    }): Promise<Agent> {
+        const { userId, clubId, role = 'agent', commissionRate, playerRakebackRate, creditLimit } = input;
+
+        // Validate commission rate: must be 40%, 45%, 50%, 55%, 60%, 65%, or 70%
+        const validRates = [0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70];
+        if (!validRates.includes(commissionRate)) {
+            throw new Error(`Commission rate must be one of: ${validRates.map(r => `${r * 100}%`).join(', ')}`);
+        }
+
+        // Validate credit setup
+        if (!input.isPrepaid && creditLimit <= 0) {
+            throw new Error('Credit agents must have a credit limit greater than 0');
+        }
+        if (input.isPrepaid && creditLimit > 0) {
+            // Pre-paid agents don't get credit lines — force to 0
+            console.warn(`[AgentService] Pre-paid agent should not have credit limit, setting to 0`);
+        }
+
+        // 1. Validate the user exists
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('id, username, player_number')
+            .eq('id', userId)
+            .single();
+
+        if (!profile) throw new Error(`User ${userId} not found`);
+
+        // 2. Ensure player_number is assigned (serves as referral code)
+        if (!profile.player_number) {
+            // Generate unique player_number: random 4-6 digit number
+            let playerNumber: number;
+            let attempts = 0;
+            do {
+                playerNumber = 1000 + Math.floor(Math.random() * 899000); // 1000-899999
+                const { data: existing } = await supabase
+                    .from('profiles')
+                    .select('id')
+                    .eq('player_number', playerNumber)
+                    .single();
+                if (!existing) break;
+                attempts++;
+            } while (attempts < 50);
+
+            await supabase
+                .from('profiles')
+                .update({ player_number: playerNumber })
+                .eq('id', userId);
+
+            console.log(`[AgentService] Assigned player_number ${playerNumber} to ${profile.username}`);
+        }
+
+        // 3. Ensure BUSINESS and PROMO wallets exist (on top of their PLAYER wallet)
+        for (const walletType of ['BUSINESS', 'PROMO'] as const) {
+            const { data: existing } = await supabase
+                .from('wallets')
+                .select('user_id')
+                .eq('user_id', userId)
+                .eq('wallet_type', walletType)
+                .single();
+
+            if (!existing) {
+                await supabase.from('wallets').insert({
+                    user_id: userId,
+                    wallet_type: walletType,
+                    balance: 0,
+                    locked_balance: 0,
+                });
+                console.log(`[AgentService] Created ${walletType} wallet for ${profile.username}`);
+            }
+        }
+
+        // 4. Check if already an agent in this club
+        const { data: existingAgent } = await supabase
+            .from('agents')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('club_id', clubId)
+            .single();
+
+        if (existingAgent) {
+            console.log(`[AgentService] ${profile.username} is already an agent in club ${clubId}`);
+            return this.getAgent(existingAgent.id) as Promise<Agent>;
+        }
+
+        // 5. Create agent record using the existing createAgent method
+        const agent = await this.createAgent({
+            userId,
+            clubId,
+            role,
+            parentAgentId: input.parentAgentId,
+            commissionRate,
+            playerRakebackRate,
+            creditLimit,
+            isPrepaid: input.isPrepaid,
+        });
+
+        // 6. Log the promotion as a wallet transaction (audit trail)
+        await WalletService.logTransaction(
+            userId, 'BUSINESS', 0, 'credit', 'settlement',
+            `Promoted to ${role} in club ${clubId}`,
+            undefined, undefined, clubId
+        );
+
+        console.log(`[AgentService] Promoted ${profile.username} to ${role} in club ${clubId}`);
+        return agent;
+    }
+
+    /**
+     * Link a player under an agent using the agent's player_number as referral code.
+     *
+     * When a player signs up for a club or with smarter.poker and enters a referral code
+     * (which is an agent's player_number), this method links them under that agent.
+     *
+     * The player's club_members.agent_id is set to the agent's user_id.
+     */
+    async linkPlayerByReferral(
+        playerId: string,
+        referralCode: number,
+        clubId: string
+    ): Promise<{ success: boolean; agentName?: string }> {
+        // 1. Find the agent by player_number (referral code)
+        const { data: agentProfile } = await supabase
+            .from('profiles')
+            .select('id, username')
+            .eq('player_number', referralCode)
+            .single();
+
+        if (!agentProfile) {
+            return { success: false };
+        }
+
+        // 2. Verify this user is an agent in the specified club
+        const { data: agentRecord } = await supabase
+            .from('agents')
+            .select('id, user_id')
+            .eq('user_id', agentProfile.id)
+            .eq('club_id', clubId)
+            .single();
+
+        if (!agentRecord) {
+            return { success: false };
+        }
+
+        // 3. Update the player's club_members record to link under this agent
+        const { error } = await supabase
+            .from('club_members')
+            .update({ agent_id: agentProfile.id })
+            .eq('user_id', playerId)
+            .eq('club_id', clubId);
+
+        if (error) {
+            console.error(`[AgentService] Failed to link player ${playerId} to agent ${agentProfile.username}:`, error);
+            return { success: false };
+        }
+
+        // 4. Increment agent player count
+        await supabase
+            .from('agents')
+            .update({
+                total_players: (agentRecord as any).total_players + 1,
+                active_player_count: (agentRecord as any).active_player_count + 1,
+            })
+            .eq('id', agentRecord.id);
+
+        console.log(`[AgentService] Linked player ${playerId} under agent ${agentProfile.username} via referral code ${referralCode}`);
+        return { success: true, agentName: agentProfile.username };
+    }
+
+    /**
+     * Assign a player directly under an agent by user IDs.
+     * Used for bulk assignment or admin-level linking without referral codes.
+     */
+    async assignPlayerToAgent(
+        playerId: string,
+        agentUserId: string,
+        clubId: string
+    ): Promise<boolean> {
+        // Verify agent exists in this club
+        const { data: agentRecord } = await supabase
+            .from('agents')
+            .select('id, total_players, active_player_count')
+            .eq('user_id', agentUserId)
+            .eq('club_id', clubId)
+            .single();
+
+        if (!agentRecord) {
+            console.error(`[AgentService] Agent ${agentUserId} not found in club ${clubId}`);
+            return false;
+        }
+
+        // Update player's club_members record
+        const { error } = await supabase
+            .from('club_members')
+            .update({ agent_id: agentUserId })
+            .eq('user_id', playerId)
+            .eq('club_id', clubId);
+
+        if (error) {
+            console.error(`[AgentService] Failed to assign player:`, error);
+            return false;
+        }
+
+        // Update agent player count
+        await supabase
+            .from('agents')
+            .update({
+                total_players: agentRecord.total_players + 1,
+                active_player_count: agentRecord.active_player_count + 1,
+            })
+            .eq('id', agentRecord.id);
 
         return true;
     }

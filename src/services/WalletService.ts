@@ -107,11 +107,46 @@ export const WalletService = {
     // ─────────────────────────────────────────────────────────────────────────────
 
     /**
-     * Mint chips using diamonds (Club Owner Only)
+     * Mint chips using diamonds.
+     *
+     * MINTING RULES:
+     * - If the club belongs to a Union, ONLY the Union owner can mint chips.
+     *   The club's mint functionality is LOCKED once they join a union.
+     *   All chips must originate from the Union level and flow down.
+     * - If the club is standalone (no union affiliation), the club owner can mint directly.
+     *
      * 75% Cheaper Law: 38 Diamonds = 100 Chips
      */
-    async mintChips(clubId: string, chipAmount: number): Promise<ChipMintResult> {
-        // Calculate diamond cost
+    async mintChips(clubId: string, chipAmount: number, requestingUserId?: string): Promise<ChipMintResult> {
+        // 1. Check if club belongs to a union
+        const { data: club } = await supabase
+            .from('clubs')
+            .select('id, name, owner_id, union_id')
+            .eq('id', clubId)
+            .single();
+
+        if (!club) throw new Error('Club not found');
+
+        // 2. If club is in a union, minting must go through the union owner
+        if (club.union_id) {
+            const { data: union } = await supabase
+                .from('unions')
+                .select('id, owner_id, name')
+                .eq('id', club.union_id)
+                .single();
+
+            if (!union) throw new Error('Union not found');
+
+            // Only the union owner can mint — club owners cannot mint when in a union
+            if (requestingUserId && requestingUserId !== union.owner_id) {
+                throw new Error(
+                    `Minting is locked for clubs in a union. Only the Union owner (${union.name}) can mint chips. ` +
+                    `Contact your union owner for chip allocation.`
+                );
+            }
+        }
+
+        // 3. Calculate diamond cost
         const diamondCost = Math.ceil((chipAmount / 100) * 38);
 
         const { data, error } = await supabase.rpc('mint_club_chips', {
@@ -122,25 +157,33 @@ export const WalletService = {
 
         if (error) throw error;
 
-        // Log mint transaction
-        // Note: minting goes to club bank, not user wallet — but we record it
-        await this.logTransaction(
-            'system', // System-level operation
-            'BUSINESS',
-            chipAmount,
-            'credit',
-            'mint',
-            `Minted ${chipAmount} chips for club (${diamondCost} diamonds spent)`,
-            undefined,
-            undefined,
-            clubId
-        );
+        // 4. Determine who receives the minted chips
+        const mintRecipientId = club.union_id
+            ? (await supabase.from('unions').select('owner_id').eq('id', club.union_id).single()).data?.owner_id
+            : club.owner_id;
+
+        // 5. Log mint transaction with full audit trail
+        if (mintRecipientId) {
+            await this.logTransaction(
+                mintRecipientId,
+                'PLAYER',
+                chipAmount,
+                'credit',
+                'mint',
+                club.union_id
+                    ? `Union mint: ${chipAmount} chips for ${club.name} (${diamondCost} diamonds spent)`
+                    : `Club mint: ${chipAmount} chips (${diamondCost} diamonds spent) — standalone club`,
+                undefined,
+                undefined,
+                clubId
+            );
+        }
 
         return {
             success: true,
             chipsAdded: chipAmount,
             diamondsSpent: diamondCost,
-            newBalance: data.new_balance,
+            newBalance: data?.new_balance || 0,
         };
     },
 
