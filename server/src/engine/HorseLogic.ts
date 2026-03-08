@@ -164,15 +164,15 @@ export class HorseLogic {
         if (strength > 0.80) {
             if (!facingBet) {
                 if (Math.random() < params.slowplayFreq) return { action: 'check', thinkTime: 0 };
-                const betSize = Math.floor(pot * (0.60 + Math.random() * 0.20) * sizeMult);
+                const betSize = Math.trunc(pot * (0.60 + Math.random() * 0.20) * sizeMult);
                 return { action: 'bet', amount: Math.min(stack, Math.max(betSize, gs.minRaise)), thinkTime: 0 };
             }
             if (Math.random() < params.checkRaiseFreq * 1.5) {
-                const raiseSize = Math.min(stack, toCall + (pot + toCall) * (0.8 + Math.random() * 0.4) * sizeMult);
+                const raiseSize = Math.trunc(Math.min(stack, toCall + (pot + toCall) * (0.8 + Math.random() * 0.4) * sizeMult) * 100) / 100;
                 return { action: 'raise', amount: raiseSize, thinkTime: 0 };
             }
             if (strength > 0.90) {
-                const raiseSize = Math.min(stack, currentBet * (2.5 + Math.random() * 0.5));
+                const raiseSize = Math.trunc(Math.min(stack, currentBet * (2.5 + Math.random() * 0.5)) * 100) / 100;
                 return { action: 'raise', amount: raiseSize, thinkTime: 0 };
             }
             return { action: 'call', amount: toCall, thinkTime: 0 };
@@ -181,12 +181,12 @@ export class HorseLogic {
         // Strong hands (0.55-0.80)
         if (strength > 0.55) {
             if (!facingBet) {
-                const betSize = Math.floor(pot * (0.45 + Math.random() * 0.20) * sizeMult);
+                const betSize = Math.trunc(pot * (0.45 + Math.random() * 0.20) * sizeMult);
                 return { action: 'bet', amount: Math.min(stack, Math.max(betSize, gs.minRaise)), thinkTime: 0 };
             }
             const betToCallRatio = toCall / pot;
             if (strength > 0.70 && Math.random() < 0.35) {
-                return { action: 'raise', amount: Math.min(stack, currentBet * (2.2 + Math.random() * 0.6)), thinkTime: 0 };
+                return { action: 'raise', amount: Math.trunc(Math.min(stack, currentBet * (2.2 + Math.random() * 0.6)) * 100) / 100, thinkTime: 0 };
             }
             if (betToCallRatio < 0.8) return { action: 'call', amount: toCall, thinkTime: 0 };
             if (strength > 0.65) return { action: 'call', amount: toCall, thinkTime: 0 };
@@ -197,7 +197,7 @@ export class HorseLogic {
         if (strength > 0.30) {
             if (!facingBet) {
                 if (strength > 0.45 && Math.random() < params.cbetFreq * 0.6) {
-                    const betSize = Math.floor(pot * (0.30 + Math.random() * 0.15) * sizeMult);
+                    const betSize = Math.trunc(pot * (0.30 + Math.random() * 0.15) * sizeMult);
                     return { action: 'bet', amount: Math.min(stack, Math.max(betSize, gs.minRaise)), thinkTime: 0 };
                 }
                 return { action: 'check', thinkTime: 0 };
@@ -205,7 +205,7 @@ export class HorseLogic {
             const betToCallRatio = toCall / (pot + toCall);
             if (strength > betToCallRatio + 0.05) return { action: 'call', amount: toCall, thinkTime: 0 };
             if (strength > 0.45 && Math.random() < params.bluffFreq * 0.5) {
-                return { action: 'raise', amount: Math.min(stack, currentBet * 2.5 * sizeMult), thinkTime: 0 };
+                return { action: 'raise', amount: Math.trunc(Math.min(stack, currentBet * 2.5 * sizeMult) * 100) / 100, thinkTime: 0 };
             }
             return { action: 'fold', thinkTime: 0 };
         }
@@ -213,7 +213,7 @@ export class HorseLogic {
         // Weak hands (< 0.30)
         if (!facingBet) {
             if (Math.random() < params.bluffFreq) {
-                const betSize = Math.floor(pot * (0.50 + Math.random() * 0.25) * params.sizingMultiplier);
+                const betSize = Math.trunc(pot * (0.50 + Math.random() * 0.25) * params.sizingMultiplier);
                 return { action: 'bet', amount: Math.min(stack, Math.max(betSize, gs.minRaise)), thinkTime: 0 };
             }
             return { action: 'check', thinkTime: 0 };
