@@ -176,10 +176,10 @@ export async function syncTournamentChips(tableId: string, tournamentId: string)
 
     await Promise.allSettled(
         seats.map(async (seat) => {
-            const rounded = Math.round(seat.stack);
+            const exact = Math.trunc(seat.stack * 100) / 100;
             await supabase
                 .from('tournament_players')
-                .update({ chips: rounded })
+                .update({ chips: exact })
                 .eq('tournament_id', tournamentId)
                 .eq('user_id', seat.user_id);
         })
