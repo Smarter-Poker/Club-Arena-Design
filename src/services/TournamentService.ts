@@ -1173,11 +1173,18 @@ class TournamentService {
 
         if (!tournament.add_on_available) return { allowed: false, reason: 'Add-ons not available' };
 
+        // Add-on is available when current level has reached or passed the rebuy_levels cap
+        // The 60-second add-on period is triggered by TournamentEngine when this level is reached
         const levelState = this.getCurrentLevelState(tournament);
-        // Add-on typically available at end of rebuy period
         const addonLevel = tournament.rebuy_levels || 4;
-        if (levelState.levelIndex !== addonLevel) {
-            return { allowed: false, reason: 'Add-on period not active' };
+        // Allow add-on when at or just past the rebuy level cap (within a 2-minute grace window)
+        if (levelState.levelIndex < addonLevel) {
+            return { allowed: false, reason: 'Re-entry period still active — add-on opens after re-entry ends' };
+        }
+
+        // Check if tournament is too far past addon level (only allow within first level after rebuy cap)
+        if (levelState.levelIndex > addonLevel + 1) {
+            return { allowed: false, reason: 'Add-on period has ended' };
         }
 
         return { allowed: true };
@@ -1197,6 +1204,18 @@ class TournamentService {
 
         const addonChips = tournament.addon_chips || tournament.starting_chips;
         const addonCost = tournament.addon_cost || tournament.buy_in_amount;
+
+        // Check if player already used their add-on (each player gets max 1 add-on)
+        const { data: existingAddon } = await supabase
+            .from('wallet_transactions')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('tx_type', 'addon')
+            .eq('tournament_id', tournamentId)
+            .limit(1);
+        if (existingAddon && existingAddon.length > 0) {
+            throw new Error('You have already used your add-on for this tournament');
+        }
 
         // Pre-validate wallet balance (better error messages)
         const { data: addonWallet } = await supabase

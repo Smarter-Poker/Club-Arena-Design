@@ -61,6 +61,7 @@ import PresenceIndicator from '../components/social/PresenceIndicator';
 import { useTableStore } from '../stores/useTableStore';
 import { useToast } from '../components/common/Toast';
 import TournamentBreakScreen from '../components/table/TournamentBreakScreen';
+import AddOnModal from '../components/table/AddOnModal';
 // RealtimeChannelService imported if needed for future use
 import ChipStack from '../components/table/ChipStack';
 import { tournamentService } from '../services/TournamentService';
@@ -340,6 +341,16 @@ export default function TablePage() {
         nextLevel?: { level: number; smallBlind: number; bigBlind: number; ante?: number; duration: number };
     }>({ active: false, timeRemaining: 0 });
     const breakChannelRef = useRef<any>(null);
+
+    // Add-on period state
+    const [addOnPeriod, setAddOnPeriod] = useState<{
+        active: boolean;
+        addOnCost: number;
+        addOnChips: number;
+        walletBalance: number;
+        timeRemaining: number;
+    }>({ active: false, addOnCost: 0, addOnChips: 0, walletBalance: 0, timeRemaining: 60 });
+    const addOnChannelRef = useRef<any>(null);
 
     // Buy-in processing lock to prevent double-click
     const buyInProcessingRef = useRef(false);
@@ -943,7 +954,7 @@ export default function TablePage() {
                     }
                 }
 
-                // Subscribe to tournament break events via Realtime
+                // Subscribe to tournament break + add-on events via Realtime
                 if (table.tournament_id) {
                     const breakChan = supabase
                         .channel(`t-break-${table.tournament_id}`)
@@ -957,10 +968,65 @@ export default function TablePage() {
                                 });
                             } else if (data?.type === 'BREAK_END') {
                                 setTournamentBreak({ active: false, timeRemaining: 0 });
+                            } else if (data?.type === 'ADDON_PERIOD_START') {
+                                // Add-on period: 60 seconds, show popup to all players
+                                const addonData = data.payload || {};
+                                // Fetch fresh wallet balance
+                                (async () => {
+                                    let walBal = 0;
+                                    if (userId && userId !== 'guest') {
+                                        const { data: w } = await supabase
+                                            .from('wallets')
+                                            .select('balance')
+                                            .eq('user_id', userId)
+                                            .eq('wallet_type', 'PLAYER')
+                                            .single();
+                                        walBal = w?.balance || 0;
+                                    }
+                                    setAddOnPeriod({
+                                        active: true,
+                                        addOnCost: addonData.addOnCost || 0,
+                                        addOnChips: addonData.addOnChips || 0,
+                                        walletBalance: walBal,
+                                        timeRemaining: 60,
+                                    });
+                                })();
+                            } else if (data?.type === 'ADDON_PERIOD_END') {
+                                setAddOnPeriod(prev => ({ ...prev, active: false }));
                             }
                         })
                         .subscribe();
                     breakChannelRef.current = breakChan;
+
+                    // Also subscribe to add-on specific channel for direct player communication
+                    const addOnChan = supabase
+                        .channel(`t-addon-${table.tournament_id}`)
+                        .on('broadcast', { event: 'addon_event' }, (payload: any) => {
+                            const data = payload.payload;
+                            if (data?.type === 'ADDON_PERIOD_START') {
+                                (async () => {
+                                    let walBal = 0;
+                                    if (userId && userId !== 'guest') {
+                                        const { data: w } = await supabase
+                                            .from('wallets')
+                                            .select('balance')
+                                            .eq('user_id', userId)
+                                            .eq('wallet_type', 'PLAYER')
+                                            .single();
+                                        walBal = w?.balance || 0;
+                                    }
+                                    setAddOnPeriod({
+                                        active: true,
+                                        addOnCost: data.addOnCost || 0,
+                                        addOnChips: data.addOnChips || 0,
+                                        walletBalance: walBal,
+                                        timeRemaining: 60,
+                                    });
+                                })();
+                            }
+                        })
+                        .subscribe();
+                    addOnChannelRef.current = addOnChan;
                 }
 
                 // Load user's Player Wallet balance for buy-in
@@ -1086,6 +1152,10 @@ export default function TablePage() {
             if (breakChannelRef.current) {
                 supabase.removeChannel(breakChannelRef.current);
                 breakChannelRef.current = null;
+            }
+            if (addOnChannelRef.current) {
+                supabase.removeChannel(addOnChannelRef.current);
+                addOnChannelRef.current = null;
             }
         };
     }, [tableId, userId, tableState.heroSeat]);
@@ -2798,6 +2868,26 @@ export default function TablePage() {
                     isOpen={showShareHand}
                     onClose={() => setShowShareHand(false)}
                     hand={sharedHandData}
+                />
+            )}
+
+            {/* Tournament Add-On Period Modal */}
+            {tableState.isTournament && addOnPeriod.active && (
+                <AddOnModal
+                    isVisible={addOnPeriod.active}
+                    addOnCost={addOnPeriod.addOnCost}
+                    addOnChips={addOnPeriod.addOnChips}
+                    walletBalance={addOnPeriod.walletBalance}
+                    timeRemaining={addOnPeriod.timeRemaining}
+                    onAccept={async () => {
+                        if (!tableState.tournamentId || !userId) return;
+                        await tournamentService.processAddOn(tableState.tournamentId, userId);
+                        toast?.success('Add-on accepted — chips added to your stack');
+                        setAddOnPeriod(prev => ({ ...prev, active: false }));
+                    }}
+                    onDecline={() => {
+                        setAddOnPeriod(prev => ({ ...prev, active: false }));
+                    }}
                 />
             )}
 

@@ -60,6 +60,9 @@ interface TournamentInfo {
     add_on_available?: boolean;
     rebuy_levels?: number;
     prize_pool_finalized?: boolean;
+    // Add-on details
+    addon_cost?: number;
+    addon_chips?: number;
     // Bounty fields
     is_bounty?: boolean;
     is_pko?: boolean;
@@ -144,6 +147,9 @@ export class TournamentEngine {
     // Hand-for-hand mode (money bubble)
     private handForHandActive = false;
     private handForHandAnnounced = false;
+    // Add-on period (60s after rebuy levels end)
+    private addOnPeriodTriggered = false;
+    private addOnPeriodActive = false;
 
     constructor(tournamentId: string, supabase: SupabaseClient) {
         this.tournamentId = tournamentId;
@@ -424,6 +430,8 @@ export class TournamentEngine {
             add_on_available: data.add_on_available || false,
             rebuy_levels: data.rebuy_levels || 0,
             prize_pool_finalized: data.prize_pool_finalized || false,
+            addon_cost: data.addon_cost || data.buy_in_amount || 0,
+            addon_chips: data.addon_chips || data.starting_chips || 0,
             // Bounty fields
             is_bounty: data.is_bounty || false,
             is_pko: data.is_pko || false,
@@ -738,12 +746,24 @@ export class TournamentEngine {
         }
 
         if (newLevel !== this.currentLevel) {
+            const prevLevel = this.currentLevel;
             this.currentLevel = newLevel;
             const level = blinds[newLevel];
             console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] BLIND LEVEL UP → Level ${level.level}: ${level.smallBlind}/${level.bigBlind} ante ${level.ante}`);
 
             // Update all tournament tables with new blinds
             this.updateTableBlinds(level);
+
+            // ── ADD-ON PERIOD TRIGGER ──
+            // When we advance past the rebuy_levels threshold and add-on is available,
+            // pause the tournament for 60 seconds and broadcast ADDON_PERIOD_START
+            if (this.tournamentInfo.add_on_available && !this.addOnPeriodTriggered) {
+                const rebuyLevelCap = this.tournamentInfo.rebuy_levels || 4;
+                // Trigger when we pass from within rebuy period to beyond it
+                if (prevLevel < rebuyLevelCap && newLevel >= rebuyLevelCap) {
+                    this.triggerAddOnPeriod();
+                }
+            }
         }
     }
 
@@ -768,6 +788,98 @@ export class TournamentEngine {
             .from('tournaments')
             .update({ current_level: level.level })
             .eq('id', this.tournamentId);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // ADD-ON PERIOD (60 seconds after rebuy levels end)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    private async triggerAddOnPeriod(): Promise<void> {
+        if (!this.tournamentInfo || this.addOnPeriodTriggered) return;
+
+        this.addOnPeriodTriggered = true;
+        this.addOnPeriodActive = true;
+
+        const addonCost = this.tournamentInfo.addon_cost || this.tournamentInfo.buy_in_amount;
+        const addonChips = this.tournamentInfo.addon_chips || this.tournamentInfo.starting_chips;
+
+        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] ADD-ON PERIOD STARTED — 60 seconds, cost: ${addonCost}, chips: ${addonChips}`);
+
+        // Pause all table engines during add-on period
+        for (const table of this.tables) {
+            if (table.engine.setHandForHand) table.engine.setHandForHand(true);
+        }
+
+        // Broadcast ADDON_PERIOD_START to all tables via tournament channel
+        try {
+            const { realtimeChannelService } = await import('../services/RealtimeChannelService');
+            await realtimeChannelService.broadcastTournamentEvent(this.tournamentId, {
+                type: 'ADDON_PERIOD_START' as any,
+                payload: {
+                    addOnCost: addonCost,
+                    addOnChips: addonChips,
+                    durationSeconds: 60,
+                },
+            });
+        } catch (e) {
+            console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to broadcast addon period:`, e);
+        }
+
+        // Also broadcast on the addon-specific channel for direct table pickup
+        try {
+            const chan = this.supabase.channel(`t-addon-${this.tournamentId}`);
+            await chan.subscribe();
+            await chan.send({
+                type: 'broadcast',
+                event: 'addon_event',
+                payload: {
+                    type: 'ADDON_PERIOD_START',
+                    addOnCost: addonCost,
+                    addOnChips: addonChips,
+                    durationSeconds: 60,
+                },
+            });
+            // Clean up after a brief delay to ensure delivery
+            setTimeout(async () => {
+                try { await chan.unsubscribe(); } catch { /* best effort */ }
+            }, 3000);
+        } catch (e) { /* noop */ }
+
+        // Wait 60 seconds for all players to accept/decline
+        await new Promise<void>((resolve) => {
+            setTimeout(() => {
+                resolve();
+            }, 60_000);
+        });
+
+        // Add-on period ended — resume tournament
+        this.addOnPeriodActive = false;
+
+        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] ADD-ON PERIOD ENDED — resuming tournament`);
+
+        // Release all table engines
+        for (const table of this.tables) {
+            if (table.engine.setHandForHand) table.engine.setHandForHand(false);
+            if (table.engine.releaseHandForHand) table.engine.releaseHandForHand();
+        }
+
+        // Finalize prize pool after add-on period
+        try {
+            const { tournamentService } = await import('../services/TournamentService');
+            await tournamentService.finalizePrizePool(this.tournamentId);
+            if (this.tournamentInfo) this.tournamentInfo.prize_pool_finalized = true;
+        } catch (e) {
+            console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to finalize after addon:`, e);
+        }
+
+        // Broadcast ADDON_PERIOD_END
+        try {
+            const { realtimeChannelService } = await import('../services/RealtimeChannelService');
+            await realtimeChannelService.broadcastTournamentEvent(this.tournamentId, {
+                type: 'ADDON_PERIOD_END' as any,
+                payload: {},
+            });
+        } catch (e) { /* noop */ }
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

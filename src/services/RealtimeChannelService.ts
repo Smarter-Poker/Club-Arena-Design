@@ -46,7 +46,8 @@ export interface TournamentEvent {
     type: 'registration_open' | 'registration_closed' | 'tournament_started' |
     'player_registered' | 'player_eliminated' | 'level_up' |
     'final_table' | 'heads_up' | 'winner' | 'payout' |
-    'hand_for_hand' | 'prize_pool_finalized' | 'bubble_burst';
+    'hand_for_hand' | 'prize_pool_finalized' | 'bubble_burst' |
+    'BREAK_START' | 'BREAK_END' | 'ADDON_PERIOD_START' | 'ADDON_PERIOD_END';
     payload: any;
     timestamp: string;
 }
