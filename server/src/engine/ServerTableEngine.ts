@@ -50,6 +50,9 @@ export class ServerTableEngine {
     private currentHandWinners: { userId: string; amount: number }[] = [];
     // Hand complete callback for tournament chip sync
     private handCompleteCallback: ((tableId: string, players: { user_id: string; stack: number }[]) => void) | null = null;
+    // Hand-for-hand pause: set by tournament manager, checked between hands
+    private handForHandPaused: boolean = false;
+    private handForHandResolve: (() => void) | null = null;
 
     constructor(tableId: string) {
         this.tableId = tableId;
@@ -100,6 +103,25 @@ export class ServerTableEngine {
 
     onHandComplete(callback: (tableId: string, players: { user_id: string; stack: number }[]) => void): void {
         this.handCompleteCallback = callback;
+    }
+
+    /** Pause dealing after current hand finishes (for hand-for-hand) */
+    pauseAfterHand(): void {
+        this.handForHandPaused = true;
+    }
+
+    /** Resume dealing (all tables finished their hand-for-hand hand) */
+    resumeDealing(): void {
+        this.handForHandPaused = false;
+        if (this.handForHandResolve) {
+            this.handForHandResolve();
+            this.handForHandResolve = null;
+        }
+    }
+
+    /** Check if engine is currently waiting for hand-for-hand resume */
+    isWaitingForHandForHand(): boolean {
+        return this.handForHandPaused && this.handForHandResolve !== null;
     }
 
     private isTournamentTable(): boolean {
@@ -235,6 +257,21 @@ export class ServerTableEngine {
                 // Deal hand
                 await this.dealHand(activePlayers);
                 this.consecutiveErrors = 0;
+
+                // Hand-for-hand: if paused, wait until tournament manager resumes all tables
+                if (this.handForHandPaused && this.running) {
+                    console.log(`[ServerTableEngine:${this.tableId}] Hand-for-hand: waiting for all tables to complete...`);
+                    await new Promise<void>(resolve => {
+                        this.handForHandResolve = resolve;
+                        // Safety timeout: resume after 2 minutes if something goes wrong
+                        setTimeout(() => {
+                            if (this.handForHandResolve === resolve) {
+                                this.handForHandResolve = null;
+                                resolve();
+                            }
+                        }, 120000);
+                    });
+                }
 
                 // Brief pause between hands (1-2 seconds for server — fast!)
                 if (this.running) {

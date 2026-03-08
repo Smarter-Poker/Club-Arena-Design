@@ -462,6 +462,8 @@ class TournamentManager {
     private onBreak: boolean = false;
     private savedBlindTimerRemaining: number = 0;
     private blindTimerStartedAt: number = 0;
+    // Hand-for-hand sync
+    private handForHandSyncInterval: NodeJS.Timeout | null = null;
     // Late reg finalization
     private prizePoolFinalized: boolean = false;
     // Tournament metadata cache
@@ -570,6 +572,47 @@ class TournamentManager {
         const variant = this.tournamentCache?.variant;
         if (type === 'SNG' || type === 'SPIN' || variant === 'sng' || variant === 'spin') return false;
         return true;
+    }
+
+    /** Start hand-for-hand sync: check every 500ms if all tables finished their hand */
+    private startHandForHandSync(): void {
+        if (this.handForHandSyncInterval) return;
+
+        this.handForHandSyncInterval = setInterval(() => {
+            if (!this.handForHandActive || !this.running) {
+                this.stopHandForHandSync();
+                return;
+            }
+
+            // Check if ALL table engines are waiting for hand-for-hand resume
+            const engines = Array.from(this.tableEngines.values());
+            if (engines.length === 0) return;
+
+            const allWaiting = engines.every(e => e.isWaitingForHandForHand());
+            if (allWaiting) {
+                console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] Hand-for-hand: all ${engines.length} tables done — resuming for next hand`);
+                // Resume all engines together for the next hand, then immediately re-pause
+                for (const engine of engines) {
+                    engine.resumeDealing();
+                }
+                // Re-pause for next hand-for-hand cycle (if still active)
+                if (this.handForHandActive) {
+                    setTimeout(() => {
+                        for (const engine of this.tableEngines.values()) {
+                            engine.pauseAfterHand();
+                        }
+                    }, 500); // Small delay to let dealing start
+                }
+            }
+        }, 500);
+    }
+
+    /** Stop hand-for-hand sync check */
+    private stopHandForHandSync(): void {
+        if (this.handForHandSyncInterval) {
+            clearInterval(this.handForHandSyncInterval);
+            this.handForHandSyncInterval = null;
+        }
     }
 
     async start(): Promise<void> {
@@ -784,6 +827,8 @@ class TournamentManager {
             engine.stop();
         }
         this.tableEngines.clear();
+        // Cleanup hand-for-hand sync
+        this.stopHandForHandSync();
         // Best-effort cleanup of broadcast channel (non-async in sync stop)
         if (this.broadcastChannel) {
             try { this.broadcastChannel.unsubscribe(); } catch { }
@@ -1102,14 +1147,24 @@ class TournamentManager {
                             if (!this.handForHandAnnounced) {
                                 this.handForHandAnnounced = true;
                                 console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] HAND-FOR-HAND — ${playingNow} players, ${payoutCount} paid`);
-                                // Broadcast hand-for-hand event
                                 await this.broadcast('hand_for_hand', { active: true, playersRemaining: playingNow, paidPositions: payoutCount });
+                                // Pause all table engines for hand-for-hand sync
+                                for (const engine of this.tableEngines.values()) {
+                                    engine.pauseAfterHand();
+                                }
+                                // Start hand-for-hand sync check
+                                this.startHandForHandSync();
                             }
                         } else if (this.handForHandActive && (playingNow || 0) <= payoutCount) {
-                            // Bubble burst
+                            // Bubble burst — resume normal play
                             this.handForHandActive = false;
+                            this.stopHandForHandSync();
                             console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] BUBBLE BURST — ${playingNow} players ITM`);
                             await this.broadcast('bubble_burst', { playersRemaining: playingNow });
+                            // Resume all engines permanently
+                            for (const engine of this.tableEngines.values()) {
+                                engine.resumeDealing();
+                            }
                         }
                     }
                 }
