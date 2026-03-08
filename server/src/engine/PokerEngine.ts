@@ -455,12 +455,13 @@ function distributePot(
     amount: number,
     _type: 'High' | 'Low'
 ): void {
-    const share = Math.trunc(amount / roundWinners.length * 100) / 100;
-    const remainder = amount % roundWinners.length;
+    const totalCents = Math.trunc(amount * 100);
+    const shareCents = Math.trunc(totalCents / roundWinners.length);
+    const remainderCents = totalCents % roundWinners.length;
 
     roundWinners.forEach((pw, i) => {
         const existing = globalWinners.find(w => w.userId === pw.player.user_id);
-        const winAmt = share + (i < remainder ? 1 : 0);
+        const winAmt = (shareCents + (i < remainderCents ? 1 : 0)) / 100;
         if (existing) {
             existing.amount += winAmt;
         } else {

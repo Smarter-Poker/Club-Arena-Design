@@ -81,7 +81,7 @@ export function BadBeatJackpot({
                         <div className="bbj-hit__title">BAD BEAT JACKPOT</div>
                         <div className="bbj-hit__subtitle">HIT!</div>
                         <div className="bbj-hit__amount">
-                            {currency}{amount.toLocaleString()}
+                            {currency}{(Math.trunc(amount * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                         <div className="bbj-hit__particles">
                             {/* CSS particles handled in stylesheet */}

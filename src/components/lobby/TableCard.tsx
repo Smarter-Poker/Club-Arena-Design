@@ -142,7 +142,7 @@ export default function TableCard({ table }: TableCardProps) {
                 {avgPot > 0 && (
                     <div className={styles.stat}>
                         <span className={styles.statLabel}>Avg Pot</span>
-                        <span className={styles.statValue}>{avgPot}</span>
+                        <span className={styles.statValue}>{avgPot.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                 )}
                 {hasWaitlist && (

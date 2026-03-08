@@ -219,7 +219,7 @@ export default function TournamentDetails() {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [tournamentId, tournament?.starting_chips]);
+    }, [tournamentId]);
 
     useEffect(() => {
         if (tournament?.start_time) {

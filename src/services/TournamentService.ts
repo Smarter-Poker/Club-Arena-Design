@@ -554,13 +554,12 @@ class TournamentService {
         if (error) {
             // Refund to Player Wallet on failure
             console.error('[TournamentService] Registration failed, refunding buy-in:', error);
-            try {
-                await supabase.rpc('credit_player_wallet', {
-                    p_user_id: userId,
-                    p_amount: totalCost,
-                });
-            } catch (refundErr) {
-                console.error('[TournamentService] CRITICAL: Refund also failed:', refundErr);
+            const { error: refundErr } = await supabase.rpc('credit_player_wallet', {
+                p_user_id: userId,
+                p_amount: totalCost,
+            });
+            if (refundErr) {
+                console.error('[TournamentService] CRITICAL: Refund also failed:', refundErr.message);
             }
             throw error;
         }
@@ -667,14 +666,21 @@ class TournamentService {
     async unregisterPlayer(tournamentId: string, userId: string): Promise<void> {
         const tournament = await this.getTournament(tournamentId);
         if (!tournament) throw new Error('Tournament not found');
-        if (tournament.status !== 'REGISTERING' && tournament.status !== 'ANNOUNCED') {
+        // Allow unregister during late registration window too
+        const lateRegMins = tournament.late_reg_mins || 0;
+        const isLateRegOpen = tournament.status === 'RUNNING'
+            && lateRegMins > 0
+            && tournament.started_at
+            && (Date.now() - new Date(tournament.started_at).getTime()) < lateRegMins * 60 * 1000;
+
+        if (tournament.status !== 'REGISTERING' && tournament.status !== 'ANNOUNCED' && !isLateRegOpen) {
             throw new Error('Cannot unregister after tournament started');
         }
 
         // CRITICAL: Verify player is actually registered BEFORE issuing any refund
         const { data: existingReg } = await supabase
             .from('tournament_players')
-            .select('id')
+            .select('id, username')
             .eq('tournament_id', tournamentId)
             .eq('user_id', userId)
             .maybeSingle();
@@ -711,6 +717,7 @@ class TournamentService {
             const { error: rollbackErr } = await supabase.from('tournament_players').insert({
                 tournament_id: tournamentId,
                 user_id: userId,
+                username: existingReg?.username || 'Unknown',
                 status: 'registered',
                 chips: 0,
             });

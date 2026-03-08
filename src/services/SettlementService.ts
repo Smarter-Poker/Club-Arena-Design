@@ -455,7 +455,8 @@ export const SettlementService = {
 
                 if (creditError) {
                     console.error(`[Settlement] CRITICAL: Credit to club owner failed, rolling back union debit:`, creditError);
-                    await supabase.rpc('credit_player_wallet', { p_user_id: union.owner_id, p_amount: rakeBack });
+                    const { error: rollbackErr } = await supabase.rpc('credit_player_wallet', { p_user_id: union.owner_id, p_amount: rakeBack });
+                    if (rollbackErr) console.error(`[Settlement] CRITICAL: Rollback also failed — ${rakeBack} chips lost: ${rollbackErr.message}`);
                     continue;
                 }
 

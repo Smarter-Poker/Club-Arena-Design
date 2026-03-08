@@ -159,7 +159,7 @@ export default function TournamentPage() {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [clubId, selectedTournament?.id]);
+    }, [clubId]);
 
     // ─── Sync registration state when selected tournament changes ───
     useEffect(() => {

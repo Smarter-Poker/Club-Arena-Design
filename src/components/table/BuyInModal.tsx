@@ -114,7 +114,7 @@ export function BuyInModal({
                 <div className="buy-in-modal__amount-display">
                     <span className="buy-in-modal__min-label">{formatAmount(minBuyIn, currency)}</span>
                     <div className="buy-in-modal__current-amount">
-                        <span className="buy-in-modal__amount-value">{clampedBuyIn}</span>
+                        <span className="buy-in-modal__amount-value">{clampedBuyIn.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         <span className="buy-in-modal__chip-icon">◉</span>
                     </div>
                     <span className="buy-in-modal__max-label">{formatAmount(maxBuyIn, currency)}</span>

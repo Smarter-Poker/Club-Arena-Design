@@ -11,7 +11,8 @@ export const ChipChange: React.FC<ChipChangeProps> = ({
     showIcon = true
 }) => {
     const isPositive = change > 0;
-    const formatted = isPositive ? `+${change.toLocaleString()}` : change.toLocaleString();
+    const fmt = (v: number) => v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const formatted = isPositive ? `+${fmt(change)}` : fmt(change);
 
     return (
         <span className={`chip-change ${isPositive ? 'positive' : 'negative'}`}>

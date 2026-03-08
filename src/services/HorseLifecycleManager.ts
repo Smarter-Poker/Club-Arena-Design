@@ -488,10 +488,11 @@ class HorseLifecycleManagerCore {
             // Refund each player
             for (const player of players) {
               if (buyInAmount > 0) {
-                await supabase.rpc('credit_player_wallet', {
+                const { error: refundErr } = await supabase.rpc('credit_player_wallet', {
                   p_user_id: player.user_id,
                   p_amount: buyInAmount,
                 });
+                if (refundErr) console.error(`[HorseLifecycle] SNG cancel refund FAILED for ${player.user_id.slice(0, 8)}: ${refundErr.message}`);
 
                 // Log refund via centralized WalletService RPC
                 await WalletService.logTransaction(

@@ -77,7 +77,8 @@ export const ChipFlowService = {
 
         if (creditErr) {
             // Rollback: re-credit sender
-            await supabase.rpc('credit_player_wallet', { p_user_id: fromUserId, p_amount: amt });
+            const { error: rollbackErr } = await supabase.rpc('credit_player_wallet', { p_user_id: fromUserId, p_amount: amt });
+            if (rollbackErr) console.error(`[ChipFlowService] CRITICAL: Rollback failed for ${fromUserId.slice(0, 8)} — ${amt} chips lost: ${rollbackErr.message}`);
             throw new Error(`Credit failed (rolled back): ${creditErr.message}`);
         }
 

@@ -53,7 +53,7 @@ export const ProfitTicker: React.FC<ProfitTickerProps> = ({
         <div className={`profit-ticker ${isProfit ? 'profit' : 'loss'} ${isAnimating ? 'animating' : ''}`}>
             <span className="ticker-prefix">{prefix}</span>
             <span className="ticker-sign">{isProfit ? '+' : ''}</span>
-            <span className="ticker-value">{displayValue.toLocaleString()}</span>
+            <span className="ticker-value">{displayValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             <span className="ticker-suffix">{suffix}</span>
         </div>
     );
