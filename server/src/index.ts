@@ -610,7 +610,8 @@ class TournamentManager {
             if (Array.isArray(payouts)) {
                 const payoutEntry = payouts.find((p: any) => p.place === position);
                 if (payoutEntry) {
-                    prize = Math.trunc((tournament.prize_pool || 0) * payoutEntry.percentage / 100);
+                    // Exact cent-precision: truncate sub-cent fractions
+                    prize = Math.trunc((tournament.prize_pool || 0) * payoutEntry.percentage / 100 * 100) / 100;
                 }
             }
         }
@@ -630,6 +631,17 @@ class TournamentManager {
             await supabase.rpc('credit_player_wallet', {
                 p_user_id: userId,
                 p_amount: prize,
+            });
+
+            // Log transaction for audit trail
+            await supabase.from('wallet_transactions').insert({
+                user_id: userId,
+                entity_type: 'PLAYER',
+                amount: prize,
+                type: 'credit',
+                category: 'prize',
+                description: `Tournament prize: position ${position}`,
+                tournament_id: this.tournamentId,
             });
         }
 
@@ -658,10 +670,22 @@ class TournamentManager {
             }
             const firstPlace = Array.isArray(payouts) ? payouts.find((p: any) => p.place === 1) : null;
             if (firstPlace) {
-                const prize = Math.trunc((tournament.prize_pool || 0) * firstPlace.percentage / 100);
+                // Exact cent-precision: truncate sub-cent fractions
+                const prize = Math.trunc((tournament.prize_pool || 0) * firstPlace.percentage / 100 * 100) / 100;
                 await supabase.rpc('credit_player_wallet', {
                     p_user_id: winnerId,
                     p_amount: prize,
+                });
+
+                // Log transaction for audit trail
+                await supabase.from('wallet_transactions').insert({
+                    user_id: winnerId,
+                    entity_type: 'PLAYER',
+                    amount: prize,
+                    type: 'credit',
+                    category: 'prize',
+                    description: `Tournament winner prize: 1st place`,
+                    tournament_id: this.tournamentId,
                 });
 
                 await supabase
