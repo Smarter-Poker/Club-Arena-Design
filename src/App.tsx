@@ -75,6 +75,9 @@ const ClubFinancialsPage = lazy(() => import('./pages/ClubFinancialsPage'));
 const BonusPage = lazy(() => import('./pages/BonusPage'));
 const WaitlistPage = lazy(() => import('./pages/WaitlistPage'));
 
+// Shared/Public Pages
+const HandReplayerPage = lazy(() => import('./pages/share/HandReplayerPage'));
+
 // Legal Pages
 const TermsOfServicePage = lazy(() => import('./pages/legal/TermsOfServicePage'));
 const ClubPromotionRulesPage = lazy(() => import('./pages/legal/PromotionsPage'));
@@ -136,6 +139,9 @@ export default function App() {
                                 </GuestGuard>
                             }
                         />
+
+                        {/* Public Hand Replay — shareable link, no auth required */}
+                        <Route path="/share/hand/:handId" element={<HandReplayerPage />} />
 
                         {/* ═══════════════════════════════════════════════════════════════
                     PROTECTED ROUTES (Auth Required)

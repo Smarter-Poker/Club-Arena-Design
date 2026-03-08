@@ -6,9 +6,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
-import { HandHistoryService } from '../../services/HandHistoryService';
-import './HandReplayer.css';
+import { handHistoryService } from '../../services/HandHistoryService';
+import './HandReplayerPage.css';
 
 interface HandAction {
     player: string;
@@ -57,40 +56,44 @@ export default function HandReplayerPage() {
 
     const loadHand = async () => {
         try {
-            // In production, fetch from HandHistoryService
-            // For demo, use mock data
-            const mockHand: HandData = {
-                id: handId || 'demo',
-                table_name: 'Shark Club NLH',
-                game_type: 'NLH',
-                stakes: '5/10',
-                pot: 1250,
-                community_cards: ['Ah', 'Kd', '7s', '2c', 'Jh'],
-                players: [
-                    { seat: 1, name: 'SharkPlayer', stack: 2500, cards: ['As', 'Ks'], is_winner: true },
-                    { seat: 2, name: 'FishBait99', stack: 1800, cards: ['Qh', 'Qd'] },
-                    { seat: 3, name: 'BluffMaster', stack: 3200 },
-                    { seat: 4, name: 'TightTommy', stack: 1000 },
-                    { seat: 5, name: 'AggroAndy', stack: 4500 },
-                    { seat: 6, name: 'NitNancy', stack: 900 },
-                ],
-                actions: [
-                    { player: 'TightTommy', action: 'fold', timestamp: 0 },
-                    { player: 'AggroAndy', action: 'raise', amount: 30, timestamp: 1 },
-                    { player: 'NitNancy', action: 'fold', timestamp: 2 },
-                    { player: 'SharkPlayer', action: 'call', amount: 30, timestamp: 3 },
-                    { player: 'FishBait99', action: 'call', amount: 30, timestamp: 4 },
-                    { player: 'BluffMaster', action: 'fold', timestamp: 5 },
-                    { player: 'SharkPlayer', action: 'bet', amount: 100, timestamp: 6 },
-                    { player: 'FishBait99', action: 'raise', amount: 300, timestamp: 7 },
-                    { player: 'AggroAndy', action: 'fold', timestamp: 8 },
-                    { player: 'SharkPlayer', action: 'all_in', amount: 2500, timestamp: 9 },
-                    { player: 'FishBait99', action: 'call', amount: 1800, timestamp: 10 },
-                ],
-                played_at: new Date().toISOString(),
-                winner: 'SharkPlayer',
+            const record = await handHistoryService.getHand(handId!);
+
+            if (!record) {
+                setHand(null);
+                return;
+            }
+
+            // Map HandRecord → HandData for the replayer UI
+            const winnerPlayer = record.players.find(p => p.is_winner);
+            const mapped: HandData = {
+                id: record.id,
+                table_name: record.table_name,
+                game_type: record.game_type,
+                stakes: record.stakes,
+                pot: record.main_pot + (record.side_pots || []).reduce((s, v) => s + v, 0),
+                community_cards: (record.community_cards || []).map(c => typeof c === 'string' ? c : `${c}`),
+                players: record.players.map(p => ({
+                    seat: p.seat,
+                    name: p.username || p.user_id.slice(0, 8),
+                    avatar: p.avatar_url || undefined,
+                    stack: p.result,
+                    cards: p.hole_cards?.length ? p.hole_cards.map(c => typeof c === 'string' ? c : `${c}`) : undefined,
+                    is_winner: p.is_winner,
+                })),
+                actions: record.actions.map((a, idx) => {
+                    const player = record.players.find(p => p.user_id === a.player_id);
+                    return {
+                        player: player?.username || a.player_id.slice(0, 8),
+                        action: a.action === 'all-in' ? 'all_in' : a.action as HandAction['action'],
+                        amount: a.amount,
+                        timestamp: idx,
+                    };
+                }),
+                played_at: record.played_at,
+                winner: winnerPlayer?.username || undefined,
             };
-            setHand(mockHand);
+
+            setHand(mapped);
         } catch (error) {
             console.error('Failed to load hand:', error);
         } finally {

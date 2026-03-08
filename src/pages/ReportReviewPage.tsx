@@ -42,6 +42,30 @@ export default function ReportReviewPage() {
         if (clubId) loadReports();
     }, [clubId, filter]);
 
+    // ── Realtime: live updates for new/updated reports ──
+    useEffect(() => {
+        const channel = supabase
+            .channel('report-review-realtime')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'player_reports',
+            }, (payload) => {
+                if (payload.eventType === 'INSERT') {
+                    // New report — reload to get joined profile data
+                    loadReports();
+                } else if (payload.eventType === 'UPDATE') {
+                    const updated = payload.new as any;
+                    setReports(prev => prev.map(r =>
+                        r.id === updated.id ? { ...r, ...updated } : r
+                    ));
+                }
+            })
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, [clubId, filter]);
+
     const loadReports = async () => {
         setLoading(true);
         try {
