@@ -200,3 +200,17 @@
     margin: 0 0 0.5rem 0;
     text-align: center;
 }
+/* ─── MOBILE RESPONSIVE ─── */
+@media (max-width: 480px) {
+    .authContainer { padding: 0.75rem; }
+    .authCard { padding: 1.25rem; border-radius: 16px; }
+    .authTitle { font-size: 1.25rem; }
+    .formInput { padding: 0.625rem 0.75rem; font-size: 0.9rem; }
+    .submitBtn { padding: 0.875rem; font-size: 0.9rem; }
+    .socialButtons { gap: 0.5rem; }
+    .socialBtn { padding: 0.625rem; font-size: 0.85rem; }
+}
+@media (max-width: 380px) {
+    .authCard { padding: 1rem; }
+    .authTitle { font-size: 1.125rem; }
+}

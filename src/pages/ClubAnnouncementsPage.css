@@ -179,3 +179,16 @@
     font-size: 2.5rem;
     opacity: 0.4;
 }
+/* ─── MOBILE RESPONSIVE ─── */
+@media (max-width: 480px) {
+    .admin-bar { padding: 0.75rem; }
+    .announcements-list { padding: 0 0.75rem; }
+    .announcement-card { padding: 0.75rem; }
+    .announcement-header { gap: 0.5rem; }
+    .announcement-title { font-size: 1rem; }
+    .announcement-body { font-size: 0.85rem; }
+    .compose-modal { padding: 1rem; border-radius: 12px; }
+}
+@media (max-width: 380px) {
+    .announcement-meta { flex-direction: column; gap: 0.25rem; }
+}

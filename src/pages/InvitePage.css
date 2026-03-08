@@ -170,3 +170,16 @@
 .error-state p {
     margin: 0 0 1rem;
 }
+/* ─── MOBILE RESPONSIVE ─── */
+@media (max-width: 480px) {
+    .invite-card { padding: 1.25rem; }
+    .invite-icon { font-size: 2.5rem; }
+    .invite-title { font-size: 1.25rem; }
+    .invite-desc { font-size: 0.85rem; }
+    .join-btn { padding: 0.875rem; font-size: 0.9rem; }
+    .club-preview { padding: 0.75rem; }
+}
+@media (max-width: 380px) {
+    .invite-card { padding: 1rem; }
+    .club-preview-stats { flex-direction: column; gap: 0.25rem; }
+}
