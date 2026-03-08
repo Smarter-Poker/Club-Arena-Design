@@ -138,8 +138,8 @@ export function RunItTwiceBoard({
         else { playerWins += 0.5; opponentWins += 0.5; }
 
         return {
-            player: Math.floor(potAmount * (playerWins / 2)),
-            opponent: Math.floor(potAmount * (opponentWins / 2)),
+            player: Math.trunc(potAmount * (playerWins / 2) * 100) / 100,
+            opponent: Math.trunc(potAmount * (opponentWins / 2) * 100) / 100,
         };
     }, [run1Winner, run2Winner, potAmount]);
 

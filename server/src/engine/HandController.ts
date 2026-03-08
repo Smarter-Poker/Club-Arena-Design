@@ -408,7 +408,7 @@ export class HandController {
         const totalWinnerAmount = winners.reduce((sum, w) => sum + w.amount, 0);
 
         const adjustedAmounts = winners.map(w =>
-            Math.floor(w.amount * (totalWinnings / (totalWinnerAmount || 1)))
+            Math.trunc(w.amount * (totalWinnings / (totalWinnerAmount || 1)) * 100) / 100
         );
         let remainder = totalWinnings - adjustedAmounts.reduce((s, a) => s + a, 0);
         for (let i = 0; i < adjustedAmounts.length && remainder > 0; i++) {

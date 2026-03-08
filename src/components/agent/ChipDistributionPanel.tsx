@@ -73,7 +73,7 @@ export const ChipDistributionPanel: React.FC<ChipDistributionPanelProps> = ({
 
     const handleEqualSplit = () => {
         if (targets.length === 0) return;
-        const perTarget = Math.floor(sourceBalance / targets.length);
+        const perTarget = Math.trunc(sourceBalance / targets.length * 100) / 100;
         const newAmounts: Record<string, number> = {};
         targets.forEach(t => {
             newAmounts[t.id] = perTarget;

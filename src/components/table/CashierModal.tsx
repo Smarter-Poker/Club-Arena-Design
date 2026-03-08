@@ -95,9 +95,9 @@ export function CashierModal({
     const quickAmounts = useMemo(() => {
         const max = activeTab === 'add' ? canAddAmount : canWithdrawAmount;
         return [
-            { label: '25%', value: Math.floor(max * 0.25) },
-            { label: '50%', value: Math.floor(max * 0.5) },
-            { label: '75%', value: Math.floor(max * 0.75) },
+            { label: '25%', value: Math.trunc(max * 0.25 * 100) / 100 },
+            { label: '50%', value: Math.trunc(max * 0.5 * 100) / 100 },
+            { label: '75%', value: Math.trunc(max * 0.75 * 100) / 100 },
             { label: 'MAX', value: max },
         ];
     }, [activeTab, canAddAmount, canWithdrawAmount]);
