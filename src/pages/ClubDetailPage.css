@@ -448,6 +448,7 @@
    RESPONSIVE
    ═══════════════════════════════════════════════════════════════════════════════ */
 
+/* ═══════ TABLET ═══════ */
 @media (max-width: 768px) {
     .club-header-content {
         flex-direction: column;
@@ -467,5 +468,62 @@
         flex: none;
         padding: var(--space-2) var(--space-3);
         font-size: var(--text-xs);
+    }
+}
+
+/* ═══════ PHONE ═══════ */
+@media (max-width: 480px) {
+    .club-detail-page {
+        padding: 0.5rem;
+    }
+
+    .club-header {
+        padding: 0.75rem;
+        border-radius: 10px;
+    }
+
+    .club-avatar {
+        width: 48px;
+        height: 48px;
+    }
+
+    .club-name {
+        font-size: 1rem;
+    }
+
+    .club-header-stats {
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .club-tabs {
+        gap: 4px;
+        padding: 0 0.25rem;
+    }
+
+    .tab {
+        padding: 6px 8px;
+        font-size: 0.65rem;
+        letter-spacing: 0.5px;
+    }
+
+    .tables-grid {
+        gap: 0.5rem;
+    }
+
+    .settings-section {
+        padding: 0.75rem;
+    }
+}
+
+/* ═══════ SMALL PHONE ═══════ */
+@media (max-width: 380px) {
+    .tab {
+        padding: 5px 6px;
+        font-size: 0.6rem;
+    }
+
+    .club-name {
+        font-size: 0.9rem;
     }
 }

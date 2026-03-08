@@ -470,12 +470,144 @@
    RESPONSIVE
    ═══════════════════════════════════════════════════════════════════════════════ */
 
+/* ═══════ TABLET ═══════ */
 @media (max-width: 768px) {
+    .agent-page {
+        gap: 1rem;
+        padding: 0.75rem;
+    }
+
+    .agent-header {
+        flex-direction: column;
+        padding: 1rem;
+        gap: 0.75rem;
+    }
+
+    .agent-header h1 {
+        font-size: 1.2rem;
+    }
+
     .agent-stats {
         grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
     }
 
     .agent-content {
         grid-template-columns: 1fr;
+        min-height: auto;
+    }
+
+    .agent-list-section,
+    .agent-details-section {
+        padding: 1rem;
+    }
+
+    .modal {
+        max-width: calc(100vw - 32px);
+        padding: 1.25rem;
+    }
+}
+
+/* ═══════ PHONE ═══════ */
+@media (max-width: 480px) {
+    .agent-page {
+        padding: 0.5rem;
+        gap: 0.75rem;
+    }
+
+    .agent-header {
+        padding: 0.75rem;
+    }
+
+    .agent-header h1 {
+        font-size: 1rem;
+    }
+
+    .agent-header .subtitle {
+        font-size: 0.8rem;
+    }
+
+    .agent-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+
+    .agent-stats .stat-card {
+        padding: 0.75rem 0.5rem;
+    }
+
+    .agent-stats .stat-value {
+        font-size: 1.1rem;
+    }
+
+    .agent-stats .stat-label {
+        font-size: 0.6rem;
+    }
+
+    .agent-list-section,
+    .agent-details-section {
+        padding: 0.75rem;
+        border-radius: 10px;
+    }
+
+    .section-header h2 {
+        font-size: 0.75rem;
+    }
+
+    .agent-card {
+        padding: 0.6rem;
+        gap: 0.5rem;
+    }
+
+    .agent-avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+
+    .agent-balance {
+        font-size: 0.9rem;
+    }
+
+    .agent-balance-display {
+        padding: 0.75rem;
+        flex-direction: column;
+        gap: 0.25rem;
+        text-align: center;
+    }
+
+    .balance-amount {
+        font-size: 1.2rem;
+    }
+
+    .player-card {
+        padding: 0.6rem;
+        gap: 0.5rem;
+    }
+
+    .player-avatar {
+        width: 30px;
+        height: 30px;
+    }
+
+    .player-actions {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+}
+
+/* ═══════ SMALL PHONE ═══════ */
+@media (max-width: 380px) {
+    .agent-stats {
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+    }
+
+    .agent-stats .stat-value {
+        font-size: 0.95rem;
+    }
+
+    .agent-stats .stat-card {
+        padding: 0.5rem 0.25rem;
     }
 }

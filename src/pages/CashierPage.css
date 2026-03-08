@@ -206,26 +206,130 @@
    MOBILE RESPONSIVE
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-@media (max-width: 480px) {
-    .balance-cards-grid {
-        grid-template-columns: 1fr;
+/* ═══════ TABLET ═══════ */
+@media (max-width: 768px) {
+    .cashier-page {
+        padding: 14px;
+        padding-bottom: 100px;
     }
 
     .balance-value {
         font-size: 1.5rem;
     }
 
-    .action-tabs-metal {
-        flex-direction: column;
+    .balance-icon {
+        font-size: 2rem;
+        margin-bottom: 8px;
     }
 
     .preset-buttons-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
     }
 
     .cashier-confirm-button button {
         font-size: 1.1rem !important;
         padding: 16px 32px !important;
+        letter-spacing: 2px !important;
+    }
+
+    .tx-row {
+        padding: 10px 10px;
+    }
+}
+
+/* ═══════ PHONE ═══════ */
+@media (max-width: 480px) {
+    .cashier-page {
+        padding: 10px;
+        padding-bottom: 90px;
+    }
+
+    .balance-cards-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .balance-value {
+        font-size: 1.3rem;
+    }
+
+    .balance-icon {
+        font-size: 1.6rem;
+        margin-bottom: 6px;
+    }
+
+    .balance-label {
+        font-size: 0.6rem;
+        letter-spacing: 1.5px;
+    }
+
+    .action-tabs-metal {
+        gap: 4px;
+    }
+
+    .action-tabs-metal button {
+        font-size: 0.65rem !important;
+        padding: 8px 4px !important;
+        letter-spacing: 0.5px !important;
+    }
+
+    .preset-buttons-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+    }
+
+    .preset-buttons-grid button {
+        font-size: 0.85rem !important;
+        padding: 10px 4px !important;
+    }
+
+    .cashier-confirm-button button {
+        font-size: 1rem !important;
+        padding: 14px 24px !important;
+        letter-spacing: 1.5px !important;
+    }
+
+    .cashier-message {
+        padding: 10px 12px;
+        font-size: 0.75rem;
+    }
+
+    .cashier-select {
+        padding: 10px 12px;
+        font-size: 0.85rem;
+    }
+
+    .tx-amount {
+        font-size: 0.8rem;
+    }
+
+    .tx-category {
+        font-size: 0.6rem;
+    }
+
+    .tx-desc {
+        font-size: 0.7rem;
+    }
+}
+
+/* ═══════ SMALL PHONE ═══════ */
+@media (max-width: 380px) {
+    .cashier-page {
+        padding: 8px;
+    }
+
+    .action-tabs-metal button {
+        font-size: 0.55rem !important;
+        padding: 7px 2px !important;
+    }
+
+    .preset-buttons-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+    }
+
+    .balance-value {
+        font-size: 1.1rem;
     }
 }
 
