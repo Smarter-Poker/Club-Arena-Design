@@ -11,6 +11,7 @@ import styles from './ClubDetailPage.module.css';
 import { getLocalStorage, setLocalStorage } from '../lib/storage';
 import ClubHome from '../components/club/ClubHome';
 import CurrencyStore from '../components/club/CurrencyStore';
+import TableOperationsPanel from '../components/club/TableOperationsPanel';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -152,7 +153,7 @@ export default function ClubDetailPage() {
     const { clubId } = useParams();
     const navigate = useNavigate();
     const toast = useToast();
-    const [activeTab, setActiveTabRaw] = useState<'overview' | 'tables' | 'members' | 'agents' | 'settings'>(() => getLocalStorage('ca_club_detail_tab', 'overview'));
+    const [activeTab, setActiveTabRaw] = useState<'overview' | 'tables' | 'members' | 'agents' | 'operations' | 'settings'>(() => getLocalStorage('ca_club_detail_tab', 'overview'));
     const setActiveTab = (t: typeof activeTab) => { setActiveTabRaw(t); setLocalStorage('ca_club_detail_tab', t); };
     const [club, setClub] = useState<ClubData | null>(null);
     const [members, setMembers] = useState<ClubMember[]>([]);
@@ -476,6 +477,9 @@ export default function ClubDetailPage() {
                 <TabButton active={activeTab === 'tables'} onClick={() => setActiveTab('tables')} icon="" label="Tables" />
                 <TabButton active={activeTab === 'members'} onClick={() => setActiveTab('members')} icon="" label="Members" />
                 <TabButton active={activeTab === 'agents'} onClick={() => setActiveTab('agents')} icon="" label="Agents" />
+                {(userRole === 'owner' || userRole === 'admin') && (
+                    <TabButton active={activeTab === 'operations'} onClick={() => setActiveTab('operations')} icon="" label="Ops" />
+                )}
                 <TabButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon="" label="Settings" />
             </nav>
 
@@ -721,6 +725,11 @@ export default function ClubDetailPage() {
                             </div>
                         )}
                     </div>
+                )}
+
+                {/* Operations Tab — Admin Table Controls */}
+                {activeTab === 'operations' && clubId && (
+                    <TableOperationsPanel clubId={clubId} />
                 )}
 
                 {/* Settings Tab */}

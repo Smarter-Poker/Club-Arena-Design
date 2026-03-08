@@ -405,6 +405,179 @@ class TableService {
         if (error) return 0;
         return count || 0;
     }
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // Admin Operations — Club owner/admin table controls
+    // ═══════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Pause a running table (stops new hands from being dealt)
+     */
+    async pauseTable(tableId: string): Promise<boolean> {
+        const { error } = await supabase
+            .from('tables')
+            .update({ status: 'paused' })
+            .eq('id', tableId)
+            .in('status', ['running', 'waiting']);
+
+        if (error) {
+            console.error('[TableService] Error pausing table:', error);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Resume a paused table
+     */
+    async resumeTable(tableId: string): Promise<boolean> {
+        const { error } = await supabase
+            .from('tables')
+            .update({ status: 'running' })
+            .eq('id', tableId)
+            .eq('status', 'paused');
+
+        if (error) {
+            console.error('[TableService] Error resuming table:', error);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Kick a player from a table — marks seat as left, returns chips to wallet
+     */
+    async kickPlayer(tableId: string, userId: string, reason?: string): Promise<boolean> {
+        // Get player's current stack
+        const { data: seat } = await supabase
+            .from('table_seats')
+            .select('stack, seat_number')
+            .eq('table_id', tableId)
+            .eq('user_id', userId)
+            .is('left_at', null)
+            .single();
+
+        if (!seat) return false;
+
+        // Return chips to player wallet
+        if (seat.stack > 0) {
+            const { error: walletErr } = await supabase.rpc('credit_player_wallet', {
+                p_user_id: userId,
+                p_amount: seat.stack,
+            });
+            if (walletErr) {
+                console.error('[TableService] Error crediting wallet on kick:', walletErr);
+                return false;
+            }
+
+            // Log the forced cash-out
+            await supabase.from('wallet_transactions').insert({
+                user_id: userId,
+                wallet_type: 'PLAYER',
+                amount: seat.stack,
+                type: 'credit',
+                category: 'cashout',
+                description: `Kicked from table: ${seat.stack} chips returned${reason ? ` (${reason})` : ''}`,
+            });
+        }
+
+        // Mark seat as left
+        const { error } = await supabase
+            .from('table_seats')
+            .update({ left_at: new Date().toISOString() })
+            .eq('table_id', tableId)
+            .eq('user_id', userId)
+            .is('left_at', null);
+
+        if (error) {
+            console.error('[TableService] Error kicking player:', error);
+            return false;
+        }
+
+        // Update player count
+        const { count } = await supabase
+            .from('table_seats')
+            .select('*', { count: 'exact', head: true })
+            .eq('table_id', tableId)
+            .is('left_at', null);
+
+        await supabase
+            .from('tables')
+            .update({ current_players: count || 0 })
+            .eq('id', tableId);
+
+        return true;
+    }
+
+    /**
+     * Get seated players for a table (admin view)
+     */
+    async getSeatedPlayers(tableId: string) {
+        const { data, error } = await supabase
+            .from('table_seats')
+            .select(`
+                user_id,
+                seat_number,
+                stack,
+                created_at,
+                profiles (
+                    display_name,
+                    username,
+                    avatar_url,
+                    is_horse
+                )
+            `)
+            .eq('table_id', tableId)
+            .is('left_at', null)
+            .order('seat_number', { ascending: true });
+
+        if (error) {
+            console.error('[TableService] Error fetching seated players:', error);
+            return [];
+        }
+        return data || [];
+    }
+
+    /**
+     * Update table settings live (blinds, ante, max players)
+     */
+    async updateTableSettings(tableId: string, settings: {
+        small_blind?: number;
+        big_blind?: number;
+        ante?: number;
+        max_players?: number;
+    }): Promise<boolean> {
+        const { error } = await supabase
+            .from('tables')
+            .update(settings)
+            .eq('id', tableId);
+
+        if (error) {
+            console.error('[TableService] Error updating table settings:', error);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Get table stats summary (for admin panel)
+     */
+    async getTableStats(tableId: string) {
+        const [rakeData, handData] = await Promise.all([
+            supabase
+                .from('rake_history')
+                .select('rake_amount')
+                .eq('table_id', tableId),
+            supabase
+                .from('hand_history')
+                .select('id', { count: 'exact', head: true })
+                .eq('table_id', tableId),
+        ]);
+
+        const totalRake = (rakeData.data || []).reduce((sum, r) => sum + (r.rake_amount || 0), 0);
+        const totalHands = handData.count || 0;
+
+        return { totalRake, totalHands };
+    }
 }
 
 export const tableService = new TableService();
