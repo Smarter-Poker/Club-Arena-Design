@@ -78,7 +78,7 @@ export function InsuranceModal({
 
     // Calculate premium
     const premium = useMemo(() => {
-        return Math.round(coverageAmount * offer.premiumRate);
+        return Math.trunc(coverageAmount * offer.premiumRate);
     }, [coverageAmount, offer.premiumRate]);
 
     // Payout if you lose
@@ -93,9 +93,9 @@ export function InsuranceModal({
 
     // Slider presets
     const presets = useMemo(() => [
-        { label: '25%', value: Math.round(offer.maxCoverage * 0.25) },
-        { label: '50%', value: Math.round(offer.maxCoverage * 0.5) },
-        { label: '75%', value: Math.round(offer.maxCoverage * 0.75) },
+        { label: '25%', value: Math.trunc(offer.maxCoverage * 0.25) },
+        { label: '50%', value: Math.trunc(offer.maxCoverage * 0.5) },
+        { label: '75%', value: Math.trunc(offer.maxCoverage * 0.75) },
         { label: 'MAX', value: offer.maxCoverage },
     ], [offer.maxCoverage]);
 

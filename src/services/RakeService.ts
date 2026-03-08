@@ -146,19 +146,19 @@ export const RakeService = {
             };
         }
 
-        // Integer arithmetic (cents) to avoid floating point
-        const potCents = Math.round(potSize * 100);
+        // Integer arithmetic (cents) to avoid floating point — use trunc, never round
+        const potCents = Math.trunc(potSize * 100);
 
         // Raw rake = rakePercent of pot
-        const rawRakeCents = Math.round(potCents * tier.rakePercent);
+        const rawRakeCents = Math.trunc(potCents * tier.rakePercent);
 
         // Cap from chart (in dollars → cents)
-        const rakeCapCents = Math.round(tier.maxAmount * 100);
+        const rakeCapCents = Math.trunc(tier.maxAmount * 100);
         const cappedRakeCents = Math.min(rawRakeCents, rakeCapCents);
 
         // BBJ drop = bbjRakeBB × BB (in BB units → dollars → cents)
         const bbjDropDollars = tier.bbjRakeBB * bigBlind;
-        const bbjDropCents = Math.round(bbjDropDollars * 100);
+        const bbjDropCents = Math.trunc(bbjDropDollars * 100);
 
         // Total deduction from pot
         const totalDeductionCents = cappedRakeCents + bbjDropCents;
@@ -362,7 +362,7 @@ export const RakeService = {
         }
 
         // Calculate equal split using integer arithmetic to avoid floating point loss
-        const totalRakeCents = Math.round(totalRake * 100);
+        const totalRakeCents = Math.trunc(totalRake * 100);
         const baseCreditCents = Math.floor(totalRakeCents / activePlayers.length);
         const remainderCents = totalRakeCents - (baseCreditCents * activePlayers.length);
         const timestamp = new Date().toISOString();

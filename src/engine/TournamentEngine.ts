@@ -779,8 +779,8 @@ export class TournamentEngine {
             const player = this.players.get(user_id);
             if (player && player.status === 'playing') {
                 player.chips = stack;
-                // tournament_players.chips is INTEGER — round to whole number
-                const rounded = Math.round(stack);
+                // tournament_players.chips is INTEGER — truncate to whole number (never round up)
+                const rounded = Math.trunc(stack);
                 updates.push(
                     this.supabase
                         .from('tournament_players')

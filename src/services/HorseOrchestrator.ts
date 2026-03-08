@@ -1079,8 +1079,8 @@ class HorseOrchestrator {
             totalHorses: Array.from(this.tables.values()).reduce((sum, t) => sum + t.horseCount, 0),
             totalTables: this.tables.size,
             totalHandsPlayed: this.handCount,
-            totalRakeCollected: Math.round(this.totalRake * 100) / 100,
-            totalBBJCollected: Math.round(this.totalBBJ * 100) / 100,
+            totalRakeCollected: Math.trunc(this.totalRake * 100) / 100,
+            totalBBJCollected: Math.trunc(this.totalBBJ * 100) / 100,
             handsPerMinute: uptimeMin > 0 ? Math.round(this.handCount / uptimeMin * 10) / 10 : 0,
             errors: this.errors.slice(-20), // Last 20 errors
             uptime: Math.round(uptimeMs / 1000),

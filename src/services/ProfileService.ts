@@ -220,8 +220,8 @@ class ProfileServiceClass {
 
         return {
             totalHands,
-            winRate: Math.round(winRate * 10) / 10,
-            avgProfit: Math.round(avgProfit * 100) / 100,
+            winRate: Math.trunc(winRate * 10) / 10,
+            avgProfit: Math.trunc(avgProfit * 100) / 100,
             biggestWin,
             favoriteVariant
         };

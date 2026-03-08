@@ -327,7 +327,7 @@ export default function DepositWithdrawModal({
                             {feeAmount > 0 && (
                                 <div className={styles.summaryRow}>
                                     <span>Fee ({currentMethod.fee}%)</span>
-                                    <span>-{feeAmount.toFixed(2)}</span>
+                                    <span>-{(Math.trunc(feeAmount * 100) / 100).toLocaleString()}</span>
                                 </div>
                             )}
                             <div className={`${styles.summaryRow} ${styles.total}`}>
@@ -335,7 +335,7 @@ export default function DepositWithdrawModal({
                                 <span>
                                     {mode === 'deposit' ?
                                         numericAmount.toLocaleString() :
-                                        (numericAmount - feeAmount).toFixed(2)}
+                                        (Math.trunc((numericAmount - feeAmount) * 100) / 100).toLocaleString()}
                                 </span>
                             </div>
                         </div>

@@ -128,7 +128,7 @@ export default function PromotionsPage() {
                     <ul>
                         <li>Creating multiple accounts to claim bonuses</li>
                         <li>Colluding with other players to manipulate promotions</li>
-                        <li>Using automated tools or bots</li>
+                        <li>Using automated tools or unauthorized software</li>
                         <li>Exploiting bugs or glitches to gain unfair advantages</li>
                     </ul>
                     <p>

@@ -62,7 +62,7 @@ export default function TermsOfServicePage() {
                 <section>
                     <h2>5. Fair Play</h2>
                     <p>
-                        Users must play fairly and not use any automated tools, bots, or collusion with other players.
+                        Users must play fairly and not use any unauthorized automated tools or collusion with other players.
                         Violation of fair play rules may result in account suspension or termination.
                     </p>
                 </section>

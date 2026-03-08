@@ -830,7 +830,7 @@ export class HeadlessTableEngine {
                             const pctMatch = sizeKey.match(/(\d+)/);
                             if (pctMatch) {
                                 const pct = parseInt(pctMatch[1]) / 100;
-                                decision.amount = Math.round(state.pot * pct);
+                                decision.amount = Math.trunc(state.pot * pct);
                             }
                         }
                     }
@@ -881,8 +881,8 @@ export class HeadlessTableEngine {
 
         const results = await Promise.allSettled(
             seats.map(async (seat) => {
-                // tournament_players.chips is INTEGER — must round to whole number
-                const rounded = Math.round(seat.stack);
+                // tournament_players.chips is INTEGER — truncate to whole number (never round up)
+                const rounded = Math.trunc(seat.stack);
                 const { error } = await this.supabaseClient
                     .from('tournament_players')
                     .update({ chips: rounded })

@@ -77,7 +77,7 @@ export default function TOSAcceptanceModal({ onAccept }: TOSAcceptanceModalProps
                     <ul>
                         <li>Use the Service for any illegal purpose</li>
                         <li>Engage in collusion, chip-dumping, or other unfair play</li>
-                        <li>Use bots, scripts, or automated software</li>
+                        <li>Use unauthorized scripts or automated software</li>
                         <li>Attempt to exploit bugs or vulnerabilities</li>
                         <li>Harass, abuse, or threaten other users</li>
                         <li>Create multiple accounts to circumvent restrictions</li>

@@ -609,15 +609,20 @@ class TournamentService {
 
     /**
      * Cancel a tournament and refund ALL registered players' buy-ins.
-     * Only allowed for ANNOUNCED or REGISTERING tournaments (not RUNNING).
-     * For running tournaments, use endTournament instead.
+     * Tournaments are ONLY cancelled when fewer than 3 players have joined.
+     * This is the sole cancellation condition — tournaments never cancel for other reasons.
      */
-    async cancelTournament(tournamentId: string, reason: string = 'Tournament cancelled'): Promise<{ refunded: number; playersRefunded: number }> {
+    async cancelTournament(tournamentId: string, reason: string = 'Insufficient players (minimum 3 required)'): Promise<{ refunded: number; playersRefunded: number }> {
         const tournament = await this.getTournament(tournamentId);
         if (!tournament) throw new Error('Tournament not found');
 
         if (tournament.status !== 'ANNOUNCED' && tournament.status !== 'REGISTERING') {
             throw new Error('Can only cancel tournaments that have not started yet');
+        }
+
+        // Verify cancellation reason: only cancel if < 3 players
+        if ((tournament.current_players || 0) >= 3) {
+            throw new Error('Cannot cancel — tournament has 3 or more players registered');
         }
 
         // Get all registered players
@@ -709,6 +714,13 @@ class TournamentService {
             .eq('status', 'registered');
 
         if (!players || players.length === 0) throw new Error('No players registered');
+
+        // Auto-cancel if fewer than 3 players — minimum for a valid tournament
+        if (players.length < 3) {
+            console.log(`[TournamentService] Auto-cancelling tournament ${tournament.name}: only ${players.length} players (minimum 3 required)`);
+            await this.cancelTournament(tournamentId, `Only ${players.length} player(s) registered — minimum 3 required`);
+            throw new Error(`Tournament cancelled: only ${players.length} player(s) registered (minimum 3 required)`);
+        }
 
         // 2. Create Tables
         const playersPerTable = 9;
