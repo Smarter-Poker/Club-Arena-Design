@@ -965,13 +965,13 @@ export default function TablePage() {
                         .channel(`t-break-${table.tournament_id}`)
                         .on('broadcast', { event: 'tournament_event' }, (payload: any) => {
                             const data = payload.payload;
-                            if (data?.type === 'BREAK_START') {
+                            if (data?.type === 'tournament_break' || data?.type === 'BREAK_START') {
                                 setTournamentBreak({
                                     active: true,
-                                    timeRemaining: (data.payload?.durationMinutes || 5) * 60,
+                                    timeRemaining: (data.payload?.breakDurationMinutes || data.payload?.durationMinutes || 5) * 60,
                                     nextLevel: data.payload?.nextLevel,
                                 });
-                            } else if (data?.type === 'BREAK_END') {
+                            } else if (data?.type === 'break_ended' || data?.type === 'BREAK_END') {
                                 setTournamentBreak({ active: false, timeRemaining: 0 });
                             } else if (data?.type === 'ADDON_PERIOD_START') {
                                 // Add-on period: 60 seconds, show popup to all players

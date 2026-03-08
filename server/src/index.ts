@@ -48,6 +48,11 @@ class GameServer {
     private tournamentRecurring = new TournamentRecurringService();
     private lifecycle = new HorseLifecycleManager();
 
+    // Synchronized break timer — all MTT/XMTT tournaments break at the top of every hour
+    private breakTimer: NodeJS.Timeout | null = null;
+    private breakResumeTimer: NodeJS.Timeout | null = null;
+    private static readonly BREAK_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+
     async start(): Promise<void> {
         this.running = true;
         console.log('═══════════════════════════════════════════════════════════════');
@@ -76,6 +81,9 @@ class GameServer {
             console.error('[GameServer] Tournament discovery fatal error:', err)
         );
 
+        // Step 6: Start synchronized break timer (top of every hour, 5 min duration)
+        this.scheduleSynchronizedBreaks();
+
         console.log('[GameServer] Running. All services started.');
     }
 
@@ -87,6 +95,8 @@ class GameServer {
         this.horseFleet.stop();
         this.tournamentRecurring.stop();
         this.lifecycle.stop();
+        if (this.breakTimer) { clearTimeout(this.breakTimer); this.breakTimer = null; }
+        if (this.breakResumeTimer) { clearTimeout(this.breakResumeTimer); this.breakResumeTimer = null; }
 
         // Stop all table engines
         for (const [id, engine] of this.tableEngines) {
@@ -117,6 +127,68 @@ class GameServer {
             activeTournaments: this.tournamentEngines.size,
             totalHandsDealt: totalHands,
         };
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════════
+    // SYNCHRONIZED BREAKS — All MTTs/XMTTs pause at the top of every hour
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    private scheduleSynchronizedBreaks(): void {
+        // Calculate ms until next top of the hour
+        const now = new Date();
+        const nextHour = new Date(now);
+        nextHour.setMinutes(0, 0, 0);
+        nextHour.setHours(nextHour.getHours() + 1);
+        const msUntilNextHour = nextHour.getTime() - now.getTime();
+
+        console.log(`[GameServer] Synchronized break scheduled in ${Math.round(msUntilNextHour / 60000)} minutes (top of next hour)`);
+
+        this.breakTimer = setTimeout(() => {
+            this.triggerSynchronizedBreak();
+            // Schedule recurring hourly breaks
+            this.breakTimer = setInterval(() => {
+                this.triggerSynchronizedBreak();
+            }, 60 * 60 * 1000); // Every hour
+        }, msUntilNextHour);
+    }
+
+    private async triggerSynchronizedBreak(): Promise<void> {
+        if (!this.running) return;
+
+        const mttEngines: TournamentManager[] = [];
+        for (const tm of this.tournamentEngines.values()) {
+            if (tm.isRunning() && tm.isMttOrXmtt()) {
+                mttEngines.push(tm);
+            }
+        }
+
+        if (mttEngines.length === 0) {
+            console.log('[GameServer] Synchronized break: no running MTTs/XMTTs to pause');
+            return;
+        }
+
+        console.log(`[GameServer] ═══ SYNCHRONIZED BREAK ═══ Pausing ${mttEngines.length} MTT/XMTT tournaments for 5 minutes`);
+
+        // Pause all MTT/XMTT tournaments
+        for (const tm of mttEngines) {
+            try {
+                await tm.pauseForBreak(GameServer.BREAK_DURATION_MS);
+            } catch (err: any) {
+                console.error(`[GameServer] Failed to pause tournament:`, err.message);
+            }
+        }
+
+        // Schedule resume after 5 minutes
+        this.breakResumeTimer = setTimeout(async () => {
+            console.log(`[GameServer] ═══ BREAK ENDED ═══ Resuming ${mttEngines.length} MTT/XMTT tournaments`);
+            for (const tm of mttEngines) {
+                try {
+                    await tm.resumeFromBreak();
+                } catch (err: any) {
+                    console.error(`[GameServer] Failed to resume tournament:`, err.message);
+                }
+            }
+        }, GameServer.BREAK_DURATION_MS);
     }
 
     // ═════════════════════════════════════════════════════════════════════════════
@@ -386,6 +458,10 @@ class TournamentManager {
     // Hand-for-hand bubble
     private handForHandActive: boolean = false;
     private handForHandAnnounced: boolean = false;
+    // Synchronized break state
+    private onBreak: boolean = false;
+    private savedBlindTimerRemaining: number = 0;
+    private blindTimerStartedAt: number = 0;
     // Late reg finalization
     private prizePoolFinalized: boolean = false;
     // Tournament metadata cache
@@ -429,6 +505,71 @@ class TournamentManager {
             this.broadcastChannel = null;
             this.broadcastReady = false;
         }
+    }
+
+    /** Synchronized break: pause blind timer and broadcast break event */
+    async pauseForBreak(breakDurationMs: number): Promise<void> {
+        if (!this.running || this.onBreak) return;
+        this.onBreak = true;
+
+        // Save remaining blind timer time
+        if (this.blindTimer) {
+            const elapsed = Date.now() - this.blindTimerStartedAt;
+            const blindStructure = this.tournamentCache?.blind_structure || [];
+            const currentLevelData = blindStructure[this.currentLevel];
+            const totalMs = (currentLevelData?.durationMinutes || 10) * 60 * 1000;
+            this.savedBlindTimerRemaining = Math.max(totalMs - elapsed, 1000);
+            clearTimeout(this.blindTimer);
+            this.blindTimer = null;
+        }
+
+        console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] SYNCHRONIZED BREAK — ${Math.round(breakDurationMs / 60000)} minutes`);
+
+        const blindStructure = this.tournamentCache?.blind_structure || [];
+        const nextLevel = blindStructure[this.currentLevel];
+        await this.broadcast('tournament_break', {
+            level: this.currentLevel,
+            breakDurationMinutes: Math.round(breakDurationMs / 60000),
+            breakEndsAt: new Date(Date.now() + breakDurationMs).toISOString(),
+            synchronized: true,
+            nextLevel: nextLevel ? {
+                smallBlind: nextLevel.smallBlind,
+                bigBlind: nextLevel.bigBlind,
+                ante: nextLevel.ante || 0,
+            } : null,
+        });
+    }
+
+    /** Resume from synchronized break: restart blind timer with remaining time */
+    async resumeFromBreak(): Promise<void> {
+        if (!this.running || !this.onBreak) return;
+        this.onBreak = false;
+
+        console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] BREAK ENDED — resuming play`);
+        await this.broadcast('break_ended', { level: this.currentLevel });
+
+        // Restart blind timer with saved remaining time
+        if (this.savedBlindTimerRemaining > 0) {
+            const blindStructure = this.tournamentCache?.blind_structure || [];
+            this.blindTimerStartedAt = Date.now();
+            this.blindTimer = setTimeout(() => {
+                if (!this.running) return;
+                this.currentLevel++;
+                if (this.currentLevel >= blindStructure.length) {
+                    this.currentLevel = blindStructure.length - 1;
+                    return;
+                }
+                this.startBlindTimer(blindStructure);
+            }, this.savedBlindTimerRemaining);
+        }
+    }
+
+    /** Check if this is an MTT or XMTT (eligible for synchronized breaks) */
+    isMttOrXmtt(): boolean {
+        const type = this.tournamentCache?.tournament_type;
+        const variant = this.tournamentCache?.variant;
+        if (type === 'SNG' || type === 'SPIN' || variant === 'sng' || variant === 'spin') return false;
+        return true;
     }
 
     async start(): Promise<void> {
@@ -731,6 +872,7 @@ class TournamentManager {
             const currentLevelData = blindStructure[this.currentLevel] || blindStructure[0];
             const durationMs = (currentLevelData?.durationMinutes || 10) * 60 * 1000;
 
+            this.blindTimerStartedAt = Date.now();
             this.blindTimer = setTimeout(async () => {
                 if (!this.running) return;
                 const prevLevel = this.currentLevel;
@@ -743,30 +885,9 @@ class TournamentManager {
 
                 const level = blindStructure[this.currentLevel];
 
-                // ── BREAK HANDLING ──
-                // If this level is a break, pause play and broadcast break event
+                // Skip any break entries that might still be in old blind structures
                 if (level.isBreak) {
-                    const breakDurationMs = (level.durationMinutes || 5) * 60 * 1000;
-                    console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] BREAK — ${level.durationMinutes || 5} minutes`);
-
-                    // Get next real level info for display
-                    const nextPlayLevel = blindStructure[this.currentLevel + 1];
-                    await this.broadcast('tournament_break', {
-                        level: this.currentLevel,
-                        breakDurationMinutes: level.durationMinutes || 5,
-                        breakEndsAt: new Date(Date.now() + breakDurationMs).toISOString(),
-                        nextLevel: nextPlayLevel ? {
-                            smallBlind: nextPlayLevel.smallBlind,
-                            bigBlind: nextPlayLevel.bigBlind,
-                            ante: nextPlayLevel.ante || 0,
-                        } : null,
-                    });
-
-                    // Wait for break to end, then advance to next level
-                    this.blindTimer = setTimeout(() => {
-                        this.broadcast('break_ended', { level: this.currentLevel + 1 });
-                        scheduleNextLevel(); // Will increment to next level
-                    }, breakDurationMs);
+                    scheduleNextLevel();
                     return;
                 }
 
