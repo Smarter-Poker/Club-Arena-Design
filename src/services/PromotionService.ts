@@ -307,9 +307,10 @@ class PromotionServiceClass {
             }, { onConflict: 'promotion_id,user_id' });
 
         // Recalculate ranks
-        await supabase.rpc('recalculate_leaderboard_ranks', {
+        const { error: rankErr } = await supabase.rpc('recalculate_leaderboard_ranks', {
             p_promotion_id: promotionId
         });
+        if (rankErr) console.error('[PromotionService] Leaderboard rank recalc failed:', rankErr.message);
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
@@ -343,11 +344,15 @@ class PromotionServiceClass {
         await this.claimPromotion(promo.id, userId);
 
         // Add bonus to promo wallet with audit trail
-        await supabase.rpc('add_to_promo_wallet', {
+        const { error: bonusErr } = await supabase.rpc('add_to_promo_wallet', {
             p_user_id: userId,
             p_amount: finalBonus,
             p_description: `Deposit bonus: ${promo.title}`
         });
+        if (bonusErr) {
+            console.error('[PromotionService] Deposit bonus credit failed:', bonusErr.message);
+            return 0;
+        }
 
         // Log transaction for audit trail
         await WalletService.logTransaction(
@@ -386,11 +391,15 @@ class PromotionServiceClass {
 
         // Award referrer bonus
         const referralBonus = Math.trunc((promo.prizePool || 10) * 100) / 100;
-        await supabase.rpc('add_to_promo_wallet', {
+        const { error: refErr } = await supabase.rpc('add_to_promo_wallet', {
             p_user_id: referrer.id,
             p_amount: referralBonus,
             p_description: 'Referral bonus'
         });
+        if (refErr) {
+            console.error('[PromotionService] Referral bonus credit failed:', refErr.message);
+            return;
+        }
 
         // Log transaction for audit trail
         await WalletService.logTransaction(

@@ -62,8 +62,9 @@ export function AgentCommissionDashboard() {
 
         try {
             // Load commission summary
-            const { data: summaryData } = await supabase
+            const { data: summaryData, error: summaryErr } = await supabase
                 .rpc('fn_get_agent_commission_summary', { p_agent_id: user.id });
+            if (summaryErr) console.error('[AgentCommission] Summary RPC failed:', summaryErr.message);
 
             if (summaryData) {
                 setSummary({

@@ -272,10 +272,15 @@ export async function processLeavePending(tableId: string, clubId: string): Prom
 
     for (const seat of pendingSeats) {
         if (seat.stack > 0) {
-            await supabase.rpc('credit_player_wallet', {
+            const { error: creditErr } = await supabase.rpc('credit_player_wallet', {
                 p_user_id: seat.user_id,
                 p_amount: seat.stack,
             });
+
+            if (creditErr) {
+                console.error(`[processLeavePending] Credit failed for ${seat.user_id}: ${creditErr.message}`);
+                continue; // Skip this seat, don't mark as left
+            }
 
             // Log the cash-out transaction — every chip move documented
             await supabase.from('wallet_transactions').insert({
@@ -368,23 +373,28 @@ export async function logRakeCollection(
 
         if (rakeRecipientId) {
             // Credit to recipient's PLAYER wallet
-            await supabase.rpc('credit_player_wallet', {
+            const { error: rakeCredErr } = await supabase.rpc('credit_player_wallet', {
                 p_user_id: rakeRecipientId,
                 p_amount: rakeAmount,
             });
 
-            // Log wallet transaction
-            await supabase.rpc('log_wallet_transaction', {
-                p_user_id: rakeRecipientId,
-                p_wallet_type: 'PLAYER',
-                p_amount: rakeAmount,
-                p_type: 'credit',
-                p_category: 'rake',
-                p_description: rakeDesc,
-                p_table_id: tableId,
-                p_hand_id: null,
-                p_related_entity_id: clubId,
-            });
+            if (rakeCredErr) {
+                console.error(`[logRakeCollection] Rake credit failed for ${rakeRecipientId}: ${rakeCredErr.message}`);
+            } else {
+                // Log wallet transaction only on successful credit
+                const { error: txErr } = await supabase.rpc('log_wallet_transaction', {
+                    p_user_id: rakeRecipientId,
+                    p_wallet_type: 'PLAYER',
+                    p_amount: rakeAmount,
+                    p_type: 'credit',
+                    p_category: 'rake',
+                    p_description: rakeDesc,
+                    p_table_id: tableId,
+                    p_hand_id: null,
+                    p_related_entity_id: clubId,
+                });
+                if (txErr) console.error(`[logRakeCollection] Rake tx log failed: ${txErr.message}`);
+            }
         }
     } catch (e) {
         console.warn(`[DB] Rake wallet credit failed for hand #${handNumber}:`, e);
@@ -452,10 +462,15 @@ export async function ensureHorseWallet(horseId: string, minBalance: number = 10
 
     if (wallet.balance < minBalance) {
         const topUp = minBalance - wallet.balance;
-        await supabase.rpc('credit_player_wallet', {
+        const { error: refillErr } = await supabase.rpc('credit_player_wallet', {
             p_user_id: horseId,
             p_amount: topUp,
         });
+
+        if (refillErr) {
+            console.error(`[refillHorseWallet] Credit failed for horse ${horseId}: ${refillErr.message}`);
+            return;
+        }
 
         await supabase.from('wallet_transactions').insert({
             user_id: horseId,
