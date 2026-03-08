@@ -50,16 +50,58 @@ export default function TournamentDetails() {
     const [showSignUpModal, setShowSignUpModal] = useState(false);
     const [countdown, setCountdown] = useState({ hours: 0, minutes: 0, seconds: 0 });
 
+    const [walletBalance, setWalletBalance] = useState<number>(0);
+    const [lateRegCountdown, setLateRegCountdown] = useState<string>('');
+
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const lateRegTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     useEffect(() => {
         if (tournamentId) {
             loadTournament();
         }
+        if (user?.id) {
+            loadWalletBalance();
+        }
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
+            if (lateRegTimerRef.current) clearInterval(lateRegTimerRef.current);
         };
-    }, [tournamentId]);
+    }, [tournamentId, user?.id]);
+
+    const loadWalletBalance = async () => {
+        if (!user?.id) return;
+        try {
+            const { data } = await supabase
+                .from('wallets')
+                .select('play_chips')
+                .eq('user_id', user.id)
+                .single();
+            if (data) setWalletBalance(data.play_chips || 0);
+        } catch { /* ignore */ }
+    };
+
+    // ── Late-reg live countdown ──
+    useEffect(() => {
+        if (lateRegTimerRef.current) clearInterval(lateRegTimerRef.current);
+        if (tournament?.status !== 'RUNNING' || !(tournament as any).late_reg_mins || !(tournament as any).started_at) return;
+
+        const tick = () => {
+            const elapsed = Date.now() - new Date((tournament as any).started_at).getTime();
+            const remaining = ((tournament as any).late_reg_mins * 60 * 1000) - elapsed;
+            if (remaining <= 0) {
+                setLateRegCountdown('');
+                if (lateRegTimerRef.current) clearInterval(lateRegTimerRef.current);
+                return;
+            }
+            const mins = Math.floor(remaining / 60000);
+            const secs = Math.floor((remaining % 60000) / 1000);
+            setLateRegCountdown(mins > 0 ? `${mins}m ${secs}s left` : `${secs}s left`);
+        };
+        tick();
+        lateRegTimerRef.current = setInterval(tick, 1000);
+        return () => { if (lateRegTimerRef.current) clearInterval(lateRegTimerRef.current); };
+    }, [tournament?.status, (tournament as any)?.started_at, (tournament as any)?.late_reg_mins]);
 
     // ── Realtime subscription: live tournament updates ──
     useEffect(() => {
@@ -137,6 +179,38 @@ export default function TournamentDetails() {
                     } else if (payload.eventType === 'DELETE' && payload.old) {
                         // Player unregistered or eliminated
                         setEntries(prev => prev.filter(e => e.id !== (payload.old as any).id));
+                    }
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'tables',
+                    filter: `tournament_id=eq.${tournamentId}`,
+                },
+                (payload) => {
+                    if (payload.eventType === 'INSERT' && payload.new) {
+                        const t = payload.new as any;
+                        setTables(prev => [...prev, {
+                            id: t.id,
+                            name: t.name || `Table ${prev.length + 1}`,
+                            status: t.status,
+                            max_players: t.max_players,
+                            current_players: t.current_players || 0,
+                            small_blind: t.small_blind,
+                            big_blind: t.big_blind,
+                        }]);
+                    } else if (payload.eventType === 'UPDATE' && payload.new) {
+                        const t = payload.new as any;
+                        setTables(prev => prev.map(tbl =>
+                            tbl.id === t.id
+                                ? { ...tbl, current_players: t.current_players, small_blind: t.small_blind, big_blind: t.big_blind, status: t.status }
+                                : tbl
+                        ));
+                    } else if (payload.eventType === 'DELETE' && payload.old) {
+                        setTables(prev => prev.filter(tbl => tbl.id !== (payload.old as any).id));
                     }
                 }
             )
@@ -394,7 +468,35 @@ export default function TournamentDetails() {
             <div className="tournament-desc">
                 <p>{tournament.name}</p>
                 <p>{tournament.buy_in_amount}+{tournament.buy_in_fee || 0} CHIPS BUY-IN</p>
-                <p>REBUY / NO ADD-ON</p>
+                <p>
+                    {(tournament as any).variant === 'sng' ? 'SIT & GO' :
+                     (tournament as any).variant === 'spin' ? 'SPIN & GO' :
+                     (tournament as any).is_bounty && !(tournament as any).is_pko && !(tournament as any).is_mystery_bounty ? 'BOUNTY KO' :
+                     (tournament as any).is_pko ? 'PROGRESSIVE KO' :
+                     (tournament as any).is_mystery_bounty ? 'MYSTERY BOUNTY' :
+                     'FREEZEOUT'}
+                    {' / '}
+                    {(tournament as any).is_rebuy ? 'REBUY' : 'NO REBUY'}
+                    {' / '}
+                    {(tournament as any).add_on_available ? 'ADD-ON' : 'NO ADD-ON'}
+                </p>
+                {(tournament as any).is_bounty && (
+                    <p style={{ color: '#f87171', fontWeight: 600 }}>
+                        BOUNTY: {(tournament as any).bounty_amount || 0} CHIPS PER KO
+                        {(tournament as any).is_pko && ' (50/50 SPLIT)'}
+                    </p>
+                )}
+                {(tournament as any).is_multi_day && (
+                    <p style={{ color: '#22d3ee' }}>MULTI-DAY: {(tournament as any).total_days || 2} DAYS</p>
+                )}
+                {(tournament as any).is_xmtt && (
+                    <p style={{ color: '#a78bfa' }}>UNION TOURNAMENT (XMTT)</p>
+                )}
+                {((tournament as any).variant === 'spin' || (tournament as any).tournament_type === 'SPIN') && (
+                    <p style={{ color: '#fbbf24', fontWeight: 700 }}>
+                        SPIN & GO {(tournament as any).spin_multiplier ? `— ${(tournament as any).spin_multiplier}x MULTIPLIER` : '— Multiplier revealed at start'}
+                    </p>
+                )}
             </div>
 
             {activeTab === 'detail' && (
@@ -483,7 +585,7 @@ export default function TournamentDetails() {
                         </div>
                         <div className="stat">
                             <span className="stat-label">Avg. Stack</span>
-                            <span className="stat-value">{entries.filter(e => e.status === 'playing').length > 0 ? Math.round(entries.filter(e => e.status === 'playing').reduce((s, e) => s + (e.chips || 0), 0) / entries.filter(e => e.status === 'playing').length).toLocaleString() : (tournament.starting_chips || 10000).toLocaleString()}</span>
+                            <span className="stat-value">{entries.filter(e => e.status === 'playing').length > 0 ? Math.trunc(entries.filter(e => e.status === 'playing').reduce((s, e) => s + (e.chips || 0), 0) / entries.filter(e => e.status === 'playing').length).toLocaleString() : (tournament.starting_chips || 10000).toLocaleString()}</span>
                         </div>
                         <div className="stat">
                             <span className="stat-label">Tables</span>
@@ -503,7 +605,10 @@ export default function TournamentDetails() {
                         </div>
                         <div className="info-row">
                             <span className="info-label">Buy-in:</span>
-                            <span className="info-value">{tournament.buy_in_amount}+{tournament.buy_in_fee || 0} chips <span className="badge-reentry">Re-entry</span></span>
+                            <span className="info-value">
+                                {tournament.buy_in_amount}+{tournament.buy_in_fee || 0} chips
+                                {(tournament as any).is_rebuy && <span className="badge-reentry">Rebuy</span>}
+                            </span>
                         </div>
                         {(() => {
                             const entryPrizePool = tournament.buy_in_amount * (entries.length || tournament.current_players || 0);
@@ -530,12 +635,20 @@ export default function TournamentDetails() {
                             <span className="info-value">{tournament.max_players || 'Unlimited'}</span>
                         </div>
                         <div className="info-row half">
-                            <span className="info-label">Re-entry:</span>
-                            <span className="info-value">{tournament.buy_in_amount}+{tournament.buy_in_fee || 0} chips</span>
+                            <span className="info-label">Rebuy:</span>
+                            <span className="info-value">
+                                {(tournament as any).is_rebuy
+                                    ? `${(tournament as any).rebuy_cost || tournament.buy_in_amount} chips (${(tournament as any).rebuy_chips || tournament.starting_chips} chips, ${(tournament as any).rebuy_levels || 4} levels)`
+                                    : 'Not Available'}
+                            </span>
                         </div>
                         <div className="info-row half">
                             <span className="info-label">Add-on:</span>
-                            <span className="info-value">No Add-on</span>
+                            <span className="info-value">
+                                {(tournament as any).add_on_available
+                                    ? `${(tournament as any).addon_cost || tournament.buy_in_amount} chips (${(tournament as any).addon_chips || tournament.starting_chips} chips)`
+                                    : 'Not Available'}
+                            </span>
                         </div>
                         <div className="info-row half">
                             <span className="info-label">Starting Chips:</span>
@@ -543,12 +656,62 @@ export default function TournamentDetails() {
                         </div>
                         <div className="info-row half">
                             <span className="info-label">Big Blind Ante:</span>
-                            <span className="info-value">No</span>
+                            <span className="info-value">
+                                {(() => {
+                                    const blinds = typeof tournament.blind_structure === 'string'
+                                        ? (() => { try { return JSON.parse(tournament.blind_structure); } catch { return []; } })()
+                                        : (tournament.blind_structure || []);
+                                    return blinds.some((b: any) => (b.ante || 0) > 0) ? 'Yes' : 'No';
+                                })()}
+                            </span>
                         </div>
+                        {(tournament as any).late_reg_mins > 0 && (
+                            <div className="info-row half">
+                                <span className="info-label">Late Registration:</span>
+                                <span className="info-value">{(tournament as any).late_reg_mins} minutes</span>
+                            </div>
+                        )}
+                        {(tournament as any).is_bounty && (
+                            <div className="info-row">
+                                <span className="info-label">Bounty:</span>
+                                <span className="info-value" style={{ color: '#f87171' }}>
+                                    {(tournament as any).bounty_amount || 0} chips per knockout
+                                    {(tournament as any).is_pko && ' (Progressive: 50% to knocker, 50% added to bounty)'}
+                                    {(tournament as any).is_mystery_bounty && ` (Mystery: ${(tournament as any).mystery_bounty_min || 1}x - ${(tournament as any).mystery_bounty_max || 100}x)`}
+                                </span>
+                            </div>
+                        )}
                         <div className="info-row">
                             <span className="info-label">Blind Structure:</span>
-                            <span className="info-value">Standard <button className="help-btn">?</button></span>
+                            <span className="info-value">
+                                {(() => {
+                                    const blinds = typeof tournament.blind_structure === 'string'
+                                        ? (() => { try { return JSON.parse(tournament.blind_structure); } catch { return []; } })()
+                                        : (tournament.blind_structure || []);
+                                    if (blinds.length === 0) return 'Standard';
+                                    const dur = blinds[0]?.duration_minutes || blinds[0]?.durationMinutes || 0;
+                                    return dur <= 5 ? 'Turbo' : dur <= 10 ? 'Regular' : 'Deep Stack';
+                                })()}
+                            </span>
                         </div>
+                        {((tournament as any).variant === 'spin' || (tournament as any).tournament_type === 'SPIN') && (
+                            <div className="info-row">
+                                <span className="info-label">Spin Multiplier:</span>
+                                <span className="info-value" style={{ color: '#fbbf24', fontWeight: 700 }}>
+                                    {(tournament as any).spin_multiplier
+                                        ? `${(tournament as any).spin_multiplier}x`
+                                        : 'Revealed at game start'}
+                                </span>
+                            </div>
+                        )}
+                        {(tournament as any).is_multi_day && (
+                            <div className="info-row">
+                                <span className="info-label">Multi-Day:</span>
+                                <span className="info-value" style={{ color: '#22d3ee' }}>
+                                    Day {(tournament as any).day_number || 1} of {(tournament as any).total_days || 2}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </>
             )}
@@ -581,6 +744,36 @@ export default function TournamentDetails() {
                         tournamentId={tournamentId || ''}
                         totalPlayers={tournament.max_players || 0}
                     />
+                </div>
+            )}
+
+            {activeTab === 'unions' && (
+                <div className="unions-section">
+                    {(tournament as any).is_xmtt && (tournament as any).union_id ? (
+                        <div className="union-info">
+                            <h3>Union Tournament (XMTT)</h3>
+                            <div className="info-row">
+                                <span className="info-label">Union ID:</span>
+                                <span className="info-value">{((tournament as any).union_id || '').slice(0, 8)}</span>
+                            </div>
+                            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, marginTop: 8 }}>
+                                This tournament spans multiple clubs within the union. Players from all member clubs can participate.
+                            </p>
+                            <div className="info-row">
+                                <span className="info-label">Participating Clubs:</span>
+                                <span className="info-value">
+                                    {(() => {
+                                        const uniqueClubs = new Set(entries.map(e => (e as any).club_id).filter(Boolean));
+                                        return uniqueClubs.size > 0 ? `${uniqueClubs.size} clubs` : 'All union clubs eligible';
+                                    })()}
+                                </span>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="empty-state">
+                            <p>This is a club tournament, not a union (XMTT) event.</p>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -701,15 +894,9 @@ export default function TournamentDetails() {
             {/* Footer Actions */}
             <div className="details-footer">
                 <button className="btn btn-share">Share</button>
-                {tournament.status === 'RUNNING' && !isRegistered && (tournament.late_reg_mins || 0) > 0 && tournament.started_at && (Date.now() - new Date(tournament.started_at).getTime()) < (tournament.late_reg_mins || 0) * 60 * 1000 ? (
+                {tournament.status === 'RUNNING' && !isRegistered && lateRegCountdown ? (
                     <button className="btn btn-register late-reg" onClick={() => setShowSignUpModal(true)}>
-                        Late Register ({(() => {
-                            const elapsed = Date.now() - new Date(tournament.started_at!).getTime();
-                            const remaining = ((tournament.late_reg_mins || 0) * 60 * 1000) - elapsed;
-                            const mins = Math.floor(remaining / 60000);
-                            const secs = Math.floor((remaining % 60000) / 1000);
-                            return mins > 0 ? `${mins}m ${secs}s left` : `${secs}s left`;
-                        })()})
+                        Late Register ({lateRegCountdown})
                     </button>
                 ) : tournament.status === 'RUNNING' ? (
                     <span className="tournament-status-badge running">In Progress</span>
@@ -746,10 +933,31 @@ export default function TournamentDetails() {
                             <span className="signup-label">Total:</span>
                             <span className="signup-value">{tournament.buy_in_amount + (tournament.buy_in_fee || 0)} chips</span>
                         </div>
+                        {(tournament as any).is_bounty && (
+                            <div className="signup-row">
+                                <span className="signup-label">Bounty:</span>
+                                <span className="signup-value" style={{ color: '#f87171' }}>
+                                    {(tournament as any).bounty_amount || 0} chips
+                                    {(tournament as any).is_pko && ' (PKO)'}
+                                    {(tournament as any).is_mystery_bounty && ' (Mystery)'}
+                                </span>
+                            </div>
+                        )}
                         <div className="signup-row">
                             <span className="signup-label">Start time:</span>
                             <span className="signup-value">{formatDate(tournament.start_time)}</span>
                         </div>
+                        <div className="signup-row" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 8, marginTop: 4 }}>
+                            <span className="signup-label">Your Balance:</span>
+                            <span className="signup-value" style={{
+                                color: walletBalance >= (tournament.buy_in_amount + (tournament.buy_in_fee || 0)) ? '#10b981' : '#ef4444'
+                            }}>
+                                {walletBalance.toLocaleString()} chips
+                            </span>
+                        </div>
+                        {walletBalance < (tournament.buy_in_amount + (tournament.buy_in_fee || 0)) && (
+                            <p className="signup-note" style={{ color: '#ef4444' }}>Insufficient balance. Please add chips via your Cashier.</p>
+                        )}
                         <p className="signup-note">Cannot unregister within 1 minute of the start time</p>
                         <div className="signup-actions">
                             <button className="btn btn-cancel" onClick={() => setShowSignUpModal(false)}>

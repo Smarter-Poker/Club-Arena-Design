@@ -161,6 +161,9 @@ interface TableState {
     lastActions: LastAction[];
     isTournament: boolean;
     tournamentId?: string;
+    bountyMap: Record<string, number>; // userId → current bounty value (for KO/PKO display)
+    isBountyTournament: boolean;
+    spinMultiplier?: number;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -292,6 +295,8 @@ export default function TablePage() {
         positions: [null, null, null, null, null, null],
         lastActions: [null, null, null, null, null, null],
         isTournament: false,
+        bountyMap: {},
+        isBountyTournament: false,
     });
 
     const [raiseAmount, setRaiseAmount] = useState(20);
@@ -894,6 +899,40 @@ export default function TablePage() {
 
                 // Store actual club_id for persistence and rake
                 actualClubIdRef.current = table.club_id || '';
+
+                // ─── Load bounty data for KO/PKO tournaments ───
+                if (table.tournament_id) {
+                    const { data: tournData } = await supabase
+                        .from('tournaments')
+                        .select('is_bounty, is_pko, is_mystery_bounty, bounty_amount, spin_multiplier')
+                        .eq('id', table.tournament_id)
+                        .single();
+
+                    if (tournData && (tournData.is_bounty || tournData.is_pko || tournData.is_mystery_bounty)) {
+                        // Load current bounty values for all players in this tournament
+                        const { data: bountyData } = await supabase
+                            .from('tournament_players')
+                            .select('user_id, current_bounty')
+                            .eq('tournament_id', table.tournament_id)
+                            .gt('current_bounty', 0);
+
+                        const bMap: Record<string, number> = {};
+                        if (bountyData) {
+                            bountyData.forEach((p: any) => { bMap[p.user_id] = p.current_bounty; });
+                        }
+                        setTableState(prev => ({
+                            ...prev,
+                            bountyMap: bMap,
+                            isBountyTournament: true,
+                            spinMultiplier: tournData.spin_multiplier || undefined,
+                        }));
+                    } else if (tournData?.spin_multiplier) {
+                        setTableState(prev => ({
+                            ...prev,
+                            spinMultiplier: tournData.spin_multiplier,
+                        }));
+                    }
+                }
 
                 // Load user's Player Wallet balance for buy-in
                 if (userId && userId !== 'guest') {
@@ -1985,6 +2024,17 @@ export default function TablePage() {
                             <span className="jackpot-diamond"></span>
                         </div>
                     )}
+                    {tableState.spinMultiplier && tableState.spinMultiplier > 1 && (
+                        <div className="jackpot-banner" style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', color: '#1a1a2e' }}>
+                            <span className="jackpot-label" style={{ color: '#1a1a2e' }}>SPIN</span>
+                            <span className="jackpot-amount" style={{ color: '#1a1a2e' }}>{tableState.spinMultiplier}x</span>
+                        </div>
+                    )}
+                    {tableState.isBountyTournament && (
+                        <div className="jackpot-banner" style={{ background: 'linear-gradient(135deg, #ef4444, #f97316)', marginLeft: 4 }}>
+                            <span className="jackpot-label">KO</span>
+                        </div>
+                    )}
                 </div>
 
                 <div className="header-actions">
@@ -2090,6 +2140,7 @@ export default function TablePage() {
                                 timerProgress={seatNumber === tableState.currentPlayerSeat ? (actionTimeRemaining / 15) * 100 : undefined}
                                 bigBlind={parseFloat(tableState.blinds.split('/')[1]) || 2}
                                 isTournament={tableState.isTournament}
+                                bountyValue={tableState.isBountyTournament && player ? tableState.bountyMap[player.id] : undefined}
                                 onSit={() => handleSeatClick(seatNumber)}
                                 onAvatarClick={() => {
                                     // Open throwable selector targeting this seat

@@ -50,6 +50,7 @@ export interface SeatSlotProps {
     timerProgress?: number; // 0-100
     bigBlind?: number; // For BB display
     isTournament?: boolean; // Tournament mode — show chips not BB, hide SIT buttons
+    bountyValue?: number; // Current bounty on this player's head (for bounty/PKO tournaments)
     onSit?: () => void;
     onAction?: () => void;
     onAvatarClick?: () => void; // For throwables targeting
@@ -166,6 +167,7 @@ export function SeatSlot({
     timerProgress,
     bigBlind = 2,
     isTournament = false,
+    bountyValue,
     onSit,
     onAction,
     onAvatarClick,
@@ -311,6 +313,13 @@ export function SeatSlot({
             {player.status === 'all_in' && (
                 <div className="seat-slot__all-in-badge">ALL IN</div>
             )}
+
+            {/* Bounty Badge (KO / PKO tournaments) */}
+            {bountyValue != null && bountyValue > 0 && (
+                <div className="seat-slot__bounty-badge">
+                    {bountyValue.toLocaleString()}
+                </div>
+            )}
         </div>
     );
 }
@@ -328,6 +337,7 @@ export default React.memo(SeatSlot, (prev, next) => {
         prev.position === next.position &&
         prev.isTournament === next.isTournament &&
         prev.bigBlind === next.bigBlind &&
+        prev.bountyValue === next.bountyValue &&
         prev.player?.id === next.player?.id &&
         prev.player?.stack === next.player?.stack &&
         prev.player?.status === next.player?.status &&
