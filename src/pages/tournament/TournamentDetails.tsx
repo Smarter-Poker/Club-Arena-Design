@@ -407,7 +407,14 @@ export default function TournamentDetails() {
                                     .filter(e => e.position && e.position <= 3)
                                     .sort((a, b) => (a.position || 99) - (b.position || 99))
                                     .map(player => {
-                                        const payoutEntry = (tournament.payout_structure || []).find(
+                                        const payoutArr = (() => {
+                                            const raw = tournament.payout_structure;
+                                            if (!raw) return [];
+                                            if (Array.isArray(raw)) return raw;
+                                            if (typeof raw === 'string') { try { return JSON.parse(raw); } catch { return []; } }
+                                            return [];
+                                        })();
+                                        const payoutEntry = payoutArr.find(
                                             (p: any) => (p.place || p.position) === player.position
                                         );
                                         const prize = payoutEntry
