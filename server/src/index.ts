@@ -272,9 +272,14 @@ class GameServer {
                         continue;
                     }
 
-                    // Start if past start_time AND minimum players met
-                    if (startTime <= now && tournament.current_players >= minPlayers) {
-                        console.log(`[GameServer] Starting tournament: ${tournament.name} (${tournament.current_players} players)`);
+                    // SNG / Spin: start immediately when max_players reached (not time-based)
+                    const isSngOrSpin = tournament.variant === 'sng' || tournament.variant === 'spin';
+                    const maxReached = tournament.max_players > 0 && tournament.current_players >= tournament.max_players;
+                    const timeReached = startTime <= now && tournament.current_players >= minPlayers;
+
+                    if (maxReached || timeReached) {
+                        const reason = maxReached ? `full (${tournament.current_players}/${tournament.max_players})` : `${tournament.current_players} players`;
+                        console.log(`[GameServer] Starting tournament: ${tournament.name} (${reason})`);
                         const tm = new TournamentManager(tournament.id, this);
                         this.tournamentEngines.set(tournament.id, tm);
                         tm.start().catch(err => {
@@ -913,7 +918,7 @@ class TournamentManager {
 
         const { data: tournament } = await supabase
             .from('tournaments')
-            .select('payout_structure, prize_pool')
+            .select('payout_structure, prize_pool, is_bounty, is_pko, is_mystery_bounty, bounty_amount, mystery_bounty_min, mystery_bounty_max')
             .eq('id', this.tournamentId)
             .single();
 
@@ -927,7 +932,8 @@ class TournamentManager {
                 const payoutEntry = payouts.find((p: any) => p.place === position);
                 if (payoutEntry) {
                     // Exact cent-precision: truncate sub-cent fractions
-                    prize = Math.trunc((tournament.prize_pool || 0) * payoutEntry.percentage / 100 * 100) / 100;
+                    const prizeRaw = (tournament.prize_pool || 0) * payoutEntry.percentage / 100;
+                    prize = Math.trunc(prizeRaw * 100) / 100;
                 }
             }
         }
@@ -953,7 +959,6 @@ class TournamentManager {
             if (creditErr) {
                 console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] CRITICAL: Prize credit failed for ${userId.slice(0, 8)}: ${creditErr.message}`);
             } else {
-                // Log prize payout via RPC (SECURITY DEFINER bypasses RLS)
                 await supabase.rpc('log_wallet_transaction', {
                     p_user_id: userId,
                     p_wallet_type: 'PLAYER',
@@ -968,6 +973,48 @@ class TournamentManager {
             }
         }
 
+        // ── BOUNTY / PKO / MYSTERY BOUNTY COLLECTION ──
+        // Determine who knocked this player out by finding the last hand winner at their table
+        const hasBounty = tournament?.is_bounty || tournament?.is_pko || tournament?.is_mystery_bounty;
+        if (hasBounty && tournament) {
+            try {
+                // Find the table this player is seated at (left_at still null — not yet marked as left)
+                const { data: seat } = await supabase
+                    .from('table_seats')
+                    .select('table_id')
+                    .eq('user_id', userId)
+                    .is('left_at', null)
+                    .limit(1)
+                    .maybeSingle();
+
+                // Find the most recent hand at that table to determine the knocker
+                let knockerId: string | null = null;
+                if (seat?.table_id) {
+                    const { data: lastHand } = await supabase
+                        .from('hand_history')
+                        .select('winners')
+                        .eq('table_id', seat.table_id)
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .maybeSingle();
+
+                    if (lastHand?.winners && Array.isArray(lastHand.winners)) {
+                        // The knocker is the hand winner (first winner — the one who took the pot)
+                        const winnerEntry = lastHand.winners.find((w: any) => (w.userId || w.user_id) !== userId);
+                        knockerId = winnerEntry ? (winnerEntry.userId || winnerEntry.user_id) : null;
+                    }
+                }
+
+                if (knockerId) {
+                    await this.processBountyCollection(tournament, userId, knockerId);
+                } else {
+                    console.warn(`[Tournament:${this.tournamentId.slice(0, 8)}] Could not determine knocker for ${userId.slice(0, 8)} — bounty skipped`);
+                }
+            } catch (bountyErr) {
+                console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Bounty processing error:`, bountyErr);
+            }
+        }
+
         await supabase
             .from('table_seats')
             .update({ left_at: new Date().toISOString() })
@@ -975,6 +1022,184 @@ class TournamentManager {
             .is('left_at', null);
 
         console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] Eliminated: ${userId.slice(0, 8)} at position ${position} (prize: ${prize})`);
+    }
+
+    /**
+     * Process bounty collection: fixed, progressive (PKO), or mystery bounty
+     */
+    private async processBountyCollection(
+        tournament: any,
+        eliminatedUserId: string,
+        knockerUserId: string
+    ): Promise<void> {
+        const baseBounty = tournament.bounty_amount || 0;
+
+        // Get eliminated player's current bounty (may be higher than base for PKO)
+        const { data: eliminatedPlayer } = await supabase
+            .from('tournament_players')
+            .select('current_bounty')
+            .eq('tournament_id', this.tournamentId)
+            .eq('user_id', eliminatedUserId)
+            .single();
+
+        const bountyValue = eliminatedPlayer?.current_bounty || baseBounty;
+
+        if (tournament.is_pko) {
+            // ── PROGRESSIVE KO ──
+            // 50% to knocker immediately, 50% added to knocker's bounty head
+            const knockerPortion = Math.trunc(bountyValue * 100 / 2) / 100;
+            const addedToHead = Math.trunc((bountyValue - knockerPortion) * 100) / 100;
+
+            // Get knocker's current bounty
+            const { data: knocker } = await supabase
+                .from('tournament_players')
+                .select('current_bounty, bounties_collected, bounty_winnings')
+                .eq('tournament_id', this.tournamentId)
+                .eq('user_id', knockerUserId)
+                .single();
+
+            const newKnockerBounty = (knocker?.current_bounty || baseBounty) + addedToHead;
+
+            // Update knocker's bounty head + stats
+            await supabase
+                .from('tournament_players')
+                .update({
+                    current_bounty: newKnockerBounty,
+                    bounties_collected: (knocker?.bounties_collected || 0) + 1,
+                    bounty_winnings: Math.trunc(((knocker?.bounty_winnings || 0) + knockerPortion) * 100) / 100,
+                })
+                .eq('tournament_id', this.tournamentId)
+                .eq('user_id', knockerUserId);
+
+            // Credit knocker portion to wallet
+            await this.creditBountyToWallet(knockerUserId, knockerPortion, eliminatedUserId);
+
+            // Record bounty in tournament_bounties
+            await supabase.from('tournament_bounties').insert({
+                tournament_id: this.tournamentId,
+                eliminated_player_id: eliminatedUserId,
+                collector_player_id: knockerUserId,
+                bounty_amount: knockerPortion,
+                added_to_collector_bounty: addedToHead,
+            });
+
+            console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] PKO: ${knockerUserId.slice(0, 8)} collected ${knockerPortion} bounty from ${eliminatedUserId.slice(0, 8)} (+${addedToHead} to head, now ${newKnockerBounty})`);
+
+        } else if (tournament.is_mystery_bounty) {
+            // ── MYSTERY BOUNTY ──
+            // Roll a random mystery value from configured tiers
+            const mysteryTiers = [
+                { min: 1, max: 1, probability: 60 },
+                { min: 2, max: 2, probability: 25 },
+                { min: 5, max: 5, probability: 10 },
+                { min: 10, max: 10, probability: 4 },
+                { min: tournament.mystery_bounty_max || 50, max: tournament.mystery_bounty_max || 50, probability: 1 },
+            ];
+
+            let mysteryMultiplier = 1;
+            const roll = Math.random() * 100;
+            let cumulative = 0;
+            for (const tier of mysteryTiers) {
+                cumulative += tier.probability;
+                if (roll <= cumulative) {
+                    mysteryMultiplier = tier.min === tier.max
+                        ? tier.min
+                        : Math.floor(Math.random() * (tier.max - tier.min + 1)) + tier.min;
+                    break;
+                }
+            }
+
+            const mysteryValue = Math.trunc(baseBounty * mysteryMultiplier * 100) / 100;
+
+            // Update knocker stats
+            const { data: knocker } = await supabase
+                .from('tournament_players')
+                .select('bounties_collected, bounty_winnings')
+                .eq('tournament_id', this.tournamentId)
+                .eq('user_id', knockerUserId)
+                .single();
+
+            await supabase
+                .from('tournament_players')
+                .update({
+                    bounties_collected: (knocker?.bounties_collected || 0) + 1,
+                    bounty_winnings: Math.trunc(((knocker?.bounty_winnings || 0) + mysteryValue) * 100) / 100,
+                })
+                .eq('tournament_id', this.tournamentId)
+                .eq('user_id', knockerUserId);
+
+            // Credit mystery bounty to wallet
+            await this.creditBountyToWallet(knockerUserId, mysteryValue, eliminatedUserId);
+
+            // Record bounty
+            await supabase.from('tournament_bounties').insert({
+                tournament_id: this.tournamentId,
+                eliminated_player_id: eliminatedUserId,
+                collector_player_id: knockerUserId,
+                bounty_amount: mysteryValue,
+                is_mystery_revealed: true,
+            });
+
+            console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] MYSTERY BOUNTY: ${knockerUserId.slice(0, 8)} revealed ${mysteryValue} (${mysteryMultiplier}x) from ${eliminatedUserId.slice(0, 8)}`);
+
+        } else {
+            // ── FIXED BOUNTY (KO) ──
+            const { data: knocker } = await supabase
+                .from('tournament_players')
+                .select('bounties_collected, bounty_winnings')
+                .eq('tournament_id', this.tournamentId)
+                .eq('user_id', knockerUserId)
+                .single();
+
+            await supabase
+                .from('tournament_players')
+                .update({
+                    bounties_collected: (knocker?.bounties_collected || 0) + 1,
+                    bounty_winnings: Math.trunc(((knocker?.bounty_winnings || 0) + bountyValue) * 100) / 100,
+                })
+                .eq('tournament_id', this.tournamentId)
+                .eq('user_id', knockerUserId);
+
+            // Credit fixed bounty to wallet
+            await this.creditBountyToWallet(knockerUserId, bountyValue, eliminatedUserId);
+
+            // Record bounty
+            await supabase.from('tournament_bounties').insert({
+                tournament_id: this.tournamentId,
+                eliminated_player_id: eliminatedUserId,
+                collector_player_id: knockerUserId,
+                bounty_amount: bountyValue,
+            });
+
+            console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] BOUNTY: ${knockerUserId.slice(0, 8)} collected ${bountyValue} from ${eliminatedUserId.slice(0, 8)}`);
+        }
+    }
+
+    /**
+     * Credit bounty amount to knocker's wallet with transaction logging
+     */
+    private async creditBountyToWallet(knockerUserId: string, amount: number, eliminatedUserId: string): Promise<void> {
+        const { error: creditErr } = await supabase.rpc('credit_player_wallet', {
+            p_user_id: knockerUserId,
+            p_amount: amount,
+        });
+
+        if (creditErr) {
+            console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] CRITICAL: Bounty credit failed for ${knockerUserId.slice(0, 8)}: ${creditErr.message}`);
+            return;
+        }
+
+        await supabase.rpc('log_wallet_transaction', {
+            p_user_id: knockerUserId,
+            p_wallet_type: 'PLAYER',
+            p_amount: amount,
+            p_type: 'credit',
+            p_category: 'bounty',
+            p_description: `Bounty collected from eliminated player`,
+            p_table_id: null,
+            p_hand_id: null,
+            p_related_entity_id: this.tournamentId,
+        });
     }
 
     private tournamentFinished = false;
