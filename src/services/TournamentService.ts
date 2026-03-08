@@ -711,7 +711,14 @@ class TournamentService {
         if (!tournament) throw new Error('Tournament not found');
 
         // Calculate prize — exact cent-precision arithmetic, no rounding
-        const payoutEntry = tournament.payout_structure.find(p => p.place === position);
+        const payoutArr = (() => {
+            const raw = tournament.payout_structure;
+            if (!raw) return [];
+            if (Array.isArray(raw)) return raw;
+            if (typeof raw === 'string') { try { return JSON.parse(raw); } catch { return []; } }
+            return [];
+        })();
+        const payoutEntry = payoutArr.find((p: any) => p.place === position);
         const prizeRaw = payoutEntry
             ? (tournament.prize_pool * payoutEntry.percentage) / 100
             : 0;
@@ -826,11 +833,15 @@ class TournamentService {
         timeRemainingSeconds: number;
         levelIndex: number;
     } {
+        const blinds: BlindLevel[] = Array.isArray(tournament.blind_structure) && tournament.blind_structure.length > 0
+            ? tournament.blind_structure
+            : [{ level: 1, smallBlind: 25, bigBlind: 50, ante: 0, durationMinutes: 15 }];
+
         if (tournament.status !== 'RUNNING' || !tournament.started_at) {
             return {
-                currentLevel: tournament.blind_structure[0],
-                nextLevel: tournament.blind_structure[1] || null,
-                timeRemainingSeconds: tournament.blind_structure[0].durationMinutes * 60,
+                currentLevel: blinds[0],
+                nextLevel: blinds[1] || null,
+                timeRemainingSeconds: blinds[0].durationMinutes * 60,
                 levelIndex: 0
             };
         }
@@ -838,14 +849,14 @@ class TournamentService {
         const elapsedMs = new Date().getTime() - new Date(tournament.started_at).getTime();
         let accumulatedMs = 0;
 
-        for (let i = 0; i < tournament.blind_structure.length; i++) {
-            const level = tournament.blind_structure[i];
+        for (let i = 0; i < blinds.length; i++) {
+            const level = blinds[i];
             const durationMs = level.durationMinutes * 60 * 1000;
 
             if (elapsedMs < accumulatedMs + durationMs) {
                 return {
                     currentLevel: level,
-                    nextLevel: tournament.blind_structure[i + 1] || null,
+                    nextLevel: blinds[i + 1] || null,
                     timeRemainingSeconds: Math.floor((accumulatedMs + durationMs - elapsedMs) / 1000),
                     levelIndex: i
                 };
@@ -855,10 +866,10 @@ class TournamentService {
 
         // Capped at last level
         return {
-            currentLevel: tournament.blind_structure[tournament.blind_structure.length - 1],
+            currentLevel: blinds[blinds.length - 1],
             nextLevel: null,
             timeRemainingSeconds: 0,
-            levelIndex: tournament.blind_structure.length - 1
+            levelIndex: blinds.length - 1
         };
     }
 
@@ -914,6 +925,20 @@ class TournamentService {
         const rebuyChips = tournament.rebuy_chips || tournament.starting_chips;
         // @ts-ignore
         const rebuyCost = tournament.rebuy_cost || tournament.buy_in_amount;
+
+        // Deduct wallet for rebuy cost
+        const { error: walletError } = await supabase.rpc('deduct_player_wallet', {
+            p_user_id: userId,
+            p_amount: rebuyCost,
+        });
+        if (walletError) throw new Error('Insufficient balance for rebuy');
+
+        // Log transaction for audit trail
+        await WalletService.logTransaction(
+            userId, 'PLAYER', -rebuyCost, 'debit', 'rebuy',
+            `Tournament rebuy: ${tournament.name}`,
+            undefined, undefined, tournamentId
+        );
 
         // Process rebuy via RPC
         const { data, error } = await supabase.rpc('process_tournament_rebuy', {
@@ -978,6 +1003,20 @@ class TournamentService {
         const addonChips = tournament.addon_chips || tournament.starting_chips;
         // @ts-ignore
         const addonCost = tournament.addon_cost || tournament.buy_in_amount;
+
+        // Deduct wallet for add-on cost
+        const { error: walletError } = await supabase.rpc('deduct_player_wallet', {
+            p_user_id: userId,
+            p_amount: addonCost,
+        });
+        if (walletError) throw new Error('Insufficient balance for add-on');
+
+        // Log transaction for audit trail
+        await WalletService.logTransaction(
+            userId, 'PLAYER', -addonCost, 'debit', 'addon',
+            `Tournament add-on: ${tournament.name}`,
+            undefined, undefined, tournamentId
+        );
 
         const { data, error } = await supabase.rpc('process_tournament_rebuy', {
             p_tournament_id: tournamentId,

@@ -661,9 +661,9 @@ export default function TournamentDetails() {
                         ) : (
                             /* Default payout structure if none defined */
                             <>
-                                <div className="payout-row"><span className="payout-place">🥇</span><span className="payout-percent">50%</span><span className="payout-chips">{effectivePrizePool > 0 ? Math.floor(effectivePrizePool * 0.5).toLocaleString() : '—'}</span></div>
-                                <div className="payout-row"><span className="payout-place">🥈</span><span className="payout-percent">30%</span><span className="payout-chips">{effectivePrizePool > 0 ? Math.floor(effectivePrizePool * 0.3).toLocaleString() : '—'}</span></div>
-                                <div className="payout-row"><span className="payout-place">🥉</span><span className="payout-percent">20%</span><span className="payout-chips">{effectivePrizePool > 0 ? Math.floor(effectivePrizePool * 0.2).toLocaleString() : '—'}</span></div>
+                                <div className="payout-row"><span className="payout-place">🥇</span><span className="payout-percent">50%</span><span className="payout-chips">{effectivePrizePool > 0 ? (Math.trunc(effectivePrizePool * 50) / 100).toLocaleString() : '—'}</span></div>
+                                <div className="payout-row"><span className="payout-place">🥈</span><span className="payout-percent">30%</span><span className="payout-chips">{effectivePrizePool > 0 ? (Math.trunc(effectivePrizePool * 30) / 100).toLocaleString() : '—'}</span></div>
+                                <div className="payout-row"><span className="payout-place">🥉</span><span className="payout-percent">20%</span><span className="payout-chips">{effectivePrizePool > 0 ? (Math.trunc(effectivePrizePool * 20) / 100).toLocaleString() : '—'}</span></div>
                             </>
                         )}
                     </div>
