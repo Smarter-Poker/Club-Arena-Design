@@ -296,3 +296,27 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ── Mobile ≤480px ── */
+@media (max-width: 480px) {
+    .lobby { gap: 12px; }
+    .hero { padding: 16px 12px; border-radius: 12px; }
+    .heroTitle { font-size: 1.5rem; }
+    .heroSubtitle { font-size: 0.875rem; }
+    .liveStats { font-size: 0.75rem; }
+    .searchBox { min-width: 100%; padding: 6px 10px; }
+    .searchInput { font-size: 0.8rem; }
+    .sectionTitle { font-size: 1.125rem; }
+    .activityItem { padding: 8px 10px; }
+    .activityIcon { width: 32px; height: 32px; font-size: 1rem; }
+    .activityContent { font-size: 0.75rem; }
+    .emptyState { padding: 32px 16px; }
+    .emptyIcon { font-size: 48px; }
+}
+
+/* ── Small phones ≤380px ── */
+@media (max-width: 380px) {
+    .hero { padding: 12px 10px; }
+    .heroTitle { font-size: 1.25rem; }
+    .activityItem { gap: 8px; }
+}

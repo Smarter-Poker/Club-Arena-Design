@@ -1002,3 +1002,44 @@
         justify-content: flex-start;
     }
 }
+
+/* ── Mobile ≤480px ── */
+@media (max-width: 480px) {
+    .page { padding: 0.75rem; padding-bottom: 80px; }
+    .header { padding: 1rem; gap: 0.75rem; border-radius: 12px; margin-bottom: 1rem; }
+    .clubAvatar { width: 52px; height: 52px; font-size: 1.25rem; }
+    .clubInfo h1 { font-size: 1.1rem; }
+    .clubId { font-size: 0.75rem; }
+    .headerActions { gap: 0.35rem; }
+    .inviteButton, .createTableButton, .financialsButton, .announcementsButton, .settingsButton {
+        padding: 0.4rem 0.6rem; font-size: 0.7rem;
+    }
+    .statsRow { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-bottom: 1rem; }
+    .statCard { padding: 0.75rem; gap: 0.5rem; }
+    .statValue { font-size: 1rem; }
+    .statLabel { font-size: 0.6rem; }
+    .tabNav { gap: 0.25rem; padding: 0.35rem; border-radius: 10px; margin-bottom: 1rem; }
+    .tab { padding: 0.6rem 0.25rem; font-size: 0.7rem; letter-spacing: 0; }
+    .overviewGrid { gap: 0.75rem; }
+    .card { padding: 1rem; border-radius: 10px; }
+    .tableCard { padding: 0.75rem; }
+    .agentCard { padding: 0.75rem; gap: 0.75rem; }
+    .agentAvatar { width: 36px; height: 36px; font-size: 1rem; }
+    .modal { padding: 1rem; border-radius: 12px; }
+    .settingsSection { padding: 1rem; }
+    .textInput { width: 100%; }
+    .textArea { width: 100%; }
+    .searchInput { width: 100%; }
+    .membersTable th, .membersTable td { padding: 0.5rem 0.25rem; font-size: 0.75rem; }
+}
+
+/* ── Small phones ≤380px ── */
+@media (max-width: 380px) {
+    .page { padding: 0.5rem; }
+    .header { padding: 0.75rem; }
+    .clubInfo h1 { font-size: 1rem; }
+    .statsRow { gap: 0.35rem; }
+    .statCard { padding: 0.5rem; }
+    .statValue { font-size: 0.875rem; }
+    .tab { font-size: 0.65rem; padding: 0.5rem 0.15rem; }
+}

@@ -1230,3 +1230,46 @@
         min-width: 280px;
     }
 }
+
+/* ── Mobile ≤480px ── */
+@media (max-width: 480px) {
+    .container { padding-top: 10px; padding-bottom: 20px; }
+    .topBar { padding: 8px 12px; }
+    .statBadge { padding: 4px 10px; gap: 4px; }
+    .statLabel { font-size: 8px; }
+    .statValue { font-size: 12px; }
+    .iconButton { width: 34px; height: 34px; }
+    .profileButton { width: 34px; height: 34px; }
+    .welcomeMessage { font-size: 17px; margin: 12px 0 20px; }
+    .carouselContainer { min-height: 320px; gap: 10px; margin-bottom: 30px; }
+    .navArrow { width: 36px; height: 36px; }
+    .floatingCard { width: 240px; height: 320px; }
+    .cardTitle { font-size: 14px; }
+    .holoCircle { width: 80px; height: 80px; }
+    .holoIcon { font-size: 28px; }
+    .bottomRow { gap: 8px; padding: 10px 10px 15px; }
+    .tileCard { width: 100px; height: 130px; }
+    .tileIcon { font-size: 22px; }
+    .tileTitle { font-size: 8px; }
+    .tileSubtitle { font-size: 6px; }
+    .actionButton { width: 90px; height: 90px; }
+    .findPlayerButton { width: 200px; height: 100px; }
+    .actionButtonLabel { width: 60px; height: 60px; font-size: 8px; }
+    .sharkClubCard { width: 280px; }
+    .modalContent { padding: 24px 16px; min-width: 260px; }
+    .modalTitle { font-size: 18px; }
+    .clubCodeInput { padding: 12px 16px; font-size: 16px; }
+}
+
+/* ── Small phones ≤380px ── */
+@media (max-width: 380px) {
+    .topBar { padding: 6px 8px; }
+    .statsSection { gap: 8px; }
+    .iconsSection { gap: 6px; }
+    .welcomeMessage { font-size: 15px; }
+    .floatingCard { width: 220px; height: 280px; }
+    .tileCard { width: 80px; height: 100px; }
+    .actionButton { width: 75px; height: 75px; }
+    .findPlayerButton { width: 160px; height: 80px; }
+    .sharkClubCard { width: 240px; }
+}
