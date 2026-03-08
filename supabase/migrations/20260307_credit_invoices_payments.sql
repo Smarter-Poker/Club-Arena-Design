@@ -1,10 +1,17 @@
 -- =============================================
 -- Credit Invoices & Payments tables
 -- Required by CreditService for weekly settlement
+-- DEPLOYED TO SUPABASE: 2026-03-07
 -- =============================================
 
+-- 0. Add business_balance column to agents (needed by RPCs below)
+ALTER TABLE agents ADD COLUMN IF NOT EXISTS business_balance NUMERIC NOT NULL DEFAULT 0;
+
 -- 1. Credit Invoices — weekly settlement invoices for agents
-CREATE TABLE IF NOT EXISTS credit_invoices (
+DROP TABLE IF EXISTS credit_payments CASCADE;
+DROP TABLE IF EXISTS credit_invoices CASCADE;
+
+CREATE TABLE credit_invoices (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
   period_start TIMESTAMPTZ NOT NULL,
@@ -18,12 +25,12 @@ CREATE TABLE IF NOT EXISTS credit_invoices (
   paid_at TIMESTAMPTZ
 );
 
-CREATE INDEX IF NOT EXISTS idx_credit_invoices_agent ON credit_invoices(agent_id);
-CREATE INDEX IF NOT EXISTS idx_credit_invoices_status ON credit_invoices(status);
-CREATE INDEX IF NOT EXISTS idx_credit_invoices_due ON credit_invoices(due_date);
+CREATE INDEX idx_credit_invoices_agent ON credit_invoices(agent_id);
+CREATE INDEX idx_credit_invoices_status ON credit_invoices(status);
+CREATE INDEX idx_credit_invoices_due ON credit_invoices(due_date);
 
 -- 2. Credit Payments — payment records per invoice
-CREATE TABLE IF NOT EXISTS credit_payments (
+CREATE TABLE credit_payments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   invoice_id UUID NOT NULL REFERENCES credit_invoices(id) ON DELETE CASCADE,
   amount DECIMAL(15,2) NOT NULL,
@@ -32,9 +39,11 @@ CREATE TABLE IF NOT EXISTS credit_payments (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_credit_payments_invoice ON credit_payments(invoice_id);
+CREATE INDEX idx_credit_payments_invoice ON credit_payments(invoice_id);
 
 -- 3. RPC: Deduct from agent balance (for invoice payments)
+DROP FUNCTION IF EXISTS wallet_user_transfer(uuid,uuid,numeric,text);
+
 CREATE OR REPLACE FUNCTION deduct_agent_balance(
   p_agent_id UUID,
   p_amount NUMERIC
