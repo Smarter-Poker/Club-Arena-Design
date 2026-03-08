@@ -259,13 +259,21 @@ class GameServer {
 
                         const refundAmount = (tournament.buy_in_amount || 0) + (tournament.buy_in_fee || 0);
                         for (const p of players || []) {
-                            await supabase.rpc('credit_player_wallet', { p_user_id: p.user_id, p_amount: refundAmount });
-                            await supabase.rpc('log_wallet_transaction', {
-                                p_user_id: p.user_id, p_wallet_type: 'PLAYER', p_amount: refundAmount,
-                                p_type: 'credit', p_category: 'refund',
-                                p_description: `Tournament cancelled (insufficient players): ${tournament.name}`,
-                                p_table_id: null, p_hand_id: null, p_related_entity_id: tournament.id,
-                            });
+                            try {
+                                const { error: creditErr } = await supabase.rpc('credit_player_wallet', { p_user_id: p.user_id, p_amount: refundAmount });
+                                if (creditErr) {
+                                    console.error(`[GameServer] Refund FAILED for ${p.user_id.slice(0, 8)} in ${tournament.name}: ${creditErr.message}`);
+                                    continue; // Skip log for this player but keep refunding others
+                                }
+                                await supabase.rpc('log_wallet_transaction', {
+                                    p_user_id: p.user_id, p_wallet_type: 'PLAYER', p_amount: refundAmount,
+                                    p_type: 'credit', p_category: 'refund',
+                                    p_description: `Tournament cancelled (insufficient players): ${tournament.name}`,
+                                    p_table_id: null, p_hand_id: null, p_related_entity_id: tournament.id,
+                                });
+                            } catch (refundErr) {
+                                console.error(`[GameServer] Refund exception for ${p.user_id.slice(0, 8)}:`, refundErr);
+                            }
                         }
                         await supabase.from('tournament_players').delete().eq('tournament_id', tournament.id);
                         await supabase.from('tournaments').update({ status: 'CANCELLED' }).eq('id', tournament.id);
@@ -402,13 +410,21 @@ class TournamentManager {
                     .eq('status', 'registered');
                 const refundAmt = (tournament.buy_in_amount || 0) + (tournament.buy_in_fee || 0);
                 for (const p of regPlayers || []) {
-                    await supabase.rpc('credit_player_wallet', { p_user_id: p.user_id, p_amount: refundAmt });
-                    await supabase.rpc('log_wallet_transaction', {
-                        p_user_id: p.user_id, p_wallet_type: 'PLAYER', p_amount: refundAmt,
-                        p_type: 'credit', p_category: 'refund',
-                        p_description: `Tournament cancelled (insufficient players): ${tournament.name}`,
-                        p_table_id: null, p_hand_id: null, p_related_entity_id: this.tournamentId,
-                    });
+                    try {
+                        const { error: creditErr } = await supabase.rpc('credit_player_wallet', { p_user_id: p.user_id, p_amount: refundAmt });
+                        if (creditErr) {
+                            console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Refund FAILED for ${p.user_id.slice(0, 8)}: ${creditErr.message}`);
+                            continue;
+                        }
+                        await supabase.rpc('log_wallet_transaction', {
+                            p_user_id: p.user_id, p_wallet_type: 'PLAYER', p_amount: refundAmt,
+                            p_type: 'credit', p_category: 'refund',
+                            p_description: `Tournament cancelled (insufficient players): ${tournament.name}`,
+                            p_table_id: null, p_hand_id: null, p_related_entity_id: this.tournamentId,
+                        });
+                    } catch (refundErr) {
+                        console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Refund exception for ${p.user_id.slice(0, 8)}:`, refundErr);
+                    }
                 }
                 await supabase.from('tournament_players').delete().eq('tournament_id', this.tournamentId);
                 await supabase.from('tournaments').update({ status: 'CANCELLED' }).eq('id', this.tournamentId);
@@ -951,14 +967,14 @@ class TournamentManager {
 
     private async eliminatePlayer(userId: string, position: number): Promise<void> {
         // Guard: check if already eliminated (prevents double-processing)
-        const { data: playerCheck } = await supabase
+        const { data: playerCheck, error: checkErr } = await supabase
             .from('tournament_players')
             .select('status')
             .eq('tournament_id', this.tournamentId)
             .eq('user_id', userId)
-            .single();
+            .maybeSingle();
 
-        if (playerCheck?.status === 'eliminated' || playerCheck?.status === 'winner') {
+        if (checkErr || !playerCheck || playerCheck.status === 'eliminated' || playerCheck.status === 'winner') {
             return; // Already processed
         }
 
@@ -1266,23 +1282,31 @@ class TournamentManager {
     private tournamentFinished = false;
 
     private async finishTournament(winnerId: string): Promise<void> {
-        // Guard: prevent double-finishing (race between elimination checker cycles)
+        // Guard: prevent double-finishing (client-side + DB-level atomic guard)
         if (this.tournamentFinished) return;
         this.tournamentFinished = true;
 
         console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] COMPLETE! Winner: ${winnerId.slice(0, 8)}`);
+
+        // Atomic DB guard: only proceed if we can claim the RUNNING → COMPLETING transition
+        const { data: claimResult } = await supabase
+            .from('tournaments')
+            .update({ status: 'COMPLETING' } as any)
+            .eq('id', this.tournamentId)
+            .eq('status', 'RUNNING')
+            .select('id')
+            .maybeSingle();
+
+        if (!claimResult) {
+            console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] Could not claim finish — already finishing/completed`);
+            return;
+        }
 
         const { data: tournament } = await supabase
             .from('tournaments')
             .select('payout_structure, prize_pool, buy_in_fee, current_players, club_id, name, status')
             .eq('id', this.tournamentId)
             .single();
-
-        // Guard: don't process already completed tournaments
-        if (tournament?.status === 'COMPLETED' || tournament?.status === 'CANCELLED') {
-            console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] Already ${tournament.status}, skipping`);
-            return;
-        }
 
         if (tournament?.payout_structure) {
             let payouts = tournament.payout_structure;

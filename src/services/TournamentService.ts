@@ -603,11 +603,11 @@ class TournamentService {
                 // Find tournament table with an open seat
                 const { data: tables } = await supabase
                     .from('tables')
-                    .select('id, max_seats, current_players')
+                    .select('id, max_players, current_players')
                     .eq('tournament_id', tournamentId)
                     .eq('status', 'active');
 
-                const openTable = (tables || []).find(t => t.current_players < t.max_seats);
+                const openTable = (tables || []).find(t => t.current_players < t.max_players);
                 if (openTable) {
                     // Find an empty seat number
                     const { data: existingSeats } = await supabase
@@ -617,7 +617,7 @@ class TournamentService {
 
                     const takenSeats = new Set((existingSeats || []).map(s => s.seat_number));
                     let seatNumber = 1;
-                    while (takenSeats.has(seatNumber) && seatNumber <= openTable.max_seats) seatNumber++;
+                    while (takenSeats.has(seatNumber) && seatNumber <= openTable.max_players) seatNumber++;
 
                     // Seat the player
                     await supabase.from('table_seats').insert({

@@ -153,6 +153,8 @@ export default function ClubHomePage() {
                         );
                     } else if (payload.eventType === 'INSERT' && payload.new) {
                         setTournaments(prev => [payload.new as any, ...prev]);
+                    } else if (payload.eventType === 'DELETE' && payload.old) {
+                        setTournaments(prev => prev.filter(t => t.id !== (payload.old as any).id));
                     }
                 }
             )
