@@ -24,6 +24,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { WalletService } from './WalletService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -438,16 +439,12 @@ export const HydraService = {
 
             console.log(`[HydraService] Deducted ${stack} chips from horse ${horseId} Player Wallet`);
 
-            // Log buy-in transaction (debit = positive amount, type indicates direction)
-            await supabase.from('wallet_transactions').insert({
-                user_id: horseId,
-                wallet_type: 'PLAYER',
-                amount: stack,
-                type: 'debit',
-                category: 'buyin',
-                description: `Horse buy-in ${stack} chips at ${bigBlind}BB table`,
-                table_id: tableId,
-            });
+            // Log buy-in transaction via centralized WalletService RPC
+            await WalletService.logTransaction(
+                horseId, 'PLAYER', stack, 'debit', 'buyin',
+                `Horse buy-in ${stack} chips at ${bigBlind}BB table`,
+                tableId
+            );
 
             // Log in chip_transactions for club accounting
             await supabase.from('chip_transactions').insert({
@@ -480,15 +477,11 @@ export const HydraService = {
                 p_amount: stack,
             });
             if (!refundError) {
-                await supabase.from('wallet_transactions').insert({
-                    user_id: horseId,
-                    wallet_type: 'PLAYER',
-                    amount: stack,
-                    type: 'credit',
-                    category: 'refund',
-                    description: `Refund buy-in — seat insert failed at table ${tableId}`,
-                    table_id: tableId,
-                });
+                await WalletService.logTransaction(
+                    horseId, 'PLAYER', stack, 'credit', 'refund',
+                    `Refund buy-in — seat insert failed at table ${tableId}`,
+                    tableId
+                );
                 console.log(`[HydraService] Refunded ${stack} to horse ${horseId} Player Wallet after seat insert failure`);
             } else {
                 console.error(`[HydraService] CRITICAL: Failed to refund ${stack} to horse ${horseId}:`, refundError.message);
@@ -594,16 +587,12 @@ export const HydraService = {
 
                 console.log(`[HydraService] Credited ${remainingStack} chips to horse ${horseId} Player Wallet`);
 
-                // Log cash-out transaction
-                await supabase.from('wallet_transactions').insert({
-                    user_id: horseId,
-                    wallet_type: 'PLAYER',
-                    amount: remainingStack,
-                    type: 'credit',
-                    category: 'cashout',
-                    description: `Horse cash-out ${remainingStack} chips from table`,
-                    table_id: tableId,
-                });
+                // Log cash-out transaction via centralized WalletService RPC
+                await WalletService.logTransaction(
+                    horseId, 'PLAYER', remainingStack, 'credit', 'cashout',
+                    `Horse cash-out ${remainingStack} chips from table`,
+                    tableId
+                );
 
                 // Log in chip_transactions for club accounting
                 await supabase.from('chip_transactions').insert({

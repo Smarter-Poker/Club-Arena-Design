@@ -25,6 +25,7 @@ import { GTOQueryService } from '../services/GTOQueryService';
 import { RakeService, type DealtInPlayer } from '../services/RakeService';
 import { workerTimeout, cancelWorkerTimeout } from '../hooks/useTabKeepAlive';
 import type { SeatPlayer, GameVariant } from '../types/database.types';
+import { WalletService } from '../services/WalletService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -954,18 +955,12 @@ export class HeadlessTableEngine {
                     .eq('user_id', horse.user_id)
                     .is('left_at', null);
 
-                // 4. Log transaction in wallet_transactions (full audit trail)
-                // NOTE: May fail silently if RLS blocks anon inserts — that's OK,
-                // the actual rebuy (stack update + chip deduction) already succeeded.
-                this.supabaseClient.from('wallet_transactions').insert({
-                    user_id: horse.user_id,
-                    wallet_type: 'PLAYER',
-                    amount: rebuyAmount,
-                    type: 'debit',
-                    category: 'buyin',
-                    description: `Auto-rebuy ${rebuyAmount} chips at ${this.tableInfo?.small_blind}/${this.tableInfo?.big_blind}`,
-                    table_id: this.tableId,
-                }).then(() => {}); // Silent — RLS may block anon writes
+                // 4. Log transaction via centralized WalletService RPC
+                WalletService.logTransaction(
+                    horse.user_id, 'PLAYER', rebuyAmount, 'debit', 'buyin',
+                    `Auto-rebuy ${rebuyAmount} chips at ${this.tableInfo?.small_blind}/${this.tableInfo?.big_blind}`,
+                    this.tableId
+                ).catch(() => {}); // Non-fatal — rebuy already succeeded
 
                 // 5. Also log in chip_transactions for club-level accounting
                 this.supabaseClient.from('chip_transactions').insert({
@@ -1029,17 +1024,12 @@ export class HeadlessTableEngine {
                         );
                     }
 
-                    // Log the cash-out transaction
-                    try {
-                        await this.supabaseClient.from('chip_transactions').insert({
-                            club_id: clubId,
-                            from_user_id: null,
-                            to_user_id: seat.user_id,
-                            amount: chipsToReturn,
-                            transaction_type: 'cash_out',
-                            notes: `Cash-out from table (leave_pending after hand)`,
-                        });
-                    } catch { /* Non-blocking — chip credit already succeeded */ }
+                    // Log the cash-out transaction via centralized WalletService
+                    WalletService.logTransaction(
+                        seat.user_id, 'PLAYER', chipsToReturn, 'credit', 'cashout',
+                        `Cash-out from table (leave_pending after hand)`,
+                        this.tableId
+                    ).catch(() => {}); // Non-blocking — credit already succeeded
                 }
 
                 // Soft-delete the seat (mark as left)

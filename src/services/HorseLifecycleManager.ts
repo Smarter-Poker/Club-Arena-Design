@@ -13,6 +13,7 @@
 
 import { supabase } from '../lib/supabase';
 import { horseBugReporter } from './HorseBugReporter';
+import { WalletService } from './WalletService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -376,15 +377,12 @@ class HorseLifecycleManagerCore {
         return false;
       }
 
-      // Log transaction
-      await supabase.from('wallet_transactions').insert({
-        user_id: horseId,
-        wallet_type: 'PLAYER',
-        amount,
-        type: 'credit',
-        category: 'tournament_winnings',
-        description: 'Tournament winnings: ' + amount + ' credits',
-      });
+      // Log transaction via centralized WalletService RPC
+      await WalletService.logTransaction(
+        horseId, 'PLAYER', amount, 'credit', 'prize',
+        'Tournament winnings: ' + amount + ' credits',
+        undefined, undefined, tournamentId
+      );
 
       console.log('[LifecycleManager] Credited ' + amount + ' tournament winnings to horse ' + horseId);
       return true;
@@ -495,15 +493,12 @@ class HorseLifecycleManagerCore {
                   p_amount: buyInAmount,
                 });
 
-                // Log refund
-                await supabase.from('wallet_transactions').insert({
-                  user_id: player.user_id,
-                  wallet_type: 'PLAYER',
-                  amount: buyInAmount,
-                  type: 'credit',
-                  category: 'refund',
-                  description: 'SNG cancelled refund: ' + buyInAmount + ' chips',
-                });
+                // Log refund via centralized WalletService RPC
+                await WalletService.logTransaction(
+                  player.user_id, 'PLAYER', buyInAmount, 'credit', 'refund',
+                  'SNG cancelled refund: ' + buyInAmount + ' chips',
+                  undefined, undefined, sng.id
+                );
               }
             }
           }

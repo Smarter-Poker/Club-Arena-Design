@@ -18,6 +18,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { HeadlessTableEngine } from './HeadlessTableEngine';
 import { BLIND_STRUCTURES, PAYOUT_STRUCTURES } from '../services/TournamentService';
+import { WalletService } from '../services/WalletService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -184,6 +185,19 @@ export class TournamentEngine {
 
             // Step 2: Migrate registrations → tournament_players
             await this.migrateRegistrations();
+
+            // Step 2b: Enforce minimum 3 players
+            if (this.players.size < 3) {
+                console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Only ${this.players.size} player(s) — cancelling (minimum 3 required)`);
+                // Use TournamentService for proper refund + cancel flow
+                const { tournamentService } = await import('../services/TournamentService');
+                await tournamentService.cancelTournament(
+                    this.tournamentId,
+                    `Only ${this.players.size} player(s) registered — minimum 3 required`
+                );
+                this.running = false;
+                return;
+            }
 
             // Step 3: Create tournament tables
             await this.createTournamentTables();
@@ -884,16 +898,12 @@ export class TournamentEngine {
 
         console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Credited ${amount} chips to Player Wallet for ${userId.slice(0, 8)}`);
 
-        // Log prize in wallet_transactions (full audit trail)
-        await this.supabase.from('wallet_transactions').insert({
-            user_id: userId,
-            wallet_type: 'PLAYER',
-            amount: amount,
-            type: 'credit',
-            category: 'prize',
-            description: `Tournament prize — ${this.tournamentInfo.name}`,
-            related_entity_id: this.tournamentId,
-        });
+        // Log prize in wallet_transactions via centralized RPC
+        await WalletService.logTransaction(
+            userId, 'PLAYER', amount, 'credit', 'prize',
+            `Tournament prize — ${this.tournamentInfo.name}`,
+            undefined, undefined, this.tournamentId
+        );
 
         // Log in chip_transactions for club accounting
         await this.supabase.from('chip_transactions').insert({

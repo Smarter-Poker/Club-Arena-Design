@@ -17,6 +17,7 @@
 import { supabase } from '../lib/supabase';
 import { HydraService } from './HydraService';
 import { horseBugReporter } from './HorseBugReporter';
+import { WalletService } from './WalletService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -210,16 +211,12 @@ class AutoRebuyServiceCore {
         }
       }
 
-      // Log transaction
-      await supabase.from('wallet_transactions').insert({
-        user_id: horseId,
-        wallet_type: 'PLAYER',
-        amount,
-        type: 'debit',
-        category: 'rebuy',
-        description: 'Auto-rebuy: topup ' + amount + ' chips',
-        table_id: tableId,
-      });
+      // Log transaction via centralized WalletService RPC
+      await WalletService.logTransaction(
+        horseId, 'PLAYER', amount, 'debit', 'rebuy',
+        'Auto-rebuy: topup ' + amount + ' chips',
+        tableId
+      );
 
       horseBugReporter.report({
         horseName: 'AutoRebuy',
@@ -385,15 +382,11 @@ class AutoRebuyServiceCore {
         return false;
       }
 
-      // Log transaction
-      await supabase.from('wallet_transactions').insert({
-        user_id: horseId,
-        wallet_type: 'PLAYER',
-        amount: topupAmount,
-        type: 'credit',
-        category: 'topup',
-        description: 'Auto-rebuy: wallet topup ' + topupAmount + ' credits',
-      });
+      // Log transaction via centralized WalletService RPC
+      await WalletService.logTransaction(
+        horseId, 'PLAYER', topupAmount, 'credit', 'topup',
+        'Auto-rebuy: wallet topup ' + topupAmount + ' credits'
+      );
 
       console.log('[AutoRebuy] Topped up horse ' + horseId + ' wallet with ' + topupAmount + ' credits');
       return true;

@@ -469,15 +469,12 @@ class TableService {
                 return false;
             }
 
-            // Log the forced cash-out
-            await supabase.from('wallet_transactions').insert({
-                user_id: userId,
-                wallet_type: 'PLAYER',
-                amount: seat.stack,
-                type: 'credit',
-                category: 'cashout',
-                description: `Kicked from table: ${seat.stack} chips returned${reason ? ` (${reason})` : ''}`,
-            });
+            // Log the forced cash-out via centralized WalletService RPC
+            await WalletService.logTransaction(
+                userId, 'PLAYER', seat.stack, 'credit', 'cashout',
+                `Kicked from table: ${seat.stack} chips returned${reason ? ` (${reason})` : ''}`,
+                tableId
+            );
         }
 
         // Mark seat as left
