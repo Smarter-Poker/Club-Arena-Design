@@ -413,15 +413,17 @@ class TournamentManager {
 
             // Spin & Go: roll multiplier at game start
             if (tournament.variant === 'spin' || tournament.tournament_type === 'SPIN') {
+                // Profitable spin multiplier table — E[multiplier] = 2.2415 (< 3.0)
+                // Prize pool = buy_in * multiplier. Club profit = 3*buy_in - prize + 3*fee
                 const SPIN_MULTIPLIERS = [
-                    { multiplier: 2, weight: 750000 },
-                    { multiplier: 3, weight: 200000 },
-                    { multiplier: 5, weight: 40000 },
-                    { multiplier: 10, weight: 8000 },
-                    { multiplier: 25, weight: 1500 },
-                    { multiplier: 100, weight: 400 },
-                    { multiplier: 1000, weight: 100 },
-                ];
+                    { multiplier: 2, weight: 925000 },   // 92.50% → EV 1.8500
+                    { multiplier: 3, weight: 50000 },    //  5.00% → EV 0.1500
+                    { multiplier: 5, weight: 18000 },    //  1.80% → EV 0.0900
+                    { multiplier: 10, weight: 5000 },    //  0.50% → EV 0.0500
+                    { multiplier: 25, weight: 1500 },    //  0.15% → EV 0.0375
+                    { multiplier: 100, weight: 400 },    //  0.04% → EV 0.0400
+                    { multiplier: 240, weight: 100 },    //  0.01% → EV 0.0240
+                ];                                        // TOTAL EV: 2.2415
                 const totalWeight = SPIN_MULTIPLIERS.reduce((s, m) => s + m.weight, 0);
                 let roll = Math.random() * totalWeight;
                 let spinMultiplier = 2;
@@ -429,8 +431,9 @@ class TournamentManager {
                     roll -= tier.weight;
                     if (roll <= 0) { spinMultiplier = tier.multiplier; break; }
                 }
-                const netBuyIn = (tournament.buy_in_amount || 0) - (tournament.buy_in_fee || 0);
-                const prizePool = Math.trunc(netBuyIn * (regCount || 3) * spinMultiplier * 100) / 100;
+                // Prize pool = buy_in * multiplier (NOT net_buy_in * players * multiplier)
+                const buyIn = tournament.buy_in_amount || 0;
+                const prizePool = Math.trunc(buyIn * spinMultiplier * 100) / 100;
 
                 await supabase.from('tournaments').update({
                     prize_pool: prizePool,

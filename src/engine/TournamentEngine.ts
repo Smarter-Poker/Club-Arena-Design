@@ -225,8 +225,10 @@ export class TournamentEngine {
             if (this.tournamentInfo.variant === 'spin' || this.tournamentInfo.tournament_type === 'SPIN') {
                 const { tournamentService, SPIN_MULTIPLIERS } = await import('../services/TournamentService');
                 const spinResult = tournamentService.spinMultiplier(SPIN_MULTIPLIERS.standard);
-                const netBuyIn = (this.tournamentInfo.buy_in_amount || 0) - (this.tournamentInfo.buy_in_fee || 0);
-                const prizePool = Math.trunc(netBuyIn * this.players.size * spinResult.multiplier * 100) / 100;
+                // Prize pool = buy_in * multiplier (NOT net * players * multiplier)
+                // Club profit = (3 * buy_in) - prize_pool + (3 * fee)
+                const buyIn = this.tournamentInfo.buy_in_amount || 0;
+                const prizePool = Math.trunc(buyIn * spinResult.multiplier * 100) / 100;
 
                 await this.supabase.from('tournaments').update({
                     prize_pool: prizePool,
