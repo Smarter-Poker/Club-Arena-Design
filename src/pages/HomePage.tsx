@@ -210,6 +210,28 @@ export default function HomePage() {
             }
         }
         fetchSharkClubStats();
+
+        // Real-time clubs table updates for Shark Club stats
+        const channel = supabase
+            .channel('clubs-live-stats')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'clubs',
+                    filter: 'club_id=eq.25450',
+                },
+                () => {
+                    // Refresh Shark Club stats when club data changes
+                    fetchSharkClubStats();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     // ═══════════════════════════════════════════════════════════════════════════════

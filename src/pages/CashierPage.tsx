@@ -243,28 +243,56 @@ export default function CashierPage() {
     // ─────────────────────────────────────────────────────────────────────────────
     // REALTIME WALLET SUBSCRIPTION
     // ─────────────────────────────────────────────────────────────────────────────
+    // Subscribes to both wallets and wallet_transactions tables for live updates
 
     useEffect(() => {
         if (!user?.id) return;
-        loadBalances(user.id);
 
+        // Initial load
+        loadBalances(user.id);
+        if (action === 'history') loadTransactions();
+
+        // Create realtime channel with combined subscriptions
         const channel = supabase
-            .channel(`cashier-wallet-${user.id}`)
-            .on('postgres_changes', {
-                event: '*', schema: 'public', table: 'wallet_transactions',
-                filter: `user_id=eq.${user.id}`,
-            }, () => {
-                loadBalances(user.id);
-                if (action === 'history') loadTransactions();
-            })
-            .on('postgres_changes', {
-                event: 'UPDATE', schema: 'public', table: 'wallets',
-                filter: `user_id=eq.${user.id}`,
-            }, () => { loadBalances(user.id); })
+            .channel(`cashier-realtime-${user.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'wallets',
+                    filter: `user_id=eq.${user.id}`,
+                },
+                (payload) => {
+                    // On any wallet change (INSERT/UPDATE), refresh balances
+                    if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+                        loadBalances(user.id);
+                    }
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'wallet_transactions',
+                    filter: `user_id=eq.${user.id}`,
+                },
+                (payload) => {
+                    // On any transaction change (INSERT/UPDATE), refresh balances and transactions
+                    if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+                        loadBalances(user.id);
+                        if (action === 'history') loadTransactions();
+                    }
+                }
+            )
             .subscribe();
 
-        return () => { supabase.removeChannel(channel); };
-    }, [user?.id, loadBalances, action, loadTransactions]);
+        // Cleanup: remove channel on unmount
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user?.id, loadBalances, loadTransactions, action]);
 
     // ─────────────────────────────────────────────────────────────────────────────
     // DETERMINE AVAILABLE TABS

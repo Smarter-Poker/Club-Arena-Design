@@ -41,6 +41,31 @@ export default function ClubMembersPage() {
         if (clubId) loadMembers();
     }, [clubId]);
 
+    // Real-time club members table updates
+    useEffect(() => {
+        if (!clubId) return;
+
+        const channel = supabase
+            .channel(`club-members-sync-${clubId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'club_members',
+                    filter: `club_id=eq.${clubId}`,
+                },
+                () => {
+                    loadMembers();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [clubId]);
+
     // Real-time presence tracking for club members
     useEffect(() => {
         if (!clubId || !user?.id) return;

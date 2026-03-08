@@ -191,6 +191,55 @@ export default function UnionDetailPage() {
     // ── Realtime: live union data updates ──
     useEffect(() => {
         if (!unionId) return;
+
+        // Helper functions to reload data
+        const reloadUnionClubs = async () => {
+            try {
+                const clubsData = await unionService.getUnionClubs(unionId);
+                setClubs(clubsData);
+            } catch (err) {
+                console.warn('[UnionDetailPage] Failed to reload clubs:', err);
+            }
+        };
+
+        const reloadUnionTournaments = async () => {
+            try {
+                if (union?.settings?.crossClubTournaments) {
+                    const clubIds = clubs.map(c => c.clubId);
+                    if (clubIds.length === 0) {
+                        setUnionTournaments([]);
+                        return;
+                    }
+                    const { data: tournaments } = await supabase
+                        .from('tournaments')
+                        .select('*, clubs(name)')
+                        .in('club_id', clubIds)
+                        .order('start_time', { ascending: true });
+
+                    // Sort: REGISTERING/ANNOUNCED first, then RUNNING, then by start_time desc
+                    const statusOrder: Record<string, number> = { REGISTERING: 0, ANNOUNCED: 1, RUNNING: 2, COMPLETED: 3, CANCELLED: 4 };
+                    const sorted = (tournaments || []).sort((a: Tournament, b: Tournament) => {
+                        const aOrder = statusOrder[a.status] ?? 5;
+                        const bOrder = statusOrder[b.status] ?? 5;
+                        if (aOrder !== bOrder) return aOrder - bOrder;
+                        return new Date(b.start_time).getTime() - new Date(a.start_time).getTime();
+                    });
+                    setUnionTournaments(sorted);
+                }
+            } catch (err) {
+                console.warn('[UnionDetailPage] Failed to reload tournaments:', err);
+            }
+        };
+
+        const reloadUnion = async () => {
+            try {
+                const unionData = await unionService.getUnion(unionId);
+                setUnion(unionData);
+            } catch (err) {
+                console.warn('[UnionDetailPage] Failed to reload union:', err);
+            }
+        };
+
         const channel = supabase
             .channel(`union-detail-${unionId}`)
             .on('postgres_changes', {
@@ -198,23 +247,42 @@ export default function UnionDetailPage() {
                 schema: 'public',
                 table: 'union_clubs',
                 filter: `union_id=eq.${unionId}`,
-            }, () => {
-                // Reload when union club membership changes
-                if (unionId) {
-                    unionService.getUnionClubs(unionId).then(setClubs).catch(() => {});
-                }
+            }, (payload) => {
+                // Reload clubs on INSERT/UPDATE/DELETE
+                void reloadUnionClubs();
             })
             .on('postgres_changes', {
                 event: 'UPDATE',
                 schema: 'public',
                 table: 'unions',
                 filter: `id=eq.${unionId}`,
-            }, () => {
-                unionService.getUnion(unionId).then(setUnion).catch(() => {});
+            }, (payload) => {
+                // Reload union data on UPDATE
+                void reloadUnion();
+            })
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'tournaments',
+            }, (payload) => {
+                // Reload tournaments on INSERT/UPDATE events
+                const newRecord = payload.new as any;
+                const oldRecord = payload.old as any;
+
+                // Check if this tournament belongs to any of our union clubs
+                const clubIds = clubs.map(c => c.clubId);
+                const relevantRecord = newRecord || oldRecord;
+
+                if (relevantRecord && clubIds.includes(relevantRecord?.club_id)) {
+                    void reloadUnionTournaments();
+                }
             })
             .subscribe();
-        return () => { supabase.removeChannel(channel); };
-    }, [unionId]);
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [unionId, union?.settings?.crossClubTournaments, clubs]);
 
     const handleApplyClick = async () => {
         if (!user) return;

@@ -171,7 +171,7 @@ class CreditRequestServiceClass {
         try {
             await pushNotificationService.sendToUser(request.requester_id, {
                 title: ' Credit Approved!',
-                message: `Your credit request for $${amount.toLocaleString()} was approved`,
+                message: `Your credit request for ${amount.toLocaleString()} chips was approved`,
                 category: 'wallet_credit',
                 url: '/wallet',
             });

@@ -1133,8 +1133,8 @@ export class HeadlessTableEngine {
 
             if (result.calculation.cappedRake > 0) {
                 console.log(
-                    `[HeadlessTableEngine:${this.tableId}] Rake: $${result.calculation.cappedRake.toFixed(2)} ` +
-                    `(pot $${potSize.toFixed(2)}, BBJ $${result.calculation.bbjDrop.toFixed(2)})`
+                    `[HeadlessTableEngine:${this.tableId}] Rake: ${result.calculation.cappedRake.toFixed(2)} ` +
+                    `(pot ${potSize.toFixed(2)}, BBJ ${result.calculation.bbjDrop.toFixed(2)})`
                 );
             }
         } catch (err) {

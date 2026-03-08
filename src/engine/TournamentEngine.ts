@@ -909,32 +909,32 @@ export class TournamentEngine {
                     // Credit bounty winnings to knocker's wallet
                     await this.creditPrize(knockerId, bountyResult.bountyAmount);
 
-                    // Update knocker's bounty stats
-                    await this.supabase.rpc('increment_bounty_stats', {
-                        p_tournament_id: this.tournamentId,
-                        p_user_id: knockerId,
-                        p_bounty_amount: bountyResult.bountyAmount,
-                    }).then(({ error }) => {
-                        // Fallback: if RPC doesn't exist, do a manual update
-                        if (error) {
-                            this.supabase
+                    // Update knocker's bounty stats — manual update (no RPC needed)
+                    try {
+                        const { data: knockerStats } = await this.supabase
+                            .from('tournament_players')
+                            .select('bounties_collected, bounty_winnings')
+                            .eq('tournament_id', this.tournamentId)
+                            .eq('user_id', knockerId)
+                            .single();
+
+                        if (knockerStats) {
+                            const { error: updateErr } = await this.supabase
                                 .from('tournament_players')
-                                .select('bounties_collected, bounty_winnings')
+                                .update({
+                                    bounties_collected: (knockerStats.bounties_collected || 0) + 1,
+                                    bounty_winnings: Math.trunc(((knockerStats.bounty_winnings || 0) + bountyResult.bountyAmount) * 100) / 100,
+                                })
                                 .eq('tournament_id', this.tournamentId)
-                                .eq('user_id', knockerId)
-                                .single()
-                                .then(({ data }) => {
-                                    if (data) {
-                                        this.supabase.from('tournament_players').update({
-                                            bounties_collected: (data.bounties_collected || 0) + 1,
-                                            bounty_winnings: Math.trunc(((data.bounty_winnings || 0) + bountyResult.bountyAmount) * 100) / 100,
-                                        })
-                                        .eq('tournament_id', this.tournamentId)
-                                        .eq('user_id', knockerId);
-                                    }
-                                });
+                                .eq('user_id', knockerId);
+
+                            if (updateErr) {
+                                console.error(`[TournamentEngine] Failed to update bounty stats for ${knockerId.slice(0, 8)}:`, updateErr);
+                            }
                         }
-                    });
+                    } catch (statsErr) {
+                        console.error(`[TournamentEngine] Bounty stats update failed:`, statsErr);
+                    }
 
                     console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] BOUNTY: ${knockerId.slice(0, 8)} collected ${bountyResult.bountyAmount} bounty from ${player.username}`);
                 }
