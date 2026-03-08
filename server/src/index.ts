@@ -297,6 +297,13 @@ class GameServer {
         this.tableEngines.set(tableId, engine);
     }
 
+    /**
+     * Get a table engine by ID (used by HTTP action endpoint)
+     */
+    getTableEngine(tableId: string): ServerTableEngine | undefined {
+        return this.tableEngines.get(tableId);
+    }
+
     private sleep(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
@@ -739,15 +746,95 @@ class TournamentManager {
 
 const gameServer = new GameServer();
 
-const httpServer = createServer((req, res) => {
-    if (req.url === '/health' || req.url === '/') {
-        const status = gameServer.getStatus();
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(status));
-    } else {
-        res.writeHead(404);
-        res.end('Not Found');
+// ═══════════════════════════════════════════════════════════════════════════════
+// CORS HEADERS — Allow frontend to call action endpoints
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const CORS_HEADERS: Record<string, string> = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+};
+
+function sendJSON(res: import('http').ServerResponse, statusCode: number, data: unknown): void {
+    res.writeHead(statusCode, { 'Content-Type': 'application/json', ...CORS_HEADERS });
+    res.end(JSON.stringify(data));
+}
+
+function readBody(req: import('http').IncomingMessage): Promise<string> {
+    return new Promise((resolve, reject) => {
+        let body = '';
+        req.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+        req.on('end', () => resolve(body));
+        req.on('error', reject);
+    });
+}
+
+const httpServer = createServer(async (req, res) => {
+    const method = req.method || 'GET';
+    const url = req.url || '/';
+
+    // Handle CORS preflight
+    if (method === 'OPTIONS') {
+        res.writeHead(204, CORS_HEADERS);
+        res.end();
+        return;
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // GET /health — Health check for monitoring / Fly.io
+    // ─────────────────────────────────────────────────────────────────────────
+    if (url === '/health' || url === '/') {
+        return sendJSON(res, 200, gameServer.getStatus());
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // POST /action — Submit a player action (fold/call/raise/check/all-in)
+    // Body: { tableId, userId, action, amount? }
+    // ─────────────────────────────────────────────────────────────────────────
+    if (method === 'POST' && url === '/action') {
+        try {
+            const body = JSON.parse(await readBody(req));
+            const { tableId, userId, action, amount } = body;
+
+            if (!tableId || !userId || !action) {
+                return sendJSON(res, 400, { success: false, error: 'Missing tableId, userId, or action' });
+            }
+
+            const engine = gameServer.getTableEngine(tableId);
+            if (!engine) {
+                return sendJSON(res, 404, { success: false, error: 'Table engine not found' });
+            }
+
+            const result = engine.handlePlayerAction(userId, action, amount);
+            return sendJSON(res, result.success ? 200 : 400, result);
+        } catch (err) {
+            return sendJSON(res, 500, { success: false, error: 'Invalid request body' });
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // GET /actions/:tableId/:userId — Get available actions for a player
+    // ─────────────────────────────────────────────────────────────────────────
+    const actionsMatch = url.match(/^\/actions\/([^/]+)\/([^/]+)$/);
+    if (method === 'GET' && actionsMatch) {
+        const tableId = actionsMatch[1];
+        const userId = actionsMatch[2];
+
+        const engine = gameServer.getTableEngine(tableId);
+        if (!engine) {
+            return sendJSON(res, 404, { canAct: false, error: 'Table engine not found' });
+        }
+
+        const actions = engine.getPlayerActions(userId);
+        return sendJSON(res, 200, actions);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 404 — Not Found
+    // ─────────────────────────────────────────────────────────────────────────
+    sendJSON(res, 404, { error: 'Not Found' });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════

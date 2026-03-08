@@ -107,6 +107,115 @@ export class ServerTableEngine {
     }
 
     // ═════════════════════════════════════════════════════════════════════════════
+    // REAL PLAYER ACTION — Accept actions from HTTP endpoint
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Handle an action from a REAL player (not a horse).
+     * Called from the HTTP /action endpoint when a player clicks fold/call/raise.
+     */
+    handlePlayerAction(userId: string, action: string, amount?: number): { success: boolean; error?: string } {
+        if (!this.handController) {
+            return { success: false, error: 'No active hand' };
+        }
+
+        const state = this.handController.getState();
+
+        // Find the player's seat
+        const player = state.players.find(p => p.user_id === userId);
+        if (!player) {
+            return { success: false, error: 'Player not found at this table' };
+        }
+
+        // Verify it's this player's turn
+        if (state.currentPlayerSeat !== player.seat) {
+            return { success: false, error: 'Not your turn' };
+        }
+
+        const seat = player.seat;
+        const toCall = Math.max(0, state.currentBet - player.bet);
+
+        // Normalize actions
+        let normalizedAction = action.toLowerCase();
+        if (normalizedAction === 'allin' || normalizedAction === 'all-in') normalizedAction = 'all_in';
+        if (normalizedAction === 'check' && toCall > 0) normalizedAction = 'call';
+        if (normalizedAction === 'call' && toCall === 0) normalizedAction = 'check';
+        if (normalizedAction === 'fold' && toCall === 0) normalizedAction = 'check';
+        if (normalizedAction === 'raise' && state.currentBet === 0) normalizedAction = 'bet';
+        if (normalizedAction === 'bet' && state.currentBet > 0) normalizedAction = 'raise';
+
+        // Clamp amounts
+        if (normalizedAction === 'call') amount = toCall;
+        if (normalizedAction === 'bet' && amount !== undefined) {
+            amount = Math.max(state.minRaise, amount);
+            if (amount >= player.stack) { normalizedAction = 'all_in'; amount = undefined; }
+        } else if (normalizedAction === 'raise' && amount !== undefined) {
+            const minRaiseTo = state.currentBet + state.minRaise;
+            amount = Math.max(minRaiseTo, amount);
+            const maxRaiseTo = player.stack + player.bet;
+            if (amount >= maxRaiseTo) { normalizedAction = 'all_in'; amount = undefined; }
+        }
+
+        try {
+            this.handController.performAction(seat, normalizedAction as any, amount);
+            console.log(`[ServerTableEngine:${this.tableId}] Player ${userId} → ${normalizedAction}${amount ? ` ${amount}` : ''}`);
+            return { success: true };
+        } catch (err) {
+            const errMsg = err instanceof Error ? err.message : 'Action failed';
+            console.warn(`[ServerTableEngine:${this.tableId}] Player action failed:`, errMsg);
+            // Auto-fold on invalid action
+            try {
+                this.handController.performAction(seat, 'fold');
+                return { success: true, error: `Original action failed, auto-folded: ${errMsg}` };
+            } catch {
+                return { success: false, error: errMsg };
+            }
+        }
+    }
+
+    /**
+     * Get available actions for a specific player
+     */
+    getPlayerActions(userId: string): { canAct: boolean; actions: string[]; toCall: number; minRaise: number; maxRaise: number; pot: number } {
+        const defaultResult = { canAct: false, actions: [], toCall: 0, minRaise: 0, maxRaise: 0, pot: 0 };
+        if (!this.handController) return defaultResult;
+
+        const state = this.handController.getState();
+        const player = state.players.find(p => p.user_id === userId);
+        if (!player) return defaultResult;
+
+        if (state.currentPlayerSeat !== player.seat) {
+            return { ...defaultResult, pot: state.pot };
+        }
+
+        const toCall = Math.max(0, state.currentBet - player.bet);
+        const actions: string[] = [];
+
+        if (toCall > 0) {
+            actions.push('fold', 'call');
+            if (player.stack > toCall) actions.push('raise');
+        } else {
+            actions.push('check');
+            if (player.stack > 0) actions.push('bet');
+        }
+        actions.push('all_in');
+
+        const minRaiseTo = state.currentBet > 0
+            ? state.currentBet + state.minRaise
+            : state.minRaise;
+        const maxRaiseTo = player.stack + player.bet;
+
+        return {
+            canAct: true,
+            actions,
+            toCall,
+            minRaise: minRaiseTo,
+            maxRaise: maxRaiseTo,
+            pot: state.pot,
+        };
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════════
     // DEALING LOOP — Millisecond-level performance
     // ═════════════════════════════════════════════════════════════════════════════
 
@@ -284,7 +393,9 @@ export class ServerTableEngine {
             case 'COMMUNITY_CARDS':
                 if (event.stage === 'flop') this.currentHandWentToFlop = true;
                 if (event.cards) {
-                    this.currentHandCommunityCards = event.cards;
+                    this.currentHandCommunityCards = event.cards.map((c: any) =>
+                        typeof c === 'string' ? c : `${c.rank}${c.suit}`
+                    );
                 }
                 this.broadcastCurrentState();
                 break;

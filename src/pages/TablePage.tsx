@@ -75,6 +75,7 @@ import SpectatorBadge from '../components/table/SpectatorBadge';
 import HandStrengthIndicator from '../components/table/HandStrengthIndicator';
 import SessionTimer from '../components/table/SessionTimer';
 import { horseBugReporter } from '../services/HorseBugReporter';
+import { submitAction } from '../services/GameServerAPI';
 import './TablePage.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1679,15 +1680,22 @@ export default function TablePage() {
         await updateSeat(seatNumber);
     };
 
-    // Action handlers - wired to HandController + WebSocket for sync
+    // Action handlers - wired to Game Server HTTP endpoint (authoritative)
+    // The server validates the action, updates its HandController, and broadcasts
+    // the new hand state to all clients via Supabase Realtime.
     const handleFold = async () => {
         const heroSeat = tableState.heroSeat;
-        setShowRaiseSlider(false); // Close raise slider on any action
+        setShowRaiseSlider(false);
+        // Optimistic local update for instant UI feedback
         if (handControllerRef.current) {
             handControllerRef.current.performAction(heroSeat, 'fold');
         }
-        await sendAction('fold', { seat: heroSeat });
         soundService.playFold();
+        // Submit to server (authoritative)
+        if (tableId) {
+            const result = await submitAction(tableId, userId, 'fold');
+            if (!result.success) console.warn('[TablePage] Server fold failed:', result.error);
+        }
     };
 
     const handleCheck = async () => {
@@ -1696,8 +1704,11 @@ export default function TablePage() {
         if (handControllerRef.current) {
             handControllerRef.current.performAction(heroSeat, 'check');
         }
-        await sendAction('check', { seat: heroSeat });
         soundService.playCheck();
+        if (tableId) {
+            const result = await submitAction(tableId, userId, 'check');
+            if (!result.success) console.warn('[TablePage] Server check failed:', result.error);
+        }
     };
 
     const handleCall = async () => {
@@ -1706,8 +1717,11 @@ export default function TablePage() {
         if (handControllerRef.current) {
             handControllerRef.current.performAction(heroSeat, 'call');
         }
-        await sendAction('call', { seat: heroSeat });
         soundService.playChips();
+        if (tableId) {
+            const result = await submitAction(tableId, userId, 'call');
+            if (!result.success) console.warn('[TablePage] Server call failed:', result.error);
+        }
     };
 
     const handleBet = () => {
@@ -1727,7 +1741,7 @@ export default function TablePage() {
         const clampedRaise = Math.min(raiseAmount, heroStack);
         if (clampedRaise <= 0) return;
 
-        // Close slider immediately so it doesn't persist if sendAction fails
+        // Close slider immediately
         setShowRaiseSlider(false);
         try {
             if (handControllerRef.current) {
@@ -1737,10 +1751,14 @@ export default function TablePage() {
                     return;
                 }
             }
-            await sendAction('raise', { seat: heroSeat, amount: clampedRaise });
             soundService.playChips();
+            // Submit to server (authoritative)
+            if (tableId) {
+                const result = await submitAction(tableId, userId, 'raise', clampedRaise);
+                if (!result.success) console.warn('[TablePage] Server raise failed:', result.error);
+            }
         } catch (err) {
-            console.warn('[TablePage] Raise send error (action still applied locally):', err);
+            console.warn('[TablePage] Raise error:', err);
         }
     };
 
@@ -1753,10 +1771,14 @@ export default function TablePage() {
             if (handControllerRef.current) {
                 handControllerRef.current.performAction(heroSeat, 'all_in');
             }
-            await sendAction('allin', { seat: heroSeat, amount: heroStack });
             soundService.playChips();
+            // Submit to server (authoritative)
+            if (tableId) {
+                const result = await submitAction(tableId, userId, 'allin', heroStack);
+                if (!result.success) console.warn('[TablePage] Server all-in failed:', result.error);
+            }
         } catch (err) {
-            console.warn('[TablePage] All-in send error:', err);
+            console.warn('[TablePage] All-in error:', err);
         }
 
         // Check for all-in scenario triggers (after slight delay to let state update)
