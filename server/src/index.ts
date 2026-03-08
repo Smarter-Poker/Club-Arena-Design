@@ -742,10 +742,38 @@ class TournamentManager {
                 }
 
                 const level = blindStructure[this.currentLevel];
+
+                // ── BREAK HANDLING ──
+                // If this level is a break, pause play and broadcast break event
+                if (level.isBreak) {
+                    const breakDurationMs = (level.durationMinutes || 5) * 60 * 1000;
+                    console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] BREAK — ${level.durationMinutes || 5} minutes`);
+
+                    // Get next real level info for display
+                    const nextPlayLevel = blindStructure[this.currentLevel + 1];
+                    await this.broadcast('tournament_break', {
+                        level: this.currentLevel,
+                        breakDurationMinutes: level.durationMinutes || 5,
+                        breakEndsAt: new Date(Date.now() + breakDurationMs).toISOString(),
+                        nextLevel: nextPlayLevel ? {
+                            smallBlind: nextPlayLevel.smallBlind,
+                            bigBlind: nextPlayLevel.bigBlind,
+                            ante: nextPlayLevel.ante || 0,
+                        } : null,
+                    });
+
+                    // Wait for break to end, then advance to next level
+                    this.blindTimer = setTimeout(() => {
+                        this.broadcast('break_ended', { level: this.currentLevel + 1 });
+                        scheduleNextLevel(); // Will increment to next level
+                    }, breakDurationMs);
+                    return;
+                }
+
                 console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] Level ${this.currentLevel}: ${level.smallBlind}/${level.bigBlind} ante ${level.ante || 0}`);
 
                 for (const tableId of this.tableEngines.keys()) {
-                    await supabase
+                    const { error: blindErr } = await supabase
                         .from('tables')
                         .update({
                             small_blind: level.smallBlind,
@@ -753,12 +781,14 @@ class TournamentManager {
                             ante: level.ante || 0,
                         })
                         .eq('id', tableId);
+                    if (blindErr) console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Blind update failed for table ${tableId.slice(0, 8)}: ${blindErr.message}`);
                 }
 
-                await supabase
+                const { error: levelErr } = await supabase
                     .from('tournaments')
                     .update({ current_level: this.currentLevel })
                     .eq('id', this.tournamentId);
+                if (levelErr) console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Level persist failed: ${levelErr.message}`);
 
                 // Broadcast level_up event to all table pages
                 await this.broadcast('level_up', {
