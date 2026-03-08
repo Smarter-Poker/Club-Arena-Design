@@ -92,6 +92,9 @@ export interface TournamentConfig {
     addOnChips?: number;
     addOnCost?: number;
 
+    // Guaranteed Prize
+    guaranteedPrize?: number;
+
     // Bounty Configuration
     bountyConfig?: BountyConfig;
 
@@ -333,7 +336,10 @@ class TournamentService {
                 status: 'ANNOUNCED',
                 blind_structure: config.blindStructure,
                 payout_structure: config.payoutStructure,
-                guaranteed_prize: 0,
+                guaranteed_prize: config.guaranteedPrize || 0,
+                late_reg_mins: config.lateRegistrationLevels || 0,
+                is_rebuy: config.isRebuy || false,
+                add_on_available: config.addOnAvailable || false,
                 start_time: config.startTime?.toISOString(),
             })
             .select()

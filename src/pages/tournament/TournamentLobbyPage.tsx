@@ -27,6 +27,7 @@ interface Tournament {
     clubName: string;
     buyIn: number;
     prizePool: number;
+    guaranteedPrize: number;
     startTime: string;
     status: 'ANNOUNCED' | 'REGISTERING' | 'RUNNING' | 'COMPLETED' | 'CANCELLED';
     currentPlayers: number;
@@ -35,6 +36,8 @@ interface Tournament {
     blindsUp: number;
     isRegistered: boolean;
     gameType: string;
+    lateRegMins: number;
+    isRebuy: boolean;
 }
 
 export default function TournamentLobbyPage() {
@@ -100,12 +103,15 @@ export default function TournamentLobbyPage() {
                     buy_in_amount,
                     buy_in_fee,
                     prize_pool,
+                    guaranteed_prize,
                     start_time,
                     status,
                     current_players,
                     max_players,
                     starting_chips,
                     game_type,
+                    late_reg_mins,
+                    is_rebuy,
                     clubs!club_id(name)
                 `;
 
@@ -168,7 +174,10 @@ export default function TournamentLobbyPage() {
                     startingChips: t.starting_chips || 10000,
                     blindsUp: 10,
                     isRegistered: registrations.includes(t.id),
-                    gameType: t.game_type || 'NLH'
+                    gameType: t.game_type || 'NLH',
+                    lateRegMins: t.late_reg_mins || 0,
+                    isRebuy: t.is_rebuy || false,
+                    guaranteedPrize: t.guaranteed_prize || 0,
                 }));
 
                 setTournaments(mapped);
@@ -300,7 +309,12 @@ export default function TournamentLobbyPage() {
                                 registeredPlayers: tournament.currentPlayers,
                                 startsAt: tournament.startTime,
                                 status: tournament.status === 'COMPLETED' ? 'finished' : tournament.status === 'ANNOUNCED' ? 'registering' : tournament.status === 'REGISTERING' ? 'registering' : tournament.status === 'RUNNING' ? 'running' : 'cancelled',
-                                blindStructure: `${tournament.blindsUp}m`
+                                blindStructure: `${tournament.blindsUp}m`,
+                                gameType: tournament.gameType,
+                                startingChips: tournament.startingChips,
+                                lateRegMins: tournament.lateRegMins,
+                                isRebuy: tournament.isRebuy,
+                                guaranteedPrize: tournament.guaranteedPrize,
                             }}
                             onRegister={() => handleRegister(tournament.id)}
                         />

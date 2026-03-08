@@ -22,6 +22,11 @@ interface Tournament {
     startsAt?: string;
     status: 'registering' | 'running' | 'finished' | 'cancelled';
     blindStructure: string;
+    gameType?: string;
+    startingChips?: number;
+    lateRegMins?: number;
+    isRebuy?: boolean;
+    guaranteedPrize?: number;
 }
 
 interface TournamentLobbyCardProps {
@@ -154,7 +159,12 @@ export default function TournamentLobbyCard({
                 </div>
                 <div className={styles.infoItem}>
                     <span className={styles.infoLabel}>Prize Pool</span>
-                    <span className={styles.infoValue}>{tournament.prizePool.toLocaleString()}</span>
+                    <span className={styles.infoValue}>
+                        {tournament.prizePool.toLocaleString()}
+                        {tournament.guaranteedPrize && tournament.guaranteedPrize > 0 && (
+                            <span className={styles.gtdBadge}>GTD</span>
+                        )}
+                    </span>
                 </div>
                 <div className={styles.infoItem}>
                     <span className={styles.infoLabel}>Players</span>
@@ -163,10 +173,32 @@ export default function TournamentLobbyCard({
                     </span>
                 </div>
                 <div className={styles.infoItem}>
+                    <span className={styles.infoLabel}>Starting Chips</span>
+                    <span className={styles.infoValue}>{(tournament.startingChips || 10000).toLocaleString()}</span>
+                </div>
+                {tournament.gameType && (
+                    <div className={styles.infoItem}>
+                        <span className={styles.infoLabel}>Game</span>
+                        <span className={styles.infoValue}>{tournament.gameType}</span>
+                    </div>
+                )}
+                <div className={styles.infoItem}>
                     <span className={styles.infoLabel}>Structure</span>
                     <span className={styles.infoValue}>{tournament.blindStructure}</span>
                 </div>
             </div>
+
+            {/* Feature Tags */}
+            {(tournament.lateRegMins || tournament.isRebuy) && (
+                <div className={styles.featureTags}>
+                    {tournament.lateRegMins && tournament.lateRegMins > 0 && (
+                        <span className={styles.featureTag}>Late Reg {tournament.lateRegMins}m</span>
+                    )}
+                    {tournament.isRebuy && (
+                        <span className={styles.featureTag}>Rebuy</span>
+                    )}
+                </div>
+            )}
 
             {/* Countdown */}
             {tournament.startsAt && tournament.status === 'registering' && (

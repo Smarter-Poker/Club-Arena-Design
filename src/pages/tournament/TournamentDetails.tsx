@@ -703,7 +703,13 @@ export default function TournamentDetails() {
                 <button className="btn btn-share">Share</button>
                 {tournament.status === 'RUNNING' && !isRegistered && (tournament.late_reg_mins || 0) > 0 && tournament.started_at && (Date.now() - new Date(tournament.started_at).getTime()) < (tournament.late_reg_mins || 0) * 60 * 1000 ? (
                     <button className="btn btn-register late-reg" onClick={() => setShowSignUpModal(true)}>
-                        Late Register
+                        Late Register ({(() => {
+                            const elapsed = Date.now() - new Date(tournament.started_at!).getTime();
+                            const remaining = ((tournament.late_reg_mins || 0) * 60 * 1000) - elapsed;
+                            const mins = Math.floor(remaining / 60000);
+                            const secs = Math.floor((remaining % 60000) / 1000);
+                            return mins > 0 ? `${mins}m ${secs}s left` : `${secs}s left`;
+                        })()})
                     </button>
                 ) : tournament.status === 'RUNNING' ? (
                     <span className="tournament-status-badge running">In Progress</span>

@@ -18,6 +18,10 @@ export default function CreateTournamentModal({ clubId, onClose, onSuccess }: Pr
     const [startingChips, setStartingChips] = useState('1500');
     const [maxPlayers, setMaxPlayers] = useState('6');
     const [blindSpeed, setBlindSpeed] = useState<'turbo' | 'regular' | 'deepStack'>('turbo');
+    const [lateRegMins, setLateRegMins] = useState('0');
+    const [isRebuy, setIsRebuy] = useState(false);
+    const [addOnAvailable, setAddOnAvailable] = useState(false);
+    const [guaranteedPrize, setGuaranteedPrize] = useState('0');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -35,9 +39,10 @@ export default function CreateTournamentModal({ clubId, onClose, onSuccess }: Pr
                 minPlayers: 2,
                 blindStructure: BLIND_STRUCTURES[blindSpeed],
                 payoutStructure: type === 'sng' ? PAYOUT_STRUCTURES.sng6 : PAYOUT_STRUCTURES.mtt20,
-                lateRegistrationLevels: 0,
-                isRebuy: false,
-                addOnAvailable: false
+                lateRegistrationLevels: parseInt(lateRegMins) || 0,
+                isRebuy,
+                addOnAvailable,
+                guaranteedPrize: parseFloat(guaranteedPrize) || 0
             });
             onSuccess();
         } catch (error) {
@@ -148,6 +153,67 @@ export default function CreateTournamentModal({ clubId, onClose, onSuccess }: Pr
                                     <option value="regular">Regular (8m)</option>
                                     <option value="deepStack">Deep Stack (15m)</option>
                                 </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Late Reg & Guaranteed */}
+                    <div className={styles.row}>
+                        <div className={styles.col}>
+                            <div className={styles.formGroup}>
+                                <label>Late Reg (mins)</label>
+                                <input
+                                    type="number"
+                                    className={styles.input}
+                                    value={lateRegMins}
+                                    onChange={e => setLateRegMins(e.target.value)}
+                                    min="0"
+                                    max="120"
+                                />
+                                <span className={styles.helperText}>0 = no late registration</span>
+                            </div>
+                        </div>
+                        <div className={styles.col}>
+                            <div className={styles.formGroup}>
+                                <label>Guaranteed Prize</label>
+                                <input
+                                    type="number"
+                                    className={styles.input}
+                                    value={guaranteedPrize}
+                                    onChange={e => setGuaranteedPrize(e.target.value)}
+                                    min="0"
+                                />
+                                <span className={styles.helperText}>0 = no guarantee</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Rebuy / Add-On Toggles */}
+                    <div className={styles.row}>
+                        <div className={styles.col}>
+                            <div className={styles.formGroup}>
+                                <label className={styles.toggleLabel}>
+                                    <input
+                                        type="checkbox"
+                                        checked={isRebuy}
+                                        onChange={e => setIsRebuy(e.target.checked)}
+                                        className={styles.checkbox}
+                                    />
+                                    Allow Rebuys
+                                </label>
+                            </div>
+                        </div>
+                        <div className={styles.col}>
+                            <div className={styles.formGroup}>
+                                <label className={styles.toggleLabel}>
+                                    <input
+                                        type="checkbox"
+                                        checked={addOnAvailable}
+                                        onChange={e => setAddOnAvailable(e.target.checked)}
+                                        className={styles.checkbox}
+                                    />
+                                    Allow Add-Ons
+                                </label>
                             </div>
                         </div>
                     </div>

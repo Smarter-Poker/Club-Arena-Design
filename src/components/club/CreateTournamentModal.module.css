@@ -132,6 +132,48 @@
     cursor: not-allowed;
 }
 
+.toggleLabel {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #ccc;
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 12px;
+    background: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 8px;
+    transition: border-color 0.2s;
+}
+
+.toggleLabel:hover {
+    border-color: #646cff;
+}
+
+.checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: #646cff;
+    cursor: pointer;
+}
+
+/* ── Mobile ≤480px ── */
+@media (max-width: 480px) {
+    .modal { padding: 16px; border-radius: 12px; }
+    .header h2 { font-size: 1.2rem; }
+    .row { flex-direction: column; gap: 0; }
+    .input, .select { padding: 10px; font-size: 0.9rem; }
+    .toggleLabel { padding: 10px; font-size: 0.85rem; }
+    .actions { margin-top: 20px; }
+    .cancelBtn, .createBtn { padding: 10px; font-size: 0.9rem; }
+}
+
+@media (max-width: 380px) {
+    .modal { padding: 12px; }
+    .header h2 { font-size: 1.1rem; }
+    .formGroup { margin-bottom: 14px; }
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;

@@ -70,6 +70,35 @@
     color: white;
 }
 
+/* GTD Badge */
+.gtdBadge {
+    display: inline-block;
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    letter-spacing: 0.5px;
+}
+
+/* Feature Tags */
+.featureTags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.featureTag {
+    background: rgba(139, 92, 246, 0.15);
+    color: #a78bfa;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
 /* Countdown */
 .countdown {
     display: flex;
@@ -164,4 +193,25 @@
     font-size: 16px;
     font-weight: 700;
     cursor: pointer;
+}
+
+/* ── Mobile ≤480px ── */
+@media (max-width: 480px) {
+    .card { padding: 14px; gap: 10px; border-radius: 12px; }
+    .title { font-size: 15px; }
+    .info { gap: 8px; padding: 10px 0; }
+    .infoLabel { font-size: 10px; }
+    .infoValue { font-size: 13px; }
+    .countdownValue { font-size: 16px; }
+    .registerBtn, .unregisterBtn, .playBtn { padding: 12px; font-size: 14px; border-radius: 10px; }
+    .featureTag { font-size: 10px; padding: 3px 8px; }
+}
+
+/* ── Small phones ≤380px ── */
+@media (max-width: 380px) {
+    .card { padding: 12px; gap: 8px; }
+    .title { font-size: 14px; }
+    .info { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+    .infoValue { font-size: 12px; }
+    .registerBtn, .unregisterBtn, .playBtn { padding: 10px; font-size: 13px; }
 }
