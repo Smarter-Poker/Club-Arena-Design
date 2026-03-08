@@ -334,16 +334,9 @@ export async function logRakeCollection(
     });
     if (rakeErr) console.warn(`[DB] Failed to log rake for hand #${handNumber}:`, rakeErr.message);
 
-    // Credit the club wallet with chips from rake
-    const { error: txErr } = await supabase.from('wallet_transactions').insert({
-        user_id: clubId,
-        wallet_type: 'CLUB',
-        amount: rakeAmount,
-        type: 'credit',
-        category: 'rake',
-        description: `Rake: ${rakeAmount} from hand #${handNumber} (pot: ${potAmount})`,
-    });
-    if (txErr) console.warn(`[DB] Failed to log rake transaction for hand #${handNumber}:`, txErr.message);
+    // rake_history IS the audit trail for club rake.
+    // Club totals are computed from SUM(rake_history.rake_amount) WHERE club_id = X.
+    // No wallet_transactions entry needed — club_id is not in auth.users (FK constraint).
 }
 
 /**
