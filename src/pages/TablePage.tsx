@@ -20,7 +20,7 @@ import type { SeatPlayer, Card, LastAction, PositionBadge } from '../components/
 import type { SidePot } from '../components/table/PotDisplay';
 import type { BoardStage } from '../components/table/CommunityCards';
 import { useTableWebSocket } from '../services/TableWebSocket';
-import { supabase } from '../lib/supabase';
+import { supabase, subscribeToHandState } from '../lib/supabase';
 import { avatarService } from '../services/AvatarService';
 import PlayerNotesPanel from '../components/gameplay/PlayerNotesPanel';
 import HandReplay from '../components/replay/HandReplay';
@@ -736,6 +736,81 @@ export default function TablePage() {
 
         return () => unsubscribe();
     }, [tableId]);
+
+    // Subscribe to server-side hand state broadcast (ServerTableEngine deals on the server)
+    useEffect(() => {
+        if (!tableId) return;
+        const unsubscribe = subscribeToHandState(tableId, (handState: Record<string, unknown>) => {
+            if (!handState) return;
+
+            const serverPlayers = (handState.players as any[]) || [];
+            const stage = (handState.stage as string) || 'preflop';
+            const communityCards = (handState.community_cards as any[]) || [];
+            const pot = (handState.pot as number) || 0;
+            const currentBet = (handState.current_bet as number) || 0;
+            const currentPlayer = handState.current_player as string | null;
+            const dealerSeat = (handState.dealer_seat as number) || 0;
+
+            setTableState(prev => {
+                const updatedPlayers = [...prev.players];
+
+                // Merge server player data with existing UI state
+                for (const sp of serverPlayers) {
+                    const seatIdx = (sp.seat as number) - 1;
+                    if (seatIdx < 0 || seatIdx >= updatedPlayers.length) continue;
+
+                    const existing = updatedPlayers[seatIdx];
+                    const isHero = sp.user_id === userId;
+
+                    updatedPlayers[seatIdx] = {
+                        ...(existing || {}),
+                        id: sp.user_id,
+                        name: sp.username || existing?.name || `Seat ${sp.seat}`,
+                        stack: sp.stack,
+                        bet: sp.bet || 0,
+                        cards: isHero ? (sp.cards || existing?.cards || []) : (existing?.cards || []),
+                        status: sp.is_folded ? 'folded' : sp.is_all_in ? 'all_in' : sp.is_sitting_out ? 'sitting_out' : 'active',
+                        isHero,
+                        showCards: isHero,
+                        isHorse: existing?.isHorse || false,
+                    } as any;
+                }
+
+                // Clear seats that have no server player
+                const serverSeatNums = new Set(serverPlayers.map((sp: any) => sp.seat));
+                for (let i = 0; i < updatedPlayers.length; i++) {
+                    if (updatedPlayers[i] && !serverSeatNums.has(i + 1)) {
+                        // Keep seat occupied from DB — don't clear non-playing spectator seats
+                    }
+                }
+
+                // Determine current player's seat index
+                let currentPlayerSeat = 0;
+                if (currentPlayer) {
+                    const cpSeat = serverPlayers.find((sp: any) => sp.user_id === currentPlayer);
+                    if (cpSeat) currentPlayerSeat = cpSeat.seat;
+                }
+
+                return {
+                    ...prev,
+                    players: updatedPlayers,
+                    pot,
+                    communityCards: communityCards.map((c: any) => {
+                        if (typeof c === 'string') {
+                            try { return JSON.parse(c); } catch { return c; }
+                        }
+                        return c;
+                    }),
+                    boardStage: stage as BoardStage,
+                    currentPlayerSeat,
+                    dealerSeat,
+                    isHandInProgress: stage !== 'preflop' || pot > 0,
+                };
+            });
+        });
+
+        return () => unsubscribe();
+    }, [tableId, userId]);
 
     // Component visibility states
     const [showSettings, setShowSettings] = useState(false);
