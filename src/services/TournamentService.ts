@@ -303,7 +303,8 @@ class TournamentService {
      * Get all tournaments for a club
      */
     async getTournaments(clubId: string): Promise<Tournament[]> {
-        const { data, error } = await supabase
+        // Fetch club-specific tournaments
+        const { data: clubTournaments, error } = await supabase
             .from('tournaments')
             .select('*')
             .eq('club_id', clubId)
@@ -313,7 +314,43 @@ class TournamentService {
             console.error('[TournamentService] Error fetching tournaments:', error);
             return [];
         }
-        return data || [];
+
+        // Also fetch XMTT tournaments for the club's union (if any)
+        let xmttTournaments: Tournament[] = [];
+        try {
+            const { data: unionClub } = await supabase
+                .from('union_clubs')
+                .select('union_id')
+                .eq('club_id', clubId)
+                .limit(1)
+                .maybeSingle();
+
+            if (unionClub?.union_id) {
+                const { data: xmttData } = await supabase
+                    .from('tournaments')
+                    .select('*')
+                    .eq('union_id', unionClub.union_id)
+                    .eq('is_xmtt', true)
+                    .neq('club_id', clubId) // Avoid duplicates (host club already included above)
+                    .order('created_at', { ascending: false });
+
+                xmttTournaments = xmttData || [];
+            }
+        } catch {
+            // Union lookup failed — return club tournaments only
+        }
+
+        // Merge and deduplicate by id
+        const all = [...(clubTournaments || []), ...xmttTournaments];
+        const seen = new Set<string>();
+        const unique: Tournament[] = [];
+        for (const t of all) {
+            if (!seen.has(t.id)) {
+                seen.add(t.id);
+                unique.push(t);
+            }
+        }
+        return unique;
     }
 
     /**

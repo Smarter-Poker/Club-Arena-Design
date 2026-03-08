@@ -138,11 +138,19 @@ export default function UnionDetailPage() {
                 // Load union-wide tournaments if enabled
                 if (unionData?.settings?.crossClubTournaments) {
                     const clubIds = clubsData.map(c => c.clubId);
-                    const { data: tournaments } = await supabase
-                        .from('tournaments')
-                        .select('*, clubs(name)')
-                        .in('club_id', clubIds)
-                        .order('start_time', { ascending: true });
+                    // Fetch both club-hosted and union-wide (XMTT) tournaments
+                    const [{ data: clubTournaments }, { data: xmttTournaments }] = await Promise.all([
+                        supabase.from('tournaments').select('*, clubs(name)').in('club_id', clubIds).order('start_time', { ascending: true }),
+                        supabase.from('tournaments').select('*, clubs(name)').eq('union_id', unionId).eq('is_xmtt', true).order('start_time', { ascending: true }),
+                    ]);
+                    // Merge and deduplicate
+                    const allTournaments = [...(clubTournaments || []), ...(xmttTournaments || [])];
+                    const seen = new Set<string>();
+                    const tournaments = allTournaments.filter(t => {
+                        if (seen.has(t.id)) return false;
+                        seen.add(t.id);
+                        return true;
+                    });
                     // Sort: REGISTERING/ANNOUNCED first, then RUNNING, then by start_time desc
                     const statusOrder: Record<string, number> = { REGISTERING: 0, ANNOUNCED: 1, RUNNING: 2, COMPLETED: 3, CANCELLED: 4 };
                     const sorted = (tournaments || []).sort((a: Tournament, b: Tournament) => {

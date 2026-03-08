@@ -63,6 +63,21 @@ interface SpinConfig {
     spinMultipliers: any[];
 }
 
+interface XMTTConfig {
+    name: string;
+    type: 'mtt' | 'bounty' | 'progressive_bounty' | 'mystery_bounty';
+    gameVariant: string;
+    buyIn: number;
+    rake: number;
+    guarantee: number;
+    startingStack: number;
+    maxPlayers: number;
+    minPlayers: number;
+    horsesToRegister: number;
+    blindStructure: any[];
+    payoutStructure: any[];
+}
+
 interface HourlyTournamentBlock {
     hours: number[];
     tournaments: TournamentConfig[];
@@ -242,6 +257,38 @@ const SPIN_CONFIGS: SpinConfig[] = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// XMTT (UNION) TOURNAMENT CONFIGS — Cross-Club Events
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const XMTT_SCHEDULE: { hours: number[]; tournaments: XMTTConfig[] }[] = [
+    {
+        hours: [10, 11],
+        tournaments: [
+            { name: 'Union Morning Classic (NLH)', type: 'mtt', gameVariant: 'nlh', buyIn: 15, rake: 1.50, guarantee: 500, startingStack: 5000, maxPlayers: 100, minPlayers: 10, horsesToRegister: 20, blindStructure: BLIND_STRUCTURES.STANDARD, payoutStructure: PAYOUT_STRUCTURES.NINE },
+        ],
+    },
+    {
+        hours: [14, 15],
+        tournaments: [
+            { name: 'Union PKO Afternoon (PLO4)', type: 'progressive_bounty', gameVariant: 'plo4', buyIn: 20, rake: 2.00, guarantee: 600, startingStack: 6000, maxPlayers: 80, minPlayers: 12, horsesToRegister: 18, blindStructure: BLIND_STRUCTURES.STANDARD, payoutStructure: PAYOUT_STRUCTURES.NINE },
+        ],
+    },
+    {
+        hours: [19, 20],
+        tournaments: [
+            { name: 'Union Grand Championship (NLH)', type: 'bounty', gameVariant: 'nlh', buyIn: 50, rake: 5.00, guarantee: 2500, startingStack: 15000, maxPlayers: 200, minPlayers: 20, horsesToRegister: 30, blindStructure: BLIND_STRUCTURES.STANDARD, payoutStructure: PAYOUT_STRUCTURES.NINE },
+            { name: 'Union Mystery Bounty (PLO5)', type: 'mystery_bounty', gameVariant: 'plo5', buyIn: 25, rake: 2.50, guarantee: 800, startingStack: 8000, maxPlayers: 100, minPlayers: 15, horsesToRegister: 22, blindStructure: BLIND_STRUCTURES.TURBO, payoutStructure: PAYOUT_STRUCTURES.NINE },
+        ],
+    },
+    {
+        hours: [22, 23],
+        tournaments: [
+            { name: 'Union Late Night Turbo (NLH)', type: 'mtt', gameVariant: 'nlh', buyIn: 10, rake: 1.00, guarantee: 300, startingStack: 4000, maxPlayers: 75, minPlayers: 8, horsesToRegister: 16, blindStructure: BLIND_STRUCTURES.TURBO, payoutStructure: PAYOUT_STRUCTURES.FIVE },
+        ],
+    },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // TOURNAMENT RECURRING SERVICE CLASS
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -249,6 +296,7 @@ export class TournamentRecurringService {
     private tournamentInterval: ReturnType<typeof setInterval> | null = null;
     private sngInterval: ReturnType<typeof setInterval> | null = null;
     private spinInterval: ReturnType<typeof setInterval> | null = null;
+    private xmttInterval: ReturnType<typeof setInterval> | null = null;
     private isRunning = false;
 
     private clubIds = [SHARK_CLUB_ID, JAQK_CLUB_ID];
@@ -267,7 +315,7 @@ export class TournamentRecurringService {
         }
 
         this.isRunning = true;
-        console.log('[TournamentRecurring] Service started — MTTs every 5 min, SNGs every 15 min, Spins every 10 min');
+        console.log('[TournamentRecurring] Service started — MTTs every 5 min, SNGs every 15 min, Spins every 10 min, XMTTs every 5 min');
 
         // Tournament check: every 5 minutes
         this.tournamentInterval = setInterval(
@@ -287,10 +335,17 @@ export class TournamentRecurringService {
             10 * 60 * 1000
         );
 
+        // XMTT check: every 5 minutes
+        this.xmttInterval = setInterval(
+            () => this.checkAndLaunchXMTTs(),
+            5 * 60 * 1000
+        );
+
         // Run checks immediately on start
         this.checkAndLaunchTournaments();
         this.checkAndLaunchSNGs();
         this.checkAndLaunchSpins();
+        this.checkAndLaunchXMTTs();
     }
 
     stop(): void {
@@ -299,10 +354,12 @@ export class TournamentRecurringService {
         if (this.tournamentInterval) clearInterval(this.tournamentInterval);
         if (this.sngInterval) clearInterval(this.sngInterval);
         if (this.spinInterval) clearInterval(this.spinInterval);
+        if (this.xmttInterval) clearInterval(this.xmttInterval);
 
         this.tournamentInterval = null;
         this.sngInterval = null;
         this.spinInterval = null;
+        this.xmttInterval = null;
         this.isRunning = false;
 
         console.log('[TournamentRecurring] Stopped');
@@ -387,6 +444,133 @@ export class TournamentRecurringService {
             }
         } catch (err: any) {
             console.error(`[TournamentRecurring] Spin check error: ${err.message}`);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // XMTT (UNION TOURNAMENT) CHECK
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private async checkAndLaunchXMTTs(): Promise<void> {
+        try {
+            // Query all unions that have cross-club tournaments enabled
+            const { data: unions } = await supabase
+                .from('unions')
+                .select('id, name, settings');
+
+            if (!unions || unions.length === 0) return;
+
+            const now = new Date();
+            const hour = now.getHours();
+
+            const block = XMTT_SCHEDULE.find(b => b.hours.includes(hour));
+            if (!block) return;
+
+            for (const union of unions) {
+                // Check if union has cross-club tournaments enabled
+                const settings = union.settings as any;
+                if (!settings?.crossClubTournaments) continue;
+
+                // Get clubs in this union
+                const { data: unionClubs } = await supabase
+                    .from('union_clubs')
+                    .select('club_id')
+                    .eq('union_id', union.id);
+
+                if (!unionClubs || unionClubs.length < 2) continue; // Need at least 2 clubs for XMTT
+
+                const hostClubId = unionClubs[0].club_id;
+
+                for (const config of block.tournaments) {
+                    // Check if this XMTT already exists for this union
+                    const { count } = await supabase
+                        .from('tournaments')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('union_id', union.id)
+                        .eq('is_xmtt', true)
+                        .ilike('name', config.name)
+                        .in('status', ['ANNOUNCED', 'REGISTERING', 'RUNNING']);
+
+                    if ((count || 0) > 0) continue;
+
+                    const result = await this.createXMTT(config, union.id, hostClubId);
+                    if (result.tournamentId) {
+                        console.log(`[TournamentRecurring] XMTT Launched: "${config.name}" for union ${union.name} (${result.registered} horses)`);
+                    }
+                }
+            }
+        } catch (err: any) {
+            console.error(`[TournamentRecurring] XMTT check error: ${err.message}`);
+        }
+    }
+
+    private async createXMTT(config: XMTTConfig, unionId: string, hostClubId: string): Promise<{ tournamentId: string | null; registered: number }> {
+        try {
+            const startTime = new Date(Date.now() + 5 * 60 * 1000); // 5 min delay for XMTTs (more registration time)
+            const gameTypeMap: Record<string, string> = {
+                'nlh': 'NLH', 'plo4': 'PLO4', 'plo5': 'PLO5', 'plo8': 'PLO8',
+                'ofc_pineapple': 'OFC_PINEAPPLE', 'short_deck': 'SHORT_DECK',
+            };
+            const dbGameType = gameTypeMap[config.gameVariant] || 'NLH';
+
+            const isBountyType = config.type === 'bounty' || config.type === 'progressive_bounty' || config.type === 'mystery_bounty';
+            const bountyAmount = isBountyType ? Math.trunc(config.buyIn * 30) / 100 : 0;
+            const mysteryMin = config.type === 'mystery_bounty' ? bountyAmount : 0;
+            const mysteryMax = config.type === 'mystery_bounty' ? Math.trunc(bountyAmount * 10 * 100) / 100 : 0;
+
+            const { data: tournament, error } = await supabase
+                .from('tournaments')
+                .insert({
+                    club_id: hostClubId,
+                    union_id: unionId,
+                    is_xmtt: true,
+                    name: config.name,
+                    game_type: dbGameType,
+                    variant: config.type === 'mtt' ? 'freezeout' : config.type,
+                    tournament_type: 'MTT',
+                    buy_in_amount: config.buyIn,
+                    buy_in_fee: config.rake,
+                    guaranteed_prize: config.guarantee || 0,
+                    starting_chips: config.startingStack,
+                    max_players: config.maxPlayers,
+                    min_players: config.minPlayers || 3,
+                    current_players: 0,
+                    status: 'REGISTERING',
+                    blind_structure: config.blindStructure,
+                    payout_structure: config.payoutStructure || [],
+                    start_time: startTime.toISOString(),
+                    late_reg_mins: 45, // Longer late reg for XMTT
+                    is_bounty: isBountyType,
+                    is_pko: config.type === 'progressive_bounty',
+                    is_mystery_bounty: config.type === 'mystery_bounty',
+                    bounty_amount: bountyAmount,
+                    mystery_bounty_min: mysteryMin,
+                    mystery_bounty_max: mysteryMax,
+                })
+                .select()
+                .single();
+
+            if (error || !tournament) {
+                console.error(`[TournamentRecurring] XMTT creation failed: ${error?.message}`);
+                return { tournamentId: null, registered: 0 };
+            }
+
+            const registered = await this.registerHorses(tournament.id, config.horsesToRegister);
+            const entriesPool = config.buyIn * registered;
+            const prizePool = config.guarantee
+                ? Math.max(entriesPool, config.guarantee)
+                : entriesPool;
+
+            const { error: updateErr } = await supabase
+                .from('tournaments')
+                .update({ current_players: registered, prize_pool: prizePool, status: 'REGISTERING' })
+                .eq('id', tournament.id);
+            if (updateErr) console.error(`[TournamentRecurring] XMTT state update failed for ${tournament.id.slice(0, 8)}: ${updateErr.message}`);
+
+            return { tournamentId: tournament.id, registered };
+        } catch (err: any) {
+            console.error(`[TournamentRecurring] createXMTT error: ${err.message}`);
+            return { tournamentId: null, registered: 0 };
         }
     }
 
