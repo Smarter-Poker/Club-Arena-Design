@@ -112,7 +112,7 @@ export default function PlayerWalletPage() {
         try {
             if (!user?.id) return;
             await internalTransfer(user.id, transferFrom, transferTo, amount);
-            setMessage({ type: 'success', text: `Transferred $${amount.toLocaleString()} successfully!` });
+            setMessage({ type: 'success', text: `Transferred ${amount.toLocaleString()} chips successfully!` });
             setTransferAmount('');
             if (user?.id) loadBalances(user.id);
         } catch (error) {
@@ -284,7 +284,7 @@ export default function PlayerWalletPage() {
                                 >
                                     {(Object.keys(walletInfo) as WalletType[]).map((type) => (
                                         <option key={type} value={type}>
-                                            {walletInfo[type].icon} {walletInfo[type].label} (${balances[type].available.toLocaleString()})
+                                            {walletInfo[type].icon} {walletInfo[type].label} ({balances[type].available.toLocaleString()})
                                         </option>
                                     ))}
                                 </select>

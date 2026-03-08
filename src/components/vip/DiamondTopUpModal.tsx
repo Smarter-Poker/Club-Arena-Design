@@ -40,7 +40,7 @@ export function DiamondTopUpModal({ isOpen, onClose, onPurchaseComplete }: Diamo
         setPurchasing(null);
     };
 
-    const formatPrice = (price: number) => `$${price.toFixed(2)}`;
+    const formatPrice = (price: number) => `${price.toLocaleString()} diamonds`;
 
     return (
         <div className="diamond-modal-overlay" onClick={onClose}>
