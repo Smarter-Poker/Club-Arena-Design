@@ -68,8 +68,13 @@ class GameServer {
         this.lifecycle.start();
 
         // Step 5: Start discovery loops (finds tables with players, starts engines)
-        this.discoverCashTables();
-        this.discoverTournaments();
+        // These are infinite while-loops — fire-and-forget with error handling
+        this.discoverCashTables().catch(err =>
+            console.error('[GameServer] Cash table discovery fatal error:', err)
+        );
+        this.discoverTournaments().catch(err =>
+            console.error('[GameServer] Tournament discovery fatal error:', err)
+        );
 
         console.log('[GameServer] Running. All services started.');
     }
@@ -885,31 +890,35 @@ class TournamentManager {
                     .eq('status', 'playing');
 
                 if ((remainingCount || 0) <= 1) {
-                    // Use maybeSingle to handle edge case where 0 players remain
-                    const { data: winner } = await supabase
-                        .from('tournament_players')
-                        .select('user_id')
-                        .eq('tournament_id', this.tournamentId)
-                        .eq('status', 'playing')
-                        .maybeSingle();
-
-                    if (winner) {
-                        await this.finishTournament(winner.user_id);
-                    } else if ((remainingCount || 0) === 0) {
-                        // All players busted simultaneously — pick the last eliminated as winner
-                        const { data: lastEliminated } = await supabase
+                    try {
+                        // Use maybeSingle to handle edge case where 0 players remain
+                        const { data: winner } = await supabase
                             .from('tournament_players')
                             .select('user_id')
                             .eq('tournament_id', this.tournamentId)
-                            .eq('status', 'eliminated')
-                            .order('eliminated_at', { ascending: false })
-                            .limit(1)
+                            .eq('status', 'playing')
                             .maybeSingle();
 
-                        if (lastEliminated) {
-                            console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] All busted simultaneously — last eliminated wins`);
-                            await this.finishTournament(lastEliminated.user_id);
+                        if (winner) {
+                            await this.finishTournament(winner.user_id);
+                        } else if ((remainingCount || 0) === 0) {
+                            // All players busted simultaneously — pick the last eliminated as winner
+                            const { data: lastEliminated } = await supabase
+                                .from('tournament_players')
+                                .select('user_id')
+                                .eq('tournament_id', this.tournamentId)
+                                .eq('status', 'eliminated')
+                                .order('eliminated_at', { ascending: false })
+                                .limit(1)
+                                .maybeSingle();
+
+                            if (lastEliminated) {
+                                console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] All busted simultaneously — last eliminated wins`);
+                                await this.finishTournament(lastEliminated.user_id);
+                            }
                         }
+                    } catch (finishErr) {
+                        console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] finishTournament error — will retry next cycle:`, finishErr);
                     }
                 }
 
@@ -1303,11 +1312,18 @@ class TournamentManager {
             return;
         }
 
-        const { data: tournament } = await supabase
+        const { data: tournament, error: tourneyLoadErr } = await supabase
             .from('tournaments')
             .select('payout_structure, prize_pool, buy_in_fee, current_players, club_id, name, status')
             .eq('id', this.tournamentId)
             .single();
+
+        if (!tournament || tourneyLoadErr) {
+            console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] CRITICAL: Could not load tournament for finish: ${tourneyLoadErr?.message} — marking COMPLETED without payouts`);
+            await supabase.from('tournaments').update({ status: 'COMPLETED', ended_at: new Date().toISOString() }).eq('id', this.tournamentId);
+            this.stop();
+            return;
+        }
 
         // Calculate winner prize — with fallback if payout_structure missing or no place 1
         let winnerPrize = 0;
@@ -1414,24 +1430,38 @@ class TournamentManager {
                 }
 
                 if (rakeRecipientId) {
-                    await supabase.rpc('credit_player_wallet', {
-                        p_user_id: rakeRecipientId,
-                        p_amount: totalRake,
-                    });
+                    // Retry rake credit up to 3 times
+                    let rakeSuccess = false;
+                    for (let attempt = 1; attempt <= 3; attempt++) {
+                        const { error: rakeErr } = await supabase.rpc('credit_player_wallet', {
+                            p_user_id: rakeRecipientId,
+                            p_amount: totalRake,
+                        });
+                        if (!rakeErr) {
+                            rakeSuccess = true;
+                            break;
+                        }
+                        console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Rake credit attempt ${attempt}/3 failed: ${rakeErr.message}`);
+                        if (attempt < 3) await new Promise(r => setTimeout(r, attempt * 1000));
+                    }
 
-                    await supabase.rpc('log_wallet_transaction', {
-                        p_user_id: rakeRecipientId,
-                        p_wallet_type: 'PLAYER',
-                        p_amount: totalRake,
-                        p_type: 'credit',
-                        p_category: 'rake',
-                        p_description: rakeDescription,
-                        p_table_id: null,
-                        p_hand_id: null,
-                        p_related_entity_id: this.tournamentId,
-                    });
-
-                    console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] Rake settled: ${totalRake} to ${club.union_id ? 'union' : 'club'} owner ${rakeRecipientId.slice(0, 8)}`);
+                    if (rakeSuccess) {
+                        const { error: txErr } = await supabase.rpc('log_wallet_transaction', {
+                            p_user_id: rakeRecipientId,
+                            p_wallet_type: 'PLAYER',
+                            p_amount: totalRake,
+                            p_type: 'credit',
+                            p_category: 'rake',
+                            p_description: rakeDescription,
+                            p_table_id: null,
+                            p_hand_id: null,
+                            p_related_entity_id: this.tournamentId,
+                        });
+                        if (txErr) console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Rake transaction log failed: ${txErr.message}`);
+                        console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] Rake settled: ${totalRake} to ${club.union_id ? 'union' : 'club'} owner ${rakeRecipientId.slice(0, 8)}`);
+                    } else {
+                        console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] CRITICAL: Rake credit FAILED after 3 retries — ${totalRake} chips LOST for recipient ${rakeRecipientId.slice(0, 8)}`);
+                    }
                 }
             }
         }

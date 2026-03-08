@@ -622,8 +622,8 @@ class TournamentService {
                     let seatNumber = 1;
                     while (takenSeats.has(seatNumber) && seatNumber <= openTable.max_players) seatNumber++;
 
-                    // Seat the player
-                    await supabase.from('table_seats').insert({
+                    // Seat the player — check for errors
+                    const { error: seatErr } = await supabase.from('table_seats').insert({
                         table_id: openTable.id,
                         user_id: userId,
                         seat_number: seatNumber,
@@ -631,17 +631,27 @@ class TournamentService {
                         status: 'active',
                     });
 
-                    // Update tournament_players to playing status with starting chips
-                    await supabase.from('tournament_players').update({
-                        status: 'playing',
-                        chips: tournament.starting_chips,
-                        table_id: openTable.id,
-                    }).eq('tournament_id', tournamentId).eq('user_id', userId);
+                    if (seatErr) {
+                        console.error(`[TournamentService] Late reg seat insert failed: ${seatErr.message}`);
+                    } else {
+                        // Update tournament_players to playing status with starting chips
+                        const { error: tpErr } = await supabase.from('tournament_players').update({
+                            status: 'playing',
+                            chips: tournament.starting_chips,
+                            table_id: openTable.id,
+                        }).eq('tournament_id', tournamentId).eq('user_id', userId);
 
-                    // Increment table player count
-                    await supabase.from('tables').update({
-                        current_players: openTable.current_players + 1,
-                    }).eq('id', openTable.id);
+                        if (tpErr) console.error(`[TournamentService] Late reg player update failed: ${tpErr.message}`);
+
+                        // Increment table player count
+                        const { error: tableErr } = await supabase.from('tables').update({
+                            current_players: openTable.current_players + 1,
+                        }).eq('id', openTable.id);
+
+                        if (tableErr) console.error(`[TournamentService] Late reg table count failed: ${tableErr.message}`);
+                    }
+                } else {
+                    console.warn(`[TournamentService] Late reg: no open table found for ${tournamentId.slice(0, 8)}`);
                 }
             } catch (lateRegErr) {
                 console.error('[TournamentService] Late reg seating failed:', lateRegErr);
@@ -698,12 +708,15 @@ class TournamentService {
         if (refundError) {
             console.error('[TournamentService] Refund to Player Wallet failed:', refundError);
             // Re-register the player since refund failed (rollback)
-            await supabase.from('tournament_players').insert({
+            const { error: rollbackErr } = await supabase.from('tournament_players').insert({
                 tournament_id: tournamentId,
                 user_id: userId,
                 status: 'registered',
                 chips: 0,
             });
+            if (rollbackErr) {
+                console.error('[TournamentService] CRITICAL: Rollback re-insert ALSO failed:', rollbackErr);
+            }
             throw new Error('Refund failed — registration restored');
         }
 
