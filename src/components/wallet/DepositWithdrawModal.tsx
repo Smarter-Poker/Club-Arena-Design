@@ -128,11 +128,11 @@ export default function DepositWithdrawModal({
         if (!currentMethod) return;
 
         if (numericAmount < currentMethod.minAmount) {
-            setError(`Minimum amount is $${currentMethod.minAmount}`);
+            setError(`Minimum amount is ${currentMethod.minAmount}`);
             return;
         }
         if (numericAmount > currentMethod.maxAmount) {
-            setError(`Maximum amount is $${currentMethod.maxAmount.toLocaleString()}`);
+            setError(`Maximum amount is ${currentMethod.maxAmount.toLocaleString()}`);
             return;
         }
         if (mode === 'withdraw' && numericAmount > currentBalance) {

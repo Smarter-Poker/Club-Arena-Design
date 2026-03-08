@@ -48,7 +48,7 @@ export interface LeaderboardPanelProps {
 
 // EXACT precision — no abbreviations, no rounding
 function formatAmount(amount: number, currency: string = ''): string {
-    return `${amount < 0 ? '-' : ''}${currency}${Math.abs(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `${amount < 0 ? '-' : ''}${Math.abs(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

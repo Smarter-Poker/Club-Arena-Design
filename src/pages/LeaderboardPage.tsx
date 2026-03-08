@@ -150,7 +150,7 @@ export default function LeaderboardPage() {
 
     const formatValue = (value: number, m: LeaderboardMetric): string => {
         if (m === 'profit') {
-            return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            return `${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
         if (m === 'vpip' || m === 'roi') {
             return `${value.toFixed(1)}%`;

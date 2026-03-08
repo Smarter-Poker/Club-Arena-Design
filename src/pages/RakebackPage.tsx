@@ -129,10 +129,10 @@ export default function RakebackPage() {
                         <BarChart data={chartData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                             <XAxis dataKey="period" stroke="var(--text-secondary)" fontSize={12} />
-                            <YAxis stroke="var(--text-secondary)" fontSize={12} tickFormatter={(v) => `$${v}`} />
+                            <YAxis stroke="var(--text-secondary)" fontSize={12} tickFormatter={(v) => `${v}`} />
                             <Tooltip
                                 contentStyle={{ background: 'var(--bg-secondary)', border: 'none', borderRadius: '8px' }}
-                                formatter={(value) => [`$${Number(value || 0).toLocaleString()}`, 'Rakeback']}
+                                formatter={(value) => [`${Number(value || 0).toLocaleString()}`, 'Rakeback']}
                             />
                             <Bar dataKey="earned" fill="var(--accent-success)" radius={[4, 4, 0, 0]} />
                         </BarChart>

@@ -206,7 +206,7 @@ export default function ClubMembersPage() {
                                 <span className="member-role">{member.role}</span>
                             </div>
                             <div className="member-balance">
-                                ${member.chip_balance.toLocaleString()}
+                                {member.chip_balance.toLocaleString()}
                             </div>
                         </div>
                     ))

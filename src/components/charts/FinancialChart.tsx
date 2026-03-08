@@ -77,7 +77,7 @@ export const FinancialChart: React.FC<FinancialChartProps> = ({
                 <YAxis
                     stroke="#666"
                     fontSize={12}
-                    tickFormatter={(v) => `$${v}`}
+                    tickFormatter={(v) => `${v}`}
                     tickLine={false}
                 />
                 <Tooltip
@@ -87,7 +87,7 @@ export const FinancialChart: React.FC<FinancialChartProps> = ({
                         borderRadius: '8px',
                         fontSize: '12px',
                     }}
-                    formatter={(value) => [`$${(value as number || 0).toLocaleString()}`, '']}
+                    formatter={(value) => [`${(value as number || 0).toLocaleString()}`, '']}
                 />
                 <Legend
                     wrapperStyle={{ fontSize: '12px' }}

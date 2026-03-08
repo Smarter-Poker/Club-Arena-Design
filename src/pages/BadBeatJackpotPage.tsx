@@ -151,7 +151,7 @@ export default function BadBeatJackpotPage() {
                 <div className="jackpot-glow" />
                 <span className="jackpot-label">Current Jackpot</span>
                 <span className="jackpot-amount">
-                    ${(jackpot?.current_amount || 0).toLocaleString()}
+                    {(jackpot?.current_amount || 0).toLocaleString()}
                 </span>
             </div>
 
@@ -207,7 +207,7 @@ export default function BadBeatJackpotPage() {
                                     </span>
                                 </div>
                                 <div className="hit-amount">
-                                    ${hit.amount.toLocaleString()}
+                                    {hit.amount.toLocaleString()}
                                 </div>
                             </div>
                         ))}

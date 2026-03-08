@@ -77,7 +77,7 @@ function formatDate(date: Date): string {
 
 function formatAction(action: NotationAction, currency: string): string {
     if (action.amount !== undefined && action.amount > 0) {
-        return `${action.player}: ${action.action} ${currency}${action.amount.toLocaleString()}`;
+        return `${action.player}: ${action.action} ${action.amount.toLocaleString()}`;
     }
     return `${action.player}: ${action.action}`;
 }
@@ -96,18 +96,18 @@ function generateNotation(hand: NotationHand, currency: string): string {
 
     // Seats
     for (const player of hand.players) {
-        lines.push(`Seat ${player.seat}: ${player.name} (${currency}${player.stack.toLocaleString()} in chips)`);
+        lines.push(`Seat ${player.seat}: ${player.name} (${player.stack.toLocaleString()} in chips)`);
     }
     lines.push('');
 
     // Blinds
     const sb = hand.players.find((p) => p.isSmallBlind);
     const bb = hand.players.find((p) => p.isBigBlind);
-    if (sb) lines.push(`${sb.name}: posts small blind ${currency}${hand.smallBlind}`);
-    if (bb) lines.push(`${bb.name}: posts big blind ${currency}${hand.bigBlind}`);
+    if (sb) lines.push(`${sb.name}: posts small blind ${hand.smallBlind}`);
+    if (bb) lines.push(`${bb.name}: posts big blind ${hand.bigBlind}`);
     if (hand.ante) {
         for (const player of hand.players) {
-            lines.push(`${player.name}: posts ante ${currency}${hand.ante}`);
+            lines.push(`${player.name}: posts ante ${hand.ante}`);
         }
     }
     lines.push('');
@@ -164,7 +164,7 @@ function generateNotation(hand: NotationHand, currency: string): string {
 
     // Summary
     lines.push('*** SUMMARY ***');
-    lines.push(`Total pot ${currency}${hand.potTotal.toLocaleString()}`);
+    lines.push(`Total pot ${hand.potTotal.toLocaleString()}`);
 
     const board = [
         ...(hand.flop?.cards || []),
@@ -177,7 +177,7 @@ function generateNotation(hand: NotationHand, currency: string): string {
 
     for (const winner of hand.winners) {
         const handStr = winner.hand ? ` with ${winner.hand}` : '';
-        lines.push(`${winner.player} collected ${currency}${winner.amount.toLocaleString()}${handStr}`);
+        lines.push(`${winner.player} collected ${winner.amount.toLocaleString()}${handStr}`);
     }
 
     return lines.join('\n');

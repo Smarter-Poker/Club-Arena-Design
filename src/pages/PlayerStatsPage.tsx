@@ -220,7 +220,7 @@ export default function PlayerStatsPage() {
                 </div>
                 <div className="stat-card profit">
                     <span className={`stat-value ${(stats?.total_profit || 0) >= 0 ? 'positive' : 'negative'}`}>
-                        ${stats?.total_profit.toLocaleString()}
+                        {stats?.total_profit.toLocaleString()}
                     </span>
                     <span className="stat-label">Total Profit</span>
                 </div>
@@ -272,10 +272,10 @@ export default function PlayerStatsPage() {
 
                 {category === 'results' && stats && (
                     <div className="stats-grid">
-                        <StatRow label="Total Profit" value={`$${stats.total_profit.toLocaleString()}`} highlight />
+                        <StatRow label="Total Profit" value={`${stats.total_profit.toLocaleString()}`} highlight />
                         <StatRow label="BB/100" value={stats.bb_per_100.toFixed(2)} />
-                        <StatRow label="Biggest Pot Won" value={`$${stats.biggest_pot_won.toLocaleString()}`} />
-                        <StatRow label="Biggest Pot Lost" value={`$${stats.biggest_pot_lost.toLocaleString()}`} />
+                        <StatRow label="Biggest Pot Won" value={`${stats.biggest_pot_won.toLocaleString()}`} />
+                        <StatRow label="Biggest Pot Lost" value={`${stats.biggest_pot_lost.toLocaleString()}`} />
                         <StatRow label="Hands Won" value={stats.hands_won.toLocaleString()} />
                         <StatRow label="Hands Lost" value={stats.hands_lost.toLocaleString()} />
                     </div>

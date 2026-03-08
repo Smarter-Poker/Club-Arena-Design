@@ -504,7 +504,7 @@ export default function TournamentPage() {
                                         </button>
                                     ) : (
                                         <button className="btn btn-primary btn-block" onClick={handleRegister}>
-                                            Register (${selectedTournament.buy_in_amount + selectedTournament.buy_in_fee})
+                                            Register ({selectedTournament.buy_in_amount + selectedTournament.buy_in_fee})
                                         </button>
                                     )
                                 ) : selectedTournament.status === 'RUNNING' ? (
@@ -525,7 +525,7 @@ export default function TournamentPage() {
                                                 onClick={handleRebuy}
                                                 disabled={isProcessingRebuy}
                                             >
-                                                {isProcessingRebuy ? ' Processing...' : ` Rebuy ($${selectedTournament.buy_in_amount})`}
+                                                {isProcessingRebuy ? ' Processing...' : ` Rebuy (${selectedTournament.buy_in_amount})`}
                                             </button>
                                         )}
 
@@ -537,7 +537,7 @@ export default function TournamentPage() {
                                                 onClick={handleAddOn}
                                                 disabled={isProcessingRebuy}
                                             >
-                                                {isProcessingRebuy ? ' Processing...' : `➕ Add-On ($${selectedTournament.buy_in_amount})`}
+                                                {isProcessingRebuy ? ' Processing...' : `➕ Add-On (${selectedTournament.buy_in_amount})`}
                                             </button>
                                         )}
                                     </>

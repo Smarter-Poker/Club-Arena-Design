@@ -209,7 +209,7 @@ export default function TournamentLobbyCard({
                             onClick={(e) => { e.stopPropagation(); handleRegister(); }}
                             disabled={registering || isFull}
                         >
-                            {registering ? 'Registering...' : isFull ? 'Tournament Full' : `Register ($${tournament.buyIn})`}
+                            {registering ? 'Registering...' : isFull ? 'Tournament Full' : `Register (${tournament.buyIn})`}
                         </button>
                     )
                 )}

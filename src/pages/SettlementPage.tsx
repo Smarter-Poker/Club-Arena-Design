@@ -263,7 +263,7 @@ export default function SettlementPage() {
             if (result.agentsPaid > 0 || result.playersWithRakeback > 0) {
                 setAgentPayouts(prev => prev.map(a => ({ ...a, status: 'paid' as const })));
                 setClubWires(prev => prev.map(w => ({ ...w, status: 'processed' as const })));
-                toast.success(`Payouts complete: ${result.agentsPaid} agents, ${result.playersWithRakeback} players, $${result.totalDisbursed.toLocaleString()} disbursed`);
+                toast.success(`Payouts complete: ${result.agentsPaid} agents, ${result.playersWithRakeback} players, ${result.totalDisbursed.toLocaleString()} disbursed`);
             }
         } catch (error) {
             console.error('[SettlementPage] Payout failed:', error);

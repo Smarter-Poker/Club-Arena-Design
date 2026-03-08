@@ -189,7 +189,7 @@ export default function PromotionsPage() {
                                     </span>
                                     {promo.prize_pool && (
                                         <span className="promo-prize">
-                                            ${promo.prize_pool.toLocaleString()}
+                                            {promo.prize_pool.toLocaleString()}
                                         </span>
                                     )}
                                 </div>

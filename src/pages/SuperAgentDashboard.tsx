@@ -263,7 +263,7 @@ export default function SuperAgentDashboard() {
                                         <span className="player-rakeback">{(player.rakebackPercent * 100).toFixed(1)}% rakeback</span>
                                     </div>
                                     <div className="player-balance">
-                                        ${player.chipBalance.toLocaleString()}
+                                        {player.chipBalance.toLocaleString()}
                                     </div>
                                 </div>
                             ))}
@@ -281,7 +281,7 @@ export default function SuperAgentDashboard() {
                             </div>
                             <div className="commission-row">
                                 <span>Paid to Downlines</span>
-                                <span className="value negative">-${spread.payoutToDownlines.toLocaleString()}</span>
+                                <span className="value negative">-{spread.payoutToDownlines.toLocaleString()}</span>
                             </div>
                             <div className="commission-row total">
                                 <span>Net Margin</span>

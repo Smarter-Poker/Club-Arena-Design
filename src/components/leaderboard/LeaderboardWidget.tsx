@@ -92,7 +92,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
 
     const formatValue = (value: number) => {
         if (selectedType === 'profit') {
-            return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            return `${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
         return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };

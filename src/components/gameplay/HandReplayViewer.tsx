@@ -243,7 +243,7 @@ export default function HandReplayViewer({
                     )}
                 </div>
                 <div className={styles.potDisplay}>
-                    Pot: ${currentPot.toLocaleString()}
+                    Pot: {currentPot.toLocaleString()}
                 </div>
             </div>
 

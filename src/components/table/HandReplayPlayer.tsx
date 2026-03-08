@@ -399,7 +399,7 @@ export function HandReplayPlayer({
                 {/* Pot */}
                 {pot > 0 && (
                     <div className="replay-player__pot">
-                        Pot: ${pot.toLocaleString()}
+                        Pot: {pot.toLocaleString()}
                     </div>
                 )}
             </div>

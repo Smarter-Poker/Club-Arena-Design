@@ -70,8 +70,8 @@ function formatTime(minutes: number): string {
 
 function formatProfit(buyIn: number, currentStack: number): string {
     const profit = currentStack - buyIn;
-    if (profit >= 0) return `+$${profit.toLocaleString()}`;
-    return `-$${Math.abs(profit).toLocaleString()}`;
+    if (profit >= 0) return `+${profit.toLocaleString()}`;
+    return `-${Math.abs(profit).toLocaleString()}`;
 }
 
 const NOTE_COLORS = ['#F85149', '#FFB800', '#3FB950', '#1877F2', '#A371F7', '#8B949E'];

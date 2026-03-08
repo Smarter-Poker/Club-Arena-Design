@@ -311,7 +311,7 @@ export function ShareHand({
     const shareText = useMemo(() => {
         const hero = hand.players.find(p => p.isHero);
         const winner = hand.players.find(p => p.isWinner);
-        const potStr = `$${hand.potTotal.toLocaleString()}`;
+        const potStr = `${hand.potTotal.toLocaleString()}`;
 
         if (winner?.isHero) {
             return `I just won a ${potStr} pot in ${hand.stakes} ${hand.variant}! \n\nWatch the replay on ${clubName}! `;
