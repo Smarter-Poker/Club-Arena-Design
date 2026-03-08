@@ -454,10 +454,11 @@ export class TournamentRecurringService {
             }
 
             const registered = await this.registerHorses(tournament.id, config.horsesToRegister);
+            const prizePool = config.buyIn * registered;
 
             await supabase
                 .from('tournaments')
-                .update({ current_players: registered, status: 'REGISTERING' })
+                .update({ current_players: registered, prize_pool: prizePool, status: 'REGISTERING' })
                 .eq('id', tournament.id);
 
             return { tournamentId: tournament.id, registered };
@@ -504,10 +505,11 @@ export class TournamentRecurringService {
             }
 
             const registered = await this.registerHorses(sng.id, config.horsesToRegister);
+            const prizePool = config.buyIn * registered;
 
             await supabase
                 .from('tournaments')
-                .update({ current_players: registered, status: 'REGISTERING' })
+                .update({ current_players: registered, prize_pool: prizePool, status: 'REGISTERING' })
                 .eq('id', sng.id);
 
             return { tournamentId: sng.id, registered };
@@ -559,7 +561,7 @@ export class TournamentRecurringService {
 
             await supabase
                 .from('tournaments')
-                .update({ current_players: registered, status: 'REGISTERING' })
+                .update({ current_players: registered, prize_pool: prizePool, status: 'REGISTERING' })
                 .eq('id', spin.id);
 
             return { tournamentId: spin.id, registered };
