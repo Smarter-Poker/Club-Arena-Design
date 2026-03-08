@@ -54,6 +54,12 @@ ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS flight_number INTEGER DEFAULT 1
 ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS is_xmtt BOOLEAN DEFAULT FALSE;
 ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS union_id UUID DEFAULT NULL;
 
+-- ─── Spin type + rake + pinned ──────────────────────────────────────────────
+
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS spin_type TEXT DEFAULT 'standard';
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS total_rake DECIMAL(18, 4) DEFAULT 0;
+ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN DEFAULT FALSE;
+
 -- ─── Tournament Players: table_id for seat tracking ──────────────────────────
 
 ALTER TABLE tournament_players ADD COLUMN IF NOT EXISTS table_id UUID DEFAULT NULL;
@@ -65,6 +71,7 @@ CREATE INDEX IF NOT EXISTS idx_tournaments_tournament_type ON tournaments(tourna
 CREATE INDEX IF NOT EXISTS idx_tournaments_start_time ON tournaments(start_time);
 CREATE INDEX IF NOT EXISTS idx_tournaments_union_id ON tournaments(union_id) WHERE union_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_tournament_players_table_id ON tournament_players(table_id) WHERE table_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_tournaments_is_pinned ON tournaments(is_pinned) WHERE is_pinned = TRUE;
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- DONE — All columns code expects now exist in the database
