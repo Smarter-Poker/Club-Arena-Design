@@ -646,11 +646,13 @@ class TournamentService {
         const tournament = await this.getTournament(tournamentId);
         if (!tournament) throw new Error('Tournament not found');
 
-        // Calculate prize
+        // Calculate prize — exact cent-precision arithmetic, no rounding
         const payoutEntry = tournament.payout_structure.find(p => p.place === position);
-        const prize = payoutEntry
-            ? Math.floor((tournament.prize_pool * payoutEntry.percentage) / 100)
+        const prizeRaw = payoutEntry
+            ? (tournament.prize_pool * payoutEntry.percentage) / 100
             : 0;
+        // Convert to cents, truncate sub-cent, back to dollars for exact penny precision
+        const prize = Math.trunc(prizeRaw * 100) / 100;
 
         await supabase
             .from('tournament_players')
@@ -744,7 +746,8 @@ class TournamentService {
     calculatePayout(prizePool: number, position: number, structure: PayoutStructure[]): number {
         const entry = structure.find(p => p.place === position);
         if (!entry) return 0;
-        return Math.floor((prizePool * entry.percentage) / 100);
+        // Exact cent-precision: truncate sub-cent fractions only
+        return Math.trunc((prizePool * entry.percentage) / 100 * 100) / 100;
     }
 
     /**
@@ -1291,8 +1294,9 @@ class TournamentService {
 
         if (bountyConfig.bountyType === 'progressive') {
             // Progressive: 50% to collector, 50% added to collector's head
-            const collectorPortion = Math.floor(bountyAmount / 2);
-            const addedToHead = bountyAmount - collectorPortion;
+            // Exact cent-precision split — remainder goes to collector
+            const collectorPortion = Math.trunc(bountyAmount * 100 / 2) / 100;
+            const addedToHead = Math.trunc((bountyAmount - collectorPortion) * 100) / 100;
 
             // Get collector's current bounty
             const { data: collector } = await supabase

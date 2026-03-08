@@ -421,11 +421,16 @@ export const BBJService = {
         recipientUserIds: string[];
         reason: string;
     }): Promise<boolean> {
-        // Distribute promo payout to each recipient
-        const perPlayer = Math.floor(params.amount / params.recipientUserIds.length);
+        // Distribute promo payout to each recipient — exact cent-precision
+        const totalCents = Math.trunc(params.amount * 100);
+        const baseCents = Math.trunc(totalCents / params.recipientUserIds.length);
+        const remainderCents = totalCents - (baseCents * params.recipientUserIds.length);
         let lastError: Error | null = null;
 
-        for (const userId of params.recipientUserIds) {
+        for (let i = 0; i < params.recipientUserIds.length; i++) {
+            const userId = params.recipientUserIds[i];
+            // Give remainder cents to first players (1 cent each)
+            const perPlayer = (baseCents + (i < remainderCents ? 1 : 0)) / 100;
             const { error: payoutError } = await supabase.rpc('add_to_promo_wallet', {
                 p_user_id: userId,
                 p_amount: perPlayer,

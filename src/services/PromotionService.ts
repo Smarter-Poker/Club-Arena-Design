@@ -200,7 +200,7 @@ class PromotionServiceClass {
                 promotion_id: promotionId,
                 user_id: userId,
                 status: promo.wagerRequirement ? 'active' : 'completed',
-                bonus_amount: promo.prizePool ? Math.floor(promo.prizePool / (promo.maxClaims || 100)) : 0,
+                bonus_amount: promo.prizePool ? Math.trunc(promo.prizePool * 100 / (promo.maxClaims || 100)) / 100 : 0,
                 wager_progress: 0,
                 wager_required: promo.wagerRequirement || 0
             })
@@ -334,7 +334,7 @@ class PromotionServiceClass {
             return 0;
         }
 
-        const bonusAmount = Math.floor(depositAmount * (promo.bonusPercent || 100) / 100);
+        const bonusAmount = Math.trunc(depositAmount * (promo.bonusPercent || 100) / 100 * 100) / 100;
         const maxBonus = promo.prizePool || 500;
         const finalBonus = Math.min(bonusAmount, maxBonus);
 

@@ -39,7 +39,7 @@ export {
     type ShowdownResult,
 } from './HandController';
 
-// Bot Logic
+// Horse Logic
 export { BotLogic } from './BotLogic';
 
 // OFC Pineapple Engine

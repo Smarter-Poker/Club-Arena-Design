@@ -22,7 +22,7 @@ const REPORT_REASONS = [
     { id: 'chip_dumping', label: 'Chip Dumping', description: 'Intentionally losing chips to another player' },
     { id: 'harassment', label: 'Harassment', description: 'Offensive or abusive behavior in chat' },
     { id: 'slow_play', label: 'Intentional Slow Play', description: 'Deliberately stalling to annoy others' },
-    { id: 'bot', label: 'Bot/Software', description: 'Using automated software to play' },
+    { id: 'software', label: 'Unauthorized Software', description: 'Using automated software to play' },
     { id: 'other', label: 'Other', description: 'Other violation not listed above' },
 ];
 

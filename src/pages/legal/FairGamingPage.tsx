@@ -63,7 +63,7 @@ export default function FairGamingPage() {
                         <li><strong>Collusion:</strong> Working with other players to gain an unfair advantage</li>
                         <li><strong>Multi-Accounting:</strong> Using multiple accounts at the same table</li>
                         <li><strong>Chip Dumping:</strong> Intentionally losing chips to another player</li>
-                        <li><strong>Bot Usage:</strong> Using automated software to play</li>
+                        <li><strong>Unauthorized Software:</strong> Using automated software to play</li>
                         <li><strong>Real-Time Assistance (RTA):</strong> Using external tools during play</li>
                         <li><strong>Account Sharing:</strong> Allowing others to play on your account</li>
                         <li><strong>Ghosting:</strong> Receiving advice from others during play</li>

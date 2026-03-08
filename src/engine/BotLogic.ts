@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🐴 BOT LOGIC — Upgraded Horse Brain (Anti Gravity Agents v2)
+ * 🐴 HORSE LOGIC — Upgraded Horse Brain (Anti Gravity Agents v2)
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * ALL horses are fundamentally WINNING poker players.

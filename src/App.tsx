@@ -15,6 +15,7 @@ import IntroVideo from './components/IntroVideo';
 // Layouts
 import AppLayout from './components/layouts/AppLayout';
 import { ToastProvider } from './components/common/Toast';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 // Auth Guards
 import { AuthGuard, GuestGuard } from './components/auth/AuthGuard';
@@ -107,6 +108,7 @@ export default function App() {
     };
 
     return (
+        <ErrorBoundary>
         <ToastProvider>
             {/* Intro video overlay - app loads in background while video plays */}
             {showIntro && (
@@ -713,5 +715,6 @@ export default function App() {
                 </Suspense>
             </TOSGuard>
         </ToastProvider>
+        </ErrorBoundary>
     );
 }

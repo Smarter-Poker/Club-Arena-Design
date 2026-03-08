@@ -48,7 +48,7 @@ export type { BBJPool, BBJContribution, BBJPayout, BBJTriggerResult } from './BB
 export { LeaderboardService } from './LeaderboardService';
 export type { LeaderboardEntry, PlayerStats, LeaderboardPeriod, LeaderboardMetric } from './LeaderboardService';
 
-// Bot Liquidity (Hydra)
+// Horse Liquidity (Hydra)
 export { HydraService } from './HydraService';
 export type { HorsePlayer, HydraConfig, HorseProfile, TableLiquidityStatus, HorseDecision, HandContext } from './HydraService';
 
