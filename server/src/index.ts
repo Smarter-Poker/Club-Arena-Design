@@ -245,7 +245,7 @@ class GameServer {
 
                     const startTime = new Date(tournament.start_time).getTime();
                     const now = Date.now();
-                    const minPlayers = tournament.min_players || 2;
+                    const minPlayers = tournament.min_players || 3;
 
                     // Auto-cancel: if 30+ mins past start time and not enough players
                     if (startTime <= now - 30 * 60 * 1000 && tournament.current_players < minPlayers) {
