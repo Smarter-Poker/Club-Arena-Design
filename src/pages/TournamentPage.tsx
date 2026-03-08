@@ -132,28 +132,6 @@ export default function TournamentPage() {
                     })();
                 }
             )
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'tournament_players',
-                },
-                (payload) => {
-                    // Refresh tournaments when players change
-                    (async () => {
-                        try {
-                            const data = await tournamentService.getTournaments(clubId);
-                            setTournaments(data);
-                            // Update selected tournament if it changed
-                            const updated = data.find(t => t.id === selectedTournament?.id);
-                            if (updated) setSelectedTournament(updated);
-                        } catch (error) {
-                            console.error('Failed to refresh tournaments:', error);
-                        }
-                    })();
-                }
-            )
             .subscribe();
 
         return () => {

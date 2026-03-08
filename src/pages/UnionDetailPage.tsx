@@ -167,9 +167,9 @@ export default function UnionDetailPage() {
                     const settlementReport = await unionService.getSettlementReport(unionId);
 
                     // Calculate overdue as sum of pending PAY_TO_UNION amounts
-                    const overdueAmount = settlementReport.clubBreakdowns
+                    const overdueAmount = Math.trunc(settlementReport.clubBreakdowns
                         .filter(c => c.wireDirection === 'PAY_TO_UNION')
-                        .reduce((sum, c) => sum + Math.abs(c.unionTaxPaid), 0);
+                        .reduce((sum, c) => sum + Math.abs(c.unionTaxPaid), 0) * 100) / 100;
 
                     setFinancialSummary({
                         totalRakeThisPeriod: settlementReport.totalRakeCollected,
@@ -218,11 +218,18 @@ export default function UnionDetailPage() {
                         setUnionTournaments([]);
                         return;
                     }
-                    const { data: tournaments } = await supabase
-                        .from('tournaments')
-                        .select('*, clubs(name)')
-                        .in('club_id', clubIds)
-                        .order('start_time', { ascending: true });
+                    // Fetch both club-hosted and XMTT tournaments (same as initial load)
+                    const [{ data: clubTournaments }, { data: xmttTournaments }] = await Promise.all([
+                        supabase.from('tournaments').select('*, clubs(name)').in('club_id', clubIds).order('start_time', { ascending: true }),
+                        supabase.from('tournaments').select('*, clubs(name)').eq('union_id', unionId).eq('is_xmtt', true).order('start_time', { ascending: true }),
+                    ]);
+                    const allT = [...(clubTournaments || []), ...(xmttTournaments || [])];
+                    const seen = new Set<string>();
+                    const tournaments = allT.filter(t => {
+                        if (seen.has(t.id)) return false;
+                        seen.add(t.id);
+                        return true;
+                    });
 
                     // Sort: REGISTERING/ANNOUNCED first, then RUNNING, then by start_time desc
                     const statusOrder: Record<string, number> = { REGISTERING: 0, ANNOUNCED: 1, RUNNING: 2, COMPLETED: 3, CANCELLED: 4 };

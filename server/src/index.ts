@@ -464,6 +464,7 @@ class TournamentManager {
     private blindTimerStartedAt: number = 0;
     // Hand-for-hand sync
     private handForHandSyncInterval: NodeJS.Timeout | null = null;
+    private handForHandRePauseTimer: NodeJS.Timeout | null = null;
     // Late reg finalization
     private prizePoolFinalized: boolean = false;
     // Tournament metadata cache
@@ -597,7 +598,9 @@ class TournamentManager {
                 }
                 // Re-pause for next hand-for-hand cycle (if still active)
                 if (this.handForHandActive) {
-                    setTimeout(() => {
+                    if (this.handForHandRePauseTimer) clearTimeout(this.handForHandRePauseTimer);
+                    this.handForHandRePauseTimer = setTimeout(() => {
+                        this.handForHandRePauseTimer = null;
                         for (const engine of this.tableEngines.values()) {
                             engine.pauseAfterHand();
                         }
@@ -829,6 +832,7 @@ class TournamentManager {
         this.tableEngines.clear();
         // Cleanup hand-for-hand sync
         this.stopHandForHandSync();
+        if (this.handForHandRePauseTimer) { clearTimeout(this.handForHandRePauseTimer); this.handForHandRePauseTimer = null; }
         // Best-effort cleanup of broadcast channel (non-async in sync stop)
         if (this.broadcastChannel) {
             try { this.broadcastChannel.unsubscribe(); } catch { }
