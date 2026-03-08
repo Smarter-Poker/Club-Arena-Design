@@ -186,6 +186,34 @@ export default function UnionDetailPage() {
         loadData();
     }, [unionId]);
 
+    // ── Realtime: live union data updates ──
+    useEffect(() => {
+        if (!unionId) return;
+        const channel = supabase
+            .channel(`union-detail-${unionId}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'union_clubs',
+                filter: `union_id=eq.${unionId}`,
+            }, () => {
+                // Reload when union club membership changes
+                if (unionId) {
+                    unionService.getUnionClubs(unionId).then(setClubs).catch(() => {});
+                }
+            })
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'unions',
+                filter: `id=eq.${unionId}`,
+            }, () => {
+                unionService.getUnion(unionId).then(setUnion).catch(() => {});
+            })
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }, [unionId]);
+
     const handleApplyClick = async () => {
         if (!user) return;
 

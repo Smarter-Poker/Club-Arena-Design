@@ -85,6 +85,23 @@ export default function PlayerStatsPage() {
         }
     }, [targetUserId]);
 
+    // ── Realtime: live stats updates when new hands complete ──
+    useEffect(() => {
+        if (!targetUserId) return;
+        const channel = supabase
+            .channel(`player-stats-${targetUserId}`)
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'hand_history',
+            }, () => {
+                loadStats();
+                loadSessionHistory();
+            })
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }, [targetUserId]);
+
     const loadStats = async () => {
         setLoading(true);
         try {

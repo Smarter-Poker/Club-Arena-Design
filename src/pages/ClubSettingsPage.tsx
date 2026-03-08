@@ -64,6 +64,23 @@ export default function ClubSettingsPage() {
         if (clubId) loadClubSettings();
     }, [clubId]);
 
+    // ── Realtime: live club settings changes ──
+    useEffect(() => {
+        if (!clubId) return;
+        const channel = supabase
+            .channel(`club-settings-${clubId}`)
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'clubs',
+                filter: `id=eq.${clubId}`,
+            }, () => {
+                loadClubSettings();
+            })
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }, [clubId]);
+
     const loadClubSettings = async () => {
         setLoading(true);
         try {

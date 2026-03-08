@@ -326,6 +326,29 @@ export default function TableConfigPage() {
         fetchTemplates();
     }, [clubId]);
 
+    // ── Realtime: live template updates ──
+    useEffect(() => {
+        if (!clubId) return;
+        const channel = supabase
+            .channel(`table-config-${clubId}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'table_templates',
+                filter: `club_id=eq.${clubId}`,
+            }, () => {
+                supabase
+                    .from('table_templates')
+                    .select('*')
+                    .eq('club_id', clubId)
+                    .eq('is_deleted', false)
+                    .order('created_at', { ascending: false })
+                    .then(({ data }) => { if (data) setTemplates(data); });
+            })
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }, [clubId]);
+
     // Generate default table name
     useEffect(() => {
         const blindsLabel = `${config.smallBlind}/${config.bigBlind}`;

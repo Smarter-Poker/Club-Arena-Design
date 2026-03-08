@@ -46,6 +46,22 @@ export default function TransactionHistoryPage() {
         }
     }, [user?.id, filter]);
 
+    // ── Realtime: live transaction updates ──
+    useEffect(() => {
+        if (!user?.id) return;
+        const channel = supabase
+            .channel(`tx-history-${user.id}`)
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'chip_transactions',
+            }, () => {
+                loadTransactions(0, true);
+            })
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }, [user?.id]);
+
     const loadTransactions = async (pageNum: number, reset = false) => {
         if (reset) setLoading(true);
         else setLoadingMore(true);
