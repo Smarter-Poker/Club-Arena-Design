@@ -27,6 +27,12 @@ interface Tournament {
     lateRegMins?: number;
     isRebuy?: boolean;
     guaranteedPrize?: number;
+    isBounty?: boolean;
+    isPko?: boolean;
+    isMysteryBounty?: boolean;
+    bountyAmount?: number;
+    isMultiDay?: boolean;
+    isPinned?: boolean;
 }
 
 interface TournamentLobbyCardProps {
@@ -136,9 +142,10 @@ export default function TournamentLobbyCard({
     const isFull = spotsRemaining <= 0;
 
     return (
-        <div className={styles.card} onClick={() => navigate(`/tournaments/${tournament.id}`)} style={{ cursor: 'pointer' }}>
+        <div className={`${styles.card} ${tournament.isPinned ? styles.pinnedCard : ''}`} onClick={() => navigate(`/tournaments/${tournament.id}`)} style={{ cursor: 'pointer' }}>
             {/* Header */}
             <div className={styles.header}>
+                {tournament.isPinned && <span className={styles.pinnedBadge}>PINNED</span>}
                 <span className={styles.type}>{getTypeLabel(tournament.type)}</span>
                 <span
                     className={styles.status}
@@ -189,8 +196,20 @@ export default function TournamentLobbyCard({
             </div>
 
             {/* Feature Tags */}
-            {(tournament.lateRegMins || tournament.isRebuy) && (
+            {(tournament.lateRegMins || tournament.isRebuy || tournament.isBounty || tournament.isPko || tournament.isMysteryBounty || tournament.isMultiDay) && (
                 <div className={styles.featureTags}>
+                    {tournament.isBounty && !tournament.isPko && !tournament.isMysteryBounty && (
+                        <span className={`${styles.featureTag} ${styles.bountyTag}`}>Bounty {tournament.bountyAmount ? tournament.bountyAmount : ''}</span>
+                    )}
+                    {tournament.isPko && (
+                        <span className={`${styles.featureTag} ${styles.pkoTag}`}>PKO</span>
+                    )}
+                    {tournament.isMysteryBounty && (
+                        <span className={`${styles.featureTag} ${styles.mysteryTag}`}>Mystery Bounty</span>
+                    )}
+                    {tournament.isMultiDay && (
+                        <span className={`${styles.featureTag} ${styles.multiDayTag}`}>Multi-Day</span>
+                    )}
                     {tournament.lateRegMins && tournament.lateRegMins > 0 && (
                         <span className={styles.featureTag}>Late Reg {tournament.lateRegMins}m</span>
                     )}

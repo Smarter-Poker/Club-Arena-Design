@@ -20,6 +20,7 @@ import { useUnionStore } from '../stores/useUnionStore';
 import styles from './UnionDetailPage.module.css';
 import { useToast } from '../components/common/Toast';
 import ConfirmModal from '../components/common/ConfirmModal';
+import CreateTournamentModal from '../components/club/CreateTournamentModal';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -71,6 +72,7 @@ export default function UnionDetailPage() {
     const [confirmJoin, setConfirmJoin] = useState<{ show: boolean; club: Club | null }>({ show: false, club: null });
     const [removingClubId, setRemovingClubId] = useState<string | null>(null);
     const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+    const [showXmttModal, setShowXmttModal] = useState(false);
     const [settingsForm, setSettingsForm] = useState({
         revenueSharePercent: 10,
         sharedPlayerPool: true,
@@ -551,15 +553,34 @@ export default function UnionDetailPage() {
                 {/* Tournaments Tab */}
                 {activeTab === 'tournaments' && union?.settings?.crossClubTournaments && (
                     <div className={styles.tournamentsContainer || styles.tablesGrid}>
-                        <div className={styles.sectionHeader || styles.card}>
-                            <h3> Union Tournaments</h3>
-                            <p>Tournaments open to all member clubs</p>
+                        <div className={styles.sectionHeader || styles.card} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <h3> Union Tournaments (XMTT)</h3>
+                                <p>Tournaments open to all member clubs</p>
+                            </div>
+                            {union?.ownerId === user?.id && clubs.length > 0 && (
+                                <button
+                                    className={styles.joinButton}
+                                    style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', border: 'none', fontWeight: 700 }}
+                                    onClick={() => setShowXmttModal(true)}
+                                >
+                                    + Create XMTT
+                                </button>
+                            )}
                         </div>
                         {unionTournaments.length === 0 ? (
                             <div className={styles.emptyState || styles.emptyText}>
                                 <span>T</span>
                                 <p>No union-wide tournaments scheduled</p>
-                                <p style={{ fontSize: '0.85rem', opacity: 0.7 }}>Create a tournament from any member club and it will appear here</p>
+                                {union?.ownerId === user?.id && (
+                                    <button
+                                        className={styles.joinButton}
+                                        style={{ marginTop: '1rem', background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', border: 'none' }}
+                                        onClick={() => setShowXmttModal(true)}
+                                    >
+                                        + Create First XMTT
+                                    </button>
+                                )}
                             </div>
                         ) : (
                             <div className={styles.tablesGrid}>
@@ -724,6 +745,30 @@ export default function UnionDetailPage() {
                     </div>
                 )}
             </section>
+
+            {/* XMTT Creation Modal */}
+            {showXmttModal && clubs.length > 0 && unionId && (
+                <CreateTournamentModal
+                    clubId={clubs[0].clubId}
+                    unionId={unionId}
+                    onClose={() => setShowXmttModal(false)}
+                    onSuccess={() => {
+                        setShowXmttModal(false);
+                        // Reload union tournaments
+                        if (union?.settings?.crossClubTournaments && clubs.length > 0) {
+                            const clubIds = clubs.map(c => c.clubId);
+                            supabase.from('tournaments')
+                                .select('*, clubs!club_id(name)')
+                                .in('club_id', clubIds)
+                                .in('status', ['ANNOUNCED', 'REGISTERING', 'RUNNING'])
+                                .order('start_time', { ascending: true })
+                                .then(({ data }) => {
+                                    if (data) setUnionTournaments(data);
+                                });
+                        }
+                    }}
+                />
+            )}
 
             {/* Join Confirmation Modal */}
             <ConfirmModal

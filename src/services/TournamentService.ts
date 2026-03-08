@@ -106,6 +106,14 @@ export interface TournamentConfig {
         tournamentId: string;
         seatsAwarded: number;
     };
+
+    // Multi-Day
+    isMultiDay?: boolean;
+    totalDays?: number;
+
+    // XMTT (Union Tournament)
+    isXmtt?: boolean;
+    unionId?: string;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -312,35 +320,76 @@ class TournamentService {
      * Create a new tournament
      */
     async createTournament(clubId: string, config: TournamentConfig): Promise<Tournament> {
-        // Union guard: clubs inside a union cannot create their own tournaments
-        const { data: unionCheck } = await supabase
-            .from('union_clubs')
-            .select('union_id')
-            .eq('club_id', clubId)
-            .maybeSingle();
-        if (unionCheck) {
-            throw new Error('Clubs inside a union cannot create standalone tournaments. Tournaments are managed at the union level.');
+        // Union guard: clubs inside a union cannot create standalone MTTs
+        // (they CAN create SNGs/Spins locally, and XMTT flow passes unionId to bypass)
+        if (!config.isXmtt && (config.type === 'mtt' || config.type === 'bounty' || config.type === 'progressive_bounty' || config.type === 'mystery_bounty')) {
+            const { data: unionCheck } = await supabase
+                .from('union_clubs')
+                .select('union_id')
+                .eq('club_id', clubId)
+                .maybeSingle();
+            if (unionCheck) {
+                throw new Error('Clubs inside a union cannot create standalone tournaments. Use the Union page to create XMTT tournaments.');
+            }
         }
+
+        // Map format to variant for DB
+        const variantMap: Record<string, string> = {
+            'mtt': 'freezeout',
+            'sng': 'sng',
+            'bounty': 'bounty',
+            'progressive_bounty': 'progressive_bounty',
+            'mystery_bounty': 'mystery_bounty',
+            'spin': 'spin',
+            'satellite': 'satellite',
+        };
+
+        // Map tournament type for the tournament_type column
+        const isBountyType = config.type === 'bounty' || config.type === 'progressive_bounty' || config.type === 'mystery_bounty';
 
         const { data, error } = await supabase
             .from('tournaments')
             .insert({
                 club_id: clubId,
                 name: config.name,
-                game_type: config.type?.toUpperCase() || 'NLH',
+                game_type: 'NLH', // Default — game variant is separate from tournament format
+                variant: variantMap[config.type] || 'freezeout',
+                tournament_type: config.type === 'sng' ? 'SNG' : config.type === 'spin' ? 'SPIN' : 'MTT',
                 buy_in_amount: config.buyIn,
                 buy_in_fee: config.rake || 0,
                 starting_chips: config.startingStack,
                 max_players: config.maxPlayers,
+                min_players: config.minPlayers || 3,
                 current_players: 0,
-                status: 'ANNOUNCED',
+                status: 'REGISTERING',
                 blind_structure: config.blindStructure,
                 payout_structure: config.payoutStructure,
                 guaranteed_prize: config.guaranteedPrize || 0,
                 late_reg_mins: config.lateRegistrationLevels || 0,
+                start_time: config.startTime?.toISOString() || new Date(Date.now() + 60000).toISOString(),
+                // Rebuy / Add-on
                 is_rebuy: config.isRebuy || false,
+                rebuy_cost: config.rebuyCost || 0,
+                rebuy_chips: config.rebuyChips || 0,
+                rebuy_levels: config.rebuyLevels || 4,
                 add_on_available: config.addOnAvailable || false,
-                start_time: config.startTime?.toISOString(),
+                addon_cost: config.addOnCost || 0,
+                addon_chips: config.addOnChips || 0,
+                // Bounty
+                is_bounty: isBountyType,
+                bounty_amount: config.bountyConfig?.baseBounty || 0,
+                is_pko: config.type === 'progressive_bounty',
+                is_mystery_bounty: config.type === 'mystery_bounty',
+                mystery_bounty_min: config.bountyConfig?.mysteryTiers?.[0]?.minMultiplier || 0,
+                mystery_bounty_max: config.bountyConfig?.mysteryTiers?.[config.bountyConfig.mysteryTiers.length - 1]?.maxMultiplier || 0,
+                // Multi-Day
+                is_multi_day: config.isMultiDay || false,
+                total_days: config.totalDays || 1,
+                day_number: 1,
+                flight_number: 1,
+                // XMTT (Union Tournament)
+                is_xmtt: config.isXmtt || false,
+                union_id: config.unionId || null,
             })
             .select()
             .single();
@@ -442,6 +491,32 @@ class TournamentService {
             );
         }
 
+        // Initialize bounty values for bounty tournaments
+        const isBountyTournament = tournament.is_bounty || tournament.is_pko || tournament.is_mystery_bounty;
+        let currentBounty = 0;
+        let mysteryBountyValue = 0;
+        if (isBountyTournament) {
+            currentBounty = tournament.bounty_amount || 0;
+            if (tournament.is_mystery_bounty) {
+                // Roll the mystery bounty value at registration (hidden until revealed on KO)
+                const baseBounty = tournament.bounty_amount || 0;
+                const bountyConfig: BountyConfig = {
+                    bountyType: 'mystery',
+                    baseBounty,
+                    mysteryTiers: [
+                        { minMultiplier: 1, maxMultiplier: 1, probability: 60 },
+                        { minMultiplier: 2, maxMultiplier: 2, probability: 25 },
+                        { minMultiplier: 5, maxMultiplier: 5, probability: 10 },
+                        { minMultiplier: 10, maxMultiplier: 10, probability: 4 },
+                        { minMultiplier: 50, maxMultiplier: 50, probability: 0.9 },
+                        { minMultiplier: 500, maxMultiplier: 500, probability: 0.1 },
+                    ],
+                };
+                mysteryBountyValue = this.rollMysteryBounty(bountyConfig);
+                currentBounty = mysteryBountyValue;
+            }
+        }
+
         // Insert player (username is NOT NULL in schema — must be provided)
         const { data, error } = await supabase
             .from('tournament_players')
@@ -451,6 +526,12 @@ class TournamentService {
                 username: username,
                 chips: 0,
                 status: 'registered',
+                ...(isBountyTournament ? {
+                    current_bounty: currentBounty,
+                    mystery_bounty_value: mysteryBountyValue || null,
+                    bounties_collected: 0,
+                    bounty_winnings: 0,
+                } : {}),
             })
             .select()
             .single();
@@ -824,11 +905,10 @@ class TournamentService {
             return [];
         })();
         const payoutEntry = payoutArr.find((p: any) => p.place === position);
-        const prizeRaw = payoutEntry
-            ? (tournament.prize_pool * payoutEntry.percentage) / 100
+        // Exact cent-precision: trunc(pool * percentage) / 100
+        const prize = payoutEntry
+            ? Math.trunc(tournament.prize_pool * payoutEntry.percentage) / 100
             : 0;
-        // Convert to cents, truncate sub-cent, back to dollars for exact penny precision
-        const prize = Math.trunc(prizeRaw * 100) / 100;
 
         await supabase
             .from('tournament_players')
@@ -922,8 +1002,10 @@ class TournamentService {
     calculatePayout(prizePool: number, position: number, structure: PayoutStructure[]): number {
         const entry = structure.find(p => p.place === position);
         if (!entry) return 0;
-        // Exact cent-precision: truncate sub-cent fractions only
-        return Math.trunc((prizePool * entry.percentage) / 100 * 100) / 100;
+        // Exact cent-precision: multiply to cents, truncate, back to dollars
+        // Formula: trunc(pool * percentage / 100 * 100) / 100
+        // Simplified: trunc(pool * percentage) / 100
+        return Math.trunc(prizePool * entry.percentage) / 100;
     }
 
     /**
@@ -989,11 +1071,9 @@ class TournamentService {
         const tournament = await this.getTournament(tournamentId);
         if (!tournament) return { allowed: false, reason: 'Tournament not found' };
 
-        // @ts-ignore - Check if rebuy is configured
         if (!tournament.is_rebuy) return { allowed: false, reason: 'Rebuys not available' };
 
         const levelState = this.getCurrentLevelState(tournament);
-        // @ts-ignore
         if (levelState.levelIndex >= (tournament.rebuy_levels || 4)) {
             return { allowed: false, reason: 'Rebuy period has ended' };
         }
@@ -1026,9 +1106,7 @@ class TournamentService {
         const tournament = await this.getTournament(tournamentId);
         if (!tournament) throw new Error('Tournament not found');
 
-        // @ts-ignore
         const rebuyChips = tournament.rebuy_chips || tournament.starting_chips;
-        // @ts-ignore
         const rebuyCost = tournament.rebuy_cost || tournament.buy_in_amount;
 
         // Pre-validate wallet balance (better error messages)
@@ -1090,12 +1168,10 @@ class TournamentService {
         const tournament = await this.getTournament(tournamentId);
         if (!tournament) return { allowed: false, reason: 'Tournament not found' };
 
-        // @ts-ignore
-        if (!tournament.addon_available) return { allowed: false, reason: 'Add-ons not available' };
+        if (!tournament.add_on_available) return { allowed: false, reason: 'Add-ons not available' };
 
         const levelState = this.getCurrentLevelState(tournament);
         // Add-on typically available at end of rebuy period
-        // @ts-ignore
         const addonLevel = tournament.rebuy_levels || 4;
         if (levelState.levelIndex !== addonLevel) {
             return { allowed: false, reason: 'Add-on period not active' };
@@ -1116,9 +1192,7 @@ class TournamentService {
         const tournament = await this.getTournament(tournamentId);
         if (!tournament) throw new Error('Tournament not found');
 
-        // @ts-ignore
         const addonChips = tournament.addon_chips || tournament.starting_chips;
-        // @ts-ignore
         const addonCost = tournament.addon_cost || tournament.buy_in_amount;
 
         // Pre-validate wallet balance (better error messages)
@@ -1457,9 +1531,8 @@ class TournamentService {
      * Create and start a Spin & Go
      */
     async createSpin(clubId: string, buyIn: number, rake: number): Promise<Tournament> {
-        const spinResult = this.spinMultiplier(SPIN_MULTIPLIERS.standard);
-        const prizePool = (buyIn - rake) * 3 * spinResult.multiplier;
-
+        // Multiplier is NOT selected here — it's rolled at game start in TournamentEngine
+        // This preserves the "surprise" element of Spin & Go
         const config: TournamentConfig = {
             name: `Spin & Go ${buyIn}`,
             type: 'spin',
@@ -1478,19 +1551,7 @@ class TournamentService {
             },
         };
 
-        const tournament = await this.createTournament(clubId, config);
-
-        // Update with actual prize pool
-        await supabase
-            .from('tournaments')
-            .update({
-                prize_pool: prizePool,
-                spin_multiplier: spinResult.multiplier,
-                is_premium_spin: spinResult.isPremium,
-            })
-            .eq('id', tournament.id);
-
-        return { ...tournament, prize_pool: prizePool };
+        return await this.createTournament(clubId, config);
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
@@ -1508,11 +1569,21 @@ class TournamentService {
         const tournament = await this.getTournament(tournamentId);
         if (!tournament) throw new Error('Tournament not found');
 
-        // @ts-ignore - Get bounty config
-        const bountyConfig = tournament.bounty_config as BountyConfig | undefined;
-        if (!bountyConfig) {
+        // Build BountyConfig from individual tournament columns
+        if (!tournament.is_bounty && !tournament.is_pko && !tournament.is_mystery_bounty) {
             return { bountyAmount: 0 };
         }
+        const bountyConfig: BountyConfig = {
+            bountyType: tournament.is_pko ? 'progressive' : tournament.is_mystery_bounty ? 'mystery' : 'fixed',
+            baseBounty: tournament.bounty_amount || 0,
+            mysteryTiers: tournament.is_mystery_bounty ? [
+                { minMultiplier: tournament.mystery_bounty_min || 1, maxMultiplier: tournament.mystery_bounty_min || 1, probability: 60 },
+                { minMultiplier: 2, maxMultiplier: 2, probability: 25 },
+                { minMultiplier: 5, maxMultiplier: 5, probability: 10 },
+                { minMultiplier: 10, maxMultiplier: 10, probability: 4 },
+                { minMultiplier: tournament.mystery_bounty_max || 50, maxMultiplier: tournament.mystery_bounty_max || 50, probability: 1 },
+            ] : undefined,
+        };
 
         // Get eliminated player's bounty
         const { data: eliminatedPlayer } = await supabase

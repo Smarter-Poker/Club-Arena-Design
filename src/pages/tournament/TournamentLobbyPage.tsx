@@ -18,7 +18,7 @@ import { ArenaTrainingController } from '../../services/ArenaTrainingController'
 import styles from './TournamentLobbyPage.module.css';
 
 type TournamentStatus = 'all' | 'upcoming' | 'REGISTERING' | 'RUNNING' | 'COMPLETED';
-type TournamentType = 'all' | 'freeroll' | 'regular' | 'bounty' | 'satellite';
+type TournamentTypeFilter = 'all' | 'mtt' | 'sng' | 'spin' | 'bounty' | 'pko' | 'mystery';
 
 interface Tournament {
     id: string;
@@ -38,6 +38,14 @@ interface Tournament {
     gameType: string;
     lateRegMins: number;
     isRebuy: boolean;
+    variant: string;
+    tournamentType: string;
+    isBounty: boolean;
+    isPko: boolean;
+    isMysteryBounty: boolean;
+    bountyAmount: number;
+    isMultiDay: boolean;
+    isPinned: boolean;
 }
 
 export default function TournamentLobbyPage() {
@@ -47,7 +55,7 @@ export default function TournamentLobbyPage() {
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState<TournamentStatus>('all');
-    const [typeFilter, setTypeFilter] = useState<TournamentType>('all');
+    const [typeFilter, setTypeFilter] = useState<TournamentTypeFilter>('all');
     const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
@@ -110,13 +118,34 @@ export default function TournamentLobbyPage() {
                     max_players,
                     starting_chips,
                     game_type,
+                    variant,
+                    tournament_type,
                     late_reg_mins,
                     is_rebuy,
+                    is_bounty,
+                    is_pko,
+                    is_mystery_bounty,
+                    bounty_amount,
+                    is_multi_day,
+                    is_pinned,
                     clubs!club_id(name)
                 `;
 
+            // 72-hour display window: only show tournaments starting within 72h (or already running)
+            const now = new Date();
+            const seventyTwoHoursOut = new Date(now.getTime() + 72 * 60 * 60 * 1000).toISOString();
+
             let activeQuery = supabase.from('tournaments').select(fields)
                 .in('status', ['ANNOUNCED', 'REGISTERING', 'RUNNING'])
+                .lte('start_time', seventyTwoHoursOut)
+                .order('is_pinned', { ascending: false })
+                .order('start_time', { ascending: true });
+
+            // Also fetch pinned tournaments regardless of start_time
+            let pinnedQuery = supabase.from('tournaments').select(fields)
+                .eq('is_pinned', true)
+                .in('status', ['ANNOUNCED', 'REGISTERING', 'RUNNING'])
+                .gt('start_time', seventyTwoHoursOut)
                 .order('start_time', { ascending: true });
 
             let completedQuery = supabase.from('tournaments').select(fields)
@@ -126,6 +155,7 @@ export default function TournamentLobbyPage() {
 
             if (clubId) {
                 activeQuery = activeQuery.eq('club_id', clubId);
+                pinnedQuery = pinnedQuery.eq('club_id', clubId);
                 completedQuery = completedQuery.eq('club_id', clubId);
             }
 
@@ -133,11 +163,18 @@ export default function TournamentLobbyPage() {
             let data: any[] = [];
             let error: any = null;
             if (statusFilter === 'all' || statusFilter === 'upcoming') {
-                const [activeRes, completedRes] = await Promise.all([activeQuery, completedQuery]);
-                error = activeRes.error || completedRes.error;
+                const [activeRes, pinnedRes, completedRes] = await Promise.all([activeQuery, pinnedQuery, completedQuery]);
+                error = activeRes.error || pinnedRes.error || completedRes.error;
                 const active = activeRes.data || [];
+                const pinned = pinnedRes.data || [];
                 const completed = statusFilter === 'upcoming' ? [] : (completedRes.data || []);
-                data = [...active, ...completed];
+                // Merge pinned (beyond 72h) with active, deduplicate by id
+                const seen = new Set<string>();
+                const merged: any[] = [];
+                for (const t of [...pinned, ...active]) {
+                    if (!seen.has(t.id)) { seen.add(t.id); merged.push(t); }
+                }
+                data = [...merged, ...completed];
             } else if (statusFilter === 'REGISTERING') {
                 const res = await supabase.from('tournaments').select(fields).eq('status', 'REGISTERING').order('start_time', { ascending: true }).limit(50);
                 data = res.data || []; error = res.error;
@@ -178,6 +215,14 @@ export default function TournamentLobbyPage() {
                     lateRegMins: t.late_reg_mins || 0,
                     isRebuy: t.is_rebuy || false,
                     guaranteedPrize: t.guaranteed_prize || 0,
+                    variant: t.variant || 'freezeout',
+                    tournamentType: t.tournament_type || 'MTT',
+                    isBounty: t.is_bounty || false,
+                    isPko: t.is_pko || false,
+                    isMysteryBounty: t.is_mystery_bounty || false,
+                    bountyAmount: t.bounty_amount || 0,
+                    isMultiDay: t.is_multi_day || false,
+                    isPinned: t.is_pinned || false,
                 }));
 
                 setTournaments(mapped);
@@ -216,12 +261,36 @@ export default function TournamentLobbyPage() {
     };
 
     const filteredTournaments = tournaments.filter(t => {
+        // Text search
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
-            return t.name.toLowerCase().includes(query) ||
-                t.clubName.toLowerCase().includes(query);
+            if (!t.name.toLowerCase().includes(query) && !t.clubName.toLowerCase().includes(query)) {
+                return false;
+            }
+        }
+        // Type filter
+        if (typeFilter !== 'all') {
+            switch (typeFilter) {
+                case 'mtt': return t.variant === 'freezeout' && !t.isBounty && !t.isPko && !t.isMysteryBounty;
+                case 'sng': return t.variant === 'sng';
+                case 'spin': return t.variant === 'spin';
+                case 'bounty': return t.isBounty && !t.isPko && !t.isMysteryBounty;
+                case 'pko': return t.isPko;
+                case 'mystery': return t.isMysteryBounty;
+            }
         }
         return true;
+    }).sort((a, b) => {
+        // Pinned tournaments always first
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        // Then by status priority: RUNNING > REGISTERING > ANNOUNCED > COMPLETED
+        const statusPriority: Record<string, number> = { RUNNING: 0, REGISTERING: 1, ANNOUNCED: 2, COMPLETED: 3, CANCELLED: 4 };
+        const aPriority = statusPriority[a.status] ?? 5;
+        const bPriority = statusPriority[b.status] ?? 5;
+        if (aPriority !== bPriority) return aPriority - bPriority;
+        // Then by start time
+        return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
     });
 
     const upcomingCount = tournaments.filter(t => ['ANNOUNCED', 'REGISTERING'].includes(t.status)).length;
@@ -258,7 +327,7 @@ export default function TournamentLobbyPage() {
                 />
             </div>
 
-            {/* Filters */}
+            {/* Status Filters */}
             <div className={styles.filters}>
                 <div className={styles.filterGroup}>
                     {(['all', 'upcoming', 'REGISTERING', 'RUNNING', 'COMPLETED'] as TournamentStatus[]).map(status => (
@@ -272,6 +341,27 @@ export default function TournamentLobbyPage() {
                                     status === 'REGISTERING' ? 'Registering' :
                                         status === 'RUNNING' ? 'Live' :
                                             'Completed'}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Type Filters */}
+            <div className={styles.filters}>
+                <div className={styles.filterGroup}>
+                    {(['all', 'mtt', 'sng', 'spin', 'bounty', 'pko', 'mystery'] as TournamentTypeFilter[]).map(tf => (
+                        <button
+                            key={tf}
+                            className={`${styles.filterBtn} ${styles.typeBtn} ${typeFilter === tf ? styles.active : ''}`}
+                            onClick={() => setTypeFilter(tf as TournamentTypeFilter)}
+                        >
+                            {tf === 'all' ? 'All Types' :
+                                tf === 'mtt' ? 'MTT' :
+                                    tf === 'sng' ? 'SNG' :
+                                        tf === 'spin' ? 'Spin' :
+                                            tf === 'bounty' ? 'Bounty' :
+                                                tf === 'pko' ? 'PKO' :
+                                                    'Mystery'}
                         </button>
                     ))}
                 </div>
@@ -302,7 +392,7 @@ export default function TournamentLobbyPage() {
                             tournament={{
                                 id: tournament.id,
                                 name: tournament.name,
-                                type: 'mtt',
+                                type: tournament.variant === 'sng' ? 'sng' : tournament.variant === 'spin' ? 'spin' : 'mtt',
                                 buyIn: tournament.buyIn,
                                 prizePool: tournament.prizePool,
                                 maxPlayers: tournament.maxPlayers,
@@ -315,6 +405,12 @@ export default function TournamentLobbyPage() {
                                 lateRegMins: tournament.lateRegMins,
                                 isRebuy: tournament.isRebuy,
                                 guaranteedPrize: tournament.guaranteedPrize,
+                                isBounty: tournament.isBounty,
+                                isPko: tournament.isPko,
+                                isMysteryBounty: tournament.isMysteryBounty,
+                                bountyAmount: tournament.bountyAmount,
+                                isMultiDay: tournament.isMultiDay,
+                                isPinned: tournament.isPinned,
                             }}
                             onRegister={() => handleRegister(tournament.id)}
                         />

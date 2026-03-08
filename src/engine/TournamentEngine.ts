@@ -43,7 +43,10 @@ interface TournamentInfo {
     name: string;
     club_id: string;
     game_type: string;
+    variant?: string;
+    tournament_type?: string;
     buy_in_amount: number;
+    buy_in_fee?: number;
     starting_chips: number;
     max_players: number;
     current_players: number;
@@ -52,6 +55,11 @@ interface TournamentInfo {
     payout_structure: PayoutEntry[];
     started_at: string;
     current_level?: number;
+    // Bounty fields
+    is_bounty?: boolean;
+    is_pko?: boolean;
+    is_mystery_bounty?: boolean;
+    bounty_amount?: number;
 }
 
 interface TournamentTable {
@@ -197,6 +205,23 @@ export class TournamentEngine {
                 );
                 this.running = false;
                 return;
+            }
+
+            // Step 2c: For Spin & Go tournaments, roll the multiplier now (at game start, not creation)
+            if (this.tournamentInfo.variant === 'spin' || this.tournamentInfo.tournament_type === 'SPIN') {
+                const { tournamentService, SPIN_MULTIPLIERS } = await import('../services/TournamentService');
+                const spinResult = tournamentService.spinMultiplier(SPIN_MULTIPLIERS.standard);
+                const netBuyIn = (this.tournamentInfo.buy_in_amount || 0) - (this.tournamentInfo.buy_in_fee || 0);
+                const prizePool = Math.trunc(netBuyIn * this.players.size * spinResult.multiplier * 100) / 100;
+
+                await this.supabase.from('tournaments').update({
+                    prize_pool: prizePool,
+                    spin_multiplier: spinResult.multiplier,
+                    is_premium_spin: spinResult.isPremium || false,
+                }).eq('id', this.tournamentId);
+
+                this.tournamentInfo.prize_pool = prizePool;
+                console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] SPIN MULTIPLIER: ${spinResult.multiplier}x — Prize Pool: ${prizePool}`);
             }
 
             // Step 3: Create tournament tables
@@ -382,6 +407,15 @@ export class TournamentEngine {
             payout_structure: payouts,
             started_at: data.started_at || '',
             current_level: data.current_level || 1,
+            // Tournament type/variant for Spin & Bounty detection
+            variant: data.variant || 'freezeout',
+            tournament_type: data.tournament_type || 'MTT',
+            buy_in_fee: data.buy_in_fee || 0,
+            // Bounty fields
+            is_bounty: data.is_bounty || false,
+            is_pko: data.is_pko || false,
+            is_mystery_bounty: data.is_mystery_bounty || false,
+            bounty_amount: data.bounty_amount || 0,
         };
 
         console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Loaded: ${data.name}, ${playerCount} players, ${blinds.length} blind levels`);
@@ -752,9 +786,14 @@ export class TournamentEngine {
 
             if (!seats) continue;
 
+            // Get last hand winners for bounty knockout attribution
+            const lastWinners = table.engine.getLastHandWinnerIds ? table.engine.getLastHandWinnerIds() : [];
+            const knockerId = lastWinners.length > 0 ? lastWinners[0] : undefined;
+
             for (const seat of seats) {
                 if (seat.stack <= 0) {
-                    await this.eliminatePlayer(seat.user_id, table.tableId);
+                    // Pass the knocker ID (winner of last hand) for bounty crediting
+                    await this.eliminatePlayer(seat.user_id, table.tableId, knockerId !== seat.user_id ? knockerId : undefined);
                 }
             }
 
@@ -820,7 +859,7 @@ export class TournamentEngine {
         this.handsDealt = this.tables.reduce((sum, t) => sum + t.engine.getHandCount(), 0);
     }
 
-    private async eliminatePlayer(userId: string, tableId: string): Promise<void> {
+    private async eliminatePlayer(userId: string, tableId: string, knockerId?: string): Promise<void> {
         const player = this.players.get(userId);
         if (!player || player.status === 'eliminated') return;
 
@@ -858,6 +897,50 @@ export class TournamentEngine {
         // Credit prize to player wallet (if any)
         if (prize > 0) {
             await this.creditPrize(userId, prize);
+        }
+
+        // Handle bounty crediting if this is a bounty tournament and we know the knocker
+        if (knockerId && this.tournamentInfo && (this.tournamentInfo.is_bounty || this.tournamentInfo.is_pko || this.tournamentInfo.is_mystery_bounty)) {
+            try {
+                const { tournamentService } = await import('../services/TournamentService');
+                const bountyResult = await tournamentService.collectBounty(this.tournamentId, userId, knockerId);
+
+                if (bountyResult.bountyAmount > 0) {
+                    // Credit bounty winnings to knocker's wallet
+                    await this.creditPrize(knockerId, bountyResult.bountyAmount);
+
+                    // Update knocker's bounty stats
+                    await this.supabase.rpc('increment_bounty_stats', {
+                        p_tournament_id: this.tournamentId,
+                        p_user_id: knockerId,
+                        p_bounty_amount: bountyResult.bountyAmount,
+                    }).then(({ error }) => {
+                        // Fallback: if RPC doesn't exist, do a manual update
+                        if (error) {
+                            this.supabase
+                                .from('tournament_players')
+                                .select('bounties_collected, bounty_winnings')
+                                .eq('tournament_id', this.tournamentId)
+                                .eq('user_id', knockerId)
+                                .single()
+                                .then(({ data }) => {
+                                    if (data) {
+                                        this.supabase.from('tournament_players').update({
+                                            bounties_collected: (data.bounties_collected || 0) + 1,
+                                            bounty_winnings: Math.trunc(((data.bounty_winnings || 0) + bountyResult.bountyAmount) * 100) / 100,
+                                        })
+                                        .eq('tournament_id', this.tournamentId)
+                                        .eq('user_id', knockerId);
+                                    }
+                                });
+                        }
+                    });
+
+                    console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] BOUNTY: ${knockerId.slice(0, 8)} collected ${bountyResult.bountyAmount} bounty from ${player.username}`);
+                }
+            } catch (err) {
+                console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Bounty collection failed:`, err);
+            }
         }
     }
 

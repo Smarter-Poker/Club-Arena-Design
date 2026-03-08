@@ -157,6 +157,48 @@
     cursor: pointer;
 }
 
+.sectionDivider {
+    margin: 16px 0;
+    padding: 16px;
+    background: rgba(100, 108, 255, 0.06);
+    border: 1px solid rgba(100, 108, 255, 0.15);
+    border-radius: 10px;
+}
+
+.sectionLabel {
+    display: block;
+    color: #646cff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+}
+
+.payoutPreview {
+    margin: 16px 0;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid #333;
+    border-radius: 8px;
+}
+
+.payoutList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.payoutItem {
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    font-size: 0.75rem;
+    color: #aaa;
+    font-weight: 500;
+}
+
 /* ── Mobile ≤480px ── */
 @media (max-width: 480px) {
     .modal { padding: 16px; border-radius: 12px; }

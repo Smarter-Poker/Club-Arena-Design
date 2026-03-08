@@ -426,6 +426,8 @@ export class TournamentRecurringService {
             };
             const dbGameType = gameTypeMap[config.gameVariant] || 'NLH';
 
+            const isBountyType = config.type === 'bounty' || config.type === 'progressive_bounty' || config.type === 'mystery_bounty';
+
             const { data: tournament, error } = await supabase
                 .from('tournaments')
                 .insert({
@@ -433,17 +435,22 @@ export class TournamentRecurringService {
                     name: config.name,
                     game_type: dbGameType,
                     variant: config.type === 'mtt' ? 'freezeout' : config.type,
+                    tournament_type: 'MTT',
                     buy_in_amount: config.buyIn,
                     buy_in_fee: config.rake,
                     guaranteed_prize: config.guarantee || 0,
                     starting_chips: config.startingStack,
                     max_players: config.maxPlayers,
+                    min_players: config.minPlayers || 3,
                     current_players: 0,
-                    status: 'ANNOUNCED',
+                    status: 'REGISTERING',
                     blind_structure: config.blindStructure,
                     payout_structure: config.payoutStructure || [],
                     start_time: startTime.toISOString(),
                     late_reg_mins: 30,
+                    is_bounty: isBountyType,
+                    is_pko: config.type === 'progressive_bounty',
+                    is_mystery_bounty: config.type === 'mystery_bounty',
                 })
                 .select()
                 .single();
@@ -488,17 +495,19 @@ export class TournamentRecurringService {
                     name: config.name,
                     game_type: dbGameType,
                     variant: 'sng',
+                    tournament_type: 'SNG',
                     buy_in_amount: config.buyIn,
                     buy_in_fee: config.rake,
                     guaranteed_prize: 0,
                     starting_chips: config.startingStack,
                     max_players: config.maxPlayers,
+                    min_players: config.minPlayers || 3,
                     current_players: 0,
-                    status: 'ANNOUNCED',
+                    status: 'REGISTERING',
                     blind_structure: config.blindStructure,
                     payout_structure: config.payoutStructure || [],
                     start_time: startTime.toISOString(),
-                    late_reg_mins: 30,
+                    late_reg_mins: 0,
                 })
                 .select()
                 .single();
@@ -541,13 +550,15 @@ export class TournamentRecurringService {
                     name: `${config.name} (${multiplier}x)`,
                     game_type: dbGameType,
                     variant: 'spin',
+                    tournament_type: 'SPIN',
                     buy_in_amount: config.buyIn,
                     buy_in_fee: config.rake,
                     guaranteed_prize: prizePool,
                     starting_chips: config.startingStack,
                     max_players: config.maxPlayers,
+                    min_players: config.minPlayers || 3,
                     current_players: 0,
-                    status: 'ANNOUNCED',
+                    status: 'REGISTERING',
                     blind_structure: config.blindStructure,
                     payout_structure: config.payoutStructure || [],
                     start_time: startTime.toISOString(),

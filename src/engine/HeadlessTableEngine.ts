@@ -197,6 +197,13 @@ export class HeadlessTableEngine {
     }
 
     /**
+     * Get the last hand's winner IDs (used for bounty knockout tracking)
+     */
+    getLastHandWinnerIds(): string[] {
+        return this.currentHandWinnerIds;
+    }
+
+    /**
      * Register a callback that fires after each hand completes with final player stacks.
      * Used by TournamentEngine for real-time chip sync to tournament_players.
      */
