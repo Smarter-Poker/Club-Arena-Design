@@ -951,7 +951,6 @@ export default function AgentManagementPage() {
                 }}
                 clubId={clubId || ''}
                 recipientId={transferAgentId || undefined}
-                recipientType="agent"
                 onTransferComplete={() => {
                     // Refresh agents
                     if (clubId) {

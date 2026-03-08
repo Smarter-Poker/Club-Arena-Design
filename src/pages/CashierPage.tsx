@@ -659,7 +659,7 @@ export default function CashierPage() {
             {clubId && (
                 <ClubBottomNav
                     clubId={clubId}
-                    userRole={userRole}
+                    userRole={userRole as 'owner' | 'admin' | 'agent' | 'member'}
                 />
             )}
         </div>

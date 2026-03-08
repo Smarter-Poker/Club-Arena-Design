@@ -603,15 +603,115 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 @media (max-width: 768px) {
+    .tournament-page {
+        padding: 0.5rem;
+        gap: var(--space-3);
+    }
+
     .tournament-content {
         grid-template-columns: 1fr;
+        gap: var(--space-3);
+        min-height: auto;
+    }
+
+    .tournament-header {
+        flex-direction: column;
+        gap: var(--space-2);
+        padding: 1rem;
+    }
+
+    .tournament-header h1 {
+        font-size: var(--text-lg);
+        letter-spacing: 1px;
+    }
+
+    .tournament-list {
+        padding: var(--space-3);
+        border-radius: 12px;
+    }
+
+    .tournament-card {
+        padding: var(--space-3);
+    }
+
+    .tourn-name {
+        font-size: 0.85rem;
+    }
+
+    .tournament-details {
+        padding: var(--space-3);
+    }
+
+    .detail-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-2);
+        margin-bottom: var(--space-3);
+    }
+
+    .detail-header h2 {
+        font-size: var(--text-base);
     }
 
     .detail-stats {
         grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-2);
+    }
+
+    .detail-stats .stat {
+        padding: var(--space-2);
+    }
+
+    .stat-label {
+        font-size: 0.6rem;
+    }
+
+    .stat-value {
+        font-size: var(--text-base);
+    }
+
+    .blind-structure {
+        padding: 0.75rem;
+    }
+
+    .blind-structure th,
+    .blind-structure td {
+        padding: var(--space-1);
+        font-size: 0.75rem;
+    }
+
+    .payout-item {
+        padding: var(--space-2);
+        gap: var(--space-2);
+    }
+
+    .detail-actions .btn-block {
+        padding: 0.75rem;
+        font-size: 0.9rem;
     }
 
     .form-row {
         grid-template-columns: 1fr;
+    }
+
+    .modal {
+        width: 95%;
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 380px) {
+    .detail-stats {
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+    }
+
+    .stat-value {
+        font-size: 0.85rem;
+    }
+
+    .action-tabs-metal button {
+        font-size: 0.65rem !important;
+        padding: 8px 4px !important;
     }
 }
