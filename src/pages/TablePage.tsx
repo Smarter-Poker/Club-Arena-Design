@@ -60,6 +60,7 @@ import TableMenu from '../components/table/TableMenu';
 import PresenceIndicator from '../components/social/PresenceIndicator';
 import { useTableStore } from '../stores/useTableStore';
 import { useToast } from '../components/common/Toast';
+import TournamentBreakScreen from '../components/table/TournamentBreakScreen';
 // RealtimeChannelService imported if needed for future use
 import ChipStack from '../components/table/ChipStack';
 import { tournamentService } from '../services/TournamentService';
@@ -331,6 +332,14 @@ export default function TablePage() {
     // Tournament rebuy state
     const [showTournamentRebuy, setShowTournamentRebuy] = useState(false);
     const [rebuyProcessing, setRebuyProcessing] = useState(false);
+
+    // Tournament break state
+    const [tournamentBreak, setTournamentBreak] = useState<{
+        active: boolean;
+        timeRemaining: number;
+        nextLevel?: { level: number; smallBlind: number; bigBlind: number; ante?: number; duration: number };
+    }>({ active: false, timeRemaining: 0 });
+    const breakChannelRef = useRef<any>(null);
 
     // Buy-in processing lock to prevent double-click
     const buyInProcessingRef = useRef(false);
@@ -934,6 +943,26 @@ export default function TablePage() {
                     }
                 }
 
+                // Subscribe to tournament break events via Realtime
+                if (table.tournament_id) {
+                    const breakChan = supabase
+                        .channel(`t-break-${table.tournament_id}`)
+                        .on('broadcast', { event: 'tournament_event' }, (payload: any) => {
+                            const data = payload.payload;
+                            if (data?.type === 'BREAK_START') {
+                                setTournamentBreak({
+                                    active: true,
+                                    timeRemaining: (data.payload?.durationMinutes || 5) * 60,
+                                    nextLevel: data.payload?.nextLevel,
+                                });
+                            } else if (data?.type === 'BREAK_END') {
+                                setTournamentBreak({ active: false, timeRemaining: 0 });
+                            }
+                        })
+                        .subscribe();
+                    breakChannelRef.current = breakChan;
+                }
+
                 // Load user's Player Wallet balance for buy-in
                 if (userId && userId !== 'guest') {
                     const { data: walletData } = await supabase
@@ -1054,6 +1083,10 @@ export default function TablePage() {
         return () => {
             unsubscribe();
             roomService.leaveRoom(tableId);
+            if (breakChannelRef.current) {
+                supabase.removeChannel(breakChannelRef.current);
+                breakChannelRef.current = null;
+            }
         };
     }, [tableId, userId, tableState.heroSeat]);
 
@@ -2765,6 +2798,22 @@ export default function TablePage() {
                     isOpen={showShareHand}
                     onClose={() => setShowShareHand(false)}
                     hand={sharedHandData}
+                />
+            )}
+
+            {/* Tournament Break Screen Overlay */}
+            {tableState.isTournament && (
+                <TournamentBreakScreen
+                    isVisible={tournamentBreak.active}
+                    breakTimeRemaining={tournamentBreak.timeRemaining}
+                    tournamentName={tableState.tableName}
+                    currentLevel={0}
+                    nextLevel={tournamentBreak.nextLevel || { level: 1, smallBlind: 0, bigBlind: 0, duration: 0 }}
+                    playersRemaining={tableState.players.filter(Boolean).length}
+                    totalPlayers={tableState.maxPlayers}
+                    averageStack={tableState.players.filter(Boolean).reduce((s, p) => s + (p?.stack || 0), 0) / Math.max(tableState.players.filter(Boolean).length, 1)}
+                    topPlayers={[]}
+                    prizePool={0}
                 />
             )}
         </div>

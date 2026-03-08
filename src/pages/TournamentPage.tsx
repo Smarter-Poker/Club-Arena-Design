@@ -14,7 +14,6 @@ import { useUserStore } from '../stores/useUserStore';
 import EliminationOverlay from '../components/tournament/EliminationOverlay';
 import HandReplayViewer from '../components/gameplay/HandReplayViewer';
 import { tableService } from '../services/TableService';
-import TournamentBreakScreen from '../components/table/TournamentBreakScreen';
 // Tournament registration/refunds handled via TournamentService → Player Wallet RPCs
 import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
