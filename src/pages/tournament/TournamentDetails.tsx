@@ -862,11 +862,40 @@ export default function TournamentDetails() {
 
             {activeTab === 'rewards' && (() => {
                 const entryCount = entries.length || tournament.current_players || 0;
+                const dbPrizePool = tournament.prize_pool || 0; // Live from DB (updated on reg, rebuy, addon)
                 const entryPrizePool = tournament.buy_in_amount * entryCount;
                 const hasGuarantee = (tournament.guaranteed_prize || 0) > 0;
+                // Use whichever is higher: DB prize pool (includes rebuys/addons), entry-based calc, or guarantee
                 const effectivePrizePool = hasGuarantee
-                    ? Math.max(entryPrizePool, tournament.guaranteed_prize || 0)
-                    : entryPrizePool;
+                    ? Math.max(dbPrizePool, entryPrizePool, tournament.guaranteed_prize || 0)
+                    : Math.max(dbPrizePool, entryPrizePool);
+
+                // Resolve payout structure — use DB if available, otherwise auto-select by entry count
+                const resolvePayouts = (): { place: number; percentage: number }[] => {
+                    const raw = tournament.payout_structure;
+                    if (raw) {
+                        const parsed = typeof raw === 'string' ? (() => { try { return JSON.parse(raw); } catch { return []; } })() : raw;
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            return parsed.map((p: any) => ({ place: p.place || p.position || 0, percentage: p.percentage || 0 }));
+                        }
+                    }
+                    // Auto-select based on entry count (matches TournamentEngine logic)
+                    if (entryCount <= 3) return [{ place: 1, percentage: 65 }, { place: 2, percentage: 35 }];
+                    if (entryCount <= 6) return [{ place: 1, percentage: 65 }, { place: 2, percentage: 35 }];
+                    if (entryCount <= 9) return [{ place: 1, percentage: 50 }, { place: 2, percentage: 30 }, { place: 3, percentage: 20 }];
+                    if (entryCount <= 18) return [{ place: 1, percentage: 50 }, { place: 2, percentage: 30 }, { place: 3, percentage: 20 }];
+                    if (entryCount <= 35) return [
+                        { place: 1, percentage: 38 }, { place: 2, percentage: 27 }, { place: 3, percentage: 18 },
+                        { place: 4, percentage: 10 }, { place: 5, percentage: 7 },
+                    ];
+                    return [
+                        { place: 1, percentage: 28 }, { place: 2, percentage: 18 }, { place: 3, percentage: 13 },
+                        { place: 4, percentage: 10 }, { place: 5, percentage: 8 }, { place: 6, percentage: 6 },
+                        { place: 7, percentage: 5 }, { place: 8, percentage: 4.5 }, { place: 9, percentage: 4 }, { place: 10, percentage: 3.5 },
+                    ];
+                };
+                const payouts = resolvePayouts();
+                const isAutoResolved = !tournament.payout_structure || (typeof tournament.payout_structure === 'string' ? (() => { try { return JSON.parse(tournament.payout_structure).length === 0; } catch { return true; } })() : !Array.isArray(tournament.payout_structure) || tournament.payout_structure.length === 0);
 
                 return (
                 <div className="rewards-section">
@@ -880,31 +909,30 @@ export default function TournamentDetails() {
                             <span className="prize-gtd">{(tournament.guaranteed_prize || 0).toLocaleString()} GTD</span>
                         )}
                     </div>
+                    {isAutoResolved && entryCount > 0 && (
+                        <p style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic', margin: '4px 0 8px' }}>
+                            Estimated payouts based on {entryCount} entries — final structure determined at start
+                        </p>
+                    )}
                     <div className="payout-table">
-                        {(tournament.payout_structure && tournament.payout_structure.length > 0) ? (
-                            (typeof tournament.payout_structure === 'string'
-                                ? (() => { try { return JSON.parse(tournament.payout_structure); } catch { return []; } })()
-                                : tournament.payout_structure
-                            ).map((payout: { position?: number; place?: number; percentage: number }) => {
-                                const pos = payout.position || payout.place || 0;
-                                return (
-                                    <div key={pos} className="payout-row">
-                                        <span className="payout-place">
-                                            {pos === 1 && '1st'}
-                                            {pos === 2 && '2nd'}
-                                            {pos === 3 && '3rd'}
-                                            {pos > 3 && `#${pos}`}
-                                        </span>
-                                        <span className="payout-percent">{payout.percentage}%</span>
-                                        <span className="payout-chips">
-                                            {effectivePrizePool > 0 ? (Math.trunc(effectivePrizePool * payout.percentage / 100 * 100) / 100).toLocaleString() : '—'}
-                                        </span>
-                                    </div>
-                                );
-                            })
+                        {payouts.length > 0 ? (
+                            payouts.map((payout) => (
+                                <div key={payout.place} className="payout-row">
+                                    <span className="payout-place">
+                                        {payout.place === 1 && '1st'}
+                                        {payout.place === 2 && '2nd'}
+                                        {payout.place === 3 && '3rd'}
+                                        {payout.place > 3 && `#${payout.place}`}
+                                    </span>
+                                    <span className="payout-percent">{payout.percentage}%</span>
+                                    <span className="payout-chips">
+                                        {effectivePrizePool > 0 ? (Math.trunc(effectivePrizePool * payout.percentage / 100 * 100) / 100).toLocaleString() : '—'}
+                                    </span>
+                                </div>
+                            ))
                         ) : (
                             <div className="payout-row" style={{ justifyContent: 'center', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                                <span>Payout structure will be determined based on entries</span>
+                                <span>Register to see estimated payouts</span>
                             </div>
                         )}
                     </div>

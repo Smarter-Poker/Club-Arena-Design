@@ -45,7 +45,8 @@ export interface ClubEvent {
 export interface TournamentEvent {
     type: 'registration_open' | 'registration_closed' | 'tournament_started' |
     'player_registered' | 'player_eliminated' | 'level_up' |
-    'final_table' | 'heads_up' | 'winner' | 'payout';
+    'final_table' | 'heads_up' | 'winner' | 'payout' |
+    'hand_for_hand' | 'prize_pool_finalized' | 'bubble_burst';
     payload: any;
     timestamp: string;
 }

@@ -168,7 +168,11 @@ export default function TournamentLobbyCard({
                 <div className={styles.infoItem}>
                     <span className={styles.infoLabel}>Prize Pool</span>
                     <span className={styles.infoValue}>
-                        {tournament.prizePool.toLocaleString()}
+                        {(() => {
+                            const gtd = tournament.guaranteedPrize || 0;
+                            const displayPool = gtd > 0 ? Math.max(tournament.prizePool, gtd) : tournament.prizePool;
+                            return displayPool.toLocaleString();
+                        })()}
                         {tournament.guaranteedPrize && tournament.guaranteedPrize > 0 && (
                             <span className={styles.gtdBadge}>GTD</span>
                         )}

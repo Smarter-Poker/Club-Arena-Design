@@ -1147,6 +1147,9 @@ class TournamentService {
 
         if (error) throw error;
 
+        // Recalculate prize pool: rebuy cost goes to pool
+        await this.recalculatePrizePool(tournamentId);
+
         // Broadcast rebuy event
         try {
             const { realtimeChannelService } = await import('./RealtimeChannelService');
@@ -1232,7 +1235,104 @@ class TournamentService {
 
         if (error) throw error;
 
+        // Recalculate prize pool: add-on cost goes to pool
+        await this.recalculatePrizePool(tournamentId);
+
         return { success: true, newStack: data?.new_stack };
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Prize Pool Recalculation
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Recalculate prize pool based on current entries + rebuys + add-ons.
+     * Prize pool = (entries * buy_in) + (rebuys * rebuy_cost) + (addons * addon_cost)
+     * If guaranteed prize > calculated pool, use guaranteed amount.
+     * Called on: every registration, every rebuy, every add-on.
+     */
+    async recalculatePrizePool(tournamentId: string): Promise<number> {
+        const tournament = await this.getTournament(tournamentId);
+        if (!tournament) return 0;
+
+        const buyIn = tournament.buy_in_amount || 0;
+        const rebuyCost = tournament.rebuy_cost || buyIn;
+        const addonCost = tournament.addon_cost || buyIn;
+        const guarantee = tournament.guaranteed_prize || 0;
+
+        // Count entries
+        const { count: entryCount } = await supabase
+            .from('tournament_players')
+            .select('*', { count: 'exact', head: true })
+            .eq('tournament_id', tournamentId);
+
+        // Count rebuys and add-ons from wallet_transactions (always available)
+        let rebuyTotal = 0;
+        let addonTotal = 0;
+        try {
+            const { data: rebuyTxns } = await supabase
+                .from('wallet_transactions')
+                .select('amount, tx_type')
+                .eq('reference_id', tournamentId)
+                .in('tx_type', ['rebuy', 'addon']);
+
+            if (rebuyTxns) {
+                for (const tx of rebuyTxns) {
+                    const cost = Math.abs(tx.amount || 0);
+                    if (tx.tx_type === 'addon') addonTotal += cost;
+                    else rebuyTotal += cost;
+                }
+            }
+        } catch (e) {
+            console.warn('[TournamentService] Could not query rebuy/addon transactions:', e);
+        }
+
+        // Calculate total prize pool
+        const calculatedPool = Math.trunc(((entryCount || 0) * buyIn + rebuyTotal + addonTotal) * 100) / 100;
+        const finalPool = guarantee > 0 ? Math.max(calculatedPool, guarantee) : calculatedPool;
+
+        // Update tournament
+        await supabase.from('tournaments').update({
+            prize_pool: finalPool,
+        }).eq('id', tournamentId);
+
+        console.log(`[TournamentService] Prize pool recalculated for ${tournamentId.slice(0, 8)}: ${finalPool} (${entryCount} entries, ${rebuyTotal} rebuys, ${addonTotal} addons, ${guarantee} GTD)`);
+
+        return finalPool;
+    }
+
+    /**
+     * Finalize the prize pool — called when late registration and/or add-on period closes.
+     * After finalization, the prize pool is locked and no longer changes.
+     */
+    async finalizePrizePool(tournamentId: string): Promise<number> {
+        const finalPool = await this.recalculatePrizePool(tournamentId);
+
+        // Mark pool as finalized (prize_pool_finalized column may not exist yet — graceful fallback)
+        const { error: finalizeErr } = await supabase.from('tournaments').update({
+            prize_pool: finalPool,
+            prize_pool_finalized: true,
+        } as any).eq('id', tournamentId);
+
+        if (finalizeErr) {
+            // Fallback: just update prize_pool without the finalized flag
+            await supabase.from('tournaments').update({ prize_pool: finalPool }).eq('id', tournamentId);
+        }
+
+        console.log(`[TournamentService] Prize pool FINALIZED for ${tournamentId.slice(0, 8)}: ${finalPool}`);
+
+        // Broadcast finalization event
+        try {
+            const { realtimeChannelService } = await import('./RealtimeChannelService');
+            await realtimeChannelService.broadcastTournamentEvent(tournamentId, {
+                type: 'prize_pool_finalized',
+                payload: { prizePool: finalPool },
+            });
+        } catch (e) {
+            console.warn('Failed to broadcast prize pool finalization:', e);
+        }
+
+        return finalPool;
     }
 
     // ─────────────────────────────────────────────────────────────────────────────

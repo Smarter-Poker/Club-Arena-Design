@@ -128,6 +128,7 @@ export default function TournamentLobbyPage() {
                     bounty_amount,
                     is_multi_day,
                     is_pinned,
+                    blind_structure,
                     clubs!club_id(name)
                 `;
 
@@ -209,7 +210,22 @@ export default function TournamentLobbyPage() {
                     currentPlayers: t.current_players || 0,
                     maxPlayers: t.max_players || 0, // 0 = unlimited (only SNG/Spin have caps)
                     startingChips: t.starting_chips || 0,
-                    blindsUp: 10,
+                    blindsUp: (() => {
+                        // Extract blind level duration from structure
+                        let blinds: any[] = [];
+                        if (Array.isArray(t.blind_structure)) blinds = t.blind_structure;
+                        else if (typeof t.blind_structure === 'string') {
+                            try { blinds = JSON.parse(t.blind_structure); } catch { /* noop */ }
+                            if (!Array.isArray(blinds)) {
+                                // Named structure — estimate duration
+                                const key = (t.blind_structure || '').toLowerCase();
+                                if (key.includes('turbo')) return 3;
+                                if (key.includes('deep')) return 15;
+                                return 8; // regular
+                            }
+                        }
+                        return blinds.length > 0 ? (blinds[0].durationMinutes || blinds[0].duration || 8) : 8;
+                    })(),
                     isRegistered: registrations.includes(t.id),
                     gameType: t.game_type || 'NLH',
                     lateRegMins: t.late_reg_mins || 0,

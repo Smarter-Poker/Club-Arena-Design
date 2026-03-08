@@ -55,6 +55,11 @@ interface TournamentInfo {
     payout_structure: PayoutEntry[];
     started_at: string;
     current_level?: number;
+    // Late reg / add-on
+    late_reg_mins?: number;
+    add_on_available?: boolean;
+    rebuy_levels?: number;
+    prize_pool_finalized?: boolean;
     // Bounty fields
     is_bounty?: boolean;
     is_pko?: boolean;
@@ -136,6 +141,9 @@ export class TournamentEngine {
     private blindCheckInterval: ReturnType<typeof setInterval> | null = null;
     private eliminationCheckInterval: ReturnType<typeof setInterval> | null = null;
     private handsDealt = 0;
+    // Hand-for-hand mode (money bubble)
+    private handForHandActive = false;
+    private handForHandAnnounced = false;
 
     constructor(tournamentId: string, supabase: SupabaseClient) {
         this.tournamentId = tournamentId;
@@ -411,6 +419,11 @@ export class TournamentEngine {
             variant: data.variant || 'freezeout',
             tournament_type: data.tournament_type || 'MTT',
             buy_in_fee: data.buy_in_fee || 0,
+            // Late reg / add-on
+            late_reg_mins: data.late_reg_mins || 0,
+            add_on_available: data.add_on_available || false,
+            rebuy_levels: data.rebuy_levels || 0,
+            prize_pool_finalized: data.prize_pool_finalized || false,
             // Bounty fields
             is_bounty: data.is_bounty || false,
             is_pko: data.is_pko || false,
@@ -782,13 +795,32 @@ export class TournamentEngine {
         if (this.prizePoolRefreshCounter % 6 === 0) {
             const { data: freshT } = await this.supabase
                 .from('tournaments')
-                .select('prize_pool, current_players')
+                .select('prize_pool, current_players, prize_pool_finalized')
                 .eq('id', this.tournamentId)
                 .single();
             if (freshT && freshT.prize_pool !== this.tournamentInfo.prize_pool) {
                 console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Prize pool updated: ${this.tournamentInfo.prize_pool} → ${freshT.prize_pool} (late reg)`);
                 this.tournamentInfo.prize_pool = freshT.prize_pool;
                 this.tournamentInfo.current_players = freshT.current_players;
+            }
+            if (freshT) {
+                this.tournamentInfo.prize_pool_finalized = freshT.prize_pool_finalized || false;
+            }
+
+            // Check if late reg period has ended — finalize prize pool if not yet done
+            if (!this.tournamentInfo.prize_pool_finalized && this.tournamentInfo.late_reg_mins && this.tournamentInfo.late_reg_mins > 0) {
+                const startedAt = new Date(this.tournamentInfo.started_at).getTime();
+                const lateRegEnd = startedAt + (this.tournamentInfo.late_reg_mins * 60 * 1000);
+                if (Date.now() > lateRegEnd) {
+                    console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Late registration closed — finalizing prize pool`);
+                    try {
+                        const { tournamentService } = await import('../services/TournamentService');
+                        await tournamentService.finalizePrizePool(this.tournamentId);
+                        this.tournamentInfo.prize_pool_finalized = true;
+                    } catch (e) {
+                        console.error(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to finalize prize pool:`, e);
+                    }
+                }
             }
         }
 
@@ -829,6 +861,58 @@ export class TournamentEngine {
 
         // Check if any tables need to be merged (< 3 players)
         await this.checkTableBalance();
+
+        // ── HAND-FOR-HAND BUBBLE MODE ──
+        // Applies to multi-table tournaments only (not Spin/SNG single-table)
+        if (this.tournamentInfo && this.tables.length > 1) {
+            const isSpin = this.tournamentInfo.variant === 'spin' || this.tournamentInfo.tournament_type === 'SPIN';
+            if (!isSpin) {
+                const payoutCount = this.tournamentInfo.payout_structure?.length || 0;
+                const playingNow = Array.from(this.players.values()).filter(p => p.status === 'playing').length;
+
+                if (payoutCount > 0 && playingNow === payoutCount + 1 && !this.handForHandActive) {
+                    // Entering the money bubble — activate hand-for-hand
+                    this.handForHandActive = true;
+                    if (!this.handForHandAnnounced) {
+                        this.handForHandAnnounced = true;
+                        console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] HAND-FOR-HAND MODE ACTIVATED — ${playingNow} players, ${payoutCount} paid`);
+                        // Broadcast bubble event
+                        try {
+                            const { realtimeChannelService } = await import('../services/RealtimeChannelService');
+                            await realtimeChannelService.broadcastTournamentEvent(this.tournamentId, {
+                                type: 'hand_for_hand',
+                                payload: { active: true, playersRemaining: playingNow, paidPositions: payoutCount },
+                            });
+                        } catch (e) { /* noop */ }
+                    }
+                    // Enable hand-for-hand sync on all table engines
+                    for (const table of this.tables) {
+                        if (table.engine.setHandForHand) table.engine.setHandForHand(true);
+                    }
+                } else if (this.handForHandActive && playingNow === payoutCount + 1) {
+                    // Still on bubble — release all tables to deal next synchronized hand
+                    for (const table of this.tables) {
+                        if (table.engine.releaseHandForHand) table.engine.releaseHandForHand();
+                    }
+                } else if (this.handForHandActive && playingNow <= payoutCount) {
+                    // Bubble burst — someone busted, now in the money
+                    this.handForHandActive = false;
+                    console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] BUBBLE BURST — Hand-for-hand deactivated, ${playingNow} players ITM`);
+                    // Disable hand-for-hand on all table engines
+                    for (const table of this.tables) {
+                        if (table.engine.setHandForHand) table.engine.setHandForHand(false);
+                    }
+                    try {
+                        const { realtimeChannelService } = await import('../services/RealtimeChannelService');
+                        await realtimeChannelService.broadcastTournamentEvent(this.tournamentId, {
+                            type: 'hand_for_hand',
+                            payload: { active: false, playersRemaining: playingNow, bubbleBurst: true },
+                        });
+                    } catch (e) { /* noop */ }
+                }
+            }
+        }
+
         } finally {
             this.eliminationCheckRunning = false;
         }

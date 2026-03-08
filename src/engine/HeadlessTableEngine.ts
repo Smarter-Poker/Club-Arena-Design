@@ -83,6 +83,9 @@ export class HeadlessTableEngine {
     private stackSyncPromise: Promise<void> | null = null;
     // Callback fired after each hand completes — used by TournamentEngine for real-time chip sync
     private handCompleteCallback: ((tableId: string, players: { user_id: string; stack: number }[]) => void) | null = null;
+    // Hand-for-hand mode (bubble) — when active, pause after each hand until released
+    private handForHandMode = false;
+    private handForHandResolve: (() => void) | null = null;
 
     constructor(tableId: string, supabaseClient: typeof supabase) {
         this.tableId = tableId;
@@ -209,6 +212,31 @@ export class HeadlessTableEngine {
      */
     onHandComplete(callback: (tableId: string, players: { user_id: string; stack: number }[]) => void): void {
         this.handCompleteCallback = callback;
+    }
+
+    /**
+     * Enable/disable hand-for-hand mode (money bubble).
+     * When active, the dealing loop pauses after each hand completes until
+     * `releaseHandForHand()` is called (or mode is disabled).
+     */
+    setHandForHand(active: boolean): void {
+        this.handForHandMode = active;
+        if (!active && this.handForHandResolve) {
+            // Release any waiting hand
+            this.handForHandResolve();
+            this.handForHandResolve = null;
+        }
+        console.log(`[HeadlessTableEngine:${this.tableId.slice(0, 8)}] Hand-for-hand: ${active ? 'ACTIVE' : 'OFF'}`);
+    }
+
+    /**
+     * Release a paused hand-for-hand wait, allowing the next hand to deal.
+     */
+    releaseHandForHand(): void {
+        if (this.handForHandResolve) {
+            this.handForHandResolve();
+            this.handForHandResolve = null;
+        }
     }
 
     // ═════════════════════════════════════════════════════════════════════════════
@@ -340,6 +368,21 @@ export class HeadlessTableEngine {
                 // Deal hand
                 await this.dealHand(activePlayers);
                 this.consecutiveErrors = 0; // Reset on success
+
+                // Hand-for-hand mode: pause after hand until released by TournamentEngine
+                if (this.handForHandMode && this.running) {
+                    console.log(`[HeadlessTableEngine:${this.tableId.slice(0, 8)}] Hand-for-hand: waiting for sync...`);
+                    await new Promise<void>((resolve) => {
+                        this.handForHandResolve = resolve;
+                        // Safety timeout: auto-release after 60s to prevent deadlock
+                        setTimeout(() => {
+                            if (this.handForHandResolve === resolve) {
+                                this.handForHandResolve = null;
+                                resolve();
+                            }
+                        }, 60_000);
+                    });
+                }
 
                 // Wait 3-5 seconds before next hand (jitter prevents Supabase request spikes)
                 if (this.running) {
