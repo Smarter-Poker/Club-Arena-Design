@@ -243,7 +243,16 @@ class GameServer {
                 for (const tournament of registering || []) {
                     if (this.tournamentEngines.has(tournament.id)) continue;
 
+                    // Guard: skip tournaments with no start_time set
+                    if (!tournament.start_time) {
+                        console.warn(`[GameServer] Tournament ${tournament.name} has no start_time — skipping`);
+                        continue;
+                    }
                     const startTime = new Date(tournament.start_time).getTime();
+                    if (isNaN(startTime)) {
+                        console.warn(`[GameServer] Tournament ${tournament.name} has invalid start_time — skipping`);
+                        continue;
+                    }
                     const now = Date.now();
                     const minPlayers = tournament.min_players || 3;
 
@@ -827,19 +836,17 @@ class TournamentManager {
                         .eq('tournament_id', this.tournamentId)
                         .eq('status', 'playing');
 
-                    const { count: totalCount } = await supabase
-                        .from('tournament_players')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('tournament_id', this.tournamentId);
+                    // Position calculation for simultaneous busts:
+                    // If 10 playing and 3 bust simultaneously, positions are 10, 9, 8
+                    // (worst to best within the batch — we can't distinguish order so assign descending)
+                    // Single bust: position = playingCount (e.g., 10 remaining → 10th place)
+                    // Multiple busts: positions descend from playingCount
+                    const basePosition = playingCount || busted.length;
 
-                    // All busted players in same batch get the SAME position
-                    // (like being eliminated on the same hand — they split the position)
-                    // Position = number of players still playing (including the busted ones about to be removed)
-                    const position = playingCount || busted.length;
-
-                    // Process each busted player at the same position
-                    for (const player of busted) {
-                        await this.eliminatePlayer(player.user_id, position);
+                    for (let i = 0; i < busted.length; i++) {
+                        // First busted player gets highest position (worst), last gets best
+                        const position = basePosition - i;
+                        await this.eliminatePlayer(busted[i].user_id, position);
                     }
                 }
 
@@ -973,14 +980,21 @@ class TournamentManager {
             .eq('status', 'playing'); // Only update if still playing (prevents double-processing)
 
         if (prize > 0) {
-            const { error: creditErr } = await supabase.rpc('credit_player_wallet', {
-                p_user_id: userId,
-                p_amount: prize,
-            });
-
-            if (creditErr) {
-                console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] CRITICAL: Prize credit failed for ${userId.slice(0, 8)}: ${creditErr.message}`);
-            } else {
+            // Retry prize credit up to 3 times with exponential backoff
+            let creditSuccess = false;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                const { error: creditErr } = await supabase.rpc('credit_player_wallet', {
+                    p_user_id: userId,
+                    p_amount: prize,
+                });
+                if (!creditErr) {
+                    creditSuccess = true;
+                    break;
+                }
+                console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Prize credit attempt ${attempt}/3 failed for ${userId.slice(0, 8)}: ${creditErr.message}`);
+                if (attempt < 3) await new Promise(r => setTimeout(r, attempt * 1000));
+            }
+            if (creditSuccess) {
                 await supabase.rpc('log_wallet_transaction', {
                     p_user_id: userId,
                     p_wallet_type: 'PLAYER',
@@ -992,6 +1006,8 @@ class TournamentManager {
                     p_hand_id: null,
                     p_related_entity_id: this.tournamentId,
                 });
+            } else {
+                console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] CRITICAL: Prize credit FAILED after 3 retries for ${userId.slice(0, 8)} — ${prize} chips lost`);
             }
         }
 
@@ -1204,13 +1220,23 @@ class TournamentManager {
      * Credit bounty amount to knocker's wallet with transaction logging
      */
     private async creditBountyToWallet(knockerUserId: string, amount: number, eliminatedUserId: string): Promise<void> {
-        const { error: creditErr } = await supabase.rpc('credit_player_wallet', {
-            p_user_id: knockerUserId,
-            p_amount: amount,
-        });
+        // Retry bounty credit up to 3 times with exponential backoff
+        let creditSuccess = false;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            const { error: creditErr } = await supabase.rpc('credit_player_wallet', {
+                p_user_id: knockerUserId,
+                p_amount: amount,
+            });
+            if (!creditErr) {
+                creditSuccess = true;
+                break;
+            }
+            console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Bounty credit attempt ${attempt}/3 failed for ${knockerUserId.slice(0, 8)}: ${creditErr.message}`);
+            if (attempt < 3) await new Promise(r => setTimeout(r, attempt * 1000));
+        }
 
-        if (creditErr) {
-            console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] CRITICAL: Bounty credit failed for ${knockerUserId.slice(0, 8)}: ${creditErr.message}`);
+        if (!creditSuccess) {
+            console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] CRITICAL: Bounty credit FAILED after 3 retries for ${knockerUserId.slice(0, 8)} — ${amount} chips lost`);
             return;
         }
 
@@ -1256,6 +1282,8 @@ class TournamentManager {
             .eq('id', this.tournamentId)
             .single();
 
+        // Calculate winner prize — with fallback if payout_structure missing or no place 1
+        let winnerPrize = 0;
         if (tournament?.payout_structure) {
             let payouts = tournament.payout_structure;
             if (typeof payouts === 'string') {
@@ -1263,39 +1291,57 @@ class TournamentManager {
             }
             const firstPlace = Array.isArray(payouts) ? payouts.find((p: any) => p.place === 1) : null;
             if (firstPlace) {
-                // Exact cent-precision: truncate sub-cent fractions
                 const prizeRaw = (tournament.prize_pool || 0) * firstPlace.percentage / 100;
-                const prize = Math.trunc(prizeRaw * 100) / 100;
+                winnerPrize = Math.trunc(prizeRaw * 100) / 100;
+            } else {
+                // FALLBACK: no place 1 in structure — award 100% of prize pool to winner
+                console.warn(`[Tournament:${this.tournamentId.slice(0, 8)}] payout_structure missing place 1 — awarding full prize pool to winner`);
+                winnerPrize = Math.trunc((tournament.prize_pool || 0) * 100) / 100;
+            }
+        } else {
+            // No payout_structure at all — award full prize pool
+            console.warn(`[Tournament:${this.tournamentId.slice(0, 8)}] No payout_structure — awarding full prize pool to winner`);
+            winnerPrize = Math.trunc((tournament?.prize_pool || 0) * 100) / 100;
+        }
 
+        if (winnerPrize > 0) {
+            // Retry winner prize credit up to 3 times
+            let creditSuccess = false;
+            for (let attempt = 1; attempt <= 3; attempt++) {
                 const { error: creditErr } = await supabase.rpc('credit_player_wallet', {
                     p_user_id: winnerId,
-                    p_amount: prize,
+                    p_amount: winnerPrize,
                 });
-
-                if (creditErr) {
-                    console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] CRITICAL: Winner prize credit FAILED for ${winnerId.slice(0, 8)}: ${creditErr.message}`);
-                } else {
-                    // Log winner prize via RPC (SECURITY DEFINER bypasses RLS)
-                    await supabase.rpc('log_wallet_transaction', {
-                        p_user_id: winnerId,
-                        p_wallet_type: 'PLAYER',
-                        p_amount: prize,
-                        p_type: 'credit',
-                        p_category: 'prize',
-                        p_description: `Tournament winner prize: 1st place`,
-                        p_table_id: null,
-                        p_hand_id: null,
-                        p_related_entity_id: this.tournamentId,
-                    });
+                if (!creditErr) {
+                    creditSuccess = true;
+                    break;
                 }
+                console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Winner prize credit attempt ${attempt}/3 failed: ${creditErr.message}`);
+                if (attempt < 3) await new Promise(r => setTimeout(r, attempt * 1000));
+            }
 
-                await supabase
-                    .from('tournament_players')
-                    .update({ status: 'winner', position: 1, prize })
-                    .eq('tournament_id', this.tournamentId)
-                    .eq('user_id', winnerId);
+            if (creditSuccess) {
+                await supabase.rpc('log_wallet_transaction', {
+                    p_user_id: winnerId,
+                    p_wallet_type: 'PLAYER',
+                    p_amount: winnerPrize,
+                    p_type: 'credit',
+                    p_category: 'prize',
+                    p_description: `Tournament winner prize: 1st place`,
+                    p_table_id: null,
+                    p_hand_id: null,
+                    p_related_entity_id: this.tournamentId,
+                });
+            } else {
+                console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] CRITICAL: Winner prize credit FAILED after 3 retries for ${winnerId.slice(0, 8)} — ${winnerPrize} chips lost`);
             }
         }
+
+        await supabase
+            .from('tournament_players')
+            .update({ status: 'winner', position: 1, prize: winnerPrize })
+            .eq('tournament_id', this.tournamentId)
+            .eq('user_id', winnerId);
 
         // ── TOURNAMENT RAKE SETTLEMENT ──
         // Rake is held by union (if club is in a union) or by standalone club owner.
@@ -1431,7 +1477,33 @@ class TournamentManager {
                     }
 
                     const engine = this.tableEngines.get(tc.tableId);
-                    if (engine) await engine.stop();
+                    if (engine) {
+                        // Wait for any active hand to complete before stopping
+                        // Check if a hand is in progress by looking for an active hand
+                        const { data: activeHand } = await supabase
+                            .from('hand_history')
+                            .select('id')
+                            .eq('table_id', tc.tableId)
+                            .is('ended_at', null)
+                            .maybeSingle();
+
+                        if (activeHand) {
+                            // Hand in progress — wait up to 30 seconds for it to finish
+                            let waited = 0;
+                            while (waited < 30000) {
+                                await new Promise(r => setTimeout(r, 2000));
+                                waited += 2000;
+                                const { data: still } = await supabase
+                                    .from('hand_history')
+                                    .select('id')
+                                    .eq('id', activeHand.id)
+                                    .is('ended_at', null)
+                                    .maybeSingle();
+                                if (!still) break; // Hand completed
+                            }
+                        }
+                        await engine.stop();
+                    }
                     this.tableEngines.delete(tc.tableId);
                     await supabase.from('tables').update({ status: 'closed' }).eq('id', tc.tableId);
 

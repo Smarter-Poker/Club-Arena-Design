@@ -428,6 +428,12 @@ export class TournamentRecurringService {
 
             const isBountyType = config.type === 'bounty' || config.type === 'progressive_bounty' || config.type === 'mystery_bounty';
 
+            // Calculate bounty amount: ~30% of buy-in for bounty types
+            const bountyAmount = isBountyType ? Math.trunc(config.buyIn * 30) / 100 : 0;
+            // Mystery bounty range: min = base bounty, max = 10x base
+            const mysteryMin = config.type === 'mystery_bounty' ? bountyAmount : 0;
+            const mysteryMax = config.type === 'mystery_bounty' ? Math.trunc(bountyAmount * 10 * 100) / 100 : 0;
+
             const { data: tournament, error } = await supabase
                 .from('tournaments')
                 .insert({
@@ -451,6 +457,9 @@ export class TournamentRecurringService {
                     is_bounty: isBountyType,
                     is_pko: config.type === 'progressive_bounty',
                     is_mystery_bounty: config.type === 'mystery_bounty',
+                    bounty_amount: bountyAmount,
+                    mystery_bounty_min: mysteryMin,
+                    mystery_bounty_max: mysteryMax,
                 })
                 .select()
                 .single();
@@ -554,6 +563,7 @@ export class TournamentRecurringService {
                     buy_in_amount: config.buyIn,
                     buy_in_fee: config.rake,
                     guaranteed_prize: prizePool,
+                    spin_multiplier: multiplier,
                     starting_chips: config.startingStack,
                     max_players: config.maxPlayers,
                     min_players: config.minPlayers || 3,
