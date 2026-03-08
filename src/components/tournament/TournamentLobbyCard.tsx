@@ -89,30 +89,21 @@ export default function TournamentLobbyCard({
         setRegistering(true);
 
         try {
-            await supabase
-                .from('tournament_players')
-                .insert({
-                    tournament_id: tournament.id,
-                    user_id: user.id,
-                    status: 'registered'
-                });
-
+            // Use the onRegister prop to go through proper tournament service
+            // (handles wallet deduction, validation, etc.)
+            if (onRegister) {
+                await onRegister(tournament.id);
+            }
             setIsRegistered(true);
-            onRegister?.(tournament.id);
         } catch (error) {
             console.error('Failed to register:', error);
         }
         setRegistering(false);
     };
 
-    const handleUnregister = async () => {
-        if (!user?.id) return;
-        await supabase
-            .from('tournament_players')
-            .delete()
-            .eq('tournament_id', tournament.id)
-            .eq('user_id', user.id);
-        setIsRegistered(false);
+    const handleUnregister = () => {
+        // Navigate to tournament details for proper unregistration flow
+        navigate(`/tournaments/${tournament.id}`);
     };
 
     const getTypeLabel = (type: string): string => {
@@ -159,7 +150,7 @@ export default function TournamentLobbyCard({
             <div className={styles.info}>
                 <div className={styles.infoItem}>
                     <span className={styles.infoLabel}>Buy-in</span>
-                    <span className={styles.infoValue}>{tournament.buyIn}</span>
+                    <span className={styles.infoValue}>{tournament.buyIn.toLocaleString()}</span>
                 </div>
                 <div className={styles.infoItem}>
                     <span className={styles.infoLabel}>Prize Pool</span>
@@ -209,7 +200,7 @@ export default function TournamentLobbyCard({
                             onClick={(e) => { e.stopPropagation(); handleRegister(); }}
                             disabled={registering || isFull}
                         >
-                            {registering ? 'Registering...' : isFull ? 'Tournament Full' : `Register (${tournament.buyIn})`}
+                            {registering ? 'Registering...' : isFull ? 'Tournament Full' : `Register (${tournament.buyIn.toLocaleString()})`}
                         </button>
                     )
                 )}

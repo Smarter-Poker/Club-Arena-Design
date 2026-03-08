@@ -13,6 +13,7 @@ import { tournamentService } from '../../services/TournamentService';
 import TournamentLobbyCard from '../../components/tournament/TournamentLobbyCard';
 import { CardSkeleton } from '../../components/skeletons/CardSkeleton';
 import SmarterHeader from '../../components/layout/SmarterHeader';
+import { useToast } from '../../components/common/Toast';
 import { ArenaTrainingController } from '../../services/ArenaTrainingController';
 import styles from './TournamentLobbyPage.module.css';
 
@@ -39,6 +40,7 @@ interface Tournament {
 export default function TournamentLobbyPage() {
     const { clubId } = useParams<{ clubId?: string }>();
     const { user } = useUserStore();
+    const toast = useToast();
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState<TournamentStatus>('all');
@@ -181,10 +183,13 @@ export default function TournamentLobbyPage() {
         if (!user?.id) return;
         try {
             await tournamentService.registerPlayer(tournamentId, user.id, user.username || 'Player');
-            // Refresh list
+            toast.success('Registered! Buy-in deducted from your wallet');
             loadTournaments();
         } catch (error) {
             console.error('Registration failed:', error);
+            const msg = (error as Error).message || 'Unknown error';
+            toast.error(`Registration failed: ${msg}`);
+            throw error; // Re-throw so card can react
         }
     };
 
@@ -192,9 +197,12 @@ export default function TournamentLobbyPage() {
         if (!user?.id) return;
         try {
             await tournamentService.unregisterPlayer(tournamentId, user.id);
+            toast.success('Unregistered — buy-in refunded to your wallet');
             loadTournaments();
         } catch (error) {
             console.error('Unregistration failed:', error);
+            const msg = (error as Error).message || 'Unknown error';
+            toast.error(`Unregistration failed: ${msg}`);
         }
     };
 
