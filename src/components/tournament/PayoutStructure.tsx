@@ -28,7 +28,7 @@ export function PayoutStructure({
     currency = ''
 }: PayoutStructureProps) {
     const paidPlaces = payouts.length;
-    const inTheMoney = entries > 0 ? ((paidPlaces / entries) * 100).toFixed(1) : 0;
+    const inTheMoney = entries > 0 ? Math.trunc((paidPlaces / entries) * 1000) / 10 : 0;
 
     return (
         <div className="payout-structure">
@@ -67,7 +67,7 @@ export function PayoutStructure({
                                 style={{ width: `${payout.percentage * 2}%` }}
                             />
                         </div>
-                        <span className="percentage">{payout.percentage.toFixed(1)}%</span>
+                        <span className="percentage">{Math.trunc(payout.percentage * 10) / 10}%</span>
                         <span className="amount">
                             {payout.amount.toLocaleString()}
                             {payout.isGuaranteed && <span className="gtd">GTD</span>}

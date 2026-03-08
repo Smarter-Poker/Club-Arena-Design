@@ -289,12 +289,17 @@ class GameServer {
                         continue;
                     }
 
-                    // SNG / Spin: start immediately when max_players reached (not time-based)
+                    // SNG / Spin: start ONLY when max_players reached (not time-based)
+                    // MTT / Bounty / PKO / Mystery: start at scheduled time if min_players met
                     const isSngOrSpin = tournament.variant === 'sng' || tournament.variant === 'spin';
                     const maxReached = tournament.max_players > 0 && tournament.current_players >= tournament.max_players;
                     const timeReached = startTime <= now && tournament.current_players >= minPlayers;
 
-                    if (maxReached || timeReached) {
+                    // SNG/Spin: only start when full (maxReached)
+                    // MTT variants: start at scheduled time with minimum players
+                    const shouldStart = isSngOrSpin ? maxReached : (maxReached || timeReached);
+
+                    if (shouldStart) {
                         const reason = maxReached ? `full (${tournament.current_players}/${tournament.max_players})` : `${tournament.current_players} players`;
                         console.log(`[GameServer] Starting tournament: ${tournament.name} (${reason})`);
                         const tm = new TournamentManager(tournament.id, this);

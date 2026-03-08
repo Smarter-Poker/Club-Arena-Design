@@ -102,6 +102,9 @@ export interface TournamentConfig {
     spinConfig?: SpinConfig;
     spinType?: 'standard' | 'hyper';
 
+    // Game Variant (poker game type)
+    gameVariant?: 'NLH' | 'PLO4' | 'PLO5' | 'PLO8' | 'OFC_PINEAPPLE' | 'SHORT_DECK';
+
     // Satellite Target
     satelliteTarget?: {
         tournamentId: string;
@@ -362,7 +365,7 @@ class TournamentService {
             .insert({
                 club_id: clubId,
                 name: config.name,
-                game_type: 'NLH', // Default — game variant is separate from tournament format
+                game_type: config.gameVariant || 'NLH',
                 variant: variantMap[config.type] || 'freezeout',
                 tournament_type: config.type === 'sng' ? 'SNG' : config.type === 'spin' ? 'SPIN' : 'MTT',
                 buy_in_amount: config.buyIn,
@@ -658,11 +661,35 @@ class TournamentService {
             throw new Error('Cannot unregister after tournament started');
         }
 
+        // CRITICAL: Verify player is actually registered BEFORE issuing any refund
+        const { data: existingReg } = await supabase
+            .from('tournament_players')
+            .select('id')
+            .eq('tournament_id', tournamentId)
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (!existingReg) {
+            throw new Error('Player is not registered for this tournament');
+        }
+
+        // Delete registration FIRST to prevent double-refund exploit
+        const { error: deleteError } = await supabase
+            .from('tournament_players')
+            .delete()
+            .eq('tournament_id', tournamentId)
+            .eq('user_id', userId);
+
+        if (deleteError) {
+            console.error('[TournamentService] Failed to delete registration:', deleteError);
+            throw new Error('Failed to unregister — please try again');
+        }
+
         // Calculate refund amount (buy-in + fee — exact penny values from DB, NO rounding)
         const buyInAmount = tournament.buy_in_amount || 0;
         const refundAmount = buyInAmount + (tournament.buy_in_fee || 0);
 
-        // Refund to Player Wallet — MUST succeed before unregistering
+        // Refund to Player Wallet — only AFTER successful deletion
         const { error: refundError } = await supabase.rpc('credit_player_wallet', {
             p_user_id: userId,
             p_amount: refundAmount,
@@ -670,7 +697,14 @@ class TournamentService {
 
         if (refundError) {
             console.error('[TournamentService] Refund to Player Wallet failed:', refundError);
-            throw new Error('Refund failed — cannot unregister without refunding buy-in');
+            // Re-register the player since refund failed (rollback)
+            await supabase.from('tournament_players').insert({
+                tournament_id: tournamentId,
+                user_id: userId,
+                status: 'registered',
+                chips: 0,
+            });
+            throw new Error('Refund failed — registration restored');
         }
 
         // Log refund transaction
@@ -679,12 +713,6 @@ class TournamentService {
             `Tournament unregister refund: ${tournament.name}`,
             undefined, undefined, tournamentId
         );
-
-        await supabase
-            .from('tournament_players')
-            .delete()
-            .eq('tournament_id', tournamentId)
-            .eq('user_id', userId);
 
         // Decrement player count and recalculate prize pool (guaranteed minimum applies)
         const newPlayerCount = Math.max(0, tournament.current_players - 1);

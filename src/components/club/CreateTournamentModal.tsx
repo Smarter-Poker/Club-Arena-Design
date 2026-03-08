@@ -18,6 +18,7 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
     // ── Core Config ──
     const [name, setName] = useState('');
     const [format, setFormat] = useState<TournamentFormat>('mtt');
+    const [gameVariant, setGameVariant] = useState<'NLH' | 'PLO4' | 'PLO5' | 'PLO8' | 'OFC_PINEAPPLE' | 'SHORT_DECK'>('NLH');
     const [buyIn, setBuyIn] = useState('10');
     const [rake, setRake] = useState('1');
     const [startingChips, setStartingChips] = useState('1500');
@@ -147,6 +148,7 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
             await tournamentService.createTournament(clubId, {
                 name,
                 type: format,
+                gameVariant,
                 buyIn: parsedBuyIn,
                 rake: parsedRake,
                 startingStack: parseInt(startingChips),
@@ -276,6 +278,23 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                             <option value="progressive_bounty">Progressive KO (PKO)</option>
                             <option value="mystery_bounty">Mystery Bounty</option>
                             <option value="spin">Spin & Go</option>
+                        </select>
+                    </div>
+
+                    {/* Game Variant Selection */}
+                    <div className={styles.formGroup}>
+                        <label>Game <span style={{ color: '#ef4444' }}>*</span></label>
+                        <select
+                            className={styles.select}
+                            value={gameVariant}
+                            onChange={e => setGameVariant(e.target.value as any)}
+                        >
+                            <option value="NLH">No-Limit Hold'em</option>
+                            <option value="PLO4">Pot-Limit Omaha (4-card)</option>
+                            <option value="PLO5">Pot-Limit Omaha (5-card)</option>
+                            <option value="PLO8">PLO Hi-Lo (8 or Better)</option>
+                            <option value="OFC_PINEAPPLE">Open Face Chinese (Pineapple)</option>
+                            <option value="SHORT_DECK">Short Deck Hold'em</option>
                         </select>
                     </div>
 
