@@ -7,6 +7,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { WalletService } from './WalletService';
 import type { Club, ClubMember, ClubSettings, MemberRole } from '../types/database.types';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -223,26 +224,46 @@ class ClubServiceClass {
     }
 
     /**
-     * Update member chip balance
+     * Update member chip balance — uses proper wallet system
+     * Positive amount = credit, negative amount = debit
      */
     async updateChipBalance(memberId: string, amount: number): Promise<boolean> {
+        // Get the user_id from club_members
         const { data: member } = await supabase
             .from('club_members')
-            .select('chip_balance')
+            .select('user_id, club_id')
             .eq('id', memberId)
             .single();
 
         if (!member) return false;
 
-        const newBalance = (member.chip_balance || 0) + amount;
-        if (newBalance < 0) return false;
+        if (amount > 0) {
+            // Credit via atomic wallet RPC
+            const { error } = await supabase.rpc('credit_player_wallet', {
+                p_user_id: member.user_id,
+                p_amount: Math.trunc(amount * 100) / 100,
+            });
+            if (error) return false;
 
-        const { error } = await supabase
-            .from('club_members')
-            .update({ chip_balance: newBalance })
-            .eq('id', memberId);
+            await WalletService.logTransaction(
+                member.user_id, 'PLAYER', Math.trunc(amount * 100) / 100, 'credit', 'transfer',
+                'Club balance adjustment (credit)'
+            );
+        } else if (amount < 0) {
+            const absAmt = Math.trunc(Math.abs(amount) * 100) / 100;
+            const { data: result, error } = await supabase.rpc('deduct_player_wallet', {
+                p_user_id: member.user_id,
+                p_amount: absAmt,
+            });
+            if (error || result === false) return false;
 
-        return !error;
+            await WalletService.logTransaction(
+                member.user_id, 'PLAYER', absAmt, 'debit', 'transfer',
+                'Club balance adjustment (debit)'
+            );
+        }
+
+        return true;
     }
 
     /**

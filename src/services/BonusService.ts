@@ -6,6 +6,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { WalletService } from './WalletService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -214,14 +215,22 @@ class BonusServiceClass {
      * Award reward to user
      */
     private async awardReward(userId: string, amount: number, type: string): Promise<void> {
+        const amt = Math.trunc(amount * 100) / 100;
         let error;
         switch (type) {
             case 'chips':
-                ({ error } = await supabase.rpc('add_chips', { p_user_id: userId, p_amount: amount }));
+                // Use proper wallet system with audit trail
+                ({ error } = await supabase.rpc('credit_player_wallet', { p_user_id: userId, p_amount: amt }));
+                if (!error) {
+                    await WalletService.logTransaction(
+                        userId, 'PLAYER', amt, 'credit', 'bonus',
+                        `Bonus chip reward`
+                    );
+                }
                 break;
 
             case 'vip_points':
-                ({ error } = await supabase.rpc('add_vip_points', { p_user_id: userId, p_amount: amount }));
+                ({ error } = await supabase.rpc('add_vip_points', { p_user_id: userId, p_amount: amt }));
                 break;
             default:
                 console.warn(`[Bonus] Unknown reward type: ${type}`);

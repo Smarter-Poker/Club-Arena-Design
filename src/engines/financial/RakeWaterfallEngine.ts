@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabase';
+import { WalletService } from '../../services/WalletService';
 import { CommissionService } from '../../services/CommissionService';
 import { RakeService } from '../../services/RakeService';
 
@@ -84,6 +85,33 @@ export class RakeWaterfallEngine {
         if (error) {
             console.error('[RakeWaterfall] CRITICAL pot deduction failure:', error);
             throw new Error(`Failed to execute pot drops for hand ${ctx.handId}: ${error.message}`);
+        }
+
+        // Log rake + BBJ deductions to wallet_transactions for audit trail
+        // Rake goes to union/club owner depending on union membership
+        const { data: club } = await supabase
+            .from('clubs')
+            .select('owner_id, union_id')
+            .eq('id', ctx.clubId)
+            .single();
+
+        if (club) {
+            let rakeRecipientId = club.owner_id;
+            if (club.union_id) {
+                const { data: union } = await supabase
+                    .from('unions')
+                    .select('owner_id')
+                    .eq('id', club.union_id)
+                    .single();
+                if (union?.owner_id) rakeRecipientId = union.owner_id;
+            }
+
+            if (rakeRecipientId && rake > 0) {
+                await WalletService.logTransaction(
+                    rakeRecipientId, 'PLAYER', Math.trunc(rake * 100) / 100, 'credit', 'rake',
+                    `Hand rake collected`, ctx.tableId, ctx.handId
+                );
+            }
         }
     }
 

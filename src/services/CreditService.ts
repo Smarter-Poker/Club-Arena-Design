@@ -19,6 +19,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { WalletService } from './WalletService';
 import { SettlementService } from './SettlementService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -338,13 +339,34 @@ export const CreditService = {
 
         // STEP 1: If paying from wallet, deduct FIRST (before recording anything)
         if (method === 'wallet') {
-            const { error: deductError } = await supabase.rpc('deduct_agent_balance', {
-                p_agent_id: invoice.agent_id,
-                p_amount: amount,
+            // Get agent's user_id for wallet deduction
+            const { data: agentData } = await supabase
+                .from('agents')
+                .select('user_id')
+                .eq('id', invoice.agent_id)
+                .single();
+
+            if (!agentData?.user_id) {
+                throw new Error('Agent user not found for wallet deduction');
+            }
+
+            const amt = Math.trunc(amount * 100) / 100;
+            const { data: deductResult, error: deductError } = await supabase.rpc('deduct_player_wallet', {
+                p_user_id: agentData.user_id,
+                p_amount: amt,
             });
             if (deductError) {
                 throw new Error(`Wallet deduction failed: ${deductError.message}`);
             }
+            if (deductResult === false) {
+                throw new Error('Insufficient wallet balance for payment');
+            }
+
+            // Log transaction for audit trail
+            await WalletService.logTransaction(
+                agentData.user_id, 'PLAYER', amt, 'debit', 'settlement',
+                `Credit invoice payment: ${invoiceId}`
+            );
         }
 
         // STEP 2: Atomically update invoice amounts via direct table update

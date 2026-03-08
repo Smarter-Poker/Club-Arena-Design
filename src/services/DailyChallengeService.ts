@@ -8,6 +8,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { WalletService } from './WalletService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -175,15 +176,23 @@ class DailyChallengeServiceClass {
      * Award rewards for completing a challenge
      */
     private async awardRewards(userId: string, challenge: DailyChallenge): Promise<void> {
-        // Award chips atomically via RPC (read-modify-write was a race condition)
+        // Award chips via proper wallet system with audit trail
         if (challenge.chipReward > 0) {
-            const { error: chipError } = await supabase.rpc('add_chips', {
+            const amt = Math.trunc(challenge.chipReward * 100) / 100;
+            const { error: chipError } = await supabase.rpc('credit_player_wallet', {
                 p_user_id: userId,
-                p_amount: challenge.chipReward,
+                p_amount: amt,
             });
             if (chipError) {
                 console.error('[DailyChallenge] Failed to award chips:', chipError);
+                return;
             }
+
+            // Log transaction for audit trail
+            await WalletService.logTransaction(
+                userId, 'PLAYER', amt, 'credit', 'bonus',
+                `Daily challenge reward: ${challenge.name}`
+            );
         }
     }
 

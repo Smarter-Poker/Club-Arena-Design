@@ -6,6 +6,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { WalletService } from './WalletService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -341,12 +342,18 @@ class PromotionServiceClass {
         // Create the claim
         await this.claimPromotion(promo.id, userId);
 
-        // Add bonus to promo wallet
+        // Add bonus to promo wallet with audit trail
         await supabase.rpc('add_to_promo_wallet', {
             p_user_id: userId,
             p_amount: finalBonus,
             p_description: `Deposit bonus: ${promo.title}`
         });
+
+        // Log transaction for audit trail
+        await WalletService.logTransaction(
+            userId, 'PROMO', finalBonus, 'credit', 'promotion',
+            `Deposit bonus: ${promo.title}`
+        );
 
         return finalBonus;
     }
@@ -378,11 +385,18 @@ class PromotionServiceClass {
         const promo = this.mapPromotion(promotions[0]);
 
         // Award referrer bonus
+        const referralBonus = Math.trunc((promo.prizePool || 10) * 100) / 100;
         await supabase.rpc('add_to_promo_wallet', {
             p_user_id: referrer.id,
-            p_amount: promo.prizePool || 10,
+            p_amount: referralBonus,
             p_description: 'Referral bonus'
         });
+
+        // Log transaction for audit trail
+        await WalletService.logTransaction(
+            referrer.id, 'PROMO', referralBonus, 'credit', 'promotion',
+            'Referral bonus reward'
+        );
 
         // Record the referral
         await supabase

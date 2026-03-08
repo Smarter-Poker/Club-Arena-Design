@@ -14,6 +14,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { WalletService } from './WalletService';
 import type { EvaluatedHand } from '../engine/PokerEngine';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -438,6 +439,12 @@ export const BBJService = {
             if (payoutError) {
                 console.error(`BBJService.executePromoPayout: Failed for ${userId}:`, payoutError);
                 lastError = payoutError;
+            } else {
+                // Log transaction for audit trail
+                await WalletService.logTransaction(
+                    userId, 'PROMO', perPlayer, 'credit', 'promotion',
+                    'BBJ promo pool payout'
+                );
             }
         }
 

@@ -447,15 +447,21 @@ export const SettlementService = {
                     continue;
                 }
 
-                // Credit to club owner
-                await supabase.rpc('credit_player_wallet', {
+                // Credit to club owner — rollback union debit on failure
+                const { error: creditError } = await supabase.rpc('credit_player_wallet', {
                     p_user_id: club.owner_id,
                     p_amount: rakeBack,
                 });
 
+                if (creditError) {
+                    console.error(`[Settlement] CRITICAL: Credit to club owner failed, rolling back union debit:`, creditError);
+                    await supabase.rpc('credit_player_wallet', { p_user_id: union.owner_id, p_amount: rakeBack });
+                    continue;
+                }
+
                 // Log both sides
                 await WalletService.logTransaction(
-                    union.owner_id, 'PLAYER', -rakeBack, 'debit', 'settlement',
+                    union.owner_id, 'PLAYER', rakeBack, 'debit', 'settlement',
                     `Weekly rake back to ${club.name}: 90% of ${clubRake}`,
                     undefined, undefined, club.id
                 );

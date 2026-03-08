@@ -12,6 +12,7 @@
 
 import { supabase } from '../lib/supabase';
 import { WalletService } from './WalletService';
+import { ChipFlowService } from './ChipFlowService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -746,39 +747,12 @@ class AgentServiceClass {
     ): Promise<boolean> {
         if (amount <= 0) throw new Error('Transfer amount must be positive');
 
-        // Get agent's business balance
-        const { data: agent } = await supabase
-            .from('agents')
-            .select('business_balance')
-            .eq('id', agentId)
-            .single();
-
-        if (!agent) throw new Error('Agent not found');
-        if (Number(agent.business_balance) < amount) throw new Error('Insufficient balance');
-
-        // STEP 1: Debit agent first
-        const { error: debitError } = await supabase
-            .from('agents')
-            .update({ business_balance: Number(agent.business_balance) - amount })
-            .eq('id', agentId);
-
-        if (debitError) throw debitError;
-
-        // STEP 2: Credit player via atomic RPC — rollback agent on failure
-        const { error: rpcError } = await supabase.rpc('add_chips', {
-            p_user_id: playerId,
-            p_amount: amount,
-        });
-
-        if (rpcError) {
-            // Rollback: re-credit agent
-            console.error('[AgentService] Player credit failed, rolling back agent debit:', rpcError);
-            await supabase
-                .from('agents')
-                .update({ business_balance: Number(agent.business_balance) })
-                .eq('id', agentId);
-            throw new Error('Failed to credit player — agent balance restored');
-        }
+        // Use ChipFlowService for proper atomic wallet transfer with full audit trail
+        await ChipFlowService.transfer(
+            agentId, playerId, amount, 'transfer',
+            `Agent chip transfer to player via hierarchy`,
+            clubId
+        );
 
         return true;
     }
@@ -820,6 +794,7 @@ class AgentServiceClass {
 
     /**
      * Distribute chips from agent to sub-agents or players
+     * Uses ChipFlowService for atomic wallet transfers with full audit trail
      */
     async distributeChips(
         fromAgentId: string,
@@ -828,50 +803,37 @@ class AgentServiceClass {
         const agent = await this.getAgent(fromAgentId);
         if (!agent) throw new Error('Agent not found');
 
-        const totalAmount = distributions.reduce((sum, d) => sum + d.amount, 0);
-        if (agent.businessBalance < totalAmount) {
-            throw new Error('Insufficient balance for distribution');
-        }
-
-        // STEP 1: Deduct from source FIRST to prevent chip duplication
-        const { error: deductError } = await supabase.from('agents').update({
-            business_balance: agent.businessBalance - totalAmount,
-        }).eq('id', fromAgentId);
-
-        if (deductError) throw new Error('Failed to deduct from source agent');
-
-        // STEP 2: Process each distribution
         let distributed = 0;
         for (const dist of distributions) {
             try {
+                const amt = Math.trunc(dist.amount * 100) / 100;
                 if (dist.type === 'agent') {
+                    // Agent → Sub-Agent: Get sub-agent's user_id
                     const subAgent = await this.getAgent(dist.toId);
                     if (!subAgent) {
                         console.warn(`[AgentService] Sub-agent ${dist.toId} not found, skipping`);
                         continue;
                     }
-                    await supabase.from('agents').update({
-                        business_balance: subAgent.businessBalance + dist.amount,
-                    }).eq('id', dist.toId);
+                    await ChipFlowService.transfer(
+                        agent.userId, subAgent.userId, amt, 'transfer',
+                        'Agent chip distribution to sub-agent'
+                    );
                 } else {
-                    await supabase.rpc('add_chips', {
-                        p_user_id: dist.toId,
-                        p_amount: dist.amount,
-                    });
+                    // Agent → Player: toId IS the user_id
+                    await ChipFlowService.transfer(
+                        agent.userId, dist.toId, amt, 'transfer',
+                        'Agent chip distribution to player'
+                    );
                 }
-                distributed += dist.amount;
+                distributed += amt;
             } catch (err) {
                 console.error(`[AgentService] Distribution to ${dist.toId} failed:`, err);
                 // Continue with remaining distributions — partial failures are logged
             }
         }
 
-        // If nothing was distributed, refund the full deduction
         if (distributed === 0 && distributions.length > 0) {
-            await supabase.from('agents').update({
-                business_balance: agent.businessBalance,
-            }).eq('id', fromAgentId);
-            throw new Error('All distributions failed — balance restored');
+            throw new Error('All distributions failed');
         }
 
         return true;
@@ -898,61 +860,22 @@ class AgentServiceClass {
             throw new Error('Agents must be in the same club');
         }
 
-        // 2. Validate sufficient balance
-        if (fromAgent.businessBalance < amount) {
-            throw new Error('Insufficient balance for transfer');
-        }
-
-        // 3. Validate amount is positive
+        // 2. Validate amount is positive
         if (amount <= 0) {
             throw new Error('Transfer amount must be positive');
         }
 
-        // 4. Execute the transfer atomically
-        const { error: fromError } = await supabase
-            .from('agents')
-            .update({
-                business_balance: fromAgent.businessBalance - amount,
-            })
-            .eq('id', fromAgentId);
+        const amt = Math.trunc(amount * 100) / 100;
+        const desc = reason || `Agent transfer: ${fromAgent.displayName || fromAgentId} to ${toAgent.displayName || toAgentId}`;
 
-        if (fromError) throw fromError;
-
-        const { error: toError } = await supabase
-            .from('agents')
-            .update({
-                business_balance: toAgent.businessBalance + amount,
-            })
-            .eq('id', toAgentId);
-
-        if (toError) {
-            // Rollback the deduction
-            await supabase
-                .from('agents')
-                .update({
-                    business_balance: fromAgent.businessBalance,
-                })
-                .eq('id', fromAgentId);
-            throw toError;
-        }
-
-        // 5. Log the transaction
-        const { data: transaction } = await supabase
-            .from('chip_transactions')
-            .insert({
-                club_id: fromAgent.clubId,
-                from_user_id: fromAgent.userId,
-                to_user_id: toAgent.userId,
-                amount,
-                transaction_type: 'agent_transfer',
-                notes: reason || `Agent transfer: ${fromAgent.displayName || fromAgentId} → ${toAgent.displayName || toAgentId}`,
-            })
-            .select('id')
-            .single();
+        // 3. Use ChipFlowService for atomic wallet transfer with audit trail
+        const result = await ChipFlowService.transfer(
+            fromAgent.userId, toAgent.userId, amt, 'transfer', desc, fromAgent.clubId
+        );
 
         return {
             success: true,
-            transactionId: transaction?.id,
+            transactionId: result.transactionIds?.[0],
         };
     }
 
