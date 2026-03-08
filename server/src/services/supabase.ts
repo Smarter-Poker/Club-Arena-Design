@@ -283,7 +283,7 @@ export async function processLeavePending(tableId: string, clubId: string): Prom
             }
 
             // Log the cash-out transaction — every chip move documented
-            await supabase.from('wallet_transactions').insert({
+            const { error: cashoutTxErr } = await supabase.from('wallet_transactions').insert({
                 user_id: seat.user_id,
                 wallet_type: 'PLAYER',
                 amount: seat.stack,
@@ -291,6 +291,7 @@ export async function processLeavePending(tableId: string, clubId: string): Prom
                 category: 'cashout',
                 description: `Cash-out from table: ${seat.stack} chips`,
             });
+            if (cashoutTxErr) console.warn(`[DB] Cash-out tx log failed for ${seat.user_id.slice(0, 8)}: ${cashoutTxErr.message}`);
         }
 
         await supabase
@@ -472,7 +473,7 @@ export async function ensureHorseWallet(horseId: string, minBalance: number = 10
             return;
         }
 
-        await supabase.from('wallet_transactions').insert({
+        const { error: refillTxErr } = await supabase.from('wallet_transactions').insert({
             user_id: horseId,
             wallet_type: 'PLAYER',
             amount: topUp,
@@ -480,6 +481,7 @@ export async function ensureHorseWallet(horseId: string, minBalance: number = 10
             category: 'horse_refill',
             description: `Horse wallet refill: ${topUp} chips (balance was ${wallet.balance})`,
         });
+        if (refillTxErr) console.warn(`[DB] Horse refill tx log failed for ${horseId.slice(0, 8)}: ${refillTxErr.message}`);
     }
 }
 

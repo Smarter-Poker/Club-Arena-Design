@@ -42,7 +42,7 @@ export const ProfitTicker: React.FC<ProfitTickerProps> = ({
                 setIsAnimating(false);
                 clearInterval(interval);
             } else {
-                setDisplayValue(Math.round(current));
+                setDisplayValue(Math.trunc(current * 100) / 100);
             }
         }, stepDuration);
 

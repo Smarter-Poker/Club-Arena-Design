@@ -332,7 +332,7 @@ export class HorseFleetManager {
             }
 
             // Log the buy-in transaction to wallet_transactions
-            await supabase.from('wallet_transactions').insert({
+            const { error: txErr } = await supabase.from('wallet_transactions').insert({
                 user_id: horseId,
                 wallet_type: 'PLAYER',
                 amount: buyIn,
@@ -340,6 +340,7 @@ export class HorseFleetManager {
                 category: 'buyin',
                 description: `Buy-in at ${tableName}: ${buyIn} chips`,
             });
+            if (txErr) console.warn(`[HorseFleet] Buy-in tx log failed for horse ${horseId.slice(0, 8)} at ${tableName}: ${txErr.message}`);
 
             // Insert into table_seats
             const { error: seatError } = await supabase
@@ -359,7 +360,7 @@ export class HorseFleetManager {
                     p_amount: buyIn,
                 });
                 if (refundErr) console.error(`[HorseFleet] Seat-fail refund FAILED for horse ${horseId.slice(0, 8)}: ${refundErr.message}`);
-                await supabase.from('wallet_transactions').insert({
+                const { error: refundTxErr } = await supabase.from('wallet_transactions').insert({
                     user_id: horseId,
                     wallet_type: 'PLAYER',
                     amount: buyIn,
@@ -367,6 +368,7 @@ export class HorseFleetManager {
                     category: 'cashout',
                     description: `Seat failed refund at ${tableName}: ${buyIn} chips`,
                 });
+                if (refundTxErr) console.warn(`[HorseFleet] Refund tx log failed for horse ${horseId.slice(0, 8)}: ${refundTxErr.message}`);
                 console.error(`[HorseFleet] Seat insert failed at ${tableName}:`, seatError.message);
                 return false;
             }

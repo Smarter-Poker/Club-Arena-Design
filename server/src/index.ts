@@ -1368,7 +1368,7 @@ class TournamentManager {
             }
 
             if (creditSuccess) {
-                await supabase.rpc('log_wallet_transaction', {
+                const { error: prizeLogErr } = await supabase.rpc('log_wallet_transaction', {
                     p_user_id: winnerId,
                     p_wallet_type: 'PLAYER',
                     p_amount: winnerPrize,
@@ -1379,6 +1379,7 @@ class TournamentManager {
                     p_hand_id: null,
                     p_related_entity_id: this.tournamentId,
                 });
+                if (prizeLogErr) console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Prize log FAILED for ${winnerId.slice(0, 8)}: ${prizeLogErr.message}`);
             } else {
                 console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] CRITICAL: Winner prize credit FAILED after 3 retries for ${winnerId.slice(0, 8)} — ${winnerPrize} chips lost`);
             }

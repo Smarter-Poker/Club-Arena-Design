@@ -357,7 +357,7 @@ export class HorseLifecycleManager {
                 return false;
             }
 
-            await supabase.from('wallet_transactions').insert({
+            const { error: txErr } = await supabase.from('wallet_transactions').insert({
                 user_id: horseId,
                 wallet_type: 'PLAYER',
                 amount,
@@ -365,6 +365,7 @@ export class HorseLifecycleManager {
                 category: 'tournament_winnings',
                 description: `Tournament winnings: ${amount} credits`,
             });
+            if (txErr) console.warn(`[Lifecycle] Winnings tx log failed for horse ${horseId.slice(0, 8)}: ${txErr.message}`);
 
             return true;
         } catch {
