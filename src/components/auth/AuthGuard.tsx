@@ -12,6 +12,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { pushNotificationService } from '../../services/PushNotificationService';
 
 const AUTH_STORAGE_KEY = 'smarter-poker-auth';
 const SESSION_CHECK_TIMEOUT = 3000; // 3s max wait for getSession
@@ -100,6 +101,13 @@ export function AuthGuard({ children }: AuthGuardProps) {
                 if (!cancelled) {
                     setIsAuthenticated(!!session);
                     setIsLoading(false);
+
+                    // Register with push notifications on login
+                    if (session?.user?.id && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+                        pushNotificationService.init().then(() => {
+                            pushNotificationService.setExternalUserId(session.user.id);
+                        }).catch(() => { /* OneSignal not configured */ });
+                    }
                 }
             }
         );

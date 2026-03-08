@@ -258,8 +258,8 @@ class PushNotificationServiceClass {
         prize: number
     ): Promise<boolean> {
         const message = position === 1
-            ? ` You won ${tournamentName}! Prize: $${prize.toLocaleString()}`
-            : `You finished ${position}${this.ordinal(position)} in ${tournamentName}${prize > 0 ? ` - $${prize.toLocaleString()}` : ''}`;
+            ? ` You won ${tournamentName}! Prize: ${prize.toLocaleString()} chips`
+            : `You finished ${position}${this.ordinal(position)} in ${tournamentName}${prize > 0 ? ` — ${prize.toLocaleString()} chips` : ''}`;
 
         return this.sendToUser(userId, {
             title: position === 1 ? ' Tournament Victory!' : ' Tournament Complete',
