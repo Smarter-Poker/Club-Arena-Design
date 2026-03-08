@@ -456,6 +456,24 @@ class TournamentService {
             console.error('[TournamentService] Failed to increment registration count:', countError);
         }
 
+        // ── SNG AUTO-START: if tournament is full, trigger immediate start ──
+        if (
+            tournament.max_players &&
+            newPlayerCount >= tournament.max_players &&
+            (tournament.tournament_type === 'SNG' || tournament.tournament_type === 'SPIN')
+        ) {
+            console.log(`[TournamentService] SNG ${tournamentId} is full (${newPlayerCount}/${tournament.max_players}), auto-starting...`);
+            try {
+                // Set start_time to NOW so server's tournament discovery loop picks it up
+                // Server polls for REGISTERING tournaments where start_time <= now && players >= 2
+                await supabase.from('tournaments').update({
+                    start_time: new Date().toISOString(),
+                }).eq('id', tournamentId);
+            } catch (autoStartErr) {
+                console.error('[TournamentService] SNG auto-start failed:', autoStartErr);
+            }
+        }
+
         return data;
     }
 
