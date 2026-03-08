@@ -59,8 +59,10 @@ import SettingsPanel from '../components/table/SettingsPanel';
 import TableMenu from '../components/table/TableMenu';
 import PresenceIndicator from '../components/social/PresenceIndicator';
 import { useTableStore } from '../stores/useTableStore';
+import { useToast } from '../components/common/Toast';
 // RealtimeChannelService imported if needed for future use
 import ChipStack from '../components/table/ChipStack';
+import { tournamentService } from '../services/TournamentService';
 import TimerBar from '../components/table/TimerBar';
 import PremiumCard from '../components/table/PremiumCard';
 import RealTimeResults from '../components/table/RealTimeResults';
@@ -158,6 +160,7 @@ interface TableState {
     positions: PositionBadge[];
     lastActions: LastAction[];
     isTournament: boolean;
+    tournamentId?: string;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -230,6 +233,7 @@ if (!_win.__pokerLocks) {
 export default function TablePage() {
     const { tableId } = useParams<{ tableId: string }>();
     const navigate = useNavigate();
+    const toast = useToast();
 
     // Prevent Chrome from throttling this tab (keeps horse AI timers alive)
     useTabKeepAlive();
@@ -318,6 +322,10 @@ export default function TablePage() {
         position: number;
         joinedAt: Date;
     }>>([]);
+
+    // Tournament rebuy state
+    const [showTournamentRebuy, setShowTournamentRebuy] = useState(false);
+    const [rebuyProcessing, setRebuyProcessing] = useState(false);
 
     // Buy-in processing lock to prevent double-click
     const buyInProcessingRef = useRef(false);
@@ -682,6 +690,46 @@ export default function TablePage() {
     // Leave-table notification state (replaces blocking alert())
     const [leaveNotice, setLeaveNotice] = useState<string | null>(null);
 
+    // Handle tournament rebuy
+    const handleTournamentRebuy = async () => {
+        if (!tableState.tournamentId || !userId || rebuyProcessing) return;
+        setRebuyProcessing(true);
+        try {
+            const rebuyCheck = await tournamentService.canRebuy(tableState.tournamentId, userId);
+            if (!rebuyCheck.allowed) {
+                toast.error(rebuyCheck.reason || 'Rebuy not available');
+                return;
+            }
+            await tournamentService.processRebuy(tableState.tournamentId, userId);
+            toast?.success('Rebuy successful — chips added');
+            setShowTournamentRebuy(false);
+        } catch (err) {
+            toast?.error((err as Error).message || 'Rebuy failed');
+        } finally {
+            setRebuyProcessing(false);
+        }
+    };
+
+    // Handle tournament add-on
+    const handleTournamentAddOn = async () => {
+        if (!tableState.tournamentId || !userId || rebuyProcessing) return;
+        setRebuyProcessing(true);
+        try {
+            const addOnCheck = await tournamentService.canAddOn(tableState.tournamentId);
+            if (!addOnCheck.allowed) {
+                toast.error(addOnCheck.reason || 'Add-on not available');
+                return;
+            }
+            await tournamentService.processAddOn(tableState.tournamentId, userId);
+            toast?.success('Add-on successful — chips added');
+            setShowTournamentRebuy(false);
+        } catch (err) {
+            toast?.error((err as Error).message || 'Add-on failed');
+        } finally {
+            setRebuyProcessing(false);
+        }
+    };
+
     // Handle leave table - cleans up and returns chips (non-blocking)
     const handleLeaveTable = async () => {
         if (!tableId || !userId) return;
@@ -836,6 +884,7 @@ export default function TablePage() {
                     tableName: table.name || 'Poker Table',
                     gameType: (table.game_variant || table.game_type || 'NLH') as any,
                     isTournament: table.game_type === 'tournament' || !!table.tournament_id,
+                    tournamentId: table.tournament_id || undefined,
                     blinds: table.stakes || '?/?',
                     maxPlayers: table.max_players || 6,
                     players: createEmptySeats(table.max_players || 6),
@@ -2609,7 +2658,12 @@ export default function TablePage() {
                         title: 'Quick Actions',
                         actions: [
                             { id: 'sitout', label: 'Sit Out', icon: '', onClick: () => { } },
-                            { id: 'rebuy', label: 'Add Chips', icon: '', onClick: () => setShowCashier(true) },
+                            ...(tableState.isTournament ? [
+                                { id: 'rebuy', label: 'Rebuy', icon: '', onClick: handleTournamentRebuy },
+                                { id: 'addon', label: 'Add-On', icon: '', onClick: handleTournamentAddOn },
+                            ] : [
+                                { id: 'rebuy', label: 'Add Chips', icon: '', onClick: () => setShowCashier(true) },
+                            ]),
                         ]
                     },
                     {

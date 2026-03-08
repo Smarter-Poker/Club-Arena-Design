@@ -357,7 +357,15 @@ class TournamentService {
     ): Promise<TournamentPlayer> {
         const tournament = await this.getTournament(tournamentId);
         if (!tournament) throw new Error('Tournament not found');
-        if (tournament.status !== 'REGISTERING' && tournament.status !== 'ANNOUNCED') {
+
+        // Check registration eligibility (includes late registration window)
+        const lateRegMins = tournament.late_reg_mins || 0;
+        const isLateRegOpen = tournament.status === 'RUNNING'
+            && lateRegMins > 0
+            && tournament.started_at
+            && (Date.now() - new Date(tournament.started_at).getTime()) < lateRegMins * 60 * 1000;
+
+        if (tournament.status !== 'REGISTERING' && tournament.status !== 'ANNOUNCED' && !isLateRegOpen) {
             throw new Error('Registration is closed');
         }
         if (tournament.max_players && tournament.current_players >= tournament.max_players) {
@@ -445,8 +453,12 @@ class TournamentService {
         }
 
         // Atomically update player count and prize pool (only buy-in goes to pool, not rake)
+        // If guaranteed prize is set, prize pool = max(entries * buy-in, guaranteed_prize)
         const newPlayerCount = (tournament.current_players || 0) + 1;
-        const newPrizePool = buyIn * newPlayerCount;
+        const entriesPrize = buyIn * newPlayerCount;
+        const newPrizePool = tournament.guaranteed_prize
+            ? Math.max(entriesPrize, tournament.guaranteed_prize)
+            : entriesPrize;
         const { error: countError } = await supabase.from('tournaments').update({
             current_players: newPlayerCount,
             prize_pool: newPrizePool,
@@ -460,7 +472,7 @@ class TournamentService {
         if (
             tournament.max_players &&
             newPlayerCount >= tournament.max_players &&
-            (tournament.tournament_type === 'SNG' || tournament.tournament_type === 'SPIN')
+            (tournament.variant === 'sng' || tournament.variant === 'spin')
         ) {
             console.log(`[TournamentService] SNG ${tournamentId} is full (${newPlayerCount}/${tournament.max_players}), auto-starting...`);
             try {
@@ -471,6 +483,55 @@ class TournamentService {
                 }).eq('id', tournamentId);
             } catch (autoStartErr) {
                 console.error('[TournamentService] SNG auto-start failed:', autoStartErr);
+            }
+        }
+
+        // ── LATE REGISTRATION: seat player at active table immediately ──
+        if (isLateRegOpen) {
+            console.log(`[TournamentService] Late reg: seating ${userId.slice(0, 8)} in running tournament ${tournamentId.slice(0, 8)}`);
+            try {
+                // Find tournament table with an open seat
+                const { data: tables } = await supabase
+                    .from('tables')
+                    .select('id, max_seats, current_players')
+                    .eq('tournament_id', tournamentId)
+                    .eq('status', 'active');
+
+                const openTable = (tables || []).find(t => t.current_players < t.max_seats);
+                if (openTable) {
+                    // Find an empty seat number
+                    const { data: existingSeats } = await supabase
+                        .from('table_seats')
+                        .select('seat_number')
+                        .eq('table_id', openTable.id);
+
+                    const takenSeats = new Set((existingSeats || []).map(s => s.seat_number));
+                    let seatNumber = 1;
+                    while (takenSeats.has(seatNumber) && seatNumber <= openTable.max_seats) seatNumber++;
+
+                    // Seat the player
+                    await supabase.from('table_seats').insert({
+                        table_id: openTable.id,
+                        user_id: userId,
+                        seat_number: seatNumber,
+                        stack: tournament.starting_chips,
+                        status: 'active',
+                    });
+
+                    // Update tournament_players to playing status with starting chips
+                    await supabase.from('tournament_players').update({
+                        status: 'playing',
+                        chips: tournament.starting_chips,
+                        table_id: openTable.id,
+                    }).eq('tournament_id', tournamentId).eq('user_id', userId);
+
+                    // Increment table player count
+                    await supabase.from('tables').update({
+                        current_players: openTable.current_players + 1,
+                    }).eq('id', openTable.id);
+                }
+            } catch (lateRegErr) {
+                console.error('[TournamentService] Late reg seating failed:', lateRegErr);
             }
         }
 
@@ -515,9 +576,12 @@ class TournamentService {
             .eq('tournament_id', tournamentId)
             .eq('user_id', userId);
 
-        // Decrement player count and recalculate prize pool (buy-in × entries, rake excluded)
+        // Decrement player count and recalculate prize pool (guaranteed minimum applies)
         const newPlayerCount = Math.max(0, tournament.current_players - 1);
-        const newPrizePool = (tournament.buy_in_amount || 0) * newPlayerCount;
+        const entriesPrize = (tournament.buy_in_amount || 0) * newPlayerCount;
+        const newPrizePool = tournament.guaranteed_prize
+            ? Math.max(entriesPrize, tournament.guaranteed_prize)
+            : entriesPrize;
         const { error: countError } = await supabase.from('tournaments').update({
             current_players: newPlayerCount,
             prize_pool: newPrizePool,
@@ -1169,10 +1233,10 @@ class TournamentService {
                 // Dynamically import to avoid circular deps
                 const { POYService } = await import('./POYService');
 
-                // Map tournament type to game_type
-                const gameType = tournament.type === 'spin' ? 'spin-n-go'
-                    : tournament.type === 'sng' ? 'sit-n-go'
-                        : tournament.type === 'satellite' ? 'satellite'
+                // Map tournament variant to game_type for POY
+                const gameType = tournament.variant === 'spin' ? 'spin-n-go'
+                    : tournament.variant === 'sng' ? 'sit-n-go'
+                        : tournament.variant === 'satellite' ? 'satellite'
                             : 'tournament';
 
                 // Submit each player's result

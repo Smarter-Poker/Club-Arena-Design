@@ -398,6 +398,51 @@ export default function TournamentDetails() {
 
             {activeTab === 'detail' && (
                 <>
+                    {/* Tournament Results (for completed tournaments) */}
+                    {tournament.status === 'COMPLETED' && entries.length > 0 && (
+                        <div className="results-summary">
+                            <h3>Final Results</h3>
+                            <div className="results-podium">
+                                {entries
+                                    .filter(e => e.position && e.position <= 3)
+                                    .sort((a, b) => (a.position || 99) - (b.position || 99))
+                                    .map(player => {
+                                        const payoutEntry = (tournament.payout_structure || []).find(
+                                            (p: any) => (p.place || p.position) === player.position
+                                        );
+                                        const prize = payoutEntry
+                                            ? Math.trunc((tournament.prize_pool || 0) * (payoutEntry as any).percentage / 100 * 100) / 100
+                                            : 0;
+                                        return (
+                                            <div key={player.user_id} className={`podium-card place-${player.position}`}>
+                                                <span className="podium-medal">
+                                                    {player.position === 1 && '🥇'}
+                                                    {player.position === 2 && '🥈'}
+                                                    {player.position === 3 && '🥉'}
+                                                </span>
+                                                <span className="podium-name">{player.username}</span>
+                                                <span className="podium-prize">{prize > 0 ? `${prize.toLocaleString()} chips` : ''}</span>
+                                            </div>
+                                        );
+                                    })
+                                }
+                            </div>
+                            <div className="results-full-list">
+                                {entries
+                                    .filter(e => e.position)
+                                    .sort((a, b) => (a.position || 99) - (b.position || 99))
+                                    .slice(0, 10)
+                                    .map(player => (
+                                        <div key={player.user_id} className="result-row">
+                                            <span className="result-position">#{player.position}</span>
+                                            <span className="result-name">{player.username}</span>
+                                        </div>
+                                    ))
+                                }
+                            </div>
+                        </div>
+                    )}
+
                     {/* Countdown Timer */}
                     <div className="countdown-section">
                         <div className="countdown-display">
@@ -648,7 +693,11 @@ export default function TournamentDetails() {
             {/* Footer Actions */}
             <div className="details-footer">
                 <button className="btn btn-share">Share</button>
-                {tournament.status === 'RUNNING' ? (
+                {tournament.status === 'RUNNING' && !isRegistered && (tournament.late_reg_mins || 0) > 0 && tournament.started_at && (Date.now() - new Date(tournament.started_at).getTime()) < (tournament.late_reg_mins || 0) * 60 * 1000 ? (
+                    <button className="btn btn-register late-reg" onClick={() => setShowSignUpModal(true)}>
+                        Late Register
+                    </button>
+                ) : tournament.status === 'RUNNING' ? (
                     <span className="tournament-status-badge running">In Progress</span>
                 ) : tournament.status === 'COMPLETED' ? (
                     <span className="tournament-status-badge completed">Completed</span>
