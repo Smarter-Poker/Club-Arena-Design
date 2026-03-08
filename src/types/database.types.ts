@@ -105,6 +105,7 @@ export type GameVariant =
 export type TableStatus = 'waiting' | 'running' | 'paused' | 'closed';
 
 export interface TableSettings {
+    // ── Core Features ──
     straddle_enabled: boolean;
     straddle_type: 'utg' | 'any_position' | 'mississippi';
     run_it_twice: boolean;
@@ -113,6 +114,20 @@ export interface TableSettings {
     bomb_pot_ante_bb: number;
     time_bank_seconds: number;
     auto_muck: boolean;
+
+    // ── Additional Game Features ──
+    vpip_display: boolean;          // Show VPIP % on player seats
+    ante_enabled: boolean;          // BB ante or regular ante
+    ante_amount: number;            // Ante in chips (0 = no ante)
+    no_rathole: boolean;            // Prevent players from leaving and re-sitting with fewer chips
+    double_board: boolean;          // Double board run-out
+    time_limit_minutes: number;     // Auto-close table after N minutes (0 = unlimited)
+    action_time_seconds: number;    // Per-action time limit (default 15)
+    min_buyin_bb: number;           // Minimum buy-in in big blinds
+    max_buyin_bb: number;           // Maximum buy-in in big blinds
+    insurance_enabled: boolean;     // All-in insurance
+    auto_restart: boolean;          // Auto restart after hand finishes
+    call_time_enabled: boolean;     // Shot clock / call time
 }
 
 export interface ChipTransaction {

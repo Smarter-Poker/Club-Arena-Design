@@ -200,7 +200,7 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
 
     const isBountyFormat = format === 'bounty' || format === 'progressive_bounty' || format === 'mystery_bounty';
 
-    // ── Validation: bounty fields required for bounty formats ──
+    // ── Validation: ALL fields required before tournament can be created ──
     const bountyValid = (() => {
         if (!isBountyFormat) return true;
         const ba = parseFloat(bountyAmount);
@@ -213,7 +213,21 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
         return true;
     })();
 
-    const canSubmit = !!name && bountyValid && !isSubmitting;
+    const coreValid = (() => {
+        if (!name.trim()) return false;
+        if (parseFloat(buyIn) <= 0) return false;
+        if (parseInt(startingChips) <= 0) return false;
+        if (parseInt(maxPlayers) < 3) return false;
+        // Scheduled tournament must have date+time
+        if (startTimeMode === 'scheduled' && (!scheduledDate || !scheduledTime)) return false;
+        // Rebuy fields required if rebuy enabled
+        if (isRebuy) {
+            if (parseInt(rebuyLevels) <= 0) return false;
+        }
+        return true;
+    })();
+
+    const canSubmit = coreValid && bountyValid && !isSubmitting;
 
     return (
         <div className={styles.modalOverlay} onClick={onClose}>
@@ -225,19 +239,20 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
 
                 <form onSubmit={handleSubmit}>
                     <div className={styles.formGroup}>
-                        <label>Tournament Name</label>
+                        <label>Tournament Name <span style={{ color: '#ef4444' }}>*</span></label>
                         <input
                             className={styles.input}
                             value={name}
                             onChange={e => setName(e.target.value)}
                             placeholder="e.g. Saturday Night Turbo"
                             required
+                            style={!name.trim() ? { borderColor: '#ef4444' } : undefined}
                         />
                     </div>
 
                     {/* Format Selection */}
                     <div className={styles.formGroup}>
-                        <label>Format</label>
+                        <label>Format <span style={{ color: '#ef4444' }}>*</span></label>
                         <select
                             className={styles.select}
                             value={format}
@@ -255,7 +270,7 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                     <div className={styles.row}>
                         <div className={styles.col}>
                             <div className={styles.formGroup}>
-                                <label>Max Players</label>
+                                <label>Max Players <span style={{ color: '#ef4444' }}>*</span></label>
                                 <input
                                     type="number"
                                     className={styles.input}
@@ -268,7 +283,7 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                         </div>
                         <div className={styles.col}>
                             <div className={styles.formGroup}>
-                                <label>Speed</label>
+                                <label>Speed <span style={{ color: '#ef4444' }}>*</span></label>
                                 <select
                                     className={styles.select}
                                     value={blindSpeed}
@@ -285,7 +300,7 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                     <div className={styles.row}>
                         <div className={styles.col}>
                             <div className={styles.formGroup}>
-                                <label>Buy-in</label>
+                                <label>Buy-in <span style={{ color: '#ef4444' }}>*</span></label>
                                 <input
                                     type="number"
                                     className={styles.input}
@@ -314,7 +329,7 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                     <div className={styles.row}>
                         <div className={styles.col}>
                             <div className={styles.formGroup}>
-                                <label>Starting Chips</label>
+                                <label>Starting Chips <span style={{ color: '#ef4444' }}>*</span></label>
                                 <input
                                     type="number"
                                     className={styles.input}
@@ -643,6 +658,18 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                             ))}
                         </div>
                     </div>
+
+                    {/* ── Validation Summary ── */}
+                    {!canSubmit && !isSubmitting && (
+                        <div style={{ color: '#ef4444', fontSize: '0.75rem', padding: '4px 0' }}>
+                            {!name.trim() && <p>Tournament name is required</p>}
+                            {parseFloat(buyIn) <= 0 && <p>Buy-in must be greater than 0</p>}
+                            {parseInt(startingChips) <= 0 && <p>Starting chips must be greater than 0</p>}
+                            {startTimeMode === 'scheduled' && (!scheduledDate || !scheduledTime) && <p>Scheduled date and time are required</p>}
+                            {isRebuy && parseInt(rebuyLevels) <= 0 && <p>Rebuy levels must be set when rebuys are enabled</p>}
+                            {!bountyValid && isBountyFormat && <p>Bounty configuration is incomplete</p>}
+                        </div>
+                    )}
 
                     <div className={styles.actions}>
                         <button type="button" className={styles.cancelBtn} onClick={onClose}>

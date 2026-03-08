@@ -117,6 +117,50 @@
     accent-color: var(--primary);
 }
 
+.error-toast {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3) var(--space-4);
+    margin: var(--space-3) var(--space-6) 0;
+    font-size: var(--text-sm);
+}
+
+.stake-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.stake-chip {
+    padding: 4px 10px;
+    border-radius: 16px;
+    border: 1px solid var(--border-subtle);
+    background: var(--dark-surface);
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.stake-chip:hover {
+    border-color: var(--primary);
+    color: var(--text-primary);
+}
+
+.stake-chip-active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+.helper-text {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
 .modal-footer {
     padding: var(--space-6);
     border-top: 1px solid var(--border-subtle);

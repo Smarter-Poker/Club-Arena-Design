@@ -118,6 +118,18 @@ class TableService {
             bomb_pot_ante_bb: 0,
             time_bank_seconds: 30,
             auto_muck: true,
+            vpip_display: false,
+            ante_enabled: false,
+            ante_amount: 0,
+            no_rathole: false,
+            double_board: false,
+            time_limit_minutes: 0,
+            action_time_seconds: 15,
+            min_buyin_bb: 20,
+            max_buyin_bb: 100,
+            insurance_enabled: false,
+            auto_restart: true,
+            call_time_enabled: false,
             ...settings,
         };
 
