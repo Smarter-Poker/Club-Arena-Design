@@ -581,7 +581,7 @@ export default function TournamentDetails() {
                         </div>
                         <div className="stat">
                             <span className="stat-label">Remaining</span>
-                            <span className="stat-value">{entries.filter(e => e.status === 'playing' || e.status === 'registered').length}/{tournament.max_players || entries.length}</span>
+                            <span className="stat-value">{entries.filter(e => e.status === 'playing' || e.status === 'registered').length}{tournament.max_players ? `/${tournament.max_players}` : ''}</span>
                         </div>
                         <div className="stat">
                             <span className="stat-label">Avg. Stack</span>
@@ -601,7 +601,7 @@ export default function TournamentDetails() {
                     <div className="game-info-section">
                         <div className="info-row">
                             <span className="info-label">Game Type:</span>
-                            <span className="info-value highlight">{(tournament.game_type || 'nlh').toUpperCase()} ({tournament.max_players || 9} max)</span>
+                            <span className="info-value highlight">{(tournament.game_type || 'nlh').toUpperCase()}{tournament.max_players ? ` (${tournament.max_players} max)` : ''}</span>
                         </div>
                         <div className="info-row">
                             <span className="info-label">Buy-in:</span>

@@ -55,16 +55,20 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // ── Auto-select payout structure based on max players ──
+    // ── Auto-select payout structure ──
+    // SNG/Spin: based on max players. MTT/Bounty/PKO/Mystery: default MTT structure (no max player cap)
     const payoutStructure = useMemo(() => {
-        const mp = parseInt(maxPlayers) || 6;
         if (format === 'spin') return [{ place: 1, percentage: 100 }];
-        if (mp <= 6) return PAYOUT_STRUCTURES.sng6;
-        if (mp <= 9) return PAYOUT_STRUCTURES.sng9;
-        if (mp <= 18) return PAYOUT_STRUCTURES.mtt10;
-        if (mp <= 45) return PAYOUT_STRUCTURES.mtt20;
+        const mp = parseInt(maxPlayers) || 0;
+        if (format === 'sng') {
+            if (mp <= 6) return PAYOUT_STRUCTURES.sng6;
+            return PAYOUT_STRUCTURES.sng9;
+        }
+        // MTT / Bounty / PKO / Mystery — no max player limit, use standard MTT payouts
         return PAYOUT_STRUCTURES.mtt50;
     }, [maxPlayers, format]);
+
+    const isSngOrSpin = format === 'sng' || format === 'spin';
 
     // ── Auto-set defaults when format changes ──
     const handleFormatChange = (f: TournamentFormat) => {
@@ -87,11 +91,11 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
             case 'bounty':
             case 'progressive_bounty':
             case 'mystery_bounty':
-                setMaxPlayers('50');
+                setMaxPlayers('0'); // Unlimited — max players only for SNG/Spin
                 setLateRegMins('30');
                 break;
             default:
-                setMaxPlayers('50');
+                setMaxPlayers('0'); // Unlimited — max players only for SNG/Spin
                 setLateRegMins('15');
         }
     };
@@ -143,7 +147,7 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                 buyIn: parsedBuyIn,
                 rake: parsedRake,
                 startingStack: parseInt(startingChips),
-                maxPlayers: parseInt(maxPlayers),
+                maxPlayers: isSngOrSpin ? parseInt(maxPlayers) : 0, // 0 = unlimited for MTT/Bounty/PKO/Mystery
                 minPlayers: 3,
                 blindStructure: BLIND_STRUCTURES[blindSpeed],
                 payoutStructure,
@@ -217,7 +221,8 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
         if (!name.trim()) return false;
         if (parseFloat(buyIn) <= 0) return false;
         if (parseInt(startingChips) <= 0) return false;
-        if (parseInt(maxPlayers) < 3) return false;
+        // Max players only required for SNG and Spin (they need a fixed table size)
+        if (isSngOrSpin && parseInt(maxPlayers) < 2) return false;
         // Scheduled tournament must have date+time
         if (startTimeMode === 'scheduled' && (!scheduledDate || !scheduledTime)) return false;
         // Rebuy fields required if rebuy enabled
@@ -268,19 +273,35 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                     </div>
 
                     <div className={styles.row}>
-                        <div className={styles.col}>
-                            <div className={styles.formGroup}>
-                                <label>Max Players <span style={{ color: '#ef4444' }}>*</span></label>
-                                <input
-                                    type="number"
-                                    className={styles.input}
-                                    value={maxPlayers}
-                                    onChange={e => setMaxPlayers(e.target.value)}
-                                    min="3"
-                                    max="1000"
-                                />
+                        {/* Max Players — ONLY for SNG and Spin (they need a fixed table size to start) */}
+                        {isSngOrSpin && (
+                            <div className={styles.col}>
+                                <div className={styles.formGroup}>
+                                    <label>Max Players <span style={{ color: '#ef4444' }}>*</span></label>
+                                    {format === 'spin' ? (
+                                        <select
+                                            className={styles.select}
+                                            value={maxPlayers}
+                                            onChange={e => setMaxPlayers(e.target.value)}
+                                        >
+                                            <option value="3">3 Players</option>
+                                            <option value="2">Heads Up (2)</option>
+                                        </select>
+                                    ) : (
+                                        <select
+                                            className={styles.select}
+                                            value={maxPlayers}
+                                            onChange={e => setMaxPlayers(e.target.value)}
+                                        >
+                                            <option value="6">6-Max</option>
+                                            <option value="9">Full Ring (9)</option>
+                                            <option value="3">3 Players</option>
+                                            <option value="2">Heads Up (2)</option>
+                                        </select>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        )}
                         <div className={styles.col}>
                             <div className={styles.formGroup}>
                                 <label>Speed <span style={{ color: '#ef4444' }}>*</span></label>

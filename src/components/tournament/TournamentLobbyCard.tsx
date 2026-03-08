@@ -138,8 +138,9 @@ export default function TournamentLobbyCard({
         }
     };
 
-    const spotsRemaining = tournament.maxPlayers - tournament.registeredPlayers;
-    const isFull = spotsRemaining <= 0;
+    const hasMaxPlayers = tournament.maxPlayers > 0;
+    const spotsRemaining = hasMaxPlayers ? tournament.maxPlayers - tournament.registeredPlayers : Infinity;
+    const isFull = hasMaxPlayers && spotsRemaining <= 0;
 
     return (
         <div className={`${styles.card} ${tournament.isPinned ? styles.pinnedCard : ''}`} onClick={() => navigate(`/tournaments/${tournament.id}`)} style={{ cursor: 'pointer' }}>
@@ -176,7 +177,7 @@ export default function TournamentLobbyCard({
                 <div className={styles.infoItem}>
                     <span className={styles.infoLabel}>Players</span>
                     <span className={styles.infoValue}>
-                        {tournament.registeredPlayers}/{tournament.maxPlayers}
+                        {tournament.registeredPlayers}{hasMaxPlayers ? `/${tournament.maxPlayers}` : ''}
                     </span>
                 </div>
                 <div className={styles.infoItem}>
@@ -227,16 +228,24 @@ export default function TournamentLobbyCard({
                 </div>
             )}
 
-            {/* Progress Bar */}
-            <div className={styles.progressBar}>
-                <div
-                    className={styles.progressFill}
-                    style={{ width: `${(tournament.registeredPlayers / tournament.maxPlayers) * 100}%` }}
-                />
-            </div>
-            <span className={styles.spotsLabel}>
-                {isFull ? 'Tournament Full' : `${spotsRemaining} spots remaining`}
-            </span>
+            {/* Progress Bar — only show for capped tournaments (SNG/Spin) */}
+            {hasMaxPlayers ? (
+                <>
+                    <div className={styles.progressBar}>
+                        <div
+                            className={styles.progressFill}
+                            style={{ width: `${(tournament.registeredPlayers / tournament.maxPlayers) * 100}%` }}
+                        />
+                    </div>
+                    <span className={styles.spotsLabel}>
+                        {isFull ? 'Tournament Full' : `${spotsRemaining} spots remaining`}
+                    </span>
+                </>
+            ) : (
+                <span className={styles.spotsLabel}>
+                    {tournament.registeredPlayers} registered — Open entry
+                </span>
+            )}
 
             {/* Action Button */}
             <div className={styles.actions}>
