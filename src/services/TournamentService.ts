@@ -1275,8 +1275,8 @@ class TournamentService {
 
         // Rebuy cutoff = late reg cutoff (always the same)
         const levelState = this.getCurrentLevelState(tournament);
-        const rebuyLevelCap = tournament.late_reg_levels || tournament.rebuy_levels || 8;
-        if (levelState.levelIndex >= rebuyLevelCap) {
+        const rebuyLevelCap = tournament.late_reg_levels ?? tournament.rebuy_levels ?? 8;
+        if (rebuyLevelCap <= 0 || levelState.levelIndex >= rebuyLevelCap) {
             return { allowed: false, reason: 'Rebuy/re-entry period has ended' };
         }
 
@@ -1341,7 +1341,7 @@ class TournamentService {
         const { data, error } = await supabase.rpc('process_tournament_rebuy', {
             p_tournament_id: tournamentId,
             p_player_id: userId,
-            p_rebuy_type: 'rebuy',
+            p_rebuy_type: tournament.is_reentry && !tournament.is_rebuy ? 'reentry' : 'rebuy',
             p_cost: rebuyCost,
             p_chips: rebuyChips,
             p_current_level: this.getCurrentLevelState(tournament).levelIndex,
@@ -1378,8 +1378,8 @@ class TournamentService {
         // Add-on period is level-based: opens when rebuy/late reg period ends,
         // stays open for addon_levels levels (default 1)
         const levelState = this.getCurrentLevelState(tournament);
-        const rebuyLevelCap = tournament.late_reg_levels || tournament.rebuy_levels || 8;
-        const addonLevelWindow = tournament.addon_levels || 1;
+        const rebuyLevelCap = tournament.late_reg_levels ?? tournament.rebuy_levels ?? 8;
+        const addonLevelWindow = tournament.addon_levels ?? 1;
 
         if (levelState.levelIndex < rebuyLevelCap) {
             return { allowed: false, reason: 'Rebuy/re-entry period still active — add-on opens after it ends' };

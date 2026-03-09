@@ -99,7 +99,7 @@ export const RakeReports: React.FC<RakeReportsProps> = ({ clubId }) => {
                     <span className="card-label">Hands Played</span>
                 </div>
                 <div className="summary-card">
-                    <span className="card-value">{data.avgRakePerHand.toFixed(2)}</span>
+                    <span className="card-value">{Math.trunc(data.avgRakePerHand * 100) / 100}</span>
                     <span className="card-label">Avg per Hand</span>
                 </div>
             </div>

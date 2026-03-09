@@ -301,7 +301,7 @@ export default function TournamentLobbyCard({
             </div>
 
             {/* Feature Tags */}
-            {(tournament.lateRegMins || tournament.isRebuy || tournament.isBounty || tournament.isPko || tournament.isMysteryBounty || tournament.isMultiDay) && (
+            {((tournament.late_reg_levels || tournament.lateRegMins) || tournament.isRebuy || tournament.isBounty || tournament.isPko || tournament.isMysteryBounty || tournament.isMultiDay) && (
                 <div className={styles.featureTags}>
                     {tournament.isBounty && !tournament.isPko && !tournament.isMysteryBounty && (
                         <span className={`${styles.featureTag} ${styles.bountyTag}`}>Bounty {tournament.bountyAmount ? tournament.bountyAmount : ''}</span>
@@ -315,12 +315,12 @@ export default function TournamentLobbyCard({
                     {tournament.isMultiDay && (
                         <span className={`${styles.featureTag} ${styles.multiDayTag}`}>Multi-Day</span>
                     )}
-                    {tournament.status === 'running' && tournament.lateRegMins && tournament.lateRegMins > 0 ? (
-                        <span className={`${styles.featureTag} ${styles.lateRegTag} ${!lateRegActive ? styles.lateRegClosed : ''} ${lateRegCountdown === '0:00' || lateRegCountdown === 'Late Reg Closed' ? styles.criticalWarning : ''}`}>
+                    {tournament.status === 'running' && (tournament.late_reg_levels || tournament.lateRegMins) && (tournament.late_reg_levels || tournament.lateRegMins || 0) > 0 ? (
+                        <span className={`${styles.featureTag} ${styles.lateRegTag} ${!lateRegActive ? styles.lateRegClosed : ''} ${lateRegCountdown === 'Late Reg Closed' ? styles.criticalWarning : ''}`}>
                             Late Reg: {lateRegActive ? `${lateRegCountdown} left` : 'Closed'}
                         </span>
-                    ) : tournament.status === 'registering' && tournament.lateRegMins && tournament.lateRegMins > 0 && (
-                        <span className={styles.featureTag}>Late Reg {tournament.lateRegMins}m</span>
+                    ) : tournament.status === 'registering' && (tournament.late_reg_levels || tournament.lateRegMins) && (tournament.late_reg_levels || tournament.lateRegMins || 0) > 0 && (
+                        <span className={styles.featureTag}>Late Reg through Lvl {tournament.late_reg_levels || tournament.lateRegMins}</span>
                     )}
                     {tournament.isRebuy && (
                         <span className={styles.featureTag}>Rebuy</span>
