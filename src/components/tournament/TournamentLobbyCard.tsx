@@ -291,7 +291,11 @@ export default function TournamentLobbyCard({
                 {tournament.gameType && (
                     <div className={styles.infoItem}>
                         <span className={styles.infoLabel}>Game</span>
-                        <span className={styles.infoValue}>{tournament.gameType}</span>
+                        <span className={styles.infoValue}>{({
+                            NLH: 'NLH', FLH: 'FLH', PLO4: 'PLO4', PLO5: 'PLO5', PLO6: 'PLO6',
+                            PLO8: 'PLO8', PLO_HILO: 'PLO Hi-Lo', OFC_PINEAPPLE: 'OFC Pineapple',
+                            SHORT_DECK: 'Short Deck', PINEAPPLE: 'Pineapple', MIXED: 'Mixed',
+                        } as Record<string, string>)[tournament.gameType ?? ''] ?? tournament.gameType}</span>
                     </div>
                 )}
                 <div className={styles.infoItem}>

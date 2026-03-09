@@ -480,7 +480,12 @@ export default function TournamentPage() {
                                     </span>
                                 </div>
                                 <div className="tourn-info">
-                                    <span className="tourn-type">{(tourn.game_type || tourn.variant || 'NLH').toUpperCase()}</span>
+                                    <span className="tourn-type">{({
+                                        NLH: 'NLH', FLH: 'FLH', PLO4: 'PLO4', PLO5: 'PLO5', PLO6: 'PLO6',
+                                        PLO8: 'PLO8', PLO_HILO: 'PLO Hi-Lo', OFC_PINEAPPLE: 'OFC Pineapple',
+                                        SHORT_DECK: 'Short Deck', PINEAPPLE: 'Pineapple', MIXED: 'Mixed',
+                                        CRAZY_PINEAPPLE: 'Crazy Pine', DOUBLE_BOARD: 'Double Board',
+                                    } as Record<string, string>)[(tourn.game_type || tourn.variant || 'NLH').toUpperCase()] || (tourn.game_type || 'NLH')}</span>
                                     <span className="tourn-buyin">{tourn.buy_in_amount} + {tourn.buy_in_fee}</span>
                                 </div>
                                 <div className="tourn-meta">

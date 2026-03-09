@@ -73,9 +73,10 @@ const VARIANT_DISPLAY: Record<string, { label: string; sub?: string; css: string
 
 // Map tournament game_type (uppercase) to variant CSS class
 const TOURNEY_VARIANT_MAP: Record<string, string> = {
-    'NLH': 'nlh', 'PLO4': 'plo4', 'PLO5': 'plo5', 'PLO6': 'plo6',
-    'PLO8': 'plo8', 'OFC_PINEAPPLE': 'ofc_pineapple', 'SHORT_DECK': 'short_deck',
-    'PINEAPPLE': 'pineapple', 'PLO': 'plo4',
+    'NLH': 'nlh', 'FLH': 'flh', 'PLO4': 'plo4', 'PLO5': 'plo5', 'PLO6': 'plo6',
+    'PLO8': 'plo8', 'PLO_HILO': 'plo_hilo', 'OFC_PINEAPPLE': 'ofc_pineapple',
+    'SHORT_DECK': 'short_deck', 'PINEAPPLE': 'pineapple', 'CRAZY_PINEAPPLE': 'crazy_pineapple',
+    'DOUBLE_BOARD': 'double_board', 'MIXED': 'mixed', 'PLO': 'plo4',
 };
 
 // ─── Helper Functions ──────────────────────────────────────────────────
@@ -125,7 +126,7 @@ interface CashCardProps {
 }
 
 export function CashGameCard({ table, isAdmin, onDelete }: CashCardProps) {
-    const variant = VARIANT_DISPLAY[table.game_variant] || { label: (table.game_variant || 'NLH').toUpperCase(), css: 'nlh' };
+    const variant = VARIANT_DISPLAY[(table.game_variant || '').toLowerCase()] || { label: (table.game_variant || 'NLH').toUpperCase(), css: 'nlh' };
     const settings = parseSettings(table.settings);
     const hasPlayers = table.current_players > 0;
     const isBombPot = table.name.toLowerCase().includes('bomb pot');
