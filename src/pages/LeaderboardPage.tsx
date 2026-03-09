@@ -61,6 +61,7 @@ export default function LeaderboardPage() {
 
     // Tournament stats
     const [activeTab, setActiveTab] = useState<LeaderboardTab>('rankings');
+    const activeTabRef = useRef<LeaderboardTab>('rankings');
     const [tournamentStats, setTournamentStats] = useState<TournamentStats[]>([]);
     const [tournamentsLoading, setTournamentsLoading] = useState(false);
 
@@ -68,6 +69,11 @@ export default function LeaderboardPage() {
     useEffect(() => {
         loadUserClubs();
     }, []);
+
+    // Keep activeTabRef in sync
+    useEffect(() => {
+        activeTabRef.current = activeTab;
+    }, [activeTab]);
 
     // Load leaderboard when filters or selected club change
     useEffect(() => {
@@ -89,7 +95,7 @@ export default function LeaderboardPage() {
                         table: 'promotion_leaderboards',
                     },
                     () => {
-                        if (activeTab === 'rankings') loadLeaderboard(true);
+                        if (activeTabRef.current === 'rankings') loadLeaderboard(true);
                     }
                 )
                 .subscribe();
@@ -105,14 +111,14 @@ export default function LeaderboardPage() {
                         table: 'tournament_players',
                     },
                     () => {
-                        if (activeTab === 'tournaments') loadTournamentStats();
+                        if (activeTabRef.current === 'tournaments') loadTournamentStats();
                     }
                 )
                 .subscribe();
 
             // Auto-refresh every 30 seconds
             refreshTimerRef.current = setInterval(() => {
-                if (activeTab === 'rankings') {
+                if (activeTabRef.current === 'rankings') {
                     loadLeaderboard(true);
                 } else {
                     loadTournamentStats();

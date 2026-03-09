@@ -74,10 +74,11 @@ export default function TournamentDetails() {
         try {
             const { data } = await supabase
                 .from('wallets')
-                .select('play_chips')
+                .select('balance')
                 .eq('user_id', user.id)
+                .eq('wallet_type', 'PLAYER')
                 .single();
-            if (data) setWalletBalance(data.play_chips || 0);
+            if (data) setWalletBalance(data.balance || 0);
         } catch { /* ignore */ }
     };
 
@@ -521,7 +522,7 @@ export default function TournamentDetails() {
                                             (p: any) => (p.place || p.position) === player.position
                                         );
                                         const prize = payoutEntry
-                                            ? Math.trunc((tournament.prize_pool || 0) * (payoutEntry as any).percentage / 100 * 100) / 100
+                                            ? Math.trunc((tournament.prize_pool || 0) * (payoutEntry as any).percentage) / 100
                                             : 0;
                                         return (
                                             <div key={player.user_id} className={`podium-card place-${player.position}`}>
@@ -926,7 +927,7 @@ export default function TournamentDetails() {
                                     </span>
                                     <span className="payout-percent">{payout.percentage}%</span>
                                     <span className="payout-chips">
-                                        {effectivePrizePool > 0 ? (Math.trunc(effectivePrizePool * payout.percentage / 100 * 100) / 100).toLocaleString() : '—'}
+                                        {effectivePrizePool > 0 ? (Math.trunc(effectivePrizePool * payout.percentage) / 100).toLocaleString() : '—'}
                                     </span>
                                 </div>
                             ))

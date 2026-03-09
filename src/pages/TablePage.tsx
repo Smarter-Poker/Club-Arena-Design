@@ -368,6 +368,7 @@ export default function TablePage() {
         timeRemaining: number;
     }>({ active: false, addOnCost: 0, addOnChips: 0, walletBalance: 0, timeRemaining: 60 });
     const addOnChannelRef = useRef<any>(null);
+    const bountyChannelRef = useRef<any>(null);
 
     // Buy-in processing lock to prevent double-click
     const buyInProcessingRef = useRef(false);
@@ -969,7 +970,7 @@ export default function TablePage() {
                             spinMultiplier: tournData.spin_multiplier || undefined,
                         }));
 
-                        // Subscribe to real-time bounty updates
+                        // Subscribe to real-time bounty updates (store in ref for cleanup)
                         const bountyChannel = supabase
                             .channel(`bounty-${table.tournament_id}`)
                             .on('postgres_changes', {
@@ -990,10 +991,7 @@ export default function TablePage() {
                                 }
                             })
                             .subscribe();
-
-                        return () => {
-                            bountyChannel.unsubscribe();
-                        };
+                        bountyChannelRef.current = bountyChannel;
                     } else if (tournData?.spin_multiplier) {
                         setTableState(prev => ({
                             ...prev,
@@ -1166,35 +1164,8 @@ export default function TablePage() {
                         .subscribe();
                     breakChannelRef.current = breakChan;
 
-                    // Also subscribe to add-on specific channel for direct player communication
-                    const addOnChan = supabase
-                        .channel(`t-addon-${table.tournament_id}`)
-                        .on('broadcast', { event: 'addon_event' }, (payload: any) => {
-                            const data = payload.payload;
-                            if (data?.type === 'ADDON_PERIOD_START') {
-                                (async () => {
-                                    let walBal = 0;
-                                    if (userId && userId !== 'guest') {
-                                        const { data: w } = await supabase
-                                            .from('wallets')
-                                            .select('balance')
-                                            .eq('user_id', userId)
-                                            .eq('wallet_type', 'PLAYER')
-                                            .single();
-                                        walBal = w?.balance || 0;
-                                    }
-                                    setAddOnPeriod({
-                                        active: true,
-                                        addOnCost: data.addOnCost || 0,
-                                        addOnChips: data.addOnChips || 0,
-                                        walletBalance: walBal,
-                                        timeRemaining: 60,
-                                    });
-                                })();
-                            }
-                        })
-                        .subscribe();
-                    addOnChannelRef.current = addOnChan;
+                    // NOTE: Add-on events handled via break channel above (ADDON_PERIOD_START/END)
+                    // No duplicate add-on channel needed — prevents race condition from dual subscriptions
                 }
 
                 // Load user's Player Wallet balance for buy-in
@@ -1324,6 +1295,10 @@ export default function TablePage() {
             if (addOnChannelRef.current) {
                 supabase.removeChannel(addOnChannelRef.current);
                 addOnChannelRef.current = null;
+            }
+            if (bountyChannelRef.current) {
+                supabase.removeChannel(bountyChannelRef.current);
+                bountyChannelRef.current = null;
             }
         };
     }, [tableId, userId, tableState.heroSeat]);

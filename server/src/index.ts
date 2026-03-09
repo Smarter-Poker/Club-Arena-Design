@@ -783,8 +783,19 @@ class TournamentManager {
                     const totalPct = payouts.reduce((sum: number, p: any) => sum + (p.percentage || 0), 0);
                     if (totalPct > 0 && Math.abs(totalPct - 100) > 0.01) {
                         console.warn(`[Tournament:${this.tournamentId.slice(0, 8)}] WARNING: Payout percentages sum to ${totalPct}% (expected 100%). Normalizing.`);
-                        // Normalize percentages proportionally
-                        payouts = payouts.map((p: any) => ({ ...p, percentage: (p.percentage / totalPct) * 100 }));
+                        // Normalize percentages proportionally using exact truncation
+                        // Distribute remainder to 1st place to ensure sum = exactly 100
+                        let sumNormalized = 0;
+                        payouts = payouts.map((p: any, idx: number) => {
+                            const normalized = Math.trunc((p.percentage / totalPct) * 100 * 100) / 100;
+                            sumNormalized += normalized;
+                            return { ...p, percentage: normalized };
+                        });
+                        // Fix rounding remainder — assign to 1st place
+                        const remainder = Math.trunc((100 - sumNormalized) * 100) / 100;
+                        if (remainder !== 0 && payouts.length > 0) {
+                            payouts[0].percentage = Math.trunc((payouts[0].percentage + remainder) * 100) / 100;
+                        }
                         await supabase.from('tournaments').update({ payout_structure: payouts }).eq('id', this.tournamentId);
                     }
                 }
