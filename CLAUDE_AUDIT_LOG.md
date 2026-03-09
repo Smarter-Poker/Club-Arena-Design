@@ -1,6 +1,6 @@
 # CLUB ARENA — Master Knowledge File
-## LAST UPDATED: Session 53+ (March 9, 2026)
-## STATUS: 100% BUG FREE — ALL SWEEPS PASSED
+## LAST UPDATED: Session 54+ (March 9, 2026)
+## STATUS: Phase 9 DEPLOYED — Level-Based Tournament Overhaul
 ## RULE: UPDATE THIS FILE EVERY TIME YOU STOP TO UPDATE THE USER
 
 ---
@@ -19,6 +19,12 @@
 - LEADERBOARD PAGE AND TOURNAMENT LOBBY ARE TWO SEPARATE THINGS
 - TOURNAMENT CANCELLATION ONLY IF < 3 PLAYERS
 - UPDATE THIS KNOWLEDGE FILE ON EVERY STATUS UPDATE
+- LATE REGISTRATION = PER-TOURNAMENT, LEVEL-BASED (NEVER GLOBAL TIME LIMIT)
+- REBUY CUTOFF = LATE REG CUTOFF (ALWAYS THE SAME LEVEL)
+- REBUY = SAME SEAT, SAME TABLE
+- RE-ENTRY = NEW SEAT ASSIGNMENT
+- MOST TOURNAMENTS RUN 8-12 LEVELS BEFORE ENDING REBUY PERIOD
+- ADD-ON PERIOD = LEVEL-BASED (AFTER REBUY PERIOD ENDS)
 
 ---
 
@@ -36,7 +42,8 @@
 - Shark Club: a41434bb-8d0c-400a-8f0d-e8b3d65afed4 (club_id: 25450)
 - JAQK Club: a0000000-0000-0000-0000-000000000001 (club_id: 77777)
 - Midway Union: fade0000-0000-0000-0000-000000000001
-- Chrome tab 34580036: Supabase SQL editor
+- Chrome tab 34580077: Supabase SQL editor (active)
+- Chrome tab 34580082: Smarter.Poker site
 
 ---
 
@@ -168,6 +175,29 @@
 - [x] LeaderboardPage.tsx: formatValue .toFixed(1) → Math.trunc(val * 10) / 10
 - [x] VISUALLY VERIFIED: Tournament details info grid now displays correctly on production
 
+### Phase 9 (Commit b332d35) — LEVEL-BASED TOURNAMENT OVERHAUL
+**MAJOR OVERHAUL — Time-based → Level-based for ALL tournament registration periods**
+- [x] Late registration: Per-tournament, controlled by blind level count (never global time limit)
+- [x] Rebuy cutoff always matches late reg cutoff (same level, `late_reg_levels`)
+- [x] Rebuy = same seat/table, Re-entry = new seat assignment (separate toggles)
+- [x] Add-on period: opens after rebuy/late reg period ends, stays open for `addon_levels` levels
+- [x] CreateTournamentModal: level dropdown (1-20, 8-12 recommended), rebuy/re-entry checkboxes
+- [x] Server engine: level-up handler replaces all setTimeout-based finalization
+- [x] TournamentService: level-based canRebuy, canAddOn, isLateRegOpen checks
+- [x] TournamentDetails/LobbyCard: level-based countdown display ("X levels remaining")
+- [x] DB migration: late_reg_levels, addon_levels, is_reentry columns added + data migrated
+- [x] NotificationDropdown: Supabase channel cleanup memory leak fixed
+- [x] ClubActivityFeed: Supabase channel cleanup memory leak fixed
+- [x] TypeScript builds clean (client + server)
+- [x] 13 files changed, 283 insertions, 183 deletions
+- **Files modified**: server/src/index.ts, server/src/services/TournamentRecurringService.ts,
+  src/components/club/ClubActivityFeed.tsx, src/components/club/CreateTournamentModal.tsx,
+  src/components/navigation/NotificationDropdown.tsx, src/components/tournament/TournamentLobbyCard.tsx,
+  src/engine/TournamentEngine.ts, src/pages/tournament/TournamentDetails.tsx,
+  src/pages/tournament/TournamentLobbyPage.tsx, src/services/HorseOrchestrator.ts,
+  src/services/TournamentRecurringService.ts, src/services/TournamentService.ts,
+  src/types/database.types.ts
+
 ---
 
 ## VERIFIED CLEAN (LAST SWEEP)
@@ -179,7 +209,7 @@
 - [x] Zero play_chips references
 - [x] All Supabase channels properly cleaned up in useEffect
 - [x] All stale closures resolved with useRef pattern
-- [x] Database schema fully synced — no SQL needed
+- [x] Database schema fully synced — late_reg_levels, addon_levels, is_reentry columns added
 - [x] TypeScript builds clean (client + server)
 - [x] All deployments on Vercel READY
 
@@ -244,10 +274,10 @@ MTT: Starts at scheduled time when min_players met
 
 ## GIT LOG (RECENT)
 ```
+b332d35 Phase 9: Level-based late reg/rebuy/re-entry/add-on overhaul + channel cleanup
+8e806af Update knowledge file with Phase 8 visual verification results
+c20133a Phase 8: Fix tournament details info grid layout + leaderboard precision
+b426455 Add master knowledge file — comprehensive feature inventory and audit log
 e7a8541 Phase 7b: Fix remaining precision issues
 bdf3510 Phase 7: Critical realtime & precision bug fixes
-2c961d1 fix: tournament results deep link + late reg failure notification
-49f68b9 fix: modal touch targets and z-index consistency
-e0dc5a7 fix: tournament blind structure grid overflow on mobile screens
-3903b80 Phase 5: Critical tournament bug fixes
 ```
