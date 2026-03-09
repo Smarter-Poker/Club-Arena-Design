@@ -293,6 +293,37 @@
 - [x] **VERIFIED**: PKO tournaments show "PKO" badge, Mystery shows "MYSTERY" badge
 - **Files modified**: src/pages/tournament/TournamentLobbyPage.tsx, src/components/tournament/TournamentLobbyCard.tsx
 
+### Phase 10i (Commit 8dd43ff) — BUILD FIX + FULL BOTTOM NAV E2E
+**CRITICAL FIX**: Last 4 Vercel deployments were in ERROR state due to TypeScript compilation failures. Build now READY for production.
+
+**Build Errors Fixed**:
+- [x] **ClubDashboard.tsx(336,86)**: `Cannot find name 'formatNumber'` — stale reference after Phase 10g+ split into `formatChips`/`formatInt`
+  - Fixed: `formatNumber(player.totalProfit)` → `formatChips(player.totalProfit)`
+- [x] **TournamentLobbyPage.tsx(565,41)**: `Type '"mystery" | "pko"' not assignable` — Tournament type interface missing new types
+  - Fixed: Added `'pko' | 'mystery'` to Tournament type interface in TournamentLobbyCard.tsx
+
+**Deployment Result**: dpl_D2FqP8Zd6LAYhyZE2R2mpdk7PxEy now READY — all 4 previously blocked phases (10g+, 10h, 10h+, and knowledge update) now live on production.
+
+**E2E Verification — Tournament Type Badges (Phase 10h+ verified)**:
+- [x] **PKO filter**: 2 results
+  - Late Night PKO (PLO4) — Registering, Buy-in 18, Prize Pool 450 GTD, PKO badge ✅
+  - Brunch Special PKO (PLO8) — Cancelled, PKO badge correct ✅
+- [x] **Mystery filter**: 1 result
+  - Evening Mystery Bounty (PLO5) — In Progress, Buy-in 15, Prize Pool 400 GTD, 18/60 players, MYSTERY badge ✅
+
+**E2E Verification — Club Dashboard Overview (Phase 10g/10g+ verified)**:
+- [x] **Club Metrics**: Total Members 101, Online Now 0, Active Tables 82, Hands Today 0 — all integers ✅
+- [x] **Top Players**: TightAggro +0.00, FoldTo3B F3B +0.00, Station Stan +0.00 — chip format with 2 decimals ✅
+
+**E2E Verification — Bottom Nav Pages — Full Walkthrough**:
+- [x] **MESSAGES** — Split-panel messaging UI, "No conversations yet", new conversation FAB button ✅
+- [x] **PLAYERS** — 101 Total Members, 0 Online Now, search bar, All/Online/Agents/Admins filters, player cards with avatar/name/role/balance (CallStation Cal 25,000, TightAggro 15,000, FoldTo3B F3B 10,000, Station Stan 1,000, agents BackdoorFlush 15,000, BigSlick Mike 7,500, ButtonClicker 50,000) ✅
+- [x] **CASHIER** — Player Wallet 49,772.5 chips, Diamonds 454,545, SEND/BUY-IN/CASH-OUT/MINT/HISTORY tabs, transaction history (Rake -2.5, Buy-In -25, Cash-Out +200) ✅
+- [x] **DATA** — Dashboard with Overview/Activity/Players/Tables sub-tabs, all rendering correctly with proper formatting ✅
+- [x] **ADMIN** — Basic Information (Club Name, Description), Privacy (Public Club ON, Require Approval OFF), Game Rules (Rake 5%, Rake Cap 3 BB, Time Bank 30s, Straddle ON, RIT ON, Rabbit Hunt ON), Buy-In Limits (Min 40 BB, Max 200 BB), Admin Activity Log with audit entries and search/filter ✅
+
+**Files modified**: src/pages/club/ClubDashboard.tsx, src/components/tournament/TournamentLobbyCard.tsx
+
 ### LIVE E2E TESTING (Session 58) — ALL PASSING
 - [x] **Data Tab — Club Metrics**: Total Members=101, Active Tables=82, Online Now=0, Hands Today=0, Rake Today=0.00 ✅
 - [x] **Data Tab — Activity sub-tab**: Club Activity Feed rendering (empty — correct, no hands played yet) ✅
@@ -399,6 +430,8 @@ MTT: Starts at scheduled time when min_players met
 
 ## GIT LOG (RECENT)
 ```
+8dd43ff Fix TypeScript build errors — formatNumber reference and Tournament type interface
+1a24811 Update knowledge file with Phase 10g/10g+/10h/10h+ and Session 58 E2E results
 2b2bc0d Phase 10h+: Fix tournament type badge labels — PKO and Mystery show correct badges
 463c46a Phase 10h: Fix tournament type filters — robust bounty/PKO/mystery detection
 92b8e83 Phase 10g+: Fix hands played formatting — use integer display, not decimal
