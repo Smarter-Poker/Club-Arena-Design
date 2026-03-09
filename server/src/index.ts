@@ -863,7 +863,17 @@ class TournamentManager {
 
         if (!players || players.length === 0) throw new Error('No players');
 
-        const maxPerTable = 9;
+        // Determine table size based on tournament type
+        let maxPerTable = tournament.max_players || 9;
+        const tType = (tournament.tournament_type || '').toUpperCase();
+        const variant = (tournament.variant || '').toLowerCase();
+        if (variant === 'spin' || tType === 'SPIN') {
+            maxPerTable = 3;
+        } else if (variant === 'sng' || tType === 'SNG') {
+            maxPerTable = Math.min(tournament.max_players || 6, 9);
+        } else {
+            maxPerTable = 9; // Standard MTT tables
+        }
         const numTables = Math.ceil(players.length / maxPerTable);
 
         for (let i = 0; i < numTables; i++) {
@@ -1092,6 +1102,28 @@ class TournamentManager {
             this.isProcessingEliminations = true;
 
             try {
+                // ── SYNC STACKS: table_seats → tournament_players ──
+                // The poker engine updates table_seats.stack after each hand.
+                // We must sync these back to tournament_players.chips for elimination detection.
+                for (const [tableId] of this.tableEngines) {
+                    const { data: seats } = await supabase
+                        .from('table_seats')
+                        .select('user_id, stack')
+                        .eq('table_id', tableId)
+                        .is('left_at', null);
+
+                    if (seats) {
+                        for (const seat of seats) {
+                            await supabase
+                                .from('tournament_players')
+                                .update({ chips: seat.stack })
+                                .eq('tournament_id', this.tournamentId)
+                                .eq('user_id', seat.user_id)
+                                .eq('status', 'playing');
+                        }
+                    }
+                }
+
                 // Find ALL busted players (0 chips) in a single query
                 const { data: busted } = await supabase
                     .from('tournament_players')
