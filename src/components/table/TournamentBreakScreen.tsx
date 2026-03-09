@@ -47,6 +47,7 @@ export interface TournamentBreakScreenProps {
     myPlayer?: TournamentPlayer;
     prizePool: number;
     currency?: string;
+    onDismiss?: () => void;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -86,7 +87,9 @@ export function TournamentBreakScreen({
     myPlayer,
     prizePool,
     currency = '',
+    onDismiss,
 }: TournamentBreakScreenProps) {
+    const [minimized, setMinimized] = useState(false);
     const [displayTime, setDisplayTime] = useState(breakTimeRemaining);
 
     // Update countdown
@@ -111,6 +114,18 @@ export function TournamentBreakScreen({
 
     if (!isVisible) return null;
 
+    // Minimized view — small floating badge showing time remaining
+    if (minimized) {
+        return (
+            <div
+                className="break-screen__minimized"
+                onClick={() => setMinimized(false)}
+            >
+                <span className="break-screen__mini-badge">⏸️ Break: {formatTime(displayTime)}</span>
+            </div>
+        );
+    }
+
     return (
         <div className="break-screen">
             <div className="break-screen__overlay"></div>
@@ -119,6 +134,13 @@ export function TournamentBreakScreen({
                 <div className="break-screen__header">
                     <span className="break-screen__badge">⏸️ Tournament on Break</span>
                     <h1 className="break-screen__title">{tournamentName}</h1>
+                    <button
+                        className="break-screen__minimize-btn"
+                        onClick={() => setMinimized(true)}
+                        aria-label="Minimize break screen"
+                    >
+                        Minimize
+                    </button>
                 </div>
 
                 {/* Timer */}

@@ -488,3 +488,52 @@
         font-size: 0.875rem;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MINIMIZE BUTTON & MINIMIZED STATE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.break-screen__minimize-btn {
+    margin-top: 12px;
+    padding: 8px 20px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 44px;
+}
+
+.break-screen__minimize-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.break-screen__minimized {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 700;
+    cursor: pointer;
+    animation: fadeIn 0.3s ease;
+}
+
+.break-screen__mini-badge {
+    display: inline-block;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, rgba(255, 184, 0, 0.2), rgba(255, 184, 0, 0.1));
+    border: 1px solid rgba(255, 184, 0, 0.3);
+    border-radius: 20px;
+    color: #FFB800;
+    font-size: 0.85rem;
+    font-weight: 700;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+}
+}

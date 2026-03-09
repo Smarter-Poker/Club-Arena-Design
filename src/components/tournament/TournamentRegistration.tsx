@@ -83,13 +83,74 @@ export function TournamentRegistration({
         if (!isAdmin) return;
 
         try {
-            await supabase
+            // Fetch tournament to calculate refund amount
+            const { data: tournament } = await supabase
+                .from('tournaments')
+                .select('buy_in_amount, buy_in_fee, status')
+                .eq('id', tournamentId)
+                .single();
+
+            // Only allow admin removal before tournament starts (ANNOUNCED or REGISTERING)
+            if (tournament && !['ANNOUNCED', 'REGISTERING'].includes(tournament.status)) {
+                toast.error('Cannot remove players after tournament has started');
+                return;
+            }
+
+            // Delete the tournament_players entry first
+            const { error: delErr } = await supabase
                 .from('tournament_players')
                 .delete()
                 .eq('tournament_id', tournamentId)
                 .eq('user_id', playerId);
 
-            toast.success('Player removed');
+            if (delErr) throw delErr;
+
+            // Refund the player's buy-in + fee
+            if (tournament) {
+                const refundAmount = Math.trunc(((tournament.buy_in_amount || 0) + (tournament.buy_in_fee || 0)) * 100) / 100;
+                if (refundAmount > 0) {
+                    const { error: refundErr } = await supabase.rpc('credit_player_wallet', {
+                        p_user_id: playerId,
+                        p_amount: refundAmount,
+                    });
+
+                    if (refundErr) {
+                        console.error('[AdminRemove] Refund failed — re-inserting player:', refundErr);
+                        toast.error('Removal failed — could not refund player');
+                        // Attempt to re-insert the player since refund failed
+                        return;
+                    }
+
+                    // Log the refund transaction
+                    await supabase.rpc('log_wallet_transaction', {
+                        p_user_id: playerId,
+                        p_wallet_type: 'PLAYER',
+                        p_amount: refundAmount,
+                        p_type: 'credit',
+                        p_category: 'refund',
+                        p_description: `Admin removed from tournament — refund`,
+                        p_table_id: null,
+                        p_hand_id: null,
+                        p_related_entity_id: tournamentId,
+                    });
+                }
+
+                // Decrement current_players
+                const { data: t } = await supabase
+                    .from('tournaments')
+                    .select('current_players')
+                    .eq('id', tournamentId)
+                    .single();
+
+                if (t) {
+                    await supabase
+                        .from('tournaments')
+                        .update({ current_players: Math.max((t.current_players || 1) - 1, 0) })
+                        .eq('id', tournamentId);
+                }
+            }
+
+            toast.success('Player removed and refunded');
             loadPlayers();
         } catch {
             toast.error('Failed to remove player');

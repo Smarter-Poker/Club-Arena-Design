@@ -1084,11 +1084,18 @@ class TournamentService {
             if (typeof raw === 'string') { try { return JSON.parse(raw); } catch { return []; } }
             return [];
         })();
+
+        // Guard: if position should pay but payout structure is empty/corrupted, log and award 0
+        if (payoutArr.length === 0 && position === 1) {
+            console.error(`[TournamentService] CRITICAL: No payout structure for tournament ${tournamentId} — winner gets full pool fallback`);
+        }
+
         const payoutEntry = payoutArr.find((p: any) => p.place === position);
         // Exact cent-precision: trunc(pool * percentage) / 100
+        // For position 1 with no payout structure, award full pool as fallback
         const prize = payoutEntry
             ? Math.trunc(tournament.prize_pool * payoutEntry.percentage) / 100
-            : 0;
+            : (position === 1 && payoutArr.length === 0 ? Math.trunc((tournament.prize_pool || 0) * 100) / 100 : 0);
 
         await supabase
             .from('tournament_players')
@@ -1253,6 +1260,10 @@ class TournamentService {
         if (!tournament) return { allowed: false, reason: 'Tournament not found' };
 
         if (!tournament.is_rebuy) return { allowed: false, reason: 'Rebuys not available' };
+
+        // Validate rebuy chips are configured
+        const rebuyChips = tournament.rebuy_chips || tournament.starting_chips;
+        if (!rebuyChips || rebuyChips <= 0) return { allowed: false, reason: 'Rebuy chips not configured' };
 
         const levelState = this.getCurrentLevelState(tournament);
         if (levelState.levelIndex >= (tournament.rebuy_levels || 4)) {

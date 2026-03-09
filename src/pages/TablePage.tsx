@@ -3113,10 +3113,17 @@ export default function TablePage() {
                     walletBalance={addOnPeriod.walletBalance}
                     timeRemaining={addOnPeriod.timeRemaining}
                     onAccept={async () => {
-                        if (!tableState.tournamentId || !userId) return;
-                        await tournamentService.processAddOn(tableState.tournamentId, userId);
-                        toast?.success('Add-on accepted — chips added to your stack');
-                        setAddOnPeriod(prev => ({ ...prev, active: false }));
+                        if (!tableState.tournamentId || !userId || rebuyProcessing) return;
+                        setRebuyProcessing(true);
+                        try {
+                            await tournamentService.processAddOn(tableState.tournamentId, userId);
+                            toast?.success('Add-on accepted — chips added to your stack');
+                            setAddOnPeriod(prev => ({ ...prev, active: false }));
+                        } catch (err: any) {
+                            toast?.error(err.message || 'Add-on failed');
+                        } finally {
+                            setRebuyProcessing(false);
+                        }
                     }}
                     onDecline={() => {
                         setAddOnPeriod(prev => ({ ...prev, active: false }));

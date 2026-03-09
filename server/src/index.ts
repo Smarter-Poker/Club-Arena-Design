@@ -414,6 +414,26 @@ class GameServer {
                     }
                 }
 
+                // ── STUCK COMPLETING RECOVERY ──
+                // If a tournament has been in COMPLETING status for > 5 minutes, force it to COMPLETED.
+                // This handles crashes/failures during the finishTournament flow.
+                const { data: stuckTournaments } = await supabase
+                    .from('tournaments')
+                    .select('id, name, status')
+                    .eq('status', 'COMPLETING');
+
+                for (const stuck of stuckTournaments || []) {
+                    if (!this.tournamentEngines.has(stuck.id)) {
+                        // No active engine managing this tournament — it's truly stuck
+                        console.warn(`[GameServer] Recovering stuck COMPLETING tournament: ${stuck.name} (${stuck.id.slice(0, 8)})`);
+                        await supabase
+                            .from('tournaments')
+                            .update({ status: 'COMPLETED', ended_at: new Date().toISOString() })
+                            .eq('id', stuck.id)
+                            .eq('status', 'COMPLETING');
+                    }
+                }
+
             } catch (err) {
                 console.error('[GameServer] Tournament discovery error:', err);
             }
@@ -1114,9 +1134,13 @@ class TournamentManager {
 
                     if (seats) {
                         for (const seat of seats) {
+                            // Guard against corrupted stack values (NaN, negative, undefined)
+                            const stackValue = typeof seat.stack === 'number' && !isNaN(seat.stack) && seat.stack >= 0
+                                ? seat.stack
+                                : 0;
                             await supabase
                                 .from('tournament_players')
-                                .update({ chips: seat.stack })
+                                .update({ chips: stackValue })
                                 .eq('tournament_id', this.tournamentId)
                                 .eq('user_id', seat.user_id)
                                 .eq('status', 'playing');
@@ -1283,7 +1307,7 @@ class TournamentManager {
             }
         }
 
-        const { data: updateResult, error: updateErr } = await supabase
+        const { error: updateErr, count: updateCount } = await supabase
             .from('tournament_players')
             .update({
                 status: 'eliminated',
@@ -1295,7 +1319,7 @@ class TournamentManager {
             .eq('user_id', userId)
             .eq('status', 'playing'); // Only update if still playing (prevents double-processing)
 
-        if (updateErr || !updateResult || updateResult.length === 0) {
+        if (updateErr || (updateCount !== null && updateCount === 0)) {
             return; // Player was already eliminated by another process
         }
 

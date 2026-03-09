@@ -331,10 +331,10 @@
     }
 
     .adjust-btn {
-        width: 40px;
-        height: 40px;
-        min-width: 40px;
-        min-height: 40px;
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
     }
 
     .amount-value {
@@ -364,9 +364,9 @@
     }
 
     .adjust-btn {
-        width: 38px;
-        height: 38px;
-        min-width: 38px;
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
         min-height: 38px;
         font-size: 1.1rem;
     }

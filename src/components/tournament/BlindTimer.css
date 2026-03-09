@@ -149,3 +149,57 @@
 .blind-timer.urgent .progress-fill {
     background: var(--accent-red);
 }
+
+/* ─── MOBILE RESPONSIVE ─── */
+@media (max-width: 768px) {
+    .blind-timer {
+        padding: var(--space-3);
+        min-width: 160px;
+    }
+
+    .blind-amount {
+        font-size: var(--fs-lg);
+    }
+
+    .blind-label {
+        font-size: 12px;
+    }
+
+    .countdown .time {
+        font-size: 2rem;
+    }
+
+    .paused-badge {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .blind-timer {
+        padding: var(--space-2);
+        min-width: 140px;
+    }
+
+    .blind-amount {
+        font-size: var(--fs-md);
+    }
+
+    .countdown .time {
+        font-size: 1.75rem;
+    }
+
+    .next-level {
+        padding: var(--space-1);
+        gap: var(--space-1);
+    }
+}
+
+@media (max-width: 400px) {
+    .blind-timer {
+        min-width: 120px;
+    }
+
+    .countdown .time {
+        font-size: 1.5rem;
+    }
+}

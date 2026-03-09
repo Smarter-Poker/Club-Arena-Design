@@ -77,6 +77,7 @@ interface XMTTConfig {
     horsesToRegister: number;
     blindStructure: any[];
     payoutStructure: any[];
+    bountyPercent?: number;
 }
 
 interface HourlyTournamentBlock {

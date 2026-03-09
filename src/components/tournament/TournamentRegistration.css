@@ -124,3 +124,60 @@
     padding: 32px;
     color: var(--text-secondary);
 }
+
+/* ─── MOBILE RESPONSIVE ─── */
+@media (max-width: 768px) {
+    .tournament-registration {
+        padding: 12px;
+    }
+
+    .registration__header {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+
+    .player-row {
+        padding: 10px 12px;
+        gap: 8px;
+    }
+
+    .player-row .rank {
+        font-size: 12px;
+        width: 24px;
+    }
+
+    .player-row .username {
+        font-size: 14px;
+    }
+
+    .player-row .chips {
+        font-size: 13px;
+    }
+
+    /* Ensure touch target minimum 44px */
+    .remove-btn {
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        padding: 8px;
+    }
+}
+
+@media (max-width: 400px) {
+    .player-row .seat {
+        display: none;
+    }
+
+    .registration__header h3 {
+        font-size: 13px;
+    }
+}

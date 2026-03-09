@@ -541,12 +541,12 @@
     }
 
     .player-name {
-        font-size: 0.6rem;
+        font-size: 0.7rem;
         max-width: 50px;
     }
 
     .player-stack {
-        font-size: 0.6rem;
+        font-size: 0.7rem;
     }
 
     .player-cards .hole-card {
@@ -590,11 +590,11 @@
     }
 
     .player-name {
-        font-size: 0.55rem;
+        font-size: 0.65rem;
     }
 
     .player-stack {
-        font-size: 0.55rem;
+        font-size: 0.65rem;
     }
 
     .player-cards .hole-card {
