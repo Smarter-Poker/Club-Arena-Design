@@ -431,8 +431,10 @@ class TournamentService {
                 bounty_amount: config.bountyConfig?.baseBounty || 0,
                 is_pko: config.type === 'progressive_bounty',
                 is_mystery_bounty: config.type === 'mystery_bounty',
-                mystery_bounty_min: config.bountyConfig?.mysteryTiers?.[0]?.minMultiplier || 0,
-                mystery_bounty_max: config.bountyConfig?.mysteryTiers?.[config.bountyConfig.mysteryTiers.length - 1]?.maxMultiplier || 0,
+                mystery_bounty_min: config.bountyConfig?.mysteryTiers?.[0]?.minMultiplier ?? 1,
+                mystery_bounty_max: config.bountyConfig?.mysteryTiers && config.bountyConfig.mysteryTiers.length > 0
+                    ? config.bountyConfig.mysteryTiers[config.bountyConfig.mysteryTiers.length - 1].maxMultiplier
+                    : 50,
                 // Multi-Day
                 is_multi_day: config.isMultiDay || false,
                 total_days: config.totalDays || 1,
@@ -590,7 +592,20 @@ class TournamentService {
             .single();
 
         if (error) {
-            // Refund to Player Wallet on failure
+            // Check for race condition: duplicate registration (unique constraint violation)
+            if ((error as any).code === '23505') {
+                // Refund immediately on race condition
+                const { error: refundErr } = await supabase.rpc('credit_player_wallet', {
+                    p_user_id: userId,
+                    p_amount: totalCost,
+                });
+                if (refundErr) {
+                    console.error('[TournamentService] CRITICAL: Refund on duplicate registration failed:', refundErr.message);
+                }
+                throw new Error('Already registered for this tournament');
+            }
+
+            // Refund to Player Wallet on other failures
             console.error('[TournamentService] Registration failed, refunding buy-in:', error);
             const { error: refundErr } = await supabase.rpc('credit_player_wallet', {
                 p_user_id: userId,

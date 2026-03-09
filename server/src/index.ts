@@ -455,9 +455,12 @@ class TournamentManager {
     private currentLevel: number = 0;
     // Add-on period
     private addOnPeriodTriggered: boolean = false;
+    private pendingAddOnPeriod: boolean = false;
     // Hand-for-hand bubble
     private handForHandActive: boolean = false;
     private handForHandAnnounced: boolean = false;
+    // Final table detection
+    private isFinalTable: boolean = false;
     // Synchronized break state
     private onBreak: boolean = false;
     private savedBlindTimerRemaining: number = 0;
@@ -565,6 +568,12 @@ class TournamentManager {
                 }
                 this.startBlindTimer(blindStructure);
             }, this.savedBlindTimerRemaining);
+        }
+
+        // If add-on period was deferred due to break, trigger it now
+        if (this.pendingAddOnPeriod && !this.addOnPeriodTriggered) {
+            this.pendingAddOnPeriod = false;
+            await this.triggerAddOnPeriod();
         }
     }
 
@@ -978,7 +987,12 @@ class TournamentManager {
                 if (this.tournamentCache?.add_on_available && !this.addOnPeriodTriggered) {
                     const rebuyLevelCap = this.tournamentCache.rebuy_levels || 4;
                     if (prevLevel < rebuyLevelCap && this.currentLevel >= rebuyLevelCap) {
-                        await this.triggerAddOnPeriod();
+                        // If currently on break, defer the add-on trigger until break resumes
+                        if (this.onBreak) {
+                            this.pendingAddOnPeriod = true;
+                        } else {
+                            await this.triggerAddOnPeriod();
+                        }
                     }
                 }
 
@@ -1075,16 +1089,14 @@ class TournamentManager {
                         .eq('status', 'playing');
 
                     // Position calculation for simultaneous busts:
-                    // If 10 playing and 3 bust simultaneously, positions are 10, 9, 8
-                    // (worst to best within the batch — we can't distinguish order so assign descending)
+                    // All players busting at the same time get TIED (same position)
+                    // If 10 playing and 3 bust simultaneously, all 3 get position 10 (tied)
                     // Single bust: position = playingCount (e.g., 10 remaining → 10th place)
-                    // Multiple busts: positions descend from playingCount
                     const basePosition = playingCount || busted.length;
 
                     for (let i = 0; i < busted.length; i++) {
-                        // First busted player gets highest position (worst), last gets best
-                        const position = basePosition - i;
-                        await this.eliminatePlayer(busted[i].user_id, position);
+                        // All simultaneous busts get the same position (tied)
+                        await this.eliminatePlayer(busted[i].user_id, basePosition);
                     }
                 }
 
@@ -1726,6 +1738,21 @@ class TournamentManager {
     }
 
     private async checkTableBalance(): Promise<void> {
+        // Check for final table (9 or fewer players remaining) — only announce once
+        if (!this.isFinalTable) {
+            const { count: remainingPlayers } = await supabase
+                .from('tournament_players')
+                .select('*', { count: 'exact', head: true })
+                .eq('tournament_id', this.tournamentId)
+                .eq('status', 'playing');
+
+            if ((remainingPlayers || 0) <= 9) {
+                this.isFinalTable = true;
+                console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] FINAL TABLE reached with ${remainingPlayers} players`);
+                await this.broadcast('final_table', { playerCount: remainingPlayers || 0 });
+            }
+        }
+
         if (this.tableEngines.size <= 1) return;
 
         const tableCounts: { tableId: string; count: number }[] = [];
