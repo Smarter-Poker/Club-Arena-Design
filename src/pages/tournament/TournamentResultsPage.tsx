@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuthUser } from '../../hooks/useAuthUser';
 import './TournamentDetails.css';
@@ -54,10 +54,12 @@ interface HandHistoryRecord {
 
 export default function TournamentResultsPage() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const { user } = useAuthUser();
     const [tournaments, setTournaments] = useState<CompletedTournament[]>([]);
     const [selectedTournament, setSelectedTournament] = useState<CompletedTournament | null>(null);
     const [results, setResults] = useState<TournamentResult[]>([]);
+    const deepLinkedRef = useRef(false);
     const [handHistory, setHandHistory] = useState<HandHistoryRecord[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'mine'>('all');
@@ -116,6 +118,37 @@ export default function TournamentResultsPage() {
     useEffect(() => {
         loadTournaments();
     }, [filter, typeFilter, user?.id]);
+
+    // ── DEEP LINK: Auto-select tournament from ?id= query parameter ──
+    useEffect(() => {
+        if (deepLinkedRef.current) return; // Only process once
+        const tournamentId = searchParams.get('id');
+        if (!tournamentId) return;
+
+        // If we already have tournaments loaded, select from them
+        const found = tournaments.find(t => t.id === tournamentId);
+        if (found) {
+            setSelectedTournament(found);
+            deepLinkedRef.current = true;
+            return;
+        }
+
+        // If not in list yet (might still be COMPLETING), load it directly
+        if (tournaments.length > 0 && !found) {
+            // Tournament list loaded but ID not found — try direct load
+            (async () => {
+                const { data } = await supabase
+                    .from('tournaments')
+                    .select('*')
+                    .eq('id', tournamentId)
+                    .maybeSingle();
+                if (data) {
+                    setSelectedTournament(data as CompletedTournament);
+                    deepLinkedRef.current = true;
+                }
+            })();
+        }
+    }, [tournaments, searchParams]);
 
     // Load results for selected tournament
     const loadResults = async () => {

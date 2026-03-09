@@ -771,6 +771,8 @@ class TournamentService {
                     } catch (refundErr) {
                         console.error(`[TournamentService] CRITICAL: Late reg refund (no table) failed:`, refundErr);
                     }
+                    // Notify the caller that registration failed (refund was issued)
+                    throw new Error('All tables are currently full — your entry has been refunded');
                 }
             } catch (lateRegErr) {
                 console.error('[TournamentService] Late reg seating failed:', lateRegErr);
