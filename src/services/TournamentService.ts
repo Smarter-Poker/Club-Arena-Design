@@ -680,7 +680,7 @@ class TournamentService {
                     .from('tables')
                     .select('id, max_players, current_players')
                     .eq('tournament_id', tournamentId)
-                    .eq('status', 'active');
+                    .in('status', ['active', 'running']);
 
                 const openTable = (tables || []).find(t => t.current_players < t.max_players);
                 if (openTable) {
@@ -688,7 +688,8 @@ class TournamentService {
                     const { data: existingSeats } = await supabase
                         .from('table_seats')
                         .select('seat_number')
-                        .eq('table_id', openTable.id);
+                        .eq('table_id', openTable.id)
+                        .is('left_at', null);
 
                     const takenSeats = new Set((existingSeats || []).map(s => s.seat_number));
                     let seatNumber = 1;
@@ -700,7 +701,6 @@ class TournamentService {
                         user_id: userId,
                         seat_number: seatNumber,
                         stack: tournament.starting_chips,
-                        status: 'active',
                     });
 
                     if (seatErr) {
@@ -1390,6 +1390,17 @@ class TournamentService {
 
         // Recalculate prize pool: add-on cost goes to pool
         await this.recalculatePrizePool(tournamentId);
+
+        // Broadcast add-on event
+        try {
+            const { realtimeChannelService } = await import('./RealtimeChannelService');
+            await realtimeChannelService.broadcastTournamentEvent(tournamentId, {
+                type: 'player_registered',
+                payload: { type: 'addon', userId, chips: addonChips },
+            });
+        } catch (e) {
+            console.warn('Failed to broadcast add-on event:', e);
+        }
 
         return { success: true, newStack: data?.new_stack };
     }
