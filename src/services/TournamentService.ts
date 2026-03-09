@@ -1083,7 +1083,8 @@ class TournamentService {
         // Note: Using maybeSingle to be safe.
         const { data: seat } = await supabase.from('table_seats').select('table_id').eq('user_id', userId).is('left_at', null).maybeSingle();
         if (seat) {
-            const { data: table } = await supabase.from('tables').select('tournament_id').eq('id', seat.table_id).single();
+            const { data: table, error: tableErr } = await supabase.from('tables').select('tournament_id').eq('id', seat.table_id).maybeSingle();
+            if (tableErr) { console.error('eliminatePlayerAuto table lookup failed:', tableErr.message); }
             if (table?.tournament_id === tournamentId) {
                 await supabase.from('table_seats')
                     .update({ left_at: new Date().toISOString() })
