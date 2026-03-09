@@ -828,11 +828,22 @@
     }
 
     .blinds-header {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 40px 1fr 60px 60px;
+        font-size: 0.7rem;
+        padding: var(--space-2) var(--space-3);
     }
 
     .blinds-row {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 40px 1fr 60px 60px;
+        font-size: 0.75rem;
+        padding: var(--space-2) var(--space-3);
+    }
+
+    .blinds-header span,
+    .blinds-row span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .blind-row {
