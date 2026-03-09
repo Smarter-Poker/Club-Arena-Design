@@ -361,6 +361,13 @@
    ACTION PANEL — 2x2 Grid Layout (PokerIQ Style)
    ═══════════════════════════════════════════════════════════════════════════════ */
 
+.action-panel-wrapper {
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, #0A0A1A 0%, #0D1020 100%);
+    border-top: 1px solid rgba(212, 168, 75, 0.2);
+}
+
 .action-panel {
     padding: 16px;
     background: linear-gradient(180deg, #0A0A1A 0%, #0D1020 100%);

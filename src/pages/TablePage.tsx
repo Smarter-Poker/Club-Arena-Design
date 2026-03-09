@@ -54,6 +54,7 @@ import { RakeService, type RakeCalculation } from '../services/RakeService';
 import { tableService } from '../services/TableService';
 import { WalletService } from '../services/WalletService';
 import ActionPanel from '../components/table/ActionPanel';
+import PreActionBar from '../components/table/PreActionBar';
 import ShareHand from '../components/table/ShareHand';
 import SettingsPanel from '../components/table/SettingsPanel';
 import TableMenu from '../components/table/TableMenu';
@@ -309,6 +310,7 @@ export default function TablePage() {
     const [raiseAmount, setRaiseAmount] = useState(20);
     const [showRaiseSlider, setShowRaiseSlider] = useState(false);
     const [actionTimeRemaining, setActionTimeRemaining] = useState(15);
+    const [preAction, setPreAction] = useState<'fold' | 'check' | 'callAny' | null>(null);
     const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
     const [showBuyInModal, setShowBuyInModal] = useState(false);
     const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
@@ -2164,6 +2166,45 @@ export default function TablePage() {
         setShowWaitList(true);
     }, [loadWaitlist]);
 
+    // Pre-action execution — When it becomes player's turn, execute queued action
+    useEffect(() => {
+        if (tableState.currentPlayerSeat === tableState.heroSeat && preAction && tableState.isHandInProgress) {
+            // Small delay to ensure state is updated
+            const timer = setTimeout(async () => {
+                try {
+                    if (preAction === 'fold') {
+                        await handleFold();
+                    } else if (preAction === 'check') {
+                        // Only check if can check (no bet to call)
+                        const handState = handControllerRef.current?.getState();
+                        const currentBet = handState?.currentBet || 0;
+                        const myEngineBet = handState?.players.find(p => p.user_id === userId)?.bet || 0;
+                        const callAmount = Math.max(0, currentBet - myEngineBet);
+                        if (callAmount === 0) {
+                            await handleCheck();
+                        }
+                    } else if (preAction === 'callAny') {
+                        await handleCall();
+                    }
+                    // Clear the pre-action after executing
+                    setPreAction(null);
+                } catch (err) {
+                    console.error('[PreAction] Error executing pre-action:', err);
+                    setPreAction(null);
+                }
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [tableState.currentPlayerSeat, tableState.heroSeat, preAction, tableState.isHandInProgress, userId]);
+
+    // Clear pre-action if game state changes significantly (new hand, someone raises after preaction set, etc)
+    useEffect(() => {
+        // Reset pre-actions when a new hand starts or board changes
+        if (!tableState.isHandInProgress) {
+            setPreAction(null);
+        }
+    }, [tableState.boardStage, tableState.isHandInProgress]);
+
     // Timer countdown with auto-fold on timeout
     // NOTE: actionTimeRemaining removed from deps to prevent re-creating interval every second
     // The setInterval handles its own countdown via the functional state updater
@@ -2349,9 +2390,9 @@ export default function TablePage() {
             </div>
 
             {/* ═══════════════════════════════════════════════════════════════════════
-          ACTION PANEL
+          ACTION PANEL + PRE-ACTION BAR
           ═══════════════════════════════════════════════════════════════════════ */}
-            <div className="action-panel">
+            <div className="action-panel-wrapper">
                 {/* Spectator Mode - Show when user is not seated */}
                 {!tableState.players[tableState.heroSeat - 1] ? (
                     <div className="spectator-mode" style={{
@@ -2448,6 +2489,24 @@ export default function TablePage() {
                         );
                     })()
                 ) : null}
+
+                {/* Pre-Action Bar - Show when seated but not player's turn */}
+                {tableState.players[tableState.heroSeat - 1] && tableState.isHandInProgress && tableState.currentPlayerSeat !== tableState.heroSeat && (
+                    <PreActionBar
+                        canCheck={
+                            (() => {
+                                const handState = handControllerRef.current?.getState();
+                                const currentBet = handState?.currentBet || 0;
+                                const myEngineBet = handState?.players.find(p => p.user_id === userId)?.bet || 0;
+                                const callAmount = Math.max(0, currentBet - myEngineBet);
+                                return callAmount === 0;
+                            })()
+                        }
+                        isMyTurn={tableState.currentPlayerSeat === tableState.heroSeat}
+                        preAction={preAction}
+                        onPreActionChange={setPreAction}
+                    />
+                )}
             </div>
 
             {/* ═══════════════════════════════════════════════════════════════════════
