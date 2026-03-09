@@ -184,6 +184,7 @@ export default function AddOnModal({
                                     fontSize: 14,
                                     fontWeight: 600,
                                     cursor: 'pointer',
+                                    minHeight: 48,
                                 }}
                             >
                                 Decline
@@ -202,6 +203,7 @@ export default function AddOnModal({
                                     fontWeight: 700,
                                     cursor: canAfford ? 'pointer' : 'not-allowed',
                                     opacity: processing ? 0.6 : 1,
+                                    minHeight: 48,
                                 }}
                             >
                                 {processing ? 'Processing...' : `Accept Add-On`}
