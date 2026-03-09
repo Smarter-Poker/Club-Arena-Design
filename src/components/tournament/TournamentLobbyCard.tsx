@@ -160,8 +160,10 @@ export default function TournamentLobbyCard({
             case 'sng': return 'SNG';
             case 'mtt': return 'MTT';
             case 'satellite': return 'Satellite';
-            case 'spin': return 'Spin & Go';
-            case 'bounty': return 'Bounty';
+            case 'spin': return 'SPIN & GO';
+            case 'bounty': return 'BOUNTY';
+            case 'pko': return 'PKO';
+            case 'mystery': return 'MYSTERY';
             default: return type.toUpperCase();
         }
     };

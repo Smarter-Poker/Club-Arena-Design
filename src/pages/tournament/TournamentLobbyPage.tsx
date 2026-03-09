@@ -562,7 +562,7 @@ export default function TournamentLobbyPage() {
                                     tournament={{
                                         id: tournament.id,
                                         name: tournament.name,
-                                        type: tournament.variant === 'sng' ? 'sng' : tournament.variant === 'spin' ? 'spin' : (tournament.isBounty || tournament.isPko || tournament.isMysteryBounty) ? 'bounty' : 'mtt',
+                                        type: tournament.variant === 'sng' ? 'sng' : tournament.variant === 'spin' ? 'spin' : tournament.isMysteryBounty ? 'mystery' : tournament.isPko ? 'pko' : tournament.isBounty ? 'bounty' : 'mtt',
                                         buyIn: tournament.buyIn,
                                         prizePool: tournament.prizePool,
                                         maxPlayers: tournament.maxPlayers,
