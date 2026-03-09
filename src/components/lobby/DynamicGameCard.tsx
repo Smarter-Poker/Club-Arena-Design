@@ -163,7 +163,7 @@ export function CashGameCard({ table, isAdmin, onDelete }: CashCardProps) {
 
                 {/* Feature badges */}
                 <div className="dgc__badges">
-                    {!isBombPot && <span className="dgc__badge dgc__badge--bbj">BBJ</span>}
+                    <span className="dgc__badge dgc__badge--bbj">BBJ</span>
                     {isStraddle && <span className="dgc__badge dgc__badge--straddle">STR</span>}
                     {isBombPot && <span className="dgc__badge dgc__badge--bombpot">BOMB</span>}
                     {isRIT && <span className="dgc__badge dgc__badge--rit">RIT</span>}
