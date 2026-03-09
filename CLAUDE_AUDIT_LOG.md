@@ -1,6 +1,6 @@
 # CLUB ARENA — Master Knowledge File
-## LAST UPDATED: Session 56+ (March 9, 2026)
-## STATUS: Phase 10d DEPLOYED — Display Labels + Full E2E Game Inventory
+## LAST UPDATED: Session 57+ (March 9, 2026)
+## STATUS: Phase 10f DEPLOYED + LIVE E2E VERIFIED — All Flows Working
 ## RULE: UPDATE THIS FILE EVERY TIME YOU STOP TO UPDATE THE USER
 
 ---
@@ -42,14 +42,13 @@
 - Shark Club: a41434bb-8d0c-400a-8f0d-e8b3d65afed4 (club_id: 25450)
 - JAQK Club: a0000000-0000-0000-0000-000000000001 (club_id: 77777)
 - Midway Union: fade0000-0000-0000-0000-000000000001
-- Chrome tab 34580118: Club Arena Leaderboard
-- Chrome tab 34580119: Supabase SQL Editor
+- Chrome tab 34580606: Club Arena (active)
 
 ---
 
 ## FEATURE STATUS (COMPREHENSIVE)
 
-### OVERALL: ~93% COMPLETE, PRODUCTION READY
+### OVERALL: ~95% COMPLETE, PRODUCTION READY, E2E VERIFIED
 
 | Category | Completion | Status |
 |----------|-----------|--------|
@@ -248,6 +247,33 @@
 - [x] **VISUALLY VERIFIED**: All 72 games rendering correctly on club-arena.vercel.app with correct stakes, buy-ins, player caps, and feature badges (STR, BOMB, RIT, INS, VPIP, BBJ)
 - **Files modified**: src/components/lobby/DynamicGameCard.tsx, src/pages/TournamentPage.tsx, src/components/tournament/TournamentLobbyCard.tsx
 
+### Phase 10e (Commit da37ce6) — FEATURE BADGE DETECTION FIX
+- [x] **Badge detection dual naming**: DynamicGameCard.tsx now checks BOTH camelCase (DB format: `bombPot`, `runItTwice`, `allInInsurance`, `vpipDisplay`, `straddle`) AND snake_case (interface format: `bomb_pot_enabled`, `run_it_twice`, `insurance_enabled`, `vpip_display`, `straddle_enabled`)
+- [x] **TableSettings interface expanded**: Added all camelCase DB keys (`straddle`, `straddleType`, `bombPot`, `runItTwice`, `vpipDisplay`, `allInInsurance`, `autoMuck`, `callTime`, `noRathole`, `doubleBoard`)
+- [x] **Straddle type display**: Supports both `straddle_type` and `straddleType` fields
+- [x] **VISUALLY VERIFIED**: FLH cards show BBJ+VPIP badges, MIXED 5/10 shows BOMB+RIT+INS+VPIP badges on live site
+- **Files modified**: src/components/lobby/DynamicGameCard.tsx
+
+### Phase 10e+ (Commit 9977671) — MOBILE TOURNAMENT NAVIGATION
+- [x] **Tournament card mobile nav**: On screens ≤768px, clicking tournament card navigates to `/tournaments/:id` detail page instead of inline detail panel (which was below the fold on mobile)
+- **Files modified**: src/pages/TournamentPage.tsx
+
+### Phase 10f (Commit 361e0fb) — BBJ BADGE FIX
+- [x] **BBJ badge always shows**: Previously BBJ only showed when bomb pot was disabled (`!isBombPot`). Now BBJ shows on ALL cash game cards since every table participates in BBJ. BOMB badge shows independently when bomb pot is enabled.
+- [x] **VISUALLY VERIFIED**: NLH 1/2/ANY (ALL FEATURES) card now shows all 6 badges: BBJ+STR+BOMB+RIT+INS+VPIP
+- [x] **VISUALLY VERIFIED**: MIXED and PLO6 cards show BBJ+BOMB together (no longer mutually exclusive)
+- **Files modified**: src/components/lobby/DynamicGameCard.tsx
+
+### LIVE E2E TESTING (Session 57) — ALL PASSING
+- [x] **Tournament Registration**: Sign Up modal → wallet deduction (-20 buy-in, -2 fee) → entry confirmed → transactions logged
+- [x] **Tournament Unregistration**: Unregister → full refund (+22) → entry removed → transaction logged
+- [x] **Cash Game Sit-Down**: Buy-in modal (slider, 20BB/40BB/100BB/MAX, Auto Rebuy toggle) → seat assignment → wallet deduction (-200) → transaction logged
+- [x] **Cash Game Leave**: Leave Table → cash-out (+200) → wallet credit → transaction logged
+- [x] **Tournament Lobby**: 53 total tournaments, filter by status (All/Upcoming/Registering/Live/Completed) and type (MTT/SNG/Spin/Bounty/PKO/Mystery)
+- [x] **Tournament Detail Page**: All metadata rendering (buy-in breakdown, prize pool GTD, starting chips, late reg level, blind structure, bounty info, PKO info, spin multipliers)
+- [x] **Cash Game Table Page**: 9-seat layout, straddle indicator, time bank, menu (Cashier/Top Up/Table Rules/Sounds/Vibrations/Chat/Share/VIP/Player Notes/Hand History/Sit Out/Wait List/Leave Table)
+- [x] **Feature Badges**: BBJ, STR, BOMB, RIT, INS, VPIP, DB all rendering correctly across all card types
+
 ---
 
 ## VERIFIED CLEAN (LAST SWEEP)
@@ -325,6 +351,12 @@ MTT: Starts at scheduled time when min_players met
 
 ## GIT LOG (RECENT)
 ```
+361e0fb Phase 10f: Fix BBJ badge — show on all tables, not mutually exclusive with BOMB
+9977671 Phase 10e+: Tournament cards navigate to detail page on mobile
+da37ce6 Phase 10e: Fix cash game feature badge detection — dual naming convention support
+a5cb43d Update knowledge file with Phase 10c/10d
+e5216d5 Phase 10d: Fix game variant display labels across all card components
+2ef3cf5 Phase 10c: Fix club navigation and tournament creation access
 991a950 Phase 10b: Fix race conditions, prize pool calc, validation, and refund safety
 9c3bfcd Update knowledge file with Phase 10 leaderboard fixes and parent app finding
 8e26359 Phase 10: Fix Leaderboard bugs — infinite loading, tournament stats crash, precision
