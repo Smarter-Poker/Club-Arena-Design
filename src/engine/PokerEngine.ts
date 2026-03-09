@@ -558,7 +558,8 @@ export function calculateRake(
         return 0;
     }
 
-    const rake = pot * (config.percent / 100);
+    // Exact cent precision — no floating-point drift
+    const rake = Math.trunc(pot * config.percent) / 100;
     return Math.min(rake, config.cap);
 }
 

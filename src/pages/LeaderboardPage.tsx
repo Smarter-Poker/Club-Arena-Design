@@ -546,11 +546,11 @@ export default function LeaderboardPage() {
                                 <div className="stats-cell wins">{stat.wins}</div>
                                 <div className="stats-cell">{stat.finalTables}</div>
                                 <div className="stats-cell">{stat.itmFinishes}</div>
-                                <div className="stats-cell prizes">{Math.round(stat.totalPrizes).toLocaleString()}</div>
+                                <div className="stats-cell prizes">{Math.trunc(stat.totalPrizes).toLocaleString()}</div>
                                 <div className={`stats-cell roi ${stat.roi >= 0 ? 'positive' : 'negative'}`}>
-                                    {stat.roi.toFixed(1)}%
+                                    {Math.trunc(stat.roi * 10) / 10}%
                                 </div>
-                                <div className="stats-cell biggest">{Math.round(stat.biggestWin).toLocaleString()}</div>
+                                <div className="stats-cell biggest">{Math.trunc(stat.biggestWin).toLocaleString()}</div>
                             </div>
                         ))}
                     </>
