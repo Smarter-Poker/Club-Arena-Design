@@ -90,12 +90,20 @@ export const LeaderboardService = {
         limit: number = 10
     ): Promise<LeaderboardEntry[]> {
         try {
-            // Direct query — player_stats has: total_winnings, total_losses, hands_played, vpip, pfr
-            const orderCol = metric === 'profit' ? 'total_winnings' : metric === 'hands_played' ? 'hands_played' : metric === 'vpip' ? 'vpip' : metric === 'pfr' ? 'pfr' : 'total_winnings';
+            // Direct query — player_stats has: total_winnings, total_losses, hands_played, vpip, pfr, tournaments_played, tournaments_won
+            const metricToColumn: Record<string, string> = {
+                profit: 'total_winnings',
+                hands_played: 'hands_played',
+                vpip: 'vpip',
+                pfr: 'pfr',
+                tournaments_won: 'tournaments_won',
+                roi: 'total_winnings', // Sort by winnings as proxy for ROI
+            };
+            const orderCol = metricToColumn[metric] || 'total_winnings';
 
             const { data: statsData, error: statsError } = await supabase
                 .from('player_stats')
-                .select('user_id, hands_played, total_winnings, total_losses, total_rake, vpip, pfr')
+                .select('user_id, hands_played, total_winnings, total_losses, total_rake, vpip, pfr, tournaments_played, tournaments_won')
                 .eq('club_id', clubId)
                 .order(orderCol, { ascending: false })
                 .limit(limit);
@@ -117,11 +125,17 @@ export const LeaderboardService = {
             return statsData.map((row: any, index: number) => {
                 const profile = profileMap.get(row.user_id) || {} as any;
                 let value = 0;
-                if (metric === 'profit') value = (row.total_winnings || 0) - (row.total_losses || 0);
+                if (metric === 'profit') value = Math.trunc(((row.total_winnings || 0) - (row.total_losses || 0)) * 100) / 100;
                 else if (metric === 'hands_played') value = row.hands_played || 0;
-                else if (metric === 'vpip') value = Math.round((row.vpip || 0) * 100);
-                else if (metric === 'pfr') value = Math.round((row.pfr || 0) * 100);
-                else value = (row.total_winnings || 0) - (row.total_losses || 0);
+                else if (metric === 'vpip') value = Math.trunc((row.vpip || 0) * 10000) / 100;
+                else if (metric === 'pfr') value = Math.trunc((row.pfr || 0) * 10000) / 100;
+                else if (metric === 'tournaments_won') value = row.tournaments_won || 0;
+                else if (metric === 'roi') {
+                    const winnings = row.total_winnings || 0;
+                    const losses = row.total_losses || 0;
+                    value = losses > 0 ? Math.trunc(((winnings - losses) / losses) * 10000) / 100 : 0;
+                }
+                else value = Math.trunc(((row.total_winnings || 0) - (row.total_losses || 0)) * 100) / 100;
 
                 return {
                     rank: index + 1,
@@ -159,11 +173,19 @@ export const LeaderboardService = {
             if (!unionClubs || unionClubs.length === 0) return [];
 
             const clubIds = unionClubs.map((uc: any) => uc.club_id);
-            const orderCol = metric === 'profit' ? 'total_winnings' : metric === 'hands_played' ? 'hands_played' : metric === 'vpip' ? 'vpip' : metric === 'pfr' ? 'pfr' : 'total_winnings';
+            const metricToColumn: Record<string, string> = {
+                profit: 'total_winnings',
+                hands_played: 'hands_played',
+                vpip: 'vpip',
+                pfr: 'pfr',
+                tournaments_won: 'tournaments_won',
+                roi: 'total_winnings',
+            };
+            const orderCol = metricToColumn[metric] || 'total_winnings';
 
             const { data: statsData, error: statsError } = await supabase
                 .from('player_stats')
-                .select('user_id, hands_played, total_winnings, total_losses, vpip, pfr')
+                .select('user_id, hands_played, total_winnings, total_losses, vpip, pfr, tournaments_played, tournaments_won')
                 .in('club_id', clubIds)
                 .order(orderCol, { ascending: false })
                 .limit(limit);
@@ -181,11 +203,17 @@ export const LeaderboardService = {
             return statsData.map((row: any, index: number) => {
                 const profile = profileMap.get(row.user_id) || {} as any;
                 let value = 0;
-                if (metric === 'profit') value = (row.total_winnings || 0) - (row.total_losses || 0);
+                if (metric === 'profit') value = Math.trunc(((row.total_winnings || 0) - (row.total_losses || 0)) * 100) / 100;
                 else if (metric === 'hands_played') value = row.hands_played || 0;
-                else if (metric === 'vpip') value = Math.round((row.vpip || 0) * 100);
-                else if (metric === 'pfr') value = Math.round((row.pfr || 0) * 100);
-                else value = (row.total_winnings || 0) - (row.total_losses || 0);
+                else if (metric === 'vpip') value = Math.trunc((row.vpip || 0) * 10000) / 100;
+                else if (metric === 'pfr') value = Math.trunc((row.pfr || 0) * 10000) / 100;
+                else if (metric === 'tournaments_won') value = row.tournaments_won || 0;
+                else if (metric === 'roi') {
+                    const winnings = row.total_winnings || 0;
+                    const losses = row.total_losses || 0;
+                    value = losses > 0 ? Math.trunc(((winnings - losses) / losses) * 10000) / 100 : 0;
+                }
+                else value = Math.trunc(((row.total_winnings || 0) - (row.total_losses || 0)) * 100) / 100;
 
                 return {
                     rank: index + 1,
@@ -286,11 +314,19 @@ export const LeaderboardService = {
         _period: LeaderboardPeriod = 'weekly'
     ): Promise<{ rank: number; total: number } | null> {
         try {
-            const orderCol = metric === 'profit' ? 'total_winnings' : metric === 'hands_played' ? 'hands_played' : metric === 'vpip' ? 'vpip' : metric === 'pfr' ? 'pfr' : 'total_winnings';
+            const metricToColumn: Record<string, string> = {
+                profit: 'total_winnings',
+                hands_played: 'hands_played',
+                vpip: 'vpip',
+                pfr: 'pfr',
+                tournaments_won: 'tournaments_won',
+                roi: 'total_winnings',
+            };
+            const orderCol = metricToColumn[metric] || 'total_winnings';
 
             const { data: allStats, error } = await supabase
                 .from('player_stats')
-                .select('user_id, total_winnings, total_losses, hands_played, vpip, pfr')
+                .select('user_id, total_winnings, total_losses, hands_played, vpip, pfr, tournaments_played, tournaments_won')
                 .eq('club_id', clubId)
                 .order(orderCol, { ascending: false });
 
@@ -328,6 +364,7 @@ export const LeaderboardService = {
                     position,
                     prize,
                     tournaments!tournament_id (
+                        id,
                         club_id,
                         buy_in_amount,
                         buy_in_fee
@@ -356,7 +393,11 @@ export const LeaderboardService = {
 
             playerResults.forEach((result: any) => {
                 const userId = result.user_id;
-                const tournaments = result.tournaments as any[];
+                // Supabase returns a single object for many-to-one joins, not an array
+                const tourn = result.tournaments as any;
+
+                // Skip if no tournament data (filtered out by club_id)
+                if (!tourn) return;
 
                 if (!statsMap.has(userId)) {
                     statsMap.set(userId, {
@@ -374,15 +415,13 @@ export const LeaderboardService = {
 
                 const stats = statsMap.get(userId)!;
 
-                // For each tournament this player participated in
-                tournaments.forEach(tourn => {
-                    if (tourn?.club_id === clubId) {
-                        const buyin = tourn.buy_in_amount || 0;
-                        const fee = tourn.buy_in_fee || 0;
-                        stats.tournaments.add((tourn as any).id);
-                        stats.totalBuyins += buyin + fee;
-                    }
-                });
+                // Process the tournament data (single object, not array)
+                if (tourn.club_id === clubId) {
+                    const buyin = tourn.buy_in_amount || 0;
+                    const fee = tourn.buy_in_fee || 0;
+                    stats.tournaments.add(tourn.id);
+                    stats.totalBuyins += buyin + fee;
+                }
 
                 // Check position and prize
                 if (result.position === 1) stats.wins++;

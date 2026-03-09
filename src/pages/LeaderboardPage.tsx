@@ -157,7 +157,10 @@ export default function LeaderboardPage() {
     };
 
     const loadLeaderboard = async (silent = false) => {
-        if (!selectedClubId) return;
+        if (!selectedClubId) {
+            setLoading(false);
+            return;
+        }
         if (!silent) setLoading(true);
         try {
             const data = await LeaderboardService.getClubLeaderboard(
@@ -187,7 +190,10 @@ export default function LeaderboardPage() {
     };
 
     const loadTournamentStats = async () => {
-        if (!selectedClubId) return;
+        if (!selectedClubId) {
+            setTournamentsLoading(false);
+            return;
+        }
         setTournamentsLoading(true);
         try {
             const data = await LeaderboardService.getClubTournamentStats(
@@ -204,13 +210,14 @@ export default function LeaderboardPage() {
     };
 
     const formatValue = (value: number, m: LeaderboardMetric): string => {
-        if (m === 'profit') {
-            return `${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const precise = Math.trunc(value * 100) / 100;
+        if (m === 'profit' || m === 'hands_played' || m === 'tournaments_won') {
+            return precise.toLocaleString('en-US');
         }
         if (m === 'vpip' || m === 'roi') {
-            return `${Math.trunc(value * 10) / 10}%`;
+            return `${precise}%`;
         }
-        return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return precise.toLocaleString('en-US');
     };
 
     const getRankBadge = (rank: number): string => {
@@ -546,11 +553,11 @@ export default function LeaderboardPage() {
                                 <div className="stats-cell wins">{stat.wins}</div>
                                 <div className="stats-cell">{stat.finalTables}</div>
                                 <div className="stats-cell">{stat.itmFinishes}</div>
-                                <div className="stats-cell prizes">{Math.trunc(stat.totalPrizes).toLocaleString()}</div>
+                                <div className="stats-cell prizes">{(Math.trunc(stat.totalPrizes * 100) / 100).toLocaleString()}</div>
                                 <div className={`stats-cell roi ${stat.roi >= 0 ? 'positive' : 'negative'}`}>
-                                    {Math.trunc(stat.roi * 10) / 10}%
+                                    {Math.trunc(stat.roi * 100) / 100}%
                                 </div>
-                                <div className="stats-cell biggest">{Math.trunc(stat.biggestWin).toLocaleString()}</div>
+                                <div className="stats-cell biggest">{(Math.trunc(stat.biggestWin * 100) / 100).toLocaleString()}</div>
                             </div>
                         ))}
                     </>
