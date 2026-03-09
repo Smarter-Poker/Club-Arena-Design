@@ -650,7 +650,15 @@ class TournamentService {
         }).eq('id', tournamentId);
 
         if (countError) {
-            console.error('[TournamentService] Failed to increment registration count:', countError);
+            console.error('[TournamentService] Failed to increment registration count, retrying:', countError);
+            // Retry once — this is important for accurate player count
+            const { error: retryErr } = await supabase.from('tournaments').update({
+                current_players: newPlayerCount,
+                prize_pool: newPrizePool,
+            }).eq('id', tournamentId);
+            if (retryErr) {
+                console.error('[TournamentService] WARN: Registration count retry also failed:', retryErr);
+            }
         }
 
         // ── SNG AUTO-START: if tournament is full, trigger immediate start ──
@@ -705,6 +713,27 @@ class TournamentService {
 
                     if (seatErr) {
                         console.error(`[TournamentService] Late reg seat insert failed: ${seatErr.message}`);
+                        // Refund the player since seating failed — they paid but can't play
+                        try {
+                            await supabase.rpc('credit_player_wallet', { p_user_id: userId, p_amount: totalCost });
+                            await WalletService.logTransaction(
+                                userId, 'PLAYER', totalCost, 'credit', 'refund',
+                                `Late registration refund (seating failed): ${tournament.name}`,
+                                undefined, undefined, tournamentId
+                            );
+                            // Remove the tournament_players entry since they can't play
+                            await supabase.from('tournament_players')
+                                .delete()
+                                .eq('tournament_id', tournamentId)
+                                .eq('user_id', userId);
+                            // Decrement current_players
+                            await supabase.from('tournaments').update({
+                                current_players: Math.max((tournament.current_players || 1) - 1, 0),
+                            }).eq('id', tournamentId);
+                            console.log(`[TournamentService] Late reg refund issued for ${userId.slice(0, 8)}`);
+                        } catch (refundErr) {
+                            console.error(`[TournamentService] CRITICAL: Late reg refund failed for ${userId.slice(0, 8)}:`, refundErr);
+                        }
                     } else {
                         // Update tournament_players to playing status with starting chips
                         const { error: tpErr } = await supabase.from('tournament_players').update({
@@ -723,7 +752,25 @@ class TournamentService {
                         if (tableErr) console.error(`[TournamentService] Late reg table count failed: ${tableErr.message}`);
                     }
                 } else {
-                    console.warn(`[TournamentService] Late reg: no open table found for ${tournamentId.slice(0, 8)}`);
+                    console.warn(`[TournamentService] Late reg: no open table found for ${tournamentId.slice(0, 8)} — refunding`);
+                    // No table available — refund the player
+                    try {
+                        await supabase.rpc('credit_player_wallet', { p_user_id: userId, p_amount: totalCost });
+                        await WalletService.logTransaction(
+                            userId, 'PLAYER', totalCost, 'credit', 'refund',
+                            `Late registration refund (no open table): ${tournament.name}`,
+                            undefined, undefined, tournamentId
+                        );
+                        await supabase.from('tournament_players')
+                            .delete()
+                            .eq('tournament_id', tournamentId)
+                            .eq('user_id', userId);
+                        await supabase.from('tournaments').update({
+                            current_players: Math.max((tournament.current_players || 1) - 1, 0),
+                        }).eq('id', tournamentId);
+                    } catch (refundErr) {
+                        console.error(`[TournamentService] CRITICAL: Late reg refund (no table) failed:`, refundErr);
+                    }
                 }
             } catch (lateRegErr) {
                 console.error('[TournamentService] Late reg seating failed:', lateRegErr);

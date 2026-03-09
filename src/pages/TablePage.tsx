@@ -1069,14 +1069,32 @@ export default function TablePage() {
                                 const elimData = data.payload || {};
                                 console.log(`[TablePage] Player eliminated: ${elimData.userId?.slice(0, 8)} at position ${elimData.position}`);
 
-                                // Check if the current user is the winner (position === 1)
-                                if (elimData.userId === userId && elimData.position === 1) {
-                                    // Current user won the tournament
-                                    const tournamentName = tableState.tableName || 'Tournament';
-                                    setTournamentWinner({
-                                        prize: elimData.prize || 0,
-                                        name: tournamentName,
-                                    });
+                                // Check if the current user was eliminated
+                                if (elimData.userId === userId) {
+                                    if (elimData.position === 1) {
+                                        // Current user won the tournament
+                                        const tournamentName = tableState.tableName || 'Tournament';
+                                        setTournamentWinner({
+                                            prize: elimData.prize || 0,
+                                            name: tournamentName,
+                                        });
+                                    } else {
+                                        // Current user was eliminated (not winner)
+                                        const pos = elimData.position || '?';
+                                        const prize = elimData.prize || 0;
+                                        if (prize > 0) {
+                                            toast?.success?.(`You finished ${pos}${pos === 1 ? 'st' : pos === 2 ? 'nd' : pos === 3 ? 'rd' : 'th'} and won ${prize}!`);
+                                        } else {
+                                            toast?.info?.(`You finished ${pos}${pos === 1 ? 'st' : pos === 2 ? 'nd' : pos === 3 ? 'rd' : 'th'}. Better luck next time!`);
+                                        }
+                                        // Auto-redirect to results after 5 seconds
+                                        setTimeout(() => {
+                                            const tournId = tableState.tournamentId;
+                                            if (tournId) {
+                                                window.location.href = `/hub/club-arena/tournament-results?id=${tournId}`;
+                                            }
+                                        }, 5000);
+                                    }
                                 }
 
                                 // Refresh seated players to reflect elimination
