@@ -11,7 +11,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
@@ -54,11 +54,97 @@ export default function ClubDashboard() {
     useEffect(() => { setLocalStorage('ca_dashboard_range', dateRange); }, [dateRange]);
     const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
 
+    // Store refs to avoid stale closures in subscription callbacks
+    const clubRefRef = useRef(club);
+    const topPlayersRefRef = useRef(topPlayers);
+
+    useEffect(() => {
+        clubRefRef.current = club;
+    }, [club]);
+
+    useEffect(() => {
+        topPlayersRefRef.current = topPlayers;
+    }, [topPlayers]);
+
     useEffect(() => {
         if (clubId) {
             loadDashboardData();
         }
     }, [clubId, dateRange]);
+
+    // Real-time subscription for table changes
+    useEffect(() => {
+        if (!clubId) return;
+
+        const channel = supabase
+            .channel(`club-dashboard-tables-${clubId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'tables',
+                    filter: `club_id=eq.${clubId}`
+                },
+                () => {
+                    loadDashboardData();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [clubId]);
+
+    // Real-time subscription for club member changes
+    useEffect(() => {
+        if (!clubId) return;
+
+        const channel = supabase
+            .channel(`club-dashboard-members-${clubId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'club_members',
+                    filter: `club_id=eq.${clubId}`
+                },
+                () => {
+                    loadDashboardData();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [clubId]);
+
+    // Real-time subscription for hand history (to update stats)
+    useEffect(() => {
+        if (!clubId) return;
+
+        const channel = supabase
+            .channel(`club-dashboard-hands-${clubId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'hand_history'
+                },
+                () => {
+                    loadDashboardData();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [clubId]);
 
     const loadDashboardData = async () => {
         setLoading(true);

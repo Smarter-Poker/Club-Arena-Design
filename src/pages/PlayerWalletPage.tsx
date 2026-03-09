@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useWalletStore } from '../stores/useWalletStore';
 import { useUserStore } from '../stores/useUserStore';
-import TransactionHistory from '../components/TransactionHistory';
+import { TransactionHistory } from '../components/wallet/TransactionHistory';
 import SmarterHeader from '../components/layout/SmarterHeader';
 import DepositWithdrawModal from '../components/wallet/DepositWithdrawModal';
 import { WalletService } from '../services/WalletService';
@@ -354,7 +354,7 @@ export default function PlayerWalletPage() {
 
                 {activeTab === 'history' && user?.id && (
                     <MetalCard size="lg">
-                        <TransactionHistory clubId="" userId={user.id} limit={50} />
+                        <TransactionHistory walletId={user.id} limit={50} />
                     </MetalCard>
                 )}
             </div>

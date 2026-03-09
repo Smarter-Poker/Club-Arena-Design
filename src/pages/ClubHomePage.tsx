@@ -12,7 +12,7 @@
  * - Active tables/games grid
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
@@ -83,6 +83,9 @@ export default function ClubHomePage() {
     const { user } = useUserStore();
     const { diamonds } = useWalletStore();
 
+    // Refs to avoid stale closures in realtime subscriptions
+    const clubIdRef = useRef(clubId);
+
     const [club, setClub] = useState<ClubData | null>(null);
     const [tables, setTables] = useState<TableData[]>([]);
     const [tournaments, setTournaments] = useState<TournamentData[]>([]);
@@ -108,6 +111,7 @@ export default function ClubHomePage() {
 
     useEffect(() => {
         if (clubId) {
+            clubIdRef.current = clubId;
             loadClubData();
         }
     }, [clubId]);
@@ -162,6 +166,34 @@ export default function ClubHomePage() {
 
         return () => {
             supabase.removeChannel(channel);
+        };
+    }, [clubId]);
+
+    // ── Realtime subscription: club member count updates ──
+    useEffect(() => {
+        if (!clubId) return;
+
+        const memberChannel = supabase
+            .channel(`club-members-${clubId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'club_members',
+                    filter: `club_id=eq.${clubId}`,
+                },
+                (payload) => {
+                    if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
+                        // Refresh club data to get updated member count
+                        loadClubData();
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(memberChannel);
         };
     }, [clubId]);
 

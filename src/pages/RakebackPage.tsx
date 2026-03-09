@@ -2,7 +2,7 @@
  *  RAKEBACK PAGE — Player Rakeback Dashboard with Charts
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
@@ -29,30 +29,8 @@ export default function RakebackPage() {
     const [totalEarned, setTotalEarned] = useState(0);
     const [currentRate, setCurrentRate] = useState(0);
 
-    useEffect(() => {
-        if (user?.id) {
-            loadRakebackData();
-
-            // Real-time updates when rakeback is paid
-            const channel = supabase
-                .channel('rakeback-updates')
-                .on(
-                    'postgres_changes',
-                    {
-                        event: '*',
-                        schema: 'public',
-                        table: 'rakeback_periods',
-                        filter: `user_id=eq.${user.id}`,
-                    },
-                    () => loadRakebackData()
-                )
-                .subscribe();
-
-            return () => {
-                supabase.removeChannel(channel);
-            };
-        }
-    }, [user?.id]);
+    // Refs to avoid stale closures
+    const loadRakebackDataRef = useRef<() => void>(() => {});
 
     const loadRakebackData = async () => {
         setLoading(true);
@@ -76,6 +54,58 @@ export default function RakebackPage() {
         }
         setLoading(false);
     };
+
+    // Store ref for callback use
+    useEffect(() => {
+        loadRakebackDataRef.current = loadRakebackData;
+    }, [user?.id]);
+
+    // Setup subscriptions to rakeback and wallet changes
+    useEffect(() => {
+        if (!user?.id) return;
+
+        // Real-time updates when rakeback periods change
+        const rakebackChannel = supabase
+            .channel('rakeback-updates')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'rakeback_periods',
+                    filter: `user_id=eq.${user.id}`,
+                },
+                () => loadRakebackDataRef.current()
+            )
+            .subscribe();
+
+        // Real-time updates when wallet changes (balance/earnings)
+        const walletChannel = supabase
+            .channel('wallet-updates')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'wallets',
+                    filter: `user_id=eq.${user.id}`,
+                },
+                () => loadRakebackDataRef.current()
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(rakebackChannel);
+            supabase.removeChannel(walletChannel);
+        };
+    }, [user?.id]);
+
+    // Initial load
+    useEffect(() => {
+        if (user?.id) {
+            loadRakebackData();
+        }
+    }, [user?.id]);
 
     const formatDate = (dateStr: string): string => {
         return new Date(dateStr).toLocaleDateString(undefined, {

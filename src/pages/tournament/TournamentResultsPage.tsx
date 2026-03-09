@@ -3,7 +3,7 @@
  * Shows completed tournaments with final standings, prizes, and stats.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuthUser } from '../../hooks/useAuthUser';
@@ -49,66 +49,119 @@ export default function TournamentResultsPage() {
     const [filter, setFilter] = useState<'all' | 'mine'>('all');
     const [typeFilter, setTypeFilter] = useState<string>('all');
 
+    // Refs to avoid stale closures
+    const loadTournamentsRef = useRef<() => void>(() => {});
+    const loadResultsRef = useRef<() => void>(() => {});
+
     // Load completed tournaments
-    useEffect(() => {
-        async function load() {
-            setIsLoading(true);
-            try {
-                let query = supabase
-                    .from('tournaments')
-                    .select('*')
-                    .eq('status', 'COMPLETED')
-                    .order('ended_at', { ascending: false })
-                    .limit(100);
+    const loadTournaments = async () => {
+        setIsLoading(true);
+        try {
+            let query = supabase
+                .from('tournaments')
+                .select('*')
+                .eq('status', 'COMPLETED')
+                .order('ended_at', { ascending: false })
+                .limit(100);
 
-                if (typeFilter !== 'all') {
-                    if (typeFilter === 'xmtt') {
-                        query = query.eq('is_xmtt', true);
-                    } else {
-                        query = query.eq('variant', typeFilter);
-                    }
+            if (typeFilter !== 'all') {
+                if (typeFilter === 'xmtt') {
+                    query = query.eq('is_xmtt', true);
+                } else {
+                    query = query.eq('variant', typeFilter);
                 }
-
-                const { data } = await query;
-                let completedList = (data || []) as CompletedTournament[];
-
-                // If "mine" filter, only show tournaments user participated in
-                if (filter === 'mine' && user?.id) {
-                    const { data: myEntries } = await supabase
-                        .from('tournament_players')
-                        .select('tournament_id')
-                        .eq('user_id', user.id);
-
-                    const myTournamentIds = new Set((myEntries || []).map(e => e.tournament_id));
-                    completedList = completedList.filter(t => myTournamentIds.has(t.id));
-                }
-
-                setTournaments(completedList);
-            } catch (err) {
-                console.error('Failed to load tournament results:', err);
             }
-            setIsLoading(false);
+
+            const { data } = await query;
+            let completedList = (data || []) as CompletedTournament[];
+
+            // If "mine" filter, only show tournaments user participated in
+            if (filter === 'mine' && user?.id) {
+                const { data: myEntries } = await supabase
+                    .from('tournament_players')
+                    .select('tournament_id')
+                    .eq('user_id', user.id);
+
+                const myTournamentIds = new Set((myEntries || []).map(e => e.tournament_id));
+                completedList = completedList.filter(t => myTournamentIds.has(t.id));
+            }
+
+            setTournaments(completedList);
+        } catch (err) {
+            console.error('Failed to load tournament results:', err);
         }
-        load();
+        setIsLoading(false);
+    };
+
+    useEffect(() => {
+        loadTournamentsRef.current = loadTournaments;
+    }, [filter, typeFilter, user?.id]);
+
+    useEffect(() => {
+        loadTournaments();
     }, [filter, typeFilter, user?.id]);
 
     // Load results for selected tournament
-    useEffect(() => {
+    const loadResults = async () => {
         if (!selectedTournament) {
             setResults([]);
             return;
         }
 
-        async function loadResults() {
-            const { data } = await supabase
-                .from('tournament_players')
-                .select('user_id, username, position, prize, status, bounty_earned')
-                .eq('tournament_id', selectedTournament!.id)
-                .order('position', { ascending: true, nullsFirst: false });
+        const { data } = await supabase
+            .from('tournament_players')
+            .select('user_id, username, position, prize, status, bounty_earned')
+            .eq('tournament_id', selectedTournament!.id)
+            .order('position', { ascending: true, nullsFirst: false });
 
-            setResults((data || []) as TournamentResult[]);
-        }
+        setResults((data || []) as TournamentResult[]);
+    };
+
+    useEffect(() => {
+        loadResultsRef.current = loadResults;
+    }, [selectedTournament?.id]);
+
+    useEffect(() => {
         loadResults();
+    }, [selectedTournament?.id]);
+
+    // Subscribe to tournament results/standings updates
+    useEffect(() => {
+        const channel = supabase
+            .channel('tournament-results-updates')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'tournaments',
+                },
+                (payload) => {
+                    // When tournament is updated (status change, prize pool finalized, etc.)
+                    loadTournamentsRef.current();
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'tournament_players',
+                },
+                (payload) => {
+                    // When player results are updated (position, prize finalized, etc.)
+                    const newTournamentId = (payload.new as any)?.tournament_id;
+                    const oldTournamentId = (payload.old as any)?.tournament_id;
+                    if (selectedTournament?.id === newTournamentId || selectedTournament?.id === oldTournamentId) {
+                        loadResultsRef.current();
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [selectedTournament?.id]);
 
     const formatDuration = (startedAt: string | null, endedAt: string | null) => {
