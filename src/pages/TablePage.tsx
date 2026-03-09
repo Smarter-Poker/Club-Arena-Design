@@ -2288,49 +2288,7 @@ export default function TablePage() {
 
     return (
         <div className="table-page">
-            {/* ═══════════════════════════════════════════════════════════════════════
-          HEADER BAR
-          ═══════════════════════════════════════════════════════════════════════ */}
-            <header className="table-header">
-                <div className="header-left">
-                    <button className="header-btn menu-btn" onClick={toggleSideMenu}>
-                        <span className="menu-icon">≡</span>
-                    </button>
-                    <button className="header-btn back-btn" onClick={() => navigate(-1)}>
-                        <span>← Back</span>
-                    </button>
-                </div>
-
-                <div className="header-center">
-                    {tableState.jackpotAmount > 0 && (
-                        <div className="jackpot-banner">
-                            <span className="jackpot-label">JACKPOT</span>
-                            <span className="jackpot-amount">{tableState.jackpotAmount.toLocaleString()}</span>
-                            <span className="jackpot-diamond"></span>
-                        </div>
-                    )}
-                    {tableState.spinMultiplier && tableState.spinMultiplier > 1 && (
-                        <div className="jackpot-banner" style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', color: '#1a1a2e' }}>
-                            <span className="jackpot-label" style={{ color: '#1a1a2e' }}>SPIN</span>
-                            <span className="jackpot-amount" style={{ color: '#1a1a2e' }}>{tableState.spinMultiplier}x</span>
-                        </div>
-                    )}
-                    {tableState.isBountyTournament && (
-                        <div className="jackpot-banner" style={{ background: 'linear-gradient(135deg, #ef4444, #f97316)', marginLeft: 4 }}>
-                            <span className="jackpot-label">KO</span>
-                        </div>
-                    )}
-                </div>
-
-                <div className="header-actions">
-                    <button className="header-btn" title="Table Info" onClick={() => setShowGameRules(true)}>
-                        <span>i</span>
-                    </button>
-                    <button className="header-btn table-id" title="Table ID">
-                        {tableState.tableId.slice(0, 8)}
-                    </button>
-                </div>
-            </header>
+            {/* HEADER REMOVED — No header on poker playing tables per directive */}
 
             {/* ═══════════════════════════════════════════════════════════════════════
           ADD CHIPS BUTTON (Left side)
