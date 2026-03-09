@@ -39,20 +39,26 @@ export default function ClubAnnouncementsPage() {
         if (clubId) {
             loadAnnouncements();
 
-            // Real-time announcements
+            // Real-time announcements - subscribe to INSERT, UPDATE, DELETE
             const channel = supabase
-                .channel('announcements-live')
+                .channel(`announcements-${clubId}`)
                 .on(
                     'postgres_changes',
                     {
-                        event: 'INSERT',
+                        event: '*',
                         schema: 'public',
                         table: 'club_announcements',
                         filter: `club_id=eq.${clubId}`,
                     },
                     (payload) => {
-                        // New announcement!
-                        toast.info(' New announcement posted!');
+                        // Handle any announcement change
+                        if (payload.eventType === 'INSERT') {
+                            toast.info(' New announcement posted!');
+                        } else if (payload.eventType === 'UPDATE') {
+                            toast.info(' Announcement updated!');
+                        } else if (payload.eventType === 'DELETE') {
+                            toast.info(' Announcement removed!');
+                        }
                         loadAnnouncements();
                     }
                 )

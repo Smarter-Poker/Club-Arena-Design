@@ -68,6 +68,7 @@ export default function AchievementsPage() {
 
     const [newUnlock, setNewUnlock] = useState<Achievement | null>(null);
     const unlockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const loadAchievementsRef = useRef<(() => Promise<void>) | null>(null);
 
     useEffect(() => {
         if (user?.id) {
@@ -75,7 +76,7 @@ export default function AchievementsPage() {
 
             // Subscribe to real-time achievement unlocks
             const channel = supabase
-                .channel('user-achievements')
+                .channel(`user-achievements-${user.id}`)
                 .on(
                     'postgres_changes',
                     {
@@ -101,7 +102,9 @@ export default function AchievementsPage() {
                             unlockTimerRef.current = setTimeout(() => setNewUnlock(null), 5000);
 
                             // Reload achievements
-                            loadAchievements();
+                            if (loadAchievementsRef.current) {
+                                await loadAchievementsRef.current();
+                            }
                         }
                     }
                 )
@@ -146,6 +149,11 @@ export default function AchievementsPage() {
         }
         setLoading(false);
     };
+
+    // Store loadAchievements in ref for use in realtime callbacks
+    useEffect(() => {
+        loadAchievementsRef.current = loadAchievements;
+    }, [user?.id]);
 
     const filteredAchievements = category === 'all'
         ? achievements

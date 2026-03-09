@@ -167,6 +167,35 @@ export default function HomePage() {
             }
         }
         fetchUserData();
+
+        // Real-time subscription: user's club membership changes
+        const setupRealtimeSubscription = async () => {
+            const { data: { user: authUser } } = await supabase.auth.getUser();
+            if (!authUser?.id) return;
+
+            const channel = supabase
+                .channel(`user-clubs-${authUser.id}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'club_members',
+                        filter: `user_id=eq.${authUser.id}`,
+                    },
+                    () => {
+                        // Refresh user's clubs when membership changes
+                        fetchUserData();
+                    }
+                )
+                .subscribe();
+
+            return () => {
+                supabase.removeChannel(channel);
+            };
+        };
+
+        setupRealtimeSubscription();
     }, []);
 
     // Fetch Shark Club stats — ALL data from live Supabase queries

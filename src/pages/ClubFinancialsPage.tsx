@@ -58,24 +58,26 @@ export default function ClubFinancialsPage() {
             .on(
                 'postgres_changes',
                 {
-                    event: '*',
+                    event: 'INSERT',
                     schema: 'public',
                     table: 'wallet_transactions',
                     filter: `club_id=eq.${clubId}`,
                 },
                 () => {
+                    // New transaction - refresh financials
                     loadFinancials();
                 }
             )
             .on(
                 'postgres_changes',
                 {
-                    event: '*',
+                    event: 'INSERT',
                     schema: 'public',
                     table: 'rake_history',
                     filter: `club_id=eq.${clubId}`,
                 },
                 () => {
+                    // New rake collection - refresh financials
                     loadFinancials();
                 }
             )
