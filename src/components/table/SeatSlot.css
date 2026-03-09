@@ -513,19 +513,109 @@
     }
 
     .seat-slot__content {
-        gap: 4px;
+        gap: 6px;
     }
 
     .seat-slot__avatar {
-        height: 56px;
-        max-width: 48px;
+        height: 60px;
+        max-width: 50px;
         border-width: 2px;
     }
 
     .seat-slot__avatar--default {
-        width: 48px;
-        height: 56px;
-        font-size: 1.5rem;
+        width: 50px;
+        height: 60px;
+        font-size: 1.6rem;
+    }
+
+    .seat-slot__info {
+        min-width: 65px;
+        padding: 4px 8px;
+        margin-top: -10px;
+        border-width: 2px;
+    }
+
+    .seat-slot__name {
+        font-size: 0.65rem;
+        max-width: 60px;
+        line-height: 1.2;
+    }
+
+    .seat-slot__stack {
+        font-size: 0.625rem;
+        margin-top: 2px;
+    }
+
+    .seat-slot__card {
+        width: 32px;
+        height: 44px;
+    }
+
+    .seat-slot__card-rank {
+        font-size: 0.9375rem;
+    }
+
+    .seat-slot__card-suit {
+        font-size: 0.9rem;
+    }
+
+    .seat-slot__cards {
+        margin-left: 6px;
+        gap: 3px;
+    }
+
+    .seat-slot--hero .seat-slot__card {
+        width: 44px;
+        height: 62px;
+    }
+
+    .seat-slot--hero .seat-slot__cards {
+        margin-left: 36px;
+    }
+
+    .seat-slot__position-chip {
+        width: 20px;
+        height: 20px;
+        font-size: 0.55rem;
+        top: -6px;
+        right: -6px;
+    }
+
+    .seat-slot__action-badge {
+        font-size: 0.6rem;
+        padding: 3px 7px;
+    }
+
+    .seat-slot__all-in-badge {
+        font-size: 0.55rem;
+        padding: 2px 5px;
+    }
+
+    .seat-slot--empty {
+        padding: 6px;
+    }
+
+    .seat-slot__sit-button {
+        padding: 5px 10px;
+        font-size: 0.6rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .seat-slot {
+        width: 74px;
+        min-height: 46px;
+    }
+
+    .seat-slot__avatar {
+        height: 54px;
+        max-width: 46px;
+    }
+
+    .seat-slot__avatar--default {
+        width: 46px;
+        height: 54px;
+        font-size: 1.4rem;
     }
 
     .seat-slot__info {
@@ -535,12 +625,61 @@
     }
 
     .seat-slot__name {
-        font-size: 0.625rem;
-        max-width: 58px;
+        font-size: 0.6rem;
+        max-width: 54px;
     }
 
     .seat-slot__stack {
-        font-size: 0.625rem;
+        font-size: 0.6rem;
+    }
+
+    .seat-slot__card {
+        width: 30px;
+        height: 42px;
+    }
+
+    .seat-slot--hero .seat-slot__card {
+        width: 40px;
+        height: 56px;
+    }
+}
+
+@media (max-width: 480px) {
+    .seat-slot {
+        width: 66px;
+        min-height: 40px;
+    }
+
+    .seat-slot__content {
+        gap: 4px;
+    }
+
+    .seat-slot__avatar {
+        height: 48px;
+        max-width: 42px;
+    }
+
+    .seat-slot__avatar--default {
+        width: 42px;
+        height: 48px;
+        font-size: 1.2rem;
+    }
+
+    .seat-slot__info {
+        min-width: 56px;
+        padding: 3px 6px;
+        margin-top: -6px;
+        border-width: 2px;
+    }
+
+    .seat-slot__name {
+        font-size: 0.55rem;
+        max-width: 50px;
+    }
+
+    .seat-slot__stack {
+        font-size: 0.55rem;
+        margin-top: 1px;
     }
 
     .seat-slot__card {
@@ -549,11 +688,11 @@
     }
 
     .seat-slot__card-rank {
-        font-size: 0.875rem;
+        font-size: 0.8125rem;
     }
 
     .seat-slot__card-suit {
-        font-size: 0.875rem;
+        font-size: 0.8rem;
     }
 
     .seat-slot__cards {
@@ -562,12 +701,12 @@
     }
 
     .seat-slot--hero .seat-slot__card {
-        width: 40px;
-        height: 56px;
+        width: 38px;
+        height: 54px;
     }
 
     .seat-slot--hero .seat-slot__cards {
-        margin-left: 30px;
+        margin-left: 28px;
     }
 
     .seat-slot__position-chip {
@@ -591,39 +730,45 @@
     .seat-slot--empty {
         padding: 4px;
     }
+
+    .seat-slot__sit-button {
+        padding: 3px 8px;
+        font-size: 0.55rem;
+    }
 }
 
-@media (max-width: 400px) {
+@media (max-width: 380px) {
     .seat-slot {
-        width: 68px;
-        min-height: 42px;
+        width: 60px;
+        min-height: 36px;
     }
 
     .seat-slot__avatar {
-        height: 44px;
-        max-width: 40px;
+        height: 42px;
+        max-width: 38px;
     }
 
     .seat-slot__avatar--default {
-        width: 40px;
-        height: 44px;
-        font-size: 1.25rem;
+        width: 38px;
+        height: 42px;
+        font-size: 1rem;
     }
 
     .seat-slot__info {
-        min-width: 52px;
-        padding: 2px 4px;
-        margin-top: -6px;
+        min-width: 50px;
+        padding: 2px 5px;
+        margin-top: -4px;
         border-width: 1px;
     }
 
     .seat-slot__name {
-        font-size: 0.5625rem;
-        max-width: 48px;
+        font-size: 0.5rem;
+        max-width: 46px;
     }
 
     .seat-slot__stack {
-        font-size: 0.5625rem;
+        font-size: 0.5rem;
+        margin-top: 1px;
     }
 
     .seat-slot__card {
@@ -634,5 +779,11 @@
     .seat-slot--hero .seat-slot__card {
         width: 34px;
         height: 48px;
+    }
+
+    .seat-slot__position-chip {
+        width: 16px;
+        height: 16px;
+        font-size: 0.45rem;
     }
 }

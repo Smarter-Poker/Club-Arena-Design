@@ -436,14 +436,117 @@
    RESPONSIVE
    ═══════════════════════════════════════════════════════════════ */
 
-@media (max-width: 400px) {
+@media (max-width: 768px) {
+    .player-seat {
+        width: 72px;
+    }
+
+    .player-avatar {
+        width: 44px;
+        height: 44px;
+    }
+
+    .avatar-emoji {
+        font-size: 1.25rem;
+    }
+
+    .player-info {
+        min-width: 65px;
+        padding: 3px 8px;
+    }
+
+    .player-name {
+        font-size: var(--fs-xs);
+        max-width: 60px;
+    }
+
+    .player-stack {
+        font-size: var(--fs-sm);
+        margin-top: 2px;
+    }
+
+    .community-card {
+        width: 40px;
+        height: 56px;
+    }
+
+    .hole-card {
+        width: 36px;
+        height: 50px;
+    }
+
+    .position-badge {
+        width: 22px;
+        height: 22px;
+        font-size: var(--fs-xs);
+    }
+}
+
+@media (max-width: 640px) {
+    .player-seat {
+        width: 68px;
+    }
+
     .player-avatar {
         width: 40px;
         height: 40px;
     }
 
+    .avatar-emoji {
+        font-size: 1.1rem;
+    }
+
     .player-info {
         min-width: 60px;
+        padding: 2px 6px;
+    }
+
+    .player-name {
+        font-size: 0.65rem;
+        max-width: 55px;
+    }
+
+    .player-stack {
+        font-size: 0.65rem;
+    }
+
+    .hole-card {
+        width: 32px;
+        height: 44px;
+    }
+
+    .community-card {
+        width: 38px;
+        height: 52px;
+    }
+}
+
+@media (max-width: 480px) {
+    .player-seat {
+        width: 60px;
+    }
+
+    .player-avatar {
+        width: 36px;
+        height: 36px;
+    }
+
+    .avatar-emoji {
+        font-size: 1rem;
+    }
+
+    .player-info {
+        min-width: 56px;
+        padding: 2px 6px;
+    }
+
+    .player-name {
+        font-size: 0.6rem;
+        max-width: 50px;
+    }
+
+    .player-stack {
+        font-size: 0.6rem;
     }
 
     .player-cards .hole-card {
@@ -454,6 +557,59 @@
     .empty-seat {
         width: 36px;
         height: 36px;
+    }
+
+    .position-badge {
+        width: 20px;
+        height: 20px;
+        font-size: 0.5rem;
+    }
+
+    .dealer-button {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+@media (max-width: 400px) {
+    .player-seat {
+        width: 56px;
+    }
+
+    .player-avatar {
+        width: 32px;
+        height: 32px;
+    }
+
+    .avatar-emoji {
+        font-size: 0.9rem;
+    }
+
+    .player-info {
+        min-width: 52px;
+    }
+
+    .player-name {
+        font-size: 0.55rem;
+    }
+
+    .player-stack {
+        font-size: 0.55rem;
+    }
+
+    .player-cards .hole-card {
+        width: 24px;
+        height: 34px;
+    }
+
+    .community-card {
+        width: 32px;
+        height: 44px;
+    }
+
+    .empty-seat {
+        width: 32px;
+        height: 32px;
     }
 }
 

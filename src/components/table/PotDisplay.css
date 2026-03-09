@@ -240,11 +240,72 @@
 
 @media (max-width: 768px) {
     .pot-display {
-        transform: translate(-50%, -20%);
+        transform: translate(-50%, -25%);
     }
 
     .pot-display__main {
-        padding: 6px 16px;
+        padding: 8px 18px;
+        gap: 4px;
+    }
+
+    .pot-display__label {
+        font-size: 0.65rem;
+        margin-bottom: 2px;
+    }
+
+    .pot-display__amount {
+        font-size: 1.1rem;
+        font-weight: 800;
+    }
+
+    .pot-display__chips {
+        height: 45px;
+        margin-bottom: 6px;
+    }
+
+    .pot-display__chip {
+        width: 24px;
+        height: 7px;
+    }
+
+    .pot-display__side-pots {
+        gap: 6px;
+        margin-top: 4px;
+    }
+
+    .pot-display__side-pot {
+        padding: 4px 10px;
+    }
+
+    .pot-display__side-pot-label {
+        font-size: 0.6rem;
+    }
+
+    .pot-display__side-pot-amount {
+        font-size: 0.8rem;
+    }
+
+    .pot-display__total {
+        margin-top: 4px;
+        padding: 4px 10px;
+    }
+
+    .pot-display__total-label {
+        font-size: 0.6rem;
+    }
+
+    .pot-display__total-amount {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .pot-display {
+        transform: translate(-50%, -28%);
+    }
+
+    .pot-display__main {
+        padding: 7px 16px;
     }
 
     .pot-display__amount {
@@ -252,11 +313,87 @@
     }
 
     .pot-display__chips {
-        height: 40px;
+        height: 42px;
     }
 
     .pot-display__chip {
         width: 22px;
         height: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .pot-display {
+        transform: translate(-50%, -30%);
+        gap: 6px;
+    }
+
+    .pot-display__main {
+        padding: 6px 14px;
+        gap: 3px;
+        border-radius: 10px;
+    }
+
+    .pot-display__label {
+        font-size: 0.6rem;
+        margin-bottom: 1px;
+    }
+
+    .pot-display__amount {
+        font-size: 0.95rem;
+        font-weight: 800;
+    }
+
+    .pot-display__chips {
+        height: 38px;
+        margin-bottom: 4px;
+    }
+
+    .pot-display__chip {
+        width: 20px;
+        height: 5px;
+    }
+
+    .pot-display__increase {
+        top: -18px;
+        right: -18px;
+        padding: 2px 6px;
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 380px) {
+    .pot-display {
+        transform: translate(-50%, -32%);
+    }
+
+    .pot-display__main {
+        padding: 5px 12px;
+        gap: 2px;
+    }
+
+    .pot-display__label {
+        font-size: 0.55rem;
+    }
+
+    .pot-display__amount {
+        font-size: 0.9rem;
+    }
+
+    .pot-display__chips {
+        height: 35px;
+    }
+
+    .pot-display__chip {
+        width: 18px;
+        height: 5px;
+    }
+
+    .pot-display__side-pots {
+        gap: 4px;
+    }
+
+    .pot-display__side-pot {
+        padding: 3px 8px;
     }
 }

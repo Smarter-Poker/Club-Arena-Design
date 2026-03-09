@@ -242,50 +242,147 @@
 
 @media (max-width: 768px) {
     .action-panel {
-        padding: var(--space-2) var(--space-3);
-        padding-bottom: calc(var(--space-2) + env(safe-area-inset-bottom, 0));
+        padding: var(--space-3) var(--space-3);
+        padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0));
+        border-top: 2px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .action-buttons {
+        flex-wrap: wrap;
     }
 
     .action-btn {
-        min-height: 48px;
+        min-height: 52px;
         -webkit-tap-highlight-color: transparent;
         touch-action: manipulation;
+        padding: var(--space-3) var(--space-4);
+        font-size: 0.95rem;
+        border-radius: 10px;
+    }
+
+    .action-btn:active:not(:disabled) {
+        transform: scale(0.98);
     }
 
     .raise-display {
-        margin-bottom: var(--space-2);
+        margin-bottom: var(--space-3);
+        gap: 12px;
+    }
+
+    .adjust-btn {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        flex-shrink: 0;
+    }
+
+    .raise-amount {
+        min-width: 110px;
+    }
+
+    .amount-value {
+        font-size: 1.75rem;
     }
 
     .raise-slider-container {
-        margin-bottom: var(--space-2);
+        margin-bottom: var(--space-3);
         padding: 0 var(--space-2);
     }
 
+    .raise-slider {
+        height: 10px;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
     .raise-slider::-webkit-slider-thumb {
-        width: 34px;
-        height: 34px;
+        width: 36px;
+        height: 36px;
     }
 
     .raise-slider::-moz-range-thumb {
-        width: 34px;
-        height: 34px;
+        width: 36px;
+        height: 36px;
+    }
+
+    .preset-btn {
+        min-height: 44px;
+        padding: var(--space-2) var(--space-3);
+    }
+
+    .confirm-btn {
+        min-height: 48px;
+        padding: var(--space-3) var(--space-4);
     }
 }
 
-@media (max-width: 400px) {
+@media (max-width: 640px) {
+    .action-panel {
+        padding: 12px;
+        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
+    }
+
     .action-btn {
-        padding: var(--space-2) var(--space-3);
-        font-size: var(--fs-base);
-        min-height: 44px;
+        padding: 14px 12px;
+        font-size: 0.875rem;
+        min-height: 48px;
+        border-radius: 8px;
     }
 
     .adjust-btn {
         width: 40px;
         height: 40px;
-        font-size: 1.25rem;
+        min-width: 40px;
+        min-height: 40px;
     }
 
     .amount-value {
-        font-size: var(--fs-xl);
+        font-size: 1.5rem;
+    }
+
+    .preset-btn {
+        padding: 10px;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .action-panel {
+        padding: 10px;
+        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0));
+    }
+
+    .action-btn {
+        padding: 12px 10px;
+        font-size: 0.8125rem;
+        min-height: 46px;
+    }
+
+    .raise-display {
+        gap: 10px;
+    }
+
+    .adjust-btn {
+        width: 38px;
+        height: 38px;
+        min-width: 38px;
+        min-height: 38px;
+        font-size: 1.1rem;
+    }
+
+    .amount-value {
+        font-size: 1.25rem;
+    }
+
+    .preset-btn {
+        padding: 8px;
+        font-size: 0.75rem;
+    }
+
+    .confirm-btn {
+        padding: 10px 12px;
+        font-size: 0.75rem;
+        min-height: 44px;
     }
 }
