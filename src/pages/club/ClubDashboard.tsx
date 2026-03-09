@@ -157,10 +157,10 @@ export default function ClubDashboard() {
                 .single();
 
             if (clubData) {
-                // Get member count
+                // Get member count — club_members has no 'id' column
                 const { count: memberCount } = await supabase
                     .from('club_members')
-                    .select('*', { count: 'exact', head: true })
+                    .select('user_id', { count: 'exact', head: true })
                     .eq('club_id', clubId);
 
                 // Get table count
@@ -179,28 +179,33 @@ export default function ClubDashboard() {
                 });
             }
 
-            // Load top players by profit
+            // Load top players by profit (chips_won - chips_lost)
             const { data: playersData } = await supabase
                 .from('club_members')
                 .select(`
                     user_id,
-                    total_profit,
+                    chips_won,
+                    chips_lost,
                     hands_played,
                     profiles(display_name, avatar_url)
                 `)
                 .eq('club_id', clubId)
-                .order('total_profit', { ascending: false })
+                .order('chips_won', { ascending: false })
                 .limit(10);
 
             if (playersData) {
-                setTopPlayers(playersData.map((p: any, idx: number) => ({
-                    userId: p.user_id,
-                    displayName: p.profiles?.display_name || 'Player',
-                    avatarUrl: p.profiles?.avatar_url,
-                    totalProfit: p.total_profit || 0,
-                    handsPlayed: p.hands_played || 0,
-                    rank: idx + 1
-                })));
+                const sorted = playersData
+                    .map((p: any) => ({
+                        userId: p.user_id,
+                        displayName: p.profiles?.display_name || 'Player',
+                        avatarUrl: p.profiles?.avatar_url,
+                        totalProfit: (p.chips_won || 0) - (p.chips_lost || 0),
+                        handsPlayed: p.hands_played || 0,
+                        rank: 0
+                    }))
+                    .sort((a: any, b: any) => b.totalProfit - a.totalProfit)
+                    .map((p: any, idx: number) => ({ ...p, rank: idx + 1 }));
+                setTopPlayers(sorted);
             }
         } catch (error) {
             console.error('Failed to load dashboard:', error);
@@ -209,7 +214,7 @@ export default function ClubDashboard() {
     };
 
     const formatNumber = (num: number): string => {
-        return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return (Math.trunc(num * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     if (loading) {

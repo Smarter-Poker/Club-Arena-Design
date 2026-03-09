@@ -41,23 +41,28 @@ export default function ClubStatsCards({ clubId }: ClubStatsCardsProps) {
         setLoading(true);
         try {
             // Get member count (all non-banned members)
+            // club_members has no 'id' column — use user_id for count
             const { count: memberCount } = await supabase
                 .from('club_members')
-                .select('id', { count: 'exact', head: true })
+                .select('user_id', { count: 'exact', head: true })
                 .eq('club_id', clubId)
                 .not('status', 'in', '("banned","suspended")');
 
-            // Get active tables
+            // Get active tables — tables use status 'running' or 'waiting', not 'active'
             const { count: tableCount } = await supabase
                 .from('tables')
                 .select('id', { count: 'exact', head: true })
                 .eq('club_id', clubId)
-                .eq('status', 'active');
+                .in('status', ['running', 'waiting', 'active']);
 
             // Get today's stats
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
+            let handsToday = 0;
+            let rakeToday = 0;
+
+            // Try club_daily_stats first
             const { data: todayStats } = await supabase
                 .from('club_daily_stats')
                 .select('hands_played, rake_collected')
@@ -65,20 +70,33 @@ export default function ClubStatsCards({ clubId }: ClubStatsCardsProps) {
                 .gte('date', today.toISOString())
                 .single();
 
+            if (todayStats) {
+                handsToday = todayStats.hands_played || 0;
+                rakeToday = todayStats.rake_collected || 0;
+            }
+
+            // Count online members — those active within last 15 minutes
+            const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+            const { count: onlineCount } = await supabase
+                .from('club_members')
+                .select('user_id', { count: 'exact', head: true })
+                .eq('club_id', clubId)
+                .gte('last_active', fifteenMinAgo);
+
             // Get weekly growth (compare to last week)
             const weekAgo = new Date(Date.now() - 7 * 86400000);
             const { count: newMembers } = await supabase
                 .from('club_members')
-                .select('id', { count: 'exact', head: true })
+                .select('user_id', { count: 'exact', head: true })
                 .eq('club_id', clubId)
                 .gte('created_at', weekAgo.toISOString());
 
             setStats({
                 totalMembers: memberCount || 0,
-                onlineNow: 0, // Would come from presence
+                onlineNow: onlineCount || 0,
                 activeTables: tableCount || 0,
-                handsToday: todayStats?.hands_played || 0,
-                rakeToday: todayStats?.rake_collected || 0,
+                handsToday: handsToday,
+                rakeToday: rakeToday,
                 weeklyGrowth: newMembers || 0
             });
         } catch (error) {
@@ -87,20 +105,20 @@ export default function ClubStatsCards({ clubId }: ClubStatsCardsProps) {
         setLoading(false);
     };
 
-    const formatNumber = (num: number): string => {
-        return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const formatInt = (num: number): string => {
+        return Math.trunc(num).toLocaleString('en-US');
     };
 
-    const formatCurrency = (num: number): string => {
-        return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const formatChips = (num: number): string => {
+        return (Math.trunc(num * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     const statCards = [
-        { label: 'Total Members', value: formatNumber(stats.totalMembers), icon: '', color: '#3b82f6' },
-        { label: 'Online Now', value: formatNumber(stats.onlineNow), icon: '', color: '#10b981' },
-        { label: 'Active Tables', value: formatNumber(stats.activeTables), icon: '', color: '#fbbf24' },
-        { label: 'Hands Today', value: formatNumber(stats.handsToday), icon: '', color: '#a855f7' },
-        { label: 'Rake Today', value: formatCurrency(stats.rakeToday), icon: '', color: '#f59e0b' },
+        { label: 'Total Members', value: formatInt(stats.totalMembers), icon: '', color: '#3b82f6' },
+        { label: 'Online Now', value: formatInt(stats.onlineNow), icon: '', color: '#10b981' },
+        { label: 'Active Tables', value: formatInt(stats.activeTables), icon: '', color: '#fbbf24' },
+        { label: 'Hands Today', value: formatInt(stats.handsToday), icon: '', color: '#a855f7' },
+        { label: 'Rake Today', value: formatChips(stats.rakeToday), icon: '', color: '#f59e0b' },
         { label: 'New This Week', value: `+${stats.weeklyGrowth}`, icon: '', color: '#22c55e' },
     ];
 
