@@ -1,6 +1,6 @@
 # CLUB ARENA — Master Knowledge File
 ## LAST UPDATED: Session 55+ (March 9, 2026)
-## STATUS: Phase 10 DEPLOYED — Leaderboard Bugs Fixed
+## STATUS: Phase 10b DEPLOYED — Race Conditions + Safety Fixes
 ## RULE: UPDATE THIS FILE EVERY TIME YOU STOP TO UPDATE THE USER
 
 ---
@@ -223,6 +223,14 @@
 - [x] **Query fix**: Tournament stats join now selects tournament `id` for proper tournament counting in Set
 - **Files modified**: src/pages/LeaderboardPage.tsx, src/services/LeaderboardService.ts, supabase/migrations/20260309_leaderboard_columns.sql
 
+### Phase 10b (Commit 991a950) — RACE CONDITIONS + SAFETY FIXES
+- [x] **Double registration race condition**: Added `isProcessing` state guard to `handleRegister` and `handleUnregister` in TournamentDetails.tsx — buttons disabled during processing, prevents double-click exploits
+- [x] **Prize pool calculation**: Fixed `TournamentPage.tsx` — was subtracting `buy_in_fee` from prize contribution, but fee is rake (not prize pool). Now correctly uses `buy_in_amount` only.
+- [x] **NaN buy-in validation**: Fixed `CreateTournamentModal.tsx` — `parseFloat("") <= 0` returns false (NaN comparison), allowing creation of tournaments with invalid buy-in. Added `isNaN()` check.
+- [x] **Silent refund failure**: Fixed `TournamentService.ts` late reg seating failure path — was catching refund error silently. Now throws user-facing error message so player knows what happened.
+- [x] **Admin removal rollback**: Fixed `TournamentRegistration.tsx` — when admin removes player and refund fails, code now re-inserts the player record instead of leaving inconsistent state (player deleted but no refund).
+- **Files modified**: src/pages/tournament/TournamentDetails.tsx, src/pages/TournamentPage.tsx, src/components/club/CreateTournamentModal.tsx, src/services/TournamentService.ts, src/components/tournament/TournamentRegistration.tsx
+
 ---
 
 ## VERIFIED CLEAN (LAST SWEEP)
@@ -300,6 +308,8 @@ MTT: Starts at scheduled time when min_players met
 
 ## GIT LOG (RECENT)
 ```
+991a950 Phase 10b: Fix race conditions, prize pool calc, validation, and refund safety
+9c3bfcd Update knowledge file with Phase 10 leaderboard fixes and parent app finding
 8e26359 Phase 10: Fix Leaderboard bugs — infinite loading, tournament stats crash, precision
 73a805c Update knowledge file with Phase 9b/9c bug fixes and visual verification
 1c74dba Phase 9c: Fix remaining || fallbacks to ?? across server + client
