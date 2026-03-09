@@ -766,7 +766,7 @@ export class TournamentEngine {
             // When we advance past the rebuy_levels threshold and add-on is available,
             // pause the tournament for 60 seconds and broadcast ADDON_PERIOD_START
             if (this.tournamentInfo.add_on_available && !this.addOnPeriodTriggered) {
-                const rebuyLevelCap = this.tournamentInfo.rebuy_levels || 4;
+                const rebuyLevelCap = this.tournamentInfo.late_reg_levels ?? this.tournamentInfo.rebuy_levels ?? 8;
                 // Trigger when we pass from within rebuy period to beyond it
                 if (prevLevel < rebuyLevelCap && newLevel >= rebuyLevelCap) {
                     this.triggerAddOnPeriod();

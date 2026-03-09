@@ -640,9 +640,9 @@ export default function TournamentDetails() {
                                 <span className="info-label">Rebuy:</span>
                                 <span className="info-value">
                                     {(tournament as any).is_rebuy
-                                        ? `${((tournament as any).rebuy_chips || tournament.starting_chips || 0).toLocaleString()} chips — through Level ${(tournament as any).late_reg_levels || (tournament as any).rebuy_levels || 8}`
+                                        ? `${((tournament as any).rebuy_chips || tournament.starting_chips || 0).toLocaleString()} chips — through Level ${(tournament as any).late_reg_levels ?? (tournament as any).rebuy_levels ?? 8}`
                                         : (tournament as any).is_reentry
-                                            ? `Re-Entry — through Level ${(tournament as any).late_reg_levels || (tournament as any).rebuy_levels || 8}`
+                                            ? `Re-Entry — through Level ${(tournament as any).late_reg_levels ?? (tournament as any).rebuy_levels ?? 8}`
                                             : 'Not Available'}
                                 </span>
                             </div>
@@ -650,7 +650,7 @@ export default function TournamentDetails() {
                                 <span className="info-label">Add-on:</span>
                                 <span className="info-value">
                                     {(tournament as any).add_on_available
-                                        ? `${((tournament as any).addon_chips || tournament.starting_chips || 0).toLocaleString()} chips — Level ${(tournament as any).late_reg_levels || (tournament as any).rebuy_levels || 8} to ${((tournament as any).late_reg_levels || (tournament as any).rebuy_levels || 8) + ((tournament as any).addon_levels || 1)}`
+                                        ? `${((tournament as any).addon_chips || tournament.starting_chips || 0).toLocaleString()} chips — Level ${(tournament as any).late_reg_levels ?? (tournament as any).rebuy_levels ?? 8} to ${((tournament as any).late_reg_levels ?? (tournament as any).rebuy_levels ?? 8) + ((tournament as any).addon_levels ?? 1)}`
                                         : 'Not Available'}
                                 </span>
                             </div>

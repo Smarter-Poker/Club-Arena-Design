@@ -1035,7 +1035,7 @@ class TournamentManager {
 
                 // ── LATE REG / REBUY PERIOD FINALIZATION (level-based) ──
                 // Late reg and rebuy share the same cutoff level
-                const lateRegLevelCap = this.tournamentCache?.late_reg_levels || this.tournamentCache?.rebuy_levels || 0;
+                const lateRegLevelCap = this.tournamentCache?.late_reg_levels ?? this.tournamentCache?.rebuy_levels ?? 0;
                 if (!this.prizePoolFinalized && lateRegLevelCap > 0 && this.currentLevel >= lateRegLevelCap) {
                     // Check if add-on is available — if so, defer finalization until add-on period ends
                     if (!this.tournamentCache?.add_on_available) {
@@ -1062,7 +1062,7 @@ class TournamentManager {
                 // ── ADD-ON PERIOD TRIGGER (level-based) ──
                 // When blind level passes the late reg/rebuy cutoff and add-on is available
                 if (this.tournamentCache?.add_on_available && !this.addOnPeriodTriggered) {
-                    const rebuyLevelCap = this.tournamentCache.late_reg_levels || this.tournamentCache.rebuy_levels || 8;
+                    const rebuyLevelCap = this.tournamentCache.late_reg_levels ?? this.tournamentCache.rebuy_levels ?? 8;
                     if (prevLevel < rebuyLevelCap && this.currentLevel >= rebuyLevelCap) {
                         // Broadcast late_reg_closed first
                         await this.broadcast('late_reg_closed', {});
@@ -1078,8 +1078,8 @@ class TournamentManager {
                 // ── ADD-ON PERIOD END (level-based) ──
                 // Add-on window closes after addon_levels levels past the rebuy cutoff
                 if (this.addOnPeriodTriggered && !this.prizePoolFinalized) {
-                    const rebuyLevelCap2 = this.tournamentCache?.late_reg_levels || this.tournamentCache?.rebuy_levels || 8;
-                    const addonWindow = this.tournamentCache?.addon_levels || 1;
+                    const rebuyLevelCap2 = this.tournamentCache?.late_reg_levels ?? this.tournamentCache?.rebuy_levels ?? 8;
+                    const addonWindow = this.tournamentCache?.addon_levels ?? 1;
                     if (this.currentLevel >= rebuyLevelCap2 + addonWindow) {
                         await this.finalizeAfterAddOn();
                     }
@@ -1099,8 +1099,8 @@ class TournamentManager {
 
         const addonCost = this.tournamentCache?.addon_cost || this.tournamentCache?.buy_in_amount || 0;
         const addonChips = this.tournamentCache?.addon_chips || this.tournamentCache?.starting_chips || 0;
-        const addonLevels = this.tournamentCache?.addon_levels || 1;
-        const rebuyLevelCap = this.tournamentCache?.late_reg_levels || this.tournamentCache?.rebuy_levels || 8;
+        const addonLevels = this.tournamentCache?.addon_levels ?? 1;
+        const rebuyLevelCap = this.tournamentCache?.late_reg_levels ?? this.tournamentCache?.rebuy_levels ?? 8;
 
         console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] ADD-ON PERIOD START — ${addonLevels} level(s) (Level ${rebuyLevelCap} to ${rebuyLevelCap + addonLevels}), cost: ${addonCost}, chips: ${addonChips}`);
 
