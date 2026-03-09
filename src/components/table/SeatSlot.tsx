@@ -317,7 +317,10 @@ export function SeatSlot({
             {/* Bounty Badge (KO / PKO tournaments) */}
             {bountyValue != null && bountyValue > 0 && (
                 <div className="seat-slot__bounty-badge">
-                    {bountyValue.toLocaleString()}
+                    <span className="seat-slot__bounty-icon">🎯</span>
+                    <span className="seat-slot__bounty-amount">
+                        {(Math.trunc(bountyValue * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
                 </div>
             )}
         </div>

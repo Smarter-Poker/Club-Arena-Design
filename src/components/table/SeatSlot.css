@@ -461,6 +461,18 @@
     }
 }
 
+@keyframes bountyBadgeGlow {
+
+    0%,
+    100% {
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+    }
+
+    50% {
+        box-shadow: 0 2px 12px rgba(239, 68, 68, 0.9), inset 0 1px 2px rgba(255, 255, 255, 0.15);
+    }
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────
    ALL-IN BADGE (PERMANENT)
    ───────────────────────────────────────────────────────────────────────────── */
@@ -487,19 +499,34 @@
 
 .seat-slot__bounty-badge {
     position: absolute;
-    top: -8px;
-    right: -4px;
-    padding: 1px 5px;
+    top: -10px;
+    right: -8px;
+    padding: 2px 6px;
     background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
     color: #FFFFFF;
     border-radius: 6px;
     font-size: 0.55rem;
     font-weight: 800;
     letter-spacing: 0.02em;
-    box-shadow: 0 1px 6px rgba(239, 68, 68, 0.5);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.1);
     white-space: nowrap;
-    z-index: 5;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    z-index: 10;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    animation: bountyBadgeGlow 2s ease-in-out infinite;
+}
+
+.seat-slot__bounty-icon {
+    font-size: 0.7rem;
+    display: inline-block;
+    line-height: 1;
+}
+
+.seat-slot__bounty-amount {
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    font-size: 0.55rem;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -591,6 +618,21 @@
         padding: 2px 5px;
     }
 
+    .seat-slot__bounty-badge {
+        top: -8px;
+        right: -6px;
+        padding: 2px 5px;
+        font-size: 0.52rem;
+    }
+
+    .seat-slot__bounty-icon {
+        font-size: 0.65rem;
+    }
+
+    .seat-slot__bounty-amount {
+        font-size: 0.52rem;
+    }
+
     .seat-slot--empty {
         padding: 6px;
     }
@@ -641,6 +683,21 @@
     .seat-slot--hero .seat-slot__card {
         width: 40px;
         height: 56px;
+    }
+
+    .seat-slot__bounty-badge {
+        top: -7px;
+        right: -6px;
+        padding: 1px 4px;
+        font-size: 0.5rem;
+    }
+
+    .seat-slot__bounty-icon {
+        font-size: 0.6rem;
+    }
+
+    .seat-slot__bounty-amount {
+        font-size: 0.5rem;
     }
 }
 
@@ -727,6 +784,22 @@
         padding: 1px 4px;
     }
 
+    .seat-slot__bounty-badge {
+        top: -6px;
+        right: -5px;
+        padding: 1px 4px;
+        font-size: 0.48rem;
+        gap: 1px;
+    }
+
+    .seat-slot__bounty-icon {
+        font-size: 0.55rem;
+    }
+
+    .seat-slot__bounty-amount {
+        font-size: 0.48rem;
+    }
+
     .seat-slot--empty {
         padding: 4px;
     }
@@ -784,6 +857,21 @@
     .seat-slot__position-chip {
         width: 16px;
         height: 16px;
+        font-size: 0.45rem;
+    }
+
+    .seat-slot__bounty-badge {
+        top: -5px;
+        right: -4px;
+        padding: 1px 3px;
+        font-size: 0.45rem;
+    }
+
+    .seat-slot__bounty-icon {
+        font-size: 0.52rem;
+    }
+
+    .seat-slot__bounty-amount {
         font-size: 0.45rem;
     }
 }

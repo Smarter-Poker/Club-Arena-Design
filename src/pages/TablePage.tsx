@@ -951,6 +951,32 @@ export default function TablePage() {
                             isBountyTournament: true,
                             spinMultiplier: tournData.spin_multiplier || undefined,
                         }));
+
+                        // Subscribe to real-time bounty updates
+                        const bountyChannel = supabase
+                            .channel(`bounty-${table.tournament_id}`)
+                            .on('postgres_changes', {
+                                event: 'UPDATE',
+                                schema: 'public',
+                                table: 'tournament_players',
+                                filter: `tournament_id=eq.${table.tournament_id}`
+                            }, (payload: any) => {
+                                if (payload.new) {
+                                    const { user_id, current_bounty } = payload.new;
+                                    setTableState(prev => ({
+                                        ...prev,
+                                        bountyMap: {
+                                            ...prev.bountyMap,
+                                            [user_id]: current_bounty || 0
+                                        }
+                                    }));
+                                }
+                            })
+                            .subscribe();
+
+                        return () => {
+                            bountyChannel.unsubscribe();
+                        };
                     } else if (tournData?.spin_multiplier) {
                         setTableState(prev => ({
                             ...prev,
