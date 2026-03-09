@@ -35,6 +35,29 @@
     font-weight: 500;
 }
 
+.speedBadge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.freezeoutTag {
+    display: inline-block;
+    background: rgba(51, 151, 204, 0.2);
+    color: #3397cc;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
 .title {
     margin: 0;
     font-size: 18px;

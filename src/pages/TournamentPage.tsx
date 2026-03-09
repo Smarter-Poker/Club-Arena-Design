@@ -520,6 +520,44 @@ export default function TournamentPage() {
                                     <span className="stat-label">Prize Pool</span>
                                     <span className="stat-value gold">{selectedTournament.prize_pool}</span>
                                 </div>
+
+                                {/* Bounty Info */}
+                                {selectedTournament.is_bounty && !selectedTournament.is_pko && !selectedTournament.is_mystery_bounty && (
+                                    <div className="stat">
+                                        <span className="stat-label">Bounty</span>
+                                        <span className="stat-value">{selectedTournament.bounty_amount} chips</span>
+                                    </div>
+                                )}
+
+                                {/* PKO Info */}
+                                {selectedTournament.is_pko && (
+                                    <div className="stat">
+                                        <span className="stat-label">PKO</span>
+                                        <span className="stat-value">{selectedTournament.bounty_amount} chips starting bounty</span>
+                                    </div>
+                                )}
+                                {selectedTournament.is_pko && (
+                                    <div className="stat">
+                                        <span className="stat-label">PKO Payout</span>
+                                        <span className="stat-value" style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)' }}>50% to knocker / 50% added to your bounty</span>
+                                    </div>
+                                )}
+
+                                {/* Mystery Bounty Info */}
+                                {selectedTournament.is_mystery_bounty && (
+                                    <div className="stat">
+                                        <span className="stat-label">Mystery Bounty Range</span>
+                                        <span className="stat-value">{selectedTournament.mystery_bounty_min || '1'}x - {selectedTournament.mystery_bounty_max || '100'}x multiplier</span>
+                                    </div>
+                                )}
+
+                                {/* Spin Info */}
+                                {selectedTournament.variant === 'spin' && (
+                                    <div className="stat">
+                                        <span className="stat-label">Multiplier</span>
+                                        <span className="stat-value">{selectedTournament.spin_multiplier ? `${selectedTournament.spin_multiplier}x` : 'TBD'}</span>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Blind Structure */}

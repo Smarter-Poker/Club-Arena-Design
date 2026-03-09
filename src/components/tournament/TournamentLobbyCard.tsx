@@ -33,6 +33,11 @@ interface Tournament {
     bountyAmount?: number;
     isMultiDay?: boolean;
     isPinned?: boolean;
+    blindDuration?: number;
+    blindsUp?: number;
+    rebuyAllowed?: boolean;
+    addonAllowed?: boolean;
+    spinMultiplier?: number;
 }
 
 interface TournamentLobbyCardProps {
@@ -138,6 +143,44 @@ export default function TournamentLobbyCard({
         }
     };
 
+    const getSpeedTier = (tournament: Tournament): { tier: string; color: string } | null => {
+        // Get blind duration from blind_duration field or infer from blindStructure
+        let blindDuration = tournament.blindDuration;
+
+        if (!blindDuration && tournament.blindStructure) {
+            // Try to parse blindStructure if it's a JSON string
+            try {
+                let structure = tournament.blindStructure;
+                if (typeof structure === 'string') {
+                    structure = JSON.parse(structure);
+                }
+                if (Array.isArray(structure) && structure.length > 0) {
+                    blindDuration = structure[0].durationMinutes || structure[0].duration_minutes;
+                }
+            } catch {
+                // If parsing fails, return no badge
+                return null;
+            }
+        }
+
+        if (!blindDuration) return null;
+
+        if (blindDuration <= 3) {
+            return { tier: 'Hyper', color: '#ef4444' }; // red
+        } else if (blindDuration <= 5) {
+            return { tier: 'Turbo', color: '#f97316' }; // orange
+        } else if (blindDuration <= 10) {
+            return null; // Regular - no badge needed
+        } else {
+            return { tier: 'Deep Stack', color: '#0ea5e9' }; // blue
+        }
+    };
+
+    const isFreezout = (tournament: Tournament): boolean => {
+        return !tournament.isRebuy && !tournament.rebuyAllowed &&
+               !tournament.addonAllowed && !tournament.lateRegMins;
+    };
+
     const hasMaxPlayers = tournament.maxPlayers > 0;
     const spotsRemaining = hasMaxPlayers ? tournament.maxPlayers - tournament.registeredPlayers : Infinity;
     const isFull = hasMaxPlayers && spotsRemaining <= 0;
@@ -154,6 +197,20 @@ export default function TournamentLobbyCard({
                 >
                     {tournament.status === 'registering' ? ' Open' : tournament.status}
                 </span>
+                {(() => {
+                    const speedTier = getSpeedTier(tournament);
+                    return speedTier ? (
+                        <span
+                            className={styles.speedBadge}
+                            style={{ backgroundColor: speedTier.color }}
+                        >
+                            {speedTier.tier}
+                        </span>
+                    ) : null;
+                })()}
+                {isFreezout(tournament) && (
+                    <span className={styles.freezeoutTag}>Freezeout</span>
+                )}
             </div>
 
             {/* Title */}
@@ -215,7 +272,8 @@ export default function TournamentLobbyCard({
                     {tournament.isMultiDay && (
                         <span className={`${styles.featureTag} ${styles.multiDayTag}`}>Multi-Day</span>
                     )}
-                    {tournament.lateRegMins && tournament.lateRegMins > 0 && (
+                    {tournament.lateRegMins && tournament.lateRegMins > 0 &&
+                     (tournament.status === 'registering' || tournament.status === 'running') && (
                         <span className={styles.featureTag}>Late Reg {tournament.lateRegMins}m</span>
                     )}
                     {tournament.isRebuy && (
