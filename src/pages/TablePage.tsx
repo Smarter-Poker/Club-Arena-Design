@@ -65,6 +65,7 @@ import TournamentBreakScreen from '../components/table/TournamentBreakScreen';
 import AddOnModal from '../components/table/AddOnModal';
 import TournamentAnnouncementOverlay from '../components/table/TournamentAnnouncementOverlay';
 import RebuyModal from '../components/table/RebuyModal';
+import TournamentWinnerOverlay from '../components/table/TournamentWinnerOverlay';
 // RealtimeChannelService imported if needed for future use
 import ChipStack from '../components/table/ChipStack';
 import { tournamentService } from '../services/TournamentService';
@@ -399,6 +400,9 @@ export default function TablePage() {
     // Insurance Modal state
     const [showInsurance, setShowInsurance] = useState(false);
     const [insuranceOffer, setInsuranceOffer] = useState<InsuranceOffer | null>(null);
+
+    // Tournament Winner state
+    const [tournamentWinner, setTournamentWinner] = useState<{ prize: number; name: string } | null>(null);
 
     // Run It Twice state
     const [showRIT, setShowRIT] = useState(false);
@@ -1064,6 +1068,17 @@ export default function TablePage() {
                                 // A player was eliminated from the tournament
                                 const elimData = data.payload || {};
                                 console.log(`[TablePage] Player eliminated: ${elimData.userId?.slice(0, 8)} at position ${elimData.position}`);
+
+                                // Check if the current user is the winner (position === 1)
+                                if (elimData.userId === userId && elimData.position === 1) {
+                                    // Current user won the tournament
+                                    const tournamentName = tableState.tableName || 'Tournament';
+                                    setTournamentWinner({
+                                        prize: elimData.prize || 0,
+                                        name: tournamentName,
+                                    });
+                                }
+
                                 // Refresh seated players to reflect elimination
                                 if (elimData.userId) {
                                     setTableState(prev => ({
@@ -3110,6 +3125,16 @@ export default function TablePage() {
                     type={announcement?.type as any}
                     data={announcement?.data}
                     onDismiss={() => setAnnouncement(null)}
+                />
+            )}
+
+            {/* Tournament Winner Overlay */}
+            {tableState.isTournament && tournamentWinner && (
+                <TournamentWinnerOverlay
+                    isWinner={true}
+                    prize={tournamentWinner.prize}
+                    tournamentName={tournamentWinner.name}
+                    onDismiss={() => setTournamentWinner(null)}
                 />
             )}
         </div>

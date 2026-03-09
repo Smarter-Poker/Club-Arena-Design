@@ -39,19 +39,35 @@ interface TournamentResult {
     bounty_earned: number;
 }
 
+interface HandHistoryRecord {
+    id: string;
+    hand_number: number;
+    small_blind: number;
+    big_blind: number;
+    pot_size: number;
+    game_variant: string;
+    community_cards: string[];
+    winners: { userId: string; amount: number }[];
+    players: { userId: string; username: string; seat: number; stack: number; cards: string[] }[];
+    created_at: string;
+}
+
 export default function TournamentResultsPage() {
     const navigate = useNavigate();
     const { user } = useAuthUser();
     const [tournaments, setTournaments] = useState<CompletedTournament[]>([]);
     const [selectedTournament, setSelectedTournament] = useState<CompletedTournament | null>(null);
     const [results, setResults] = useState<TournamentResult[]>([]);
+    const [handHistory, setHandHistory] = useState<HandHistoryRecord[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'mine'>('all');
     const [typeFilter, setTypeFilter] = useState<string>('all');
+    const [activeTab, setActiveTab] = useState<'standings' | 'hands'>('standings');
 
     // Refs to avoid stale closures
     const loadTournamentsRef = useRef<() => void>(() => {});
     const loadResultsRef = useRef<() => void>(() => {});
+    const loadHandHistoryRef = useRef<() => void>(() => {});
 
     // Load completed tournaments
     const loadTournaments = async () => {
@@ -117,12 +133,37 @@ export default function TournamentResultsPage() {
         setResults((data || []) as TournamentResult[]);
     };
 
+    // Load hand history for selected tournament
+    const loadHandHistory = async () => {
+        if (!selectedTournament) {
+            setHandHistory([]);
+            return;
+        }
+
+        const { data } = await supabase
+            .from('hand_history')
+            .select('id, hand_number, small_blind, big_blind, pot_size, game_variant, community_cards, winners, players, created_at')
+            .eq('tournament_id', selectedTournament!.id)
+            .order('hand_number', { ascending: false })
+            .limit(100);
+
+        setHandHistory((data || []) as HandHistoryRecord[]);
+    };
+
     useEffect(() => {
         loadResultsRef.current = loadResults;
     }, [selectedTournament?.id]);
 
     useEffect(() => {
         loadResults();
+    }, [selectedTournament?.id]);
+
+    useEffect(() => {
+        loadHandHistoryRef.current = loadHandHistory;
+    }, [selectedTournament?.id]);
+
+    useEffect(() => {
+        loadHandHistory();
     }, [selectedTournament?.id]);
 
     // Subscribe to tournament results/standings updates
@@ -295,59 +336,137 @@ export default function TournamentResultsPage() {
                                 Buy-in: {formatAmount(t.buy_in_amount)} + {formatAmount(t.buy_in_fee)} · Ended: {t.ended_at ? new Date(t.ended_at).toLocaleDateString() : '—'}
                             </div>
 
-                            {/* Expanded Results */}
-                            {selectedTournament?.id === t.id && results.length > 0 && (
+                            {/* Expanded Results — Tabs */}
+                            {selectedTournament?.id === t.id && (results.length > 0 || handHistory.length > 0) && (
                                 <div style={{ marginTop: '12px', borderTop: '1px solid #1e293b', paddingTop: '12px' }}>
-                                    <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px', fontWeight: 600 }}>
-                                        Final Standings
+                                    {/* Tab Buttons */}
+                                    <div style={{ display: 'flex', gap: '4px', marginBottom: '12px' }}>
+                                        <button
+                                            onClick={() => setActiveTab('standings')}
+                                            style={{
+                                                padding: '6px 12px',
+                                                borderRadius: '6px',
+                                                border: 'none',
+                                                fontSize: '12px',
+                                                cursor: 'pointer',
+                                                background: activeTab === 'standings' ? '#10b981' : '#1e293b',
+                                                color: activeTab === 'standings' ? '#000' : '#94a3b8',
+                                                fontWeight: activeTab === 'standings' ? 600 : 400,
+                                            }}
+                                        >
+                                            Standings
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveTab('hands')}
+                                            style={{
+                                                padding: '6px 12px',
+                                                borderRadius: '6px',
+                                                border: 'none',
+                                                fontSize: '12px',
+                                                cursor: 'pointer',
+                                                background: activeTab === 'hands' ? '#10b981' : '#1e293b',
+                                                color: activeTab === 'hands' ? '#000' : '#94a3b8',
+                                                fontWeight: activeTab === 'hands' ? 600 : 400,
+                                            }}
+                                        >
+                                            Hand History ({handHistory.length})
+                                        </button>
                                     </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                        {results
-                                            .filter(r => r.position !== null)
-                                            .sort((a, b) => (a.position || 999) - (b.position || 999))
-                                            .map(r => {
-                                                const isMe = r.user_id === user?.id;
-                                                const posColor = r.position === 1 ? '#fbbf24' : r.position === 2 ? '#94a3b8' : r.position === 3 ? '#d97706' : '#475569';
-                                                return (
+
+                                    {/* Standings Tab */}
+                                    {activeTab === 'standings' && results.length > 0 && (
+                                        <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px', fontWeight: 600 }}>
+                                            Final Standings
+                                        </div>
+                                    )}
+                                    {activeTab === 'standings' && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                            {results
+                                                .filter(r => r.position !== null)
+                                                .sort((a, b) => (a.position || 999) - (b.position || 999))
+                                                .map(r => {
+                                                    const isMe = r.user_id === user?.id;
+                                                    const posColor = r.position === 1 ? '#fbbf24' : r.position === 2 ? '#94a3b8' : r.position === 3 ? '#d97706' : '#475569';
+                                                    return (
+                                                        <div
+                                                            key={r.user_id}
+                                                            style={{
+                                                                display: 'flex',
+                                                                justifyContent: 'space-between',
+                                                                alignItems: 'center',
+                                                                padding: '6px 8px',
+                                                                borderRadius: '6px',
+                                                                background: isMe ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
+                                                                border: isMe ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid transparent',
+                                                            }}
+                                                        >
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                <span style={{ color: posColor, fontSize: '13px', fontWeight: 700, minWidth: '24px' }}>
+                                                                    #{r.position}
+                                                                </span>
+                                                                <span style={{ color: isMe ? '#10b981' : '#cbd5e1', fontSize: '13px' }}>
+                                                                    {r.username}
+                                                                    {isMe && <span style={{ fontSize: '10px', color: '#10b981', marginLeft: '4px' }}>(You)</span>}
+                                                                </span>
+                                                            </div>
+                                                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                                                {r.bounty_earned > 0 && (
+                                                                    <span style={{ color: '#f59e0b', fontSize: '11px' }}>
+                                                                        +{formatAmount(r.bounty_earned)} bounty
+                                                                    </span>
+                                                                )}
+                                                                <span style={{
+                                                                    color: r.prize > 0 ? '#10b981' : '#475569',
+                                                                    fontSize: '13px',
+                                                                    fontWeight: r.prize > 0 ? 600 : 400,
+                                                                }}>
+                                                                    {r.prize > 0 ? `+${formatAmount(r.prize)}` : '—'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                        </div>
+                                    )}
+
+                                    {/* Hand History Tab */}
+                                    {activeTab === 'hands' && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '400px', overflowY: 'auto' }}>
+                                            {handHistory.length === 0 ? (
+                                                <div style={{ color: '#64748b', fontSize: '12px', padding: '8px', textAlign: 'center' }}>
+                                                    No hands recorded
+                                                </div>
+                                            ) : (
+                                                handHistory.map(hand => (
                                                     <div
-                                                        key={r.user_id}
+                                                        key={hand.id}
                                                         style={{
-                                                            display: 'flex',
-                                                            justifyContent: 'space-between',
-                                                            alignItems: 'center',
-                                                            padding: '6px 8px',
+                                                            padding: '8px',
                                                             borderRadius: '6px',
-                                                            background: isMe ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
-                                                            border: isMe ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid transparent',
+                                                            background: '#0f172a',
+                                                            border: '1px solid #1e293b',
+                                                            fontSize: '11px',
                                                         }}
                                                     >
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                            <span style={{ color: posColor, fontSize: '13px', fontWeight: 700, minWidth: '24px' }}>
-                                                                #{r.position}
-                                                            </span>
-                                                            <span style={{ color: isMe ? '#10b981' : '#cbd5e1', fontSize: '13px' }}>
-                                                                {r.username}
-                                                                {isMe && <span style={{ fontSize: '10px', color: '#10b981', marginLeft: '4px' }}>(You)</span>}
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                            <span style={{ color: '#10b981', fontWeight: 600 }}>Hand #{hand.hand_number}</span>
+                                                            <span style={{ color: '#64748b' }}>
+                                                                {new Date(hand.created_at).toLocaleTimeString()}
                                                             </span>
                                                         </div>
-                                                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                                                            {r.bounty_earned > 0 && (
-                                                                <span style={{ color: '#f59e0b', fontSize: '11px' }}>
-                                                                    +{formatAmount(r.bounty_earned)} bounty
-                                                                </span>
-                                                            )}
-                                                            <span style={{
-                                                                color: r.prize > 0 ? '#10b981' : '#475569',
-                                                                fontSize: '13px',
-                                                                fontWeight: r.prize > 0 ? 600 : 400,
-                                                            }}>
-                                                                {r.prize > 0 ? `+${formatAmount(r.prize)}` : '—'}
-                                                            </span>
+                                                        <div style={{ color: '#94a3b8', fontSize: '10px' }}>
+                                                            {hand.game_variant} · {hand.small_blind}/{hand.big_blind} · Pot: {formatAmount(hand.pot_size)}
                                                         </div>
+                                                        {hand.winners.length > 0 && (
+                                                            <div style={{ color: '#10b981', fontSize: '10px', marginTop: '4px' }}>
+                                                                Winners: {hand.winners.map(w => w.amount).join(', ')}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                );
-                                            })}
-                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

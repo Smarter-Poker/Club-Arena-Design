@@ -1,0 +1,145 @@
+.winnerOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+    background: rgba(0, 0, 0, 0.85);
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: all;
+}
+
+.winnerOverlay.visible {
+    opacity: 1;
+}
+
+.confettiContainer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.confettiParticle {
+    position: absolute;
+    top: -10px;
+    width: 8px;
+    height: 12px;
+    border-radius: 2px;
+    animation: confettiFall 3s ease-in forwards;
+}
+
+@keyframes confettiFall {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+.winnerContent {
+    text-align: center;
+    z-index: 1;
+    animation: winnerBounce 0.8s ease-out;
+}
+
+.winnerTrophy {
+    font-size: 5rem;
+    margin-bottom: 1rem;
+    animation: trophySpin 1.5s ease-out;
+    filter: drop-shadow(0 0 30px rgba(245, 158, 11, 0.6));
+}
+
+@keyframes trophySpin {
+    0% {
+        transform: scale(0) rotate(-180deg);
+    }
+    60% {
+        transform: scale(1.2) rotate(10deg);
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+    }
+}
+
+.winnerTitle {
+    font-size: 2.5rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #f59e0b, #fbbf24, #f59e0b);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    margin-bottom: 0.5rem;
+    text-shadow: none;
+}
+
+.winnerTournament {
+    font-size: 1.1rem;
+    color: #94a3b8;
+    margin-bottom: 1rem;
+}
+
+.winnerPrize {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #10b981;
+    margin-bottom: 1.5rem;
+}
+
+.winnerDismissBtn {
+    padding: 12px 40px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border: none;
+    border-radius: 12px;
+    color: #1a1a2e;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.winnerDismissBtn:hover {
+    transform: scale(1.05);
+}
+
+@keyframes winnerBounce {
+    0% {
+        transform: scale(0.3);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 640px) {
+    .winnerTrophy {
+        font-size: 3.5rem;
+    }
+    .winnerTitle {
+        font-size: 1.8rem;
+    }
+    .winnerPrize {
+        font-size: 1.3rem;
+    }
+    .winnerTournament {
+        font-size: 0.9rem;
+    }
+}
