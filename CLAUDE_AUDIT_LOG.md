@@ -1,6 +1,6 @@
 # CLUB ARENA — Master Knowledge File
-## LAST UPDATED: Session 55+ (March 9, 2026)
-## STATUS: Phase 10b DEPLOYED — Race Conditions + Safety Fixes
+## LAST UPDATED: Session 56+ (March 9, 2026)
+## STATUS: Phase 10d DEPLOYED — Display Labels + Full E2E Game Inventory
 ## RULE: UPDATE THIS FILE EVERY TIME YOU STOP TO UPDATE THE USER
 
 ---
@@ -49,7 +49,7 @@
 
 ## FEATURE STATUS (COMPREHENSIVE)
 
-### OVERALL: ~90% COMPLETE, PRODUCTION READY
+### OVERALL: ~93% COMPLETE, PRODUCTION READY
 
 | Category | Completion | Status |
 |----------|-----------|--------|
@@ -230,6 +230,23 @@
 - [x] **Silent refund failure**: Fixed `TournamentService.ts` late reg seating failure path — was catching refund error silently. Now throws user-facing error message so player knows what happened.
 - [x] **Admin removal rollback**: Fixed `TournamentRegistration.tsx` — when admin removes player and refund fails, code now re-inserts the player record instead of leaving inconsistent state (player deleted but no refund).
 - **Files modified**: src/pages/tournament/TournamentDetails.tsx, src/pages/TournamentPage.tsx, src/components/club/CreateTournamentModal.tsx, src/services/TournamentService.ts, src/components/tournament/TournamentRegistration.tsx
+
+### Phase 10c (Commit 2ef3cf5) — CLUB NAVIGATION + TOURNAMENT ACCESS FIXES
+- [x] **ClubHomePage union redirect removed**: Clubs in unions were auto-redirecting to `/unions/:id` — removed redirect so club dashboard is always accessible for management
+- [x] **Create Tournament button**: Changed visibility from `!isInUnion` to `isOwner` — admins can now create tournaments regardless of union membership
+- [x] **CRITICAL DISCOVERY**: smarter.poker/hub/club-arena renders the parent Next.js app, NOT the Club Arena SPA. The Club Arena SPA deploys separately to club-arena.vercel.app
+- **Files modified**: src/pages/ClubHomePage.tsx, src/pages/TournamentPage.tsx
+
+### Phase 10d (Commit e5216d5) — DISPLAY LABELS + FULL E2E GAME INVENTORY
+- [x] **DynamicGameCard case fix**: Cash game variant lookup now uses `.toLowerCase()` — DB stores uppercase (SHORT_DECK), map keys are lowercase (short_deck)
+- [x] **TOURNEY_VARIANT_MAP expanded**: Added FLH, MIXED, PLO_HILO, CRAZY_PINEAPPLE, DOUBLE_BOARD entries
+- [x] **TournamentPage human-readable labels**: Game type display now maps SHORT_DECK → "Short Deck", OFC_PINEAPPLE → "OFC Pineapple", PLO_HILO → "PLO Hi-Lo"
+- [x] **TournamentLobbyCard labels**: Same human-readable mapping in tournament detail view
+- [x] **BULK CREATION (72/72 SUCCESS, 0 FAILURES)**:
+  - 19 tournaments across 7 days: NLH MTT (Turbo/Regular/DeepStack), PLO4/PLO5/Short Deck MTTs, SNG (6-max/9-max/Heads-Up), Spin (Standard/Hyper/PLO4), Bounty (KO/PKO/Mystery), Multi-Day Championship, Freeze-out, OFC Pineapple SNG, PLO8 Bounty MTT
+  - 53 cash tables: NLH all stakes (0.01/0.02 → 50/100), NLH 6-Max, NLH HU, NLH ALL FEATURES (straddle+bomb pot+RIT+VPIP+insurance+no rathole), PLO4 all stakes, PLO5, PLO6, PLO Hi-Lo, Short Deck, OFC Pineapple, Mixed Games, FLH, JAQK Club games
+- [x] **VISUALLY VERIFIED**: All 72 games rendering correctly on club-arena.vercel.app with correct stakes, buy-ins, player caps, and feature badges (STR, BOMB, RIT, INS, VPIP, BBJ)
+- **Files modified**: src/components/lobby/DynamicGameCard.tsx, src/pages/TournamentPage.tsx, src/components/tournament/TournamentLobbyCard.tsx
 
 ---
 
