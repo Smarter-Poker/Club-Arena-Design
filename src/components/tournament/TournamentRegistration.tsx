@@ -116,8 +116,20 @@ export function TournamentRegistration({
 
                     if (refundErr) {
                         console.error('[AdminRemove] Refund failed — re-inserting player:', refundErr);
-                        toast.error('Removal failed — could not refund player');
-                        // Attempt to re-insert the player since refund failed
+                        // Re-insert the player since refund failed — preserve tournament integrity
+                        try {
+                            const playerEntry = players.find(p => p.id === playerId);
+                            await supabase.from('tournament_players').insert({
+                                tournament_id: tournamentId,
+                                user_id: playerId,
+                                username: playerEntry?.username || 'Player',
+                                status: 'registered',
+                            });
+                            toast.error('Removal cancelled — refund failed, player re-inserted');
+                        } catch (reinsertErr) {
+                            console.error('[AdminRemove] CRITICAL: Re-insert failed after refund failure:', reinsertErr);
+                            toast.error('CRITICAL: Player removed but refund failed — contact support');
+                        }
                         return;
                     }
 

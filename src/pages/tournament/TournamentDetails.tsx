@@ -52,6 +52,7 @@ export default function TournamentDetails() {
 
     const [walletBalance, setWalletBalance] = useState<number>(0);
     const [lateRegCountdown, setLateRegCountdown] = useState<string>('');
+    const [isProcessing, setIsProcessing] = useState(false);
 
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const lateRegTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -353,12 +354,13 @@ export default function TournamentDetails() {
     };
 
     const handleRegister = async () => {
-        if (!tournament) return;
+        if (isProcessing || !tournament) return;
         if (!user) {
             toast.error('Loading your profile... please try again in a moment');
             return;
         }
         setShowSignUpModal(false);
+        setIsProcessing(true);
 
         try {
             await tournamentService.registerPlayer(tournament.id, user.id, user.username || 'Player');
@@ -369,15 +371,18 @@ export default function TournamentDetails() {
             console.error('Registration failed:', error);
             const msg = (error as Error).message || 'Unknown error';
             toast.error(`Registration failed: ${msg}`);
+        } finally {
+            setIsProcessing(false);
         }
     };
 
     const handleUnregister = async () => {
-        if (!tournament) return;
+        if (isProcessing || !tournament) return;
         if (!user) {
             toast.error('Loading your profile... please try again in a moment');
             return;
         }
+        setIsProcessing(true);
 
         try {
             await tournamentService.unregisterPlayer(tournament.id, user.id);
@@ -389,6 +394,8 @@ export default function TournamentDetails() {
             console.error('Unregistration failed:', error);
             const msg = (error as Error).message || 'Unknown error';
             toast.error(`Unregister failed: ${msg}`);
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -985,8 +992,8 @@ export default function TournamentDetails() {
                 ) : tournament.status === 'CANCELLED' ? (
                     <span className="tournament-status-badge cancelled">Cancelled</span>
                 ) : isRegistered ? (
-                    <button className="btn btn-unregister" onClick={handleUnregister}>
-                        Unregister
+                    <button className="btn btn-unregister" onClick={handleUnregister} disabled={isProcessing}>
+                        {isProcessing ? 'Processing...' : 'Unregister'}
                     </button>
                 ) : (
                     <button className="btn btn-register" onClick={() => setShowSignUpModal(true)}>
@@ -1043,8 +1050,8 @@ export default function TournamentDetails() {
                             <button className="btn btn-cancel" onClick={() => setShowSignUpModal(false)}>
                                 Cancel
                             </button>
-                            <button className="btn btn-confirm" onClick={handleRegister}>
-                                Confirm
+                            <button className="btn btn-confirm" onClick={handleRegister} disabled={isProcessing}>
+                                {isProcessing ? 'Processing...' : 'Confirm'}
                             </button>
                         </div>
                     </div>

@@ -235,8 +235,8 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
 
     const coreValid = (() => {
         if (!name.trim()) return false;
-        if (parseFloat(buyIn) <= 0) return false;
-        if (parseInt(startingChips) <= 0) return false;
+        if (isNaN(parseFloat(buyIn)) || parseFloat(buyIn) <= 0) return false;
+        if (isNaN(parseInt(startingChips)) || parseInt(startingChips) <= 0) return false;
         // Max players only required for SNG and Spin (they need a fixed table size)
         if (isSngOrSpin && parseInt(maxPlayers) < 2) return false;
         // Scheduled tournament must have date+time
@@ -774,7 +774,7 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                     {!canSubmit && !isSubmitting && (
                         <div style={{ color: '#ef4444', fontSize: '0.75rem', padding: '4px 0' }}>
                             {!name.trim() && <p>Tournament name is required</p>}
-                            {parseFloat(buyIn) <= 0 && <p>Buy-in must be greater than 0</p>}
+                            {(isNaN(parseFloat(buyIn)) || parseFloat(buyIn) <= 0) && <p>Buy-in must be greater than 0</p>}
                             {parseInt(startingChips) <= 0 && <p>Starting chips must be greater than 0</p>}
                             {startTimeMode === 'scheduled' && (!scheduledDate || !scheduledTime) && <p>Scheduled date and time are required</p>}
                             {(isRebuy || isReentry) && parseInt(lateRegLevels) <= 0 && <p>Late reg levels must be set when rebuys/re-entries are enabled</p>}

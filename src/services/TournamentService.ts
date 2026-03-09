@@ -739,7 +739,9 @@ class TournamentService {
                             console.log(`[TournamentService] Late reg refund issued for ${userId.slice(0, 8)}`);
                         } catch (refundErr) {
                             console.error(`[TournamentService] CRITICAL: Late reg refund failed for ${userId.slice(0, 8)}:`, refundErr);
+                            throw new Error(`Late registration seating failed and refund could not be processed. Please contact support.`);
                         }
+                        throw new Error(`Late registration seating failed. Your buy-in has been refunded.`);
                     } else {
                         // Update tournament_players to playing status with starting chips
                         const { error: tpErr } = await supabase.from('tournament_players').update({

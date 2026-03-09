@@ -176,7 +176,7 @@ export default function TournamentPage() {
             setIsRegistered(true);
 
             // Update tournament in list (prize pool = buy_in minus rake)
-            const prizeContribution = selectedTournament.buy_in_amount - (selectedTournament.buy_in_fee || 0);
+            const prizeContribution = selectedTournament.buy_in_amount;
             setTournaments(prev => prev.map(t =>
                 t.id === selectedTournament.id
                     ? { ...t, current_players: t.current_players + 1, prize_pool: t.prize_pool + prizeContribution }
@@ -250,7 +250,7 @@ export default function TournamentPage() {
 
             setIsRegistered(false);
 
-            const prizeContribution = selectedTournament.buy_in_amount - (selectedTournament.buy_in_fee || 0);
+            const prizeContribution = selectedTournament.buy_in_amount;
             setTournaments(prev => prev.map(t =>
                 t.id === selectedTournament.id
                     ? { ...t, current_players: t.current_players - 1, prize_pool: t.prize_pool - prizeContribution }
