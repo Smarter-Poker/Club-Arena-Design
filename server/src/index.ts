@@ -1018,6 +1018,13 @@ class TournamentManager {
 
                         // Broadcast late_reg_closed so clients update UI
                         await this.broadcast('late_reg_closed', { prizePool: freshT?.prize_pool || 0 });
+
+                        // ── RECALCULATE PRIZES for players eliminated during late reg ──
+                        // During late reg, eliminated ITM players got prizes based on a smaller pool.
+                        // Now that the pool is finalized, recalculate and credit the difference.
+                        if (freshT) {
+                            await this.recalculateEliminatedPrizes(freshT.prize_pool);
+                        }
                     }
                 }
 
@@ -1058,6 +1065,9 @@ class TournamentManager {
                 prize_pool: freshT.prize_pool,
                 prize_pool_finalized: true,
             } as any).eq('id', this.tournamentId);
+
+            // Recalculate prizes for players eliminated before add-on period
+            await this.recalculateEliminatedPrizes(freshT.prize_pool);
         }
 
         // Broadcast ADDON_PERIOD_END
@@ -1535,6 +1545,69 @@ class TournamentManager {
             p_related_entity_id: this.tournamentId,
         });
         if (bountyLogErr) console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Bounty log FAILED for ${knockerUserId.slice(0, 8)}: ${bountyLogErr.message}`);
+    }
+
+    /**
+     * Recalculate prizes for players eliminated during late reg.
+     * When the prize pool grows during late reg, early eliminations got smaller prizes.
+     * This credits the difference now that the final pool is known.
+     */
+    private async recalculateEliminatedPrizes(finalPrizePool: number): Promise<void> {
+        const { data: eliminated } = await supabase
+            .from('tournament_players')
+            .select('user_id, position, prize')
+            .eq('tournament_id', this.tournamentId)
+            .eq('status', 'eliminated')
+            .gt('prize', 0); // Only ITM players
+
+        if (!eliminated || eliminated.length === 0) return;
+
+        let payouts = this.tournamentCache?.payout_structure;
+        if (typeof payouts === 'string') {
+            try { payouts = JSON.parse(payouts); } catch { payouts = []; }
+        }
+        if (!Array.isArray(payouts)) return;
+
+        for (const player of eliminated) {
+            const payoutEntry = payouts.find((p: any) => p.place === player.position);
+            if (!payoutEntry) continue;
+
+            const correctPrize = Math.trunc((finalPrizePool * payoutEntry.percentage / 100) * 100) / 100;
+            const difference = Math.trunc((correctPrize - (player.prize || 0)) * 100) / 100;
+
+            if (difference > 0) {
+                console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] Prize recalc: ${player.user_id.slice(0, 8)} pos ${player.position} — old: ${player.prize}, new: ${correctPrize}, diff: +${difference}`);
+
+                // Credit the difference
+                const { error: creditErr } = await supabase.rpc('credit_player_wallet', {
+                    p_user_id: player.user_id,
+                    p_amount: difference,
+                });
+
+                if (!creditErr) {
+                    // Update the recorded prize
+                    await supabase.from('tournament_players')
+                        .update({ prize: correctPrize })
+                        .eq('tournament_id', this.tournamentId)
+                        .eq('user_id', player.user_id);
+
+                    // Log the adjustment
+                    await supabase.rpc('log_wallet_transaction', {
+                        p_user_id: player.user_id,
+                        p_wallet_type: 'PLAYER',
+                        p_amount: difference,
+                        p_type: 'credit',
+                        p_category: 'prize',
+                        p_description: `Tournament prize adjustment (late reg pool finalized): position ${player.position}`,
+                        p_table_id: null,
+                        p_hand_id: null,
+                        p_related_entity_id: this.tournamentId,
+                    });
+                } else {
+                    console.error(`[Tournament:${this.tournamentId.slice(0, 8)}] Prize recalc credit FAILED for ${player.user_id.slice(0, 8)}: ${creditErr.message}`);
+                }
+            }
+        }
     }
 
     private tournamentFinished = false;

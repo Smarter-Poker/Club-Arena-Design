@@ -384,6 +384,26 @@ class TournamentService {
             }
         }
 
+        // XMTT validation: require unionId and verify the union has crossClubTournaments enabled
+        if (config.isXmtt) {
+            if (!config.unionId) {
+                throw new Error('XMTT tournaments require a union ID');
+            }
+            // Verify union exists and has crossClubTournaments enabled
+            const { data: unionData } = await supabase
+                .from('unions')
+                .select('id, settings')
+                .eq('id', config.unionId)
+                .maybeSingle();
+            if (!unionData) {
+                throw new Error('Union not found');
+            }
+            const settings = typeof unionData.settings === 'string' ? JSON.parse(unionData.settings) : unionData.settings;
+            if (settings && settings.crossClubTournaments === false) {
+                throw new Error('This union does not allow cross-club tournaments');
+            }
+        }
+
         // Map format to variant for DB
         const variantMap: Record<string, string> = {
             'mtt': 'freezeout',

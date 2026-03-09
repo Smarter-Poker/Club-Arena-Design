@@ -32,6 +32,7 @@ interface TournamentConfig {
     horsesToRegister: number;
     blindStructure: any[];
     payoutStructure: any[];
+    bountyPercent?: number;
 }
 
 interface SNGConfig {
@@ -182,7 +183,7 @@ const HOURLY_SCHEDULE: HourlyTournamentBlock[] = [
     {
         hours: [0, 1, 2],
         tournaments: [
-            { name: 'Midnight Bounty (NLH)', type: 'bounty', gameVariant: 'nlh', buyIn: 5, rake: 0.50, guarantee: 100, startingStack: 3000, maxPlayers: 50, minPlayers: 8, horsesToRegister: 12, blindStructure: BLIND_STRUCTURES.TURBO, payoutStructure: PAYOUT_STRUCTURES.FIVE },
+            { name: 'Midnight Bounty (NLH)', type: 'bounty', gameVariant: 'nlh', buyIn: 5, rake: 0.50, guarantee: 100, startingStack: 3000, maxPlayers: 50, minPlayers: 8, horsesToRegister: 12, blindStructure: BLIND_STRUCTURES.TURBO, payoutStructure: PAYOUT_STRUCTURES.FIVE, bountyPercent: 30 },
             { name: 'Late Night Grind (PLO4)', type: 'mtt', gameVariant: 'plo4', buyIn: 3, rake: 0.30, guarantee: 50, startingStack: 2000, maxPlayers: 30, minPlayers: 6, horsesToRegister: 10, blindStructure: BLIND_STRUCTURES.TURBO, payoutStructure: PAYOUT_STRUCTURES.FIVE },
         ],
     },
@@ -190,21 +191,21 @@ const HOURLY_SCHEDULE: HourlyTournamentBlock[] = [
         hours: [3, 4, 5],
         tournaments: [
             { name: 'Early Bird Freeroll (NLH)', type: 'mtt', gameVariant: 'nlh', buyIn: 0, rake: 0, guarantee: 75, startingStack: 2500, maxPlayers: 100, minPlayers: 10, horsesToRegister: 20, blindStructure: BLIND_STRUCTURES.HYPER_TURBO, payoutStructure: PAYOUT_STRUCTURES.FIVE },
-            { name: 'Pre-Dawn Mystery Bounty (PLO5)', type: 'mystery_bounty', gameVariant: 'plo5', buyIn: 7, rake: 0.70, guarantee: 80, startingStack: 3500, maxPlayers: 50, minPlayers: 10, horsesToRegister: 15, blindStructure: BLIND_STRUCTURES.TURBO, payoutStructure: PAYOUT_STRUCTURES.FIVE },
+            { name: 'Pre-Dawn Mystery Bounty (PLO5)', type: 'mystery_bounty', gameVariant: 'plo5', buyIn: 7, rake: 0.70, guarantee: 80, startingStack: 3500, maxPlayers: 50, minPlayers: 10, horsesToRegister: 15, blindStructure: BLIND_STRUCTURES.TURBO, payoutStructure: PAYOUT_STRUCTURES.FIVE, bountyPercent: 40 },
         ],
     },
     {
         hours: [6, 7, 8],
         tournaments: [
             { name: 'Morning Grinder (PLO)', type: 'mtt', gameVariant: 'plo4', buyIn: 4, rake: 0.40, guarantee: 120, startingStack: 3000, maxPlayers: 50, minPlayers: 8, horsesToRegister: 14, blindStructure: BLIND_STRUCTURES.TURBO, payoutStructure: PAYOUT_STRUCTURES.FIVE },
-            { name: 'Sunrise Bounty (NLH)', type: 'bounty', gameVariant: 'nlh', buyIn: 6, rake: 0.60, guarantee: 90, startingStack: 3500, maxPlayers: 60, minPlayers: 10, horsesToRegister: 16, blindStructure: BLIND_STRUCTURES.TURBO, payoutStructure: PAYOUT_STRUCTURES.FIVE },
+            { name: 'Sunrise Bounty (NLH)', type: 'bounty', gameVariant: 'nlh', buyIn: 6, rake: 0.60, guarantee: 90, startingStack: 3500, maxPlayers: 60, minPlayers: 10, horsesToRegister: 16, blindStructure: BLIND_STRUCTURES.TURBO, payoutStructure: PAYOUT_STRUCTURES.FIVE, bountyPercent: 30 },
         ],
     },
     {
         hours: [9, 10, 11],
         tournaments: [
             { name: 'Mid-Morning Turbo (6-Max NLH)', type: 'mtt', gameVariant: 'nlh', buyIn: 8, rake: 0.80, guarantee: 150, startingStack: 4000, maxPlayers: 36, minPlayers: 6, horsesToRegister: 12, blindStructure: BLIND_STRUCTURES.TURBO, payoutStructure: PAYOUT_STRUCTURES.FIVE },
-            { name: 'Brunch Special PKO (PLO8)', type: 'progressive_bounty', gameVariant: 'plo8', buyIn: 10, rake: 1.00, guarantee: 180, startingStack: 4500, maxPlayers: 50, minPlayers: 10, horsesToRegister: 15, blindStructure: BLIND_STRUCTURES.STANDARD, payoutStructure: PAYOUT_STRUCTURES.FIVE },
+            { name: 'Brunch Special PKO (PLO8)', type: 'progressive_bounty', gameVariant: 'plo8', buyIn: 10, rake: 1.00, guarantee: 180, startingStack: 4500, maxPlayers: 50, minPlayers: 10, horsesToRegister: 15, blindStructure: BLIND_STRUCTURES.STANDARD, payoutStructure: PAYOUT_STRUCTURES.FIVE, bountyPercent: 50 },
         ],
     },
     {
@@ -217,7 +218,7 @@ const HOURLY_SCHEDULE: HourlyTournamentBlock[] = [
     {
         hours: [15, 16, 17],
         tournaments: [
-            { name: 'Afternoon Bounty (NLH)', type: 'bounty', gameVariant: 'nlh', buyIn: 10, rake: 1.00, guarantee: 200, startingStack: 4500, maxPlayers: 75, minPlayers: 10, horsesToRegister: 18, blindStructure: BLIND_STRUCTURES.TURBO, payoutStructure: PAYOUT_STRUCTURES.FIVE },
+            { name: 'Afternoon Bounty (NLH)', type: 'bounty', gameVariant: 'nlh', buyIn: 10, rake: 1.00, guarantee: 200, startingStack: 4500, maxPlayers: 75, minPlayers: 10, horsesToRegister: 18, blindStructure: BLIND_STRUCTURES.TURBO, payoutStructure: PAYOUT_STRUCTURES.FIVE, bountyPercent: 30 },
             { name: 'Coffee Break Freeroll (PLO4)', type: 'mtt', gameVariant: 'plo4', buyIn: 0, rake: 0, guarantee: 80, startingStack: 3000, maxPlayers: 50, minPlayers: 8, horsesToRegister: 14, blindStructure: BLIND_STRUCTURES.HYPER_TURBO, payoutStructure: PAYOUT_STRUCTURES.FIVE },
         ],
     },
@@ -225,14 +226,14 @@ const HOURLY_SCHEDULE: HourlyTournamentBlock[] = [
         hours: [18, 19, 20],
         tournaments: [
             { name: 'Prime Time Main Event (NLH)', type: 'mtt', gameVariant: 'nlh', buyIn: 25, rake: 2.50, guarantee: 1000, startingStack: 10000, maxPlayers: 150, minPlayers: 20, horsesToRegister: 30, blindStructure: BLIND_STRUCTURES.STANDARD, payoutStructure: PAYOUT_STRUCTURES.NINE },
-            { name: 'Evening Mystery Bounty (PLO5)', type: 'mystery_bounty', gameVariant: 'plo5', buyIn: 15, rake: 1.50, guarantee: 400, startingStack: 5000, maxPlayers: 60, minPlayers: 12, horsesToRegister: 18, blindStructure: BLIND_STRUCTURES.TURBO, payoutStructure: PAYOUT_STRUCTURES.FIVE },
+            { name: 'Evening Mystery Bounty (PLO5)', type: 'mystery_bounty', gameVariant: 'plo5', buyIn: 15, rake: 1.50, guarantee: 400, startingStack: 5000, maxPlayers: 60, minPlayers: 12, horsesToRegister: 18, blindStructure: BLIND_STRUCTURES.TURBO, payoutStructure: PAYOUT_STRUCTURES.FIVE, bountyPercent: 40 },
         ],
     },
     {
         hours: [21, 22, 23],
         tournaments: [
-            { name: 'Night Owl Special (NLH)', type: 'bounty', gameVariant: 'nlh', buyIn: 20, rake: 2.00, guarantee: 600, startingStack: 8000, maxPlayers: 100, minPlayers: 15, horsesToRegister: 25, blindStructure: BLIND_STRUCTURES.TURBO, payoutStructure: PAYOUT_STRUCTURES.NINE },
-            { name: 'Late Night PKO (PLO4)', type: 'progressive_bounty', gameVariant: 'plo4', buyIn: 18, rake: 1.80, guarantee: 450, startingStack: 7500, maxPlayers: 70, minPlayers: 12, horsesToRegister: 20, blindStructure: BLIND_STRUCTURES.TURBO, payoutStructure: PAYOUT_STRUCTURES.FIVE },
+            { name: 'Night Owl Special (NLH)', type: 'bounty', gameVariant: 'nlh', buyIn: 20, rake: 2.00, guarantee: 600, startingStack: 8000, maxPlayers: 100, minPlayers: 15, horsesToRegister: 25, blindStructure: BLIND_STRUCTURES.TURBO, payoutStructure: PAYOUT_STRUCTURES.NINE, bountyPercent: 30 },
+            { name: 'Late Night PKO (PLO4)', type: 'progressive_bounty', gameVariant: 'plo4', buyIn: 18, rake: 1.80, guarantee: 450, startingStack: 7500, maxPlayers: 70, minPlayers: 12, horsesToRegister: 20, blindStructure: BLIND_STRUCTURES.TURBO, payoutStructure: PAYOUT_STRUCTURES.FIVE, bountyPercent: 50 },
         ],
     },
 ];
@@ -267,14 +268,14 @@ const XMTT_SCHEDULE: { hours: number[]; tournaments: XMTTConfig[] }[] = [
     {
         hours: [14, 15],
         tournaments: [
-            { name: 'Union PKO Afternoon (PLO4)', type: 'progressive_bounty', gameVariant: 'plo4', buyIn: 20, rake: 2.00, guarantee: 600, startingStack: 6000, maxPlayers: 80, minPlayers: 12, horsesToRegister: 18, blindStructure: BLIND_STRUCTURES.STANDARD, payoutStructure: PAYOUT_STRUCTURES.NINE },
+            { name: 'Union PKO Afternoon (PLO4)', type: 'progressive_bounty', gameVariant: 'plo4', buyIn: 20, rake: 2.00, guarantee: 600, startingStack: 6000, maxPlayers: 80, minPlayers: 12, horsesToRegister: 18, blindStructure: BLIND_STRUCTURES.STANDARD, payoutStructure: PAYOUT_STRUCTURES.NINE, bountyPercent: 50 },
         ],
     },
     {
         hours: [19, 20],
         tournaments: [
-            { name: 'Union Grand Championship (NLH)', type: 'bounty', gameVariant: 'nlh', buyIn: 50, rake: 5.00, guarantee: 2500, startingStack: 15000, maxPlayers: 200, minPlayers: 20, horsesToRegister: 30, blindStructure: BLIND_STRUCTURES.STANDARD, payoutStructure: PAYOUT_STRUCTURES.NINE },
-            { name: 'Union Mystery Bounty (PLO5)', type: 'mystery_bounty', gameVariant: 'plo5', buyIn: 25, rake: 2.50, guarantee: 800, startingStack: 8000, maxPlayers: 100, minPlayers: 15, horsesToRegister: 22, blindStructure: BLIND_STRUCTURES.TURBO, payoutStructure: PAYOUT_STRUCTURES.NINE },
+            { name: 'Union Grand Championship (NLH)', type: 'bounty', gameVariant: 'nlh', buyIn: 50, rake: 5.00, guarantee: 2500, startingStack: 15000, maxPlayers: 200, minPlayers: 20, horsesToRegister: 30, blindStructure: BLIND_STRUCTURES.STANDARD, payoutStructure: PAYOUT_STRUCTURES.NINE, bountyPercent: 30 },
+            { name: 'Union Mystery Bounty (PLO5)', type: 'mystery_bounty', gameVariant: 'plo5', buyIn: 25, rake: 2.50, guarantee: 800, startingStack: 8000, maxPlayers: 100, minPlayers: 15, horsesToRegister: 22, blindStructure: BLIND_STRUCTURES.TURBO, payoutStructure: PAYOUT_STRUCTURES.NINE, bountyPercent: 40 },
         ],
     },
     {
@@ -511,7 +512,8 @@ export class TournamentRecurringService {
             const dbGameType = gameTypeMap[config.gameVariant] || 'NLH';
 
             const isBountyType = config.type === 'bounty' || config.type === 'progressive_bounty' || config.type === 'mystery_bounty';
-            const bountyAmount = isBountyType ? Math.trunc(config.buyIn * 30) / 100 : 0;
+            const bountyPercent = config.bountyPercent || 30;
+            const bountyAmount = isBountyType ? Math.trunc(config.buyIn * bountyPercent) / 100 : 0;
             const mysteryMin = config.type === 'mystery_bounty' ? bountyAmount : 0;
             const mysteryMax = config.type === 'mystery_bounty' ? Math.trunc(bountyAmount * 10 * 100) / 100 : 0;
 
@@ -612,8 +614,9 @@ export class TournamentRecurringService {
 
             const isBountyType = config.type === 'bounty' || config.type === 'progressive_bounty' || config.type === 'mystery_bounty';
 
-            // Calculate bounty amount: ~30% of buy-in for bounty types
-            const bountyAmount = isBountyType ? Math.trunc(config.buyIn * 30) / 100 : 0;
+            // Calculate bounty amount using configurable bountyPercent
+            const bountyPercent = config.bountyPercent || 30;
+            const bountyAmount = isBountyType ? Math.trunc(config.buyIn * bountyPercent) / 100 : 0;
             // Mystery bounty range: min = base bounty, max = 10x base
             const mysteryMin = config.type === 'mystery_bounty' ? bountyAmount : 0;
             const mysteryMax = config.type === 'mystery_bounty' ? Math.trunc(bountyAmount * 10 * 100) / 100 : 0;
