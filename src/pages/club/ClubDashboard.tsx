@@ -213,8 +213,12 @@ export default function ClubDashboard() {
         setLoading(false);
     };
 
-    const formatNumber = (num: number): string => {
+    const formatChips = (num: number): string => {
         return (Math.trunc(num * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
+    const formatInt = (num: number): string => {
+        return Math.trunc(num).toLocaleString('en-US');
     };
 
     if (loading) {
@@ -374,11 +378,11 @@ export default function ClubDashboard() {
                                     <div className={styles.playerInfo}>
                                         <span className={styles.playerName}>{player.displayName}</span>
                                         <span className={styles.playerStats}>
-                                            {formatNumber(player.handsPlayed)} hands played
+                                            {formatInt(player.handsPlayed)} hands played
                                         </span>
                                     </div>
                                     <span className={`${styles.profit} ${player.totalProfit >= 0 ? styles.positive : styles.negative}`}>
-                                        {player.totalProfit >= 0 ? '+' : ''}{formatNumber(player.totalProfit)}
+                                        {player.totalProfit >= 0 ? '+' : ''}{formatChips(player.totalProfit)}
                                     </span>
                                 </div>
                             ))}
