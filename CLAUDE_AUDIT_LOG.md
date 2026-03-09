@@ -198,6 +198,20 @@
   src/services/TournamentRecurringService.ts, src/services/TournamentService.ts,
   src/types/database.types.ts
 
+### Phase 9b (Commit 2713afe) — BUG FIX SWEEP
+- [x] canRebuy/canAddOn: `||` → `??` (nullish coalescing) — late_reg_levels=0 no longer falls back to 8
+- [x] canRebuy: explicit `rebuyLevelCap <= 0` check disables rebuys when no late reg configured
+- [x] processRebuy: passes correct `p_rebuy_type` based on `is_reentry` flag (reentry vs rebuy)
+- [x] TournamentLobbyCard: feature tags check `late_reg_levels` instead of old `lateRegMins`
+- [x] TournamentLobbyCard: late reg display shows "through Lvl X" instead of "Xm"
+- [x] RakeReports: avgRakePerHand `.toFixed(2)` → `Math.trunc(value * 100) / 100`
+
+### Phase 9c (Commit 1c74dba) — REMAINING || FALLBACK FIXES
+- [x] server/index.ts: ALL late_reg_levels/rebuy_levels/addon_levels use `??` (4 locations)
+- [x] TournamentDetails.tsx: Rebuy/add-on level display uses `??` (3 locations)
+- [x] TournamentEngine.ts: Add-on trigger uses `late_reg_levels ?? rebuy_levels ?? 8`
+- [x] VISUALLY VERIFIED: Create Tournament modal shows level-based dropdown, lobby cards show "Late Reg: Closed"
+
 ---
 
 ## VERIFIED CLEAN (LAST SWEEP)
@@ -274,10 +288,10 @@ MTT: Starts at scheduled time when min_players met
 
 ## GIT LOG (RECENT)
 ```
+1c74dba Phase 9c: Fix remaining || fallbacks to ?? across server + client
+2713afe Phase 9b: Fix rebuy/add-on 0-value fallback, re-entry type, lobby card tags, rake precision
+c8d15ec Update knowledge file with Phase 9 level-based tournament overhaul
 b332d35 Phase 9: Level-based late reg/rebuy/re-entry/add-on overhaul + channel cleanup
 8e806af Update knowledge file with Phase 8 visual verification results
 c20133a Phase 8: Fix tournament details info grid layout + leaderboard precision
-b426455 Add master knowledge file — comprehensive feature inventory and audit log
-e7a8541 Phase 7b: Fix remaining precision issues
-bdf3510 Phase 7: Critical realtime & precision bug fixes
 ```
