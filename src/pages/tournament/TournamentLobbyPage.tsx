@@ -343,9 +343,9 @@ export default function TournamentLobbyPage() {
                     guaranteedPrize: t.guaranteed_prize || 0,
                     variant: t.variant || 'freezeout',
                     tournamentType: t.tournament_type || 'MTT',
-                    isBounty: t.is_bounty || false,
-                    isPko: t.is_pko || false,
-                    isMysteryBounty: t.is_mystery_bounty || false,
+                    isBounty: t.is_bounty || t.bounty_amount > 0 || /bounty/i.test(t.name) || false,
+                    isPko: t.is_pko || /\bpko\b/i.test(t.name) || /progressive\s*k/i.test(t.name) || false,
+                    isMysteryBounty: t.is_mystery_bounty || /mystery/i.test(t.name) || false,
                     bountyAmount: t.bounty_amount || 0,
                     isMultiDay: t.is_multi_day || false,
                     isPinned: t.is_pinned || false,
@@ -397,7 +397,7 @@ export default function TournamentLobbyPage() {
         // Type filter
         if (typeFilter !== 'all') {
             switch (typeFilter) {
-                case 'mtt': return t.variant === 'freezeout' && !t.isBounty && !t.isPko && !t.isMysteryBounty;
+                case 'mtt': return (t.variant === 'freezeout' || t.tournamentType === 'MTT') && !t.isBounty && !t.isPko && !t.isMysteryBounty;
                 case 'sng': return t.variant === 'sng';
                 case 'spin': return t.variant === 'spin';
                 case 'bounty': return t.isBounty && !t.isPko && !t.isMysteryBounty;
