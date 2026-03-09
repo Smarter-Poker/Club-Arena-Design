@@ -34,27 +34,33 @@ export default function AddOnModal({
     const [decided, setDecided] = useState(false);
     const [result, setResult] = useState<'accepted' | 'declined' | 'insufficient' | null>(null);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const onDeclineRef = useRef(onDecline);
+    onDeclineRef.current = onDecline;
+    const decidedRef = useRef(false);
 
     const canAfford = walletBalance >= addOnCost;
 
     useEffect(() => {
         if (!isVisible) {
             setDecided(false);
+            decidedRef.current = false;
             setResult(null);
             setProcessing(false);
             return;
         }
 
+        decidedRef.current = false;
         setCountdown(initialTime);
         timerRef.current = setInterval(() => {
             setCountdown(prev => {
                 if (prev <= 1) {
                     // Time expired — auto-decline
                     if (timerRef.current) clearInterval(timerRef.current);
-                    if (!decided) {
+                    if (!decidedRef.current) {
+                        decidedRef.current = true;
                         setDecided(true);
                         setResult('declined');
-                        onDecline();
+                        onDeclineRef.current();
                     }
                     return 0;
                 }

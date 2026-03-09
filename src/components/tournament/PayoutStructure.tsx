@@ -35,7 +35,7 @@ export function PayoutStructure({
             <div className="payout-structure__header">
                 <div className="prize-info">
                     <span className="total-prize">
-                        {currency} {totalPrize.toLocaleString()}
+                        {currency ? `${currency} ` : ''}{totalPrize.toLocaleString()}
                     </span>
                     <span className="label">Prize Pool</span>
                 </div>

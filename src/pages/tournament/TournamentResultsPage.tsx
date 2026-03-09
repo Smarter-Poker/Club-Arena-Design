@@ -122,7 +122,12 @@ export default function TournamentResultsPage() {
     };
 
     const formatAmount = (n: number) => {
-        return (Math.trunc(n * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const truncated = Math.trunc(n * 100) / 100;
+        // Show decimals only if there are sub-unit fractions
+        if (truncated === Math.trunc(truncated)) {
+            return Math.trunc(truncated).toLocaleString('en-US');
+        }
+        return truncated.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     const getVariantLabel = (t: CompletedTournament) => {

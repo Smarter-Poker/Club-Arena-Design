@@ -673,38 +673,44 @@ class TournamentManager {
                 return;
             }
 
-            // Spin & Go: roll multiplier at game start
+            // Spin & Go: use multiplier from creation (already rolled by TournamentRecurringService)
+            // Only re-roll if somehow missing (safety fallback)
             if (tournament.variant === 'spin' || tournament.tournament_type === 'SPIN') {
-                // Profitable spin multiplier tables — E[multiplier] < 3.0
-                // Prize pool = buy_in * multiplier. Club profit = 3*buy_in - prize + 3*fee
-                const SPIN_STANDARD = [
-                    { multiplier: 2, weight: 925000 },   // 92.50% → EV 1.8500
-                    { multiplier: 3, weight: 50000 },    //  5.00% → EV 0.1500
-                    { multiplier: 5, weight: 18000 },    //  1.80% → EV 0.0900
-                    { multiplier: 10, weight: 5000 },    //  0.50% → EV 0.0500
-                    { multiplier: 25, weight: 1500 },    //  0.15% → EV 0.0375
-                    { multiplier: 100, weight: 400 },    //  0.04% → EV 0.0400
-                    { multiplier: 240, weight: 100 },    //  0.01% → EV 0.0240
-                ];                                        // TOTAL EV: 2.2415
+                let spinMultiplier = tournament.spin_multiplier || 0;
 
-                const SPIN_HYPER = [
-                    { multiplier: 2, weight: 910000 },   // 91.00% → EV 1.8200
-                    { multiplier: 3, weight: 55000 },    //  5.50% → EV 0.1650
-                    { multiplier: 5, weight: 22000 },    //  2.20% → EV 0.1100
-                    { multiplier: 10, weight: 8000 },    //  0.80% → EV 0.0800
-                    { multiplier: 25, weight: 3500 },    //  0.35% → EV 0.0875
-                    { multiplier: 100, weight: 400 },    //  0.04% → EV 0.0400
-                    { multiplier: 240, weight: 100 },    //  0.01% → EV 0.0240
-                ];                                        // TOTAL EV: 2.3265
+                if (!spinMultiplier || spinMultiplier <= 0) {
+                    // Safety fallback — roll now if creation didn't set one
+                    const SPIN_STANDARD = [
+                        { multiplier: 2, weight: 925000 },   // 92.50% → EV 1.8500
+                        { multiplier: 3, weight: 50000 },    //  5.00% → EV 0.1500
+                        { multiplier: 5, weight: 18000 },    //  1.80% → EV 0.0900
+                        { multiplier: 10, weight: 5000 },    //  0.50% → EV 0.0500
+                        { multiplier: 25, weight: 1500 },    //  0.15% → EV 0.0375
+                        { multiplier: 100, weight: 400 },    //  0.04% → EV 0.0400
+                        { multiplier: 240, weight: 100 },    //  0.01% → EV 0.0240
+                    ];
 
-                const SPIN_MULTIPLIERS = tournament.spin_type === 'hyper' ? SPIN_HYPER : SPIN_STANDARD;
-                const totalWeight = SPIN_MULTIPLIERS.reduce((s, m) => s + m.weight, 0);
-                let roll = Math.random() * totalWeight;
-                let spinMultiplier = 2;
-                for (const tier of SPIN_MULTIPLIERS) {
-                    roll -= tier.weight;
-                    if (roll <= 0) { spinMultiplier = tier.multiplier; break; }
+                    const SPIN_HYPER = [
+                        { multiplier: 2, weight: 910000 },   // 91.00% → EV 1.8200
+                        { multiplier: 3, weight: 55000 },    //  5.50% → EV 0.1650
+                        { multiplier: 5, weight: 22000 },    //  2.20% → EV 0.1100
+                        { multiplier: 10, weight: 8000 },    //  0.80% → EV 0.0800
+                        { multiplier: 25, weight: 3500 },    //  0.35% → EV 0.0875
+                        { multiplier: 100, weight: 400 },    //  0.04% → EV 0.0400
+                        { multiplier: 240, weight: 100 },    //  0.01% → EV 0.0240
+                    ];
+
+                    const SPIN_MULTIPLIERS = tournament.spin_type === 'hyper' ? SPIN_HYPER : SPIN_STANDARD;
+                    const totalWeight = SPIN_MULTIPLIERS.reduce((s, m) => s + m.weight, 0);
+                    let roll = Math.random() * totalWeight;
+                    spinMultiplier = 2;
+                    for (const tier of SPIN_MULTIPLIERS) {
+                        roll -= tier.weight;
+                        if (roll <= 0) { spinMultiplier = tier.multiplier; break; }
+                    }
+                    console.warn(`[Tournament:${this.tournamentId.slice(0, 8)}] Spin multiplier was missing — rolled ${spinMultiplier}x as fallback`);
                 }
+
                 // Prize pool = buy_in * multiplier (NOT net_buy_in * players * multiplier)
                 const buyIn = tournament.buy_in_amount || 0;
                 const prizePool = Math.trunc(buyIn * spinMultiplier * 100) / 100;
@@ -1327,7 +1333,7 @@ class TournamentManager {
             .from('tournament_bounties')
             .select('id')
             .eq('tournament_id', this.tournamentId)
-            .eq('eliminated_user_id', eliminatedUserId)
+            .eq('eliminated_player_id', eliminatedUserId)
             .maybeSingle();
         if (existingBounty) {
             console.warn(`[Tournament:${this.tournamentId.slice(0, 8)}] Bounty already collected for ${eliminatedUserId.slice(0, 8)} — skipping duplicate`);

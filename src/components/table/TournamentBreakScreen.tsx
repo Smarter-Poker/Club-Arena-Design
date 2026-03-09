@@ -61,7 +61,12 @@ function formatTime(seconds: number): string {
 
 // EXACT precision — no abbreviations, no rounding
 function formatStack(amount: number): string {
-    return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // Tournament chips are integers; only show decimals if sub-chip precision exists
+    const truncated = Math.trunc(amount * 100) / 100;
+    if (truncated === Math.trunc(truncated)) {
+        return Math.trunc(truncated).toLocaleString('en-US');
+    }
+    return truncated.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -158,7 +163,7 @@ export function TournamentBreakScreen({
                     <div className="break-screen__stat">
                         <span className="break-screen__stat-value">{formatStack(averageStack)}</span>
                         <span className="break-screen__stat-label">Average Stack</span>
-                        <span className="break-screen__stat-sub">{Math.round(averageStack / nextLevel.bigBlind)} BB</span>
+                        <span className="break-screen__stat-sub">{Math.trunc(averageStack / nextLevel.bigBlind)} BB</span>
                     </div>
                     <div className="break-screen__stat">
                         <span className="break-screen__stat-value">{currency}{formatStack(prizePool)}</span>
@@ -177,7 +182,7 @@ export function TournamentBreakScreen({
                             </div>
                             <div className="break-screen__my-stack">
                                 <span className="break-screen__stack-value">{formatStack(myPlayer.stack)}</span>
-                                <span className="break-screen__stack-bb">{Math.round(myPlayer.stack / nextLevel.bigBlind)} BB</span>
+                                <span className="break-screen__stack-bb">{Math.trunc(myPlayer.stack / nextLevel.bigBlind)} BB</span>
                             </div>
                         </div>
                     </div>
