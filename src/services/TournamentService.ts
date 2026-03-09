@@ -84,14 +84,16 @@ export interface TournamentConfig {
     lateRegistrationLevels: number;
     startTime?: Date;
 
-    // Rebuy/Add-on
+    // Rebuy/Re-Entry/Add-on
     isRebuy: boolean;
-    rebuyLevels?: number;
+    isReentry?: boolean;
+    rebuyLevels?: number;  // Always matches lateRegistrationLevels
     rebuyChips?: number;
     rebuyCost?: number;
     addOnAvailable: boolean;
     addOnChips?: number;
     addOnCost?: number;
+    addOnLevels?: number;  // Number of levels add-on window is open after rebuy period
 
     // Guaranteed Prize
     guaranteedPrize?: number;
@@ -436,16 +438,20 @@ class TournamentService {
                 blind_structure: config.blindStructure,
                 payout_structure: config.payoutStructure,
                 guaranteed_prize: config.guaranteedPrize || 0,
-                late_reg_mins: config.lateRegistrationLevels || 0,
+                // Late reg + rebuy cutoff (level-based, per-tournament)
+                late_reg_levels: config.lateRegistrationLevels || 0,
+                late_reg_mins: config.lateRegistrationLevels || 0,  // Legacy fallback
                 start_time: config.startTime?.toISOString() || new Date(Date.now() + 60000).toISOString(),
-                // Rebuy / Add-on
+                // Rebuy / Re-Entry / Add-on
                 is_rebuy: config.isRebuy || false,
+                is_reentry: config.isReentry || false,
                 rebuy_cost: config.rebuyCost || 0,
                 rebuy_chips: config.rebuyChips || 0,
-                rebuy_levels: config.rebuyLevels || 4,
+                rebuy_levels: config.lateRegistrationLevels || 0,  // Always matches late reg
                 add_on_available: config.addOnAvailable || false,
                 addon_cost: config.addOnCost || 0,
                 addon_chips: config.addOnChips || 0,
+                addon_levels: config.addOnLevels || 1,
                 // Bounty
                 is_bounty: isBountyType,
                 bounty_amount: config.bountyConfig?.baseBounty || 0,
@@ -488,12 +494,12 @@ class TournamentService {
         const tournament = await this.getTournament(tournamentId);
         if (!tournament) throw new Error('Tournament not found');
 
-        // Check registration eligibility (includes late registration window)
-        const lateRegMins = tournament.late_reg_mins || 0;
+        // Check registration eligibility (level-based late registration)
+        const lateRegLevels = tournament.late_reg_levels || tournament.late_reg_mins || 0;
+        const levelState = this.getCurrentLevelState(tournament);
         const isLateRegOpen = tournament.status === 'RUNNING'
-            && lateRegMins > 0
-            && tournament.started_at
-            && (Date.now() - new Date(tournament.started_at).getTime()) < lateRegMins * 60 * 1000;
+            && lateRegLevels > 0
+            && levelState.levelIndex < lateRegLevels;
 
         if (tournament.status !== 'REGISTERING' && tournament.status !== 'ANNOUNCED' && !isLateRegOpen) {
             throw new Error('Registration is closed');
@@ -788,12 +794,12 @@ class TournamentService {
     async unregisterPlayer(tournamentId: string, userId: string): Promise<void> {
         const tournament = await this.getTournament(tournamentId);
         if (!tournament) throw new Error('Tournament not found');
-        // Allow unregister during late registration window too
-        const lateRegMins = tournament.late_reg_mins || 0;
+        // Allow unregister during late registration window too (level-based)
+        const lateRegLevels2 = tournament.late_reg_levels || tournament.late_reg_mins || 0;
+        const levelState2 = this.getCurrentLevelState(tournament);
         const isLateRegOpen = tournament.status === 'RUNNING'
-            && lateRegMins > 0
-            && tournament.started_at
-            && (Date.now() - new Date(tournament.started_at).getTime()) < lateRegMins * 60 * 1000;
+            && lateRegLevels2 > 0
+            && levelState2.levelIndex < lateRegLevels2;
 
         if (tournament.status !== 'REGISTERING' && tournament.status !== 'ANNOUNCED' && !isLateRegOpen) {
             throw new Error('Cannot unregister after tournament started');
@@ -1261,15 +1267,17 @@ class TournamentService {
         const tournament = await this.getTournament(tournamentId);
         if (!tournament) return { allowed: false, reason: 'Tournament not found' };
 
-        if (!tournament.is_rebuy) return { allowed: false, reason: 'Rebuys not available' };
+        if (!tournament.is_rebuy && !tournament.is_reentry) return { allowed: false, reason: 'Rebuys/re-entries not available' };
 
         // Validate rebuy chips are configured
         const rebuyChips = tournament.rebuy_chips || tournament.starting_chips;
         if (!rebuyChips || rebuyChips <= 0) return { allowed: false, reason: 'Rebuy chips not configured' };
 
+        // Rebuy cutoff = late reg cutoff (always the same)
         const levelState = this.getCurrentLevelState(tournament);
-        if (levelState.levelIndex >= (tournament.rebuy_levels || 4)) {
-            return { allowed: false, reason: 'Rebuy period has ended' };
+        const rebuyLevelCap = tournament.late_reg_levels || tournament.rebuy_levels || 8;
+        if (levelState.levelIndex >= rebuyLevelCap) {
+            return { allowed: false, reason: 'Rebuy/re-entry period has ended' };
         }
 
         // Check current stack (must be at or below starting stack)
@@ -1367,17 +1375,17 @@ class TournamentService {
 
         if (!tournament.add_on_available) return { allowed: false, reason: 'Add-ons not available' };
 
-        // Add-on is available when current level has reached or passed the rebuy_levels cap
-        // The 60-second add-on period is triggered by TournamentEngine when this level is reached
+        // Add-on period is level-based: opens when rebuy/late reg period ends,
+        // stays open for addon_levels levels (default 1)
         const levelState = this.getCurrentLevelState(tournament);
-        const addonLevel = tournament.rebuy_levels || 4;
-        // Allow add-on when at or just past the rebuy level cap (within a 2-minute grace window)
-        if (levelState.levelIndex < addonLevel) {
-            return { allowed: false, reason: 'Re-entry period still active — add-on opens after re-entry ends' };
+        const rebuyLevelCap = tournament.late_reg_levels || tournament.rebuy_levels || 8;
+        const addonLevelWindow = tournament.addon_levels || 1;
+
+        if (levelState.levelIndex < rebuyLevelCap) {
+            return { allowed: false, reason: 'Rebuy/re-entry period still active — add-on opens after it ends' };
         }
 
-        // Check if tournament is too far past addon level (only allow within first level after rebuy cap)
-        if (levelState.levelIndex > addonLevel + 1) {
+        if (levelState.levelIndex >= rebuyLevelCap + addonLevelWindow) {
             return { allowed: false, reason: 'Add-on period has ended' };
         }
 

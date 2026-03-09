@@ -40,6 +40,10 @@ interface Tournament {
     spinMultiplier?: number;
     started_at?: string;
     late_reg_mins?: number;
+    late_reg_levels?: number;
+    current_level?: number;
+    addon_levels?: number;
+    is_reentry?: boolean;
 }
 
 interface TournamentLobbyCardProps {
@@ -69,12 +73,13 @@ export default function TournamentLobbyCard({
     }, [tournament.id, tournament.startsAt]);
 
     useEffect(() => {
-        if (tournament.status === 'running' && tournament.late_reg_mins && tournament.late_reg_mins > 0 && tournament.started_at) {
+        const lateRegLevels = tournament.late_reg_levels || tournament.late_reg_mins || 0;
+        if (tournament.status === 'running' && lateRegLevels > 0) {
             updateLateRegCountdown();
-            const interval = setInterval(updateLateRegCountdown, 1000);
+            const interval = setInterval(updateLateRegCountdown, 10000);
             return () => clearInterval(interval);
         }
-    }, [tournament.status, tournament.late_reg_mins, tournament.started_at]);
+    }, [tournament.status, tournament.late_reg_levels, tournament.late_reg_mins, tournament.current_level]);
 
     const checkRegistration = async () => {
         if (!user?.id) return;
@@ -113,23 +118,19 @@ export default function TournamentLobbyCard({
     };
 
     const updateLateRegCountdown = () => {
-        if (!tournament.started_at || !tournament.late_reg_mins || tournament.late_reg_mins <= 0) return;
+        const lateRegLevels = tournament.late_reg_levels || tournament.late_reg_mins || 0;
+        if (lateRegLevels <= 0) return;
 
-        const now = new Date().getTime();
-        const startTime = new Date(tournament.started_at).getTime();
-        const lateRegEndTime = startTime + (tournament.late_reg_mins * 60 * 1000);
-        const remaining = lateRegEndTime - now;
-
-        if (remaining <= 0) {
+        const currentLevel = tournament.current_level || 0;
+        if (currentLevel >= lateRegLevels) {
             setLateRegCountdown('Late Reg Closed');
             setLateRegActive(false);
             return;
         }
 
         setLateRegActive(true);
-        const minutes = Math.floor(remaining / 60000);
-        const seconds = Math.floor((remaining % 60000) / 1000);
-        setLateRegCountdown(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+        const levelsLeft = lateRegLevels - currentLevel;
+        setLateRegCountdown(`${levelsLeft} lvl${levelsLeft !== 1 ? 's' : ''} left`);
     };
 
     const handleRegister = async () => {

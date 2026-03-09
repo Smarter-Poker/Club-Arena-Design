@@ -40,7 +40,8 @@ export default function ClubActivityFeed({
 
     useEffect(() => {
         loadActivities();
-        subscribeToActivities();
+        const cleanup = subscribeToActivities();
+        return cleanup;
     }, [clubId]);
 
     const loadActivities = async () => {

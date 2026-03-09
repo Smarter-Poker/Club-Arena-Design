@@ -740,7 +740,8 @@ class HorseOrchestrator {
                     blind_structure: config.blindStructure,
                     payout_structure: config.payoutStructure || [],
                     start_time: startTime.toISOString(),
-                    late_reg_mins: 30,
+                    late_reg_levels: 8,
+                    late_reg_mins: 8,
                 })
                 .select()
                 .single();
@@ -839,6 +840,7 @@ class HorseOrchestrator {
                     status: 'REGISTERING',
                     blind_structure: config.blindStructure,
                     payout_structure: config.payoutStructure || [],
+                    late_reg_levels: 0,
                     late_reg_mins: 0,
                     start_time: new Date(Date.now() + 10_000).toISOString(), // Start 10s from now
                 })
@@ -933,6 +935,7 @@ class HorseOrchestrator {
                     status: 'REGISTERING',
                     blind_structure: config.blindStructure,
                     payout_structure: [{ place: 1, percentage: 100 }],
+                    late_reg_levels: 0,
                     late_reg_mins: 0,
                     start_time: new Date(Date.now() + 10_000).toISOString(),
                 })

@@ -55,14 +55,17 @@ interface TournamentInfo {
     payout_structure: PayoutEntry[];
     started_at: string;
     current_level?: number;
-    // Late reg / add-on
-    late_reg_mins?: number;
+    // Late reg / rebuy / add-on (level-based)
+    late_reg_levels?: number;
+    late_reg_mins?: number;  // Legacy
     add_on_available?: boolean;
     rebuy_levels?: number;
+    is_reentry?: boolean;
     prize_pool_finalized?: boolean;
     // Add-on details
     addon_cost?: number;
     addon_chips?: number;
+    addon_levels?: number;
     // Bounty fields
     is_bounty?: boolean;
     is_pko?: boolean;
@@ -427,13 +430,16 @@ export class TournamentEngine {
             variant: data.variant || 'freezeout',
             tournament_type: data.tournament_type || 'MTT',
             buy_in_fee: data.buy_in_fee || 0,
-            // Late reg / add-on
+            // Late reg / rebuy / add-on (level-based)
+            late_reg_levels: data.late_reg_levels || data.late_reg_mins || 0,
             late_reg_mins: data.late_reg_mins || 0,
             add_on_available: data.add_on_available || false,
             rebuy_levels: data.rebuy_levels || 0,
+            is_reentry: data.is_reentry || false,
             prize_pool_finalized: data.prize_pool_finalized || false,
             addon_cost: data.addon_cost || data.buy_in_amount || 0,
             addon_chips: data.addon_chips || data.starting_chips || 0,
+            addon_levels: data.addon_levels || 1,
             // Bounty fields
             is_bounty: data.is_bounty || false,
             is_pko: data.is_pko || false,
@@ -921,12 +927,12 @@ export class TournamentEngine {
                 this.tournamentInfo.prize_pool_finalized = freshT.prize_pool_finalized || false;
             }
 
-            // Check if late reg period has ended — finalize prize pool if not yet done
-            if (!this.tournamentInfo.prize_pool_finalized && this.tournamentInfo.late_reg_mins && this.tournamentInfo.late_reg_mins > 0) {
-                const startedAt = new Date(this.tournamentInfo.started_at).getTime();
-                const lateRegEnd = startedAt + (this.tournamentInfo.late_reg_mins * 60 * 1000);
-                if (Date.now() > lateRegEnd) {
-                    console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Late registration closed — finalizing prize pool`);
+            // Check if late reg period has ended (level-based) — finalize prize pool if not yet done
+            const lateRegLevelCap = this.tournamentInfo.late_reg_levels || this.tournamentInfo.late_reg_mins || 0;
+            if (!this.tournamentInfo.prize_pool_finalized && lateRegLevelCap > 0) {
+                const currentLevel = this.tournamentInfo.current_level || 0;
+                if (currentLevel >= lateRegLevelCap) {
+                    console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Late registration closed at level ${currentLevel} — finalizing prize pool`);
                     try {
                         const { tournamentService } = await import('../services/TournamentService');
                         await tournamentService.finalizePrizePool(this.tournamentId);

@@ -35,7 +35,8 @@ export default function NotificationDropdown({ onNavigate }: NotificationDropdow
     useEffect(() => {
         if (user?.id) {
             loadNotifications();
-            subscribeToNotifications();
+            const cleanup = subscribeToNotifications();
+            return () => { cleanup(); };
         }
     }, [user?.id]);
 

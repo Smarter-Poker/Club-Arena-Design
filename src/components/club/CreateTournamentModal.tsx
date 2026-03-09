@@ -31,17 +31,20 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
     const [scheduledDate, setScheduledDate] = useState('');
     const [scheduledTime, setScheduledTime] = useState('');
 
-    // ── Late Registration ──
-    const [lateRegMins, setLateRegMins] = useState('15');
+    // ── Late Registration (level-based, per tournament) ──
+    // Late reg and rebuy/re-entry ALWAYS share the same cutoff level
+    const [lateRegLevels, setLateRegLevels] = useState('8');
 
-    // ── Rebuy / Add-On ──
+    // ── Rebuy / Re-Entry / Add-On ──
     const [isRebuy, setIsRebuy] = useState(false);
+    const [isReentry, setIsReentry] = useState(false);
     const [rebuyCost, setRebuyCost] = useState('');
     const [rebuyChips, setRebuyChips] = useState('');
-    const [rebuyLevels, setRebuyLevels] = useState('4');
+    // rebuyLevels is derived from lateRegLevels (always the same cutoff)
     const [addOnAvailable, setAddOnAvailable] = useState(false);
     const [addOnCost, setAddOnCost] = useState('');
     const [addOnChips, setAddOnChips] = useState('');
+    const [addOnLevels, setAddOnLevels] = useState('1');
 
     // ── Bounty Config ──
     const [bountyAmount, setBountyAmount] = useState('5');
@@ -80,27 +83,28 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
         switch (f) {
             case 'sng':
                 setMaxPlayers('6');
-                setLateRegMins('0');
+                setLateRegLevels('0');
                 setStartTimeMode('now');
                 setIsMultiDay(false);
                 break;
             case 'spin':
                 setMaxPlayers('3');
-                setLateRegMins('0');
+                setLateRegLevels('0');
                 setStartTimeMode('now');
                 setIsMultiDay(false);
                 setIsRebuy(false);
+                setIsReentry(false);
                 setAddOnAvailable(false);
                 break;
             case 'bounty':
             case 'progressive_bounty':
             case 'mystery_bounty':
                 setMaxPlayers('0'); // Unlimited — max players only for SNG/Spin
-                setLateRegMins('30');
+                setLateRegLevels('10');
                 break;
             default:
                 setMaxPlayers('0'); // Unlimited — max players only for SNG/Spin
-                setLateRegMins('15');
+                setLateRegLevels('8');
         }
     };
 
@@ -156,15 +160,18 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                 minPlayers: 3,
                 blindStructure: BLIND_STRUCTURES[blindSpeed],
                 payoutStructure,
-                lateRegistrationLevels: parseInt(lateRegMins) || 0,
+                lateRegistrationLevels: parseInt(lateRegLevels) || 0,
                 startTime,
                 isRebuy,
-                rebuyLevels: isRebuy ? parseInt(rebuyLevels) || 4 : undefined,
-                rebuyChips: isRebuy ? (parseInt(rebuyChips) || parseInt(startingChips)) : undefined,
-                rebuyCost: isRebuy ? (parseFloat(rebuyCost) || parsedBuyIn) : undefined,
+                isReentry,
+                // Rebuy/re-entry cutoff = late reg cutoff (always the same)
+                rebuyLevels: (isRebuy || isReentry) ? (parseInt(lateRegLevels) || 8) : undefined,
+                rebuyChips: (isRebuy || isReentry) ? (parseInt(rebuyChips) || parseInt(startingChips)) : undefined,
+                rebuyCost: (isRebuy || isReentry) ? (parseFloat(rebuyCost) || parsedBuyIn) : undefined,
                 addOnAvailable,
                 addOnChips: addOnAvailable ? (parseInt(addOnChips) || parseInt(startingChips)) : undefined,
                 addOnCost: addOnAvailable ? (parseFloat(addOnCost) || parsedBuyIn) : undefined,
+                addOnLevels: addOnAvailable ? (parseInt(addOnLevels) || 1) : undefined,
                 guaranteedPrize: parseFloat(guaranteedPrize) || 0,
                 isMultiDay,
                 totalDays: isMultiDay ? parseInt(totalDays) || 2 : undefined,
@@ -234,10 +241,8 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
         if (isSngOrSpin && parseInt(maxPlayers) < 2) return false;
         // Scheduled tournament must have date+time
         if (startTimeMode === 'scheduled' && (!scheduledDate || !scheduledTime)) return false;
-        // Rebuy fields required if rebuy enabled
-        if (isRebuy) {
-            if (parseInt(rebuyLevels) <= 0) return false;
-        }
+        // Late reg levels must be valid if set
+        if ((isRebuy || isReentry) && parseInt(lateRegLevels) <= 0) return false;
         return true;
     })();
 
@@ -460,21 +465,32 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                         </div>
                     )}
 
-                    {/* ── Late Registration ── */}
+                    {/* ── Late Registration & Rebuy/Re-Entry Period (level-based) ── */}
                     {format !== 'spin' && (
-                        <div className={styles.row}>
-                            <div className={styles.col}>
-                                <div className={styles.formGroup}>
-                                    <label>Late Reg (mins)</label>
-                                    <input
-                                        type="number"
-                                        className={styles.input}
-                                        value={lateRegMins}
-                                        onChange={e => setLateRegMins(e.target.value)}
-                                        min="0"
-                                        max="120"
-                                    />
-                                    <span className={styles.helperText}>0 = no late registration</span>
+                        <div className={styles.sectionDivider}>
+                            <span className={styles.sectionLabel}>Late Registration / Rebuy Period</span>
+                            <div className={styles.row}>
+                                <div className={styles.col}>
+                                    <div className={styles.formGroup}>
+                                        <label>Late Reg Cutoff (Levels)</label>
+                                        <select
+                                            className={styles.select}
+                                            value={lateRegLevels}
+                                            onChange={e => setLateRegLevels(e.target.value)}
+                                        >
+                                            <option value="0">No Late Registration</option>
+                                            {[...Array(20)].map((_, i) => (
+                                                <option key={i + 1} value={String(i + 1)}>
+                                                    Through Level {i + 1}{i + 1 >= 8 && i + 1 <= 12 ? ' (Recommended)' : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <span className={styles.helperText}>
+                                            {parseInt(lateRegLevels) > 0
+                                                ? `Late reg, rebuys, and re-entries close after Level ${lateRegLevels}`
+                                                : 'No late registration — registration closes when tournament starts'}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -566,10 +582,10 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                         </div>
                     )}
 
-                    {/* ── Rebuy / Add-On ── */}
+                    {/* ── Rebuy / Re-Entry / Add-On ── */}
                     {format !== 'spin' && (
                         <div className={styles.sectionDivider}>
-                            <span className={styles.sectionLabel}>Rebuy / Add-On</span>
+                            <span className={styles.sectionLabel}>Rebuy / Re-Entry / Add-On</span>
                             <div className={styles.row}>
                                 <div className={styles.col}>
                                     <div className={styles.formGroup}>
@@ -580,7 +596,20 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                                                 onChange={e => setIsRebuy(e.target.checked)}
                                                 className={styles.checkbox}
                                             />
-                                            Allow Rebuys
+                                            Allow Rebuys (same seat)
+                                        </label>
+                                    </div>
+                                </div>
+                                <div className={styles.col}>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.toggleLabel}>
+                                            <input
+                                                type="checkbox"
+                                                checked={isReentry}
+                                                onChange={e => setIsReentry(e.target.checked)}
+                                                className={styles.checkbox}
+                                            />
+                                            Allow Re-Entry (new seat)
                                         </label>
                                     </div>
                                 </div>
@@ -599,54 +628,50 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                                 </div>
                             </div>
 
-                            {isRebuy && (
-                                <div className={styles.row}>
-                                    <div className={styles.col}>
-                                        <div className={styles.formGroup}>
-                                            <label>Rebuy Cost</label>
-                                            <input
-                                                type="number"
-                                                className={styles.input}
-                                                value={rebuyCost}
-                                                onChange={e => setRebuyCost(e.target.value)}
-                                                placeholder={buyIn}
-                                                min="0"
-                                                step="0.01"
-                                            />
-                                            <span className={styles.helperText}>Blank = same as buy-in</span>
+                            {(isRebuy || isReentry) && (
+                                <>
+                                    <div className={styles.row}>
+                                        <div className={styles.col}>
+                                            <div className={styles.formGroup}>
+                                                <label>{isRebuy ? 'Rebuy' : 'Re-Entry'} Cost</label>
+                                                <input
+                                                    type="number"
+                                                    className={styles.input}
+                                                    value={rebuyCost}
+                                                    onChange={e => setRebuyCost(e.target.value)}
+                                                    placeholder={buyIn}
+                                                    min="0"
+                                                    step="0.01"
+                                                />
+                                                <span className={styles.helperText}>Blank = same as buy-in</span>
+                                            </div>
+                                        </div>
+                                        <div className={styles.col}>
+                                            <div className={styles.formGroup}>
+                                                <label>{isRebuy ? 'Rebuy' : 'Re-Entry'} Chips</label>
+                                                <input
+                                                    type="number"
+                                                    className={styles.input}
+                                                    value={rebuyChips}
+                                                    onChange={e => setRebuyChips(e.target.value)}
+                                                    placeholder={startingChips}
+                                                />
+                                                <span className={styles.helperText}>Blank = starting stack</span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className={styles.col}>
-                                        <div className={styles.formGroup}>
-                                            <label>Rebuy Chips</label>
-                                            <input
-                                                type="number"
-                                                className={styles.input}
-                                                value={rebuyChips}
-                                                onChange={e => setRebuyChips(e.target.value)}
-                                                placeholder={startingChips}
-                                            />
-                                            <span className={styles.helperText}>Blank = starting stack</span>
-                                        </div>
-                                    </div>
-                                    <div className={styles.col}>
-                                        <div className={styles.formGroup}>
-                                            <label>Rebuy Levels</label>
-                                            <input
-                                                type="number"
-                                                className={styles.input}
-                                                value={rebuyLevels}
-                                                onChange={e => setRebuyLevels(e.target.value)}
-                                                min="1"
-                                                max="20"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
+                                    <span className={styles.helperText} style={{ display: 'block', marginTop: 4 }}>
+                                        {isRebuy && isReentry
+                                            ? `Rebuy (same seat) and Re-Entry (new seat) both close after Level ${lateRegLevels || 0}`
+                                            : isRebuy
+                                                ? `Rebuy period closes after Level ${lateRegLevels || 0} (same as late registration)`
+                                                : `Re-Entry period closes after Level ${lateRegLevels || 0} (same as late registration)`}
+                                    </span>
+                                </>
                             )}
 
                             {addOnAvailable && (
-                                <div className={styles.row}>
+                                <div className={styles.row} style={{ marginTop: 8 }}>
                                     <div className={styles.col}>
                                         <div className={styles.formGroup}>
                                             <label>Add-On Cost</label>
@@ -673,6 +698,25 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                                                 placeholder={startingChips}
                                             />
                                             <span className={styles.helperText}>Blank = starting stack</span>
+                                        </div>
+                                    </div>
+                                    <div className={styles.col}>
+                                        <div className={styles.formGroup}>
+                                            <label>Add-On Levels</label>
+                                            <select
+                                                className={styles.select}
+                                                value={addOnLevels}
+                                                onChange={e => setAddOnLevels(e.target.value)}
+                                            >
+                                                {[1, 2, 3].map(n => (
+                                                    <option key={n} value={String(n)}>
+                                                        {n} Level{n > 1 ? 's' : ''} after rebuy period
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <span className={styles.helperText}>
+                                                Add-on opens at Level {parseInt(lateRegLevels) || 0} through Level {(parseInt(lateRegLevels) || 0) + (parseInt(addOnLevels) || 1)}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -733,7 +777,7 @@ export default function CreateTournamentModal({ clubId, unionId, onClose, onSucc
                             {parseFloat(buyIn) <= 0 && <p>Buy-in must be greater than 0</p>}
                             {parseInt(startingChips) <= 0 && <p>Starting chips must be greater than 0</p>}
                             {startTimeMode === 'scheduled' && (!scheduledDate || !scheduledTime) && <p>Scheduled date and time are required</p>}
-                            {isRebuy && parseInt(rebuyLevels) <= 0 && <p>Rebuy levels must be set when rebuys are enabled</p>}
+                            {(isRebuy || isReentry) && parseInt(lateRegLevels) <= 0 && <p>Late reg levels must be set when rebuys/re-entries are enabled</p>}
                             {!bountyValid && isBountyFormat && <p>Bounty configuration is incomplete</p>}
                         </div>
                     )}

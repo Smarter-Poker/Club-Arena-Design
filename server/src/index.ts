@@ -1033,27 +1033,13 @@ class TournamentManager {
                     ante: level.ante || 0,
                 });
 
-                // ── ADD-ON PERIOD TRIGGER ──
-                // When blind level passes rebuy_levels cap and add-on is available
-                if (this.tournamentCache?.add_on_available && !this.addOnPeriodTriggered) {
-                    const rebuyLevelCap = this.tournamentCache.rebuy_levels || 4;
-                    if (prevLevel < rebuyLevelCap && this.currentLevel >= rebuyLevelCap) {
-                        // If currently on break, defer the add-on trigger until break resumes
-                        if (this.onBreak) {
-                            this.pendingAddOnPeriod = true;
-                        } else {
-                            await this.triggerAddOnPeriod();
-                        }
-                    }
-                }
-
-                // ── LATE REG FINALIZATION ──
-                if (!this.prizePoolFinalized && this.tournamentCache?.late_reg_mins > 0) {
-                    const startedAt = new Date(this.tournamentCache.started_at || Date.now()).getTime();
-                    const lateRegEnd = startedAt + (this.tournamentCache.late_reg_mins * 60 * 1000);
-                    if (Date.now() > lateRegEnd) {
+                // ── LATE REG / REBUY PERIOD FINALIZATION (level-based) ──
+                // Late reg and rebuy share the same cutoff level
+                const lateRegLevelCap = this.tournamentCache?.late_reg_levels || this.tournamentCache?.rebuy_levels || 0;
+                if (!this.prizePoolFinalized && lateRegLevelCap > 0 && this.currentLevel >= lateRegLevelCap) {
+                    // Check if add-on is available — if so, defer finalization until add-on period ends
+                    if (!this.tournamentCache?.add_on_available) {
                         this.prizePoolFinalized = true;
-                        // Recalculate and finalize
                         const { data: freshT } = await supabase
                             .from('tournaments')
                             .select('prize_pool')
@@ -1064,18 +1050,38 @@ class TournamentManager {
                                 prize_pool: freshT.prize_pool,
                                 prize_pool_finalized: true,
                             } as any).eq('id', this.tournamentId);
-                            console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] Late reg closed — prize pool finalized: ${freshT.prize_pool}`);
+                            console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] Late reg/rebuy closed at level ${this.currentLevel} — prize pool finalized: ${freshT.prize_pool}`);
                         }
-
-                        // Broadcast late_reg_closed so clients update UI
                         await this.broadcast('late_reg_closed', { prizePool: freshT?.prize_pool || 0 });
-
-                        // ── RECALCULATE PRIZES for players eliminated during late reg ──
-                        // During late reg, eliminated ITM players got prizes based on a smaller pool.
-                        // Now that the pool is finalized, recalculate and credit the difference.
                         if (freshT) {
                             await this.recalculateEliminatedPrizes(freshT.prize_pool);
                         }
+                    }
+                }
+
+                // ── ADD-ON PERIOD TRIGGER (level-based) ──
+                // When blind level passes the late reg/rebuy cutoff and add-on is available
+                if (this.tournamentCache?.add_on_available && !this.addOnPeriodTriggered) {
+                    const rebuyLevelCap = this.tournamentCache.late_reg_levels || this.tournamentCache.rebuy_levels || 8;
+                    if (prevLevel < rebuyLevelCap && this.currentLevel >= rebuyLevelCap) {
+                        // Broadcast late_reg_closed first
+                        await this.broadcast('late_reg_closed', {});
+                        // If currently on break, defer the add-on trigger until break resumes
+                        if (this.onBreak) {
+                            this.pendingAddOnPeriod = true;
+                        } else {
+                            await this.triggerAddOnPeriod();
+                        }
+                    }
+                }
+
+                // ── ADD-ON PERIOD END (level-based) ──
+                // Add-on window closes after addon_levels levels past the rebuy cutoff
+                if (this.addOnPeriodTriggered && !this.prizePoolFinalized) {
+                    const rebuyLevelCap2 = this.tournamentCache?.late_reg_levels || this.tournamentCache?.rebuy_levels || 8;
+                    const addonWindow = this.tournamentCache?.addon_levels || 1;
+                    if (this.currentLevel >= rebuyLevelCap2 + addonWindow) {
+                        await this.finalizeAfterAddOn();
                     }
                 }
 
@@ -1093,18 +1099,29 @@ class TournamentManager {
 
         const addonCost = this.tournamentCache?.addon_cost || this.tournamentCache?.buy_in_amount || 0;
         const addonChips = this.tournamentCache?.addon_chips || this.tournamentCache?.starting_chips || 0;
+        const addonLevels = this.tournamentCache?.addon_levels || 1;
+        const rebuyLevelCap = this.tournamentCache?.late_reg_levels || this.tournamentCache?.rebuy_levels || 8;
 
-        console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] ADD-ON PERIOD START — 60s, cost: ${addonCost}, chips: ${addonChips}`);
+        console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] ADD-ON PERIOD START — ${addonLevels} level(s) (Level ${rebuyLevelCap} to ${rebuyLevelCap + addonLevels}), cost: ${addonCost}, chips: ${addonChips}`);
 
-        // Broadcast ADDON_PERIOD_START via Supabase Realtime
-        await this.broadcast('ADDON_PERIOD_START', { addOnCost: addonCost, addOnChips: addonChips, durationSeconds: 60 });
+        // Broadcast ADDON_PERIOD_START via Supabase Realtime (no fixed duration — level-based)
+        await this.broadcast('ADDON_PERIOD_START', {
+            addOnCost: addonCost,
+            addOnChips: addonChips,
+            addonLevels,
+            startLevel: rebuyLevelCap,
+            endLevel: rebuyLevelCap + addonLevels,
+        });
 
-        // Wait 60 seconds
-        await new Promise<void>(resolve => setTimeout(resolve, 60_000));
+        // NOTE: Add-on period end is now handled by the level-up handler (finalizeAfterAddOn)
+        // No more hardcoded 60-second timer!
+    }
 
-        console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] ADD-ON PERIOD ENDED — resuming`);
+    private async finalizeAfterAddOn(): Promise<void> {
+        if (this.prizePoolFinalized) return;
 
-        // Finalize prize pool after add-on
+        console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] ADD-ON PERIOD ENDED at level ${this.currentLevel} — finalizing prize pool`);
+
         this.prizePoolFinalized = true;
         const { data: freshT } = await supabase
             .from('tournaments')
@@ -1117,11 +1134,9 @@ class TournamentManager {
                 prize_pool_finalized: true,
             } as any).eq('id', this.tournamentId);
 
-            // Recalculate prizes for players eliminated before add-on period
             await this.recalculateEliminatedPrizes(freshT.prize_pool);
         }
 
-        // Broadcast ADDON_PERIOD_END
         await this.broadcast('ADDON_PERIOD_END', {});
     }
 

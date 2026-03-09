@@ -739,7 +739,8 @@ class TournamentRecurringService {
                     blind_structure: config.blindStructure,
                     payout_structure: config.payoutStructure || [],
                     start_time: startTime.toISOString(),
-                    late_reg_mins: 30,
+                    late_reg_levels: 8,
+                    late_reg_mins: 8,
                 })
                 .select()
                 .single();
@@ -802,7 +803,8 @@ class TournamentRecurringService {
                     blind_structure: config.blindStructure,
                     payout_structure: config.payoutStructure || [],
                     start_time: startTime.toISOString(),
-                    late_reg_mins: 30,
+                    late_reg_levels: 8,
+                    late_reg_mins: 8,
                 })
                 .select()
                 .single();
@@ -867,6 +869,7 @@ class TournamentRecurringService {
                     blind_structure: config.blindStructure,
                     payout_structure: config.payoutStructure || [],
                     start_time: startTime.toISOString(),
+                    late_reg_levels: 0,
                     late_reg_mins: 0,
                 })
                 .select()

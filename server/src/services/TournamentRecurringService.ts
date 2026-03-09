@@ -542,7 +542,8 @@ export class TournamentRecurringService {
                         blind_structure: config.blindStructure,
                         payout_structure: config.payoutStructure || [],
                         start_time: startTime.toISOString(),
-                        late_reg_mins: 45, // Longer late reg for XMTT
+                        late_reg_levels: 10, // Level-based late reg for XMTT
+                        late_reg_mins: 10, // Legacy fallback
                         is_bounty: isBountyType,
                         is_pko: config.type === 'progressive_bounty',
                         is_mystery_bounty: config.type === 'mystery_bounty',
@@ -654,7 +655,8 @@ export class TournamentRecurringService {
                         blind_structure: config.blindStructure,
                         payout_structure: config.payoutStructure || [],
                         start_time: startTime.toISOString(),
-                        late_reg_mins: 30,
+                        late_reg_levels: 8, // Level-based late reg
+                        late_reg_mins: 8, // Legacy fallback
                         is_bounty: isBountyType,
                         is_pko: config.type === 'progressive_bounty',
                         is_mystery_bounty: config.type === 'mystery_bounty',
@@ -725,6 +727,7 @@ export class TournamentRecurringService {
                     blind_structure: config.blindStructure,
                     payout_structure: config.payoutStructure || [],
                     start_time: startTime.toISOString(),
+                    late_reg_levels: 0,
                     late_reg_mins: 0,
                 })
                 .select()
@@ -782,6 +785,7 @@ export class TournamentRecurringService {
                     blind_structure: config.blindStructure,
                     payout_structure: config.payoutStructure || [],
                     start_time: startTime.toISOString(),
+                    late_reg_levels: 0,
                     late_reg_mins: 0,
                 })
                 .select()

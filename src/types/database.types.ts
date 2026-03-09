@@ -293,6 +293,7 @@ export interface Tournament {
     guaranteed_prize: number;
     start_time: string;
     late_reg_mins?: number;
+    late_reg_levels?: number;
     current_level?: number;
     started_at?: string;
     ended_at?: string;
@@ -300,8 +301,10 @@ export interface Tournament {
     updated_at?: string;
     rebuy_cost?: number;
     rebuy_chips?: number;
+    is_reentry?: boolean;
     addon_cost?: number;
     addon_chips?: number;
+    addon_levels?: number;
     settings?: any;
     [key: string]: any;
 }

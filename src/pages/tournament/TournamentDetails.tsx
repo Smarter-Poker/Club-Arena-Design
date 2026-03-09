@@ -82,27 +82,27 @@ export default function TournamentDetails() {
         } catch { /* ignore */ }
     };
 
-    // ── Late-reg live countdown ──
+    // ── Late-reg level-based status ──
     useEffect(() => {
         if (lateRegTimerRef.current) clearInterval(lateRegTimerRef.current);
-        if (tournament?.status !== 'RUNNING' || !(tournament as any).late_reg_mins || !(tournament as any).started_at) return;
+        const lateRegLevels = (tournament as any)?.late_reg_levels || (tournament as any)?.late_reg_mins || 0;
+        if (tournament?.status !== 'RUNNING' || !lateRegLevels) return;
 
         const tick = () => {
-            const elapsed = Date.now() - new Date((tournament as any).started_at).getTime();
-            const remaining = ((tournament as any).late_reg_mins * 60 * 1000) - elapsed;
-            if (remaining <= 0) {
+            const currentLevel = (tournament as any)?.current_level || 0;
+            if (currentLevel >= lateRegLevels) {
                 setLateRegCountdown('');
                 if (lateRegTimerRef.current) clearInterval(lateRegTimerRef.current);
                 return;
             }
-            const mins = Math.floor(remaining / 60000);
-            const secs = Math.floor((remaining % 60000) / 1000);
-            setLateRegCountdown(mins > 0 ? `${mins}m ${secs}s left` : `${secs}s left`);
+            const levelsRemaining = lateRegLevels - currentLevel;
+            setLateRegCountdown(`${levelsRemaining} level${levelsRemaining !== 1 ? 's' : ''} remaining`);
         };
         tick();
-        lateRegTimerRef.current = setInterval(tick, 1000);
+        // Check every 10 seconds for level updates
+        lateRegTimerRef.current = setInterval(tick, 10000);
         return () => { if (lateRegTimerRef.current) clearInterval(lateRegTimerRef.current); };
-    }, [tournament?.status, (tournament as any)?.started_at, (tournament as any)?.late_reg_mins]);
+    }, [tournament?.status, (tournament as any)?.current_level, (tournament as any)?.late_reg_levels]);
 
     // ── Realtime subscription: live tournament updates ──
     useEffect(() => {
@@ -640,15 +640,17 @@ export default function TournamentDetails() {
                                 <span className="info-label">Rebuy:</span>
                                 <span className="info-value">
                                     {(tournament as any).is_rebuy
-                                        ? `${(tournament as any).rebuy_cost || tournament.buy_in_amount} chips (${(tournament as any).rebuy_chips || tournament.starting_chips} chips, ${(tournament as any).rebuy_levels || 4} levels)`
-                                        : 'Not Available'}
+                                        ? `${((tournament as any).rebuy_chips || tournament.starting_chips || 0).toLocaleString()} chips — through Level ${(tournament as any).late_reg_levels || (tournament as any).rebuy_levels || 8}`
+                                        : (tournament as any).is_reentry
+                                            ? `Re-Entry — through Level ${(tournament as any).late_reg_levels || (tournament as any).rebuy_levels || 8}`
+                                            : 'Not Available'}
                                 </span>
                             </div>
                             <div className="info-row half">
                                 <span className="info-label">Add-on:</span>
                                 <span className="info-value">
                                     {(tournament as any).add_on_available
-                                        ? `${(tournament as any).addon_cost || tournament.buy_in_amount} chips (${(tournament as any).addon_chips || tournament.starting_chips} chips)`
+                                        ? `${((tournament as any).addon_chips || tournament.starting_chips || 0).toLocaleString()} chips — Level ${(tournament as any).late_reg_levels || (tournament as any).rebuy_levels || 8} to ${((tournament as any).late_reg_levels || (tournament as any).rebuy_levels || 8) + ((tournament as any).addon_levels || 1)}`
                                         : 'Not Available'}
                                 </span>
                             </div>
@@ -667,10 +669,10 @@ export default function TournamentDetails() {
                                     })()}
                                 </span>
                             </div>
-                            {(tournament as any).late_reg_mins > 0 && (
+                            {((tournament as any).late_reg_levels || (tournament as any).late_reg_mins || 0) > 0 && (
                                 <div className="info-row half">
                                     <span className="info-label">Late Registration:</span>
-                                    <span className="info-value">{(tournament as any).late_reg_mins} minutes</span>
+                                    <span className="info-value">Through Level {(tournament as any).late_reg_levels || (tournament as any).late_reg_mins}</span>
                                 </div>
                             )}
                         </div>
