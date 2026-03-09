@@ -46,6 +46,19 @@ export interface PlayerStats {
     lastUpdated: string;
 }
 
+export interface TournamentStats {
+    userId: string;
+    username: string;
+    avatar?: string;
+    tournamentsPlayed: number;
+    wins: number;
+    finalTables: number;
+    itmFinishes: number;
+    totalPrizes: number;
+    roi: number;
+    biggestWin: number;
+}
+
 export interface HandResultForStats {
     handId: string;
     userId: string;
@@ -300,6 +313,124 @@ export const LeaderboardService = {
     },
 
 
+
+    /**
+     * Get tournament stats for all players in a club
+     */
+    async getClubTournamentStats(clubId: string, limit: number = 50): Promise<TournamentStats[]> {
+        try {
+            // Query tournament_players for all completed tournaments in this club
+            const { data: playerResults, error: resultsError } = await supabase
+                .from('tournament_players')
+                .select(`
+                    user_id,
+                    username,
+                    position,
+                    prize,
+                    tournaments!tournament_id (
+                        club_id,
+                        buy_in_amount,
+                        buy_in_fee
+                    )
+                `)
+                .eq('tournaments.club_id', clubId)
+                .in('status', ['eliminated', 'winner']);
+
+            if (resultsError || !playerResults) {
+                console.error('LeaderboardService.getClubTournamentStats error:', resultsError);
+                return [];
+            }
+
+            // Group and aggregate stats by user
+            const statsMap = new Map<string, {
+                username: string;
+                userId: string;
+                tournaments: Set<string>;
+                wins: number;
+                finalTables: number;
+                itmFinishes: number;
+                totalPrizes: number;
+                totalBuyins: number;
+                biggestWin: number;
+            }>();
+
+            playerResults.forEach((result: any) => {
+                const userId = result.user_id;
+                const tournaments = result.tournaments as any[];
+
+                if (!statsMap.has(userId)) {
+                    statsMap.set(userId, {
+                        username: result.username || 'Player',
+                        userId,
+                        tournaments: new Set(),
+                        wins: 0,
+                        finalTables: 0,
+                        itmFinishes: 0,
+                        totalPrizes: 0,
+                        totalBuyins: 0,
+                        biggestWin: 0,
+                    });
+                }
+
+                const stats = statsMap.get(userId)!;
+
+                // For each tournament this player participated in
+                tournaments.forEach(tourn => {
+                    if (tourn?.club_id === clubId) {
+                        const buyin = tourn.buy_in_amount || 0;
+                        const fee = tourn.buy_in_fee || 0;
+                        stats.tournaments.add((tourn as any).id);
+                        stats.totalBuyins += buyin + fee;
+                    }
+                });
+
+                // Check position and prize
+                if (result.position === 1) stats.wins++;
+                if (result.position && result.position <= 9) stats.finalTables++;
+                if (result.prize && result.prize > 0) stats.itmFinishes++;
+
+                const prize = result.prize || 0;
+                stats.totalPrizes += prize;
+                stats.biggestWin = Math.max(stats.biggestWin, prize);
+            });
+
+            // Convert to array and calculate ROI
+            const statsArray = Array.from(statsMap.values()).map(stats => ({
+                userId: stats.userId,
+                username: stats.username,
+                tournamentsPlayed: stats.tournaments.size,
+                wins: stats.wins,
+                finalTables: stats.finalTables,
+                itmFinishes: stats.itmFinishes,
+                totalPrizes: stats.totalPrizes,
+                roi: stats.totalBuyins > 0 ? ((stats.totalPrizes - stats.totalBuyins) / stats.totalBuyins) * 100 : 0,
+                biggestWin: stats.biggestWin,
+            }));
+
+            // Get usernames and avatars from profiles
+            const userIds = statsArray.map(s => s.userId);
+            const { data: profiles } = await supabase
+                .from('profiles')
+                .select('id, username, avatar_url')
+                .in('id', userIds);
+
+            const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
+            // Merge profile data and sort by totalPrizes descending
+            return statsArray
+                .map(stats => ({
+                    ...stats,
+                    avatar: profileMap.get(stats.userId)?.avatar_url,
+                    username: profileMap.get(stats.userId)?.username || stats.username,
+                }))
+                .sort((a, b) => b.totalPrizes - a.totalPrizes)
+                .slice(0, limit);
+
+        } catch (err) {
+            console.error('LeaderboardService.getClubTournamentStats error:', err);
+            return [];
+        }
+    },
 
     /**
      * Get period date boundaries

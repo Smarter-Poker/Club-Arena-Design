@@ -215,6 +215,14 @@ export default function TournamentResultsPage() {
         return `${hrs}h ${remainMins}m`;
     };
 
+    const getOrdinalPosition = (pos: number | null): string => {
+        if (!pos) return '—';
+        if (pos === 1) return '1st';
+        if (pos === 2) return '2nd';
+        if (pos === 3) return '3rd';
+        return `${pos}th`;
+    };
+
     const formatAmount = (n: number) => {
         const truncated = Math.trunc(n * 100) / 100;
         // Show decimals only if there are sub-unit fractions
@@ -333,7 +341,7 @@ export default function TournamentResultsPage() {
                             </div>
 
                             <div style={{ color: '#475569', fontSize: '11px' }}>
-                                Buy-in: {formatAmount(t.buy_in_amount)} + {formatAmount(t.buy_in_fee)} · Ended: {t.ended_at ? new Date(t.ended_at).toLocaleDateString() : '—'}
+                                Buy-in: {formatAmount(t.buy_in_amount)} + {formatAmount(t.buy_in_fee)} · Entries: {t.current_players} · Duration: {formatDuration(t.started_at, t.ended_at)} · Ended: {t.ended_at ? new Date(t.ended_at).toLocaleDateString() : '—'}
                             </div>
 
                             {/* Expanded Results — Tabs */}
@@ -401,8 +409,8 @@ export default function TournamentResultsPage() {
                                                             }}
                                                         >
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                <span style={{ color: posColor, fontSize: '13px', fontWeight: 700, minWidth: '24px' }}>
-                                                                    #{r.position}
+                                                                <span style={{ color: posColor, fontSize: '13px', fontWeight: 700, minWidth: '28px' }}>
+                                                                    {getOrdinalPosition(r.position)}
                                                                 </span>
                                                                 <span style={{ color: isMe ? '#10b981' : '#cbd5e1', fontSize: '13px' }}>
                                                                     {r.username}
@@ -420,7 +428,7 @@ export default function TournamentResultsPage() {
                                                                     fontSize: '13px',
                                                                     fontWeight: r.prize > 0 ? 600 : 400,
                                                                 }}>
-                                                                    {r.prize > 0 ? `+${formatAmount(r.prize)}` : '—'}
+                                                                    {r.prize > 0 ? `${formatAmount(r.prize)}` : '—'}
                                                                 </span>
                                                             </div>
                                                         </div>

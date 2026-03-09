@@ -167,11 +167,21 @@ export default function TournamentLobbyCard({
 
     const getStatusColor = (status: string): string => {
         switch (status) {
-            case 'registering': return '#10b981';
-            case 'running': return '#f59e0b';
-            case 'finished': return '#6b7280';
-            case 'cancelled': return '#ef4444';
+            case 'registering': return '#10b981';  // Green
+            case 'running': return '#f59e0b';     // Amber
+            case 'finished': return '#6b7280';    // Gray
+            case 'cancelled': return '#ef4444';   // Red
             default: return '#6b7280';
+        }
+    };
+
+    const getStatusLabel = (status: string): string => {
+        switch (status) {
+            case 'registering': return 'Registering';
+            case 'running': return 'In Progress';
+            case 'finished': return 'Completed';
+            case 'cancelled': return 'Cancelled';
+            default: return status;
         }
     };
 
@@ -227,7 +237,7 @@ export default function TournamentLobbyCard({
                     className={styles.status}
                     style={{ color: getStatusColor(tournament.status) }}
                 >
-                    {tournament.status === 'registering' ? ' Open' : tournament.status}
+                    {getStatusLabel(tournament.status)}
                 </span>
                 {(() => {
                     const speedTier = getSpeedTier(tournament);

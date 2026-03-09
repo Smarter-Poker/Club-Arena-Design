@@ -10,7 +10,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { LeaderboardService } from '../services/LeaderboardService';
-import type { LeaderboardEntry, LeaderboardMetric, LeaderboardPeriod } from '../services/LeaderboardService';
+import type { LeaderboardEntry, LeaderboardMetric, LeaderboardPeriod, TournamentStats } from '../services/LeaderboardService';
 import { getUserMemberships } from '../services/ClubsService';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
@@ -18,6 +18,7 @@ import SmarterHeader from '../components/layout/SmarterHeader';
 import './LeaderboardPage.css';
 
 type LeaderboardScope = 'my-clubs' | 'global';
+type LeaderboardTab = 'rankings' | 'tournaments';
 
 interface UserClub {
     id: string;
@@ -58,6 +59,11 @@ export default function LeaderboardPage() {
     const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
     const [clubsLoading, setClubsLoading] = useState(true);
 
+    // Tournament stats
+    const [activeTab, setActiveTab] = useState<LeaderboardTab>('rankings');
+    const [tournamentStats, setTournamentStats] = useState<TournamentStats[]>([]);
+    const [tournamentsLoading, setTournamentsLoading] = useState(false);
+
     // Load user's clubs on mount
     useEffect(() => {
         loadUserClubs();
@@ -66,7 +72,11 @@ export default function LeaderboardPage() {
     // Load leaderboard when filters or selected club change
     useEffect(() => {
         if (selectedClubId) {
-            loadLeaderboard();
+            if (activeTab === 'rankings') {
+                loadLeaderboard();
+            } else {
+                loadTournamentStats();
+            }
 
             // Subscribe to real-time leaderboard updates
             const channel = supabase
@@ -79,25 +89,47 @@ export default function LeaderboardPage() {
                         table: 'promotion_leaderboards',
                     },
                     () => {
-                        loadLeaderboard(true);
+                        if (activeTab === 'rankings') loadLeaderboard(true);
+                    }
+                )
+                .subscribe();
+
+            // Also subscribe to tournament updates
+            const tourneyChannel = supabase
+                .channel('tournament-leaderboard-updates')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'tournament_players',
+                    },
+                    () => {
+                        if (activeTab === 'tournaments') loadTournamentStats();
                     }
                 )
                 .subscribe();
 
             // Auto-refresh every 30 seconds
             refreshTimerRef.current = setInterval(() => {
-                loadLeaderboard(true);
+                if (activeTab === 'rankings') {
+                    loadLeaderboard(true);
+                } else {
+                    loadTournamentStats();
+                }
             }, 30000);
 
             return () => {
                 supabase.removeChannel(channel);
+                supabase.removeChannel(tourneyChannel);
                 if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
             };
         } else {
             setEntries([]);
+            setTournamentStats([]);
             setLoading(false);
         }
-    }, [scope, period, metric, selectedClubId]);
+    }, [scope, period, metric, selectedClubId, activeTab]);
 
     const loadUserClubs = async () => {
         setClubsLoading(true);
@@ -148,6 +180,23 @@ export default function LeaderboardPage() {
         setLoading(false);
     };
 
+    const loadTournamentStats = async () => {
+        if (!selectedClubId) return;
+        setTournamentsLoading(true);
+        try {
+            const data = await LeaderboardService.getClubTournamentStats(
+                selectedClubId,
+                50
+            );
+            setTournamentStats(data);
+            setLastUpdated(new Date());
+        } catch (error) {
+            console.error('Failed to load tournament stats:', error);
+            toast.error('Failed to load tournament stats');
+        }
+        setTournamentsLoading(false);
+    };
+
     const formatValue = (value: number, m: LeaderboardMetric): string => {
         if (m === 'profit') {
             return `${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -183,6 +232,22 @@ export default function LeaderboardPage() {
             <div className="live-indicator">
                 <span className="live-dot"></span>
                 <span>Live • Updated {lastUpdated.toLocaleTimeString()}</span>
+            </div>
+
+            {/* Tab Selector */}
+            <div className="leaderboard-tabs">
+                <button
+                    className={`tab-btn ${activeTab === 'rankings' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('rankings')}
+                >
+                    Rankings
+                </button>
+                <button
+                    className={`tab-btn ${activeTab === 'tournaments' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('tournaments')}
+                >
+                    Tournament Stats
+                </button>
             </div>
 
             {/* User Rank Card */}
@@ -275,18 +340,29 @@ export default function LeaderboardPage() {
                             Browse Clubs
                         </button>
                     </div>
-                ) : loading ? (
+                ) : activeTab === 'rankings' && loading ? (
                     <div className="loading-state">
                         <div className="spinner" />
                         <p>Loading rankings...</p>
                     </div>
-                ) : entries.length === 0 ? (
+                ) : activeTab === 'rankings' && entries.length === 0 ? (
                     <div className="empty-state">
                         <span className="empty-icon">🏆</span>
                         <p>No rankings yet for this period.</p>
                         <p className="empty-sub">Start playing to climb the leaderboard!</p>
                     </div>
-                ) : (
+                ) : activeTab === 'tournaments' && tournamentsLoading ? (
+                    <div className="loading-state">
+                        <div className="spinner" />
+                        <p>Loading tournament stats...</p>
+                    </div>
+                ) : activeTab === 'tournaments' && tournamentStats.length === 0 ? (
+                    <div className="empty-state">
+                        <span className="empty-icon">🏅</span>
+                        <p>No tournament stats yet.</p>
+                        <p className="empty-sub">Register for a tournament to see your stats!</p>
+                    </div>
+                ) : activeTab === 'rankings' && entries.length > 0 ? (
                     <>
                         {/* ── TOP 3 PODIUM ── */}
                         {top3.length >= 3 && (
@@ -427,7 +503,52 @@ export default function LeaderboardPage() {
                             </div>
                         ))}
                     </>
-                )}
+                ) : activeTab === 'tournaments' && tournamentStats.length > 0 ? (
+                    <>
+                        {/* Tournament Stats Header */}
+                        <div className="tournament-stats-header">
+                            <div className="stats-column-header">Player</div>
+                            <div className="stats-column-header">Tournaments</div>
+                            <div className="stats-column-header">Wins</div>
+                            <div className="stats-column-header">Final Tables</div>
+                            <div className="stats-column-header">ITM</div>
+                            <div className="stats-column-header">Total Prizes</div>
+                            <div className="stats-column-header">ROI</div>
+                            <div className="stats-column-header">Biggest Win</div>
+                        </div>
+
+                        {/* Tournament Stats Rows */}
+                        {tournamentStats.map((stat, index) => (
+                            <div
+                                key={stat.userId}
+                                className={`tournament-stats-entry animate-fade-in-up stagger-${Math.min(index + 1, 10)} ${stat.userId === user?.id ? 'current-user' : ''}`}
+                                onClick={() => navigate(`/profile/${stat.userId}`)}
+                                style={{ cursor: 'pointer' }}
+                            >
+                                <div className="stats-cell player-cell">
+                                    <span className="rank-badge">#{index + 1}</span>
+                                    <div className="entry-avatar">
+                                        {stat.avatar ? (
+                                            <img src={stat.avatar} alt="" />
+                                        ) : (
+                                            <span>{stat.username[0]?.toUpperCase()}</span>
+                                        )}
+                                    </div>
+                                    <span className="player-name">{stat.username}</span>
+                                </div>
+                                <div className="stats-cell">{stat.tournamentsPlayed}</div>
+                                <div className="stats-cell wins">{stat.wins}</div>
+                                <div className="stats-cell">{stat.finalTables}</div>
+                                <div className="stats-cell">{stat.itmFinishes}</div>
+                                <div className="stats-cell prizes">{Math.round(stat.totalPrizes).toLocaleString()}</div>
+                                <div className={`stats-cell roi ${stat.roi >= 0 ? 'positive' : 'negative'}`}>
+                                    {stat.roi.toFixed(1)}%
+                                </div>
+                                <div className="stats-cell biggest">{Math.round(stat.biggestWin).toLocaleString()}</div>
+                            </div>
+                        ))}
+                    </>
+                ) : null}
             </div>
         </div>
     );

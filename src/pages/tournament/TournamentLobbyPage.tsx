@@ -410,6 +410,41 @@ export default function TournamentLobbyPage() {
         return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
     });
 
+    // Group tournaments by time window
+    const getTimeGroup = (startTime: string): { label: string; order: number } => {
+        const now = Date.now();
+        const start = new Date(startTime).getTime();
+        const diffMs = start - now;
+        const diffMins = diffMs / (1000 * 60);
+        const diffHours = diffMins / 60;
+
+        if (diffMs < 0) {
+            // Already started or completed
+            return { label: 'Now', order: 0 };
+        } else if (diffMins < 30) {
+            return { label: 'Starting Soon (< 30 min)', order: 1 };
+        } else if (diffMins < 120) {
+            return { label: 'Next Hour (30 min - 2 hours)', order: 2 };
+        } else if (diffHours < 6) {
+            return { label: 'Later Today', order: 3 };
+        } else if (diffHours < 24) {
+            return { label: 'Tomorrow', order: 4 };
+        } else {
+            return { label: 'Coming Soon', order: 5 };
+        }
+    };
+
+    const groupedTournaments = filteredTournaments.reduce((acc, t) => {
+        const group = getTimeGroup(t.startTime);
+        const existing = acc.find(g => g.label === group.label);
+        if (existing) {
+            existing.tournaments.push(t);
+        } else {
+            acc.push({ ...group, tournaments: [t] });
+        }
+        return acc;
+    }, [] as Array<{ label: string; order: number; tournaments: Tournament[] }>).sort((a, b) => a.order - b.order);
+
     const upcomingCount = tournaments.filter(t => ['ANNOUNCED', 'REGISTERING'].includes(t.status)).length;
     const runningCount = tournaments.filter(t => t.status === 'RUNNING').length;
 
@@ -503,34 +538,45 @@ export default function TournamentLobbyPage() {
                         )}
                     </div>
                 ) : (
-                    filteredTournaments.map(tournament => (
-                        <TournamentLobbyCard
-                            key={tournament.id}
-                            tournament={{
-                                id: tournament.id,
-                                name: tournament.name,
-                                type: tournament.variant === 'sng' ? 'sng' : tournament.variant === 'spin' ? 'spin' : (tournament.isBounty || tournament.isPko || tournament.isMysteryBounty) ? 'bounty' : 'mtt',
-                                buyIn: tournament.buyIn,
-                                prizePool: tournament.prizePool,
-                                maxPlayers: tournament.maxPlayers,
-                                registeredPlayers: tournament.currentPlayers,
-                                startsAt: tournament.startTime,
-                                status: tournament.status === 'COMPLETED' ? 'finished' : tournament.status === 'ANNOUNCED' ? 'registering' : tournament.status === 'REGISTERING' ? 'registering' : tournament.status === 'RUNNING' ? 'running' : 'cancelled',
-                                blindStructure: `${tournament.blindsUp}m`,
-                                gameType: tournament.gameType,
-                                startingChips: tournament.startingChips,
-                                lateRegMins: tournament.lateRegMins,
-                                isRebuy: tournament.isRebuy,
-                                guaranteedPrize: tournament.guaranteedPrize,
-                                isBounty: tournament.isBounty,
-                                isPko: tournament.isPko,
-                                isMysteryBounty: tournament.isMysteryBounty,
-                                bountyAmount: tournament.bountyAmount,
-                                isMultiDay: tournament.isMultiDay,
-                                isPinned: tournament.isPinned,
-                            }}
-                            onRegister={() => handleRegister(tournament.id)}
-                        />
+                    groupedTournaments.map(group => (
+                        <div key={group.label}>
+                            {/* Time Group Header */}
+                            <div className={styles.groupHeader}>
+                                <span className={styles.groupLabel}>{group.label}</span>
+                                <span className={styles.groupCount}>{group.tournaments.length}</span>
+                            </div>
+
+                            {/* Tournaments in Group */}
+                            {group.tournaments.map(tournament => (
+                                <TournamentLobbyCard
+                                    key={tournament.id}
+                                    tournament={{
+                                        id: tournament.id,
+                                        name: tournament.name,
+                                        type: tournament.variant === 'sng' ? 'sng' : tournament.variant === 'spin' ? 'spin' : (tournament.isBounty || tournament.isPko || tournament.isMysteryBounty) ? 'bounty' : 'mtt',
+                                        buyIn: tournament.buyIn,
+                                        prizePool: tournament.prizePool,
+                                        maxPlayers: tournament.maxPlayers,
+                                        registeredPlayers: tournament.currentPlayers,
+                                        startsAt: tournament.startTime,
+                                        status: tournament.status === 'COMPLETED' ? 'finished' : tournament.status === 'ANNOUNCED' ? 'registering' : tournament.status === 'REGISTERING' ? 'registering' : tournament.status === 'RUNNING' ? 'running' : 'cancelled',
+                                        blindStructure: `${tournament.blindsUp}m`,
+                                        gameType: tournament.gameType,
+                                        startingChips: tournament.startingChips,
+                                        lateRegMins: tournament.lateRegMins,
+                                        isRebuy: tournament.isRebuy,
+                                        guaranteedPrize: tournament.guaranteedPrize,
+                                        isBounty: tournament.isBounty,
+                                        isPko: tournament.isPko,
+                                        isMysteryBounty: tournament.isMysteryBounty,
+                                        bountyAmount: tournament.bountyAmount,
+                                        isMultiDay: tournament.isMultiDay,
+                                        isPinned: tournament.isPinned,
+                                    }}
+                                    onRegister={() => handleRegister(tournament.id)}
+                                />
+                            ))}
+                        </div>
                     ))
                 )}
             </div>
