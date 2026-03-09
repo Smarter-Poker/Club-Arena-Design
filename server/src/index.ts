@@ -314,7 +314,7 @@ class GameServer {
                 // Find REGISTERING tournaments ready to start
                 const { data: registering } = await supabase
                     .from('tournaments')
-                    .select('id, name, start_time, current_players, min_players, max_players, variant, buy_in_amount, buy_in_fee, guaranteed_prize')
+                    .select('id, name, start_time, current_players, min_players, max_players, variant, tournament_type, buy_in_amount, buy_in_fee, guaranteed_prize')
                     .eq('status', 'REGISTERING');
 
                 for (const tournament of registering || []) {

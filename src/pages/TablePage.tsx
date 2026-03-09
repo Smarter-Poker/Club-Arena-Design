@@ -1109,9 +1109,37 @@ export default function TablePage() {
                                     }));
                                 }
                             } else if (data?.type === 'table_rebalance') {
-                                // Players moved between tables — force refresh
-                                console.log('[TablePage] Table rebalance detected — refreshing seats');
-                                setTableState(prev => ({ ...prev, refreshTrigger: Date.now() }));
+                                // Players moved between tables — check if current user was moved
+                                console.log('[TablePage] Table rebalance detected');
+                                (async () => {
+                                    try {
+                                        if (userId && tableState.tournamentId) {
+                                            const { data: playerData } = await supabase
+                                                .from('tournament_players')
+                                                .select('table_id')
+                                                .eq('tournament_id', tableState.tournamentId)
+                                                .eq('user_id', userId)
+                                                .maybeSingle();
+
+                                            if (playerData?.table_id && playerData.table_id !== tableId) {
+                                                // Current user was moved to a different table — redirect
+                                                console.log(`[TablePage] User moved from ${tableId} to ${playerData.table_id}`);
+                                                const cId = actualClubIdRef.current || tableId || 'demo';
+                                                navigate(`/clubs/${cId}/table/${playerData.table_id}`);
+                                            } else if (playerData?.table_id === tableId) {
+                                                // User stayed at this table — just refresh seats
+                                                setTableState(prev => ({ ...prev, refreshTrigger: Date.now() }));
+                                            }
+                                        } else {
+                                            // Not a tournament or no user — just refresh
+                                            setTableState(prev => ({ ...prev, refreshTrigger: Date.now() }));
+                                        }
+                                    } catch (err) {
+                                        console.error('[TablePage] Error checking player table during rebalance:', err);
+                                        // Fallback: just refresh seats
+                                        setTableState(prev => ({ ...prev, refreshTrigger: Date.now() }));
+                                    }
+                                })();
                             } else if (data?.type === 'late_reg_closed') {
                                 // Late registration window has closed
                                 setTableState(prev => ({
