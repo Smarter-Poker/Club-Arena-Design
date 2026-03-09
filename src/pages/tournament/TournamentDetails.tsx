@@ -627,51 +627,53 @@ export default function TournamentDetails() {
                                 </div>
                             );
                         })()}
-                        <div className="info-row half">
-                            <span className="info-label">Entries:</span>
-                            <span className="info-value">{entries.length}</span>
-                        </div>
-                        <div className="info-row half">
-                            <span className="info-label">Max Entries:</span>
-                            <span className="info-value">{tournament.max_players || 'Unlimited'}</span>
-                        </div>
-                        <div className="info-row half">
-                            <span className="info-label">Rebuy:</span>
-                            <span className="info-value">
-                                {(tournament as any).is_rebuy
-                                    ? `${(tournament as any).rebuy_cost || tournament.buy_in_amount} chips (${(tournament as any).rebuy_chips || tournament.starting_chips} chips, ${(tournament as any).rebuy_levels || 4} levels)`
-                                    : 'Not Available'}
-                            </span>
-                        </div>
-                        <div className="info-row half">
-                            <span className="info-label">Add-on:</span>
-                            <span className="info-value">
-                                {(tournament as any).add_on_available
-                                    ? `${(tournament as any).addon_cost || tournament.buy_in_amount} chips (${(tournament as any).addon_chips || tournament.starting_chips} chips)`
-                                    : 'Not Available'}
-                            </span>
-                        </div>
-                        <div className="info-row half">
-                            <span className="info-label">Starting Chips:</span>
-                            <span className="info-value">{tournament.starting_chips ? tournament.starting_chips.toLocaleString() : '—'}</span>
-                        </div>
-                        <div className="info-row half">
-                            <span className="info-label">Big Blind Ante:</span>
-                            <span className="info-value">
-                                {(() => {
-                                    const blinds = typeof tournament.blind_structure === 'string'
-                                        ? (() => { try { return JSON.parse(tournament.blind_structure); } catch { return []; } })()
-                                        : (tournament.blind_structure || []);
-                                    return blinds.some((b: any) => (b.ante || 0) > 0) ? 'Yes' : 'No';
-                                })()}
-                            </span>
-                        </div>
-                        {(tournament as any).late_reg_mins > 0 && (
+                        <div className="info-half-grid">
                             <div className="info-row half">
-                                <span className="info-label">Late Registration:</span>
-                                <span className="info-value">{(tournament as any).late_reg_mins} minutes</span>
+                                <span className="info-label">Entries:</span>
+                                <span className="info-value">{entries.length}</span>
                             </div>
-                        )}
+                            <div className="info-row half">
+                                <span className="info-label">Max Entries:</span>
+                                <span className="info-value">{tournament.max_players || 'Unlimited'}</span>
+                            </div>
+                            <div className="info-row half">
+                                <span className="info-label">Rebuy:</span>
+                                <span className="info-value">
+                                    {(tournament as any).is_rebuy
+                                        ? `${(tournament as any).rebuy_cost || tournament.buy_in_amount} chips (${(tournament as any).rebuy_chips || tournament.starting_chips} chips, ${(tournament as any).rebuy_levels || 4} levels)`
+                                        : 'Not Available'}
+                                </span>
+                            </div>
+                            <div className="info-row half">
+                                <span className="info-label">Add-on:</span>
+                                <span className="info-value">
+                                    {(tournament as any).add_on_available
+                                        ? `${(tournament as any).addon_cost || tournament.buy_in_amount} chips (${(tournament as any).addon_chips || tournament.starting_chips} chips)`
+                                        : 'Not Available'}
+                                </span>
+                            </div>
+                            <div className="info-row half">
+                                <span className="info-label">Starting Chips:</span>
+                                <span className="info-value">{tournament.starting_chips ? tournament.starting_chips.toLocaleString() : '—'}</span>
+                            </div>
+                            <div className="info-row half">
+                                <span className="info-label">Big Blind Ante:</span>
+                                <span className="info-value">
+                                    {(() => {
+                                        const blinds = typeof tournament.blind_structure === 'string'
+                                            ? (() => { try { return JSON.parse(tournament.blind_structure); } catch { return []; } })()
+                                            : (tournament.blind_structure || []);
+                                        return blinds.some((b: any) => (b.ante || 0) > 0) ? 'Yes' : 'No';
+                                    })()}
+                                </span>
+                            </div>
+                            {(tournament as any).late_reg_mins > 0 && (
+                                <div className="info-row half">
+                                    <span className="info-label">Late Registration:</span>
+                                    <span className="info-value">{(tournament as any).late_reg_mins} minutes</span>
+                                </div>
+                            )}
+                        </div>
                         {(tournament as any).is_bounty && (
                             <div className="info-row">
                                 <span className="info-label">Bounty:</span>

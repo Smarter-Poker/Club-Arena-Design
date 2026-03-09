@@ -208,7 +208,7 @@ export default function LeaderboardPage() {
             return `${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
         if (m === 'vpip' || m === 'roi') {
-            return `${value.toFixed(1)}%`;
+            return `${Math.trunc(value * 10) / 10}%`;
         }
         return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
