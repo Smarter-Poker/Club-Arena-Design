@@ -470,7 +470,14 @@ export default function TournamentPage() {
                             <div
                                 key={tourn.id}
                                 className={`tournament-card ${selectedTournament?.id === tourn.id ? 'selected' : ''}`}
-                                onClick={() => setSelectedTournament(tourn)}
+                                onClick={() => {
+                                    setSelectedTournament(tourn);
+                                    // On mobile, navigate to full detail page
+                                    if (window.innerWidth <= 768) {
+                                        navigate(`/tournaments/${tourn.id}`);
+                                    }
+                                }}
+                                style={{ cursor: 'pointer' }}
                             >
                                 <div className="tourn-header">
                                     <span className="tourn-name">{tourn.name}</span>
