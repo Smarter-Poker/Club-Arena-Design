@@ -1356,7 +1356,7 @@ class TournamentManager {
             // ── PROGRESSIVE KO ──
             // 50% to knocker immediately, 50% added to knocker's bounty head
             const totalBountyCents = Math.trunc(bountyValue * 100);
-            const knockerCents = Math.floor(totalBountyCents / 2);
+            const knockerCents = Math.trunc(totalBountyCents / 2);
             const knockerPortion = knockerCents / 100;
             const addedToHead = (totalBountyCents - knockerCents) / 100;
 

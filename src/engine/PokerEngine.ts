@@ -614,7 +614,7 @@ export function determineWinners(
 
         if (isHiLo && qualifyingLowPlayers.length > 0) {
             const potCents = Math.trunc(pot.amount * 100);
-            const loCents = Math.floor(potCents / 2);
+            const loCents = Math.trunc(potCents / 2);
             loPotAmount = loCents / 100;
             hiPotAmount = (potCents - loCents) / 100;
         }

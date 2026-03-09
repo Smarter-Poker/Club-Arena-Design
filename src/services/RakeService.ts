@@ -363,7 +363,7 @@ export const RakeService = {
 
         // Calculate equal split using integer arithmetic to avoid floating point loss
         const totalRakeCents = Math.trunc(totalRake * 100);
-        const baseCreditCents = Math.floor(totalRakeCents / activePlayers.length);
+        const baseCreditCents = Math.trunc(totalRakeCents / activePlayers.length);
         const remainderCents = totalRakeCents - (baseCreditCents * activePlayers.length);
         const timestamp = new Date().toISOString();
 
