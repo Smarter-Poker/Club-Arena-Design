@@ -300,12 +300,11 @@ export default function HomePage() {
     };
 
     // ═══════════════════════════════════════════════════════════════════════════════
-    // BUILD MY CLUBS LIST — ALL clubs the user belongs to (excluding Shark Club
-    // since it's shown as the featured card above)
+    // MY CLUBS LIST — ALL clubs the user belongs to (including Shark Club)
+    // Featured card is shown separately above, but user's owned/joined clubs
+    // all appear in the grid below so they can navigate to any of them
     // ═══════════════════════════════════════════════════════════════════════════════
-    const myClubs = userClubs.filter(
-        (club) => club.id !== sharkClubId && !club.name?.toLowerCase().includes('shark club')
-    );
+    const myClubs = userClubs;
 
     return (
         <div className={styles.container}>
