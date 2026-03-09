@@ -333,7 +333,7 @@ export default function ClubDashboard() {
                                             </div>
                                             <span className={styles.playerName}>{player.displayName}</span>
                                             <span className={`${styles.profit} ${player.totalProfit >= 0 ? styles.positive : styles.negative}`}>
-                                                {player.totalProfit >= 0 ? '+' : ''}{formatNumber(player.totalProfit)}
+                                                {player.totalProfit >= 0 ? '+' : ''}{formatChips(player.totalProfit)}
                                             </span>
                                         </div>
                                     ))

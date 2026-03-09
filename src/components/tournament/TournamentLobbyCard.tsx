@@ -14,7 +14,7 @@ import styles from './TournamentLobbyCard.module.css';
 interface Tournament {
     id: string;
     name: string;
-    type: 'sng' | 'mtt' | 'satellite' | 'spin' | 'bounty';
+    type: 'sng' | 'mtt' | 'satellite' | 'spin' | 'bounty' | 'pko' | 'mystery';
     buyIn: number;
     prizePool: number;
     maxPlayers: number;
