@@ -9,7 +9,6 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import CreateUnionModal from '../components/union/CreateUnionModal';
 import { unionService, type Union } from '../services/UnionService';
-import SmarterHeader from '../components/layout/SmarterHeader';
 
 export default function UnionsPage() {
     const navigate = useNavigate();
@@ -38,7 +37,6 @@ export default function UnionsPage() {
 
     return (
         <div className="unions-page">
-            <SmarterHeader title=" Unions" showBackButton={false} />
             <header className="unions-header">
                 <div>
                     <p>Join club networks for more players and bigger games.</p>

@@ -6,7 +6,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import { exportToCSV } from '../lib/export';
 import './TransactionHistoryPage.css';
 
@@ -178,7 +177,6 @@ export default function TransactionHistoryPage() {
 
     return (
         <div className="transaction-history-page">
-            <SmarterHeader title=" Transactions" />
 
             {/* Summary */}
             <div className="tx-summary">

@@ -7,7 +7,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import {
     LineChart,
     Line,
@@ -198,7 +197,6 @@ export default function PlayerStatsPage() {
     if (loading) {
         return (
             <div className="stats-page">
-                <SmarterHeader title=" Statistics" />
                 <div className="loading-state"><div className="spinner" /></div>
             </div>
         );
@@ -206,7 +204,6 @@ export default function PlayerStatsPage() {
 
     return (
         <div className="stats-page">
-            <SmarterHeader title=" Statistics" />
 
             {/* Summary Cards */}
             <div className="stats-summary">

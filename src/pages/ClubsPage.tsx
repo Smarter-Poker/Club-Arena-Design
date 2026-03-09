@@ -14,7 +14,6 @@ import { ClubsService } from '../services/ClubsService';
 import { LoadingState, NoClubsEmpty } from '../components/common/EmptyState';
 import { CardSkeleton } from '../components/skeletons/CardSkeleton';
 import { useToast } from '../components/common/Toast';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import IntroVideo from '../components/IntroVideo';
 import haptic from '../services/HapticService';
 import { MetalFrame, MetalButton, MetalInput, MetalCard } from '../components/metal-ui';
@@ -177,7 +176,6 @@ export default function ClubsPage() {
             )}
 
             <div className={styles.page}>
-                <SmarterHeader title=" Clubs" showBackButton={false} />
                 {/* Header */}
                 <div className={styles.pageIntro}>
                     <p className={styles.subtitle}>Join private poker communities or create your own.</p>

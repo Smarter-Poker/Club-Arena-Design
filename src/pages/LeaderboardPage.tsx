@@ -14,7 +14,6 @@ import type { LeaderboardEntry, LeaderboardMetric, LeaderboardPeriod, Tournament
 import { getUserMemberships } from '../services/ClubsService';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import './LeaderboardPage.css';
 
 type LeaderboardScope = 'my-clubs' | 'global';
@@ -239,7 +238,6 @@ export default function LeaderboardPage() {
 
     return (
         <div className="leaderboard-page">
-            <SmarterHeader title="🏆 Leaderboard" />
 
             {/* Live Indicator */}
             <div className="live-indicator">

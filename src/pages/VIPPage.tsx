@@ -9,7 +9,6 @@ import { vipService, VIP_GOLD_LIMITS, FEATURE_PRICING, type VIPFeature } from '.
 import { VIPCardsModal } from '../components/vip/VIPCardsModal';
 import { VIPPerksGrid } from '../components/vip/VIPPerksGrid';
 import { DiamondTopUpModal } from '../components/vip/DiamondTopUpModal';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import { useToast } from '../components/common/Toast';
 import './VIPPage.css';
 
@@ -101,7 +100,6 @@ export default function VIPPage() {
     if (loading) {
         return (
             <div className="vip-page">
-                <SmarterHeader title=" VIP Status" />
                 <div className="loading-state"><div className="spinner" /></div>
             </div>
         );
@@ -109,7 +107,6 @@ export default function VIPPage() {
 
     return (
         <div className="vip-page">
-            <SmarterHeader title=" VIP Status" />
 
             {/* VIP Gold Status */}
             <section className="vip-section vip-card-section">

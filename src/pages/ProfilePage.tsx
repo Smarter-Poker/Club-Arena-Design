@@ -12,7 +12,6 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import { LoadingState } from '../components/common/EmptyState';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import DailyBonusWheel from '../components/bonus/DailyBonusWheel';
 import FriendListPanel from '../components/social/FriendListPanel';
 import { VIPStatusCard } from '../components/vip/VIPStatusCard';
@@ -358,7 +357,6 @@ export default function ProfilePage() {
 
     return (
         <div className={styles.page}>
-            <SmarterHeader title=" Profile" showBackButton={false} />
             {/* Profile Header */}
             <section className={styles.profileHeader}>
                 <div className={styles.avatarContainer}>

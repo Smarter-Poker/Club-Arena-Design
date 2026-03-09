@@ -11,7 +11,6 @@ import { CommissionService } from '../services/CommissionService';
 import type { CommissionSpread } from '../services/CommissionService';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import CreditRequestWidget from '../components/agent/CreditRequestWidget';
 import './SuperAgentDashboard.css';
 
@@ -109,7 +108,6 @@ export default function SuperAgentDashboard() {
     if (loading) {
         return (
             <div className="super-agent-dashboard">
-                <SmarterHeader title="Agent Dashboard" />
                 <div className="loading-state"><div className="spinner" /></div>
             </div>
         );
@@ -118,7 +116,6 @@ export default function SuperAgentDashboard() {
     if (!agent) {
         return (
             <div className="super-agent-dashboard">
-                <SmarterHeader title="Agent Dashboard" />
                 <div className="empty-state">
                     <span className="empty-icon">♠</span>
                     <p>You are not an agent in this club</p>
@@ -130,7 +127,6 @@ export default function SuperAgentDashboard() {
 
     return (
         <div className="super-agent-dashboard">
-            <SmarterHeader title="Agent Dashboard" />
 
             {/* Stats Grid */}
             <div className="stats-grid">

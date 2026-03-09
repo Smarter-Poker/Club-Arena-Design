@@ -6,7 +6,6 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import './TableCreationPage.css';
 
 type GameType = 'nlh' | 'plo' | 'plo5' | 'ofc';
@@ -114,7 +113,6 @@ export default function TableCreationPage() {
 
     return (
         <div className="table-creation-page">
-            <SmarterHeader title=" Create Table" />
 
             <div className="creation-content">
                 {error && <div className="error-message">{error}</div>}

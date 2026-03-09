@@ -7,7 +7,6 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import './ReportReviewPage.css';
 
@@ -147,7 +146,6 @@ export default function ReportReviewPage() {
 
     return (
         <div className="report-review-page">
-            <SmarterHeader title=" Review Reports" />
 
             {/* Filter Tabs */}
             <div className="filter-tabs">

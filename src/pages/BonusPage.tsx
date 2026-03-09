@@ -8,7 +8,6 @@ import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import { bonusService } from '../services/BonusService';
 import { useToast } from '../components/common/Toast';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import './BonusPage.css';
 
 interface DailyBonus {
@@ -162,7 +161,6 @@ export default function BonusPage() {
     if (loading) {
         return (
             <div className="bonus-page">
-                <SmarterHeader title=" Bonuses" />
                 <div className="loading-state"><div className="spinner" /></div>
             </div>
         );
@@ -170,7 +168,6 @@ export default function BonusPage() {
 
     return (
         <div className="bonus-page">
-            <SmarterHeader title=" Bonuses" />
 
             {/* Daily Login Calendar */}
             <section className="bonus-section">

@@ -1,11 +1,8 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * ♠ CLUB ARENA — Fixed Canvas Layout (Facebook-style)
+ * ♠ CLUB ARENA — Home Page (Redesigned Card Grid Layout)
  * ═══════════════════════════════════════════════════════════════════════════════
- * Viewport-locked layout that scales uniformly
- * - Fixed canvas width matching header (max 600px for mobile-first)
- * - All elements scale together proportionally
- * - No reflow on window resize - just uniform scaling
+ * Mobile-first scrollable layout with featured club + club grid + quick links
  */
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -23,205 +20,23 @@
     overflow-x: hidden;
     overflow-y: auto;
     background: url('/images/backgrounds/club-arena-bg.jpg') center center / cover no-repeat fixed;
-    padding-top: 20px;
-    padding-bottom: 40px;
 }
 
-/* Fixed canvas wrapper - LOCKED at 600px, scales uniformly on smaller screens */
-.fixedCanvas {
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MAIN CONTENT - Replaces fixed canvas, uses natural flow
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.mainContent {
     width: 100%;
     max-width: 600px;
-    min-width: 0;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 0;
+    padding: 0 16px 40px 16px;
     box-sizing: border-box;
-    transform-origin: top center;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   TOP FLOATING ICON BAR
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-.topBar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    max-width: 1200px;
-    padding: 12px 24px;
-    z-index: 50;
-    position: relative;
-}
-
-.logoSection {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.logoIcon {
-    font-size: 24px;
-    color: #00d4ff;
-    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
-}
-
-.logoText {
-    font-size: 14px;
-    font-weight: 700;
-    color: #fff;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-}
-
-.statsSection {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-}
-
-.statBadge {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(0, 30, 60, 0.7);
-    border: 1px solid rgba(0, 180, 255, 0.3);
-    border-radius: 20px;
-    padding: 6px 14px;
-}
-
-.statIcon {
-    font-size: 16px;
-}
-
-.statLabel {
-    font-size: 10px;
-    font-weight: 600;
-    color: rgba(0, 200, 255, 0.9);
-    text-transform: uppercase;
-}
-
-.statValue {
-    font-size: 14px;
-    font-weight: 700;
-    color: #fff;
-}
-
-.addButton {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 1px solid rgba(0, 200, 255, 0.5);
-    background: rgba(0, 180, 255, 0.2);
-    color: #00d4ff;
-    font-size: 14px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-}
-
-.addButton:hover {
-    background: rgba(0, 200, 255, 0.4);
-    box-shadow: 0 0 10px rgba(0, 200, 255, 0.5);
-}
-
-.levelBadge {
-    font-size: 10px;
-    font-weight: 600;
-    color: #030a14;
-    background: linear-gradient(135deg, #00d4ff, #0080ff);
-    padding: 2px 8px;
-    border-radius: 10px;
-}
-
-.iconsSection {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.iconButton {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 1px solid rgba(0, 180, 255, 0.3);
-    background: rgba(0, 30, 60, 0.6);
-    color: rgba(0, 200, 255, 0.9);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-}
-
-.iconButton:hover {
-    background: rgba(0, 180, 255, 0.3);
-    border-color: rgba(0, 220, 255, 0.7);
-    box-shadow: 0 0 15px rgba(0, 200, 255, 0.4);
-}
-
-.iconButton svg {
-    width: 20px;
-    height: 20px;
-}
-
-.profileButton {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 2px solid rgba(0, 200, 255, 0.5);
-    background: rgba(0, 30, 60, 0.6);
-    cursor: pointer;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    transition: all 0.2s;
-}
-
-.profileButton:hover {
-    border-color: #00d4ff;
-    box-shadow: 0 0 15px rgba(0, 200, 255, 0.5);
-}
-
-.profileAvatar {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.helpButton {
-    padding: 8px 16px;
-    border-radius: 20px;
-    border: 1px solid rgba(0, 180, 255, 0.5);
-    background: rgba(0, 30, 60, 0.6);
-    color: #00d4ff;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.helpButton:hover {
-    background: rgba(0, 180, 255, 0.3);
-    box-shadow: 0 0 15px rgba(0, 200, 255, 0.4);
-}
-
-/* Welcome Message */
-.welcomeMessage {
-    font-size: 22px;
-    font-weight: 400;
-    color: #fff;
-    text-align: center;
-    margin: 20px 0 30px 0;
     z-index: 10;
-    letter-spacing: 1px;
+    position: relative;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -229,17 +44,17 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .backgroundLayer {
-    position: absolute;
+    position: fixed;
     inset: 0;
     z-index: 0;
     overflow: hidden;
+    pointer-events: none;
 }
 
 .circuitPattern {
     position: absolute;
     inset: 0;
     background:
-        /* Subtle circuit lines */
         linear-gradient(90deg, transparent 49.5%, rgba(0, 180, 255, 0.03) 49.5%, rgba(0, 180, 255, 0.03) 50.5%, transparent 50.5%),
         linear-gradient(0deg, transparent 49.5%, rgba(0, 180, 255, 0.03) 49.5%, rgba(0, 180, 255, 0.03) 50.5%, transparent 50.5%);
     background-size: 60px 60px;
@@ -283,535 +98,54 @@
 }
 
 @keyframes pulse {
-
-    0%,
-    100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-
-    50% {
-        opacity: 0.7;
-        transform: scale(1.1);
-    }
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.1); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   CAROUSEL CONTAINER
+   SECTION HEADERS
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-.carouselContainer {
+.sectionHeader {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 20px;
-    z-index: 10;
-    perspective: 1500px;
-    margin-bottom: 60px;
-    margin-top: 20px;
-    flex-grow: 1;
-    min-height: 420px;
-}
-
-.navArrow {
-    width: 50px;
-    height: 50px;
-    border: 2px solid rgba(0, 200, 255, 0.4);
-    border-radius: 50%;
-    background: rgba(0, 30, 60, 0.6);
-    color: rgba(0, 220, 255, 0.9);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-}
-
-.navArrow:hover {
-    background: rgba(0, 180, 255, 0.2);
-    border-color: rgba(0, 220, 255, 0.8);
-    box-shadow: 0 0 20px rgba(0, 200, 255, 0.4);
-    transform: scale(1.1);
-}
-
-.navArrow svg {
-    width: 28px;
-    height: 28px;
-}
-
-.cardsRow {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 30px;
-    transform-style: preserve-3d;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   FLOATING CARDS - 3D with Neon Borders
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-.floatingCard {
-    position: relative;
-    width: 240px;
-    height: 340px;
-    border-radius: 0;
-    background: transparent;
-    cursor: pointer;
-    transition: all 0.4s ease;
-    transform-style: preserve-3d;
-}
-
-.centerCard {
-    transform: translateZ(50px) scale(1.05);
-    z-index: 20;
-}
-
-/* Flat card - no tilting, used when less than 3 cards or for side cards */
-.flatCard {
-    transform: none;
-    z-index: 10;
-}
-
-.floatingCard:hover {
-    transform: translateZ(20px) scale(1.03);
-    z-index: 30;
-}
-
-/* Frame Image - fills entire card as the box itself */
-.cardFrame {
-    position: absolute;
-    inset: 0;
+    gap: 10px;
     width: 100%;
-    height: 100%;
-    object-fit: fill;
-    border-radius: 0;
-    z-index: 0;
+    padding: 16px 4px 8px 4px;
+    margin-top: 8px;
 }
 
-/* Full card image - covers entire card with no overlaid content */
-.fullCardImage {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 8px;
-    z-index: 0;
-}
-
-/* Content image - covers the interior, replacing frame's background */
-.cardContentImage {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    right: 10px;
-    bottom: 10px;
-    width: calc(100% - 20px);
-    height: calc(100% - 20px);
-    object-fit: cover;
-    z-index: 2;
-}
-
-/* Card Inner Content - Uses 10px inset to stay within frame borders
-   Following the "Nested Perfect Fit" protocol from the Hub standard */
-.cardInner {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    right: 10px;
-    bottom: 10px;
-    width: calc(100% - 20px);
-    height: calc(100% - 20px);
-    border-radius: 0;
-    background: transparent;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20px 15px;
-    overflow: hidden;
-    z-index: 2;
-    box-sizing: border-box;
-}
-
-.cardHeader {
-    text-align: center;
-    margin-bottom: 8px;
-}
-
-.cardTitle {
-    font-size: 16px;
-    font-weight: 800;
-    color: #fff;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    text-shadow: 0 0 20px rgba(0, 200, 255, 0.5);
-    margin: 0 0 4px 0;
-    font-family: 'Inter', 'Segoe UI', sans-serif;
-    /* Ensure long text wraps within frame */
-    word-wrap: break-word;
-    text-align: center;
-    max-width: 100%;
-    line-height: 1.2;
-}
-
-.cardSubtitle {
-    font-size: 11px;
-    font-weight: 600;
+.sectionLabel {
+    font-size: 13px;
+    font-weight: 700;
     color: rgba(0, 220, 255, 0.9);
     text-transform: uppercase;
-    letter-spacing: 4px;
+    letter-spacing: 3px;
 }
 
-/* Holographic Area */
-.holoArea {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    width: 100%;
-}
-
-.holoCircle {
-    width: 110px;
-    height: 110px;
-    border-radius: 50%;
-    background: radial-gradient(circle,
-            rgba(0, 180, 255, 0.15) 0%,
-            rgba(0, 100, 200, 0.08) 50%,
-            transparent 70%);
-    border: 2px solid rgba(0, 200, 255, 0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-}
-
-.holoCircle::before {
-    content: '';
-    position: absolute;
-    inset: -20px;
-    border-radius: 50%;
-    border: 1px solid rgba(0, 200, 255, 0.15);
-}
-
-.holoCircle::after {
-    content: '';
-    position: absolute;
-    inset: -40px;
-    border-radius: 50%;
-    border: 1px dashed rgba(0, 200, 255, 0.1);
-    animation: rotate 20s linear infinite;
-}
-
-@keyframes rotate {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-.holoIcon {
-    font-size: 36px;
-    filter: drop-shadow(0 0 15px rgba(0, 200, 255, 0.5));
-}
-
-.techLines {
-    position: absolute;
-    inset: 0;
-    background:
-        linear-gradient(0deg, transparent 48%, rgba(0, 180, 255, 0.05) 50%, transparent 52%),
-        linear-gradient(90deg, transparent 48%, rgba(0, 180, 255, 0.05) 50%, transparent 52%);
-    background-size: 20px 20px;
-    pointer-events: none;
-}
-
-/* Club Logo Image in Card */
-.clubLogo {
-    width: 100px;
-    height: 100px;
-    object-fit: contain;
-    border-radius: 8px;
-    filter: drop-shadow(0 0 15px rgba(0, 200, 255, 0.4));
-}
-
-/* Empty Card Placeholder */
-.emptyCard {
-    width: 280px;
-    height: 380px;
-    border-radius: 16px;
-    background: transparent;
-    opacity: 0;
-    pointer-events: none;
-}
-
-.cardFooter {
-    text-align: center;
-    padding-top: 16px;
-}
-
-.cardDescription {
-    font-size: 10px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.7);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    line-height: 1.5;
-    margin: 0;
-}
-
-/* Card Reflection */
-.cardReflection {
-    position: absolute;
-    bottom: -100px;
-    left: 0;
-    right: 0;
-    height: 100px;
-    background: linear-gradient(180deg,
-            rgba(0, 150, 255, 0.08) 0%,
-            transparent 100%);
-    transform: scaleY(-1) rotateX(60deg);
-    filter: blur(4px);
-    opacity: 0.4;
-    pointer-events: none;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   BOTTOM ROW - Smaller Card Tiles
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-.bottomRow {
-    display: flex;
-    gap: 16px;
-    z-index: 10;
-    padding: 20px 20px 30px 20px;
-    margin-top: 25px;
-    overflow-x: auto;
-    overflow-y: visible;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    /* Visible scrollbar slider */
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0, 200, 255, 0.6) rgba(0, 30, 60, 0.4);
-}
-
-/* Custom scrollbar styling for webkit browsers */
-.bottomRow::-webkit-scrollbar {
-    height: 8px;
-}
-
-.bottomRow::-webkit-scrollbar-track {
-    background: rgba(0, 30, 60, 0.4);
-    border-radius: 4px;
-}
-
-.bottomRow::-webkit-scrollbar-thumb {
-    background: linear-gradient(90deg, rgba(0, 180, 255, 0.7), rgba(0, 220, 255, 0.9));
-    border-radius: 4px;
-}
-
-.bottomRow::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(90deg, rgba(0, 200, 255, 0.9), rgba(0, 240, 255, 1));
-}
-
-/* 1.5x Hub dimensions: 162x243 (was 108x162) */
-.tileCard {
-    width: 162px;
-    height: 243px;
-    border-radius: 12px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: visible;
-    flex-shrink: 0;
-    scroll-snap-align: start;
-}
-
-.tileCard:hover,
-.tileActive {
-    box-shadow: 0 0 25px rgba(0, 200, 255, 0.4);
-    transform: translateY(-5px) scale(1.02);
-}
-
-/* Frame image for tiles - fills entire tile */
-.tileFrame {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: fill;
-    border-radius: 0;
-    z-index: 0;
-}
-
-/* Baked tile image - shows FULL image without cropping */
-.tileImage {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    border-radius: 8px;
-}
-
-/* Tile content - Uses inset positioning to stay within frame borders
-   Following "Nested Perfect Fit" protocol, using 8px inset for smaller tiles */
-.tileContent {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    right: 8px;
-    bottom: 8px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    z-index: 2;
-    background: transparent;
-    box-sizing: border-box;
-}
-
-.tileIcon {
-    font-size: 28px;
-    filter: drop-shadow(0 0 8px rgba(0, 200, 255, 0.4));
-}
-
-.tileTitle {
-    font-size: 9px;
+.sectionCount {
+    font-size: 12px;
     font-weight: 700;
     color: #fff;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    text-align: center;
-}
-
-.tileSubtitle {
-    font-size: 7px;
-    font-weight: 500;
-    color: rgba(0, 200, 255, 0.8);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    background: rgba(0, 180, 255, 0.25);
+    border: 1px solid rgba(0, 200, 255, 0.4);
+    border-radius: 12px;
+    padding: 2px 10px;
+    min-width: 24px;
     text-align: center;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   LOADING STATE
+   ACTION BAR - CREATE A CLUB / FIND A PLAYER / JOIN A CLUB
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-.loadingOverlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(3, 10, 20, 0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-}
-
-.spinner {
-    width: 50px;
-    height: 50px;
-    border: 3px solid rgba(0, 180, 255, 0.2);
-    border-top-color: rgba(0, 220, 255, 0.9);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   RESPONSIVE
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-@media (max-width: 900px) {
-    .floatingCard {
-        width: 220px;
-        height: 300px;
-    }
-
-    .cardsRow {
-        gap: 20px;
-    }
-
-    .cardTitle {
-        font-size: 18px;
-    }
-
-    .holoCircle {
-        width: 100px;
-        height: 100px;
-    }
-
-    .holoIcon {
-        font-size: 36px;
-    }
-}
-
-@media (max-width: 700px) {
-    .sideCard {
-        display: none;
-    }
-
-    .centerCard {
-        transform: none;
-    }
-
-    .bottomRow {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 10px;
-    }
-
-    .tileCard {
-        width: 90px;
-        height: 110px;
-    }
-}
-
-@media (max-width: 400px) {
-    .floatingCard {
-        width: 280px;
-        height: 360px;
-    }
-
-    .navArrow {
-        width: 40px;
-        height: 40px;
-    }
-
-    .bottomRow {
-        padding: 10px;
-    }
-
-    .tileCard {
-        width: 80px;
-        height: 100px;
-    }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   ACTION BUTTONS ROW - CREATE A CLUB / FIND A PLAYER / JOIN A CLUB
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-/* Horizontal Action Bar */
 .actionBarRow {
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
     z-index: 20;
-    margin: -60px 0 0 0;
+    margin: 0 0 4px 0;
     padding: 0;
 }
 
@@ -840,155 +174,25 @@
     cursor: pointer;
 }
 
-.actionZoneLeft {
-    left: 0;
-    width: 25%;
-}
-
-.actionZoneCenter {
-    left: 25%;
-    width: 50%;
-}
-
-.actionZoneRight {
-    right: 0;
-    width: 25%;
-}
-
-/* Center card row for Shark Club */
-.centerCardRow {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    margin: -80px 0 10px 0;
-}
-
-/* Side buttons - 148x148px to nearly fill canvas */
-.actionButton {
-    width: 148px;
-    height: 148px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border-radius: 0;
-    overflow: visible;
-    position: relative;
-    padding: 0;
-    outline: none;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    flex-shrink: 0;
-}
-
-.actionButton:hover {
-    transform: scale(1.1) translateY(-5px);
-}
-
-.actionButton:active {
-    transform: scale(0.95);
-}
-
-/* Find A Player button - 296x148px pill shape (user's reference design) */
-.findPlayerButton {
-    width: 296px;
-    height: 148px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    padding: 0;
-    outline: none;
-    margin: 0;
-    flex-shrink: 0;
-}
-
-.findPlayerButton:hover {
-    transform: scale(1.02);
-}
-
-/* Action button images - bright red text via CSS filter */
-.findPlayerImage {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    filter: hue-rotate(310deg) saturate(10) brightness(1.5);
-}
-
-/* Action button images - bright red text via CSS filter */
-.actionButtonImage {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    filter: hue-rotate(310deg) saturate(10) brightness(1.5);
-}
-
-/* White text inside the dark blue circle */
-.actionButtonLabel {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 75px;
-    height: 75px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(10, 30, 60, 0.95);
-    border-radius: 50%;
-    color: #FFFFFF;
-    font-size: 9px;
-    font-weight: 800;
-    text-align: center;
-    text-transform: uppercase;
-    letter-spacing: 0.2px;
-    line-height: 1.3;
-    pointer-events: none;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-/* Search bar container */
-.searchBarContainer {
-    flex: 1;
-    max-width: 300px;
-    margin: 0 15px;
-    display: flex;
-    align-items: center;
-    align-self: center;
-}
-
-.searchInput {
-    width: 100%;
-    padding: 12px 16px;
-    border: 2px solid rgba(0, 200, 255, 0.4);
-    border-radius: 25px;
-    background: rgba(0, 20, 40, 0.8);
-    color: #fff;
-    font-size: 14px;
-    outline: none;
-    transition: all 0.3s ease;
-}
-
-.searchInput::placeholder {
-    color: rgba(255, 255, 255, 0.5);
-}
-
-.searchInput:focus {
-    border-color: rgba(0, 200, 255, 0.8);
-    box-shadow: 0 0 15px rgba(0, 200, 255, 0.3);
-}
+.actionZoneLeft { left: 0; width: 25%; }
+.actionZoneCenter { left: 25%; width: 50%; }
+.actionZoneRight { right: 0; width: 25%; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SHARK CLUB CARD - CENTER
+   FEATURED CLUB — Shark Club Card
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-.sharkClubCard {
+.featuredCardRow {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 0 0 8px 0;
+}
+
+.featuredCard {
     position: relative;
-    width: 360px;
-    /* Height auto-sizes from child's aspect-ratio (604:1024) */
+    width: 340px;
     cursor: pointer;
     transition: all 0.3s ease;
     border-radius: 12px;
@@ -996,25 +200,163 @@
     flex-shrink: 0;
 }
 
-.sharkClubCard:hover {
-    transform: scale(1.05) translateY(-5px);
-    box-shadow: 0 20px 60px rgba(0, 200, 255, 0.4);
+.featuredCard:hover {
+    transform: scale(1.03) translateY(-4px);
+    box-shadow: 0 16px 50px rgba(0, 200, 255, 0.35);
 }
 
-.sharkClubImage {
+.cardSkeleton {
+    width: 340px;
+    height: 577px;
+    background: rgba(0, 30, 60, 0.6);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(0, 200, 255, 0.5);
+    font-size: 14px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MY CLUBS — Card Grid
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.clubGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    width: 100%;
+    padding: 4px 0 8px 0;
+}
+
+.clubCard {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 240 / 340;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.clubCard:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 12px 40px rgba(0, 200, 255, 0.3);
+}
+
+.clubCard:active {
+    transform: scale(0.97);
+}
+
+.clubCardFrame {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    display: block;
+    object-fit: fill;
     border-radius: 12px;
+    z-index: 0;
 }
 
+.clubCardInner {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 12px;
+    z-index: 2;
+    box-sizing: border-box;
+}
 
-/* ═══════════════════════════════════════════════════════════════
-   SHARK CLUB CARD STAT VALUES
-   All stats are now rendered directly in the SVG file.
-   No CSS overlays needed.
-   ═══════════════════════════════════════════════════════════════ */
+.clubCardHeader {
+    text-align: center;
+    width: 100%;
+}
+
+.clubCardTitle {
+    font-size: 14px;
+    font-weight: 800;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 0 20px rgba(0, 200, 255, 0.5);
+    margin: 0 0 4px 0;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    word-wrap: break-word;
+    text-align: center;
+    line-height: 1.2;
+}
+
+.clubCardRole {
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(0, 220, 255, 0.9);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+}
+
+.clubCardCenter {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.clubCardLogo {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: 8px;
+    filter: drop-shadow(0 0 12px rgba(0, 200, 255, 0.4));
+}
+
+.clubCardIcon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 180, 255, 0.15) 0%, rgba(0, 100, 200, 0.08) 50%, transparent 70%);
+    border: 2px solid rgba(0, 200, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    filter: drop-shadow(0 0 12px rgba(0, 200, 255, 0.4));
+}
+
+.clubCardFooter {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    width: 100%;
+    padding-top: 8px;
+}
+
+.clubCardStat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.clubCardStatValue {
+    font-size: 16px;
+    font-weight: 800;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(0, 200, 255, 0.4);
+}
+
+.clubCardStatLabel {
+    font-size: 8px;
+    font-weight: 600;
+    color: rgba(0, 200, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    NO CLUBS MESSAGE
@@ -1026,11 +368,13 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 60px 40px;
+    padding: 40px 30px;
     background: rgba(0, 20, 40, 0.6);
     border: 2px solid rgba(0, 200, 255, 0.3);
     border-radius: 20px;
     backdrop-filter: blur(10px);
+    margin: 20px 0;
+    width: 100%;
     max-width: 400px;
 }
 
@@ -1045,6 +389,92 @@
     font-size: 18px;
     color: #fff;
     font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BOTTOM ROW - 5 Quick Link Tile Cards
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.bottomRow {
+    display: flex;
+    gap: 16px;
+    z-index: 10;
+    padding: 20px 4px 30px 4px;
+    margin-top: 16px;
+    overflow-x: auto;
+    overflow-y: visible;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 200, 255, 0.6) rgba(0, 30, 60, 0.4);
+    width: 100%;
+}
+
+/* Custom scrollbar styling for webkit browsers */
+.bottomRow::-webkit-scrollbar { height: 8px; }
+.bottomRow::-webkit-scrollbar-track {
+    background: rgba(0, 30, 60, 0.4);
+    border-radius: 4px;
+}
+.bottomRow::-webkit-scrollbar-thumb {
+    background: linear-gradient(90deg, rgba(0, 180, 255, 0.7), rgba(0, 220, 255, 0.9));
+    border-radius: 4px;
+}
+.bottomRow::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(90deg, rgba(0, 200, 255, 0.9), rgba(0, 240, 255, 1));
+}
+
+.tileCard {
+    width: 162px;
+    height: 243px;
+    border-radius: 12px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: visible;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+}
+
+.tileCard:hover {
+    box-shadow: 0 0 25px rgba(0, 200, 255, 0.4);
+    transform: translateY(-5px) scale(1.02);
+}
+
+.tileImage {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LOADING STATE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.loadingOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(3, 10, 20, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(0, 180, 255, 0.2);
+    border-top-color: rgba(0, 220, 255, 0.9);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -1064,13 +494,8 @@
 }
 
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .modalContent {
@@ -1085,15 +510,8 @@
 }
 
 @keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .modalTitle {
@@ -1202,75 +620,117 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   RESPONSIVE - ACTION BUTTONS
+   RESPONSIVE
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-@media (max-width: 700px) {
-    .actionButtonsRow {
-        gap: 5px;
+/* ── Tablet & smaller ── */
+@media (max-width: 600px) {
+    .mainContent {
+        padding: 0 12px 30px 12px;
     }
 
-    .actionButton {
-        width: 100px;
-        height: 100px;
-    }
-}
-
-@media (max-width: 400px) {
-    .actionButtonsRow {
-        gap: 5px;
+    .featuredCard {
+        width: 300px;
     }
 
-    .actionButton {
-        width: 80px;
-        height: 80px;
+    .cardSkeleton {
+        width: 300px;
+        height: 509px;
     }
 
-    .modalContent {
-        padding: 30px 20px;
-        min-width: 280px;
+    .clubGrid {
+        gap: 12px;
     }
 }
 
 /* ── Mobile ≤480px ── */
 @media (max-width: 480px) {
-    .container { padding-top: 10px; padding-bottom: 20px; }
-    .topBar { padding: 8px 12px; }
-    .statBadge { padding: 4px 10px; gap: 4px; }
-    .statLabel { font-size: 8px; }
-    .statValue { font-size: 12px; }
-    .iconButton { width: 34px; height: 34px; }
-    .profileButton { width: 34px; height: 34px; }
-    .welcomeMessage { font-size: 17px; margin: 12px 0 20px; }
-    .carouselContainer { min-height: 320px; gap: 10px; margin-bottom: 30px; }
-    .navArrow { width: 36px; height: 36px; }
-    .floatingCard { width: 240px; height: 320px; }
-    .cardTitle { font-size: 14px; }
-    .holoCircle { width: 80px; height: 80px; }
-    .holoIcon { font-size: 28px; }
-    .bottomRow { gap: 8px; padding: 10px 10px 15px; }
-    .tileCard { width: 100px; height: 130px; }
-    .tileIcon { font-size: 22px; }
-    .tileTitle { font-size: 8px; }
-    .tileSubtitle { font-size: 6px; }
-    .actionButton { width: 90px; height: 90px; }
-    .findPlayerButton { width: 200px; height: 100px; }
-    .actionButtonLabel { width: 60px; height: 60px; font-size: 8px; }
-    .sharkClubCard { width: 280px; }
-    .modalContent { padding: 24px 16px; min-width: 260px; }
-    .modalTitle { font-size: 18px; }
-    .clubCodeInput { padding: 12px 16px; font-size: 16px; }
+    .mainContent {
+        padding: 0 10px 20px 10px;
+    }
+
+    .featuredCard {
+        width: 280px;
+    }
+
+    .cardSkeleton {
+        width: 280px;
+        height: 475px;
+    }
+
+    .clubCardTitle {
+        font-size: 12px;
+    }
+
+    .clubCardIcon {
+        width: 60px;
+        height: 60px;
+        font-size: 24px;
+    }
+
+    .clubCardLogo {
+        width: 60px;
+        height: 60px;
+    }
+
+    .clubCardStatValue {
+        font-size: 14px;
+    }
+
+    .clubCardStatLabel {
+        font-size: 7px;
+    }
+
+    .bottomRow {
+        gap: 10px;
+        padding: 12px 4px 20px;
+    }
+
+    .tileCard {
+        width: 120px;
+        height: 180px;
+    }
+
+    .modalContent {
+        padding: 24px 16px;
+        min-width: 260px;
+    }
+
+    .modalTitle {
+        font-size: 18px;
+    }
+
+    .clubCodeInput {
+        padding: 12px 16px;
+        font-size: 16px;
+    }
 }
 
 /* ── Small phones ≤380px ── */
 @media (max-width: 380px) {
-    .topBar { padding: 6px 8px; }
-    .statsSection { gap: 8px; }
-    .iconsSection { gap: 6px; }
-    .welcomeMessage { font-size: 15px; }
-    .floatingCard { width: 220px; height: 280px; }
-    .tileCard { width: 80px; height: 100px; }
-    .actionButton { width: 75px; height: 75px; }
-    .findPlayerButton { width: 160px; height: 80px; }
-    .sharkClubCard { width: 240px; }
+    .featuredCard {
+        width: 240px;
+    }
+
+    .cardSkeleton {
+        width: 240px;
+        height: 407px;
+    }
+
+    .clubGrid {
+        gap: 8px;
+    }
+
+    .clubCardInner {
+        padding: 10px 8px;
+    }
+
+    .clubCardTitle {
+        font-size: 11px;
+    }
+
+    .tileCard {
+        width: 100px;
+        height: 150px;
+    }
 }

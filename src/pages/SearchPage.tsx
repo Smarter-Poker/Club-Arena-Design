@@ -6,7 +6,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/common/Toast';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import './SearchPage.css';
 
 type SearchCategory = 'all' | 'clubs' | 'players' | 'tables';
@@ -141,7 +140,6 @@ export default function SearchPage() {
 
     return (
         <div className="search-page">
-            <SmarterHeader title=" Search" />
 
             <div className="search-bar">
                 <input

@@ -9,7 +9,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import AchievementBadge, { AchievementGrid } from '../components/achievements/AchievementBadge';
 import { achievementService, ACHIEVEMENTS as SERVICE_ACHIEVEMENTS } from '../services/AchievementService';
 import './AchievementsPage.css';
@@ -172,7 +171,6 @@ export default function AchievementsPage() {
 
     return (
         <div className="achievements-page">
-            <SmarterHeader title=" Achievements" />
 
             {/* Progress Summary */}
             <div className="progress-summary">

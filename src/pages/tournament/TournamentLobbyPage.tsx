@@ -12,7 +12,6 @@ import { useUserStore } from '../../stores/useUserStore';
 import { tournamentService } from '../../services/TournamentService';
 import TournamentLobbyCard from '../../components/tournament/TournamentLobbyCard';
 import { CardSkeleton } from '../../components/skeletons/CardSkeleton';
-import SmarterHeader from '../../components/layout/SmarterHeader';
 import { useToast } from '../../components/common/Toast';
 import { ArenaTrainingController } from '../../services/ArenaTrainingController';
 import styles from './TournamentLobbyPage.module.css';
@@ -459,7 +458,6 @@ export default function TournamentLobbyPage() {
 
     return (
         <div className={styles.page}>
-            <SmarterHeader title={clubId ? " Club Tournaments" : " Tournament Lobby"} />
 
             {/* Quick Stats */}
             <div className={styles.quickStats}>

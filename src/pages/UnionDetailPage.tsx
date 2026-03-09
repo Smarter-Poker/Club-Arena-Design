@@ -14,7 +14,6 @@ import { clubService } from '../services/ClubService';
 import { useUserStore } from '../stores/useUserStore';
 import { presenceService } from '../services/PresenceService';
 import { supabase } from '../lib/supabase';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import type { PokerTable, Club, Tournament } from '../types/database.types';
 import { useUnionStore } from '../stores/useUnionStore';
 import styles from './UnionDetailPage.module.css';
@@ -365,7 +364,6 @@ export default function UnionDetailPage() {
 
     return (
         <div className={styles.page}>
-            <SmarterHeader title={union.name} />
             <header className={styles.header}>
                 <div className={styles.unionAvatar}>
                     {union.avatarUrl || union.name.charAt(0)}

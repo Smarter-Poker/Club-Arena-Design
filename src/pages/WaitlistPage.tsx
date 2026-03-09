@@ -7,7 +7,6 @@ import { useNavigate } from 'react-router-dom';
 import { waitlistService, type WaitlistEntry as ServiceEntry } from '../services/WaitlistService';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import './WaitlistPage.css';
 
 interface WaitlistEntry {
@@ -109,7 +108,6 @@ export default function WaitlistPage() {
 
     return (
         <div className="waitlist-page">
-            <SmarterHeader title=" My Waitlist" />
 
             {/* Real-time indicator */}
             {entries.length > 0 && (

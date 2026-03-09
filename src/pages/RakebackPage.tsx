@@ -6,7 +6,6 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import './RakebackPage.css';
 
@@ -129,7 +128,6 @@ export default function RakebackPage() {
 
     return (
         <div className="rakeback-page">
-            <SmarterHeader title=" Rakeback" />
 
             <div className="rakeback-summary">
                 <div className="summary-card main">

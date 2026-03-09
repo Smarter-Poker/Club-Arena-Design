@@ -9,7 +9,6 @@ import { useUserStore } from '../stores/useUserStore';
 import { clubService } from '../services/ClubService';
 import { MembershipService } from '../services/MembershipService';
 import { useToast } from '../components/common/Toast';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import './InvitePage.css';
 
 interface ClubInfo {
@@ -126,7 +125,6 @@ export default function InvitePage() {
     if (loading) {
         return (
             <div className="invite-page">
-                <SmarterHeader title="📨 Invitation" />
                 <div className="loading-state"><div className="spinner" /></div>
             </div>
         );
@@ -135,7 +133,6 @@ export default function InvitePage() {
     if (error || !club) {
         return (
             <div className="invite-page">
-                <SmarterHeader title="📨 Invitation" />
                 <div className="error-state">
                     <span className="error-icon"></span>
                     <h2>Oops!</h2>
@@ -150,7 +147,6 @@ export default function InvitePage() {
 
     return (
         <div className="invite-page">
-            <SmarterHeader title="📨 Invitation" />
 
             <div className="invite-card">
                 <div className="club-avatar">

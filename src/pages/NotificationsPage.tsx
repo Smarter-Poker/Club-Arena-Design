@@ -6,7 +6,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import './NotificationsPage.css';
 
 interface Notification {
@@ -137,7 +136,6 @@ export default function NotificationsPage() {
 
     return (
         <div className="notifications-page">
-            <SmarterHeader title=" Notifications" />
 
             {/* Real-time indicator */}
             <div className="realtime-indicator">

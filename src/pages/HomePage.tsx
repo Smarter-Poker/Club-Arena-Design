@@ -1,12 +1,13 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * ♠ CLUB ARENA — Home Page (Carousel Layout v2)
+ * ♠ CLUB ARENA — Home Page (Redesigned Card Grid Layout)
  * ═══════════════════════════════════════════════════════════════════════════════
  * Layout Structure:
- * - Top Row: CREATE A CLUB (left) | FEATURED CLUB (center) | JOIN A CLUB (right)
- * - Carousel: User's clubs (unlimited clubs supported)
+ * - GlobalHeader (hub-style, hidden in iframe)
+ * - Action Bar: CREATE A CLUB | FIND A PLAYER | JOIN A CLUB
+ * - Featured Club: Shark Club (visible to ALL users)
+ * - My Clubs Grid: All clubs the user owns or has joined
  * - Bottom 5 tiles: Player Stats, Leaderboards, Cashier, Diamond Store, Hand History
- * - Shark Club = Featured Club (always first)
  */
 
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
@@ -14,7 +15,6 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import { ClubsService } from '../services/ClubsService';
-import { ArenaLobbyEngine } from '../services/ArenaLobbyEngine';
 import { useToast } from '../components/common/Toast';
 import GlobalHeader from '../components/navigation/GlobalHeader';
 import haptic from '../services/HapticService';
@@ -25,20 +25,6 @@ const CreateClubModal = lazy(() => import('../components/modals/CreateClubModal'
 const FindPlayerModal = lazy(() => import('../components/modals/FindPlayerModal'));
 const ClubStatsPanel = lazy(() => import('../components/club/ClubStatsPanel'));
 
-interface ClubCard {
-    id: string;
-    title: string;
-    subtitle: string;
-    description: string;
-    icon: string;
-    color: string;
-    logoUrl?: string;
-    frameImage: string;
-    fullCardImage?: string;
-    isFeatured?: boolean;
-    action: () => void;
-}
-
 const LAST_VISITED_KEY = 'club_arena_last_visited';
 const LAST_CLUB_KEY = 'club_arena_last_club'; // For Cashier routing
 
@@ -47,9 +33,6 @@ const getFrameImage = (index: number) => `${import.meta.env.BASE_URL}images/fram
 
 // Action button images
 const ACTION_BAR_HORIZONTAL = `${import.meta.env.BASE_URL}images/icons/action-bar-horizontal.png`;
-
-// Shark Club Card Image (baked-in full card)
-const SHARK_CLUB_CARD = `${import.meta.env.BASE_URL}images/shark-club-card.jpg`;
 
 // Bottom Row Tile Images (baked cards)
 const TILE_PLAYER_STATS = `${import.meta.env.BASE_URL}images/tiles/player-stats.jpg`;
@@ -81,7 +64,6 @@ export default function HomePage() {
     const [diamonds, setDiamonds] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [userClubs, setUserClubs] = useState<any[]>([]);
-    const [currentIndex, setCurrentIndex] = useState(0);
 
     // JOIN A CLUB modal state
     const [showJoinModal, setShowJoinModal] = useState(false);
@@ -103,24 +85,6 @@ export default function HomePage() {
         clubLevel: 1,
         activePlayers: 0,
     });
-
-    // FIXED CANVAS SCALING - Lock at 600px, scale uniformly on smaller viewports
-    const canvasRef = useRef<HTMLDivElement>(null);
-    const [canvasScale, setCanvasScale] = useState(1);
-
-    useEffect(() => {
-        const calculateScale = () => {
-            const CANVAS_WIDTH = 600;
-            const viewportWidth = window.innerWidth;
-            // Only scale down if viewport is smaller than canvas
-            const scale = viewportWidth < CANVAS_WIDTH ? viewportWidth / CANVAS_WIDTH : 1;
-            setCanvasScale(scale);
-        };
-
-        calculateScale();
-        window.addEventListener('resize', calculateScale);
-        return () => window.removeEventListener('resize', calculateScale);
-    }, []);
 
     // Fetch user stats and clubs from Supabase
     useEffect(() => {
@@ -149,15 +113,6 @@ export default function HomePage() {
                         active_tables: m.club?.active_tables || 0,
                     })) || [];
                     setUserClubs(clubs);
-
-                    // Restore last visited position
-                    const lastVisited = localStorage.getItem(LAST_VISITED_KEY);
-                    if (lastVisited && clubs && clubs.length > 0) {
-                        const idx = clubs.findIndex((c: any) => c.id === lastVisited);
-                        if (idx !== -1) {
-                            setCurrentIndex(idx);
-                        }
-                    }
                 }
             } catch (err) {
                 console.error('Error fetching user data:', err);
@@ -345,114 +300,12 @@ export default function HomePage() {
     };
 
     // ═══════════════════════════════════════════════════════════════════════════════
-    // BUILD CAROUSEL CARDS - Exclude Shark Club (already shown as featured card)
+    // BUILD MY CLUBS LIST — ALL clubs the user belongs to (excluding Shark Club
+    // since it's shown as the featured card above)
     // ═══════════════════════════════════════════════════════════════════════════════
-    const buildCarouselCards = (): ClubCard[] => {
-        const cards: ClubCard[] = [];
-
-        // Add user clubs to carousel, EXCLUDING Shark Club (it's shown as featured card)
-        userClubs
-            .filter((club) => club.id !== sharkClubId && !club.name.toLowerCase().includes('shark club')) // Don't duplicate Shark Club
-            .forEach((club, idx) => {
-                cards.push({
-                    id: club.id,
-                    title: club.name?.toUpperCase() || 'MY CLUB',
-                    subtitle: club.is_owner ? 'CLUB OWNER' : 'MEMBER',
-                    description: `${club.member_count || 0} MEMBERS\n${club.active_tables || 0} ACTIVE TABLES`,
-                    icon: club.logo_url ? '' : '♣',
-                    logoUrl: club.logo_url,
-                    color: '#00d4ff',
-                    frameImage: getFrameImage(idx),
-                    isFeatured: false,
-                    action: () => {
-                        localStorage.setItem(LAST_VISITED_KEY, club.id);
-                        localStorage.setItem(LAST_CLUB_KEY, club.id);
-                        navigate(`/clubs/${club.id}`);
-                    },
-                });
-            });
-
-        return cards;
-    };
-
-    const carouselCards = buildCarouselCards();
-    const hasClubs = userClubs.length > 0;
-
-    // Navigation functions
-    const canNavigate = carouselCards.length >= 3;
-    const nextCard = () => {
-        if (canNavigate) {
-            setCurrentIndex((prev) => (prev + 1) % carouselCards.length);
-        }
-    };
-    const prevCard = () => {
-        if (canNavigate) {
-            setCurrentIndex((prev) => (prev - 1 + carouselCards.length) % carouselCards.length);
-        }
-    };
-
-    // Get visible cards
-    const getVisibleCards = () => {
-        if (carouselCards.length === 0) return [];
-        if (carouselCards.length <= 2) return carouselCards;
-
-        const prev = (currentIndex - 1 + carouselCards.length) % carouselCards.length;
-        const next = (currentIndex + 1) % carouselCards.length;
-        return [carouselCards[prev], carouselCards[currentIndex], carouselCards[next]];
-    };
-
-    const visibleCards = getVisibleCards();
-
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // BOTTOM 5 QUICK LINKS (New Order)
-    // ═══════════════════════════════════════════════════════════════════════════════
-    const quickLinks = [
-        {
-            id: 'player-stats',
-            title: 'PLAYER STATS',
-            icon: '',
-            subtitle: 'Your Profile',
-            action: () => navigate('/profile'),
-        },
-        {
-            id: 'leaderboard',
-            title: 'LEADERBOARDS',
-            icon: '',
-            subtitle: 'Rankings',
-            action: () => navigate('/leaderboard'),
-        },
-        {
-            id: 'cashier',
-            title: 'CASHIER',
-            icon: '',
-            subtitle: 'Chips & Cash',
-            action: () => {
-                // Route to last club's cashier if multi-club, else first club
-                const lastClub = localStorage.getItem(LAST_CLUB_KEY);
-                if (lastClub) {
-                    navigate(`/clubs/${lastClub}/cashier`);
-                } else if (userClubs.length > 0) {
-                    navigate(`/clubs/${userClubs[0].id}/cashier`);
-                } else {
-                    toast.info('Join a club first to access the cashier');
-                }
-            },
-        },
-        {
-            id: 'diamond-store',
-            title: 'DIAMOND STORE',
-            icon: '',
-            subtitle: 'Purchase',
-            action: () => navigate('/store'),
-        },
-        {
-            id: 'hand-history',
-            title: 'HAND HISTORY',
-            icon: '',
-            subtitle: 'Review hands',
-            action: () => navigate('/hand-history'),
-        },
-    ];
+    const myClubs = userClubs.filter(
+        (club) => club.id !== sharkClubId && !club.name?.toLowerCase().includes('shark club')
+    );
 
     return (
         <div className={styles.container}>
@@ -468,13 +321,9 @@ export default function HomePage() {
             {!isInIframe && <GlobalHeader />}
 
             {/* ═══════════════════════════════════════════════════════════════════════
-                FIXED CANVAS - All content scales uniformly (locked at 600px)
+                MAIN CONTENT — Scrollable card layout
             ═══════════════════════════════════════════════════════════════════════ */}
-            <div
-                ref={canvasRef}
-                className={styles.fixedCanvas}
-                style={{ transform: `scale(${canvasScale})` }}
-            >
+            <div className={styles.mainContent}>
 
                 {/* ═══════════════════════════════════════════════════════════════════════
                     HORIZONTAL ACTION BAR - Below Header (with clickable zones)
@@ -505,21 +354,25 @@ export default function HomePage() {
                 </div>
 
                 {/* ═══════════════════════════════════════════════════════════════════════
-                    SHARK CLUB CARD - Using VectorMagic SVG with dynamic text elements
+                    FEATURED CLUB — Shark Club (Visible to ALL users)
                 ═══════════════════════════════════════════════════════════════════════ */}
-                <div className={styles.centerCardRow}>
+                <div className={styles.sectionHeader}>
+                    <span className={styles.sectionLabel}>FEATURED CLUB</span>
+                </div>
+                <div className={styles.featuredCardRow}>
                     <div
-                        className={styles.sharkClubCard}
+                        className={styles.featuredCard}
                         onClick={() => {
                             haptic.success();
                             if (sharkClubId) {
+                                localStorage.setItem(LAST_VISITED_KEY, sharkClubId);
+                                localStorage.setItem(LAST_CLUB_KEY, sharkClubId);
                                 navigate(`/clubs/${sharkClubId}`);
                             } else {
                                 toast.info('Shark Club not found. Join or create a club!');
                             }
                         }}
                     >
-                        {/* Full VectorMagic SVG - ClubStatsPanel handles dynamic text updates */}
                         <Suspense fallback={<div className={styles.cardSkeleton}>Loading...</div>}>
                             <ClubStatsPanel
                                 totalMembers={sharkClubStats.totalMembers}
@@ -530,68 +383,78 @@ export default function HomePage() {
                     </div>
                 </div>
 
-                {/* Club Cards Carousel - Hidden for now, replaced by Shark Club card */}
-                {hasClubs && carouselCards.length > 1 && (
-                    <div className={styles.carouselContainer}>
-                        <div className={styles.cardsRow}>
-                            {canNavigate && (
-                                <button className={styles.navArrow} onClick={prevCard}>
-                                    <svg viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-                                    </svg>
-                                </button>
-                            )}
-
-                            {visibleCards.map((card, index) => {
-                                if (!card) return <div key={`empty-${index}`} className={styles.emptyCard}></div>;
-
-                                const isCenter = carouselCards.length >= 3 && index === 1;
-
-                                return (
-                                    <div
-                                        key={card.id}
-                                        className={`${styles.floatingCard} ${isCenter ? styles.centerCard : styles.flatCard}`}
-                                        onClick={card.action}
-                                    >
-                                        <img src={card.frameImage} alt="" className={styles.cardFrame} />
-                                        <div className={styles.cardInner}>
-                                            <div className={styles.cardHeader}>
-                                                <h2 className={styles.cardTitle}>{card.title}</h2>
-                                                <span className={styles.cardSubtitle}>{card.subtitle}</span>
-                                            </div>
-                                            <div className={styles.holoArea}>
-                                                <div className={styles.holoCircle}>
-                                                    {card.logoUrl ? (
-                                                        <img src={card.logoUrl} alt="" className={styles.clubLogo} />
-                                                    ) : (
-                                                        <span className={styles.holoIcon}>{card.icon}</span>
-                                                    )}
+                {/* ═══════════════════════════════════════════════════════════════════════
+                    MY CLUBS — Grid of all clubs the user belongs to
+                ═══════════════════════════════════════════════════════════════════════ */}
+                {myClubs.length > 0 && (
+                    <>
+                        <div className={styles.sectionHeader}>
+                            <span className={styles.sectionLabel}>MY CLUBS</span>
+                            <span className={styles.sectionCount}>{myClubs.length}</span>
+                        </div>
+                        <div className={styles.clubGrid}>
+                            {myClubs.map((club, idx) => (
+                                <div
+                                    key={club.id}
+                                    className={styles.clubCard}
+                                    onClick={() => {
+                                        haptic.medium();
+                                        localStorage.setItem(LAST_VISITED_KEY, club.id);
+                                        localStorage.setItem(LAST_CLUB_KEY, club.id);
+                                        navigate(`/clubs/${club.id}`);
+                                    }}
+                                >
+                                    <img
+                                        src={getFrameImage(idx)}
+                                        alt=""
+                                        className={styles.clubCardFrame}
+                                    />
+                                    <div className={styles.clubCardInner}>
+                                        <div className={styles.clubCardHeader}>
+                                            <h3 className={styles.clubCardTitle}>
+                                                {club.name?.toUpperCase() || 'MY CLUB'}
+                                            </h3>
+                                            <span className={styles.clubCardRole}>
+                                                {club.is_owner ? 'OWNER' : 'MEMBER'}
+                                            </span>
+                                        </div>
+                                        <div className={styles.clubCardCenter}>
+                                            {club.logo_url ? (
+                                                <img src={club.logo_url} alt="" className={styles.clubCardLogo} />
+                                            ) : (
+                                                <div className={styles.clubCardIcon}>
+                                                    <span>♣</span>
                                                 </div>
+                                            )}
+                                        </div>
+                                        <div className={styles.clubCardFooter}>
+                                            <div className={styles.clubCardStat}>
+                                                <span className={styles.clubCardStatValue}>{club.member_count || 0}</span>
+                                                <span className={styles.clubCardStatLabel}>MEMBERS</span>
                                             </div>
-                                            <div className={styles.cardFooter}>
-                                                <p className={styles.cardDescription}>
-                                                    {card.description.split('\n').map((line, i) => (
-                                                        <span key={i}>{line}<br /></span>
-                                                    ))}
-                                                </p>
+                                            <div className={styles.clubCardStat}>
+                                                <span className={styles.clubCardStatValue}>{club.active_tables || 0}</span>
+                                                <span className={styles.clubCardStatLabel}>TABLES</span>
                                             </div>
                                         </div>
                                     </div>
-                                );
-                            })}
-
-                            {canNavigate && (
-                                <button className={styles.navArrow} onClick={nextCard}>
-                                    <svg viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z" />
-                                    </svg>
-                                </button>
-                            )}
+                                </div>
+                            ))}
                         </div>
+                    </>
+                )}
+
+                {/* No Clubs Message */}
+                {!isLoading && userClubs.length === 0 && (
+                    <div className={styles.noClubsMessage}>
+                        <p>Welcome to Club Arena</p>
+                        <p>Create or join a club to get started!</p>
                     </div>
                 )}
 
-                {/* Bottom Row - 5 Baked Tile Cards */}
+                {/* ═══════════════════════════════════════════════════════════════════════
+                    BOTTOM ROW — 5 Quick Link Tile Cards
+                ═══════════════════════════════════════════════════════════════════════ */}
                 <div className={styles.bottomRow}>
                     <button className={styles.tileCard} onClick={() => navigate('/profile')}>
                         <img src={TILE_PLAYER_STATS} alt="Player Stats" className={styles.tileImage} />
@@ -633,84 +496,82 @@ export default function HomePage() {
             {/* ═══════════════════════════════════════════════════════════════════════
                 JOIN A CLUB MODAL
             ═══════════════════════════════════════════════════════════════════════ */}
-            {
-                showJoinModal && (
-                    <div className={styles.modalOverlay} onClick={() => {
-                        setShowJoinModal(false);
-                        setShowReferralPrompt(false);
-                        setClubCode('');
-                        setReferralCode('');
-                        setValidClubId(null);
-                    }}>
-                        <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-                            {!showReferralPrompt ? (
-                                <>
-                                    <h2 className={styles.modalTitle}>Join a Club</h2>
-                                    <div className={styles.inputGroup}>
-                                        <input
-                                            ref={joinInputRef}
-                                            type="tel"
-                                            inputMode="numeric"
-                                            pattern="[0-9]{5}"
-                                            maxLength={5}
-                                            className={styles.clubCodeInput}
-                                            placeholder="Enter 5-Digit Club Code"
-                                            value={clubCode}
-                                            onChange={(e) => setClubCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
-                                            onKeyDown={(e) => e.key === 'Enter' && handleJoinClubSubmit()}
-                                        />
-                                    </div>
-                                    <div className={styles.modalButtons}>
-                                        <button
-                                            className={styles.modalButtonPrimary}
-                                            onClick={handleJoinClubSubmit}
-                                            disabled={isValidatingCode}
-                                        >
-                                            {isValidatingCode ? 'Validating...' : 'Continue'}
-                                        </button>
-                                        <button
-                                            className={styles.modalButtonSecondary}
-                                            onClick={() => setShowJoinModal(false)}
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <h2 className={styles.modalTitle}>Referral Code</h2>
-                                    <p className={styles.modalSubtitle}>
-                                        Enter a referral code or join without one
-                                    </p>
-                                    <div className={styles.inputGroup}>
-                                        <input
-                                            type="text"
-                                            className={styles.clubCodeInput}
-                                            placeholder="Referral Code (Optional)"
-                                            value={referralCode}
-                                            onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                                        />
-                                    </div>
-                                    <div className={styles.modalButtons}>
-                                        <button
-                                            className={styles.modalButtonPrimary}
-                                            onClick={handleJoinWithReferral}
-                                        >
-                                            Join with Referral
-                                        </button>
-                                        <button
-                                            className={styles.modalButtonSecondary}
-                                            onClick={handleJoinWithoutReferral}
-                                        >
-                                            Join Without Referral
-                                        </button>
-                                    </div>
-                                </>
-                            )}
-                        </div>
+            {showJoinModal && (
+                <div className={styles.modalOverlay} onClick={() => {
+                    setShowJoinModal(false);
+                    setShowReferralPrompt(false);
+                    setClubCode('');
+                    setReferralCode('');
+                    setValidClubId(null);
+                }}>
+                    <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+                        {!showReferralPrompt ? (
+                            <>
+                                <h2 className={styles.modalTitle}>Join a Club</h2>
+                                <div className={styles.inputGroup}>
+                                    <input
+                                        ref={joinInputRef}
+                                        type="tel"
+                                        inputMode="numeric"
+                                        pattern="[0-9]{5}"
+                                        maxLength={5}
+                                        className={styles.clubCodeInput}
+                                        placeholder="Enter 5-Digit Club Code"
+                                        value={clubCode}
+                                        onChange={(e) => setClubCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleJoinClubSubmit()}
+                                    />
+                                </div>
+                                <div className={styles.modalButtons}>
+                                    <button
+                                        className={styles.modalButtonPrimary}
+                                        onClick={handleJoinClubSubmit}
+                                        disabled={isValidatingCode}
+                                    >
+                                        {isValidatingCode ? 'Validating...' : 'Continue'}
+                                    </button>
+                                    <button
+                                        className={styles.modalButtonSecondary}
+                                        onClick={() => setShowJoinModal(false)}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <h2 className={styles.modalTitle}>Referral Code</h2>
+                                <p className={styles.modalSubtitle}>
+                                    Enter a referral code or join without one
+                                </p>
+                                <div className={styles.inputGroup}>
+                                    <input
+                                        type="text"
+                                        className={styles.clubCodeInput}
+                                        placeholder="Referral Code (Optional)"
+                                        value={referralCode}
+                                        onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                                    />
+                                </div>
+                                <div className={styles.modalButtons}>
+                                    <button
+                                        className={styles.modalButtonPrimary}
+                                        onClick={handleJoinWithReferral}
+                                    >
+                                        Join with Referral
+                                    </button>
+                                    <button
+                                        className={styles.modalButtonSecondary}
+                                        onClick={handleJoinWithoutReferral}
+                                    >
+                                        Join Without Referral
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
-                )
-            }
+                </div>
+            )}
 
             {/* CREATE A CLUB MODAL */}
             <Suspense fallback={null}>
@@ -733,14 +594,11 @@ export default function HomePage() {
             </Suspense>
 
             {/* Loading indicator */}
-            {
-                isLoading && (
-                    <div className={styles.loadingOverlay}>
-                        <div className={styles.spinner}></div>
-                    </div>
-                )
-            }
-        </div >
+            {isLoading && (
+                <div className={styles.loadingOverlay}>
+                    <div className={styles.spinner}></div>
+                </div>
+            )}
+        </div>
     );
 }
-// Deploy trigger 1769659300

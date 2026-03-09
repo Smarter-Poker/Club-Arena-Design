@@ -4,7 +4,6 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import FeedbackForm from '../components/support/FeedbackForm';
 import SystemStatus from '../components/support/SystemStatus';
 import './HelpPage.css';
@@ -63,7 +62,6 @@ export default function HelpPage() {
 
     return (
         <div className="help-page">
-            <SmarterHeader title="❓ Help & FAQ" />
 
             <div className="help-search">
                 <input

@@ -11,7 +11,6 @@ import { supabase } from '../lib/supabase';
 import { useWalletStore } from '../stores/useWalletStore';
 import { useUserStore } from '../stores/useUserStore';
 import { TransactionHistory } from '../components/wallet/TransactionHistory';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import DepositWithdrawModal from '../components/wallet/DepositWithdrawModal';
 import { WalletService } from '../services/WalletService';
 import { MetalFrame, MetalButton, MetalInput, MetalCard } from '../components/metal-ui';
@@ -141,7 +140,6 @@ export default function PlayerWalletPage() {
 
     return (
         <div className="wallet-page">
-            <SmarterHeader title="My Wallet" />
 
             {/* Total Balance Card - Metal Frame */}
             <MetalFrame variant="card" size="lg">

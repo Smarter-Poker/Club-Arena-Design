@@ -6,7 +6,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/common/Toast';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import './BadBeatJackpotPage.css';
 
@@ -135,7 +134,6 @@ export default function BadBeatJackpotPage() {
     if (loading) {
         return (
             <div className="bbj-page">
-                <SmarterHeader title=" Bad Beat Jackpot" />
                 <div className="loading-state"><div className="spinner" /></div>
                 {clubId && <ClubBottomNav clubId={clubId} />}
             </div>
@@ -144,7 +142,6 @@ export default function BadBeatJackpotPage() {
 
     return (
         <div className="bbj-page">
-            <SmarterHeader title=" Bad Beat Jackpot" />
 
             {/* Current Jackpot */}
             <div className="jackpot-display">

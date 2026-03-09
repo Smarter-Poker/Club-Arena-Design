@@ -7,7 +7,6 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import FriendsList from '../components/social/FriendsList';
 import RecentPlayers from '../components/social/RecentPlayers';
 import InviteToTable from '../components/social/InviteToTable';
@@ -183,7 +182,6 @@ export default function FriendsPage() {
 
     return (
         <div className="friends-page">
-            <SmarterHeader title="👫 Friends" />
 
             <div className="friends-summary">
                 <div className="summary-stat">

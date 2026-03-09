@@ -5,7 +5,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import DailyBonusWheel from '../components/bonus/DailyBonusWheel';
 import LeaderboardCard from '../components/leaderboard/LeaderboardCard';
 import ReferralModal from '../components/social/ReferralModal';
@@ -131,7 +130,6 @@ export default function PromotionsPage() {
 
     return (
         <div className="promotions-page">
-            <SmarterHeader title=" Promotions" />
 
             {/* Daily Bonus Button */}
             <div className="daily-bonus-banner" onClick={() => setShowBonusWheel(true)}>

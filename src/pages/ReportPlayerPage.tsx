@@ -6,7 +6,6 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import './ReportPlayerPage.css';
 
 type ReportReason = 'collusion' | 'abuse' | 'cheating' | 'harassment' | 'other';
@@ -74,7 +73,6 @@ export default function ReportPlayerPage() {
     if (submitted) {
         return (
             <div className="report-page">
-                <SmarterHeader title=" Report Player" />
                 <div className="success-state">
                     <span className="success-icon"></span>
                     <h2>Report Submitted</h2>
@@ -89,7 +87,6 @@ export default function ReportPlayerPage() {
 
     return (
         <div className="report-page">
-            <SmarterHeader title=" Report Player" />
 
             <div className="report-content">
                 {error && <div className="error-message">{error}</div>}

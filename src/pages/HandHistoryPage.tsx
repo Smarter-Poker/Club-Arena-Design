@@ -14,7 +14,6 @@ import { useToast } from '../components/common/Toast';
 import { exportToCSV } from '../lib/export';
 import { supabase } from '../lib/supabase';
 import HandReplay from '../components/replay/HandReplay';
-import SmarterHeader from '../components/layout/SmarterHeader';
 import ReplayActions from '../components/table/ReplayActions';
 import HandReplayPlayer from '../components/table/HandReplayPlayer';
 import HandHistoryModal from '../components/club/HandHistoryModal';
@@ -207,7 +206,6 @@ export default function HandHistoryPage() {
 
     return (
         <div className="hand-history-page">
-            <SmarterHeader title=" Hand History" />
 
             {/* Filters */}
             <div className="hh-filters">
