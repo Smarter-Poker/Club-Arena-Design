@@ -300,11 +300,16 @@ export default function HomePage() {
     };
 
     // ═══════════════════════════════════════════════════════════════════════════════
-    // MY CLUBS LIST — ALL clubs the user belongs to (including Shark Club)
-    // Featured card is shown separately above, but user's owned/joined clubs
-    // all appear in the grid below so they can navigate to any of them
+    // USER'S CLUBS — excluding the featured Shark Club (25450) to avoid duplicate
+    // in the showcase row. These appear as side cards flanking the featured card.
     // ═══════════════════════════════════════════════════════════════════════════════
-    const myClubs = userClubs;
+    const sideClubs = userClubs.filter(
+        (club) => club.id !== sharkClubId
+    );
+
+    // Split side clubs into left and right groups for the World Hub layout
+    const leftClubs = sideClubs.filter((_: any, i: number) => i % 2 === 0);
+    const rightClubs = sideClubs.filter((_: any, i: number) => i % 2 === 1);
 
     return (
         <div className={styles.container}>
@@ -353,95 +358,108 @@ export default function HomePage() {
                 </div>
 
                 {/* ═══════════════════════════════════════════════════════════════════════
-                    FEATURED CLUB — Shark Club (Visible to ALL users)
+                    CARD SHOWCASE — World Hub Style Layout
+                    Center: Shark Club (Featured, larger, raised)
+                    Sides: User's clubs (smaller, angled perspective)
                 ═══════════════════════════════════════════════════════════════════════ */}
-                <div className={styles.sectionHeader}>
-                    <span className={styles.sectionLabel}>FEATURED CLUB</span>
-                </div>
-                <div className={styles.featuredCardRow}>
-                    <div
-                        className={styles.featuredCard}
-                        onClick={() => {
-                            haptic.success();
-                            if (sharkClubId) {
-                                localStorage.setItem(LAST_VISITED_KEY, sharkClubId);
-                                localStorage.setItem(LAST_CLUB_KEY, sharkClubId);
-                                navigate(`/clubs/${sharkClubId}`);
-                            } else {
-                                toast.info('Shark Club not found. Join or create a club!');
-                            }
-                        }}
-                    >
-                        <Suspense fallback={<div className={styles.cardSkeleton}>Loading...</div>}>
-                            <ClubStatsPanel
-                                totalMembers={sharkClubStats.totalMembers}
-                                clubLevel={sharkClubStats.clubLevel}
-                                activePlayers={sharkClubStats.activePlayers}
-                            />
-                        </Suspense>
-                    </div>
-                </div>
-
-                {/* ═══════════════════════════════════════════════════════════════════════
-                    MY CLUBS — Grid of all clubs the user belongs to
-                ═══════════════════════════════════════════════════════════════════════ */}
-                {myClubs.length > 0 && (
-                    <>
-                        <div className={styles.sectionHeader}>
-                            <span className={styles.sectionLabel}>MY CLUBS</span>
-                            <span className={styles.sectionCount}>{myClubs.length}</span>
-                        </div>
-                        <div className={styles.clubGrid}>
-                            {myClubs.map((club, idx) => (
-                                <div
-                                    key={club.id}
-                                    className={styles.clubCard}
-                                    onClick={() => {
-                                        haptic.medium();
-                                        localStorage.setItem(LAST_VISITED_KEY, club.id);
-                                        localStorage.setItem(LAST_CLUB_KEY, club.id);
-                                        navigate(`/clubs/${club.id}`);
-                                    }}
-                                >
-                                    <img
-                                        src={getFrameImage(idx)}
-                                        alt=""
-                                        className={styles.clubCardFrame}
-                                    />
-                                    <div className={styles.clubCardInner}>
-                                        <div className={styles.clubCardHeader}>
-                                            <h3 className={styles.clubCardTitle}>
-                                                {club.name?.toUpperCase() || 'MY CLUB'}
-                                            </h3>
-                                            <span className={styles.clubCardRole}>
-                                                {club.is_owner ? 'OWNER' : 'MEMBER'}
-                                            </span>
-                                        </div>
-                                        <div className={styles.clubCardCenter}>
-                                            {club.logo_url ? (
-                                                <img src={club.logo_url} alt="" className={styles.clubCardLogo} />
-                                            ) : (
-                                                <div className={styles.clubCardIcon}>
-                                                    <span>♣</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className={styles.clubCardFooter}>
-                                            <div className={styles.clubCardStat}>
-                                                <span className={styles.clubCardStatValue}>{club.member_count || 0}</span>
-                                                <span className={styles.clubCardStatLabel}>MEMBERS</span>
-                                            </div>
-                                            <div className={styles.clubCardStat}>
-                                                <span className={styles.clubCardStatValue}>{club.active_tables || 0}</span>
-                                                <span className={styles.clubCardStatLabel}>TABLES</span>
-                                            </div>
-                                        </div>
+                <div className={styles.showcaseContainer}>
+                    {/* LEFT SIDE CLUBS */}
+                    <div className={styles.sideColumn}>
+                        {leftClubs.map((club: any, idx: number) => (
+                            <div
+                                key={club.id}
+                                className={`${styles.sideCard} ${styles.sideCardLeft}`}
+                                onClick={() => {
+                                    haptic.medium();
+                                    localStorage.setItem(LAST_VISITED_KEY, club.id);
+                                    localStorage.setItem(LAST_CLUB_KEY, club.id);
+                                    navigate(`/clubs/${club.id}`);
+                                }}
+                            >
+                                <img src={getFrameImage(idx)} alt="" className={styles.sideCardFrame} />
+                                <div className={styles.sideCardInner}>
+                                    <h3 className={styles.sideCardTitle}>
+                                        {club.name?.toUpperCase() || 'MY CLUB'}
+                                    </h3>
+                                    <span className={styles.sideCardRole}>
+                                        {club.is_owner ? 'OWNER' : 'MEMBER'}
+                                    </span>
+                                    <div className={styles.sideCardCenter}>
+                                        {club.logo_url ? (
+                                            <img src={club.logo_url} alt="" className={styles.sideCardLogo} />
+                                        ) : (
+                                            <div className={styles.sideCardIcon}>♣</div>
+                                        )}
+                                    </div>
+                                    <div className={styles.sideCardStats}>
+                                        <span>{club.member_count || 0} Members</span>
                                     </div>
                                 </div>
-                            ))}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* CENTER — FEATURED SHARK CLUB */}
+                    <div className={styles.centerColumn}>
+                        <div
+                            className={styles.featuredCard}
+                            onClick={() => {
+                                haptic.success();
+                                if (sharkClubId) {
+                                    localStorage.setItem(LAST_VISITED_KEY, sharkClubId);
+                                    localStorage.setItem(LAST_CLUB_KEY, sharkClubId);
+                                    navigate(`/clubs/${sharkClubId}`);
+                                } else {
+                                    toast.info('Shark Club not found. Join or create a club!');
+                                }
+                            }}
+                        >
+                            <Suspense fallback={<div className={styles.cardSkeleton}>Loading...</div>}>
+                                <ClubStatsPanel
+                                    totalMembers={sharkClubStats.totalMembers}
+                                    clubLevel={sharkClubStats.clubLevel}
+                                    activePlayers={sharkClubStats.activePlayers}
+                                />
+                            </Suspense>
                         </div>
-                    </>
-                )}
+                    </div>
+
+                    {/* RIGHT SIDE CLUBS */}
+                    <div className={styles.sideColumn}>
+                        {rightClubs.map((club: any, idx: number) => (
+                            <div
+                                key={club.id}
+                                className={`${styles.sideCard} ${styles.sideCardRight}`}
+                                onClick={() => {
+                                    haptic.medium();
+                                    localStorage.setItem(LAST_VISITED_KEY, club.id);
+                                    localStorage.setItem(LAST_CLUB_KEY, club.id);
+                                    navigate(`/clubs/${club.id}`);
+                                }}
+                            >
+                                <img src={getFrameImage(idx + 2)} alt="" className={styles.sideCardFrame} />
+                                <div className={styles.sideCardInner}>
+                                    <h3 className={styles.sideCardTitle}>
+                                        {club.name?.toUpperCase() || 'MY CLUB'}
+                                    </h3>
+                                    <span className={styles.sideCardRole}>
+                                        {club.is_owner ? 'OWNER' : 'MEMBER'}
+                                    </span>
+                                    <div className={styles.sideCardCenter}>
+                                        {club.logo_url ? (
+                                            <img src={club.logo_url} alt="" className={styles.sideCardLogo} />
+                                        ) : (
+                                            <div className={styles.sideCardIcon}>♣</div>
+                                        )}
+                                    </div>
+                                    <div className={styles.sideCardStats}>
+                                        <span>{club.member_count || 0} Members</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
 
                 {/* No Clubs Message */}
                 {!isLoading && userClubs.length === 0 && (

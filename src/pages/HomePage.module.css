@@ -28,7 +28,7 @@
 
 .mainContent {
     width: 100%;
-    max-width: 600px;
+    max-width: 960px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
@@ -103,7 +103,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   SECTION HEADERS
+   SECTION HEADERS (kept for potential future use)
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .sectionHeader {
@@ -132,6 +132,155 @@
     border-radius: 12px;
     padding: 2px 10px;
     min-width: 24px;
+    text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CARD SHOWCASE — World Hub Style (3D Perspective Layout)
+   Center: Featured card (larger, raised)
+   Sides: User's clubs (smaller, angled)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.showcaseContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 960px;
+    perspective: 1200px;
+    padding: 10px 0 20px 0;
+    gap: 0;
+    min-height: 400px;
+}
+
+.sideColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 0 0 auto;
+    align-items: center;
+    z-index: 5;
+}
+
+.centerColumn {
+    flex: 0 0 auto;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ── Side Cards (Left + Right) ── */
+
+.sideCard {
+    position: relative;
+    width: 180px;
+    aspect-ratio: 240 / 340;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    overflow: hidden;
+    transform-style: preserve-3d;
+}
+
+.sideCardLeft {
+    transform: perspective(800px) rotateY(12deg) scale(0.88);
+    margin-right: -20px;
+}
+
+.sideCardRight {
+    transform: perspective(800px) rotateY(-12deg) scale(0.88);
+    margin-left: -20px;
+}
+
+.sideCard:hover {
+    transform: perspective(800px) rotateY(0deg) scale(0.95) translateY(-8px);
+    box-shadow: 0 16px 50px rgba(0, 200, 255, 0.35);
+    z-index: 20;
+}
+
+.sideCardFrame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    border-radius: 10px;
+    z-index: 0;
+}
+
+.sideCardInner {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 8px;
+    z-index: 2;
+    box-sizing: border-box;
+}
+
+.sideCardTitle {
+    font-size: 11px;
+    font-weight: 800;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 0 15px rgba(0, 200, 255, 0.5);
+    margin: 0;
+    text-align: center;
+    line-height: 1.2;
+    word-wrap: break-word;
+}
+
+.sideCardRole {
+    font-size: 8px;
+    font-weight: 600;
+    color: rgba(0, 220, 255, 0.9);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-top: 2px;
+}
+
+.sideCardCenter {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sideCardLogo {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    border-radius: 8px;
+    filter: drop-shadow(0 0 10px rgba(0, 200, 255, 0.4));
+}
+
+.sideCardIcon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 180, 255, 0.15) 0%, transparent 70%);
+    border: 2px solid rgba(0, 200, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: rgba(0, 200, 255, 0.7);
+    filter: drop-shadow(0 0 10px rgba(0, 200, 255, 0.4));
+}
+
+.sideCardStats {
+    font-size: 9px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 1px;
     text-align: center;
 }
 
@@ -179,35 +328,29 @@
 .actionZoneRight { right: 0; width: 25%; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   FEATURED CLUB — Shark Club Card
+   FEATURED CLUB — Center Card in Showcase
    ═══════════════════════════════════════════════════════════════════════════════ */
-
-.featuredCardRow {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    padding: 0 0 8px 0;
-}
 
 .featuredCard {
     position: relative;
-    width: 340px;
+    width: 280px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.4s ease;
     border-radius: 12px;
     overflow: hidden;
     flex-shrink: 0;
+    z-index: 10;
+    filter: drop-shadow(0 8px 30px rgba(0, 150, 255, 0.3));
 }
 
 .featuredCard:hover {
-    transform: scale(1.03) translateY(-4px);
-    box-shadow: 0 16px 50px rgba(0, 200, 255, 0.35);
+    transform: scale(1.04) translateY(-6px);
+    filter: drop-shadow(0 20px 60px rgba(0, 200, 255, 0.45));
 }
 
 .cardSkeleton {
-    width: 340px;
-    height: 577px;
+    width: 280px;
+    height: 475px;
     background: rgba(0, 30, 60, 0.6);
     border-radius: 12px;
     display: flex;
@@ -215,147 +358,6 @@
     justify-content: center;
     color: rgba(0, 200, 255, 0.5);
     font-size: 14px;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   MY CLUBS — Card Grid
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-.clubGrid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-    width: 100%;
-    padding: 4px 0 8px 0;
-}
-
-.clubCard {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 240 / 340;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    overflow: hidden;
-}
-
-.clubCard:hover {
-    transform: translateY(-4px) scale(1.02);
-    box-shadow: 0 12px 40px rgba(0, 200, 255, 0.3);
-}
-
-.clubCard:active {
-    transform: scale(0.97);
-}
-
-.clubCardFrame {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: fill;
-    border-radius: 12px;
-    z-index: 0;
-}
-
-.clubCardInner {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    right: 10px;
-    bottom: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 12px;
-    z-index: 2;
-    box-sizing: border-box;
-}
-
-.clubCardHeader {
-    text-align: center;
-    width: 100%;
-}
-
-.clubCardTitle {
-    font-size: 14px;
-    font-weight: 800;
-    color: #fff;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    text-shadow: 0 0 20px rgba(0, 200, 255, 0.5);
-    margin: 0 0 4px 0;
-    font-family: 'Inter', 'Segoe UI', sans-serif;
-    word-wrap: break-word;
-    text-align: center;
-    line-height: 1.2;
-}
-
-.clubCardRole {
-    font-size: 10px;
-    font-weight: 600;
-    color: rgba(0, 220, 255, 0.9);
-    text-transform: uppercase;
-    letter-spacing: 3px;
-}
-
-.clubCardCenter {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.clubCardLogo {
-    width: 80px;
-    height: 80px;
-    object-fit: contain;
-    border-radius: 8px;
-    filter: drop-shadow(0 0 12px rgba(0, 200, 255, 0.4));
-}
-
-.clubCardIcon {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(0, 180, 255, 0.15) 0%, rgba(0, 100, 200, 0.08) 50%, transparent 70%);
-    border: 2px solid rgba(0, 200, 255, 0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 32px;
-    filter: drop-shadow(0 0 12px rgba(0, 200, 255, 0.4));
-}
-
-.clubCardFooter {
-    display: flex;
-    justify-content: center;
-    gap: 24px;
-    width: 100%;
-    padding-top: 8px;
-}
-
-.clubCardStat {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-}
-
-.clubCardStatValue {
-    font-size: 16px;
-    font-weight: 800;
-    color: #fff;
-    text-shadow: 0 0 10px rgba(0, 200, 255, 0.4);
-}
-
-.clubCardStatLabel {
-    font-size: 8px;
-    font-weight: 600;
-    color: rgba(0, 200, 255, 0.7);
-    text-transform: uppercase;
-    letter-spacing: 1px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -624,61 +626,86 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 /* ── Tablet & smaller ── */
-@media (max-width: 600px) {
+@media (max-width: 700px) {
     .mainContent {
-        padding: 0 12px 30px 12px;
+        padding: 0 8px 30px 8px;
+        max-width: 100%;
+    }
+
+    .showcaseContainer {
+        padding: 6px 0 16px 0;
+        min-height: 350px;
     }
 
     .featuredCard {
-        width: 300px;
+        width: 240px;
     }
 
     .cardSkeleton {
-        width: 300px;
-        height: 509px;
+        width: 240px;
+        height: 407px;
     }
 
-    .clubGrid {
-        gap: 12px;
+    .sideCard {
+        width: 150px;
+    }
+
+    .sideCardLeft {
+        margin-right: -15px;
+    }
+
+    .sideCardRight {
+        margin-left: -15px;
     }
 }
 
 /* ── Mobile ≤480px ── */
 @media (max-width: 480px) {
     .mainContent {
-        padding: 0 10px 20px 10px;
+        padding: 0 6px 20px 6px;
+    }
+
+    .showcaseContainer {
+        min-height: 300px;
+        padding: 4px 0 12px 0;
     }
 
     .featuredCard {
-        width: 280px;
+        width: 200px;
     }
 
     .cardSkeleton {
-        width: 280px;
-        height: 475px;
+        width: 200px;
+        height: 340px;
     }
 
-    .clubCardTitle {
-        font-size: 12px;
+    .sideCard {
+        width: 120px;
     }
 
-    .clubCardIcon {
-        width: 60px;
-        height: 60px;
-        font-size: 24px;
+    .sideCardLeft {
+        transform: perspective(800px) rotateY(10deg) scale(0.85);
+        margin-right: -12px;
     }
 
-    .clubCardLogo {
-        width: 60px;
-        height: 60px;
+    .sideCardRight {
+        transform: perspective(800px) rotateY(-10deg) scale(0.85);
+        margin-left: -12px;
     }
 
-    .clubCardStatValue {
-        font-size: 14px;
+    .sideCardTitle {
+        font-size: 9px;
     }
 
-    .clubCardStatLabel {
-        font-size: 7px;
+    .sideCardIcon {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+    }
+
+    .sideCardLogo {
+        width: 40px;
+        height: 40px;
     }
 
     .bottomRow {
@@ -709,24 +736,26 @@
 /* ── Small phones ≤380px ── */
 @media (max-width: 380px) {
     .featuredCard {
-        width: 240px;
+        width: 170px;
     }
 
     .cardSkeleton {
-        width: 240px;
-        height: 407px;
+        width: 170px;
+        height: 289px;
     }
 
-    .clubGrid {
-        gap: 8px;
+    .sideCard {
+        width: 100px;
     }
 
-    .clubCardInner {
-        padding: 10px 8px;
+    .sideCardTitle {
+        font-size: 8px;
     }
 
-    .clubCardTitle {
-        font-size: 11px;
+    .sideCardIcon {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
     }
 
     .tileCard {
