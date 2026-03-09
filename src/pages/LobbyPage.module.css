@@ -117,7 +117,9 @@
     background: var(--club-surface);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-lg);
-    min-width: 250px;
+    width: 100%;
+    max-width: 250px;
+    min-width: 0;
 }
 
 .searchIcon {

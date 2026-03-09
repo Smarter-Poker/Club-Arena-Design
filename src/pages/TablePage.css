@@ -192,7 +192,7 @@
 /* Table Wrapper - Scales uniformly via CSS transform */
 .table-scaler {
     width: 100%;
-    max-width: 420px;
+    max-width: min(100%, 420px);
     aspect-ratio: 1 / 1.4;
     /* Vertical orientation */
     position: relative;

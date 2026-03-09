@@ -270,6 +270,12 @@
     margin-bottom: var(--space-6);
 }
 
+@media (max-width: 640px) {
+    .detail-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 .detail-stats .stat {
     display: flex;
     flex-direction: column;
@@ -520,8 +526,8 @@
     border: 2px solid #2a3a4a;
     border-radius: 16px;
     padding: 1.5rem;
+    width: 90vw;
     max-width: 500px;
-    width: 90%;
     box-shadow:
         0 0 40px rgba(0, 212, 255, 0.2),
         0 20px 60px rgba(0, 0, 0, 0.6);

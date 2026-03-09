@@ -416,6 +416,7 @@
     .tab-btn {
         padding: 0.625rem;
         font-size: 0.75rem;
+        min-height: 44px;
     }
 
     .wallet-content {
@@ -447,6 +448,7 @@
     .form-row input {
         padding: 0.625rem;
         font-size: 0.9rem;
+        min-height: 44px;
     }
 
     .transfer-btn {

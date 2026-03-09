@@ -29,8 +29,9 @@
 
 /* Fixed canvas wrapper - LOCKED at 600px, scales uniformly on smaller screens */
 .fixedCanvas {
-    width: 600px;
-    min-width: 600px;
+    width: 100%;
+    max-width: 600px;
+    min-width: 0;
     margin: 0 auto;
     display: flex;
     flex-direction: column;

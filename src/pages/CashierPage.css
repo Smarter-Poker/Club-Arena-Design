@@ -114,6 +114,12 @@
     margin: 20px 0;
 }
 
+@media (max-width: 640px) {
+    .preset-buttons-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 .preset-buttons-grid button {
     font-size: 1rem !important;
     font-weight: 800 !important;
