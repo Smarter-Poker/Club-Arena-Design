@@ -1,168 +1,155 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * GLOBAL HEADER — Hub-Style Dark Theme Styles
+ * GLOBAL HEADER — Pixel-match to World Hub UniversalHeader
  * ═══════════════════════════════════════════════════════════════════════════════
- * Ported from Hub's UniversalHeader for consistency.
+ * bg: black | height: 55px | border-bottom: 3px solid rgba(200,200,200,0.8)
+ * All right-side icons: 26x26px
+ * Profile orb: 26x26 with cyan glow border
  */
 
 .header {
-    background: #0a0e1a;
-    padding: 8px 12px;
+    background: #000000;
+    padding: 6px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(0, 136, 255, 0.2);
+    border-bottom: 3px solid rgba(200, 200, 200, 0.8);
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     width: 100%;
+    height: 55px;
     z-index: 1000;
-    gap: 8px;
+    gap: 2px;
     flex-wrap: nowrap;
     box-sizing: border-box;
 }
 
-/* LEFT Section */
+/* ─── LEFT Section ─── */
 .headerLeft {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 2px;
     flex-shrink: 0;
 }
 
-.navBtn {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 6px 10px;
-    border-radius: 6px;
-    background: linear-gradient(135deg, rgba(0, 136, 255, 0.2) 0%, rgba(0, 102, 204, 0.3) 100%);
-    border: 1px solid rgba(0, 136, 255, 0.4);
-    color: white;
-    font-weight: 600;
-    font-size: 13px;
+.hamburgerBtn {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: none;
+    background: transparent;
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 136, 255, 0.2);
-    transition: all 0.2s;
-}
-
-.navBtn:hover {
-    background: linear-gradient(135deg, rgba(0, 136, 255, 0.3) 0%, rgba(0, 102, 204, 0.4) 100%);
-}
-
-.brandLogo {
-    height: 36px;
-    width: auto;
-    object-fit: contain;
-    border-radius: 4px;
-    filter: drop-shadow(0 0 8px rgba(65, 105, 225, 0.3));
-}
-
-.hamburger {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
-    padding: 6px;
-    border-radius: 6px;
-    background: linear-gradient(135deg, rgba(0, 136, 255, 0.2) 0%, rgba(0, 102, 204, 0.3) 100%);
-    border: 1px solid rgba(0, 136, 255, 0.4);
-    color: white;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 136, 255, 0.2);
-    transition: all 0.2s;
     flex-shrink: 0;
 }
 
-.hamburger:hover {
-    background: linear-gradient(135deg, rgba(0, 136, 255, 0.3) 0%, rgba(0, 102, 204, 0.4) 100%);
+.hamburgerBtn .iconImg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
-/* CENTER Section */
+.hubBtn {
+    height: 22px;
+    width: 80px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.hubImg {
+    height: 100%;
+    width: 100%;
+    object-fit: contain;
+}
+
+/* ─── CENTER Section ─── */
 .headerCenter {
     display: flex;
     align-items: center;
-    gap: 10px;
-    flex-shrink: 1;
     justify-content: center;
+    flex: 1;
+    min-width: 0;
 }
 
-.diamondWallet {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    background: transparent;
-    border: none;
-    padding: 0 10px;
-    border-radius: 0;
-    text-decoration: none;
-    color: white;
+.brandText {
+    height: 20px;
     width: auto;
-    height: 40px;
-    box-sizing: border-box;
-    font-weight: 700;
+    object-fit: contain;
+    opacity: 0.9;
 }
 
-.xpDisplay {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, rgba(0, 212, 255, 0.15) 0%, rgba(0, 100, 150, 0.2) 100%);
-    border: 1px solid rgba(0, 212, 255, 0.4);
-    padding: 0 10px;
-    border-radius: 12px;
-    width: 90px;
-    height: 40px;
-    box-sizing: border-box;
-    line-height: 1.1;
-}
-
-.xpRow {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    color: white;
-    font-weight: 700;
-    font-size: 11px;
-}
-
-.statValue {
-    font-weight: 700;
-}
-
-.addBtn {
-    font-weight: 700;
-    cursor: pointer;
-}
-
-/* RIGHT Section */
+/* ─── RIGHT Section ─── */
 .headerRight {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 2px;
     flex-shrink: 0;
-    flex-grow: 1;
     justify-content: flex-end;
 }
 
-.profileOrb {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 2px solid rgba(0, 245, 255, 0.5);
-    box-shadow: 0 0 12px rgba(0, 245, 255, 0.3);
+.orbBtn {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
     flex-shrink: 0;
-    background: linear-gradient(135deg, rgba(0, 136, 255, 0.3) 0%, rgba(0, 245, 255, 0.15) 100%);
+    position: relative;
+    transition: opacity 0.15s ease;
+}
+
+.orbBtn:hover {
+    opacity: 0.8;
+}
+
+.orbLink {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
     text-decoration: none;
+    transition: opacity 0.15s ease;
+}
+
+.orbLink:hover {
+    opacity: 0.8;
+}
+
+.orbImg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Profile orb — cyan glow circle */
+.profileOrb {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid rgb(0, 224, 255);
+    box-shadow: 0 0 8px rgba(0, 224, 255, 0.6), 0 0 16px rgba(0, 224, 255, 0.3);
     overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(0, 136, 255, 0.3) 0%, rgba(0, 245, 255, 0.15) 100%);
 }
 
 .profileImg {
@@ -171,75 +158,60 @@
     object-fit: cover;
 }
 
-.orbBtn {
-    width: 36px;
-    height: 36px;
-    background: transparent;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    position: relative;
-    flex-shrink: 0;
-    transition: transform 0.1s ease, opacity 0.15s ease;
-    text-decoration: none;
+.profilePlaceholder {
+    font-size: 14px;
+    line-height: 1;
 }
 
-.orbBtn:hover {
-    opacity: 0.8;
-    transform: scale(1.1);
-}
-
+/* Badge for notifications / messages */
 .badge {
     position: absolute;
-    top: -2px;
-    right: -2px;
+    top: -4px;
+    right: -4px;
     background: #e41e3f;
     color: white;
     border-radius: 10px;
-    padding: 2px 6px;
-    font-size: 11px;
+    padding: 1px 4px;
+    font-size: 9px;
     font-weight: 700;
-    min-width: 18px;
+    min-width: 14px;
     text-align: center;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    border: 2px solid #0a0e1a;
+    border: 1.5px solid #000;
+    line-height: 1.2;
 }
 
-/* Mobile Responsive */
+/* ─── Mobile Responsive ─── */
 @media (max-width: 600px) {
     .header {
-        padding: 6px 10px;
-        gap: 6px;
+        padding: 4px 6px;
+        height: 48px;
     }
 
-    .headerLeft {
-        gap: 4px;
-    }
-
-    .brandLogo {
-        height: 28px;
-    }
-
-    .navBtn {
-        padding: 10px 14px;
-        font-size: 14px;
-        font-weight: 700;
-    }
-
-    .diamondWallet,
-    .xpDisplay {
-        width: 75px;
+    .hamburgerBtn {
+        width: 36px;
         height: 36px;
-        padding: 0 6px;
-        font-size: 10px;
+    }
+
+    .hubBtn {
+        width: 60px;
+        height: 18px;
+    }
+
+    /* Hide brand text on mobile like World Hub */
+    .brandText {
+        display: none;
     }
 
     .orbBtn,
+    .orbLink {
+        width: 24px;
+        height: 24px;
+    }
+
     .profileOrb {
-        width: 32px;
-        height: 32px;
+        width: 24px;
+        height: 24px;
     }
 
     .badge {
@@ -247,6 +219,34 @@
         right: -3px;
         padding: 0 3px;
         font-size: 8px;
-        min-width: 10px;
+        min-width: 12px;
+    }
+}
+
+@media (max-width: 380px) {
+    .header {
+        padding: 4px;
+        gap: 1px;
+    }
+
+    .hamburgerBtn {
+        width: 32px;
+        height: 32px;
+    }
+
+    .hubBtn {
+        width: 50px;
+        height: 16px;
+    }
+
+    .orbBtn,
+    .orbLink {
+        width: 22px;
+        height: 22px;
+    }
+
+    .profileOrb {
+        width: 22px;
+        height: 22px;
     }
 }
