@@ -99,26 +99,53 @@ export default function AuthPage() {
             if (authError) throw authError;
 
             if (data.user) {
-                // Create profile in database
-                const { error: profileError } = await supabase
+                // ═══════════════════════════════════════════════════════════════════
+                // 🔗 DUPLICATE PREVENTION: Check if a profile with same email exists
+                // ═══════════════════════════════════════════════════════════════════
+                const { data: emailMatch, error: emailCheckError } = await supabase
                     .from('profiles')
-                    .upsert({
-                        id: data.user.id,
-                        username: username.trim(),
-                        display_name: username.trim(),
-                        vip_level: 'bronze',
-                        diamonds: 0,
-                        created_at: new Date().toISOString(),
-                    });
+                    .select('id, username, display_name, email')
+                    .ilike('email', email.trim())
+                    .maybeSingle();
 
-                if (profileError) {
-                    // PGRST116 = no rows (ok on upsert), 23505 = unique violation (username taken)
-                    if (profileError.code === '23505') {
-                        throw new Error('Username is already taken. Please choose a different one.');
+                if (emailMatch && !emailCheckError) {
+                    console.log(`🔐 [AUTH] DUPLICATE PREVENTED: Found existing profile for ${email}. Linking to auth.id=${data.user.id}`);
+
+                    // Update existing profile's last login
+                    await supabase
+                        .from('profiles')
+                        .update({
+                            last_login: new Date().toISOString(),
+                            last_active: new Date().toISOString(),
+                            is_online: true
+                        })
+                        .eq('id', emailMatch.id);
+
+                    // Account successfully linked!
+                } else {
+                    // Create new profile in database
+                    const { error: profileError } = await supabase
+                        .from('profiles')
+                        .upsert({
+                            id: data.user.id,
+                            username: username.trim(),
+                            display_name: username.trim(),
+                            vip_level: 'bronze',
+                            diamonds: 0,
+                            created_at: new Date().toISOString(),
+                            last_login: new Date().toISOString(),
+                            last_active: new Date().toISOString(),
+                            is_online: true
+                        });
+
+                    if (profileError) {
+                        // PGRST116 = no rows (ok on upsert), 23505 = unique violation (username taken)
+                        if (profileError.code === '23505') {
+                            throw new Error('Username is already taken. Please choose a different one.');
+                        }
+                        console.warn('[AUTH] Profile creation failed (non-critical, may already exist):', profileError.code);
                     }
-                    console.warn('[AUTH] Profile creation failed (non-critical, may already exist):', profileError.code);
                 }
-
 
                 // Check if email confirmation is required
                 if (data.session) {
