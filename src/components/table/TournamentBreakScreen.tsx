@@ -113,10 +113,11 @@ export function TournamentBreakScreen({
 
     return (
         <div className="break-screen">
+            <div className="break-screen__overlay"></div>
             <div className="break-screen__content">
                 {/* Header */}
                 <div className="break-screen__header">
-                    <span className="break-screen__badge">⏸️ BREAK</span>
+                    <span className="break-screen__badge">⏸️ Tournament on Break</span>
                     <h1 className="break-screen__title">{tournamentName}</h1>
                 </div>
 
@@ -142,13 +143,19 @@ export function TournamentBreakScreen({
 
                 {/* Next Level Info */}
                 <div className="break-screen__next-level">
-                    <span className="break-screen__section-title">Next Level: {nextLevel.level}</span>
+                    <span className="break-screen__section-title">Coming Next: Level {currentLevel + 1}</span>
                     <div className="break-screen__blinds">
-                        <span className="break-screen__blind-value">
-                            {formatStack(nextLevel.smallBlind)}/{formatStack(nextLevel.bigBlind)}
-                        </span>
+                        <div className="break-screen__blind-item">
+                            <span className="break-screen__blind-label">Blinds</span>
+                            <span className="break-screen__blind-value">
+                                {formatStack(nextLevel.smallBlind)}/{formatStack(nextLevel.bigBlind)}
+                            </span>
+                        </div>
                         {nextLevel.ante && nextLevel.ante > 0 && (
-                            <span className="break-screen__ante">Ante: {formatStack(nextLevel.ante)}</span>
+                            <div className="break-screen__blind-item">
+                                <span className="break-screen__blind-label">Ante</span>
+                                <span className="break-screen__blind-value">{formatStack(nextLevel.ante)}</span>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -156,31 +163,35 @@ export function TournamentBreakScreen({
                 {/* Stats Grid */}
                 <div className="break-screen__stats">
                     <div className="break-screen__stat">
+                        <span className="break-screen__stat-label">Players</span>
                         <span className="break-screen__stat-value">{playersRemaining}</span>
-                        <span className="break-screen__stat-label">Players Left</span>
                         <span className="break-screen__stat-sub">of {totalPlayers}</span>
                     </div>
                     <div className="break-screen__stat">
+                        <span className="break-screen__stat-label">Avg Stack</span>
                         <span className="break-screen__stat-value">{formatStack(averageStack)}</span>
-                        <span className="break-screen__stat-label">Average Stack</span>
                         <span className="break-screen__stat-sub">{Math.trunc(averageStack / nextLevel.bigBlind)} BB</span>
                     </div>
                     <div className="break-screen__stat">
-                        <span className="break-screen__stat-value">{currency}{formatStack(prizePool)}</span>
                         <span className="break-screen__stat-label">Prize Pool</span>
+                        <span className="break-screen__stat-value">{formatStack(prizePool)}</span>
+                        <span className="break-screen__stat-sub">{currency ? currency + ' Total' : ''}</span>
                     </div>
                 </div>
 
                 {/* My Position */}
                 {myPlayer && (
                     <div className="break-screen__my-position">
-                        <span className="break-screen__section-title">Your Position</span>
+                        <span className="break-screen__section-title">Your Status</span>
                         <div className="break-screen__my-info">
                             <div className="break-screen__my-rank">
+                                <span className="break-screen__rank-label">Rank</span>
                                 <span className="break-screen__rank-number">#{myPlayer.rank}</span>
                                 <span className="break-screen__rank-of">of {playersRemaining}</span>
                             </div>
+                            <div className="break-screen__divider"></div>
                             <div className="break-screen__my-stack">
+                                <span className="break-screen__stack-label">Stack</span>
                                 <span className="break-screen__stack-value">{formatStack(myPlayer.stack)}</span>
                                 <span className="break-screen__stack-bb">{Math.trunc(myPlayer.stack / nextLevel.bigBlind)} BB</span>
                             </div>

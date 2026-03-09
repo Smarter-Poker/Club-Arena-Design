@@ -28,6 +28,19 @@ interface SpinTournament {
 
 const SPIN_MULTIPLIERS = [2, 3, 4, 5, 10, 25, 50, 100, 1000];
 
+// Multiplier tier probabilities (as percentages)
+const MULTIPLIER_PROBABILITIES: { [key: number]: number } = {
+    2: 60,
+    3: 20,
+    4: 10,
+    5: 5,
+    10: 2.5,
+    25: 1.2,
+    50: 0.8,
+    100: 0.4,
+    1000: 0.1,
+};
+
 export function SpinAndGoLobby({ clubId, onRegister }: SpinAndGoLobbyProps) {
     const { user } = useUserStore();
     const toast = useToast();
@@ -35,6 +48,7 @@ export function SpinAndGoLobby({ clubId, onRegister }: SpinAndGoLobbyProps) {
     const [tournaments, setTournaments] = useState<SpinTournament[]>([]);
     const [loading, setLoading] = useState(true);
     const [registering, setRegistering] = useState<string | null>(null);
+    const [expandedCard, setExpandedCard] = useState<string | null>(null);
 
     useEffect(() => {
         loadTournaments();
@@ -112,7 +126,7 @@ export function SpinAndGoLobby({ clubId, onRegister }: SpinAndGoLobbyProps) {
     return (
         <div className="spin-lobby">
             <div className="spin-lobby__header">
-                <h3> Spin & Go</h3>
+                <h3>Spin & Go</h3>
                 <span className="spin-lobby__subtitle">Win up to 1000x your buy-in!</span>
             </div>
 
@@ -123,10 +137,11 @@ export function SpinAndGoLobby({ clubId, onRegister }: SpinAndGoLobbyProps) {
                     {tournaments.map(t => (
                         <div
                             key={t.id}
-                            className={`spin-card ${t.status}`}
+                            className={`spin-card ${t.status} ${expandedCard === t.id ? 'spin-card--expanded' : ''}`}
+                            onClick={() => setExpandedCard(expandedCard === t.id ? null : t.id)}
                         >
                             <div className="spin-card__buyin">
-                                <span className="value">{t.buyIn.toLocaleString()}</span>
+                                <span className="value">{Math.trunc(t.buyIn).toLocaleString()}</span>
                                 <span className="label">Buy-In</span>
                             </div>
 
@@ -140,16 +155,44 @@ export function SpinAndGoLobby({ clubId, onRegister }: SpinAndGoLobbyProps) {
 
                             <div className="spin-card__players">
                                 <span className="count">{t.players}/{t.maxPlayers}</span>
-                                <span className="label">Players</span>
+                                <span className="label">Waiting</span>
+                            </div>
+
+                            {/* Expanded Prize Wheel */}
+                            {expandedCard === t.id && (
+                                <div className="spin-card__prize-wheel">
+                                    <div className="prize-wheel">
+                                        {SPIN_MULTIPLIERS.filter(m => m <= 100).map((multiplier) => {
+                                            const prob = MULTIPLIER_PROBABILITIES[multiplier] || 0;
+                                            const prize = Math.trunc(t.buyIn * 3 * multiplier);
+                                            return (
+                                                <div key={multiplier} className="prize-tier">
+                                                    <span className="prize-multiplier">{multiplier}x</span>
+                                                    <span className="prize-amount">{Math.trunc(prize).toLocaleString()}</span>
+                                                    <span className="prize-prob">{prob}%</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Probability Info */}
+                            <div className="spin-card__info">
+                                <span className="info-label">Prize Tiers</span>
+                                <span className="info-text">2x-60%, 5x-5%, 10x-2.5%, 25x-1.2%, 100x-0.4%</span>
                             </div>
 
                             {t.status === 'registering' && (
                                 <button
                                     className="spin-card__register"
-                                    onClick={() => handleRegister(t)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRegister(t);
+                                    }}
                                     disabled={registering === t.id}
                                 >
-                                    {registering === t.id ? 'Registering...' : 'Register'}
+                                    {registering === t.id ? 'Registering...' : 'Spin Now'}
                                 </button>
                             )}
 
