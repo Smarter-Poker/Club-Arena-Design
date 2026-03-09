@@ -12,6 +12,7 @@ import './DynamicGameCard.css';
 // ─── Types ──────────────────────────────────────────────────────────────
 
 interface TableSettings {
+    // Snake_case keys (interface standard)
     insurance_enabled?: boolean;
     run_it_twice?: boolean;
     run_it_twice_mandatory?: boolean;
@@ -21,6 +22,19 @@ interface TableSettings {
     bomb_pot_frequency?: number;
     bomb_pot_ante_bb?: number;
     vpip_display?: boolean;
+    // CamelCase keys (DB storage format)
+    straddle?: boolean;
+    straddleType?: string;
+    bombPot?: boolean;
+    bombPotFrequency?: number;
+    bombPotAnte?: number;
+    runItTwice?: boolean;
+    vpipDisplay?: boolean;
+    allInInsurance?: boolean;
+    autoMuck?: boolean;
+    callTime?: boolean;
+    noRathole?: boolean;
+    doubleBoard?: boolean;
     [key: string]: unknown;
 }
 
@@ -129,12 +143,13 @@ export function CashGameCard({ table, isAdmin, onDelete }: CashCardProps) {
     const variant = VARIANT_DISPLAY[(table.game_variant || '').toLowerCase()] || { label: (table.game_variant || 'NLH').toUpperCase(), css: 'nlh' };
     const settings = parseSettings(table.settings);
     const hasPlayers = table.current_players > 0;
-    const isBombPot = table.name.toLowerCase().includes('bomb pot');
-    const isStraddle = settings.straddle_enabled || table.name.toLowerCase().includes('straddle');
-    const isRIT = settings.run_it_twice || table.name.toLowerCase().includes('rit');
-    const isInsurance = settings.insurance_enabled || table.name.toLowerCase().includes('insurance');
-    const isVPIP = settings.vpip_display || table.name.toLowerCase().includes('vpip');
-    const isDoubleBoard = table.name.toLowerCase().includes('double') || table.name.toLowerCase().includes('dbl');
+    // Support both snake_case (interface) and camelCase (DB) key names
+    const isBombPot = settings.bomb_pot_enabled || settings.bombPot || table.name.toLowerCase().includes('bomb pot');
+    const isStraddle = settings.straddle_enabled || settings.straddle || table.name.toLowerCase().includes('straddle');
+    const isRIT = settings.run_it_twice || settings.runItTwice || table.name.toLowerCase().includes('rit');
+    const isInsurance = settings.insurance_enabled || settings.allInInsurance || table.name.toLowerCase().includes('insurance');
+    const isVPIP = settings.vpip_display || settings.vpipDisplay || table.name.toLowerCase().includes('vpip');
+    const isDoubleBoard = settings.doubleBoard || table.name.toLowerCase().includes('double') || table.name.toLowerCase().includes('dbl');
 
     return (
         <div className="table-card-wrapper" style={{ position: 'relative' }}>
@@ -168,7 +183,7 @@ export function CashGameCard({ table, isAdmin, onDelete }: CashCardProps) {
                     <span className="dgc__blinds-label">Blinds</span>
                     <span className="dgc__blinds-value">
                         {table.small_blind}/{table.big_blind}
-                        {isStraddle && settings.straddle_type ? `/${settings.straddle_type.substring(0, 3).toUpperCase()}` : ''}
+                        {isStraddle && (settings.straddle_type || settings.straddleType) ? `/${(settings.straddle_type || settings.straddleType || '').substring(0, 3).toUpperCase()}` : ''}
                     </span>
                     <span className="dgc__timer">00:30:00</span>
                 </div>
