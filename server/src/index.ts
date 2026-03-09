@@ -519,7 +519,8 @@ class TournamentManager {
         if (this.blindTimer) {
             const elapsed = Date.now() - this.blindTimerStartedAt;
             const blindStructure = this.tournamentCache?.blind_structure || [];
-            const currentLevelData = blindStructure[this.currentLevel];
+            if (!blindStructure || blindStructure.length === 0) return;
+            const currentLevelData = blindStructure[Math.min(this.currentLevel, blindStructure.length - 1)];
             const totalMs = (currentLevelData?.durationMinutes || 10) * 60 * 1000;
             this.savedBlindTimerRemaining = Math.max(totalMs - elapsed, 1000);
             clearTimeout(this.blindTimer);
@@ -529,7 +530,7 @@ class TournamentManager {
         console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] SYNCHRONIZED BREAK — ${Math.round(breakDurationMs / 60000)} minutes`);
 
         const blindStructure = this.tournamentCache?.blind_structure || [];
-        const nextLevel = blindStructure[this.currentLevel];
+        const nextLevel = blindStructure[Math.min(this.currentLevel, blindStructure.length - 1)];
         await this.broadcast('tournament_break', {
             level: this.currentLevel,
             breakDurationMinutes: Math.round(breakDurationMs / 60000),
@@ -751,14 +752,11 @@ class TournamentManager {
                 }
                 if (Array.isArray(payouts) && payouts.length > 0) {
                     const totalPct = payouts.reduce((sum: number, p: any) => sum + (p.percentage || 0), 0);
-                    if (totalPct < 99 || totalPct > 101) {
-                        console.warn(`[Tournament:${this.tournamentId.slice(0, 8)}] WARNING: Payout percentages sum to ${totalPct}% (expected ~100%). Adjusting place 1 to compensate.`);
-                        // Auto-fix: adjust 1st place to make sum exactly 100%
-                        const firstPlace = payouts.find((p: any) => p.place === 1);
-                        if (firstPlace) {
-                            firstPlace.percentage += (100 - totalPct);
-                            await supabase.from('tournaments').update({ payout_structure: payouts }).eq('id', this.tournamentId);
-                        }
+                    if (totalPct > 0 && Math.abs(totalPct - 100) > 0.01) {
+                        console.warn(`[Tournament:${this.tournamentId.slice(0, 8)}] WARNING: Payout percentages sum to ${totalPct}% (expected 100%). Normalizing.`);
+                        // Normalize percentages proportionally
+                        payouts = payouts.map((p: any) => ({ ...p, percentage: (p.percentage / totalPct) * 100 }));
+                        await supabase.from('tournaments').update({ payout_structure: payouts }).eq('id', this.tournamentId);
                     }
                 }
             }
@@ -938,7 +936,7 @@ class TournamentManager {
                     return;
                 }
 
-                const level = blindStructure[this.currentLevel];
+                const level = blindStructure[Math.min(this.currentLevel, blindStructure.length - 1)];
 
                 // Skip any break entries that might still be in old blind structures
                 if (level.isBreak) {
@@ -1221,7 +1219,7 @@ class TournamentManager {
             }
         }
 
-        await supabase
+        const { data: updateResult, error: updateErr } = await supabase
             .from('tournament_players')
             .update({
                 status: 'eliminated',
@@ -1232,6 +1230,10 @@ class TournamentManager {
             .eq('tournament_id', this.tournamentId)
             .eq('user_id', userId)
             .eq('status', 'playing'); // Only update if still playing (prevents double-processing)
+
+        if (updateErr || !updateResult || updateResult.length === 0) {
+            return; // Player was already eliminated by another process
+        }
 
         if (prize > 0) {
             // Retry prize credit up to 3 times with exponential backoff

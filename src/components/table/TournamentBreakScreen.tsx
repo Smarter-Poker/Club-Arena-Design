@@ -170,7 +170,7 @@ export function TournamentBreakScreen({
                     <div className="break-screen__stat">
                         <span className="break-screen__stat-label">Avg Stack</span>
                         <span className="break-screen__stat-value">{formatStack(averageStack)}</span>
-                        <span className="break-screen__stat-sub">{Math.trunc(averageStack / nextLevel.bigBlind)} BB</span>
+                        <span className="break-screen__stat-sub">{Math.trunc(averageStack / Math.max(nextLevel.bigBlind, 1))} BB</span>
                     </div>
                     <div className="break-screen__stat">
                         <span className="break-screen__stat-label">Prize Pool</span>
@@ -193,7 +193,7 @@ export function TournamentBreakScreen({
                             <div className="break-screen__my-stack">
                                 <span className="break-screen__stack-label">Stack</span>
                                 <span className="break-screen__stack-value">{formatStack(myPlayer.stack)}</span>
-                                <span className="break-screen__stack-bb">{Math.trunc(myPlayer.stack / nextLevel.bigBlind)} BB</span>
+                                <span className="break-screen__stack-bb">{Math.trunc(myPlayer.stack / Math.max(nextLevel.bigBlind, 1))} BB</span>
                             </div>
                         </div>
                     </div>

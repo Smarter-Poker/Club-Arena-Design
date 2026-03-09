@@ -73,7 +73,7 @@ export default function BonusPage() {
                 .from('profiles')
                 .select('streak_days, last_login')
                 .eq('id', user?.id)
-                .single();
+                .maybeSingle();
 
             if (profile) {
                 setCurrentDay(profile.streak_days || 1);

@@ -20,7 +20,7 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({
     onClaimReward
 }) => {
     const completedCount = items.filter(i => i.completed).length;
-    const progress = (completedCount / items.length) * 100;
+    const progress = items.length > 0 ? (completedCount / items.length) * 100 : 0;
 
     return (
         <div className="onboarding-checklist">

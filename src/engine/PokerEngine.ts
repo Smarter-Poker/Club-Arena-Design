@@ -661,7 +661,10 @@ function distributePot(
     const shareCents = Math.trunc(totalCents / roundWinners.length);
     const remainderCents = totalCents % roundWinners.length;
 
-    roundWinners.forEach((pw, i) => {
+    // Sort winners by seat position (lowest seat first = closest to left of dealer)
+    const sortedWinners = [...roundWinners].sort((a, b) => a.player.seat - b.player.seat);
+
+    sortedWinners.forEach((pw, i) => {
         const existing = globalWinners.find(w => w.userId === pw.player.user_id);
         const winAmt = (shareCents + (i < remainderCents ? 1 : 0)) / 100;
 
