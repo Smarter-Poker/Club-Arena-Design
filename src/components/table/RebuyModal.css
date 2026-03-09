@@ -1,0 +1,133 @@
+.rebuyModalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    animation: fadeIn 0.2s ease;
+}
+
+.rebuyModalContent {
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    width: 90vw;
+    max-width: 360px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.rebuyModalHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.rebuyModalHeader h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #f1f5f9;
+}
+
+.rebuyCloseBtn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.rebuyModalBody {
+    padding: 20px;
+}
+
+.rebuyInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.rebuyRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.95rem;
+    color: #cbd5e1;
+}
+
+.rebuyValue {
+    font-weight: 600;
+    color: #f1f5f9;
+}
+
+.rebuyValue.rebuyChips {
+    color: #10b981;
+}
+
+.rebuyValue.insufficient {
+    color: #ef4444;
+}
+
+.rebuyWarning {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    color: #fca5a5;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.rebuyModalFooter {
+    display: flex;
+    gap: 10px;
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.rebuyDeclineBtn,
+.rebuyConfirmBtn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.rebuyDeclineBtn {
+    background: rgba(255, 255, 255, 0.08);
+    color: #94a3b8;
+}
+
+.rebuyConfirmBtn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+}
+
+.rebuyConfirmBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}

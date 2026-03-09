@@ -142,6 +142,42 @@
     color: #22d3ee;
 }
 
+.lateRegTag {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    font-weight: 700;
+    font-family: 'Monaco', 'Consolas', monospace;
+    animation: lateRegPulse 1s ease-in-out infinite alternate;
+}
+
+.lateRegTag.lateRegClosed {
+    animation: none;
+    background: rgba(107, 114, 128, 0.15);
+    color: #9ca3af;
+}
+
+.lateRegTag.criticalWarning {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    animation: criticalPulse 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes lateRegPulse {
+    from { opacity: 1; }
+    to { opacity: 0.7; }
+}
+
+@keyframes criticalPulse {
+    from {
+        opacity: 1;
+        box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+    }
+    to {
+        opacity: 0.6;
+        box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+    }
+}
+
 /* Pinned */
 .pinnedCard {
     border-color: rgba(251, 191, 36, 0.5);

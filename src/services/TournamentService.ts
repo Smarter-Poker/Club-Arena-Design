@@ -1344,8 +1344,8 @@ class TournamentService {
             .from('wallet_transactions')
             .select('id')
             .eq('user_id', userId)
-            .eq('tx_type', 'addon')
-            .eq('tournament_id', tournamentId)
+            .eq('category', 'addon')
+            .eq('related_entity_id', tournamentId)
             .limit(1);
         if (existingAddon && existingAddon.length > 0) {
             throw new Error('You have already used your add-on for this tournament');
@@ -1425,14 +1425,14 @@ class TournamentService {
         try {
             const { data: rebuyTxns } = await supabase
                 .from('wallet_transactions')
-                .select('amount, tx_type')
-                .eq('reference_id', tournamentId)
-                .in('tx_type', ['rebuy', 'addon']);
+                .select('amount, category')
+                .eq('related_entity_id', tournamentId)
+                .in('category', ['rebuy', 'addon']);
 
             if (rebuyTxns) {
                 for (const tx of rebuyTxns) {
                     const cost = Math.abs(tx.amount || 0);
-                    if (tx.tx_type === 'addon') addonTotal += cost;
+                    if (tx.category === 'addon') addonTotal += cost;
                     else rebuyTotal += cost;
                 }
             }

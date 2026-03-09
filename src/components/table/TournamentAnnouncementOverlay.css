@@ -1,0 +1,88 @@
+.tournamentAnnouncement {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.7) 0%, transparent 70%);
+}
+
+.tournamentAnnouncement.visible {
+    opacity: 1;
+}
+
+.announcementContent {
+    text-align: center;
+    animation: announcePulse 0.6s ease-out;
+}
+
+.announcementIcon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    filter: drop-shadow(0 0 12px var(--accent-color));
+}
+
+.announcementTitle {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--accent-color);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    text-shadow: 0 0 20px var(--accent-color), 0 2px 4px rgba(0, 0, 0, 0.8);
+    margin-bottom: 0.5rem;
+}
+
+.announcementSubtitle {
+    font-size: 1rem;
+    color: #e2e8f0;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+@keyframes announcePulse {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 640px) {
+    .announcementIcon {
+        font-size: 2rem;
+    }
+    .announcementTitle {
+        font-size: 1.4rem;
+        letter-spacing: 0.1em;
+    }
+    .announcementSubtitle {
+        font-size: 0.85rem;
+        max-width: 280px;
+    }
+}
+
+@media (max-width: 380px) {
+    .announcementIcon {
+        font-size: 1.5rem;
+    }
+    .announcementTitle {
+        font-size: 1.1rem;
+    }
+    .announcementSubtitle {
+        font-size: 0.75rem;
+    }
+}

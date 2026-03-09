@@ -38,6 +38,8 @@ interface Tournament {
     rebuyAllowed?: boolean;
     addonAllowed?: boolean;
     spinMultiplier?: number;
+    started_at?: string;
+    late_reg_mins?: number;
 }
 
 interface TournamentLobbyCardProps {
@@ -54,6 +56,8 @@ export default function TournamentLobbyCard({
     const [registering, setRegistering] = useState(false);
     const [isRegistered, setIsRegistered] = useState(false);
     const [countdown, setCountdown] = useState<string>('');
+    const [lateRegCountdown, setLateRegCountdown] = useState<string>('');
+    const [lateRegActive, setLateRegActive] = useState(false);
 
     useEffect(() => {
         checkRegistration();
@@ -63,6 +67,14 @@ export default function TournamentLobbyCard({
             return () => clearInterval(interval);
         }
     }, [tournament.id, tournament.startsAt]);
+
+    useEffect(() => {
+        if (tournament.status === 'running' && tournament.late_reg_mins && tournament.late_reg_mins > 0 && tournament.started_at) {
+            updateLateRegCountdown();
+            const interval = setInterval(updateLateRegCountdown, 1000);
+            return () => clearInterval(interval);
+        }
+    }, [tournament.status, tournament.late_reg_mins, tournament.started_at]);
 
     const checkRegistration = async () => {
         if (!user?.id) return;
@@ -98,6 +110,26 @@ export default function TournamentLobbyCard({
         } else {
             setCountdown(`${minutes}m ${seconds}s`);
         }
+    };
+
+    const updateLateRegCountdown = () => {
+        if (!tournament.started_at || !tournament.late_reg_mins || tournament.late_reg_mins <= 0) return;
+
+        const now = new Date().getTime();
+        const startTime = new Date(tournament.started_at).getTime();
+        const lateRegEndTime = startTime + (tournament.late_reg_mins * 60 * 1000);
+        const remaining = lateRegEndTime - now;
+
+        if (remaining <= 0) {
+            setLateRegCountdown('Late Reg Closed');
+            setLateRegActive(false);
+            return;
+        }
+
+        setLateRegActive(true);
+        const minutes = Math.floor(remaining / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
+        setLateRegCountdown(`${minutes}:${seconds.toString().padStart(2, '0')}`);
     };
 
     const handleRegister = async () => {
@@ -272,8 +304,11 @@ export default function TournamentLobbyCard({
                     {tournament.isMultiDay && (
                         <span className={`${styles.featureTag} ${styles.multiDayTag}`}>Multi-Day</span>
                     )}
-                    {tournament.lateRegMins && tournament.lateRegMins > 0 &&
-                     (tournament.status === 'registering' || tournament.status === 'running') && (
+                    {tournament.status === 'running' && tournament.lateRegMins && tournament.lateRegMins > 0 ? (
+                        <span className={`${styles.featureTag} ${styles.lateRegTag} ${!lateRegActive ? styles.lateRegClosed : ''} ${lateRegCountdown === '0:00' || lateRegCountdown === 'Late Reg Closed' ? styles.criticalWarning : ''}`}>
+                            Late Reg: {lateRegActive ? `${lateRegCountdown} left` : 'Closed'}
+                        </span>
+                    ) : tournament.status === 'registering' && tournament.lateRegMins && tournament.lateRegMins > 0 && (
                         <span className={styles.featureTag}>Late Reg {tournament.lateRegMins}m</span>
                     )}
                     {tournament.isRebuy && (

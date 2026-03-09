@@ -941,8 +941,18 @@ class TournamentManager {
                 this.currentLevel++;
 
                 if (this.currentLevel >= blindStructure.length) {
-                    this.currentLevel = blindStructure.length - 1; // Stay at max
-                    return;
+                    // Auto-escalate: double the last level's blinds
+                    const lastLevel = blindStructure[blindStructure.length - 1];
+                    const escalationFactor = Math.pow(2, this.currentLevel - blindStructure.length + 1);
+                    const autoLevel = {
+                        level: this.currentLevel + 1,
+                        smallBlind: lastLevel.smallBlind * escalationFactor,
+                        bigBlind: lastLevel.bigBlind * escalationFactor,
+                        ante: lastLevel.ante * escalationFactor,
+                        durationMinutes: Math.max(lastLevel.durationMinutes || 3, 2), // Keep same duration, min 2 min
+                    };
+                    blindStructure.push(autoLevel);
+                    console.log(`[Tournament:${this.tournamentId.slice(0, 8)}] Auto-escalated blinds: ${autoLevel.smallBlind}/${autoLevel.bigBlind} ante ${autoLevel.ante}`);
                 }
 
                 const level = blindStructure[Math.min(this.currentLevel, blindStructure.length - 1)];

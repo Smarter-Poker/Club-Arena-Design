@@ -953,3 +953,84 @@
         padding: 4px 6px;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SPIN MULTIPLIER BADGE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.spinMultiplierBadge {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border-radius: 20px;
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: #1a1a2e;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+    z-index: 50;
+    animation: spinBadgeGlow 2s ease-in-out infinite alternate;
+}
+
+.spinMultiplierIcon {
+    font-size: 1.2rem;
+}
+
+.spinMultiplierValue {
+    font-size: 1.2rem;
+    letter-spacing: 0.05em;
+}
+
+/* Premium spins (100x+) get special styling */
+.spinMultiplierBadge.premium {
+    background: linear-gradient(135deg, #ec4899, #8b5cf6);
+    box-shadow: 0 4px 20px rgba(236, 72, 153, 0.5);
+    animation: premiumSpinGlow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes spinBadgeGlow {
+    from { box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); }
+    to { box-shadow: 0 4px 25px rgba(245, 158, 11, 0.6); }
+}
+
+@keyframes premiumSpinGlow {
+    from { box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4); }
+    to { box-shadow: 0 4px 30px rgba(236, 72, 153, 0.7); }
+}
+
+@media (max-width: 768px) {
+    .spinMultiplierBadge {
+        padding: 5px 12px;
+        font-size: 0.95rem;
+        top: 10px;
+    }
+
+    .spinMultiplierIcon {
+        font-size: 1rem;
+    }
+
+    .spinMultiplierValue {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .spinMultiplierBadge {
+        padding: 4px 12px;
+        font-size: 0.9rem;
+        top: 8px;
+    }
+
+    .spinMultiplierIcon {
+        font-size: 0.95rem;
+    }
+
+    .spinMultiplierValue {
+        font-size: 0.95rem;
+    }
+}

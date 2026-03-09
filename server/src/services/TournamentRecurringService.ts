@@ -517,40 +517,50 @@ export class TournamentRecurringService {
             const mysteryMin = config.type === 'mystery_bounty' ? bountyAmount : 0;
             const mysteryMax = config.type === 'mystery_bounty' ? Math.trunc(bountyAmount * 10 * 100) / 100 : 0;
 
-            const { data: tournament, error } = await supabase
-                .from('tournaments')
-                .insert({
-                    club_id: hostClubId,
-                    union_id: unionId,
-                    is_xmtt: true,
-                    name: config.name,
-                    game_type: dbGameType,
-                    variant: config.type === 'mtt' ? 'freezeout' : config.type,
-                    tournament_type: 'MTT',
-                    buy_in_amount: config.buyIn,
-                    buy_in_fee: config.rake,
-                    guaranteed_prize: config.guarantee || 0,
-                    starting_chips: config.startingStack,
-                    max_players: config.maxPlayers,
-                    min_players: config.minPlayers || 3,
-                    current_players: 0,
-                    status: 'REGISTERING',
-                    blind_structure: config.blindStructure,
-                    payout_structure: config.payoutStructure || [],
-                    start_time: startTime.toISOString(),
-                    late_reg_mins: 45, // Longer late reg for XMTT
-                    is_bounty: isBountyType,
-                    is_pko: config.type === 'progressive_bounty',
-                    is_mystery_bounty: config.type === 'mystery_bounty',
-                    bounty_amount: bountyAmount,
-                    mystery_bounty_min: mysteryMin,
-                    mystery_bounty_max: mysteryMax,
-                })
-                .select()
-                .single();
-
-            if (error || !tournament) {
-                console.error(`[TournamentRecurring] XMTT creation failed: ${error?.message}`);
+            let tournament = null;
+            let lastError = null;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                const { data, error } = await supabase
+                    .from('tournaments')
+                    .insert({
+                        club_id: hostClubId,
+                        union_id: unionId,
+                        is_xmtt: true,
+                        name: config.name,
+                        game_type: dbGameType,
+                        variant: config.type === 'mtt' ? 'freezeout' : config.type,
+                        tournament_type: 'MTT',
+                        buy_in_amount: config.buyIn,
+                        buy_in_fee: config.rake,
+                        guaranteed_prize: config.guarantee || 0,
+                        starting_chips: config.startingStack,
+                        max_players: config.maxPlayers,
+                        min_players: config.minPlayers || 3,
+                        current_players: 0,
+                        status: 'REGISTERING',
+                        blind_structure: config.blindStructure,
+                        payout_structure: config.payoutStructure || [],
+                        start_time: startTime.toISOString(),
+                        late_reg_mins: 45, // Longer late reg for XMTT
+                        is_bounty: isBountyType,
+                        is_pko: config.type === 'progressive_bounty',
+                        is_mystery_bounty: config.type === 'mystery_bounty',
+                        bounty_amount: bountyAmount,
+                        mystery_bounty_min: mysteryMin,
+                        mystery_bounty_max: mysteryMax,
+                    })
+                    .select()
+                    .single();
+                if (!error && data) {
+                    tournament = data;
+                    break;
+                }
+                lastError = error;
+                console.error(`[RecurringService] XMTT creation attempt ${attempt}/3 failed: ${error?.message}`);
+                if (attempt < 3) await new Promise(r => setTimeout(r, 5000));
+            }
+            if (!tournament) {
+                console.error(`[RecurringService] XMTT creation FAILED after 3 retries: ${lastError?.message}`);
                 return { tournamentId: null, registered: 0 };
             }
 
@@ -621,38 +631,48 @@ export class TournamentRecurringService {
             const mysteryMin = config.type === 'mystery_bounty' ? bountyAmount : 0;
             const mysteryMax = config.type === 'mystery_bounty' ? Math.trunc(bountyAmount * 10 * 100) / 100 : 0;
 
-            const { data: tournament, error } = await supabase
-                .from('tournaments')
-                .insert({
-                    club_id: this.getNextClubId(),
-                    name: config.name,
-                    game_type: dbGameType,
-                    variant: config.type === 'mtt' ? 'freezeout' : config.type,
-                    tournament_type: 'MTT',
-                    buy_in_amount: config.buyIn,
-                    buy_in_fee: config.rake,
-                    guaranteed_prize: config.guarantee || 0,
-                    starting_chips: config.startingStack,
-                    max_players: config.maxPlayers,
-                    min_players: config.minPlayers || 3,
-                    current_players: 0,
-                    status: 'REGISTERING',
-                    blind_structure: config.blindStructure,
-                    payout_structure: config.payoutStructure || [],
-                    start_time: startTime.toISOString(),
-                    late_reg_mins: 30,
-                    is_bounty: isBountyType,
-                    is_pko: config.type === 'progressive_bounty',
-                    is_mystery_bounty: config.type === 'mystery_bounty',
-                    bounty_amount: bountyAmount,
-                    mystery_bounty_min: mysteryMin,
-                    mystery_bounty_max: mysteryMax,
-                })
-                .select()
-                .single();
-
-            if (error || !tournament) {
-                console.error(`[TournamentRecurring] Tournament creation failed: ${error?.message}`);
+            let tournament = null;
+            let lastError = null;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                const { data, error } = await supabase
+                    .from('tournaments')
+                    .insert({
+                        club_id: this.getNextClubId(),
+                        name: config.name,
+                        game_type: dbGameType,
+                        variant: config.type === 'mtt' ? 'freezeout' : config.type,
+                        tournament_type: 'MTT',
+                        buy_in_amount: config.buyIn,
+                        buy_in_fee: config.rake,
+                        guaranteed_prize: config.guarantee || 0,
+                        starting_chips: config.startingStack,
+                        max_players: config.maxPlayers,
+                        min_players: config.minPlayers || 3,
+                        current_players: 0,
+                        status: 'REGISTERING',
+                        blind_structure: config.blindStructure,
+                        payout_structure: config.payoutStructure || [],
+                        start_time: startTime.toISOString(),
+                        late_reg_mins: 30,
+                        is_bounty: isBountyType,
+                        is_pko: config.type === 'progressive_bounty',
+                        is_mystery_bounty: config.type === 'mystery_bounty',
+                        bounty_amount: bountyAmount,
+                        mystery_bounty_min: mysteryMin,
+                        mystery_bounty_max: mysteryMax,
+                    })
+                    .select()
+                    .single();
+                if (!error && data) {
+                    tournament = data;
+                    break;
+                }
+                lastError = error;
+                console.error(`[RecurringService] Tournament creation attempt ${attempt}/3 failed: ${error?.message}`);
+                if (attempt < 3) await new Promise(r => setTimeout(r, 5000));
+            }
+            if (!tournament) {
+                console.error(`[RecurringService] Tournament creation FAILED after 3 retries: ${lastError?.message}`);
                 return { tournamentId: null, registered: 0 };
             }
 

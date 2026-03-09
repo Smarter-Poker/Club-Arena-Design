@@ -63,6 +63,8 @@ import { useTableStore } from '../stores/useTableStore';
 import { useToast } from '../components/common/Toast';
 import TournamentBreakScreen from '../components/table/TournamentBreakScreen';
 import AddOnModal from '../components/table/AddOnModal';
+import TournamentAnnouncementOverlay from '../components/table/TournamentAnnouncementOverlay';
+import RebuyModal from '../components/table/RebuyModal';
 // RealtimeChannelService imported if needed for future use
 import ChipStack from '../components/table/ChipStack';
 import { tournamentService } from '../services/TournamentService';
@@ -348,6 +350,13 @@ export default function TablePage() {
         nextLevel?: { level: number; smallBlind: number; bigBlind: number; ante?: number; duration: number };
     }>({ active: false, timeRemaining: 0 });
     const breakChannelRef = useRef<any>(null);
+
+    // Tournament announcement overlay state
+    const [announcement, setAnnouncement] = useState<{ type: string; data?: any } | null>(null);
+
+    // Rebuy modal state
+    const [showRebuyModal, setShowRebuyModal] = useState(false);
+    const [rebuyData, setRebuyData] = useState<{ cost: number; chips: number } | null>(null);
 
     // Add-on period state
     const [addOnPeriod, setAddOnPeriod] = useState<{
@@ -724,21 +733,23 @@ export default function TablePage() {
 
     // Handle tournament rebuy
     const handleTournamentRebuy = async () => {
-        if (!tableState.tournamentId || !userId || rebuyProcessing) return;
-        setRebuyProcessing(true);
+        if (!tableState.tournamentId || !userId) return;
         try {
             const rebuyCheck = await tournamentService.canRebuy(tableState.tournamentId, userId);
             if (!rebuyCheck.allowed) {
                 toast.error(rebuyCheck.reason || 'Rebuy not available');
                 return;
             }
-            await tournamentService.processRebuy(tableState.tournamentId, userId);
-            toast?.success('Rebuy successful — chips added');
-            setShowTournamentRebuy(false);
+            // Get tournament info to get rebuy cost and chips
+            const tournament = await tournamentService.getTournament(tableState.tournamentId);
+            if (tournament) {
+                const rebuyChips = tournament.rebuy_chips || tournament.starting_chips;
+                const rebuyCost = tournament.rebuy_cost || tournament.buy_in_amount;
+                setRebuyData({ cost: rebuyCost, chips: rebuyChips });
+                setShowRebuyModal(true);
+            }
         } catch (err) {
-            toast?.error((err as Error).message || 'Rebuy failed');
-        } finally {
-            setRebuyProcessing(false);
+            toast?.error((err as Error).message || 'Failed to load rebuy info');
         }
     };
 
@@ -1037,6 +1048,7 @@ export default function TablePage() {
                                     } : undefined,
                                 }));
                                 if (data.payload?.active) {
+                                    setAnnouncement({ type: 'hand_for_hand', data: data.payload });
                                     toast?.info?.('Hand-for-hand play activated — bubble approaching');
                                 }
                             } else if (data?.type === 'bubble_burst') {
@@ -1046,6 +1058,7 @@ export default function TablePage() {
                                     handForHand: false,
                                     bubbleInfo: undefined,
                                 }));
+                                setAnnouncement({ type: 'bubble_burst', data: data.payload });
                                 toast?.success?.('Bubble burst — you are in the money!');
                             } else if (data?.type === 'player_eliminated') {
                                 // A player was eliminated from the tournament
@@ -1086,6 +1099,7 @@ export default function TablePage() {
                                     currentLevel: levelData.level,
                                     blinds: levelData.blinds,
                                 }));
+                                setAnnouncement({ type: 'level_up', data: levelData });
                             }
                         })
                         .subscribe();
@@ -2331,6 +2345,14 @@ export default function TablePage() {
                                 )}
                             </div>
 
+                            {/* Spin Multiplier Badge */}
+                            {tableState.isTournament && tableState.spinMultiplier && tableState.spinMultiplier > 1 && (
+                                <div className={`spinMultiplierBadge ${tableState.spinMultiplier >= 100 ? 'premium' : ''}`}>
+                                    <span className="spinMultiplierIcon">🎰</span>
+                                    <span className="spinMultiplierValue">{tableState.spinMultiplier}x</span>
+                                </div>
+                            )}
+
                             {/* Hand Strength Indicator - Shows during hero's turn */}
                             {tableState.isHandInProgress && tableState.players[tableState.heroSeat - 1]?.holeCards && tableState.players[tableState.heroSeat - 1]!.holeCards!.length >= 2 && (
                                 <div className="hand-strength-hud">
@@ -3041,6 +3063,31 @@ export default function TablePage() {
                 />
             )}
 
+            {/* Tournament Rebuy Modal */}
+            {rebuyData && (
+                <RebuyModal
+                    isOpen={showRebuyModal}
+                    rebuyCost={rebuyData.cost}
+                    rebuyChips={rebuyData.chips}
+                    walletBalance={accountBalance || 0}
+                    onConfirm={async () => {
+                        if (!tableState.tournamentId || !userId) return;
+                        setRebuyProcessing(true);
+                        try {
+                            await tournamentService.processRebuy(tableState.tournamentId, userId);
+                            toast?.success('Rebuy successful — chips added to your stack');
+                            setShowRebuyModal(false);
+                        } catch (err: any) {
+                            toast?.error(err.message || 'Rebuy failed');
+                        } finally {
+                            setRebuyProcessing(false);
+                        }
+                    }}
+                    onClose={() => setShowRebuyModal(false)}
+                    isProcessing={rebuyProcessing}
+                />
+            )}
+
             {/* Tournament Break Screen Overlay */}
             {tableState.isTournament && (
                 <TournamentBreakScreen
@@ -3054,6 +3101,15 @@ export default function TablePage() {
                     averageStack={tableState.players.filter(Boolean).reduce((s, p) => s + (p?.stack || 0), 0) / Math.max(tableState.players.filter(Boolean).length, 1)}
                     topPlayers={[]}
                     prizePool={0}
+                />
+            )}
+
+            {/* Tournament Announcement Overlay */}
+            {tableState.isTournament && (
+                <TournamentAnnouncementOverlay
+                    type={announcement?.type as any}
+                    data={announcement?.data}
+                    onDismiss={() => setAnnouncement(null)}
                 />
             )}
         </div>
