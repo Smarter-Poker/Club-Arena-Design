@@ -1,6 +1,6 @@
 # CLUB ARENA — Master Knowledge File
-## LAST UPDATED: Session 54+ (March 9, 2026)
-## STATUS: Phase 9 DEPLOYED — Level-Based Tournament Overhaul
+## LAST UPDATED: Session 55+ (March 9, 2026)
+## STATUS: Phase 10 DEPLOYED — Leaderboard Bugs Fixed
 ## RULE: UPDATE THIS FILE EVERY TIME YOU STOP TO UPDATE THE USER
 
 ---
@@ -42,8 +42,8 @@
 - Shark Club: a41434bb-8d0c-400a-8f0d-e8b3d65afed4 (club_id: 25450)
 - JAQK Club: a0000000-0000-0000-0000-000000000001 (club_id: 77777)
 - Midway Union: fade0000-0000-0000-0000-000000000001
-- Chrome tab 34580077: Supabase SQL editor (active)
-- Chrome tab 34580082: Smarter.Poker site
+- Chrome tab 34580118: Club Arena Leaderboard
+- Chrome tab 34580119: Supabase SQL Editor
 
 ---
 
@@ -58,7 +58,7 @@
 | Cash Games | 90% | All mechanics working |
 | Wallet/Financial | 100% | Triple wallet fully functional |
 | Club Management | 95% | Complete with agent hierarchy |
-| Leaderboards | 95% | Full featured |
+| Leaderboards | 98% | Rankings + tournament stats fixed |
 | Unions | 90% | Cross-club tournaments working |
 | Admin/Agents | 95% | Full management suite |
 | Horses/AI | 90% | Backend strong, UI minimal |
@@ -212,6 +212,17 @@
 - [x] TournamentEngine.ts: Add-on trigger uses `late_reg_levels ?? rebuy_levels ?? 8`
 - [x] VISUALLY VERIFIED: Create Tournament modal shows level-based dropdown, lobby cards show "Late Reg: Closed"
 
+### Phase 10 (Commit 8e26359) — LEADERBOARD BUGS FIXED
+- [x] **CRITICAL FIX**: `LeaderboardService.getClubTournamentStats` — Supabase returns single object for many-to-one tournament join, code was treating it as array and calling `.forEach()` which would crash. Fixed to handle single object.
+- [x] **Infinite loading fix**: `loadLeaderboard()` and `loadTournamentStats()` now call `setLoading(false)` / `setTournamentsLoading(false)` before early returns when `selectedClubId` is null
+- [x] **Precision fix**: `formatValue` now uses `Math.trunc(value * 100) / 100` (2 decimals) instead of `Math.trunc(value * 10) / 10` (1 decimal) for VPIP/ROI
+- [x] **Precision fix**: Profit display removed `toLocaleString` rounding, uses exact truncation per directive
+- [x] **Precision fix**: Tournament stats totalPrizes/biggestWin/ROI now use 2-decimal truncation
+- [x] **New metrics**: `tournaments_won` and `roi` properly handled in `getClubLeaderboard`, `getUnionLeaderboard`, `getUserRank` — was defaulting to `total_winnings` sort for all unknown metrics
+- [x] **DB migration**: Added `tournaments_played` and `tournaments_won` INTEGER columns to `player_stats` table (migration file + live DB via Supabase SQL editor)
+- [x] **Query fix**: Tournament stats join now selects tournament `id` for proper tournament counting in Set
+- **Files modified**: src/pages/LeaderboardPage.tsx, src/services/LeaderboardService.ts, supabase/migrations/20260309_leaderboard_columns.sql
+
 ---
 
 ## VERIFIED CLEAN (LAST SWEEP)
@@ -223,7 +234,7 @@
 - [x] Zero play_chips references
 - [x] All Supabase channels properly cleaned up in useEffect
 - [x] All stale closures resolved with useRef pattern
-- [x] Database schema fully synced — late_reg_levels, addon_levels, is_reentry columns added
+- [x] Database schema fully synced — late_reg_levels, addon_levels, is_reentry, tournaments_played, tournaments_won columns added
 - [x] TypeScript builds clean (client + server)
 - [x] All deployments on Vercel READY
 
@@ -285,9 +296,12 @@ MTT: Starts at scheduled time when min_players met
 3. Satellite tournaments — type defined, limited functionality
 4. Training system detail pages — ArenaTrainingController exists, UI minimal
 5. Custom blind structure editor — predefined structures work, custom creation limited
+6. **PARENT APP LEADERBOARD**: The smarter.poker parent Next.js app renders its OWN leaderboard at `/hub/club-arena/leaderboard` with different UI (Chip Balance/Profit/Hands Played/Win Rate buttons) — it does NOT load Club Arena's LeaderboardPage.tsx. The "Loading Rankings..." stuck state at that URL is a parent app bug, NOT a Club Arena bug. Club Arena's leaderboard is correctly fixed but only accessible when the SPA loads directly.
 
 ## GIT LOG (RECENT)
 ```
+8e26359 Phase 10: Fix Leaderboard bugs — infinite loading, tournament stats crash, precision
+73a805c Update knowledge file with Phase 9b/9c bug fixes and visual verification
 1c74dba Phase 9c: Fix remaining || fallbacks to ?? across server + client
 2713afe Phase 9b: Fix rebuy/add-on 0-value fallback, re-entry type, lobby card tags, rake precision
 c8d15ec Update knowledge file with Phase 9 level-based tournament overhaul
