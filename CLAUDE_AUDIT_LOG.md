@@ -159,6 +159,15 @@
 - [x] LeaderboardPage Math.round → Math.trunc on all money
 - [x] LeaderboardPage .toFixed → Math.trunc for ROI
 
+### Phase 8 (Commit c20133a) — VISUAL VERIFIED ON LIVE SITE
+- [x] TournamentDetails.tsx: Info grid layout fix — .info-row.half elements were concatenating
+  Wrapped in .info-half-grid flex container with proper 2-column layout
+  Added border separators between columns
+  Added mobile fallback (stacks to 1 column at 480px)
+- [x] TournamentDetails.css: New .info-half-grid class with flex-wrap
+- [x] LeaderboardPage.tsx: formatValue .toFixed(1) → Math.trunc(val * 10) / 10
+- [x] VISUALLY VERIFIED: Tournament details info grid now displays correctly on production
+
 ---
 
 ## VERIFIED CLEAN (LAST SWEEP)
