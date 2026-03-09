@@ -63,6 +63,12 @@ export default function TournamentLobbyPage() {
     statusFilterRef.current = statusFilter;
 
     const loadTournamentsRef = useRef<() => void>(() => {});
+    const tournamentsRef = useRef<Tournament[]>([]);
+    const channelRefsRef = useRef<Map<string, any>>(new Map());
+
+    useEffect(() => {
+        tournamentsRef.current = tournaments;
+    }, [tournaments]);
 
     useEffect(() => {
         loadTournaments();
@@ -104,6 +110,94 @@ export default function TournamentLobbyPage() {
             supabase.removeChannel(channel);
         };
     }, [clubId]);
+
+    // ── Broadcast: Subscribe to tournament events for all running tournaments ──
+    useEffect(() => {
+        // Get all running tournament IDs from current tournaments
+        const runningTournamentIds = tournamentsRef.current
+            .filter(t => ['ANNOUNCED', 'REGISTERING', 'RUNNING'].includes(t.status))
+            .map(t => t.id);
+
+        // Cleanup old channels for tournaments no longer running
+        const channelMap = channelRefsRef.current;
+        for (const [tourneyId, channel] of channelMap.entries()) {
+            if (!runningTournamentIds.includes(tourneyId)) {
+                supabase.removeChannel(channel);
+                channelMap.delete(tourneyId);
+            }
+        }
+
+        // Subscribe to new tournaments
+        runningTournamentIds.forEach(tournamentId => {
+            if (channelMap.has(tournamentId)) return; // Already subscribed
+
+            const channel = supabase
+                .channel(`t-break-${tournamentId}`)
+                .on(
+                    'broadcast',
+                    { event: 'tournament_event' },
+                    (payload) => {
+                        const eventType = payload.payload?.type;
+                        const data = payload.payload?.data;
+
+                        // Update the tournament in the list
+                        setTournaments(prev => prev.map(t => {
+                            if (t.id !== tournamentId) return t;
+
+                            // Common updates for multiple event types
+                            let updated = { ...t };
+
+                            switch (eventType) {
+                                case 'level_up':
+                                case 'table_rebalance':
+                                    // Just trigger a lightweight update if needed
+                                    // The postgres_changes subscription should handle most of this
+                                    break;
+
+                                case 'player_eliminated':
+                                    // Decrement player count
+                                    if (data?.playerName) {
+                                        updated = {
+                                            ...updated,
+                                            currentPlayers: Math.max(0, updated.currentPlayers - 1),
+                                        };
+                                    }
+                                    break;
+
+                                case 'late_reg_closed':
+                                    // Status may have changed, no immediate UI change needed
+                                    break;
+
+                                case 'ADDON_PERIOD_START':
+                                case 'ADDON_PERIOD_END':
+                                    // No player count change
+                                    break;
+
+                                case 'tournament_break':
+                                case 'break_ended':
+                                case 'hand_for_hand':
+                                case 'bubble_burst':
+                                    // Status notifications, no state update needed
+                                    break;
+                            }
+
+                            return updated;
+                        }));
+                    }
+                )
+                .subscribe();
+
+            channelMap.set(tournamentId, channel);
+        });
+
+        return () => {
+            // Cleanup all channels on unmount
+            for (const channel of channelRefsRef.current.values()) {
+                supabase.removeChannel(channel);
+            }
+            channelRefsRef.current.clear();
+        };
+    }, [tournaments]);
 
     const loadTournaments = async () => {
         loadTournamentsRef.current = loadTournaments;

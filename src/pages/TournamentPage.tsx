@@ -291,6 +291,107 @@ export default function TournamentPage() {
         checkRebuyAddOn();
     }, [selectedTournament, currentUser.id]);
 
+    // ── Broadcast: Tournament events (level_up, player_eliminated, etc) ──
+    useEffect(() => {
+        if (!selectedTournament?.id) return;
+
+        const channel = supabase
+            .channel(`t-break-${selectedTournament.id}`)
+            .on(
+                'broadcast',
+                { event: 'tournament_event' },
+                (payload) => {
+                    const eventType = payload.payload?.type;
+                    const data = payload.payload?.data;
+
+                    switch (eventType) {
+                        case 'level_up':
+                            // Refresh tournament data
+                            (async () => {
+                                try {
+                                    const updated = await tournamentService.getTournament(selectedTournament.id);
+                                    if (updated) setSelectedTournament(updated);
+                                } catch (error) {
+                                    console.error('Failed to refresh tournament on level_up:', error);
+                                }
+                            })();
+                            break;
+
+                        case 'player_eliminated':
+                            // Refresh tournament data and show toast
+                            (async () => {
+                                try {
+                                    const updated = await tournamentService.getTournament(selectedTournament.id);
+                                    if (updated) setSelectedTournament(updated);
+                                } catch (error) {
+                                    console.error('Failed to refresh tournament on player_eliminated:', error);
+                                }
+                            })();
+                            if (data?.playerName) {
+                                toast.info(`${data.playerName} has been eliminated`);
+                            }
+                            break;
+
+                        case 'tournament_break':
+                            toast.warning('Tournament on break');
+                            break;
+
+                        case 'break_ended':
+                            toast.success('Break ended — play resumes');
+                            break;
+
+                        case 'hand_for_hand':
+                            toast.info('Hand-for-hand play activated');
+                            break;
+
+                        case 'bubble_burst':
+                            toast.success('Bubble burst! All remaining players in the money');
+                            break;
+
+                        case 'late_reg_closed':
+                            toast.info('Late registration closed');
+                            // Refresh tournament data
+                            (async () => {
+                                try {
+                                    const updated = await tournamentService.getTournament(selectedTournament.id);
+                                    if (updated) setSelectedTournament(updated);
+                                } catch (error) {
+                                    console.error('Failed to refresh tournament on late_reg_closed:', error);
+                                }
+                            })();
+                            break;
+
+                        case 'ADDON_PERIOD_START':
+                            setCanAddOnNow(true);
+                            toast.success('Add-on period now available');
+                            break;
+
+                        case 'ADDON_PERIOD_END':
+                            setCanAddOnNow(false);
+                            toast.info('Add-on period has ended');
+                            break;
+
+                        case 'table_rebalance':
+                            // Refresh tournament data
+                            (async () => {
+                                try {
+                                    const updated = await tournamentService.getTournament(selectedTournament.id);
+                                    if (updated) setSelectedTournament(updated);
+                                } catch (error) {
+                                    console.error('Failed to refresh tournament on table_rebalance:', error);
+                                }
+                            })();
+                            break;
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [selectedTournament?.id, toast]);
+
     // Handle Rebuy
     const handleRebuy = async () => {
         if (!selectedTournament) return;
