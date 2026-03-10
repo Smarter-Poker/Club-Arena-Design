@@ -8,6 +8,7 @@
 
 import { Routes, Route } from 'react-router-dom';
 import { Suspense, lazy, useState, useEffect } from 'react';
+import { supabase } from './lib/supabase';
 
 // Intro Video for first-time load
 import IntroVideo from './components/IntroVideo';
@@ -110,6 +111,34 @@ export default function App() {
         sessionStorage.setItem(INTRO_SHOWN_KEY, 'true');
         setShowIntro(false);
     };
+
+    // ── Receive auth token from parent World Hub via postMessage ──
+    // When embedded in an iframe at smarter.poker, the parent sends
+    // the Supabase auth token so the SPA can authenticate without
+    // requiring a separate login flow.
+    useEffect(() => {
+        const isInIframe = window.parent !== window;
+        if (!isInIframe) return;
+
+        const handleMessage = async (event: MessageEvent) => {
+            // Only accept from smarter.poker
+            if (!event.origin.includes('smarter.poker')) return;
+
+            if (event.data?.type === 'SMARTER_AUTH_TOKEN' && event.data.token) {
+                try {
+                    await supabase.auth.setSession({
+                        access_token: event.data.token,
+                        refresh_token: event.data.refreshToken || '',
+                    });
+                } catch (e) {
+                    console.error('[App] Failed to set session from parent:', e);
+                }
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, []);
 
     return (
         <ErrorBoundary>
