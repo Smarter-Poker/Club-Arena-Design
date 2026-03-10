@@ -1,6 +1,6 @@
 # CLUB ARENA — Master Knowledge File
-## LAST UPDATED: Session 58 (March 9, 2026)
-## STATUS: Phase 10h+ DEPLOYED + FULL E2E VERIFIED — All Filters, Data, Late Reg Working
+## LAST UPDATED: Session 59 (March 10, 2026)
+## STATUS: Phase 11c DEPLOYED — World Hub Header Match + Table Header Removal + Full Reassessment
 ## RULE: UPDATE THIS FILE EVERY TIME YOU STOP TO UPDATE THE USER
 
 ---
@@ -343,6 +343,31 @@
   - Ranking tab: Tournament Standings with 28 remaining, 3 eliminated
   - Button changed to "IN PROGRESS" (green)
 
+### Phase 11 (Commit e66cc12) — HOMEPAGE REDESIGN + DUPLICATE HEADER REMOVAL
+- [x] **HomePage redesign**: New card-grid layout with action bar, side cards (JAQK, Midway Union, Shark Club), featured center card, bottom row quick links
+- [x] **SmarterHeader removed from 26+ sub-pages**: All pages now use single GlobalHeader via AppLayout wrapper
+- [x] **No more duplicate headers**: Every page shows exactly one header (GlobalHeader from AppLayout or standalone)
+- **Files modified**: src/pages/HomePage.tsx, 26+ sub-page files
+
+### Phase 11b (Commit a0f5dea) — WORLD HUB STYLE CARD SHOWCASE
+- [x] **3D card layout**: Featured center card with side clubs (JAQK, Midway Union) matching World Hub visual style
+- [x] **MY CLUBS grid fix** (cdaa5ab): Shows ALL user clubs including Shark Club
+- **Files modified**: src/pages/HomePage.tsx
+
+### Phase 11c (Commit c5498d5) — GLOBALHEADER PIXEL-MATCH TO WORLD HUB
+- [x] **Complete rewrite of GlobalHeader.tsx**: Replaced old SVG icons with image-based icons from smarter.poker
+- [x] **Layout**: LEFT: Hamburger (40x40) + HUB button (80x22) | CENTER: Brand text (hidden on mobile) | RIGHT: Diamond, VIP, Profile orb, Messages, Notifications, Settings, Help — all 26x26px
+- [x] **Profile orb**: 26x26px with `border: 2px solid rgb(0, 224, 255)` + cyan glow box-shadow
+- [x] **8 new assets downloaded**: btn-hub.png, brand-text.png, diamond-icon.png, vip-card.png, header-messenger.png, header-notifications.png, header-settings.png, header-help.png
+- [x] **CSS rewrite**: black bg, 55px height, 3px solid border-bottom rgba(200,200,200,0.8), responsive at 600px and 380px
+- [x] **Notification/message badges**: Red badges with counts on messenger and notifications icons
+- **Files modified**: src/components/navigation/GlobalHeader.tsx, src/components/navigation/GlobalHeader.module.css, public/images/ (8 new files)
+
+### Phase 11c+ (Commit da73ef0) — TABLE HEADER REMOVAL
+- [x] **TablePage.tsx header removed**: Entire `<header className="table-header">` element removed (hamburger, back button, jackpot, spin, bounty, table info)
+- [x] **Fully immersive poker table**: No header on cash game or tournament table pages
+- **Files modified**: src/pages/TablePage.tsx
+
 ### LIVE E2E TESTING (Session 57) — ALL PASSING
 - [x] **Tournament Registration**: Sign Up modal → wallet deduction (-20 buy-in, -2 fee) → entry confirmed → transactions logged
 - [x] **Tournament Unregistration**: Unregister → full refund (+22) → entry removed → transaction logged
@@ -430,6 +455,12 @@ MTT: Starts at scheduled time when min_players met
 
 ## GIT LOG (RECENT)
 ```
+da73ef0 Remove header from poker table pages — no header on cash games or tournaments
+c5498d5 Phase 11c: Match GlobalHeader to World Hub UniversalHeader exactly
+a0f5dea Phase 11b: World Hub style card showcase — featured center + side clubs
+cdaa5ab Fix MY CLUBS grid — show ALL user clubs including Shark Club
+e66cc12 Phase 11: Redesign Club Home page + remove duplicate headers across all pages
+a27308c Update knowledge file — Phase 10i build fix and full bottom nav E2E verification
 8dd43ff Fix TypeScript build errors — formatNumber reference and Tournament type interface
 1a24811 Update knowledge file with Phase 10g/10g+/10h/10h+ and Session 58 E2E results
 2b2bc0d Phase 10h+: Fix tournament type badge labels — PKO and Mystery show correct badges
