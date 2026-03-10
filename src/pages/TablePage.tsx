@@ -314,6 +314,13 @@ export default function TablePage() {
     const [showRaiseSlider, setShowRaiseSlider] = useState(false);
     const [actionTimeRemaining, setActionTimeRemaining] = useState(15);
     const [preAction, setPreAction] = useState<'fold' | 'check' | 'callAny' | null>(null);
+
+    // Pot display mode — toggle between chip amounts and BB count
+    type PotDisplayMode = 'chips' | 'bb';
+    const [potDisplayMode, setPotDisplayMode] = useState<PotDisplayMode>('chips');
+    const handleTogglePotDisplay = useCallback(() => {
+        setPotDisplayMode(prev => prev === 'chips' ? 'bb' : 'chips');
+    }, []);
     const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
     const [showBuyInModal, setShowBuyInModal] = useState(false);
     const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
@@ -827,7 +834,9 @@ export default function TablePage() {
                 ...prev,
                 tableName: updatedTable.name,
                 gameType: updatedTable.game_variant as any,
-                blinds: `${updatedTable.small_blind}/${updatedTable.big_blind}`,
+                blinds: (updatedTable.small_blind != null && updatedTable.big_blind != null)
+                    ? `${updatedTable.small_blind}/${updatedTable.big_blind}`
+                    : prev.blinds,
             }));
         });
 
@@ -933,7 +942,8 @@ export default function TablePage() {
                     gameType: (table.game_variant || table.game_type || 'NLH') as any,
                     isTournament: table.game_type === 'tournament' || !!table.tournament_id,
                     tournamentId: table.tournament_id || undefined,
-                    blinds: table.stakes || '?/?',
+                    blinds: table.stakes
+                        || (table.small_blind != null && table.big_blind != null ? `${table.small_blind}/${table.big_blind}` : '?/?'),
                     maxPlayers: table.max_players || 6,
                     players: createEmptySeats(table.max_players || 6),
                     positions: Array(table.max_players || 6).fill(null),
@@ -1417,7 +1427,7 @@ export default function TablePage() {
     // Called directly from: (1) horse loading callback, (2) HAND_COMPLETE handler
     // This eliminates React dependency-array re-runs that caused duplicate HCs
     // ═══════════════════════════════════════════════════════════════════════════
-    const startNextHandRef = useRef<() => void>(() => {});
+    const startNextHandRef = useRef<() => void>(() => { });
     startNextHandRef.current = () => {
         // GUARD: prevent duplicate creation using GLOBAL window locks + timestamp debounce
         const locks = _win.__pokerLocks;
@@ -2020,10 +2030,12 @@ export default function TablePage() {
     const handleFold = async () => {
         const heroSeat = tableState.heroSeat;
         setShowRaiseSlider(false);
-        // Optimistic local update for instant UI feedback
-        if (handControllerRef.current) {
-            handControllerRef.current.performAction(heroSeat, 'fold');
-        }
+        // Optimistic local update — wrapped in startTransition to avoid INP blocking
+        startTransition(() => {
+            if (handControllerRef.current) {
+                handControllerRef.current.performAction(heroSeat, 'fold');
+            }
+        });
         soundService.playFold();
         // Submit to server (authoritative)
         if (tableId) {
@@ -2035,9 +2047,11 @@ export default function TablePage() {
     const handleCheck = async () => {
         const heroSeat = tableState.heroSeat;
         setShowRaiseSlider(false);
-        if (handControllerRef.current) {
-            handControllerRef.current.performAction(heroSeat, 'check');
-        }
+        startTransition(() => {
+            if (handControllerRef.current) {
+                handControllerRef.current.performAction(heroSeat, 'check');
+            }
+        });
         soundService.playCheck();
         if (tableId) {
             const result = await submitAction(tableId, userId, 'check');
@@ -2048,9 +2062,11 @@ export default function TablePage() {
     const handleCall = async () => {
         const heroSeat = tableState.heroSeat;
         setShowRaiseSlider(false);
-        if (handControllerRef.current) {
-            handControllerRef.current.performAction(heroSeat, 'call');
-        }
+        startTransition(() => {
+            if (handControllerRef.current) {
+                handControllerRef.current.performAction(heroSeat, 'call');
+            }
+        });
         soundService.playChips();
         if (tableId) {
             const result = await submitAction(tableId, userId, 'call');
@@ -2078,13 +2094,14 @@ export default function TablePage() {
         // Close slider immediately
         setShowRaiseSlider(false);
         try {
-            if (handControllerRef.current) {
-                const result = handControllerRef.current.performAction(heroSeat, 'raise', clampedRaise);
-                if (result === false) {
-                    console.warn('[TablePage] Raise rejected by engine — amount:', clampedRaise);
-                    return;
+            startTransition(() => {
+                if (handControllerRef.current) {
+                    const result = handControllerRef.current.performAction(heroSeat, 'raise', clampedRaise);
+                    if (result === false) {
+                        console.warn('[TablePage] Raise rejected by engine — amount:', clampedRaise);
+                    }
                 }
-            }
+            });
             soundService.playChips();
             // Submit to server (authoritative)
             if (tableId) {
@@ -2102,9 +2119,11 @@ export default function TablePage() {
         const heroStack = hero?.stack || 0;
         if (heroStack <= 0) return;
         try {
-            if (handControllerRef.current) {
-                handControllerRef.current.performAction(heroSeat, 'all_in');
-            }
+            startTransition(() => {
+                if (handControllerRef.current) {
+                    handControllerRef.current.performAction(heroSeat, 'all_in');
+                }
+            });
             soundService.playChips();
             // Submit to server (authoritative)
             if (tableId) {
@@ -2283,7 +2302,7 @@ export default function TablePage() {
             }, 1000);
             return () => clearInterval(timer);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [tableState.currentPlayerSeat, tableState.heroSeat]);
 
     return (
@@ -2306,102 +2325,105 @@ export default function TablePage() {
           ═══════════════════════════════════════════════════════════════════════ */}
             <div className="table-container">
                 <div className="table-scaler">
-                {/* Table Felt */}
-                <div className="table-felt">
-                    <div className="table-rail">
-                        <div className="table-surface">
+                    {/* Table Felt */}
+                    <div className="table-felt">
+                        <div className="table-rail">
+                            <div className="table-surface">
 
-                            {/* Pot Display */}
-                            <div className="pot-area">
-                                <PotDisplay
-                                    mainPot={tableState.pot}
-                                    sidePots={tableState.sidePots}
-                                />
-                            </div>
-
-                            {/* Community Cards */}
-                            <div className="community-area">
-                                <CommunityCards
-                                    cards={tableState.communityCards}
-                                    stage={tableState.boardStage}
-                                    highlightedIndices={[]}
-                                />
-                            </div>
-
-                            {/* Game Info */}
-                            <div className="game-info">
-                                <span className="game-type">{tableState.gameType}</span>
-                                <span className="game-variant">{getGameVariantLabel(tableState.gameType)}</span>
-                                <span className="game-blinds">Blinds: {tableState.blinds}</span>
-                                {/* Spectator Badge */}
-                                {presence?.observers && presence.observers.length > 0 && (
-                                    <SpectatorBadge observers={presence.observers} />
-                                )}
-                            </div>
-
-                            {/* Spin Multiplier Badge */}
-                            {tableState.isTournament && tableState.spinMultiplier && tableState.spinMultiplier > 1 && (
-                                <div className={`spinMultiplierBadge ${tableState.spinMultiplier >= 100 ? 'premium' : ''}`}>
-                                    <span className="spinMultiplierIcon">🎰</span>
-                                    <span className="spinMultiplierValue">{tableState.spinMultiplier}x</span>
-                                </div>
-                            )}
-
-                            {/* Hand Strength Indicator - Shows during hero's turn */}
-                            {tableState.isHandInProgress && tableState.players[tableState.heroSeat - 1]?.holeCards && tableState.players[tableState.heroSeat - 1]!.holeCards!.length >= 2 && (
-                                <div className="hand-strength-hud">
-                                    <HandStrengthIndicator
-                                        cards={tableState.players[tableState.heroSeat - 1]!.holeCards!.map((c: Card) => `${c.rank}${c.suit}`)}
-                                        communityCards={tableState.communityCards.map((c: Card) => `${c.rank}${c.suit}`)}
-                                        size="sm"
+                                {/* Pot Display — click to toggle chips/BB */}
+                                <div className="pot-area">
+                                    <PotDisplay
+                                        mainPot={tableState.pot}
+                                        sidePots={tableState.sidePots}
+                                        bigBlind={parseFloat(tableState.blinds.split('/')[1]) || 0}
+                                        displayMode={potDisplayMode}
+                                        onToggleDisplayMode={handleTogglePotDisplay}
                                     />
                                 </div>
-                            )}
 
-                            {/* Session Timer */}
-                            <SessionTimer
-                                breakInterval={60}
-                                onBreakSuggested={() => console.log('Break suggested')}
-                            />
+                                {/* Community Cards */}
+                                <div className="community-area">
+                                    <CommunityCards
+                                        cards={tableState.communityCards}
+                                        stage={tableState.boardStage}
+                                        highlightedIndices={[]}
+                                    />
+                                </div>
 
+                                {/* Game Info */}
+                                <div className="game-info">
+                                    <span className="game-type">{tableState.gameType}</span>
+                                    <span className="game-variant">{getGameVariantLabel(tableState.gameType)}</span>
+                                    <span className="game-blinds">Blinds: {tableState.blinds}</span>
+                                    {/* Spectator Badge */}
+                                    {presence?.observers && presence.observers.length > 0 && (
+                                        <SpectatorBadge observers={presence.observers} />
+                                    )}
+                                </div>
+
+                                {/* Spin Multiplier Badge */}
+                                {tableState.isTournament && tableState.spinMultiplier && tableState.spinMultiplier > 1 && (
+                                    <div className={`spinMultiplierBadge ${tableState.spinMultiplier >= 100 ? 'premium' : ''}`}>
+                                        <span className="spinMultiplierIcon">🎰</span>
+                                        <span className="spinMultiplierValue">{tableState.spinMultiplier}x</span>
+                                    </div>
+                                )}
+
+                                {/* Hand Strength Indicator - Shows during hero's turn */}
+                                {tableState.isHandInProgress && tableState.players[tableState.heroSeat - 1]?.holeCards && tableState.players[tableState.heroSeat - 1]!.holeCards!.length >= 2 && (
+                                    <div className="hand-strength-hud">
+                                        <HandStrengthIndicator
+                                            cards={tableState.players[tableState.heroSeat - 1]!.holeCards!.map((c: Card) => `${c.rank}${c.suit}`)}
+                                            communityCards={tableState.communityCards.map((c: Card) => `${c.rank}${c.suit}`)}
+                                            size="sm"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Session Timer */}
+                                <SessionTimer
+                                    breakInterval={60}
+                                    onBreakSuggested={() => console.log('Break suggested')}
+                                />
+
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Player Seats */}
-                {seatPositions.map((pos, idx) => {
-                    const seatNumber = idx + 1;
-                    const player = getPlayerAtSeat(seatNumber);
+                    {/* Player Seats */}
+                    {seatPositions.map((pos, idx) => {
+                        const seatNumber = idx + 1;
+                        const player = getPlayerAtSeat(seatNumber);
 
-                    return (
-                        <div
-                            key={seatNumber}
-                            className="seat-wrapper"
-                            style={{
-                                left: `${pos.x}%`,
-                                top: `${pos.y}%`,
-                            }}
-                        >
-                            <SeatSlot
-                                seatNumber={seatNumber}
-                                player={player || null}
-                                position={tableState.positions[idx] || null}
-                                isActive={seatNumber === tableState.currentPlayerSeat}
-                                lastAction={tableState.lastActions[idx] || null}
-                                timerProgress={seatNumber === tableState.currentPlayerSeat ? (actionTimeRemaining / 15) * 100 : undefined}
-                                bigBlind={parseFloat(tableState.blinds.split('/')[1]) || 2}
-                                isTournament={tableState.isTournament}
-                                bountyValue={tableState.isBountyTournament && player ? tableState.bountyMap[player.id] : undefined}
-                                onSit={() => handleSeatClick(seatNumber)}
-                                onAvatarClick={() => {
-                                    // Open throwable selector targeting this seat
-                                    setThrowTargetSeat(seatNumber);
-                                    setShowThrowableSelector(true);
+                        return (
+                            <div
+                                key={seatNumber}
+                                className="seat-wrapper"
+                                style={{
+                                    left: `${pos.x}%`,
+                                    top: `${pos.y}%`,
                                 }}
-                            />
-                        </div>
-                    );
-                })}
+                            >
+                                <SeatSlot
+                                    seatNumber={seatNumber}
+                                    player={player || null}
+                                    position={tableState.positions[idx] || null}
+                                    isActive={seatNumber === tableState.currentPlayerSeat}
+                                    lastAction={tableState.lastActions[idx] || null}
+                                    timerProgress={seatNumber === tableState.currentPlayerSeat ? (actionTimeRemaining / 15) * 100 : undefined}
+                                    bigBlind={parseFloat(tableState.blinds.split('/')[1]) || 2}
+                                    isTournament={tableState.isTournament}
+                                    bountyValue={tableState.isBountyTournament && player ? tableState.bountyMap[player.id] : undefined}
+                                    onSit={() => handleSeatClick(seatNumber)}
+                                    onAvatarClick={() => {
+                                        // Open throwable selector targeting this seat
+                                        setThrowTargetSeat(seatNumber);
+                                        setShowThrowableSelector(true);
+                                    }}
+                                />
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
 

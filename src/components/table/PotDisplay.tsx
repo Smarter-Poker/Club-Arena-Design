@@ -22,12 +22,17 @@ export interface SidePot {
     eligiblePlayers: string[];
 }
 
+export type PotDisplayMode = 'chips' | 'bb';
+
 export interface PotDisplayProps {
     mainPot: number;
     sidePots?: SidePot[];
     previousPot?: number;
     showChipAnimation?: boolean;
     currency?: string;
+    bigBlind?: number;
+    displayMode?: PotDisplayMode;
+    onToggleDisplayMode?: () => void;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -37,6 +42,17 @@ export interface PotDisplayProps {
 // EXACT precision — no abbreviations, no rounding
 function formatAmount(amount: number, currency: string = ''): string {
     return `${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+// Format amount in Big Blinds
+function formatBB(amount: number, bigBlind: number): string {
+    if (bigBlind <= 0) return formatAmount(amount);
+    const bbs = amount / bigBlind;
+    // Show 1 decimal for fractional BBs, whole number for clean amounts
+    if (bbs === Math.floor(bbs)) {
+        return `${bbs} BB`;
+    }
+    return `${bbs.toFixed(1)} BB`;
 }
 
 // Chip denomination colors
@@ -105,7 +121,7 @@ interface SidePotBadgeProps {
     index: number;
 }
 
-function SidePotBadge({ pot, index }: SidePotBadgeProps) {
+function SidePotBadge({ pot, index, displayMode = 'chips', bigBlind = 0 }: SidePotBadgeProps & { displayMode?: PotDisplayMode; bigBlind?: number }) {
     return (
         <div
             className="pot-display__side-pot"
@@ -113,7 +129,9 @@ function SidePotBadge({ pot, index }: SidePotBadgeProps) {
         >
             <span className="pot-display__side-pot-label">Side Pot {index + 1}</span>
             <span className="pot-display__side-pot-amount">
-                {formatAmount(pot.amount)}
+                {displayMode === 'bb' && bigBlind > 0
+                    ? formatBB(pot.amount, bigBlind)
+                    : formatAmount(pot.amount)}
             </span>
         </div>
     );
@@ -129,6 +147,9 @@ export function PotDisplay({
     previousPot = 0,
     showChipAnimation = true,
     currency = '',
+    bigBlind = 0,
+    displayMode = 'chips',
+    onToggleDisplayMode,
 }: PotDisplayProps) {
     const [displayPot, setDisplayPot] = useState(mainPot);
     const [isAnimating, setIsAnimating] = useState(false);
@@ -192,11 +213,17 @@ export function PotDisplay({
                 </div>
             )}
 
-            {/* Main Pot Amount */}
-            <div className={`pot-display__main ${isAnimating ? 'pot-display__main--animating' : ''}`}>
+            {/* Main Pot Amount — click to toggle chips/BB display */}
+            <div
+                className={`pot-display__main ${isAnimating ? 'pot-display__main--animating' : ''} ${onToggleDisplayMode ? 'pot-display__main--clickable' : ''}`}
+                onClick={onToggleDisplayMode}
+                title={onToggleDisplayMode ? 'Click to toggle Chips/BB display' : undefined}
+            >
                 <span className="pot-display__label">POT</span>
                 <span className="pot-display__amount">
-                    {formatAmount(displayPot, currency)}
+                    {displayMode === 'bb' && bigBlind > 0
+                        ? formatBB(displayPot, bigBlind)
+                        : formatAmount(displayPot, currency)}
                 </span>
             </div>
 
@@ -204,7 +231,7 @@ export function PotDisplay({
             {sidePots.length > 0 && (
                 <div className="pot-display__side-pots">
                     {sidePots.map((pot, i) => (
-                        <SidePotBadge key={pot.id} pot={pot} index={i} />
+                        <SidePotBadge key={pot.id} pot={pot} index={i} displayMode={displayMode} bigBlind={bigBlind} />
                     ))}
                 </div>
             )}
@@ -214,7 +241,9 @@ export function PotDisplay({
                 <div className="pot-display__total">
                     <span className="pot-display__total-label">TOTAL</span>
                     <span className="pot-display__total-amount">
-                        {formatAmount(totalPot, currency)}
+                        {displayMode === 'bb' && bigBlind > 0
+                            ? formatBB(totalPot, bigBlind)
+                            : formatAmount(totalPot, currency)}
                     </span>
                 </div>
             )}
@@ -222,7 +251,9 @@ export function PotDisplay({
             {/* Pot Increase Indicator */}
             {isAnimating && mainPot > previousPot && (
                 <div className="pot-display__increase">
-                    +{formatAmount(mainPot - previousPot, currency)}
+                    +{displayMode === 'bb' && bigBlind > 0
+                        ? formatBB(mainPot - previousPot, bigBlind)
+                        : formatAmount(mainPot - previousPot, currency)}
                 </div>
             )}
         </div>

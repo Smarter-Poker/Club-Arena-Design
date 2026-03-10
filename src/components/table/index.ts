@@ -16,7 +16,7 @@ export type { SeatPlayer, SeatSlotProps, Card as SeatCard, PlayerStatus, Positio
 
 // Pot Display
 export { PotDisplay } from './PotDisplay';
-export type { PotDisplayProps, SidePot } from './PotDisplay';
+export type { PotDisplayProps, SidePot, PotDisplayMode } from './PotDisplay';
 
 // Community Cards
 export { CommunityCards } from './CommunityCards';
