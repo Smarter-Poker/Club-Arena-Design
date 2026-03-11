@@ -18,58 +18,53 @@ import GlobalHeader from '../navigation/GlobalHeader';
 import { useUserStore } from '../../stores/useUserStore';
 
 export default function AppLayout() {
-    const location = useLocation();
+  const location = useLocation();
 
-    // Detect if running inside iframe (World Hub embedding)
-    // Use state to ensure correct value after client-side hydration
-    const [isInIframe, setIsInIframe] = useState(false);
+  // Detect if running inside iframe (World Hub embedding)
+  // Use state to ensure correct value after client-side hydration
+  const [isInIframe, setIsInIframe] = useState(false);
 
-    useEffect(() => {
-        const inIframe = window.parent !== window;
-        setIsInIframe(inIframe);
+  useEffect(() => {
+    const inIframe = window.parent !== window;
+    setIsInIframe(inIframe);
 
-        // Also add class to body so CSS can hide header immediately
-        if (inIframe) {
-            document.body.classList.add('embedded-in-iframe');
-        }
-        return () => {
-            document.body.classList.remove('embedded-in-iframe');
-        };
-    }, []);
+    // Also add class to body so CSS can hide header immediately
+    if (inIframe) {
+      document.body.classList.add('embedded-in-iframe');
+    }
+    return () => {
+      document.body.classList.remove('embedded-in-iframe');
+    };
+  }, []);
 
-    // User store for conditional rendering
-    const { user } = useUserStore();
-    const { showWelcome, isReady, acceptWelcome } = useClubArenaWelcome();
+  // User store for conditional rendering
+  const { user } = useUserStore();
+  const { showWelcome, isReady, acceptWelcome } = useClubArenaWelcome();
 
-    return (
-        <div className={`${styles.layout} ${isInIframe ? styles.embedded : ''}`}>
-            {/* First-time Welcome Modal - Always show regardless of iframe */}
-            {isReady && !isInIframe && (
-                <ClubArenaWelcomeModal
-                    isOpen={showWelcome}
-                    onAccept={acceptWelcome}
-                />
-            )}
+  return (
+    <div className={`${styles.layout} ${isInIframe ? styles.embedded : ''}`}>
+      {/* First-time Welcome Modal - Always show regardless of iframe */}
+      {isReady && !isInIframe && (
+        <ClubArenaWelcomeModal isOpen={showWelcome} onAccept={acceptWelcome} />
+      )}
 
-            {/* Global Header - Hide when in iframe */}
-            {!isInIframe && <GlobalHeader pageDepth={2} />}
+      {/* Global Header - Hide when in iframe */}
+      {!isInIframe && <GlobalHeader pageDepth={2} />}
 
-            {/* Global Announcement Banner (shows club announcements when in a club context) */}
-            <ClubAnnouncementBanner />
+      {/* Global Announcement Banner (shows club announcements when in a club context) */}
+      <ClubAnnouncementBanner />
 
+      {/* Main Content */}
+      <main id="main-content" className={styles.main}>
+        <Outlet />
+      </main>
 
-            {/* Main Content */}
-            <main id="main-content" className={styles.main}>
-                <Outlet />
-            </main>
-
-            {/* Footer - Hide when in iframe */}
-            {!isInIframe && (
-                <footer className={styles.footer}>
-                    <p>Club Engine 2026 - Smarter.Poker</p>
-                </footer>
-            )}
-        </div>
-    );
+      {/* Footer - Hide when in iframe */}
+      {!isInIframe && (
+        <footer className={styles.footer}>
+          <p>Club Engine 2026 - Smarter.Poker</p>
+        </footer>
+      )}
+    </div>
+  );
 }
-
