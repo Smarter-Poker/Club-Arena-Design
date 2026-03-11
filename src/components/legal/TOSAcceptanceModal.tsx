@@ -5,7 +5,7 @@
  * Full-screen blocking modal for first-time users
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './TOSAcceptanceModal.css';
 
 interface TOSAcceptanceModalProps {
@@ -15,6 +15,11 @@ interface TOSAcceptanceModalProps {
 export default function TOSAcceptanceModal({ onAccept }: TOSAcceptanceModalProps) {
     const [isAccepting, setIsAccepting] = useState(false);
     const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setTimeout(() => setMounted(true), 50);
+    }, []);
 
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
         const target = e.target as HTMLDivElement;
@@ -35,7 +40,7 @@ export default function TOSAcceptanceModal({ onAccept }: TOSAcceptanceModalProps
 
     return (
         <div className="tos-modal-overlay">
-            <div className="tos-modal">
+            <div className="tos-modal" style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 <div className="tos-header">
                     <span className="tos-icon"></span>
                     <h1>Terms of Service</h1>

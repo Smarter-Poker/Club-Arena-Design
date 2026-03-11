@@ -31,15 +31,18 @@ export const EliminationOverlay: React.FC<EliminationOverlayProps> = ({
     onComplete,
 }) => {
     const [phase, setPhase] = useState<'entering' | 'showing' | 'exiting' | 'hidden'>('hidden');
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         if (elimination) {
+            setTimeout(() => setMounted(true), 50);
             setPhase('entering');
 
             const showTimer = setTimeout(() => setPhase('showing'), 100);
             const exitTimer = setTimeout(() => setPhase('exiting'), 3500);
             const hideTimer = setTimeout(() => {
                 setPhase('hidden');
+                setMounted(false);
                 onComplete?.();
             }, 4500);
 
@@ -67,7 +70,7 @@ export const EliminationOverlay: React.FC<EliminationOverlayProps> = ({
         <div className={`elimination-overlay elimination-overlay--${phase}`}>
             <div className="elimination-backdrop" />
 
-            <div className="elimination-content">
+            <div className="elimination-content" style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 {/* Skull animation */}
                 <div className="elimination-icon">
                     {isMoneyFinish ? '' : isBubble ? '' : ''}

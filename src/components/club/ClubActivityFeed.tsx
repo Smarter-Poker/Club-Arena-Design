@@ -37,6 +37,7 @@ export default function ClubActivityFeed({
     const [activities, setActivities] = useState<ActivityItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<ActivityType | 'all'>('all');
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         loadActivities();
@@ -76,6 +77,10 @@ export default function ClubActivityFeed({
             }));
 
             setActivities(items);
+            setVisibleItems(new Set());
+            items.forEach((_, i) => {
+                setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+            });
         } catch (error) {
             console.error('Failed to load activities:', error);
         }
@@ -184,8 +189,16 @@ export default function ClubActivityFeed({
                 ) : filteredActivities.length === 0 ? (
                     <div className={styles.empty}>No activity yet</div>
                 ) : (
-                    filteredActivities.map(activity => (
-                        <div key={activity.id} className={styles.item}>
+                    filteredActivities.map((activity, i) => (
+                        <div
+                            key={activity.id}
+                            className={styles.item}
+                            style={{
+                                opacity: visibleItems.has(i) ? 1 : 0,
+                                transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
+                        >
                             <span className={styles.icon}>{getActivityIcon(activity.type)}</span>
                             <div className={styles.content}>
                                 {activity.userName && (

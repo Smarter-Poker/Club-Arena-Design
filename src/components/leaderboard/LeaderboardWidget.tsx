@@ -38,6 +38,7 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
     const [selectedType, setSelectedType] = useState<LeaderboardType>(type);
     const [timeframe, setTimeframe] = useState<'daily' | 'weekly' | 'monthly' | 'alltime'>('weekly');
     const [loading, setLoading] = useState(true);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         loadLeaderboard();
@@ -83,6 +84,10 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                 change: entry.change,
             }));
             setEntries(mapped);
+            setVisibleItems(new Set());
+            mapped.forEach((_, i) => {
+                setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+            });
         } catch (error) {
             console.error('Failed to load leaderboard:', error);
         } finally {
@@ -162,7 +167,11 @@ export const LeaderboardWidget: React.FC<LeaderboardWidgetProps> = ({
                             key={entry.userId}
                             className={`entry-row rank-${entry.rank}`}
                             onClick={() => onPlayerClick?.(entry.userId)}
-                            style={{ animationDelay: `${index * 50}ms` }}
+                            style={{
+                                opacity: visibleItems.has(index) ? 1 : 0,
+                                transform: visibleItems.has(index) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
                         >
                             <span className="rank-badge">{getRankBadge(entry.rank)}</span>
                             <div className="player-info">

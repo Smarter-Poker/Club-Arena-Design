@@ -49,6 +49,7 @@ export function SpinAndGoLobby({ clubId, onRegister }: SpinAndGoLobbyProps) {
     const [loading, setLoading] = useState(true);
     const [registering, setRegistering] = useState<string | null>(null);
     const [expandedCard, setExpandedCard] = useState<string | null>(null);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         loadTournaments();
@@ -88,6 +89,10 @@ export function SpinAndGoLobby({ clubId, onRegister }: SpinAndGoLobbyProps) {
                     status: t.status,
                     startAt: t.start_at ? new Date(t.start_at) : undefined
                 })));
+                setVisibleItems(new Set());
+                data.forEach((_, i) => {
+                    setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+                });
             }
         } catch (error) {
             toast.error('Failed to load spin tournaments');
@@ -134,11 +139,16 @@ export function SpinAndGoLobby({ clubId, onRegister }: SpinAndGoLobbyProps) {
                 <div className="empty-state">No spin tournaments available</div>
             ) : (
                 <div className="spin-grid">
-                    {tournaments.map(t => (
+                    {tournaments.map((t, i) => (
                         <div
                             key={t.id}
                             className={`spin-card ${t.status} ${expandedCard === t.id ? 'spin-card--expanded' : ''}`}
                             onClick={() => setExpandedCard(expandedCard === t.id ? null : t.id)}
+                            style={{
+                                opacity: visibleItems.has(i) ? 1 : 0,
+                                transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
                         >
                             <div className="spin-card__buyin">
                                 <span className="value">{Math.trunc(t.buyIn).toLocaleString()}</span>

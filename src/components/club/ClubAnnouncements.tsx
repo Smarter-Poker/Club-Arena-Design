@@ -111,8 +111,16 @@ export function ClubAnnouncements({
                     {/* List */}
                     <div className="post-list">
                         {sortedPosts.length > 0 ? (
-                            sortedPosts.map((post) => (
-                                <div key={post.id} className={`news-item ${post.isSticky ? 'sticky' : ''}`}>
+                            sortedPosts.map((post, i) => (
+                                <div
+                                    key={post.id}
+                                    className={`news-item ${post.isSticky ? 'sticky' : ''}`}
+                                    style={{
+                                        opacity: i < 15 ? 1 : 0.8,
+                                        transform: 'translateY(0)',
+                                        transition: `all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) ${i * 60}ms`
+                                    }}
+                                >
                                     <div className="post-header">
                                         <div className="post-meta">
                                             {post.isSticky && <span className="sticky-tag"> PINNED</span>}

@@ -32,6 +32,9 @@ export default function ClubStatsCards({ clubId }: ClubStatsCardsProps) {
         weeklyGrowth: 0
     });
     const [loading, setLoading] = useState(true);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+
+    // statCards moved after format function declarations (see below)
 
     useEffect(() => {
         loadStats();
@@ -122,6 +125,14 @@ export default function ClubStatsCards({ clubId }: ClubStatsCardsProps) {
         { label: 'New This Week', value: `+${stats.weeklyGrowth}`, icon: '', color: '#22c55e' },
     ];
 
+    useEffect(() => {
+        if (!loading) {
+            statCards.forEach((_, i) => {
+                setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+            });
+        }
+    }, [loading]);
+
     if (loading) {
         return (
             <div className={styles.grid}>
@@ -132,13 +143,22 @@ export default function ClubStatsCards({ clubId }: ClubStatsCardsProps) {
         );
     }
 
+    const cardsToDisplay = [
+        { label: 'Total Members', value: formatInt(stats.totalMembers), icon: '', color: '#3b82f6' },
+        { label: 'Online Now', value: formatInt(stats.onlineNow), icon: '', color: '#10b981' },
+        { label: 'Active Tables', value: formatInt(stats.activeTables), icon: '', color: '#fbbf24' },
+        { label: 'Hands Today', value: formatInt(stats.handsToday), icon: '', color: '#a855f7' },
+        { label: 'Rake Today', value: formatChips(stats.rakeToday), icon: '', color: '#f59e0b' },
+        { label: 'New This Week', value: `+${stats.weeklyGrowth}`, icon: '', color: '#22c55e' },
+    ];
+
     return (
         <div className={styles.grid}>
-            {statCards.map((stat, i) => (
+            {cardsToDisplay.map((stat, i) => (
                 <div
                     key={i}
                     className={styles.card}
-                    style={{ '--accent-color': stat.color } as React.CSSProperties}
+                    style={{ '--accent-color': stat.color, opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' } as React.CSSProperties}
                 >
                     <span className={styles.icon}>{stat.icon}</span>
                     <span className={styles.value}>{stat.value}</span>

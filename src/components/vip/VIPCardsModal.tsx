@@ -9,7 +9,7 @@
  * - Diamond pricing for non-VIP users
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { VIP_GOLD_LIMITS, FEATURE_PRICING } from '../../services/VIPService';
 import { useVIPStatus } from '../../hooks/useVIP';
 import './VIPCardsModal.css';
@@ -34,6 +34,15 @@ const FEATURES = [
 
 export function VIPCardsModal({ isOpen, onClose }: VIPInfoModalProps) {
     const { isVIP, isLoading } = useVIPStatus();
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        if (isOpen) {
+            FEATURES.forEach((_, i) => {
+                setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+            });
+        }
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -75,12 +84,12 @@ export function VIPCardsModal({ isOpen, onClose }: VIPInfoModalProps) {
                             </tr>
                         </thead>
                         <tbody>
-                            {FEATURES.map(feature => {
+                            {FEATURES.map((feature, i) => {
                                 const pricing = FEATURE_PRICING[feature.key as keyof typeof FEATURE_PRICING];
                                 const vipFree = 'vipFree' in feature && feature.vipFree;
                                 const vipValue = 'vipValue' in feature ? feature.vipValue : null;
                                 return (
-                                    <tr key={feature.key}>
+                                    <tr key={feature.key} style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                                         <td className="feature-name">{feature.label}</td>
                                         <td className="feature-vip">
                                             {vipFree ? ' Free' : vipValue || ''}

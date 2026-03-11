@@ -10,7 +10,7 @@
  * - Manage Player Tags (e.g., "Aggressive", "Grinder")
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './UserProfileEdit.css';
 
 export interface UserProfileData {
@@ -47,6 +47,12 @@ export function UserProfileEdit({
 }: UserProfileEditProps) {
     const [formData, setFormData] = useState<UserProfileData>(initialData);
     const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) setTimeout(() => setMounted(true), 50);
+        else setMounted(false);
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -68,7 +74,7 @@ export function UserProfileEdit({
 
     return (
         <div className="profile-overlay" onClick={onClose}>
-            <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="profile-modal" onClick={(e) => e.stopPropagation()} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 <div className="profile-header">
                     <h2>Edit Profile</h2>
                     <button className="close-btn" onClick={onClose}>×</button>

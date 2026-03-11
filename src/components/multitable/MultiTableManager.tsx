@@ -33,6 +33,14 @@ export const MultiTableManager: React.FC<MultiTableManagerProps> = ({
     viewMode,
     onViewModeChange,
 }) => {
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        tables.forEach((_, i) => {
+            setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+        });
+    }, [tables]);
+
     return (
         <div className="multi-table-manager">
             {/* View mode toggle */}
@@ -59,6 +67,7 @@ export const MultiTableManager: React.FC<MultiTableManagerProps> = ({
                         key={table.id}
                         className={`table-tab ${table.id === activeTableId ? 'active' : ''} ${table.isMyTurn ? 'my-turn' : ''}`}
                         onClick={() => onTableSelect(table.id)}
+                        style={{ opacity: visibleItems.has(idx) ? 1 : 0, transform: visibleItems.has(idx) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
                     >
                         <span className="table-num">{idx + 1}</span>
                         <div className="table-info">

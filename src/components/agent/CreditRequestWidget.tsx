@@ -27,6 +27,8 @@ export default function CreditRequestWidget({
     const [requests, setRequests] = useState<CreditRequest[]>([]);
     const [pendingApprovals, setPendingApprovals] = useState<CreditRequest[]>([]);
     const [loading, setLoading] = useState(true);
+    const [visibleApprovals, setVisibleApprovals] = useState<Set<number>>(new Set());
+    const [visibleHistory, setVisibleHistory] = useState<Set<number>>(new Set());
     const [showRequestForm, setShowRequestForm] = useState(false);
     const [requestAmount, setRequestAmount] = useState('');
     const [requestReason, setRequestReason] = useState('');
@@ -45,7 +47,16 @@ export default function CreditRequestWidget({
 
             // Load requests I need to approve (if I'm a super agent)
             const toApprove = await creditRequestService.getRequestsForApprover(agentId);
-            setPendingApprovals(toApprove.filter(r => r.status === 'pending'));
+            const pending = toApprove.filter(r => r.status === 'pending');
+            setPendingApprovals(pending);
+            setVisibleApprovals(new Set());
+            pending.forEach((_, i) => {
+                setTimeout(() => setVisibleApprovals(prev => new Set(prev).add(i)), i * 60);
+            });
+            setVisibleHistory(new Set());
+            myReqs.slice(0, 5).forEach((_, i) => {
+                setTimeout(() => setVisibleHistory(prev => new Set(prev).add(i)), i * 60);
+            });
         } catch (error) {
             console.error('Failed to load credit requests:', error);
         }
@@ -167,8 +178,16 @@ export default function CreditRequestWidget({
             {pendingApprovals.length > 0 && (
                 <div className="pending-approvals">
                     <h4> Pending Approvals ({pendingApprovals.length})</h4>
-                    {pendingApprovals.map(req => (
-                        <div key={req.id} className="approval-card">
+                    {pendingApprovals.map((req, i) => (
+                        <div
+                            key={req.id}
+                            className="approval-card"
+                            style={{
+                                opacity: visibleApprovals.has(i) ? 1 : 0,
+                                transform: visibleApprovals.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
+                        >
                             <div className="approval-info">
                                 <span className="requester">{req.requesterName}</span>
                                 <span className="amount">{req.requestedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -187,8 +206,16 @@ export default function CreditRequestWidget({
             {requests.length > 0 && (
                 <div className="request-history">
                     <h4>My Requests</h4>
-                    {requests.slice(0, 5).map(req => (
-                        <div key={req.id} className="request-row">
+                    {requests.slice(0, 5).map((req, i) => (
+                        <div
+                            key={req.id}
+                            className="request-row"
+                            style={{
+                                opacity: visibleHistory.has(i) ? 1 : 0,
+                                transform: visibleHistory.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
+                        >
                             <span className="request-amount">{req.requestedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             {getStatusBadge(req.status)}
                             <span className="request-date">

@@ -111,11 +111,16 @@ export function ClubAnnouncementsList({ clubId, isAdmin, limit = 10 }: ClubAnnou
                 <div className="empty-state">No announcements</div>
             ) : (
                 <div className="announcements">
-                    {announcements.map(ann => (
+                    {announcements.map((ann, i) => (
                         <div
                             key={ann.id}
                             className={`announcement ${ann.isPinned ? 'pinned' : ''}`}
-                            style={{ borderLeftColor: PRIORITY_COLORS[ann.priority] }}
+                            style={{
+                                borderLeftColor: PRIORITY_COLORS[ann.priority],
+                                opacity: i < 15 ? 1 : 0.8,
+                                transform: 'translateY(0)',
+                                transition: `all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) ${i * 60}ms`
+                            }}
                         >
                             <div className="announcement__header">
                                 {ann.isPinned && <span className="pin"></span>}

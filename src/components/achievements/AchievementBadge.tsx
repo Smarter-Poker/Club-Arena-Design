@@ -5,6 +5,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
+import React, { useState, useEffect } from 'react';
 import styles from './AchievementBadge.module.css';
 
 interface AchievementBadgeProps {
@@ -35,6 +36,12 @@ export default function AchievementBadge({
     unlockedAt,
     onClick
 }: AchievementBadgeProps) {
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setTimeout(() => setMounted(true), 50);
+    }, []);
+
     const rarityColor = RARITY_COLORS[rarity];
 
     const formatDate = (dateStr: string): string => {
@@ -48,7 +55,7 @@ export default function AchievementBadge({
     return (
         <div
             className={`${styles.badge} ${unlocked ? styles.unlocked : styles.locked}`}
-            style={{ '--rarity-color': rarityColor } as React.CSSProperties}
+            style={{ '--rarity-color': rarityColor, opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' } as React.CSSProperties}
             onClick={onClick}
         >
             <div className={styles.iconWrapper}>

@@ -43,6 +43,8 @@ export const AntiCollusionMonitor: React.FC<AntiCollusionMonitorProps> = ({
     const [selectedReport, setSelectedReport] = useState<CollusionReport | null>(null);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
+    const [visibleCards, setVisibleCards] = useState<Set<number>>(new Set());
+    const [visiblePatterns, setVisiblePatterns] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         loadReports();
@@ -52,6 +54,7 @@ export const AntiCollusionMonitor: React.FC<AntiCollusionMonitorProps> = ({
         // Replaced seeded test data with dynamic initialization
         const liveReports: CollusionReport[] = [];
         setReports(liveReports);
+        setVisibleCards(new Set());
         setLoading(false);
     };
 
@@ -109,11 +112,22 @@ export const AntiCollusionMonitor: React.FC<AntiCollusionMonitorProps> = ({
 
             {/* Report Cards */}
             <div className="report-cards">
-                {reports.map(report => (
+                {reports.map((report, i) => (
                     <div
                         key={report.tableId}
                         className={`report-card ${selectedReport?.tableId === report.tableId ? 'selected' : ''}`}
-                        onClick={() => setSelectedReport(report)}
+                        onClick={() => {
+                            setSelectedReport(report);
+                            setVisiblePatterns(new Set());
+                            report.suspiciousPatterns.forEach((_, pi) => {
+                                setTimeout(() => setVisiblePatterns(prev => new Set(prev).add(pi)), pi * 60);
+                            });
+                        }}
+                        style={{
+                            opacity: visibleCards.has(i) ? 1 : 0,
+                            transform: visibleCards.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                            transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                        }}
                     >
                         <div className="report-header">
                             <span className="table-name">{report.tableName}</span>
@@ -135,10 +149,15 @@ export const AntiCollusionMonitor: React.FC<AntiCollusionMonitorProps> = ({
                 <div className="pattern-details">
                     <h3>Suspicious Patterns - {selectedReport.tableName}</h3>
                     <div className="patterns-list">
-                        {filteredPatterns(selectedReport.suspiciousPatterns).map(pattern => (
+                        {filteredPatterns(selectedReport.suspiciousPatterns).map((pattern, i) => (
                             <div
                                 key={pattern.id}
                                 className={`pattern-card ${getSeverityClass(pattern.severity)}`}
+                                style={{
+                                    opacity: visiblePatterns.has(i) ? 1 : 0,
+                                    transform: visiblePatterns.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                                    transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                                }}
                             >
                                 <div className="pattern-header">
                                     <span className="pattern-icon">{getPatternIcon(pattern.type)}</span>

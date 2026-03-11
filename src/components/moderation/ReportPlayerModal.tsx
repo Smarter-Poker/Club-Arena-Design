@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from '../common/Toast';
 import './ReportPlayerModal.css';
 
@@ -38,6 +38,12 @@ export const ReportPlayerModal: React.FC<ReportPlayerModalProps> = ({
     const [details, setDetails] = useState('');
     const [handId, setHandId] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) setTimeout(() => setMounted(true), 50);
+        else setMounted(false);
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -66,7 +72,7 @@ export const ReportPlayerModal: React.FC<ReportPlayerModalProps> = ({
 
     return (
         <div className="report-modal-overlay" onClick={onClose}>
-            <div className="report-modal" onClick={e => e.stopPropagation()}>
+            <div className="report-modal" onClick={e => e.stopPropagation()} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 <div className="report-header">
                     <h2>Report Player</h2>
                     <button className="close-btn" onClick={onClose}>×</button>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './MultiTableView.css';
 
 interface TableInfo {
@@ -27,6 +27,13 @@ export const MultiTableView: React.FC<MultiTableViewProps> = ({
     onCloseTable
 }) => {
     const [layout, setLayout] = useState<'2x2' | '3x2' | '1x1'>('2x2');
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        tables.forEach((_, i) => {
+            setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+        });
+    }, [tables]);
 
     const getGridClass = () => {
         switch (layout) {
@@ -66,11 +73,12 @@ export const MultiTableView: React.FC<MultiTableViewProps> = ({
             </div>
 
             <div className={`tables-grid ${getGridClass()}`}>
-                {tables.map(table => (
+                {tables.map((table, i) => (
                     <div
                         key={table.id}
                         className={`table-tile ${activeTableId === table.id ? 'active' : ''} ${table.isYourTurn ? 'your-turn' : ''}`}
                         onClick={() => onSelectTable?.(table.id)}
+                        style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
                     >
                         <div className="tile-header">
                             <span className="table-name">{table.name}</span>

@@ -46,6 +46,7 @@ export const ModerationLog: React.FC<ModerationLogProps> = ({
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<string>('all');
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         loadLogs();
@@ -67,6 +68,12 @@ export const ModerationLog: React.FC<ModerationLogProps> = ({
     const filteredLogs = filter === 'all'
         ? logs
         : logs.filter(log => log.action === filter);
+
+    useEffect(() => {
+        filteredLogs.forEach((_, i) => {
+            setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+        });
+    }, [filteredLogs]);
 
     const formatTime = (date: Date) => {
         const now = new Date();
@@ -95,8 +102,8 @@ export const ModerationLog: React.FC<ModerationLogProps> = ({
                 <div className="log-loading">Loading...</div>
             ) : (
                 <div className="log-entries">
-                    {filteredLogs.map(log => (
-                        <div key={log.id} className="log-entry">
+                    {filteredLogs.map((log, i) => (
+                        <div key={log.id} className="log-entry" style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                             <div
                                 className="log-icon"
                                 style={{ background: `${ACTION_COLORS[log.action]}20`, color: ACTION_COLORS[log.action] }}

@@ -3,6 +3,10 @@ import { supabase } from '../../lib/supabase';
 import { useToast } from '../common/Toast';
 import './WaitlistManager.css';
 
+interface VisibleItemsState {
+    [key: string]: Set<number>;
+}
+
 interface WaitlistEntry {
     id: string;
     userId: string;
@@ -34,6 +38,7 @@ export const WaitlistManager: React.FC<WaitlistManagerProps> = ({
     const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [joining, setJoining] = useState(false);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     const isInWaitlist = waitlist.some(e => e.userId === currentUserId);
     const myPosition = waitlist.find(e => e.userId === currentUserId)?.position;
@@ -77,7 +82,7 @@ export const WaitlistManager: React.FC<WaitlistManagerProps> = ({
 
                 const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
-                setWaitlist(data.map((e: any) => {
+                const mapped = data.map((e: any) => {
                     const profile = profileMap.get(e.user_id);
                     return {
                         id: e.id,
@@ -88,7 +93,12 @@ export const WaitlistManager: React.FC<WaitlistManagerProps> = ({
                         position: e.position,
                         joinedAt: new Date(e.created_at)
                     };
-                }));
+                });
+                setWaitlist(mapped);
+                setVisibleItems(new Set());
+                mapped.forEach((_, i) => {
+                    setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+                });
             }
         } catch (error) {
             console.error('Failed to load waitlist:', error);
@@ -174,7 +184,15 @@ export const WaitlistManager: React.FC<WaitlistManagerProps> = ({
             ) : (
                 <div className="waitlist-entries">
                     {waitlist.map((entry, idx) => (
-                        <div key={entry.id} className="waitlist-entry">
+                        <div
+                            key={entry.id}
+                            className="waitlist-entry"
+                            style={{
+                                opacity: visibleItems.has(idx) ? 1 : 0,
+                                transform: visibleItems.has(idx) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
+                        >
                             <span className="position">#{entry.position}</span>
                             <div className="entry-avatar">
                                 {entry.avatarUrl ? (

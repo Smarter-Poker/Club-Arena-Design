@@ -26,6 +26,11 @@ export function TournamentChipCount({ tournamentId, limit = 10 }: TournamentChip
     const [leaders, setLeaders] = useState<ChipLeader[]>([]);
     const [totalChips, setTotalChips] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setTimeout(() => setMounted(true), 50);
+    }, []);
 
     useEffect(() => {
         loadChipCounts();
@@ -75,15 +80,15 @@ export function TournamentChipCount({ tournamentId, limit = 10 }: TournamentChip
     }
 
     return (
-        <div className="chip-count">
+        <div className="chip-count" style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)', transitionDelay: '0.1s' }}>
             <div className="chip-count__header">
                 <h3> Chip Counts</h3>
                 <span className="avg-stack">Avg: {avgStack.toLocaleString()}</span>
             </div>
 
             <div className="chip-count__list">
-                {leaders.map(leader => (
-                    <div key={leader.userId} className={`leader-row rank-${leader.rank}`}>
+                {leaders.map((leader, i) => (
+                    <div key={leader.userId} className={`leader-row rank-${leader.rank}`} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)', transitionDelay: `${0.1 + i * 0.06}s` }}>
                         <span className="rank">{leader.rank}</span>
                         <span className="avatar">{leader.avatarUrl}</span>
                         <div className="player-info">

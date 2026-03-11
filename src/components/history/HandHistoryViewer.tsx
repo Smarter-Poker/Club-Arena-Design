@@ -43,6 +43,7 @@ export function HandHistoryViewer({
     const [hands, setHands] = useState<HandSummary[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'won' | 'lost'>('all');
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         if (user?.id) {
@@ -81,6 +82,10 @@ export function HandHistoryViewer({
                     action: h.final_action || 'fold',
                     playedAt: new Date(h.played_at || h.created_at)
                 })));
+                setVisibleItems(new Set());
+                data.forEach((_, i) => {
+                    setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+                });
             }
         } catch (error) {
             toast.error('Failed to load hand history');
@@ -121,11 +126,16 @@ export function HandHistoryViewer({
                 <div className="empty-state">No hands found</div>
             ) : (
                 <div className="hand-history__list">
-                    {filteredHands.map(hand => (
+                    {filteredHands.map((hand, i) => (
                         <div
                             key={hand.id}
                             className={`hand-row ${hand.myResult > 0 ? 'won' : hand.myResult < 0 ? 'lost' : ''}`}
                             onClick={() => onSelectHand?.(hand.id)}
+                            style={{
+                                opacity: visibleItems.has(i) ? 1 : 0,
+                                transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
                         >
                             <div className="hand-info">
                                 <span className="table">{hand.tableName}</span>

@@ -135,8 +135,15 @@ export function AdminReports({
                                 </thead>
                                 <tbody>
                                     {agents.length > 0 ? (
-                                        agents.map((agent) => (
-                                            <tr key={agent.agentId}>
+                                        agents.map((agent, i) => (
+                                            <tr
+                                                key={agent.agentId}
+                                                style={{
+                                                    opacity: i < 10 ? 1 : 0.8,
+                                                    transform: 'translateY(0)',
+                                                    transition: `all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) ${i * 60}ms`
+                                                }}
+                                            >
                                                 <td className="agent-name">{agent.agentName}</td>
                                                 <td className="text-center">{agent.playersInvited}</td>
                                                 <td className="text-right">{currency}{agent.totalRakeGenerated.toLocaleString()}</td>

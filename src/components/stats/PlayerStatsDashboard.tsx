@@ -13,6 +13,13 @@ import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
 import './PlayerStatsDashboard.css';
 
+const STAT_CARDS = [
+    { id: 'vpip', label: 'VPIP' },
+    { id: 'pfr', label: 'PFR' },
+    { id: 'af', label: 'AF' },
+    { id: 'bb100', label: 'BB/100' }
+];
+
 interface PlayerStats {
     vpip: number;        // Voluntarily Put chips In Pot
     pfr: number;         // Pre-Flop Raise
@@ -45,6 +52,7 @@ export const PlayerStatsDashboard: React.FC<{ playerId?: string }> = ({ playerId
     const [sessionData, setSessionData] = useState<SessionData[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'overview' | 'hands' | 'leaks'>('overview');
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         loadStats();
@@ -54,6 +62,10 @@ export const PlayerStatsDashboard: React.FC<{ playerId?: string }> = ({ playerId
     const loadStats = async () => {
         // In production, fetch from Supabase
         setLoading(false);
+        setVisibleItems(new Set());
+        STAT_CARDS.forEach((_, i) => {
+            setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+        });
     };
 
     const generateSessionData = () => {
@@ -123,28 +135,56 @@ export const PlayerStatsDashboard: React.FC<{ playerId?: string }> = ({ playerId
                 <>
                     {/* Key Stats Cards */}
                     <div className="stats-grid">
-                        <div className="stat-card">
+                        <div
+                            className="stat-card"
+                            style={{
+                                opacity: visibleItems.has(0) ? 1 : 0,
+                                transform: visibleItems.has(0) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
+                        >
                             <span className="stat-label">VPIP</span>
                             <span className="stat-value" style={{ color: getStatColor('vpip', stats.vpip) }}>
                                 {stats.vpip}%
                             </span>
                             <span className="stat-hint">Voluntarily Put In Pot</span>
                         </div>
-                        <div className="stat-card">
+                        <div
+                            className="stat-card"
+                            style={{
+                                opacity: visibleItems.has(1) ? 1 : 0,
+                                transform: visibleItems.has(1) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
+                        >
                             <span className="stat-label">PFR</span>
                             <span className="stat-value" style={{ color: getStatColor('pfr', stats.pfr) }}>
                                 {stats.pfr}%
                             </span>
                             <span className="stat-hint">Pre-Flop Raise</span>
                         </div>
-                        <div className="stat-card">
+                        <div
+                            className="stat-card"
+                            style={{
+                                opacity: visibleItems.has(2) ? 1 : 0,
+                                transform: visibleItems.has(2) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
+                        >
                             <span className="stat-label">AF</span>
                             <span className="stat-value" style={{ color: getStatColor('af', stats.af) }}>
                                 {stats.af}
                             </span>
                             <span className="stat-hint">Aggression Factor</span>
                         </div>
-                        <div className="stat-card">
+                        <div
+                            className="stat-card"
+                            style={{
+                                opacity: visibleItems.has(3) ? 1 : 0,
+                                transform: visibleItems.has(3) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
+                        >
                             <span className="stat-label">BB/100</span>
                             <span className="stat-value" style={{ color: stats.bbPer100 >= 0 ? 'var(--accent-green)' : 'var(--accent-red)' }}>
                                 {stats.bbPer100 > 0 ? '+' : ''}{stats.bbPer100}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from '../common/Toast';
 import './ChatModerationPanel.css';
 
@@ -28,6 +28,13 @@ export const ChatModerationPanel: React.FC<ChatModerationPanelProps> = ({
 }) => {
     const toast = useToast();
     const [selectedMessage, setSelectedMessage] = useState<string | null>(null);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        messages.forEach((_, i) => {
+            setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+        });
+    }, [messages]);
 
     const handleDelete = (messageId: string) => {
         onDeleteMessage?.(messageId);
@@ -56,11 +63,12 @@ export const ChatModerationPanel: React.FC<ChatModerationPanelProps> = ({
             </div>
 
             <div className="moderation-messages">
-                {messages.map(msg => (
+                {messages.map((msg, i) => (
                     <div
                         key={msg.id}
                         className={`mod-message ${msg.flagged ? 'flagged' : ''} ${selectedMessage === msg.id ? 'selected' : ''}`}
                         onClick={() => setSelectedMessage(selectedMessage === msg.id ? null : msg.id)}
+                        style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
                     >
                         <div className="message-header">
                             <span className="msg-username">{msg.username}</span>

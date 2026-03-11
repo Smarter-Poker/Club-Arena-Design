@@ -3,7 +3,7 @@
  * Search and manage players across clubs - Real Supabase integration
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import './PlayerSearch.css';
 
@@ -37,6 +37,7 @@ export const PlayerSearch: React.FC<PlayerSearchProps> = ({
     const [loading, setLoading] = useState(false);
     const [searchType, setSearchType] = useState<'username' | 'email' | 'id'>('username');
     const [searched, setSearched] = useState(false);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     const handleSearch = useCallback(async () => {
         if (!query.trim()) return;
@@ -121,6 +122,10 @@ export const PlayerSearch: React.FC<PlayerSearchProps> = ({
             }));
 
             setResults(players);
+            setVisibleItems(new Set());
+            players.forEach((_, i) => {
+                setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+            });
         } catch (error) {
             console.error('Failed to search players:', error);
             setResults([]);
@@ -193,11 +198,16 @@ export const PlayerSearch: React.FC<PlayerSearchProps> = ({
                         <p>No players found matching "{query}"</p>
                     </div>
                 ) : (
-                    results.map(player => (
+                    results.map((player, i) => (
                         <div
                             key={player.id}
                             className="player-row"
                             onClick={() => onPlayerSelect?.(player)}
+                            style={{
+                                opacity: visibleItems.has(i) ? 1 : 0,
+                                transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
                         >
                             <div className="player-avatar">
                                 {player.avatar ? (

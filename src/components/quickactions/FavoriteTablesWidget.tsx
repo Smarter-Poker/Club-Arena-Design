@@ -24,12 +24,19 @@ export const FavoriteTablesWidget: React.FC<FavoriteTablesWidgetProps> = ({
     const { user } = useUserStore();
     const [favorites, setFavorites] = useState<FavoriteTable[]>([]);
     const [loading, setLoading] = useState(true);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         if (user?.id) {
             loadFavorites();
         }
     }, [user?.id]);
+
+    useEffect(() => {
+        favorites.forEach((_, i) => {
+            setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+        });
+    }, [favorites]);
 
     const loadFavorites = async () => {
         setLoading(true);
@@ -92,8 +99,8 @@ export const FavoriteTablesWidget: React.FC<FavoriteTablesWidgetProps> = ({
                 </div>
             ) : (
                 <div className="favorites-list">
-                    {favorites.map(table => (
-                        <div key={table.id} className="favorite-item">
+                    {favorites.map((table, i) => (
+                        <div key={table.id} className="favorite-item" style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                             <div className="favorite-info">
                                 <span className="table-name">{table.tableName}</span>
                                 <span className="table-details">

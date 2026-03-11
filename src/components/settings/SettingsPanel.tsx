@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './SettingsPanel.css';
 
 type SettingsTab = 'general' | 'sound' | 'notifications' | 'privacy' | 'gameplay' | 'appearance';
@@ -13,6 +13,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     initialTab = 'general'
 }) => {
     const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setTimeout(() => setMounted(true), 50);
+    }, []);
 
     const tabs: { id: SettingsTab; label: string; icon: string }[] = [
         { id: 'general', label: 'General', icon: '' },
@@ -24,7 +29,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     ];
 
     return (
-        <div className="settings-panel">
+        <div className="settings-panel" style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
             <div className="settings-header">
                 <h2>Settings</h2>
                 {onClose && (

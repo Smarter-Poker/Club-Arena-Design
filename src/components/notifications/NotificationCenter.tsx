@@ -28,6 +28,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'unread'>('all');
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         if (isOpen) {
@@ -66,7 +67,12 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                 .limit(50);
 
             if (data) {
-                setNotifications(data.map(mapNotification));
+                const mapped = data.map(mapNotification);
+                setNotifications(mapped);
+                setVisibleItems(new Set());
+                mapped.forEach((_, i) => {
+                    setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+                });
             }
         } catch (error) {
             console.error('Failed to load notifications:', error);
@@ -197,11 +203,16 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                             {filter === 'unread' ? 'No unread notifications' : 'No notifications'}
                         </div>
                     ) : (
-                        filteredNotifications.map(notif => (
+                        filteredNotifications.map((notif, i) => (
                             <div
                                 key={notif.id}
                                 className={`notification-item ${notif.isRead ? 'read' : 'unread'}`}
                                 onClick={() => handleNotificationClick(notif)}
+                                style={{
+                                    opacity: visibleItems.has(i) ? 1 : 0,
+                                    transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                                    transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                                }}
                             >
                                 <span className="notif-icon">{getTypeIcon(notif.type)}</span>
                                 <div className="notif-content">

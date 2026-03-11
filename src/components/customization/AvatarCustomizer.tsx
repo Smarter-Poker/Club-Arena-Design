@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './AvatarCustomizer.css';
 
 interface AvatarCustomizerProps {
@@ -24,7 +24,15 @@ export const AvatarCustomizer: React.FC<AvatarCustomizerProps> = ({
     const [selectedBg, setSelectedBg] = useState(AVATAR_BACKGROUNDS[0]);
     const [customImage, setCustomImage] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'preset' | 'custom'>('preset');
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        const items = activeTab === 'preset' ? PRESET_AVATARS.length + AVATAR_BACKGROUNDS.length : 0;
+        for (let i = 0; i < items; i++) {
+            setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+        }
+    }, [activeTab]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -83,11 +91,12 @@ export const AvatarCustomizer: React.FC<AvatarCustomizerProps> = ({
                     <div className="option-section">
                         <label>Icon</label>
                         <div className="emoji-grid">
-                            {PRESET_AVATARS.map(emoji => (
+                            {PRESET_AVATARS.map((emoji, i) => (
                                 <button
                                     key={emoji}
                                     className={`emoji-btn ${selectedEmoji === emoji ? 'selected' : ''}`}
                                     onClick={() => setSelectedEmoji(emoji)}
+                                    style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
                                 >
                                     {emoji}
                                 </button>
@@ -98,11 +107,11 @@ export const AvatarCustomizer: React.FC<AvatarCustomizerProps> = ({
                     <div className="option-section">
                         <label>Background</label>
                         <div className="color-grid">
-                            {AVATAR_BACKGROUNDS.map(color => (
+                            {AVATAR_BACKGROUNDS.map((color, i) => (
                                 <button
                                     key={color}
                                     className={`color-btn ${selectedBg === color ? 'selected' : ''}`}
-                                    style={{ background: color }}
+                                    style={{ background: color, opacity: visibleItems.has(PRESET_AVATARS.length + i) ? 1 : 0, transform: visibleItems.has(PRESET_AVATARS.length + i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
                                     onClick={() => setSelectedBg(color)}
                                 />
                             ))}

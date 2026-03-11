@@ -43,7 +43,14 @@ export function PrivateChat({
     onClose,
 }: PrivateChatProps) {
     const [inputText, setInputText] = useState('');
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        messages.forEach((_, i) => {
+            setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+        });
+    }, [messages]);
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -81,8 +88,8 @@ export function PrivateChat({
             {/* Messages */}
             <div className="chat-messages">
                 {messages.length > 0 ? (
-                    messages.map((msg) => (
-                        <div key={msg.id} className={`message-row ${msg.isSelf ? 'self' : 'friend'}`}>
+                    messages.map((msg, i) => (
+                        <div key={msg.id} className={`message-row ${msg.isSelf ? 'self' : 'friend'}`} style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                             <div className="message-bubble">
                                 <p className="message-text">{msg.text}</p>
                                 <div className="message-meta">

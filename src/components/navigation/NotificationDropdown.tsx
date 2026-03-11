@@ -30,6 +30,7 @@ export default function NotificationDropdown({ onNavigate }: NotificationDropdow
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -71,6 +72,10 @@ export default function NotificationDropdown({ onNavigate }: NotificationDropdow
             }));
             setNotifications(mapped);
             setUnreadCount(mapped.filter(n => !n.isRead).length);
+            setVisibleItems(new Set());
+            mapped.forEach((_, i) => {
+                setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+            });
         }
         setLoading(false);
     };
@@ -187,11 +192,16 @@ export default function NotificationDropdown({ onNavigate }: NotificationDropdow
                         ) : notifications.length === 0 ? (
                             <div className={styles.empty}>No notifications</div>
                         ) : (
-                            notifications.map(n => (
+                            notifications.map((n, i) => (
                                 <div
                                     key={n.id}
                                     className={`${styles.item} ${!n.isRead ? styles.unread : ''}`}
                                     onClick={() => handleNotificationClick(n)}
+                                    style={{
+                                        opacity: visibleItems.has(i) ? 1 : 0,
+                                        transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                                        transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                                    }}
                                 >
                                     <span className={styles.icon}>{getIcon(n.type)}</span>
                                     <div className={styles.content}>

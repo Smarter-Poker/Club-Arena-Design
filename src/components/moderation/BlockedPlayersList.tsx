@@ -23,12 +23,19 @@ export const BlockedPlayersList: React.FC<BlockedPlayersListProps> = ({ onUnbloc
     const [blockedPlayers, setBlockedPlayers] = useState<BlockedPlayer[]>([]);
     const [loading, setLoading] = useState(true);
     const [unblocking, setUnblocking] = useState<string | null>(null);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         if (user?.id) {
             loadBlockedPlayers();
         }
     }, [user?.id]);
+
+    useEffect(() => {
+        blockedPlayers.forEach((_, i) => {
+            setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+        });
+    }, [blockedPlayers]);
 
     const loadBlockedPlayers = async () => {
         setLoading(true);
@@ -103,8 +110,8 @@ export const BlockedPlayersList: React.FC<BlockedPlayersListProps> = ({ onUnbloc
                 </div>
             ) : (
                 <div className="blocked-items">
-                    {blockedPlayers.map(player => (
-                        <div key={player.id} className="blocked-item">
+                    {blockedPlayers.map((player, i) => (
+                        <div key={player.id} className="blocked-item" style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                             <div className="blocked-avatar">
                                 {player.avatar ? (
                                     <img src={player.avatar} alt="" />

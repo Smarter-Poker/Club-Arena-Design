@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { unionService } from '../../services';
 import { useToast } from '../common/Toast';
 import './RevenueSplitEditor.css';
@@ -31,6 +31,13 @@ export const RevenueSplitEditor: React.FC<RevenueSplitEditorProps> = ({
         return initial;
     });
     const [saving, setSaving] = useState(false);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        clubs.forEach((_, i) => {
+            setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+        });
+    }, [clubs]);
 
     const handleSplitChange = (clubId: string, value: number) => {
         setSplits(prev => ({
@@ -70,8 +77,8 @@ export const RevenueSplitEditor: React.FC<RevenueSplitEditorProps> = ({
             </div>
 
             <div className="split-list">
-                {clubs.map(club => (
-                    <div key={club.clubId} className="split-row">
+                {clubs.map((club, i) => (
+                    <div key={club.clubId} className="split-row" style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                         <div className="club-info">
                             <div className="club-logo">
                                 {club.clubLogo ? (

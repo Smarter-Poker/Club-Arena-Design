@@ -31,7 +31,12 @@ export const BlindTimer: React.FC<BlindTimerProps> = ({
 }) => {
     const [timeRemaining, setTimeRemaining] = useState(0);
     const [isUrgent, setIsUrgent] = useState(false);
+    const [mounted, setMounted] = useState(false);
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    useEffect(() => {
+        setTimeout(() => setMounted(true), 50);
+    }, []);
 
     const current = levels[currentLevel - 1];
     const next = levels[currentLevel];
@@ -79,7 +84,7 @@ export const BlindTimer: React.FC<BlindTimerProps> = ({
     if (!current) return null;
 
     return (
-        <div className={`blind-timer ${isUrgent ? 'urgent' : ''} ${isPaused ? 'paused' : ''}`}>
+        <div className={`blind-timer ${isUrgent ? 'urgent' : ''} ${isPaused ? 'paused' : ''}`} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)', transitionDelay: '0.1s' }}>
             {/* Current Level */}
             <div className="timer-header">
                 <span className="level-label">Level {currentLevel}</span>

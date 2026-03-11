@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './GameplaySettings.css';
 
 interface GameplayConfig {
@@ -35,6 +35,11 @@ export const GameplaySettings: React.FC<GameplaySettingsProps> = ({ onChange }) 
         timeBank: 30,
         sitOutOnBlind: false,
     });
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setTimeout(() => setMounted(true), 50);
+    }, []);
 
     const updateConfig = <K extends keyof GameplayConfig>(key: K, value: GameplayConfig[K]) => {
         const newConfig = { ...config, [key]: value };
@@ -52,7 +57,7 @@ export const GameplaySettings: React.FC<GameplaySettingsProps> = ({ onChange }) 
         );
 
     return (
-        <div className="gameplay-settings">
+        <div className="gameplay-settings" style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)', transitionDelay: '0.1s' }}>
             <div className="gameplay-section">
                 <h4>Hand Actions</h4>
                 <Toggle

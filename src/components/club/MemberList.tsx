@@ -58,14 +58,20 @@ export function MemberList({
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [roleFilter, setRoleFilter] = useState<MemberRole | 'all'>('all');
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     // Filter members
     const filteredMembers = useMemo(() => {
-        return members.filter((m) => {
+        const filtered = members.filter((m) => {
             const matchesSearch = m.name.toLowerCase().includes(searchQuery.toLowerCase());
             const matchesRole = roleFilter === 'all' || m.role === roleFilter;
             return matchesSearch && matchesRole;
         });
+        setVisibleItems(new Set());
+        filtered.forEach((_, i) => {
+            setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+        });
+        return filtered;
     }, [members, searchQuery, roleFilter]);
 
     // Permission check helper
@@ -118,8 +124,16 @@ export function MemberList({
 
                     {/* Table Body */}
                     {filteredMembers.length > 0 ? (
-                        filteredMembers.map((member) => (
-                            <div key={member.id} className="member-row">
+                        filteredMembers.map((member, i) => (
+                            <div
+                                key={member.id}
+                                className="member-row"
+                                style={{
+                                    opacity: visibleItems.has(i) ? 1 : 0,
+                                    transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                                    transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                                }}
+                            >
                                 {/* Name & Avatar */}
                                 <div
                                     className="member-col member-col--name"

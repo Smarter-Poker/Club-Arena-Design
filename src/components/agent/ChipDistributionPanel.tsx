@@ -104,8 +104,16 @@ export const ChipDistributionPanel: React.FC<ChipDistributionPanelProps> = ({
             </div>
 
             <div className="targets-list">
-                {targets.map(target => (
-                    <div key={target.id} className="target-row">
+                {targets.map((target, i) => (
+                    <div
+                        key={target.id}
+                        className="target-row"
+                        style={{
+                            opacity: i < 20 ? 1 : 0.8,
+                            transform: 'translateY(0)',
+                            transition: `all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) ${i * 60}ms`
+                        }}
+                    >
                         <div className="target-avatar">
                             {target.avatarUrl ? (
                                 <img src={target.avatarUrl} alt={target.displayName} />

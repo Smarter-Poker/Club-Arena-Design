@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './NotificationSettings.css';
 
 interface NotificationConfig {
@@ -35,6 +35,11 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ onCh
         quietHoursStart: '22:00',
         quietHoursEnd: '08:00',
     });
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setTimeout(() => setMounted(true), 50);
+    }, []);
 
     const updateConfig = (key: keyof NotificationConfig, value: boolean | string) => {
         const newConfig = { ...config, [key]: value };
@@ -65,7 +70,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ onCh
     );
 
     return (
-        <div className="notification-settings">
+        <div className="notification-settings" style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)', transitionDelay: '0.1s' }}>
             <div className="notification-section">
                 <h4>Notification Channels</h4>
                 <Toggle

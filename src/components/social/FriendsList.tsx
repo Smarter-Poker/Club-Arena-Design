@@ -41,11 +41,24 @@ export function FriendsList({
 }: FriendsListProps) {
     const [activeTab, setActiveTab] = useState<'all' | 'requests'>('all');
     const [addInput, setAddInput] = useState('');
+    const [visibleOnline, setVisibleOnline] = useState<Set<number>>(new Set());
+    const [visibleOffline, setVisibleOffline] = useState<Set<number>>(new Set());
 
     if (!isOpen) return null;
 
     const onlineFriends = friends.filter(f => f.status !== 'offline');
     const offlineFriends = friends.filter(f => f.status === 'offline');
+
+    React.useEffect(() => {
+        setVisibleOnline(new Set());
+        onlineFriends.forEach((_, i) => {
+            setTimeout(() => setVisibleOnline(prev => new Set(prev).add(i)), i * 60);
+        });
+        setVisibleOffline(new Set());
+        offlineFriends.forEach((_, i) => {
+            setTimeout(() => setVisibleOffline(prev => new Set(prev).add(i)), i * 60);
+        });
+    }, [friends]);
 
     const handleAddSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -103,14 +116,22 @@ export function FriendsList({
                         {onlineFriends.length > 0 && (
                             <div className="friends-section">
                                 <h4 className="section-label">Online — {onlineFriends.length}</h4>
-                                {onlineFriends.map(friend => (
-                                    <FriendItem
+                                {onlineFriends.map((friend, i) => (
+                                    <div
                                         key={friend.id}
-                                        friend={friend}
-                                        onChat={onOpenChat}
-                                        onRemove={onRemoveFriend}
-                                        onInvite={onInvite}
-                                    />
+                                        style={{
+                                            opacity: visibleOnline.has(i) ? 1 : 0,
+                                            transform: visibleOnline.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                                            transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                                        }}
+                                    >
+                                        <FriendItem
+                                            friend={friend}
+                                            onChat={onOpenChat}
+                                            onRemove={onRemoveFriend}
+                                            onInvite={onInvite}
+                                        />
+                                    </div>
                                 ))}
                             </div>
                         )}
@@ -119,14 +140,22 @@ export function FriendsList({
                         {offlineFriends.length > 0 && (
                             <div className="friends-section">
                                 <h4 className="section-label">Offline — {offlineFriends.length}</h4>
-                                {offlineFriends.map(friend => (
-                                    <FriendItem
+                                {offlineFriends.map((friend, i) => (
+                                    <div
                                         key={friend.id}
-                                        friend={friend}
-                                        onChat={onOpenChat}
-                                        onRemove={onRemoveFriend}
-                                        onInvite={onInvite}
-                                    />
+                                        style={{
+                                            opacity: visibleOffline.has(i) ? 1 : 0,
+                                            transform: visibleOffline.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                                            transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                                        }}
+                                    >
+                                        <FriendItem
+                                            friend={friend}
+                                            onChat={onOpenChat}
+                                            onRemove={onRemoveFriend}
+                                            onInvite={onInvite}
+                                        />
+                                    </div>
                                 ))}
                             </div>
                         )}

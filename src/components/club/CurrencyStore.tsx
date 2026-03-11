@@ -9,7 +9,7 @@
  * - Payment integration via onPurchase callback
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './CurrencyStore.css';
 
 export interface ProductItem {
@@ -50,6 +50,16 @@ const DEFAULT_GOLD_PRODUCTS: ProductItem[] = [
 
 export function CurrencyStore({ isOpen, onClose, onPurchase, diamondProducts, goldProducts }: CurrencyStoreProps) {
     const [activeTab, setActiveTab] = useState<'diamonds' | 'gold'>('diamonds');
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        if (isOpen) {
+            const products = activeTab === 'diamonds' ? (diamondProducts || DEFAULT_DIAMOND_PRODUCTS) : (goldProducts || DEFAULT_GOLD_PRODUCTS);
+            products.forEach((_, i) => {
+                setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+            });
+        }
+    }, [isOpen, activeTab, diamondProducts, goldProducts]);
 
     if (!isOpen) return null;
 
@@ -62,8 +72,8 @@ export function CurrencyStore({ isOpen, onClose, onPurchase, diamondProducts, go
     };
 
     const renderProducts = (products: ProductItem[], icon: string) => (
-        products.map((p: ProductItem) => (
-            <div key={p.id} className={`product-card ${p.tag ? 'tagged' : ''}`}>
+        products.map((p: ProductItem, i: number) => (
+            <div key={p.id} className={`product-card ${p.tag ? 'tagged' : ''}`} style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 {p.tag && <span className="product-tag">{p.tag}</span>}
                 <div className="product-visual">{icon}</div>
                 <h3 className="product-amount">{p.amount.toLocaleString()}</h3>

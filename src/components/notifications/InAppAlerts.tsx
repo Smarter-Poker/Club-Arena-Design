@@ -29,14 +29,23 @@ export const InAppAlerts: React.FC<InAppAlertsProps> = ({
     onDismiss,
     position = 'top-right',
 }) => {
+    const [visibleItems, setVisibleItems] = useState<Set<string>>(new Set());
+
+    useEffect(() => {
+        alerts.forEach((alert, i) => {
+            setTimeout(() => setVisibleItems(prev => new Set(prev).add(alert.id)), i * 60);
+        });
+    }, [alerts]);
+
     return (
         <div className={`in-app-alerts position-${position}`}>
-            {alerts.map((alert) => (
-                <AlertItem
-                    key={alert.id}
-                    alert={alert}
-                    onDismiss={() => onDismiss(alert.id)}
-                />
+            {alerts.map((alert, i) => (
+                <div key={alert.id} style={{ opacity: visibleItems.has(alert.id) ? 1 : 0, transform: visibleItems.has(alert.id) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
+                    <AlertItem
+                        alert={alert}
+                        onDismiss={() => onDismiss(alert.id)}
+                    />
+                </div>
             ))}
         </div>
     );

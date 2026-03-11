@@ -27,6 +27,7 @@ export const AuditLog: React.FC<AuditLogProps> = ({ clubId }) => {
     const [filter, setFilter] = useState<ActionType>('all');
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         loadAuditLog();
@@ -38,6 +39,7 @@ export const AuditLog: React.FC<AuditLogProps> = ({ clubId }) => {
             // Replaced mock data with dynamic initialization
             const liveEntries: AuditEntry[] = [];
             setEntries(liveEntries);
+            setVisibleItems(new Set());
         } catch (error) {
             console.error('Failed to load audit log:', error);
         } finally {
@@ -121,8 +123,16 @@ export const AuditLog: React.FC<AuditLogProps> = ({ clubId }) => {
                         <p>No log entries found</p>
                     </div>
                 ) : (
-                    filteredEntries.map(entry => (
-                        <div key={entry.id} className="log-entry">
+                    filteredEntries.map((entry, i) => (
+                        <div
+                            key={entry.id}
+                            className="log-entry"
+                            style={{
+                                opacity: visibleItems.has(i) ? 1 : 0,
+                                transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
+                        >
                             <span className="entry-icon">{getActionIcon(entry.action)}</span>
                             <div className="entry-content">
                                 <div className="entry-header">

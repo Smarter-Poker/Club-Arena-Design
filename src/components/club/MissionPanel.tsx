@@ -9,7 +9,7 @@
  * - Timer until reset
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './MissionPanel.css';
 
 export interface Mission {
@@ -36,6 +36,16 @@ export function MissionPanel({
     missions,
     onClaim,
 }: MissionPanelProps) {
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        if (isOpen) {
+            missions.forEach((_, i) => {
+                setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+            });
+        }
+    }, [missions, isOpen]);
+
     if (!isOpen) return null;
 
     const dailies = missions.filter(m => m.type === 'daily');
@@ -63,8 +73,10 @@ export function MissionPanel({
                         <div className="mission-section">
                             <h3 className="section-header">Daily Missions <span className="timer">Resets in 4h 12m</span></h3>
                             <div className="mission-list">
-                                {dailies.map(m => (
-                                    <MissionItem key={m.id} mission={m} onClaim={onClaim} />
+                                {dailies.map((m, i) => (
+                                    <div key={m.id} style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
+                                        <MissionItem mission={m} onClaim={onClaim} />
+                                    </div>
                                 ))}
                             </div>
                         </div>
@@ -75,8 +87,10 @@ export function MissionPanel({
                         <div className="mission-section">
                             <h3 className="section-header">Weekly Challenges <span className="timer">Resets in 3d</span></h3>
                             <div className="mission-list">
-                                {weeklies.map(m => (
-                                    <MissionItem key={m.id} mission={m} onClaim={onClaim} />
+                                {weeklies.map((m, i) => (
+                                    <div key={m.id} style={{ opacity: visibleItems.has(dailies.length + i) ? 1 : 0, transform: visibleItems.has(dailies.length + i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
+                                        <MissionItem mission={m} onClaim={onClaim} />
+                                    </div>
                                 ))}
                             </div>
                         </div>

@@ -39,6 +39,8 @@ export default function TournamentBracket({
 }: TournamentBracketProps) {
     const [players, setPlayers] = useState<BracketPlayer[]>([]);
     const [loading, setLoading] = useState(true);
+    const [visibleActive, setVisibleActive] = useState<Set<number>>(new Set());
+    const [visibleEliminated, setVisibleEliminated] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         loadPlayers();
@@ -100,6 +102,16 @@ export default function TournamentBracket({
             });
 
             setPlayers(mapped);
+            const active = mapped.filter(p => !p.eliminated);
+            const elim = mapped.filter(p => p.eliminated);
+            setVisibleActive(new Set());
+            active.forEach((_, i) => {
+                setTimeout(() => setVisibleActive(prev => new Set(prev).add(i)), i * 60);
+            });
+            setVisibleEliminated(new Set());
+            elim.forEach((_, i) => {
+                setTimeout(() => setVisibleEliminated(prev => new Set(prev).add(i)), i * 60);
+            });
         } catch (error) {
             console.error('Failed to load bracket:', error);
         }
@@ -151,7 +163,15 @@ export default function TournamentBracket({
                 <h4>Still In ({activePlayers.length})</h4>
                 <div className={styles.playerGrid}>
                     {activePlayers.map((player, index) => (
-                        <div key={player.userId} className={styles.playerCard}>
+                        <div
+                            key={player.userId}
+                            className={styles.playerCard}
+                            style={{
+                                opacity: visibleActive.has(index) ? 1 : 0,
+                                transform: visibleActive.has(index) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
+                        >
                             <span className={styles.rank}>{index + 1}</span>
                             <div className={styles.avatar}>
                                 {player.avatarUrl ? (
@@ -174,8 +194,16 @@ export default function TournamentBracket({
                 <div className={styles.section}>
                     <h4>Finished ({eliminatedPlayers.length})</h4>
                     <div className={styles.eliminatedList}>
-                        {eliminatedPlayers.map(player => (
-                            <div key={player.userId} className={styles.eliminatedRow}>
+                        {eliminatedPlayers.map((player, index) => (
+                            <div
+                                key={player.userId}
+                                className={styles.eliminatedRow}
+                                style={{
+                                    opacity: visibleEliminated.has(index) ? 1 : 0,
+                                    transform: visibleEliminated.has(index) ? 'translateY(0)' : 'translateY(8px)',
+                                    transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                                }}
+                            >
                                 <span className={styles.position}>
                                     {getPositionBadge(player.finishPosition)}
                                 </span>

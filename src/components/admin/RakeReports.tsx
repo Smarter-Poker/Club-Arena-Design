@@ -25,6 +25,7 @@ export const RakeReports: React.FC<RakeReportsProps> = ({ clubId }) => {
     const [rawRecords, setRawRecords] = useState<any[]>([]);
     const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'year'>('week');
     const [loading, setLoading] = useState(true);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         loadRakeData();
@@ -90,6 +91,10 @@ export const RakeReports: React.FC<RakeReportsProps> = ({ clubId }) => {
                 dailyBreakdown: dailyBreakdown.length > 0 ? dailyBreakdown : [{ date: 'Today', rake: 0, hands: 0 }],
             };
             setData(liveData);
+            setVisibleItems(new Set());
+            dailyBreakdown.forEach((_, i) => {
+                setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+            });
         } catch (error) {
             console.error('Failed to load rake data:', error);
         } finally {
@@ -170,8 +175,16 @@ export const RakeReports: React.FC<RakeReportsProps> = ({ clubId }) => {
             <div className="daily-chart">
                 <h3>Daily Breakdown</h3>
                 <div className="chart-bars">
-                    {data.dailyBreakdown.map(day => (
-                        <div key={day.date} className="bar-group">
+                    {data.dailyBreakdown.map((day, i) => (
+                        <div
+                            key={day.date}
+                            className="bar-group"
+                            style={{
+                                opacity: visibleItems.has(i) ? 1 : 0,
+                                transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
+                        >
                             <div className="bar-container">
                                 <div
                                     className="bar-fill"

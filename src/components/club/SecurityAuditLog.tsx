@@ -9,7 +9,7 @@
  * - Filtering options
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './SecurityAuditLog.css';
 
 export type LogSeverity = 'low' | 'medium' | 'high' | 'critical';
@@ -37,12 +37,23 @@ export function SecurityAuditLog({
     logs,
 }: SecurityAuditLogProps) {
     const [filterSeverity, setFilterSeverity] = useState<LogSeverity | 'all'>('all');
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        if (isOpen) {
+            filteredLogs.forEach((_, i) => {
+                setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+            });
+        }
+    }, [logs, filterSeverity, isOpen]);
 
     if (!isOpen) return null;
 
     const filteredLogs = logs.filter(
         (log) => filterSeverity === 'all' || log.severity === filterSeverity
     );
+
+    // Move useEffect hook before JSX
 
     return (
         <div className="audit-overlay" onClick={onClose}>
@@ -86,8 +97,8 @@ export function SecurityAuditLog({
                         </thead>
                         <tbody>
                             {filteredLogs.length > 0 ? (
-                                filteredLogs.map((log) => (
-                                    <tr key={log.id} className={`audit-row level-${log.severity}`}>
+                                filteredLogs.map((log, i) => (
+                                    <tr key={log.id} className={`audit-row level-${log.severity}`} style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                                         <td className="audit-time">{log.timestamp}</td>
                                         <td>
                                             <span className={`audit-badge sev-${log.severity}`}>

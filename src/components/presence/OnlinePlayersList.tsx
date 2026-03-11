@@ -26,6 +26,7 @@ export const OnlinePlayersList: React.FC<OnlinePlayersListProps> = ({
     const [players, setPlayers] = useState<OnlinePlayer[]>([]);
     const [loading, setLoading] = useState(true);
     const [onlineCount, setOnlineCount] = useState(0);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         loadOnlinePlayers();
@@ -50,6 +51,12 @@ export const OnlinePlayersList: React.FC<OnlinePlayersListProps> = ({
             clearInterval(interval);
         };
     }, [clubId]);
+
+    useEffect(() => {
+        players.forEach((_, i) => {
+            setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+        });
+    }, [players]);
 
     const loadOnlinePlayers = async () => {
         try {
@@ -112,11 +119,12 @@ export const OnlinePlayersList: React.FC<OnlinePlayersListProps> = ({
                 <div className="no-players">No players online</div>
             ) : (
                 <div className="players-grid">
-                    {players.map(player => (
+                    {players.map((player, i) => (
                         <div
                             key={player.id}
                             className="player-card"
                             onClick={() => onPlayerClick?.(player)}
+                            style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
                         >
                             <div className="player-avatar">
                                 {player.avatarUrl ? (

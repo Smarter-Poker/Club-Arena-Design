@@ -10,7 +10,7 @@
  * - Agent performance metrics
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './AgentManager.css';
 
 export interface AgentNode {
@@ -41,6 +41,15 @@ export function AgentManager({
     onRemoveAgent,
 }: AgentManagerProps) {
     const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        if (isOpen) {
+            agents.forEach((_, i) => {
+                setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+            });
+        }
+    }, [agents, isOpen]);
 
     if (!isOpen) return null;
 
@@ -56,7 +65,7 @@ export function AgentManager({
         const hasChildren = node.downline && node.downline.length > 0;
 
         return (
-            <div key={node.id} className="agent-node-wrapper">
+            <div key={node.id} className="agent-node-wrapper" style={{ opacity: visibleItems.has(depth) ? 1 : 0, transform: visibleItems.has(depth) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 <div className="agent-row" style={{ paddingLeft: `${depth * 24 + 16}px` }}>
                     {/* Collapse/Expand Toggle */}
                     <button

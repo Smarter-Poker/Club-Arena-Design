@@ -42,6 +42,7 @@ export function ClubMemberManagement({ clubId, isAdmin }: ClubMemberManagementPr
     const [searchTerm, setSearchTerm] = useState('');
     const [roleFilter, setRoleFilter] = useState<string>('all');
     const [sortBy, setSortBy] = useState<'name' | 'balance' | 'rake' | 'joined'>('name');
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         loadMembers();
@@ -72,6 +73,10 @@ export function ClubMemberManagement({ clubId, isAdmin }: ClubMemberManagementPr
                         isBanned: m.is_banned || false
                     };
                 }));
+                setVisibleItems(new Set());
+                data.forEach((_, i) => {
+                    setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+                });
             }
         } catch (error) {
             toast.error('Failed to load members');
@@ -174,8 +179,16 @@ export function ClubMemberManagement({ clubId, isAdmin }: ClubMemberManagementPr
             </div>
 
             <div className="member-management__list">
-                {filteredMembers.map(member => (
-                    <div key={member.id} className={`member-row ${member.isBanned ? 'banned' : ''}`}>
+                {filteredMembers.map((member, i) => (
+                    <div
+                        key={member.id}
+                        className={`member-row ${member.isBanned ? 'banned' : ''}`}
+                        style={{
+                            opacity: visibleItems.has(i) ? 1 : 0,
+                            transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                            transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                        }}
+                    >
                         <span className="avatar">{member.avatarUrl}</span>
                         <div className="info">
                             <span className="name">

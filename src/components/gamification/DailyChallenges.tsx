@@ -45,6 +45,8 @@ export const DailyChallenges: React.FC = () => {
     });
 
     const [showAnimation, setShowAnimation] = useState(false);
+    const [visibleDaily, setVisibleDaily] = useState<Set<number>>(new Set());
+    const [visibleWeekly, setVisibleWeekly] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         if (user?.id) {
@@ -78,6 +80,16 @@ export const DailyChallenges: React.FC = () => {
                 ...prev,
                 currentStreak: stats.currentStreak
             }));
+            const daily = mappedChallenges.filter(c => c.type === 'daily');
+            const weekly = mappedChallenges.filter(c => c.type === 'weekly');
+            setVisibleDaily(new Set());
+            daily.forEach((_, i) => {
+                setTimeout(() => setVisibleDaily(prev => new Set(prev).add(i)), i * 60);
+            });
+            setVisibleWeekly(new Set());
+            weekly.forEach((_, i) => {
+                setTimeout(() => setVisibleWeekly(prev => new Set(prev).add(i)), i * 60);
+            });
         } catch (error) {
             console.error('Failed to load daily challenges:', error);
         }
@@ -133,10 +145,15 @@ export const DailyChallenges: React.FC = () => {
             <section className="challenges-section">
                 <h3>📅 Daily Challenges</h3>
                 <div className="challenges-list">
-                    {dailyChallenges.map((challenge) => (
+                    {dailyChallenges.map((challenge, i) => (
                         <div
                             key={challenge.id}
                             className={`challenge-card ${challenge.completed ? 'completed' : ''} ${challenge.claimed ? 'claimed' : ''}`}
+                            style={{
+                                opacity: visibleDaily.has(i) ? 1 : 0,
+                                transform: visibleDaily.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
                         >
                             <span className="challenge-icon">{challenge.icon}</span>
                             <div className="challenge-content">
@@ -175,10 +192,15 @@ export const DailyChallenges: React.FC = () => {
             <section className="challenges-section">
                 <h3>📆 Weekly Challenges</h3>
                 <div className="challenges-list">
-                    {weeklyChallenges.map((challenge) => (
+                    {weeklyChallenges.map((challenge, i) => (
                         <div
                             key={challenge.id}
                             className={`challenge-card ${challenge.completed ? 'completed' : ''}`}
+                            style={{
+                                opacity: visibleWeekly.has(i) ? 1 : 0,
+                                transform: visibleWeekly.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
                         >
                             <span className="challenge-icon">{challenge.icon}</span>
                             <div className="challenge-content">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './SoundSettings.css';
 
 interface SoundSettingsProps {
@@ -29,6 +29,11 @@ export const SoundSettings: React.FC<SoundSettingsProps> = ({ onChange }) => {
         enableTurnAlert: true,
         enableWinSound: true,
     });
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setTimeout(() => setMounted(true), 50);
+    }, []);
 
     const updateConfig = (key: keyof SoundConfig, value: number | boolean) => {
         const newConfig = { ...config, [key]: value };
@@ -44,7 +49,7 @@ export const SoundSettings: React.FC<SoundSettingsProps> = ({ onChange }) => {
     };
 
     return (
-        <div className="sound-settings">
+        <div className="sound-settings" style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)', transitionDelay: '0.1s' }}>
             <div className="sound-master-toggle">
                 <label className="toggle-label">
                     <span>Enable All Sounds</span>

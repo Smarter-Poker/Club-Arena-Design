@@ -41,6 +41,7 @@ export function LobbyTableList({ clubId, gameType, onJoinTable }: LobbyTableList
     const [tables, setTables] = useState<TableInfo[]>([]);
     const [loading, setLoading] = useState(true);
     const [sortBy, setSortBy] = useState<'stakes' | 'players' | 'pot'>('stakes');
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         loadTables();
@@ -83,6 +84,10 @@ export function LobbyTableList({ clubId, gameType, onJoinTable }: LobbyTableList
                     isPrivate: t.is_private || false,
                     features: t.settings?.features || []
                 })));
+                setVisibleItems(new Set());
+                data.forEach((_, i) => {
+                    setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+                });
             }
         } catch (error) {
             toast.error('Failed to load tables');
@@ -121,8 +126,16 @@ export function LobbyTableList({ clubId, gameType, onJoinTable }: LobbyTableList
                 <div className="empty-state">No tables available</div>
             ) : (
                 <div className="lobby-tables__list">
-                    {sortedTables.map(table => (
-                        <div key={table.id} className="table-row">
+                    {sortedTables.map((table, i) => (
+                        <div
+                            key={table.id}
+                            className="table-row"
+                            style={{
+                                opacity: visibleItems.has(i) ? 1 : 0,
+                                transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
+                        >
                             <div className="table-info">
                                 <span className="name">
                                     {table.isPrivate && ' '}

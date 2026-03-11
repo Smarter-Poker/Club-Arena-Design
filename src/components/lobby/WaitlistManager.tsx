@@ -33,6 +33,7 @@ export function WaitlistManager({ tableId, isAdmin, onSeatPlayer }: WaitlistMana
     const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [myPosition, setMyPosition] = useState<number | null>(null);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         loadWaitlist();
@@ -73,6 +74,10 @@ export function WaitlistManager({ tableId, isAdmin, onSeatPlayer }: WaitlistMana
                     };
                 });
                 setWaitlist(list);
+                setVisibleItems(new Set());
+                list.forEach((_, i) => {
+                    setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+                });
 
                 const myEntry = list.find(w => w.userId === user?.id);
                 setMyPosition(myEntry?.position || null);
@@ -160,10 +165,15 @@ export function WaitlistManager({ tableId, isAdmin, onSeatPlayer }: WaitlistMana
                 <div className="empty-state">No one waiting</div>
             ) : (
                 <div className="waitlist__list">
-                    {waitlist.map(entry => (
+                    {waitlist.map((entry, i) => (
                         <div
                             key={entry.id}
                             className={`waitlist-row ${entry.userId === user?.id ? 'me' : ''}`}
+                            style={{
+                                opacity: visibleItems.has(i) ? 1 : 0,
+                                transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
                         >
                             <span className="position">#{entry.position}</span>
                             <span className="avatar">{entry.avatarUrl}</span>

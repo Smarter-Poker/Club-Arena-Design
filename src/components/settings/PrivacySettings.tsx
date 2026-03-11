@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './PrivacySettings.css';
 
 interface PrivacyConfig {
@@ -27,6 +27,11 @@ export const PrivacySettings: React.FC<PrivacySettingsProps> = ({ onChange }) =>
         allowDirectMessages: 'friends',
         hideFromSearch: false,
     });
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setTimeout(() => setMounted(true), 50);
+    }, []);
 
     const updateConfig = <K extends keyof PrivacyConfig>(key: K, value: PrivacyConfig[K]) => {
         const newConfig = { ...config, [key]: value };
@@ -35,7 +40,7 @@ export const PrivacySettings: React.FC<PrivacySettingsProps> = ({ onChange }) =>
     };
 
     return (
-        <div className="privacy-settings">
+        <div className="privacy-settings" style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)', transitionDelay: '0.1s' }}>
             <div className="privacy-section">
                 <h4>Profile Visibility</h4>
                 <div className="visibility-options">

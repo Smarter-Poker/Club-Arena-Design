@@ -27,6 +27,7 @@ export default function LeaderboardCard({
     const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [userRank, setUserRank] = useState<LeaderboardEntry | null>(null);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         loadLeaderboard();
@@ -37,6 +38,10 @@ export default function LeaderboardCard({
         try {
             const data = await promotionService.getLeaderboard(promotionId, limit);
             setEntries(data);
+            setVisibleItems(new Set());
+            data.forEach((_, i) => {
+                setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+            });
 
             // Find current user if not in top N
             if (showCurrentUser && user?.id) {
@@ -91,12 +96,17 @@ export default function LeaderboardCard({
                 </div>
             ) : (
                 <div className={styles.list}>
-                    {entries.map(entry => {
+                    {entries.map((entry, i) => {
                         const isCurrentUser = user?.id === entry.userId;
                         return (
                             <div
                                 key={entry.userId}
                                 className={`${styles.row} ${entry.rank <= 3 ? styles.topThree : ''} ${isCurrentUser ? styles.currentUser : ''}`}
+                                style={{
+                                    opacity: visibleItems.has(i) ? 1 : 0,
+                                    transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                                    transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                                }}
                             >
                                 <div className={styles.rankCol}>
                                     {entry.rank <= 3 ? (

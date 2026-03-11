@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     ResponsiveContainer,
     AreaChart,
@@ -35,6 +35,12 @@ export const FinancialChart: React.FC<FinancialChartProps> = ({
     showRakeback = true,
     showCommissions = false,
 }) => {
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setTimeout(() => setMounted(true), 50);
+    }, []);
+
     if (data.length === 0) {
         return (
             <div style={{
@@ -51,7 +57,8 @@ export const FinancialChart: React.FC<FinancialChartProps> = ({
     }
 
     return (
-        <ResponsiveContainer width="100%" height={height}>
+        <div style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)', transitionDelay: '0.1s' }}>
+            <ResponsiveContainer width="100%" height={height}>
             <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                     <linearGradient id="colorRake" x1="0" y1="0" x2="0" y2="1">
@@ -124,7 +131,8 @@ export const FinancialChart: React.FC<FinancialChartProps> = ({
                     />
                 )}
             </AreaChart>
-        </ResponsiveContainer>
+            </ResponsiveContainer>
+        </div>
     );
 };
 

@@ -33,6 +33,13 @@ export function LeaderboardWidget({
 }: LeaderboardWidgetProps) {
     const [entries, setEntries] = useState<LeaderEntry[]>([]);
     const [loading, setLoading] = useState(true);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        entries.forEach((_, i) => {
+            setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+        });
+    }, [entries]);
 
     useEffect(() => {
         loadLeaderboard();
@@ -104,8 +111,8 @@ export function LeaderboardWidget({
             )}
 
             <div className="leaderboard-widget__list">
-                {entries.map(entry => (
-                    <div key={entry.userId} className={`leader-entry rank-${entry.rank}`}>
+                {entries.map((entry, i) => (
+                    <div key={entry.userId} className={`leader-entry rank-${entry.rank}`} style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                         <span className="rank">
                             {entry.rank === 1 && '1st'}
                             {entry.rank === 2 && '2nd'}

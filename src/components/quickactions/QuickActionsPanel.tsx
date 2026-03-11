@@ -21,6 +21,7 @@ export const QuickActionsPanel: React.FC = () => {
     navigateRef.current = navigate;
     const [isOpen, setIsOpen] = useState(false);
     const [recentlyUsed, setRecentlyUsed] = useState<string[]>([]);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     const actions: QuickAction[] = useMemo(() => [
         { id: 'lobby', icon: '🎰', label: 'Lobby', shortcut: 'L', action: () => navigateRef.current('/lobby') },
@@ -70,6 +71,16 @@ export const QuickActionsPanel: React.FC = () => {
         }
     }, []);
 
+    useEffect(() => {
+        const sortedActions = [
+            ...recentlyUsed.map(id => actions.find(a => a.id === id)!).filter(Boolean),
+            ...actions.filter(a => !recentlyUsed.includes(a.id)),
+        ];
+        sortedActions.forEach((_, i) => {
+            setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+        });
+    }, [isOpen, actions, recentlyUsed]);
+
     const sortedActions = [
         ...recentlyUsed.map(id => actions.find(a => a.id === id)!).filter(Boolean),
         ...actions.filter(a => !recentlyUsed.includes(a.id)),
@@ -96,11 +107,12 @@ export const QuickActionsPanel: React.FC = () => {
                             <span className="shortcut-hint">Alt + key</span>
                         </div>
                         <div className="quick-grid">
-                            {sortedActions.map((action) => (
+                            {sortedActions.map((action, i) => (
                                 <button
                                     key={action.id}
                                     className="quick-action"
                                     onClick={() => executeAction(action)}
+                                    style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
                                 >
                                     <span className="action-icon">{action.icon}</span>
                                     <span className="action-label">{action.label}</span>

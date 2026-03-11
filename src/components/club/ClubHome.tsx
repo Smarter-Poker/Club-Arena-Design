@@ -138,8 +138,16 @@ export function ClubHome({
                     <h3 className="club-home__section-title">Recent Activity</h3>
                     <div className="club-activity-list">
                         {activities.length > 0 ? (
-                            activities.map((activity) => (
-                                <div key={activity.id} className="club-activity-item">
+                            activities.map((activity, i) => (
+                                <div
+                                    key={activity.id}
+                                    className="club-activity-item"
+                                    style={{
+                                        opacity: i < 10 ? 1 : 0.8,
+                                        transform: 'translateY(0)',
+                                        transition: `all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) ${i * 60}ms`
+                                    }}
+                                >
                                     <div className={`club-activity-icon club-activity-icon--${activity.type}`}>
                                         {activity.type === 'game_start' && '▶'}
                                         {activity.type === 'game_end' && '■'}

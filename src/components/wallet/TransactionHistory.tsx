@@ -102,6 +102,7 @@ export function TransactionHistory({ walletId, limit = 20 }: TransactionHistoryP
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<string>('all');
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         if (user?.id || walletId) {
@@ -139,6 +140,10 @@ export function TransactionHistory({ walletId, limit = 20 }: TransactionHistoryP
                     createdAt: new Date(t.created_at),
                     walletType: t.wallet_type || 'PLAYER',
                 })));
+                setVisibleItems(new Set());
+                data.forEach((_, i) => {
+                    setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+                });
             }
         } catch (error) {
             toast.error('Failed to load transactions');
@@ -180,8 +185,16 @@ export function TransactionHistory({ walletId, limit = 20 }: TransactionHistoryP
                 <div className="empty-state">No transactions</div>
             ) : (
                 <div className="transaction-list">
-                    {filteredTransactions.map(tx => (
-                        <div key={tx.id} className={`transaction-row ${tx.type}`}>
+                    {filteredTransactions.map((tx, i) => (
+                        <div
+                            key={tx.id}
+                            className={`transaction-row ${tx.type}`}
+                            style={{
+                                opacity: visibleItems.has(i) ? 1 : 0,
+                                transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
+                        >
                             <span className="icon">{CATEGORY_ICONS[tx.category] || '●'}</span>
                             <div className="details">
                                 <span className="type" style={{ color: CATEGORY_COLORS[tx.category] || '#94a3b8' }}>

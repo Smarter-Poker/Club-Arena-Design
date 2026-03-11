@@ -32,10 +32,17 @@ export const RecentPlayers: React.FC<RecentPlayersProps> = ({
 }) => {
     const [players, setPlayers] = useState<RecentPlayer[]>([]);
     const [loading, setLoading] = useState(true);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         loadRecentPlayers();
     }, []);
+
+    useEffect(() => {
+        players.forEach((_, i) => {
+            setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+        });
+    }, [players]);
 
     const loadRecentPlayers = async () => {
         try {
@@ -77,11 +84,12 @@ export const RecentPlayers: React.FC<RecentPlayersProps> = ({
                         <p>No recent players</p>
                     </div>
                 ) : (
-                    players.map(player => (
+                    players.map((player, i) => (
                         <div
                             key={player.id}
                             className="player-row"
                             onClick={() => onViewProfile?.(player.id)}
+                            style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
                         >
                             <div className="player-avatar">
                                 {player.avatar ? (

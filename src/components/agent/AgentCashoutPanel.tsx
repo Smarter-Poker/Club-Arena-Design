@@ -21,6 +21,7 @@ export default function AgentCashoutPanel({ clubId, onCashoutProcessed }: AgentC
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     // Load pending cashouts
     const loadCashouts = useCallback(async () => {
@@ -30,6 +31,10 @@ export default function AgentCashoutPanel({ clubId, onCashoutProcessed }: AgentC
         try {
             const pending = await cashoutService.getAgentPendingCashouts(user.id, clubId);
             setCashouts(pending);
+            setVisibleItems(new Set());
+            pending.forEach((_, i) => {
+                setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+            });
         } catch (err) {
             console.error('Failed to load cashouts:', err);
         }
@@ -126,8 +131,16 @@ export default function AgentCashoutPanel({ clubId, onCashoutProcessed }: AgentC
                 </div>
             ) : (
                 <div className="cashout-list">
-                    {cashouts.map(cashout => (
-                        <div key={cashout.id} className="cashout-card">
+                    {cashouts.map((cashout, i) => (
+                        <div
+                            key={cashout.id}
+                            className="cashout-card"
+                            style={{
+                                opacity: visibleItems.has(i) ? 1 : 0,
+                                transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            }}
+                        >
                             <div className="cashout-header">
                                 <div className="player-info">
                                     <img
