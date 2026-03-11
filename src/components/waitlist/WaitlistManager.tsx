@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import { useToast } from '../common/Toast';
 import './WaitlistManager.css';
 
@@ -47,8 +48,10 @@ export const WaitlistManager: React.FC<WaitlistManagerProps> = ({
         loadWaitlist();
 
         // Real-time subscription
-        const channel = supabase
-            .channel(`waitlist:${tableId}`)
+        const channelKey = `waitlist:${tableId}`;
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
@@ -60,7 +63,7 @@ export const WaitlistManager: React.FC<WaitlistManagerProps> = ({
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [tableId]);
 

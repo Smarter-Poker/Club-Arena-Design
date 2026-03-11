@@ -5,7 +5,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import { useUserStore } from '../../stores/useUserStore';
 import { useToast } from '../common/Toast';
 import './WaitlistManager.css';
@@ -38,8 +39,11 @@ export function WaitlistManager({ tableId, isAdmin, onSeatPlayer }: WaitlistMana
     useEffect(() => {
         loadWaitlist();
 
-        const channel = supabase
-            .channel(`waitlist-${tableId}`)
+        const channelKey = `waitlist-${tableId}`;
+
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
@@ -48,7 +52,7 @@ export function WaitlistManager({ tableId, isAdmin, onSeatPlayer }: WaitlistMana
             }, () => loadWaitlist())
             .subscribe();
 
-        return () => { supabase.removeChannel(channel); };
+        return () => { masterBus.removeRegisteredChannel(channelKey); };
     }, [tableId]);
 
     const loadWaitlist = async () => {

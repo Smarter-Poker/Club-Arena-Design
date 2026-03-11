@@ -4,7 +4,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase'
+import { masterBus } from '../core/MasterBus';;
 import DailyBonusWheel from '../components/bonus/DailyBonusWheel';
 import LeaderboardCard from '../components/leaderboard/LeaderboardCard';
 import ReferralModal from '../components/social/ReferralModal';
@@ -44,8 +45,10 @@ export default function PromotionsPage() {
         loadPromotions();
 
         // Real-time promotions updates
-        const channel = supabase
-            .channel('promotions-live')
+        const channelKey = 'promotions-live';
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on(
                 'postgres_changes',
                 {
@@ -61,7 +64,7 @@ export default function PromotionsPage() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [clubId]);
 

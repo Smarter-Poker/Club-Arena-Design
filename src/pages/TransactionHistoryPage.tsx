@@ -4,7 +4,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase'
+import { masterBus } from '../core/MasterBus';;
 import { useUserStore } from '../stores/useUserStore';
 import { exportToCSV } from '../lib/export';
 import './TransactionHistoryPage.css';
@@ -58,8 +59,10 @@ export default function TransactionHistoryPage() {
     // ── Realtime: live transaction updates ──
     useEffect(() => {
         if (!user?.id) return;
-        const channel = supabase
-            .channel(`tx-history-${user.id}`)
+        const channelKey = `tx-history-${user.id}`;
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
@@ -68,7 +71,7 @@ export default function TransactionHistoryPage() {
                 loadTransactions(0, true);
             })
             .subscribe();
-        return () => { supabase.removeChannel(channel); };
+        return () => { masterBus.removeRegisteredChannel(channelKey); };
     }, [user?.id]);
 
     const loadTransactions = async (pageNum: number, reset = false) => {

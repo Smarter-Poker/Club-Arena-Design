@@ -6,7 +6,8 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import { useUserStore } from '../../stores/useUserStore';
 import styles from './NotificationDropdown.module.css';
 
@@ -81,8 +82,10 @@ export default function NotificationDropdown({ onNavigate }: NotificationDropdow
     };
 
     const subscribeToNotifications = () => {
-        const channel = supabase
-            .channel(`notifications:${user?.id}`)
+        const channelKey = `notifications:${user?.id}`;
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
@@ -103,7 +106,7 @@ export default function NotificationDropdown({ onNavigate }: NotificationDropdow
             })
             .subscribe();
 
-        return () => supabase.removeChannel(channel);
+        return () => masterBus.removeRegisteredChannel(channelKey);
     };
 
     const markAsRead = async (id: string) => {

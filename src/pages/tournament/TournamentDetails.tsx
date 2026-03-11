@@ -6,7 +6,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { tournamentService } from '../../services/TournamentService';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import type { Tournament } from '../../types/database.types';
 import { useAuthUser } from '../../hooks/useAuthUser';
 import TournamentBracket from '../../components/tournament/TournamentBracket';
@@ -110,8 +111,11 @@ export default function TournamentDetails() {
     useEffect(() => {
         if (!tournamentId) return;
 
-        const channel = supabase
-            .channel(`tournament-${tournamentId}`)
+        const channelKey = `tournament-${tournamentId}`;
+
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on(
                 'postgres_changes',
                 {
@@ -220,7 +224,7 @@ export default function TournamentDetails() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [tournamentId]);
 

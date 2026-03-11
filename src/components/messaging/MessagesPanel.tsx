@@ -6,7 +6,8 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import { useUserStore } from '../../stores/useUserStore';
 import styles from './MessagesPanel.module.css';
 
@@ -71,8 +72,11 @@ export default function MessagesPanel({
     useEffect(() => {
         if (!selectedConvo) return;
 
-        const channel = supabase
-            .channel(`messages:${selectedConvo.id}`)
+        const channelKey = `messages:${selectedConvo.id}`;
+
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
@@ -91,7 +95,7 @@ export default function MessagesPanel({
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [selectedConvo?.id, user?.id]);
 

@@ -4,7 +4,8 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase'
+import { masterBus } from '../core/MasterBus';;
 import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import './BadBeatJackpotPage.css';
@@ -49,8 +50,10 @@ export default function BadBeatJackpotPage() {
             loadJackpotData();
 
             // Real-time jackpot updates
-            const channel = supabase
-                .channel('jackpot-live')
+            const channelKey = 'jackpot-live';
+
+            const channel = masterBus.getOrCreateChannel(channelKey);
+                channel
                 .on(
                     'postgres_changes',
                     {
@@ -87,7 +90,7 @@ export default function BadBeatJackpotPage() {
                 .subscribe();
 
             return () => {
-                supabase.removeChannel(channel);
+                masterBus.removeRegisteredChannel(channelKey);
             };
         }
     }, [clubId]);

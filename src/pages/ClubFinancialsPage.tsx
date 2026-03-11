@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import { useToast } from '../components/common/Toast';
@@ -65,8 +66,9 @@ export default function ClubFinancialsPage() {
     useEffect(() => {
         if (!clubId) return;
 
-        const channel = supabase
-            .channel(`club-financials-${clubId}`)
+        const channelKey = `club-financials-${clubId}`;
+        const channel = masterBus.getOrCreateChannel(channelKey);
+        channel
             .on(
                 'postgres_changes',
                 {
@@ -76,7 +78,6 @@ export default function ClubFinancialsPage() {
                     filter: `club_id=eq.${clubId}`,
                 },
                 () => {
-                    // New transaction - refresh financials
                     loadFinancials();
                 }
             )
@@ -89,14 +90,13 @@ export default function ClubFinancialsPage() {
                     filter: `club_id=eq.${clubId}`,
                 },
                 () => {
-                    // New rake collection - refresh financials
                     loadFinancials();
                 }
             )
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [clubId]);
 

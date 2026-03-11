@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import { PresenceIndicator } from './PresenceIndicator';
 import './OnlinePlayersList.css';
 
@@ -32,8 +33,10 @@ export const OnlinePlayersList: React.FC<OnlinePlayersListProps> = ({
         loadOnlinePlayers();
 
         // Subscribe to presence changes
-        const channel = supabase
-            .channel('online_players')
+        const channelKey = 'online_players';
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
@@ -47,7 +50,7 @@ export const OnlinePlayersList: React.FC<OnlinePlayersListProps> = ({
         const interval = setInterval(loadOnlinePlayers, 30000);
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
             clearInterval(interval);
         };
     }, [clubId]);

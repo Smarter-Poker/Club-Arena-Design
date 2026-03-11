@@ -6,7 +6,8 @@
  */
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import { useUserStore } from '../../stores/useUserStore';
 import ChatBubble from './ChatBubble';
 import MessageInput from './MessageInput';
@@ -261,8 +262,10 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
         }, 5000);
 
         // Real-time subscription
-        const channel = supabase
-            .channel(`messages-${conversationId}`)
+        const channelKey = `messages-${conversationId}`;
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
@@ -278,7 +281,7 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
 
         return () => {
             if (heartbeatRef.current) clearInterval(heartbeatRef.current);
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [conversationId, loadConversation, loadMessages, user?.id]);
 

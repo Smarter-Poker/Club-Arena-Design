@@ -12,7 +12,8 @@ import styles from './AgentManagementPage.module.css';
 import { AgentService, type Agent } from '@/services/AgentService';
 import { MembershipService, type ClubMembership } from '@/services/MembershipService';
 import { useUserStore } from '@/stores/useUserStore';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase'
+import { masterBus } from '../core/MasterBus';;
 import ChipTransferModal from '@/components/agent/ChipTransferModal';
 import AgentTree from '@/components/agent/AgentTree';
 import CommissionHistoryModal from '@/components/agent/CommissionHistoryModal';
@@ -129,8 +130,11 @@ export default function AgentManagementPage() {
             }
         };
 
-        const channel = supabase
-            .channel(`agent-mgmt-${clubId}`)
+        const channelKey = `agent-mgmt-${clubId}`;
+
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on(
                 'postgres_changes',
                 {
@@ -159,7 +163,7 @@ export default function AgentManagementPage() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [clubId]);
 

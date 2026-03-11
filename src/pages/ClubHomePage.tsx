@@ -15,6 +15,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import { useWalletStore } from '../stores/useWalletStore';
 import haptic from '../services/HapticService';
@@ -142,8 +143,9 @@ export default function ClubHomePage() {
     useEffect(() => {
         if (!clubId) return;
 
-        const channel = supabase
-            .channel(`club-tables-${clubId}`)
+        const channelKey = `club-tables-${clubId}`;
+        const channel = masterBus.getOrCreateChannel(channelKey);
+        channel
             .on(
                 'postgres_changes',
                 {
@@ -187,7 +189,7 @@ export default function ClubHomePage() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [clubId]);
 
@@ -195,8 +197,9 @@ export default function ClubHomePage() {
     useEffect(() => {
         if (!clubId) return;
 
-        const memberChannel = supabase
-            .channel(`club-members-${clubId}`)
+        const memberChannelKey = `club-members-${clubId}`;
+        const memberChannel = masterBus.getOrCreateChannel(memberChannelKey);
+        memberChannel
             .on(
                 'postgres_changes',
                 {
@@ -207,7 +210,6 @@ export default function ClubHomePage() {
                 },
                 (payload) => {
                     if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
-                        // Refresh club data to get updated member count
                         loadClubData();
                     }
                 }
@@ -215,7 +217,7 @@ export default function ClubHomePage() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(memberChannel);
+            masterBus.removeRegisteredChannel(memberChannelKey);
         };
     }, [clubId]);
 

@@ -149,6 +149,7 @@ function useCountAnimation(target: number, duration: number = 800) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { supabase } from '../lib/supabase';
+import { masterBus } from '../core/MasterBus';
 import { presenceService } from '../services/PresenceService';
 import ClubActivityFeed from '../components/club/ClubActivityFeed';
 // CreateTableModal replaced by full TableConfigPage navigation
@@ -251,8 +252,9 @@ export default function ClubDetailPage() {
     useEffect(() => {
         if (!clubId) return;
 
-        const channel = supabase
-            .channel(`club-detail-${clubId}`)
+        const channelKey = `club-detail-${clubId}`;
+        const channel = masterBus.getOrCreateChannel(channelKey);
+        channel
             .on(
                 'postgres_changes',
                 {
@@ -292,7 +294,7 @@ export default function ClubDetailPage() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [clubId]);
 

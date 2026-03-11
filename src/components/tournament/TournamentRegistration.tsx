@@ -5,7 +5,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import { useToast } from '../common/Toast';
 import './TournamentRegistration.css';
 
@@ -41,8 +42,11 @@ export function TournamentRegistration({
     useEffect(() => {
         loadPlayers();
 
-        const channel = supabase
-            .channel(`tournament-${tournamentId}-players`)
+        const channelKey = `tournament-${tournamentId}-players`;
+
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
@@ -51,7 +55,7 @@ export function TournamentRegistration({
             }, () => loadPlayers())
             .subscribe();
 
-        return () => { supabase.removeChannel(channel); };
+        return () => { masterBus.removeRegisteredChannel(channelKey); };
     }, [tournamentId]);
 
     const loadPlayers = async () => {

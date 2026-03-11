@@ -5,7 +5,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import { useAuthUser } from '../../hooks/useAuthUser';
 import './TournamentDetails.css';
 
@@ -213,8 +214,10 @@ export default function TournamentResultsPage() {
 
     // Subscribe to tournament results/standings updates
     useEffect(() => {
-        const channel = supabase
-            .channel('tournament-results-updates')
+        const channelKey = 'tournament-results-updates';
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on(
                 'postgres_changes',
                 {
@@ -246,7 +249,7 @@ export default function TournamentResultsPage() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [selectedTournament?.id]);
 

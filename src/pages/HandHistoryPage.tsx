@@ -12,7 +12,8 @@ import type { HandRecord } from '../services/HandHistoryService';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import { exportToCSV } from '../lib/export';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase'
+import { masterBus } from '../core/MasterBus';;
 import HandReplay from '../components/replay/HandReplay';
 import ReplayActions from '../components/table/ReplayActions';
 import HandReplayPlayer from '../components/table/HandReplayPlayer';
@@ -58,8 +59,11 @@ export default function HandHistoryPage() {
     useEffect(() => {
         if (!user?.id) return;
 
-        const channel = supabase
-            .channel(`hand-history-${user.id}`)
+        const channelKey = `hand-history-${user.id}`;
+
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on(
                 'postgres_changes',
                 {
@@ -75,7 +79,7 @@ export default function HandHistoryPage() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [user?.id]);
 

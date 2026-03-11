@@ -5,7 +5,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import { useToast } from '../common/Toast';
 import './LobbyTableList.css';
 
@@ -46,8 +47,11 @@ export function LobbyTableList({ clubId, gameType, onJoinTable }: LobbyTableList
     useEffect(() => {
         loadTables();
 
-        const channel = supabase
-            .channel('lobby-tables')
+        const channelKey = 'lobby-tables';
+
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
@@ -55,7 +59,7 @@ export function LobbyTableList({ clubId, gameType, onJoinTable }: LobbyTableList
             }, () => loadTables())
             .subscribe();
 
-        return () => { supabase.removeChannel(channel); };
+        return () => { masterBus.removeRegisteredChannel(channelKey); };
     }, [clubId, gameType]);
 
     const loadTables = async () => {

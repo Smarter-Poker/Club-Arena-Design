@@ -6,7 +6,8 @@
  */
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import styles from './ClubActivityFeed.module.css';
 
 export type ActivityType = 'member_join' | 'member_leave' | 'table_start' | 'table_end' |
@@ -88,8 +89,10 @@ export default function ClubActivityFeed({
     };
 
     const subscribeToActivities = () => {
-        const channel = supabase
-            .channel(`club_activity:${clubId}`)
+        const channelKey = `club_activity:${clubId}`;
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
@@ -125,7 +128,7 @@ export default function ClubActivityFeed({
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     };
 

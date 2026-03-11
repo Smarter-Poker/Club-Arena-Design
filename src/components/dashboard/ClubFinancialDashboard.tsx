@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { WalletService } from '../../services/WalletService';
 import { CommissionService } from '../../services/CommissionService';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import { useUserStore } from '../../stores/useUserStore';
 import { useToast } from '../common/Toast';
 import {
@@ -83,8 +84,11 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
             fetchRevenueData();
         }, 30000);
 
-        const channel = supabase
-            .channel(`club_wallet:${clubId}`)
+        const channelKey = `club_wallet:${clubId}`;
+
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on(
                 'postgres_changes',
                 {
@@ -103,7 +107,7 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
 
         return () => {
             clearInterval(interval);
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [clubId]);
 

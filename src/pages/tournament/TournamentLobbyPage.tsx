@@ -7,7 +7,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import { useUserStore } from '../../stores/useUserStore';
 import { tournamentService } from '../../services/TournamentService';
 import TournamentLobbyCard from '../../components/tournament/TournamentLobbyCard';
@@ -87,8 +88,10 @@ export default function TournamentLobbyPage() {
 
     // Subscribe to realtime tournament updates
     useEffect(() => {
-        const channel = supabase
-            .channel('tournament-lobby-updates')
+        const channelKey = 'tournament-lobby-updates';
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on(
                 'postgres_changes',
                 {
@@ -118,7 +121,7 @@ export default function TournamentLobbyPage() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [clubId]);
 
@@ -133,7 +136,7 @@ export default function TournamentLobbyPage() {
         const channelMap = channelRefsRef.current;
         for (const [tourneyId, channel] of channelMap.entries()) {
             if (!runningTournamentIds.includes(tourneyId)) {
-                supabase.removeChannel(channel);
+                masterBus.removeRegisteredChannel(`t-break-${tourneyId}`);
                 channelMap.delete(tourneyId);
             }
         }
@@ -142,8 +145,11 @@ export default function TournamentLobbyPage() {
         runningTournamentIds.forEach(tournamentId => {
             if (channelMap.has(tournamentId)) return; // Already subscribed
 
-            const channel = supabase
-                .channel(`t-break-${tournamentId}`)
+            const channelKey = `t-break-${tournamentId}`;
+
+
+            const channel = masterBus.getOrCreateChannel(channelKey);
+                channel
                 .on(
                     'broadcast',
                     { event: 'tournament_event' },
@@ -203,8 +209,8 @@ export default function TournamentLobbyPage() {
 
         return () => {
             // Cleanup all channels on unmount
-            for (const channel of channelRefsRef.current.values()) {
-                supabase.removeChannel(channel);
+            for (const [tourneyId] of channelRefsRef.current.entries()) {
+                masterBus.removeRegisteredChannel(`t-break-${tourneyId}`);
             }
             channelRefsRef.current.clear();
         };

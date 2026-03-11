@@ -8,7 +8,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase'
+import { masterBus } from '../core/MasterBus';;
 import { LeaderboardService } from '../services/LeaderboardService';
 import type { LeaderboardEntry, LeaderboardMetric, LeaderboardPeriod, TournamentStats } from '../services/LeaderboardService';
 import { getUserMemberships } from '../services/ClubsService';
@@ -96,8 +97,10 @@ export default function LeaderboardPage() {
             }
 
             // Subscribe to real-time leaderboard updates
-            const channel = supabase
-                .channel('leaderboard-updates')
+            const channelKey = 'leaderboard-updates';
+
+            const channel = masterBus.getOrCreateChannel(channelKey);
+                channel
                 .on(
                     'postgres_changes',
                     {
@@ -112,8 +115,10 @@ export default function LeaderboardPage() {
                 .subscribe();
 
             // Also subscribe to tournament updates
-            const tourneyChannel = supabase
-                .channel('tournament-leaderboard-updates')
+            const tourneyChannelKey = 'tournament-leaderboard-updates';
+
+            const tourneyChannel = masterBus.getOrCreateChannel(tourneyChannelKey);
+                tourneyChannel
                 .on(
                     'postgres_changes',
                     {
@@ -137,8 +142,8 @@ export default function LeaderboardPage() {
             }, 30000);
 
             return () => {
-                supabase.removeChannel(channel);
-                supabase.removeChannel(tourneyChannel);
+                masterBus.removeRegisteredChannel(channelKey);
+                masterBus.removeRegisteredChannel(tourneyChannelKey);
                 if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
             };
         } else {

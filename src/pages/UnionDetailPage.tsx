@@ -13,7 +13,8 @@ import { tableService } from '../services/TableService';
 import { clubService } from '../services/ClubService';
 import { useUserStore } from '../stores/useUserStore';
 import { presenceService } from '../services/PresenceService';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase'
+import { masterBus } from '../core/MasterBus';;
 import type { PokerTable, Club, Tournament } from '../types/database.types';
 import { useUnionStore } from '../stores/useUnionStore';
 import styles from './UnionDetailPage.module.css';
@@ -266,8 +267,11 @@ export default function UnionDetailPage() {
             }
         };
 
-        const channel = supabase
-            .channel(`union-detail-${unionId}`)
+        const channelKey = `union-detail-${unionId}`;
+
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
@@ -306,7 +310,7 @@ export default function UnionDetailPage() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [unionId, union?.settings?.crossClubTournaments, clubs]);
 

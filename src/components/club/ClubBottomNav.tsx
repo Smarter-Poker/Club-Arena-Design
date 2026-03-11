@@ -7,7 +7,8 @@
 
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import { useUserStore } from '../../stores/useUserStore';
 import styles from './ClubBottomNav.module.css';
 
@@ -45,8 +46,10 @@ export default function ClubBottomNav({ clubId, userRole = 'member', clubName }:
             });
 
         // Subscribe to new notifications
-        const channel = supabase
-            .channel(`nav-notif-badge-${user.id}`)
+        const channelKey = `nav-notif-badge-${user.id}`;
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on(
                 'postgres_changes',
                 {
@@ -77,7 +80,7 @@ export default function ClubBottomNav({ clubId, userRole = 'member', clubName }:
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [user?.id]);
 

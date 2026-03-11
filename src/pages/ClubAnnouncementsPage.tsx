@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import { useToast } from '../components/common/Toast';
@@ -46,8 +47,9 @@ export default function ClubAnnouncementsPage() {
             loadAnnouncements();
 
             // Real-time announcements - subscribe to INSERT, UPDATE, DELETE
-            const channel = supabase
-                .channel(`announcements-${clubId}`)
+            const channelKey = `announcements-${clubId}`;
+            const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
                 .on(
                     'postgres_changes',
                     {
@@ -57,7 +59,6 @@ export default function ClubAnnouncementsPage() {
                         filter: `club_id=eq.${clubId}`,
                     },
                     (payload) => {
-                        // Handle any announcement change
                         if (payload.eventType === 'INSERT') {
                             toast.info(' New announcement posted!');
                         } else if (payload.eventType === 'UPDATE') {
@@ -71,7 +72,7 @@ export default function ClubAnnouncementsPage() {
                 .subscribe();
 
             return () => {
-                supabase.removeChannel(channel);
+                masterBus.removeRegisteredChannel(channelKey);
             };
         }
     }, [clubId]);

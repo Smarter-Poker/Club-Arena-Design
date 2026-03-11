@@ -3,7 +3,8 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase'
+import { masterBus } from '../core/MasterBus';;
 import { useUserStore } from '../stores/useUserStore';
 import { vipService, VIP_GOLD_LIMITS, FEATURE_PRICING, type VIPFeature } from '../services/VIPService';
 import { VIPCardsModal } from '../components/vip/VIPCardsModal';
@@ -37,8 +38,10 @@ export default function VIPPage() {
 
         // Real-time profile updates (diamonds, VIP status)
         if (user?.id) {
-            const channel = supabase
-                .channel('vip-status')
+            const channelKey = 'vip-status';
+
+            const channel = masterBus.getOrCreateChannel(channelKey);
+                channel
                 .on(
                     'postgres_changes',
                     {
@@ -57,7 +60,7 @@ export default function VIPPage() {
                 .subscribe();
 
             return () => {
-                supabase.removeChannel(channel);
+                masterBus.removeRegisteredChannel(channelKey);
             };
         }
     }, [user?.id]);

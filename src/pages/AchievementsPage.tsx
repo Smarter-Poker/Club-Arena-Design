@@ -7,7 +7,8 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase'
+import { masterBus } from '../core/MasterBus';;
 import { useUserStore } from '../stores/useUserStore';
 import AchievementBadge, { AchievementGrid } from '../components/achievements/AchievementBadge';
 import { achievementService, ACHIEVEMENTS as SERVICE_ACHIEVEMENTS } from '../services/AchievementService';
@@ -75,8 +76,10 @@ export default function AchievementsPage() {
             loadAchievements();
 
             // Subscribe to real-time achievement unlocks
-            const channel = supabase
-                .channel(`user-achievements-${user.id}`)
+            const channelKey = `user-achievements-${user.id}`;
+
+            const channel = masterBus.getOrCreateChannel(channelKey);
+                channel
                 .on(
                     'postgres_changes',
                     {
@@ -111,7 +114,7 @@ export default function AchievementsPage() {
                 .subscribe();
 
             return () => {
-                supabase.removeChannel(channel);
+                masterBus.removeRegisteredChannel(channelKey);
                 if (unlockTimerRef.current) clearTimeout(unlockTimerRef.current);
             };
         }

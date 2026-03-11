@@ -1079,8 +1079,10 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                         }));
 
                         // Subscribe to real-time bounty updates (store in ref for cleanup)
-                        const bountyChannel = supabase
-                            .channel(`bounty-${table.tournament_id}`)
+                        const bountyChannelKey = `bounty-${table.tournament_id}`;
+
+                        const bountyChannel = masterBus.getOrCreateChannel(bountyChannelKey);
+                            bountyChannel
                             .on('postgres_changes', {
                                 event: 'UPDATE',
                                 schema: 'public',
@@ -1110,8 +1112,10 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
 
                 // Subscribe to tournament break + add-on events via Realtime
                 if (table.tournament_id) {
-                    const breakChan = supabase
-                        .channel(`t-break-${table.tournament_id}`)
+                    const breakChanKey = `t-break-${table.tournament_id}`;
+
+                    const breakChan = masterBus.getOrCreateChannel(breakChanKey);
+                        breakChan
                         .on('broadcast', { event: 'tournament_event' }, (payload: any) => {
                             const data = payload.payload;
                             if (data?.type === 'tournament_break' || data?.type === 'BREAK_START') {

@@ -4,7 +4,8 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase'
+import { masterBus } from '../core/MasterBus';;
 import { useUserStore } from '../stores/useUserStore';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import './RakebackPage.css';
@@ -65,8 +66,10 @@ export default function RakebackPage() {
         if (!user?.id) return;
 
         // Real-time updates when rakeback periods change
-        const rakebackChannel = supabase
-            .channel('rakeback-updates')
+        const rakebackChannelKey = 'rakeback-updates';
+
+        const rakebackChannel = masterBus.getOrCreateChannel(rakebackChannelKey);
+            rakebackChannel
             .on(
                 'postgres_changes',
                 {
@@ -80,8 +83,10 @@ export default function RakebackPage() {
             .subscribe();
 
         // Real-time updates when wallet changes (balance/earnings)
-        const walletChannel = supabase
-            .channel('wallet-updates')
+        const walletChannelKey = 'wallet-updates';
+
+        const walletChannel = masterBus.getOrCreateChannel(walletChannelKey);
+            walletChannel
             .on(
                 'postgres_changes',
                 {
@@ -95,8 +100,8 @@ export default function RakebackPage() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(rakebackChannel);
-            supabase.removeChannel(walletChannel);
+            masterBus.removeRegisteredChannel(rakebackChannelKey);
+            masterBus.removeRegisteredChannel(walletChannelKey);
         };
     }, [user?.id]);
 

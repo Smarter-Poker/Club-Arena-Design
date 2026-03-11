@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { masterBus } from '../core/MasterBus';
 import { ClubsService } from '../services/ClubsService';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
@@ -80,8 +81,9 @@ export default function ClubSettingsPage() {
     // ── Realtime: live club settings changes ──
     useEffect(() => {
         if (!clubId) return;
-        const channel = supabase
-            .channel(`club-settings-${clubId}`)
+        const channelKey = `club-settings-${clubId}`;
+        const channel = masterBus.getOrCreateChannel(channelKey);
+        channel
             .on('postgres_changes', {
                 event: 'UPDATE',
                 schema: 'public',
@@ -91,7 +93,7 @@ export default function ClubSettingsPage() {
                 loadClubSettings();
             })
             .subscribe();
-        return () => { supabase.removeChannel(channel); };
+        return () => { masterBus.removeRegisteredChannel(channelKey); };
     }, [clubId]);
 
     const loadClubSettings = async () => {

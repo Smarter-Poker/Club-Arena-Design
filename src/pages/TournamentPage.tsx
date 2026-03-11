@@ -9,7 +9,8 @@ import { tournamentService, BLIND_STRUCTURES, PAYOUT_STRUCTURES } from '../servi
 import type { Tournament } from '../types/database.types';
 import CreateTournamentModal from '../components/club/CreateTournamentModal';
 import './TournamentPage.css';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase'
+import { masterBus } from '../core/MasterBus';;
 import { useUserStore } from '../stores/useUserStore';
 import EliminationOverlay from '../components/tournament/EliminationOverlay';
 import HandReplayViewer from '../components/gameplay/HandReplayViewer';
@@ -126,8 +127,11 @@ export default function TournamentPage() {
     useEffect(() => {
         if (!clubId) return;
 
-        const channel = supabase
-            .channel(`tournament-page-${clubId}`)
+        const channelKey = `tournament-page-${clubId}`;
+
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on(
                 'postgres_changes',
                 {
@@ -154,7 +158,7 @@ export default function TournamentPage() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [clubId]);
 
@@ -334,8 +338,11 @@ export default function TournamentPage() {
     useEffect(() => {
         if (!selectedTournament?.id) return;
 
-        const channel = supabase
-            .channel(`t-break-${selectedTournament.id}`)
+        const channelKey = `t-break-${selectedTournament.id}`;
+
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on(
                 'broadcast',
                 { event: 'tournament_event' },
@@ -427,7 +434,7 @@ export default function TournamentPage() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [selectedTournament?.id, toast]);
 

@@ -4,7 +4,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase'
+import { masterBus } from '../core/MasterBus';;
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import {
@@ -107,8 +108,10 @@ export default function PlayerStatsPage() {
     // ── Realtime: live stats updates when new hands complete ──
     useEffect(() => {
         if (!targetUserId) return;
-        const channel = supabase
-            .channel(`player-stats-${targetUserId}`)
+        const channelKey = `player-stats-${targetUserId}`;
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
@@ -118,7 +121,7 @@ export default function PlayerStatsPage() {
                 loadSessionHistory();
             })
             .subscribe();
-        return () => { supabase.removeChannel(channel); };
+        return () => { masterBus.removeRegisteredChannel(channelKey); };
     }, [targetUserId]);
 
     const loadStats = async () => {

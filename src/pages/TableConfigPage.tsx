@@ -14,7 +14,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase'
+import { masterBus } from '../core/MasterBus';;
 import { useToast } from '../components/common/Toast';
 import './TableConfigPage.css';
 
@@ -329,8 +330,10 @@ export default function TableConfigPage() {
     // ── Realtime: live template updates ──
     useEffect(() => {
         if (!clubId) return;
-        const channel = supabase
-            .channel(`table-config-${clubId}`)
+        const channelKey = `table-config-${clubId}`;
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
@@ -346,7 +349,7 @@ export default function TableConfigPage() {
                     .then(({ data }) => { if (data) setTemplates(data); });
             })
             .subscribe();
-        return () => { supabase.removeChannel(channel); };
+        return () => { masterBus.removeRegisteredChannel(channelKey); };
     }, [clubId]);
 
     // Generate default table name

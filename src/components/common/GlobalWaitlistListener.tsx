@@ -18,6 +18,8 @@ import { masterBus } from '../../core/MasterBus';
 import { useToast } from './Toast';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
+const WAITLIST_CHANNEL_KEY = 'global-waitlist-auto-seat';
+
 export default function GlobalWaitlistListener() {
     const { user } = useUserStore();
     const navigate = useNavigate();
@@ -31,11 +33,11 @@ export default function GlobalWaitlistListener() {
 
         // Prevent duplicate channels
         if (channelRef.current) {
-            supabase.removeChannel(channelRef.current);
+            masterBus.removeRegisteredChannel(WAITLIST_CHANNEL_KEY);
         }
 
-        const channel = supabase
-            .channel('global-waitlist-auto-seat')
+        const channel = masterBus.getOrCreateChannel(WAITLIST_CHANNEL_KEY);
+            channel
             .on(
                 'postgres_changes',
                 {
@@ -112,7 +114,7 @@ export default function GlobalWaitlistListener() {
         const channel = setupChannel();
 
         return () => {
-            if (channel) supabase.removeChannel(channel);
+            if (channel) masterBus.removeRegisteredChannel(WAITLIST_CHANNEL_KEY);
             if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
         };
     }, [setupChannel]);

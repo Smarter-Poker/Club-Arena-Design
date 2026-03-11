@@ -5,7 +5,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { waitlistService, type WaitlistEntry as ServiceEntry } from '../services/WaitlistService';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase'
+import { masterBus } from '../core/MasterBus';;
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import './WaitlistPage.css';
@@ -42,8 +43,10 @@ export default function WaitlistPage() {
             loadWaitlist();
 
             // Subscribe to real-time waitlist changes
-            const channel = supabase
-                .channel('user-waitlist')
+            const channelKey = 'user-waitlist';
+
+            const channel = masterBus.getOrCreateChannel(channelKey);
+                channel
                 .on(
                     'postgres_changes',
                     {
@@ -60,7 +63,7 @@ export default function WaitlistPage() {
                 .subscribe();
 
             return () => {
-                supabase.removeChannel(channel);
+                masterBus.removeRegisteredChannel(channelKey);
             };
         }
     }, [user?.id]);

@@ -2,17 +2,14 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  * CLUB ARENA — Home Page (World Hub Cinematic Design)
  * ═══════════════════════════════════════════════════════════════════════════════
- * Layout Structure:
- * - GlobalHeader (hub-style, hidden in iframe)
- * - Dark cinematic background (grid floor + volumetric light + vignette)
- * - Action Bar: CREATE A CLUB | FIND A PLAYER | JOIN A CLUB
- * - Featured Club: Shark Club (holographic center card)
- * - My Clubs: Holographic card row
- * - Daily Challenges: Glass-morphism panel
- * - Bottom tiles: Holographic standing cards
+ * Phase 4: 16 Advanced Enhancements
+ * - Architecture: Extracted DailyChallenges, ClubContextMenu, lobbyTiles config
+ * - Core UX: Keyboard shortcuts, pin favorites, leave confirmation, timestamps
+ * - Polish: Card entrance, prefetch, search, haptic, sound, seasonal, tooltip
+ * - Accessibility: ARIA, focus traps, keyboard nav, offline indicator
  */
 
-import { useState, useEffect, useRef, useCallback, lazy, Suspense, Component } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense, Component, useMemo } from 'react';
 import type { ReactNode, ErrorInfo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -21,6 +18,9 @@ import { useToast } from '../components/common/Toast';
 import GlobalHeader from '../components/navigation/GlobalHeader';
 import haptic from '../services/HapticService';
 import { masterBus } from '../core/MasterBus';
+import DailyChallenges from '../components/home/DailyChallenges';
+import ClubContextMenu from '../components/home/ClubContextMenu';
+import LOBBY_TILES from '../config/lobbyTiles.config';
 import styles from './HomePage.module.css';
 
 // Lazy-load heavy components to reduce initial bundle
@@ -29,18 +29,13 @@ const FindPlayerModal = lazy(() => import('../components/modals/FindPlayerModal'
 const ClubStatsPanel = lazy(() => import('../components/club/ClubStatsPanel'));
 
 const LAST_VISITED_KEY = 'club_arena_last_visited';
-const LAST_CLUB_KEY = 'club_arena_last_club'; // For Cashier routing
-const SWR_CACHE_KEY = 'club_arena_clubs_cache'; // Enhancement #9: SWR cache
+const LAST_CLUB_KEY = 'club_arena_last_club';
+const SWR_CACHE_KEY = 'club_arena_clubs_cache';
+const PINNED_CLUBS_KEY = 'club_arena_pinned_clubs';
+const SOUNDS_ENABLED_KEY = 'club_arena_sounds';
 
 // Action button images
 const ACTION_BAR_HORIZONTAL = `${import.meta.env.BASE_URL}images/icons/action-bar-horizontal.png`;
-
-// Bottom Row Tile Images (baked cards)
-const TILE_PLAYER_STATS = `${import.meta.env.BASE_URL}images/tiles/player-stats.jpg`;
-const TILE_LEADERBOARDS = `${import.meta.env.BASE_URL}images/tiles/leaderboards.jpg`;
-const TILE_CASHIER = `${import.meta.env.BASE_URL}images/tiles/cashier.jpg`;
-const TILE_MARKETPLACE = `${import.meta.env.BASE_URL}images/tiles/marketplace.jpg`;
-const TILE_HAND_HISTORIES = `${import.meta.env.BASE_URL}images/tiles/hand-histories.jpg`;
 
 // Enhancement #9: Unique gradient CSS classes for logo-less club cards
 const GRADIENT_CLASSES = [
@@ -50,6 +45,39 @@ const GRADIENT_CLASSES = [
     styles.clubCardGradient4,
     styles.clubCardGradient5,
 ] as const;
+
+// #12: Seasonal theme detection
+function getSeasonalTheme(): string {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    if (month === 12 && day >= 15) return 'christmas';
+    if (month === 1 && day <= 7) return 'newyear';
+    if (month === 6 || month === 7) return 'wsop'; // WSOP season
+    if (month === 10 && day >= 25) return 'halloween';
+    return 'default';
+}
+
+// #12: Seasonal gradient overrides
+const SEASONAL_GRADIENTS: Record<string, string> = {
+    christmas: 'linear-gradient(180deg, #0a1218 0%, #0d1a0d 50%, #0a1218 100%)',
+    newyear: 'linear-gradient(180deg, #0a0a12 0%, #1a0a1a 50%, #0a0a12 100%)',
+    wsop: 'linear-gradient(180deg, #0a0a12 0%, #1a1205 50%, #0a0a12 100%)',
+    halloween: 'linear-gradient(180deg, #0a0a12 0%, #1a0f05 50%, #0a0a12 100%)',
+    default: '',
+};
+
+// #11: Sound effects utility
+const SFX = {
+    play: (soundName: string) => {
+        try {
+            if (localStorage.getItem(SOUNDS_ENABLED_KEY) === 'false') return;
+            const audio = new Audio(`${import.meta.env.BASE_URL}sounds/${soundName}.mp3`);
+            audio.volume = 0.3;
+            audio.play().catch(() => { /* user hasn't interacted yet */ });
+        } catch { /* ignore */ }
+    },
+};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Enhancement #10: Error Boundary Wrapper
@@ -141,6 +169,35 @@ function HomePageInner() {
     // Enhancement #8: Notification badges (unread counts)
     const [tileBadges, setTileBadges] = useState<Record<string, number>>({});
 
+    // #1: Keyboard shortcuts active flag
+    const [showShortcutHint, setShowShortcutHint] = useState(false);
+
+    // #2: Pinned clubs (persisted in localStorage)
+    const [pinnedClubIds, setPinnedClubIds] = useState<string[]>(() => {
+        try { return JSON.parse(localStorage.getItem(PINNED_CLUBS_KEY) || '[]'); }
+        catch { return []; }
+    });
+
+    // #4: Leave confirmation modal
+    const [leaveConfirm, setLeaveConfirm] = useState<{ visible: boolean; club: any } | null>(null);
+
+    // #9: Search/filter
+    const [searchQuery, setSearchQuery] = useState('');
+
+    // #11: Sound effects toggle
+    const [soundsEnabled, setSoundsEnabled] = useState(() => {
+        return localStorage.getItem(SOUNDS_ENABLED_KEY) !== 'false';
+    });
+
+    // #12: Seasonal theme
+    const seasonalTheme = useMemo(() => getSeasonalTheme(), []);
+
+    // #13: Tooltip state
+    const [tooltipClub, setTooltipClub] = useState<{ club: any; x: number; y: number } | null>(null);
+
+    // #15: Online status
+    const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+
     // JOIN A CLUB modal state
     const [showJoinModal, setShowJoinModal] = useState(false);
     const [showCreateClubModal, setShowCreateClubModal] = useState(false);
@@ -161,6 +218,18 @@ function HomePageInner() {
         clubLevel: 1,
         activePlayers: 0,
     });
+
+    // #15: Online/Offline detection
+    useEffect(() => {
+        const goOnline = () => setIsOnline(true);
+        const goOffline = () => setIsOnline(false);
+        window.addEventListener('online', goOnline);
+        window.addEventListener('offline', goOffline);
+        return () => {
+            window.removeEventListener('online', goOnline);
+            window.removeEventListener('offline', goOffline);
+        };
+    }, []);
 
     // ═══════════════════════════════════════════════════════════════════════════════
     // DATA FETCHING (with SWR cache)

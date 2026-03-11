@@ -4,7 +4,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase'
+import { masterBus } from '../core/MasterBus';;
 import { useUserStore } from '../stores/useUserStore';
 import { bonusService } from '../services/BonusService';
 import { useToast } from '../components/common/Toast';
@@ -43,8 +44,10 @@ export default function BonusPage() {
             loadBonuses();
 
             // Real-time bonus updates
-            const channel = supabase
-                .channel('bonuses-live')
+            const channelKey = 'bonuses-live';
+
+            const channel = masterBus.getOrCreateChannel(channelKey);
+                channel
                 .on(
                     'postgres_changes',
                     {
@@ -61,7 +64,7 @@ export default function BonusPage() {
                 .subscribe();
 
             return () => {
-                supabase.removeChannel(channel);
+                masterBus.removeRegisteredChannel(channelKey);
             };
         }
     }, [user?.id]);

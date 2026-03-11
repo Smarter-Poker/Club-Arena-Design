@@ -7,7 +7,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import { useUserStore } from '../../stores/useUserStore';
 import styles from './ConversationList.module.css';
 
@@ -180,8 +181,10 @@ export default function ConversationList({ clubId, onSelectConversation, selecte
         initHeartbeat();
 
         // Real-time subscription for new messages
-        const channel = supabase
-            .channel('conversations-updates')
+        const channelKey = 'conversations-updates';
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
@@ -194,7 +197,7 @@ export default function ConversationList({ clubId, onSelectConversation, selecte
 
         return () => {
             if (heartbeatRef.current) clearInterval(heartbeatRef.current);
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [loadConversations, loadClubMessagesCount, initHeartbeat]);
 

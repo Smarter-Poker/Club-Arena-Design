@@ -6,7 +6,8 @@
  */
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import styles from './PresenceIndicator.module.css';
 
 interface PresenceIndicatorProps {
@@ -69,8 +70,10 @@ export default function PresenceIndicator({
         fetchPresence();
 
         // Subscribe to realtime changes
-        const channel = supabase
-            .channel(`presence:${userId}`)
+        const channelKey = `presence:${userId}`;
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
@@ -89,7 +92,7 @@ export default function PresenceIndicator({
 
         return () => {
             isMounted = false;
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [userId]);
 

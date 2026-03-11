@@ -4,7 +4,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase'
+import { masterBus } from '../core/MasterBus';;
 import { AgentService } from '../services/AgentService';
 import type { Agent, AgentPlayer } from '../services/AgentService';
 import { CommissionService } from '../services/CommissionService';
@@ -67,8 +68,10 @@ export default function SuperAgentDashboard() {
             loadDashboardData();
 
             // Real-time updates for agent activity
-            const channel = supabase
-                .channel('super-agent-live')
+            const channelKey = 'super-agent-live';
+
+            const channel = masterBus.getOrCreateChannel(channelKey);
+                channel
                 .on(
                     'postgres_changes',
                     {
@@ -91,7 +94,7 @@ export default function SuperAgentDashboard() {
                 .subscribe();
 
             return () => {
-                supabase.removeChannel(channel);
+                masterBus.removeRegisteredChannel(channelKey);
             };
         }
     }, [clubId, user?.id]);

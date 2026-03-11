@@ -8,7 +8,8 @@ import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { clubService } from '../../services/ClubService';
 import { tableService } from '../../services/TableService';
 import { tournamentService } from '../../services/TournamentService';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import type { Club, PokerTable, Tournament } from '../../types/database.types';
 import ClubBottomNav from '../../components/club/ClubBottomNav';
 import './ClubLobby.css';
@@ -66,8 +67,11 @@ export default function ClubLobby() {
     useEffect(() => {
         if (!clubId) return;
 
-        const channel = supabase
-            .channel(`club-lobby-${clubId}`)
+        const channelKey = `club-lobby-${clubId}`;
+
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on(
                 'postgres_changes',
                 {
@@ -111,7 +115,7 @@ export default function ClubLobby() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [clubId]);
 

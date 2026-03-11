@@ -9,6 +9,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import MessageThread from '../components/messaging/MessageThread';
@@ -108,8 +109,9 @@ export default function ClubMessagesPage() {
         loadClubConversations();
 
         // Real-time subscription
-        const channel = supabase
-            .channel('club-messages-updates')
+        const channelKey = 'club-messages-updates';
+        const channel = masterBus.getOrCreateChannel(channelKey);
+        channel
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
@@ -120,7 +122,7 @@ export default function ClubMessagesPage() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [loadClubConversations]);
 

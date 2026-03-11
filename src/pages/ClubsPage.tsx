@@ -10,6 +10,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { masterBus } from '../core/MasterBus';
 import { ClubsService } from '../services/ClubsService';
 import { LoadingState, NoClubsEmpty } from '../components/common/EmptyState';
 import { CardSkeleton } from '../components/skeletons/CardSkeleton';
@@ -102,12 +103,13 @@ export default function ClubsPage() {
         loadMyClubs();
 
         // Realtime: refresh clubs when membership data changes
-        const channel = supabase
-            .channel('clubs-page-live')
+        const channelKey = 'clubs-page-live';
+        const channel = masterBus.getOrCreateChannel(channelKey);
+        channel
             .on('postgres_changes', { event: '*', schema: 'public', table: 'club_members' }, () => loadMyClubs())
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'clubs' }, () => loadMyClubs())
             .subscribe();
-        return () => { supabase.removeChannel(channel); };
+        return () => { masterBus.removeRegisteredChannel(channelKey); };
     }, []);
 
     // Join club by ID

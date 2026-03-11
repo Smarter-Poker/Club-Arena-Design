@@ -13,7 +13,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import { tableService } from '../../services/TableService';
 
 interface TableInfo {
@@ -368,8 +369,10 @@ export default function TableOperationsPanel({ clubId }: Props) {
 
     // ─── Realtime subscription ─────────────────────────────────────────────────
     useEffect(() => {
-        const channel = supabase
-            .channel('table-ops-live')
+        const channelKey = 'table-ops-live';
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on('postgres_changes', { event: '*', schema: 'public', table: 'tables', filter: `club_id=eq.${clubId}` }, () => loadTables())
             .on('postgres_changes', { event: '*', schema: 'public', table: 'table_seats' }, () => {
                 // Refresh seated players for expanded table
@@ -377,7 +380,7 @@ export default function TableOperationsPanel({ clubId }: Props) {
             })
             .subscribe();
 
-        return () => { supabase.removeChannel(channel); };
+        return () => { masterBus.removeRegisteredChannel(channelKey); };
     }, [clubId, expandedTable, loadTables]);
 
     // ─── Load seated players for a table ───────────────────────────────────────

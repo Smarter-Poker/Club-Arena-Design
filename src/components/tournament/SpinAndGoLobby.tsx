@@ -5,7 +5,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import { useUserStore } from '../../stores/useUserStore';
 import { useToast } from '../common/Toast';
 import './SpinAndGoLobby.css';
@@ -55,8 +56,10 @@ export function SpinAndGoLobby({ clubId, onRegister }: SpinAndGoLobbyProps) {
         loadTournaments();
 
         // Subscribe to updates
-        const channel = supabase
-            .channel('spin-tournaments')
+        const channelKey = 'spin-tournaments';
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
@@ -65,7 +68,7 @@ export function SpinAndGoLobby({ clubId, onRegister }: SpinAndGoLobbyProps) {
             }, () => loadTournaments())
             .subscribe();
 
-        return () => { supabase.removeChannel(channel); };
+        return () => { masterBus.removeRegisteredChannel(channelKey); };
     }, [clubId]);
 
     const loadTournaments = async () => {

@@ -13,6 +13,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import IntroVideo from '../components/IntroVideo';
 import './ClubCarouselPage.css';
@@ -88,12 +89,13 @@ export default function ClubCarouselPage() {
 
     // Realtime: refresh when club data changes
     useEffect(() => {
-        const channel = supabase
-            .channel('club-carousel-live')
+        const channelKey = 'club-carousel-live';
+        const channel = masterBus.getOrCreateChannel(channelKey);
+        channel
             .on('postgres_changes', { event: '*', schema: 'public', table: 'club_members' }, () => loadUserData())
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'clubs' }, () => loadUserData())
             .subscribe();
-        return () => { supabase.removeChannel(channel); };
+        return () => { masterBus.removeRegisteredChannel(channelKey); };
     }, []);
 
     // Stagger animation for club cards

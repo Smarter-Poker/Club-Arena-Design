@@ -4,7 +4,8 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase'
+import { masterBus } from '../core/MasterBus';;
 import { useUserStore } from '../stores/useUserStore';
 import './NotificationsPage.css';
 
@@ -31,8 +32,10 @@ export default function NotificationsPage() {
             loadNotifications();
 
             // Subscribe to real-time notifications
-            const channel = supabase
-                .channel('user-notifications')
+            const channelKey = 'user-notifications';
+
+            const channel = masterBus.getOrCreateChannel(channelKey);
+                channel
                 .on(
                     'postgres_changes',
                     {
@@ -60,7 +63,7 @@ export default function NotificationsPage() {
                 .subscribe();
 
             return () => {
-                supabase.removeChannel(channel);
+                masterBus.removeRegisteredChannel(channelKey);
             };
         }
     }, [user?.id]);

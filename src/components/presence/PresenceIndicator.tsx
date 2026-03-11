@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import './PresenceIndicator.css';
 
 interface PresenceState {
@@ -29,8 +30,10 @@ export const PresenceIndicator: React.FC<PresenceIndicatorProps> = ({
         fetchPresence();
 
         // Subscribe to presence changes
-        const channel = supabase
-            .channel(`presence:${userId}`)
+        const channelKey = `presence:${userId}`;
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on('presence', { event: 'sync' }, () => {
                 const state = channel.presenceState();
                 const rawState = state[userId]?.[0];
@@ -42,7 +45,7 @@ export const PresenceIndicator: React.FC<PresenceIndicatorProps> = ({
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [userId]);
 

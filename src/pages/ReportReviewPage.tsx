@@ -4,7 +4,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase'
+import { masterBus } from '../core/MasterBus';;
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
@@ -49,8 +50,10 @@ export default function ReportReviewPage() {
 
     // ── Realtime: live updates for new/updated reports ──
     useEffect(() => {
-        const channel = supabase
-            .channel('report-review-realtime')
+        const channelKey = 'report-review-realtime';
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
@@ -68,7 +71,7 @@ export default function ReportReviewPage() {
             })
             .subscribe();
 
-        return () => { supabase.removeChannel(channel); };
+        return () => { masterBus.removeRegisteredChannel(channelKey); };
     }, [clubId, filter]);
 
     const loadReports = async () => {

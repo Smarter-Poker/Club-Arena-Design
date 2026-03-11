@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import { useNavigate } from 'react-router-dom';
 import './NotificationCenter.css';
 
@@ -38,8 +39,10 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
 
     useEffect(() => {
         // Real-time subscription
-        const channel = supabase
-            .channel(`notifications:${userId}`)
+        const channelKey = `notifications:${userId}`;
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
@@ -52,7 +55,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [userId]);
 

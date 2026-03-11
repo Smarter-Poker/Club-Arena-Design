@@ -6,7 +6,8 @@
  */
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase'
+import { masterBus } from '../../core/MasterBus';;
 import styles from './TournamentBracket.module.css';
 
 interface BracketPlayer {
@@ -46,8 +47,10 @@ export default function TournamentBracket({
         loadPlayers();
 
         // Subscribe to realtime updates on tournament_players
-        const channel = supabase
-            .channel(`bracket-${tournamentId}`)
+        const channelKey = `bracket-${tournamentId}`;
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
@@ -62,7 +65,7 @@ export default function TournamentBracket({
         const pollInterval = setInterval(loadPlayers, 15000);
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
             clearInterval(pollInterval);
         };
     }, [tournamentId]);

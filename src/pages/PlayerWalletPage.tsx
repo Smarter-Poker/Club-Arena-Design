@@ -7,7 +7,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase'
+import { masterBus } from '../core/MasterBus';;
 import { useWalletStore } from '../stores/useWalletStore';
 import { useUserStore } from '../stores/useUserStore';
 import { TransactionHistory } from '../components/wallet/TransactionHistory';
@@ -60,8 +61,11 @@ export default function PlayerWalletPage() {
     useEffect(() => {
         if (!user?.id) return;
 
-        const channel = supabase
-            .channel(`user-wallet-${user.id}`)
+        const channelKey = `user-wallet-${user.id}`;
+
+
+        const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
             .on(
                 'postgres_changes',
                 {
@@ -98,7 +102,7 @@ export default function PlayerWalletPage() {
 
         // Cleanup on unmount
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [user?.id, loadBalances, loadDiamonds]);
 
