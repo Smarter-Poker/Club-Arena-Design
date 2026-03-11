@@ -825,3 +825,71 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CLUB LEVEL BADGE & PROGRESS
+═══════════════════════════════════════════════════════════════════════════════ */
+.club-card__level {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.club-card__online {
+    color: #00e676;
+    font-size: 0.8em;
+}
+
+.club-level-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    flex-shrink: 0;
+}
+
+.club-level-badge__number {
+    font-weight: 800;
+    font-size: 0.75rem;
+    color: #000;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.club-level-badge__tier {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.7);
+    white-space: nowrap;
+}
+
+.club-level-progress {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+}
+
+.club-level-progress__bar {
+    flex: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.club-level-progress__fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.club-level-progress__text {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.5);
+    flex-shrink: 0;
+    min-width: 28px;
+    text-align: right;
+}

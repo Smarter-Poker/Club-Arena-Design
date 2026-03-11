@@ -21,6 +21,7 @@ import { useWalletStore } from '../stores/useWalletStore';
 import haptic from '../services/HapticService';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import { CashGameCard, TournamentCard, SNGCard, SpinCard } from '../components/lobby/DynamicGameCard';
+import { getClubLevel, ClubLevelInfo } from '../utils/clubLevels';
 import './ClubHomePage.css';
 
 // Types
@@ -120,6 +121,7 @@ export default function ClubHomePage() {
     const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
     const [deletingTableId, setDeletingTableId] = useState<string | null>(null);
     const [isInUnion, setIsInUnion] = useState(false);
+    const [clubLevel, setClubLevel] = useState<ClubLevelInfo | null>(null);
 
     // User profile data
     const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
@@ -320,6 +322,31 @@ export default function ClubHomePage() {
                     if (allUcRows && allUcRows.length > 0) {
                         unionClubIds = allUcRows.map(r => r.club_id);
                     }
+
+                    // Aggregate member counts across ALL union clubs
+                    try {
+                        const { count: totalMembers } = await supabase
+                            .from('club_members')
+                            .select('*', { count: 'exact', head: true })
+                            .in('club_id', unionClubIds)
+                            .eq('status', 'active');
+
+                        const { count: onlineMembers } = await supabase
+                            .from('club_members')
+                            .select('*', { count: 'exact', head: true })
+                            .in('club_id', unionClubIds)
+                            .eq('status', 'active')
+                            .eq('is_online', true);
+
+                        // Override club display with union-wide aggregated counts
+                        setClub(prev => prev ? {
+                            ...prev,
+                            member_count: totalMembers || prev.member_count || 0,
+                            online_count: onlineMembers || prev.online_count || 0,
+                        } : prev);
+                    } catch {
+                        // is_online column may not exist — fall back to club-level counts
+                    }
                 }
             } catch {
                 // Query error — fail-open for standalone clubs
@@ -374,6 +401,24 @@ export default function ClubHomePage() {
             }
 
             setTournaments(allTournaments);
+
+            // Calculate Club Level from live metrics
+            const activeTables = tableData ? tableData.filter(t => t.status === 'running' || t.current_players > 0).length : 0;
+            const tournamentsHosted = allTournaments.length;
+            const clubAgeDays = clubData.created_at
+                ? Math.floor((Date.now() - new Date(clubData.created_at).getTime()) / 86400000)
+                : 0;
+
+            const levelInfo = getClubLevel({
+                memberCount: clubData.member_count || 0,
+                activeTables,
+                tournamentsHosted,
+                totalHandsPlayed: clubData.total_hands_played || 0,
+                totalRakeGenerated: clubData.total_rake_generated || 0,
+                isInUnion: !!unionId,
+                clubAgeDays,
+            });
+            setClubLevel(levelInfo);
 
             // Load BBJ amount (bbj_pools table may not exist yet — graceful fallback)
             try {
@@ -530,11 +575,31 @@ export default function ClubHomePage() {
                         <h2 className="club-card__name">{club.name}</h2>
                         <div className="club-card__meta">
                             <span className="club-card__id">ID: {club.club_id}</span>
-                            <span className="club-card__members">{club.member_count || 0}</span>
+                            <span className="club-card__members">{(club.member_count || 0).toLocaleString()}{club.online_count > 0 && <span className="club-card__online"> / {club.online_count.toLocaleString()} online</span>}</span>
                             <button className="club-card__share" title="Share" onClick={() => haptic.medium()}>
                                 <span className="icon-link"></span>
                             </button>
                         </div>
+                        {clubLevel && (
+                            <div className="club-card__level">
+                                <div className="club-level-badge" style={{ background: clubLevel.gradient }}>
+                                    <span className="club-level-badge__number">Lv.{clubLevel.level}</span>
+                                    <span className="club-level-badge__tier">{clubLevel.tierLabel}</span>
+                                </div>
+                                <div className="club-level-progress">
+                                    <div className="club-level-progress__bar">
+                                        <div
+                                            className="club-level-progress__fill"
+                                            style={{
+                                                width: `${clubLevel.progressPercent}%`,
+                                                background: clubLevel.gradient,
+                                            }}
+                                        />
+                                    </div>
+                                    <span className="club-level-progress__text">{clubLevel.progressPercent}%</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className="club-home__wallet">
