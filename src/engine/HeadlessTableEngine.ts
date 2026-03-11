@@ -1196,6 +1196,124 @@ export class HeadlessTableEngine {
     }
 
     // ═════════════════════════════════════════════════════════════════════════════
+    // PRIVATE: BBJ TRIGGER CHECK
+    // ═════════════════════════════════════════════════════════════════════════════
+
+    private async checkAndExecuteBBJTrigger(players: SeatedPlayer[]): Promise<void> {
+        // Need at least 2 players in showdown
+        if (this.currentHandShowdownResults.length < 2) {
+            return;
+        }
+
+        // Sort by hand ranking to identify winner and loser
+        const sorted = [...this.currentHandShowdownResults].sort((a, b) => {
+            // Higher ranking is better (lower number in hand evaluation)
+            const rankA = a.hand?.ranking ?? 999;
+            const rankB = b.hand?.ranking ?? 999;
+            return rankA - rankB;
+        });
+
+        const winner = sorted[0];
+        const loser = sorted[1];
+
+        if (!winner?.hand || !loser?.hand) {
+            return;
+        }
+
+        // Check if this hand qualifies for Bad Beat Jackpot
+        const gameVariant = (this.tableInfo?.game_variant || 'nlh') as BBJGameVariant;
+        const bbjResult = BBJService.checkBBJTrigger(loser.hand, winner.hand, gameVariant);
+
+        if (!bbjResult.triggered) {
+            return;
+        }
+
+        // BBJ triggered! Get the pool and execute payout
+        try {
+            const pool = await BBJService.getPool({
+                clubId: this.tableInfo?.club_id,
+            });
+
+            if (!pool) {
+                console.warn(`[HeadlessTableEngine:${this.tableId}] BBJ pool not found for club ${this.tableInfo?.club_id}`);
+                return;
+            }
+
+            // Get hand ID and other context
+            const handId = this.persistence.getCurrentHandId() || crypto.randomUUID();
+            const dealtInPlayerIds = players.map(p => p.user_id);
+
+            // Find winner and loser user IDs from showdown results
+            const winnerPlayer = players.find(p => p.user_id === winner.userId);
+            const loserPlayer = players.find(p => p.user_id === loser.userId);
+
+            if (!winnerPlayer || !loserPlayer) {
+                console.warn(`[HeadlessTableEngine:${this.tableId}] Could not find winner or loser in players`);
+                return;
+            }
+
+            if (!this.tableInfo) {
+                console.warn(`[HeadlessTableEngine:${this.tableId}] Table info is missing`);
+                return;
+            }
+
+            // Determine stakes tier from big blind
+            const stakesTier = this.tableInfo.big_blind
+                ? (this.tableInfo.big_blind <= 1 ? 'micro' :
+                   this.tableInfo.big_blind <= 5 ? 'low' :
+                   this.tableInfo.big_blind <= 20 ? 'mid' : 'high')
+                : 'mid';
+
+            // Execute the payout with full parameters
+            await BBJService.executePayout({
+                poolId: pool.id,
+                handId,
+                clubId: this.tableInfo.club_id,
+                tableId: this.tableId,
+                handNumber: this.handCount,
+                bigBlind: this.tableInfo.big_blind,
+                stakesTier,
+                gameVariant: gameVariant,
+                winnerUserId: winner.userId,
+                winnerHand: winner.hand.name || 'Unknown',
+                winnerCards: winner.cards?.join(', ') || '',
+                winnerDisplayName: winnerPlayer.username,
+                loserUserId: loser.userId,
+                loserHand: loser.hand.name || 'Unknown',
+                loserCards: loser.cards?.join(', ') || '',
+                loserDisplayName: loserPlayer.username,
+                dealtInPlayerIds,
+            });
+
+            console.log(
+                `[HeadlessTableEngine:${this.tableId}] BBJ TRIGGERED! ` +
+                `${loserPlayer.username} (${loser.hand.name}) lost to ` +
+                `${winnerPlayer.username} (${winner.hand.name})`
+            );
+
+            // Broadcast BBJ_HIT event for UI notification via table channel
+            try {
+                supabase.channel(`table:${this.tableId}`).send({
+                    type: 'broadcast',
+                    event: 'bbj_hit',
+                    payload: {
+                        table_id: this.tableId,
+                        winner_name: winnerPlayer.username,
+                        loser_name: loserPlayer.username,
+                        pool_amount: pool.main_balance,
+                    },
+                }).catch((err: unknown) => {
+                    console.warn(`[HeadlessTableEngine:${this.tableId}] Failed to broadcast BBJ event:`, err);
+                });
+            } catch (broadcastErr) {
+                console.warn(`[HeadlessTableEngine:${this.tableId}] BBJ broadcast error:`, broadcastErr);
+            }
+        } catch (err) {
+            console.error(`[HeadlessTableEngine:${this.tableId}] BBJ payout execution failed:`, err);
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════════
     // PRIVATE: RAKE CONFIG
     // ═════════════════════════════════════════════════════════════════════════════
 
