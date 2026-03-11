@@ -29,7 +29,7 @@ class ClubServiceClass {
             .from('club_members')
             .select('club_id, clubs(*)')
             .eq('user_id', userId)
-            .eq('status', 'active');
+            .in('status', ['active', 'approved']);
 
         if (error) throw error;
         return (data || []).map((m) => m.clubs as unknown as Club);
@@ -329,7 +329,7 @@ class ClubServiceClass {
             .from('club_members')
             .select('*', { count: 'exact', head: true })
             .eq('club_id', clubId)
-            .eq('status', 'active')
+            .in('status', ['active', 'approved'])
             .gte('last_active_at', fifteenMinAgo);
 
         if (!onlineError && onlineCount !== null) {
@@ -341,7 +341,7 @@ class ClubServiceClass {
             .from('club_members')
             .select('*', { count: 'exact', head: true })
             .eq('club_id', clubId)
-            .eq('status', 'active');
+            .in('status', ['active', 'approved']);
 
         if (error) throw error;
         return Math.floor((count || 0) * 0.15); // Conservative estimate
@@ -355,7 +355,7 @@ class ClubServiceClass {
             .from('club_members')
             .select('*', { count: 'exact', head: true })
             .eq('club_id', clubId)
-            .eq('status', 'active');
+            .in('status', ['active', 'approved']);
 
         if (error) throw error;
         return count || 0;

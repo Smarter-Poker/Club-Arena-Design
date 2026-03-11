@@ -362,13 +362,13 @@ export default function ClubHomePage() {
                             .from('club_members')
                             .select('*', { count: 'exact', head: true })
                             .in('club_id', unionClubIds)
-                            .eq('status', 'active');
+                            .in('status', ['active', 'approved']);
 
                         const { count: onlineMembers } = await supabase
                             .from('club_members')
                             .select('*', { count: 'exact', head: true })
                             .in('club_id', unionClubIds)
-                            .eq('status', 'active')
+                            .in('status', ['active', 'approved'])
                             .eq('is_online', true);
 
                         // Override club display with union-wide aggregated counts

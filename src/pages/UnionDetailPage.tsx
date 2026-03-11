@@ -179,6 +179,18 @@ export default function UnionDetailPage() {
                         pendingSettlements: settlementReport.clubBreakdowns.filter(c => c.wireDirection === 'PAY_TO_UNION').length,
                         overdueAmount,
                     });
+
+                    // Populate settlement history from club breakdowns
+                    setSettlements(settlementReport.clubBreakdowns.map((cb, idx) => ({
+                        id: `settlement-${idx}`,
+                        periodStart: settlementReport.periodStart,
+                        periodEnd: settlementReport.periodEnd,
+                        clubId: cb.clubId,
+                        clubName: cb.clubName,
+                        rakeGenerated: cb.rakeCollected,
+                        unionShare: cb.unionTaxPaid,
+                        status: cb.wireDirection === 'PAY_TO_UNION' ? 'pending' as const : 'paid' as const,
+                    })));
                 } catch {
                     // Fallback if no settlement data
                     setFinancialSummary({
@@ -514,13 +526,13 @@ export default function UnionDetailPage() {
                             <h3> Top Clubs</h3>
                             <div className={styles.clubList}>
                                 {clubs.slice(0, 5).map(club => (
-                                    <div key={club.clubId} className={styles.clubRow}>
+                                    <Link key={club.clubId} to={`/clubs/${club.clubId}`} className={styles.clubRow} style={{ textDecoration: 'none', color: 'inherit' }}>
                                         <div className={styles.clubAvatar}></div>
                                         <div className={styles.clubInfo}>
                                             <strong>{club.clubName}</strong>
-                                            <span>{club.memberCount} members</span>
+                                            <span>{club.memberCount} {club.memberCount === 1 ? 'member' : 'members'}</span>
                                         </div>
-                                    </div>
+                                    </Link>
                                 ))}
                             </div>
                         </div>
@@ -557,17 +569,19 @@ export default function UnionDetailPage() {
                 {activeTab === 'clubs' && (
                     <div className={styles.clubsGrid}>
                         {clubs.map(club => (
-                            <div key={club.clubId} className={`${styles.clubCard} ${visibleClubs.has(club.clubId) ? styles.fadeInUp : styles.hidden}`} style={visibleClubs.has(club.clubId) ? undefined : { opacity: 0, transform: 'translateY(8px)' }}>
+                            <Link key={club.clubId} to={`/clubs/${club.clubId}`} className={`${styles.clubCard} ${visibleClubs.has(club.clubId) ? styles.fadeInUp : styles.hidden}`} style={{ ...(visibleClubs.has(club.clubId) ? {} : { opacity: 0, transform: 'translateY(8px)' }), textDecoration: 'none', color: 'inherit' }}>
                                 <div className={styles.clubCardAvatar}></div>
                                 <div className={styles.clubCardInfo}>
                                     <h4>{club.clubName}</h4>
                                     <p>Owner: {club.ownerName || 'Unknown'}</p>
-                                    <span>{club.memberCount} members</span>
+                                    <span>{club.memberCount} {club.memberCount === 1 ? 'member' : 'members'}</span>
                                 </div>
                                 {union?.ownerId === user?.id && (
                                     <button
                                         className={styles.removeClubBtn}
-                                        onClick={() => {
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
                                             if (!unionId || removingClubId) return;
                                             setRemoveConfirm({ show: true, clubId: club.clubId, clubName: club.clubName });
                                         }}
@@ -576,7 +590,7 @@ export default function UnionDetailPage() {
                                         {removingClubId === club.clubId ? 'Removing...' : '✕ Remove'}
                                     </button>
                                 )}
-                            </div>
+                            </Link>
                         ))}
                     </div>
                 )}

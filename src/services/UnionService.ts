@@ -366,7 +366,7 @@ class UnionServiceClass {
                     .from('club_members')
                     .select('*', { count: 'exact', head: true })
                     .eq('club_id', uc.club_id)
-                    .eq('status', 'active');
+                    .in('status', ['active', 'approved']);
                 memberCount = count || 0;
             } catch {
                 // Silently ignore member count errors
@@ -609,7 +609,7 @@ class UnionServiceClass {
             .from('club_members')
             .select('*', { count: 'exact', head: true })
             .in('club_id', clubIds)
-            .eq('status', 'active');
+            .in('status', ['active', 'approved']);
 
         return {
             totalPlayers: totalPlayers || 0,

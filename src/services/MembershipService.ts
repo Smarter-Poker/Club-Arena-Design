@@ -251,7 +251,7 @@ export const MembershipService = {
                 )
             `)
             .eq('club_id', clubId)
-            .eq('status', 'active')
+            .in('status', ['active', 'approved'])
             .in('role', ['member', 'guest'])
             .order('joined_at', { ascending: false });
 
@@ -337,7 +337,7 @@ export const MembershipService = {
             .from('club_members')
             .select('*', { count: 'exact', head: true })
             .eq('club_id', clubId)
-            .eq('status', 'active');
+            .in('status', ['active', 'approved']);
 
         const { count: pending } = await supabase
             .from('club_members')
