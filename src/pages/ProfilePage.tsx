@@ -425,6 +425,54 @@ export default function ProfilePage() {
                 </button>
             </section>
 
+            {/* Achievement Showcase — always visible */}
+            {achievements.filter(a => a.unlockedAt).length > 0 && (
+                <section className={styles.xpSection}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <h3 style={{ margin: 0, fontSize: '0.875rem', color: '#8a9aaa', fontWeight: 600 }}>Top Achievements</h3>
+                        <button
+                            onClick={() => setActiveTab('achievements')}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#00d4ff',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                padding: '2px 6px',
+                            }}
+                        >
+                            View All
+                        </button>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+                        {achievements
+                            .filter(a => a.unlockedAt)
+                            .sort((a, b) => new Date(b.unlockedAt!).getTime() - new Date(a.unlockedAt!).getTime())
+                            .slice(0, 5)
+                            .map(a => (
+                                <div
+                                    key={a.id}
+                                    style={{
+                                        flex: '0 0 auto',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 6,
+                                        padding: '6px 10px',
+                                        background: 'rgba(255,255,255,0.04)',
+                                        border: '1px solid rgba(0,212,255,0.15)',
+                                        borderRadius: 8,
+                                        minWidth: 0,
+                                    }}
+                                >
+                                    <span style={{ fontSize: '1.25rem' }}>{a.icon || '★'}</span>
+                                    <span style={{ fontSize: '0.7rem', color: '#ccc', fontWeight: 600, whiteSpace: 'nowrap' }}>{a.name}</span>
+                                </div>
+                            ))}
+                    </div>
+                </section>
+            )}
+
             {/* Tab Navigation */}
             <nav className={styles.tabNav}>
                 <button className={`${styles.tab} ${activeTab === 'stats' ? styles.activeTab : ''}`} onClick={() => setActiveTab('stats')}>

@@ -7,6 +7,8 @@
 
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
+import { useUserStore } from '../../stores/useUserStore';
 import styles from './ClubBottomNav.module.css';
 
 interface ClubBottomNavProps {
@@ -17,6 +19,59 @@ interface ClubBottomNavProps {
 
 export default function ClubBottomNav({ clubId, userRole = 'member', clubName }: ClubBottomNavProps) {
     const location = useLocation();
+    const { user } = useUserStore();
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    // ── Live unread notification badge ──
+    useEffect(() => {
+        if (!user?.id) return;
+
+        // Initial count
+        supabase
+            .from('notifications')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('read', false)
+            .then(({ count }) => {
+                setUnreadCount(count || 0);
+            });
+
+        // Subscribe to new notifications
+        const channel = supabase
+            .channel(`nav-notif-badge-${user.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'notifications',
+                    filter: `user_id=eq.${user.id}`,
+                },
+                () => {
+                    setUnreadCount(prev => prev + 1);
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'notifications',
+                    filter: `user_id=eq.${user.id}`,
+                },
+                (payload) => {
+                    // If marked as read, decrement
+                    if ((payload.new as any).read === true && (payload.old as any).read === false) {
+                        setUnreadCount(prev => Math.max(0, prev - 1));
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user?.id]);
 
     // Check if user has elevated permissions (can see Players/Admin tabs)
     const hasAdminAccess = userRole === 'owner' || userRole === 'admin' || userRole === 'agent';
@@ -46,6 +101,11 @@ export default function ClubBottomNav({ clubId, userRole = 'member', clubName }:
                     <svg className={styles.icon} viewBox="0 0 24 24" fill="currentColor">
                         <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4V4c0-1.1-.9-2-2-2zm0 15.17L18.83 16H4V4h16v13.17zM7 9h10v2H7zm0-3h10v2H7zm0 6h7v2H7z" />
                     </svg>
+                    {unreadCount > 0 && (
+                        <span className={styles.badge}>
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                    )}
                     <span className={styles.label}>Messages</span>
                 </Link>
 

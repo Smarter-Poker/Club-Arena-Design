@@ -154,6 +154,37 @@ export default function ClubAnnouncementsPage() {
         });
     };
 
+    const handleTogglePin = async (id: string, currentlyPinned: boolean) => {
+        try {
+            const { error } = await supabase
+                .from('club_announcements')
+                .update({ is_pinned: !currentlyPinned })
+                .eq('id', id);
+
+            if (!error) {
+                loadAnnouncements();
+            }
+        } catch (err) {
+            console.error('Failed to toggle pin:', err);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('Delete this announcement?')) return;
+        try {
+            const { error } = await supabase
+                .from('club_announcements')
+                .delete()
+                .eq('id', id);
+
+            if (!error) {
+                setAnnouncements(prev => prev.filter(a => a.id !== id));
+            }
+        } catch (err) {
+            console.error('Failed to delete announcement:', err);
+        }
+    };
+
     return (
         <div className="announcements-page">
 
@@ -207,13 +238,29 @@ export default function ClubAnnouncementsPage() {
                 ) : (
                     announcements.map(announcement => (
                         <div key={announcement.id} className={`announcement-card ${announcement.is_pinned ? 'pinned' : ''}`}>
-                            {announcement.is_pinned && <span className="pin-badge"> Pinned</span>}
+                            {announcement.is_pinned && <span className="pin-badge">Pinned</span>}
                             <h3 className="announcement-title">{announcement.title}</h3>
                             <p className="announcement-content">{announcement.content}</p>
                             <div className="announcement-meta">
                                 <span className="announcement-author">By {announcement.author_name}</span>
                                 <span className="announcement-date">{formatDate(announcement.created_at)}</span>
                             </div>
+                            {isAdmin && (
+                                <div className="announcement-admin-actions">
+                                    <button
+                                        className="btn btn-sm btn-ghost"
+                                        onClick={() => handleTogglePin(announcement.id, announcement.is_pinned)}
+                                    >
+                                        {announcement.is_pinned ? 'Unpin' : 'Pin'}
+                                    </button>
+                                    <button
+                                        className="btn btn-sm btn-danger"
+                                        onClick={() => handleDelete(announcement.id)}
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     ))
                 )}

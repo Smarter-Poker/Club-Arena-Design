@@ -72,6 +72,7 @@
 
 /* Individual nav item */
 .navItem {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -113,6 +114,27 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+/* Notification badge */
+.badge {
+    position: absolute;
+    top: 2px;
+    right: 8px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: #EF4444;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+    pointer-events: none;
 }
 
 /* Disabled state for players tab when not admin */
