@@ -92,7 +92,7 @@ export default function ChipTransferModal({
                 .select('balance')
                 .eq('user_id', user.id)
                 .eq('wallet_type', 'PLAYER')
-                .single();
+                .maybeSingle();
             setSenderBalance(wallet?.balance || 0);
 
             // Get sender's role in this club
@@ -101,7 +101,7 @@ export default function ChipTransferModal({
                 .select('role')
                 .eq('club_id', clubId)
                 .eq('user_id', user.id)
-                .single();
+                .maybeSingle();
             setSenderRole(member?.role || 'member');
 
             // Get club name
@@ -109,7 +109,7 @@ export default function ChipTransferModal({
                 .from('clubs')
                 .select('name')
                 .eq('id', clubId)
-                .single();
+                .maybeSingle();
             setClubName(club?.name || '');
         } catch (err) {
             console.error('Failed to load sender info:', err);
@@ -126,7 +126,7 @@ export default function ChipTransferModal({
                 .select('role')
                 .eq('club_id', clubId)
                 .eq('user_id', user.id)
-                .single();
+                .maybeSingle();
 
             const role = senderMember?.role || 'member';
             let query = supabase

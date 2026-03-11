@@ -95,7 +95,7 @@ export class RakeWaterfallEngine {
             .from('clubs')
             .select('owner_id, union_id')
             .eq('id', ctx.clubId)
-            .single();
+            .maybeSingle();
 
         if (club) {
             let rakeRecipientId = club.owner_id;
@@ -104,7 +104,7 @@ export class RakeWaterfallEngine {
                     .from('unions')
                     .select('owner_id')
                     .eq('id', club.union_id)
-                    .single();
+                    .maybeSingle();
                 if (union?.owner_id) rakeRecipientId = union.owner_id;
             }
 

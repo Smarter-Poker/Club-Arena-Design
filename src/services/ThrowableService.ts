@@ -117,7 +117,7 @@ class ThrowableServiceClass {
                 .from('profiles')
                 .select('is_vip')
                 .eq('id', userId)
-                .single();
+                .maybeSingle();
 
             const isVip = profile?.is_vip || false;
 
@@ -174,7 +174,7 @@ class ThrowableServiceClass {
                 .from('profiles')
                 .select('diamonds')
                 .eq('id', userId)
-                .single();
+                .maybeSingle();
 
             if (!profile || (profile.diamonds || 0) < DIAMOND_COST_PER_THROW) {
                 return { success: false, error: `Need ${DIAMOND_COST_PER_THROW} Diamonds` };

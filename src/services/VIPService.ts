@@ -100,7 +100,7 @@ class VIPServiceClass {
             .from('profiles')
             .select('is_vip, vip_expires_at')
             .eq('id', userId)
-            .single();
+            .maybeSingle();
 
         if (error || !data) {
             return {

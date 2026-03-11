@@ -189,7 +189,7 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
                     },
                 })
                 .select()
-                .single();
+                .maybeSingle();
 
             if (insertError) throw insertError;
 

@@ -61,7 +61,7 @@ export function PlayerProfileCard({
                 .from('profiles')
                 .select('*, player_stats(*), player_presence(*)')
                 .eq('id', userId)
-                .single();
+                .maybeSingle();
 
             if (!error && data) {
                 const stats = Array.isArray(data.player_stats) ? data.player_stats[0] : data.player_stats;

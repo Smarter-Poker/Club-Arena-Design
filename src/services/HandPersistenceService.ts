@@ -241,7 +241,7 @@ export class HandPersistence {
             .from('hands')
             .insert(insertPayload)
             .select('id')
-            .single();
+            .maybeSingle();
 
         if (error) {
             console.error(`[HandPersistence:${this.tableId}] Failed to insert hand #${handNumber}:`, error);
@@ -251,7 +251,7 @@ export class HandPersistence {
                     .from('hands')
                     .insert(insertPayload)
                     .select('id')
-                    .single();
+                    .maybeSingle();
 
                 if (!retryError && retryData) {
                     if (this.currentHand) this.currentHand.id = retryData.id;

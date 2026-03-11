@@ -94,14 +94,14 @@ export const ChipFlowService = {
             .select('balance')
             .eq('user_id', fromUserId)
             .eq('wallet_type', 'PLAYER')
-            .single();
+            .maybeSingle();
 
         const { data: toWallet } = await supabase
             .from('wallets')
             .select('balance')
             .eq('user_id', toUserId)
             .eq('wallet_type', 'PLAYER')
-            .single();
+            .maybeSingle();
 
         return {
             success: true,
@@ -250,7 +250,7 @@ export const ChipFlowService = {
             .select('balance')
             .eq('user_id', unionOwnerId)
             .eq('wallet_type', 'PLAYER')
-            .single();
+            .maybeSingle();
 
         return wallet?.balance || 0;
     },
@@ -269,7 +269,7 @@ export const ChipFlowService = {
             .select('balance')
             .eq('user_id', userId)
             .eq('wallet_type', 'PLAYER')
-            .single();
+            .maybeSingle();
 
         const currentBalance = wallet?.balance || 0;
 

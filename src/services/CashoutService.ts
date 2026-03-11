@@ -231,7 +231,7 @@ class CashoutServiceClass {
                 agent:agent_id(display_name)
             `)
             .eq('id', cashoutId)
-            .single();
+            .maybeSingle();
 
         if (error || !data) return null;
 

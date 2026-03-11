@@ -227,7 +227,7 @@ class IdentityDNACore {
             .from('profiles')
             .select('*')
             .eq('id', userId)
-            .single();
+            .maybeSingle();
 
         if (error) {
             // Profile might not exist yet - this is okay for new users

@@ -115,7 +115,7 @@ export default function HandReplayViewer({
                     played_at
                 `)
                 .eq('id', handId)
-                .single();
+                .maybeSingle();
 
             if (!error && data) {
                 setHand({

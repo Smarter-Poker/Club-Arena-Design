@@ -111,7 +111,7 @@ export default function FriendListPanel({
                 .from('profiles')
                 .select('id, username, display_name')
                 .ilike('username', addFriendInput.trim())
-                .single();
+                .maybeSingle();
 
             if (findError || !targetUser) {
                 setError('User not found');
@@ -131,7 +131,7 @@ export default function FriendListPanel({
                 .select('id')
                 .eq('user_id', user.id)
                 .eq('friend_id', targetUser.id)
-                .single();
+                .maybeSingle();
 
             if (existing) {
                 setError('Already friends');

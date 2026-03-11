@@ -211,7 +211,7 @@ class NotificationServiceClass {
                 is_read: false
             })
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) {
             console.error('[Notifications] Failed to create:', error);

@@ -94,7 +94,7 @@ export function TournamentRegistration({
                 .from('tournaments')
                 .select('buy_in_amount, buy_in_fee, status')
                 .eq('id', tournamentId)
-                .single();
+                .maybeSingle();
 
             // Only allow admin removal before tournament starts (ANNOUNCED or REGISTERING)
             if (tournament && !['ANNOUNCED', 'REGISTERING'].includes(tournament.status)) {
@@ -158,7 +158,7 @@ export function TournamentRegistration({
                     .from('tournaments')
                     .select('current_players')
                     .eq('id', tournamentId)
-                    .single();
+                    .maybeSingle();
 
                 if (t) {
                     await supabase

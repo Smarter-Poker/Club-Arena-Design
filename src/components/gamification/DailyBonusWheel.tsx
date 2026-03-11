@@ -60,7 +60,7 @@ export function DailyBonusWheel({ isOpen, onClose, onReward }: DailyBonusWheelPr
                 .eq('user_id', user.id)
                 .order('created_at', { ascending: false })
                 .limit(1)
-                .single();
+                .maybeSingle();
 
             if (data) {
                 const lastSpin = new Date(data.created_at);

@@ -146,7 +146,7 @@ export const useUserStore = create<UserState>()(
                         .from('profiles')
                         .select('*')
                         .eq('id', userId)
-                        .single();
+                        .maybeSingle();
 
                     if (error) {
                         // PGRST116 = no rows returned (profile doesn't exist yet)

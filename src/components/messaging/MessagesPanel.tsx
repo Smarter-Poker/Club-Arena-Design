@@ -125,7 +125,7 @@ export default function MessagesPanel({
                     .from('profiles')
                     .select('display_name, avatar_url')
                     .eq('id', participantId)
-                    .single();
+                    .maybeSingle();
 
                 return {
                     id: c.id,

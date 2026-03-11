@@ -70,9 +70,9 @@ export const AgentFinancialPortal: React.FC<AgentPortalProps> = ({ agentId }) =>
             .from('agents')
             .select('agent_wallet_balance, player_wallet_balance, promo_wallet_balance, credit_limit')
             .eq('id', agentId)
-            .single();
+            .maybeSingle();
 
-        if (error) {
+        if (error || !data) {
             console.error("Error loading agent wallet", error);
             return;
         }
@@ -81,10 +81,10 @@ export const AgentFinancialPortal: React.FC<AgentPortalProps> = ({ agentId }) =>
         const calculatedDebt = await CreditService.calculateDebt(agentId);
 
         setWallet({
-            agentBal: data.agent_wallet_balance,
-            playerBal: data.player_wallet_balance,
-            promoBal: data.promo_wallet_balance,
-            creditLimit: data.credit_limit,
+            agentBal: data.agent_wallet_balance || 0,
+            playerBal: data.player_wallet_balance || 0,
+            promoBal: data.promo_wallet_balance || 0,
+            creditLimit: data.credit_limit || 0,
             debt: calculatedDebt.debtOwed
         });
     };

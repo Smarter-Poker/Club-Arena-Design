@@ -146,7 +146,7 @@ export const useWalletStore = create<WalletState>()(
                         .from('profiles')
                         .select('diamonds')
                         .eq('id', userId)
-                        .single();
+                        .maybeSingle();
 
                     if (!error && data) {
                         set({ diamonds: data.diamonds || 0 });

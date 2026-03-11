@@ -81,7 +81,7 @@ export function HandReplayer({ handId, isOpen, onClose }: HandReplayerProps) {
                 .from('hand_histories')
                 .select('*')
                 .eq('id', handId)
-                .single();
+                .maybeSingle();
 
             if (!error && data) {
                 setHandData({

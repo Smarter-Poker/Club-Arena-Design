@@ -267,7 +267,7 @@ export class HeadlessTableEngine {
         'id, club_id, small_blind, big_blind, game_variant, max_players, ante, game_type, tournament_id'
       )
       .eq('id', this.tableId)
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
       throw new Error(`Failed to load table info: ${error?.message}`);
@@ -297,7 +297,7 @@ export class HeadlessTableEngine {
       .from('tables')
       .select('small_blind, big_blind, ante')
       .eq('id', this.tableId)
-      .single();
+      .maybeSingle();
 
     if (data) {
       this.tableInfo.small_blind = data.small_blind;
@@ -1082,7 +1082,7 @@ export class HeadlessTableEngine {
           .select('balance')
           .eq('user_id', horse.user_id)
           .eq('wallet_type', 'PLAYER')
-          .single();
+          .maybeSingle();
 
         if (walletError || !walletData) {
           console.warn(

@@ -56,7 +56,7 @@ class CreditRequestServiceClass {
             .from('profiles')
             .select('username')
             .eq('id', requesterId)
-            .single();
+            .maybeSingle();
 
         const { data, error } = await supabase
             .from('credit_requests')
@@ -70,7 +70,7 @@ class CreditRequestServiceClass {
                 status: 'pending',
             })
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) throw error;
 
@@ -140,7 +140,7 @@ class CreditRequestServiceClass {
             .from('credit_requests')
             .select('*')
             .eq('id', requestId)
-            .single();
+            .maybeSingle();
 
         if (!request || request.approver_id !== approverId) {
             throw new Error('Request not found or unauthorized');
@@ -163,7 +163,7 @@ class CreditRequestServiceClass {
             })
             .eq('id', requestId)
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) throw error;
 
@@ -194,7 +194,7 @@ class CreditRequestServiceClass {
             .from('credit_requests')
             .select('*')
             .eq('id', requestId)
-            .single();
+            .maybeSingle();
 
         if (!request || request.approver_id !== approverId) {
             throw new Error('Request not found or unauthorized');
@@ -209,7 +209,7 @@ class CreditRequestServiceClass {
             })
             .eq('id', requestId)
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) throw error;
 

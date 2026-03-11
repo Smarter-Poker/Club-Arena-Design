@@ -144,7 +144,7 @@ export const MembershipService = {
             .select('*')
             .eq('club_id', clubId)
             .eq('user_id', userId)
-            .single();
+            .maybeSingle();
 
         if (error || !data) return null;
 
@@ -180,7 +180,7 @@ export const MembershipService = {
                 invited_by: invitedBy,
             })
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) throw error;
 

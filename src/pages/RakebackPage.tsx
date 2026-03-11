@@ -179,7 +179,7 @@ export default function RakebackPage() {
 
             if (data.success) {
                 setClaimStatus('success');
-                setClaimMessage(`Claimed ${(data.amount || pendingAmount).toLocaleString()} chips!`);
+                setClaimMessage(`Claimed ${(data.claimed || pendingAmount).toLocaleString()} chips!`);
                 // Reload data to reflect changed status
                 loadRakebackData();
                 setTimeout(() => {

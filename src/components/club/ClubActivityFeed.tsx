@@ -109,7 +109,7 @@ export default function ClubActivityFeed({
                         .from('profiles')
                         .select('display_name, avatar_url')
                         .eq('id', newActivity.user_id)
-                        .single();
+                        .maybeSingle();
                     userName = profile?.display_name;
                     userAvatar = profile?.avatar_url;
                 }

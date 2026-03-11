@@ -59,7 +59,7 @@ export default function QuickActions() {
                         .select('union_id')
                         .in('club_id', clubIds)
                         .limit(1)
-                        .single();
+                        .maybeSingle();
 
                     if (firstUnion) {
                         const { data: allUnionClubs } = await supabase

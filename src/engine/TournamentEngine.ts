@@ -174,7 +174,7 @@ export class TournamentEngine {
             .from('tournaments')
             .select('status')
             .eq('id', this.tournamentId)
-            .single();
+            .maybeSingle();
 
         if (statusErr || !statusCheck) {
             console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Cannot start — tournament not found`);
@@ -402,7 +402,7 @@ export class TournamentEngine {
             .from('tournaments')
             .select('*')
             .eq('id', this.tournamentId)
-            .single();
+            .maybeSingle();
 
         if (error || !data) {
             throw new Error(`Failed to load tournament: ${error?.message}`);
@@ -606,7 +606,7 @@ export class TournamentEngine {
                 .from('tables')
                 .insert(tableRow)
                 .select('id')
-                .single();
+                .maybeSingle();
 
             if (error || !data) {
                 console.error(`[TournamentEngine] Failed to create table ${i + 1}:`, error?.message);
@@ -917,7 +917,7 @@ export class TournamentEngine {
                 .from('tournaments')
                 .select('prize_pool, current_players, prize_pool_finalized')
                 .eq('id', this.tournamentId)
-                .single();
+                .maybeSingle();
             if (freshT && freshT.prize_pool !== this.tournamentInfo.prize_pool) {
                 console.log(`[TournamentEngine:${this.tournamentId.slice(0, 8)}] Prize pool updated: ${this.tournamentInfo.prize_pool} → ${freshT.prize_pool} (late reg)`);
                 this.tournamentInfo.prize_pool = freshT.prize_pool;
@@ -1136,7 +1136,7 @@ export class TournamentEngine {
                             .select('bounties_collected, bounty_winnings')
                             .eq('tournament_id', this.tournamentId)
                             .eq('user_id', knockerId)
-                            .single();
+                            .maybeSingle();
 
                         if (knockerStats) {
                             const { error: updateErr } = await this.supabase

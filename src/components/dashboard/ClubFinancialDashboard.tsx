@@ -116,7 +116,7 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
             .from('club_diamond_wallets')
             .select('balance')
             .eq('club_id', clubId)
-            .single();
+            .maybeSingle();
 
         if (data) setDiamondBalance(data.balance);
     };

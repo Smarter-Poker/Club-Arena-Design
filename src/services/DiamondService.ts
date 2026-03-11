@@ -63,7 +63,7 @@ export const DiamondService = {
             .from('profiles')
             .select('diamonds')
             .eq('id', userId)
-            .single();
+            .maybeSingle();
 
         if (error || !data) {
             return { balance: 0, lifetimeEarned: 0, lifetimeSpent: 0 };

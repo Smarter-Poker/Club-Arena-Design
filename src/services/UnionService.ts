@@ -136,7 +136,7 @@ class UnionServiceClass {
                     .from('unions')
                     .select('*')
                     .eq('id', a.union_id)
-                    .single();
+                    .maybeSingle();
                 if (unionData) {
                     unionMap.set(unionData.id, unionData);
                 }
@@ -154,7 +154,7 @@ class UnionServiceClass {
             .from('unions')
             .select('*')
             .eq('id', unionId)
-            .single();
+            .maybeSingle();
 
         if (error && error.code !== 'PGRST116') throw error;
         if (!data) return null;
@@ -186,7 +186,7 @@ class UnionServiceClass {
                 },
             })
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) throw error;
 
@@ -212,7 +212,7 @@ class UnionServiceClass {
             })
             .eq('id', unionId)
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) throw error;
 
@@ -255,7 +255,7 @@ class UnionServiceClass {
                     .from('profiles')
                     .select('username, full_name')
                     .eq('id', a.user_id)
-                    .single();
+                    .maybeSingle();
                 displayName = profile?.full_name || profile?.username;
             } catch {
                 // Silently ignore
@@ -317,7 +317,7 @@ class UnionServiceClass {
             .from('unions')
             .select('owner_id')
             .eq('id', unionId)
-            .single();
+            .maybeSingle();
 
         if (union?.owner_id === userId) return true;
 
@@ -391,7 +391,7 @@ class UnionServiceClass {
                         .from('profiles')
                         .select('username, full_name')
                         .eq('id', ownerId)
-                        .single();
+                        .maybeSingle();
                     ownerName = profile?.full_name || profile?.username;
                 }
             } catch {
@@ -432,7 +432,7 @@ class UnionServiceClass {
             .from('unions')
             .select('club_count')
             .eq('id', unionId)
-            .single();
+            .maybeSingle();
 
         if (union) {
             await supabase
@@ -467,7 +467,7 @@ class UnionServiceClass {
             .from('unions')
             .select('club_count')
             .eq('id', unionId)
-            .single();
+            .maybeSingle();
 
         if (union) {
             await supabase

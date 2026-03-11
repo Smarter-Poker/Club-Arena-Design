@@ -69,7 +69,7 @@ export const InviteService = {
                 expires_at: expiresAt.toISOString(),
             })
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) throw error;
 
@@ -170,7 +170,7 @@ export const InviteService = {
             .eq('invite_code', code)
             .eq('status', 'pending')
             .gt('expires_at', new Date().toISOString())
-            .single();
+            .maybeSingle();
 
         if (error || !data) return null;
 

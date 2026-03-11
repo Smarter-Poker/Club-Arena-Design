@@ -71,7 +71,7 @@ export default function ClubStatsCards({ clubId }: ClubStatsCardsProps) {
                 .select('hands_played, rake_collected')
                 .eq('club_id', clubId)
                 .gte('date', today.toISOString())
-                .single();
+                .maybeSingle();
 
             if (todayStats) {
                 handsToday = todayStats.hands_played || 0;

@@ -82,7 +82,7 @@ export async function startTrainingSession(
             time_remaining: levelConfig.timer_seconds,
         })
         .select()
-        .single();
+        .maybeSingle();
 
     if (error) {
         console.error('[Service] Session start failed:', error);
@@ -126,7 +126,7 @@ export async function recordAnswer(
         .from('training_sessions')
         .select('*')
         .eq('id', sessionId)
-        .single();
+        .maybeSingle();
 
     if (fetchError || !session) {
         throw new Error('Session not found');

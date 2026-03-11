@@ -40,7 +40,7 @@ export default function PresenceIndicator({
                     .from('user_presence')
                     .select('status, last_seen')
                     .eq('user_id', userId)
-                    .single();
+                    .maybeSingle();
 
                 if (!error && data && isMounted) {
                     setStatus(data.status as PresenceStatus);
@@ -55,7 +55,7 @@ export default function PresenceIndicator({
                         .from('profiles')
                         .select('is_online, last_active')
                         .eq('id', userId)
-                        .single();
+                        .maybeSingle();
 
                     if (profile && isMounted) {
                         setStatus(profile.is_online ? 'online' : 'offline');
@@ -132,7 +132,7 @@ export function usePresence(userId: string): PresenceStatus {
                 .from('profiles')
                 .select('is_online')
                 .eq('id', userId)
-                .single();
+                .maybeSingle();
 
             if (data) {
                 setStatus(data.is_online ? 'online' : 'offline');

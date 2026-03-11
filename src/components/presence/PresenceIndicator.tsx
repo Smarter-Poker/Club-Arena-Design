@@ -55,7 +55,7 @@ export const PresenceIndicator: React.FC<PresenceIndicatorProps> = ({
                 .from('player_presence')
                 .select('status, last_seen_at, current_table_id')
                 .eq('user_id', userId)
-                .single();
+                .maybeSingle();
 
             if (data) {
                 setPresence({

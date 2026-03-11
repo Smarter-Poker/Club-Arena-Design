@@ -162,7 +162,7 @@ class AvatarServiceClass {
                 .from('profiles')
                 .select('avatar_url')
                 .eq('id', userId)
-                .single();
+                .maybeSingle();
 
             if (error || !data?.avatar_url) {
                 return DEFAULT_AVATAR_URL;
@@ -240,7 +240,7 @@ class AvatarServiceClass {
                 .from('profiles')
                 .select('is_vip')
                 .eq('id', userId)
-                .single();
+                .maybeSingle();
 
             return data?.is_vip || false;
         } catch {

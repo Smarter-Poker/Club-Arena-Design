@@ -100,7 +100,7 @@ class PromotionServiceClass {
             .from('promotions')
             .select('*')
             .eq('id', promotionId)
-            .single();
+            .maybeSingle();
 
         if (error || !data) return null;
         return this.mapPromotion(data);
@@ -127,7 +127,7 @@ class PromotionServiceClass {
                 wager_requirement: config.wagerRequirement
             })
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) throw error;
         return this.mapPromotion(data);
@@ -173,7 +173,7 @@ class PromotionServiceClass {
             .select('id')
             .eq('promotion_id', promotionId)
             .eq('user_id', userId)
-            .single();
+            .maybeSingle();
 
         if (existingClaim) {
             throw new Error('Promotion already claimed');
@@ -206,7 +206,7 @@ class PromotionServiceClass {
                 wager_required: promo.wagerRequirement || 0
             })
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) throw error;
 
@@ -215,7 +215,7 @@ class PromotionServiceClass {
             .from('promotions')
             .select('claim_count')
             .eq('id', promotionId)
-            .single();
+            .maybeSingle();
 
         if (promoData) {
             await supabase
@@ -248,7 +248,7 @@ class PromotionServiceClass {
             .from('promotion_claims')
             .select('wager_progress')
             .eq('id', claimId)
-            .single();
+            .maybeSingle();
 
         if (claim) {
             const { error } = await supabase
@@ -373,7 +373,7 @@ class PromotionServiceClass {
             .from('profiles')
             .select('id')
             .eq('referral_code', referrerCode)
-            .single();
+            .maybeSingle();
 
         if (!referrer) return;
 

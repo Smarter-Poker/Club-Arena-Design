@@ -75,7 +75,7 @@ export function ClubSettingsPanel({ clubId, isOpen, onClose, onSave }: ClubSetti
                 .from('clubs')
                 .select('*')
                 .eq('id', clubId)
-                .single();
+                .maybeSingle();
 
             if (!error && data) {
                 setSettings({

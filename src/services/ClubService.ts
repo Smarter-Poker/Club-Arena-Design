@@ -43,7 +43,7 @@ class ClubServiceClass {
             .from('clubs')
             .select('*')
             .eq('id', clubId)
-            .single();
+            .maybeSingle();
 
         if (error && error.code !== 'PGRST116') throw error;
         return data;
@@ -57,7 +57,7 @@ class ClubServiceClass {
             .from('clubs')
             .select('*')
             .eq('club_id', publicId)
-            .single();
+            .maybeSingle();
 
         if (error && error.code !== 'PGRST116') throw error;
         return data;
@@ -123,7 +123,7 @@ class ClubServiceClass {
                 },
             })
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) throw error;
 
@@ -158,7 +158,7 @@ class ClubServiceClass {
             .update({ ...updates, updated_at: new Date().toISOString() })
             .eq('id', clubId)
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) throw error;
         return data;
@@ -222,7 +222,7 @@ class ClubServiceClass {
                 chip_balance: 0,
             })
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) throw error;
         return data;
@@ -250,7 +250,7 @@ class ClubServiceClass {
             .from('club_members')
             .select('user_id, club_id')
             .eq('id', memberId)
-            .single();
+            .maybeSingle();
 
         if (!member) return false;
 

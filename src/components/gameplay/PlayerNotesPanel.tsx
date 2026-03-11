@@ -84,7 +84,7 @@ export default function PlayerNotesPanel({
             .select('*')
             .eq('user_id', user?.id)
             .eq('target_user_id', targetUserId)
-            .single();
+            .maybeSingle();
 
         if (data) {
             setCurrentNote(data.note || '');

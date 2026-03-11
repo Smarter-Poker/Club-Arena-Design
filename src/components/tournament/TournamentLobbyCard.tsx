@@ -93,7 +93,7 @@ export default function TournamentLobbyCard({
             .select('id')
             .eq('tournament_id', tournament.id)
             .eq('user_id', user.id)
-            .single();
+            .maybeSingle();
         setIsRegistered(!!data);
     };
 

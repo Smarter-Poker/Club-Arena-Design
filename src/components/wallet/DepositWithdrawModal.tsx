@@ -176,7 +176,7 @@ export default function DepositWithdrawModal({
                     }
                 })
                 .select()
-                .single();
+                .maybeSingle();
 
             if (txError) throw txError;
 
