@@ -1605,12 +1605,14 @@ export default function TablePage({
         case 'PLAYER_ACTION': {
           // Handle player action broadcast with sound effects
           const action = (msg.payload as any)?.action?.toLowerCase() || '';
-          if (action === 'bet' || action === 'raise' || action === 'call' || action === 'allin') {
-            soundService.playChips();
-          } else if (action === 'check') {
-            soundService.playCheck();
-          } else if (action === 'fold') {
-            soundService.playFold();
+          if (soundService.isEnabled()) {
+            if (action === 'bet' || action === 'raise' || action === 'call' || action === 'allin') {
+              soundService.playChips();
+            } else if (action === 'check') {
+              soundService.playCheck();
+            } else if (action === 'fold') {
+              soundService.playFold();
+            }
           }
           break;
         }

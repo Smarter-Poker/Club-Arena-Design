@@ -424,18 +424,18 @@ export class HandController {
     // Get actions for this betting round
     const stageActions = this.state.actionHistory.filter((a) => a.stage === this.state.stage);
 
-    // Find the last aggressive action (bet/raise/all_in that increased currentBet)
+    // Find the last aggressive action (bet/raise that INCREASED the currentBet)
     let lastAggressorSeat = -1;
+    let runningCurrentBet = 0;
     for (const action of stageActions) {
-      if (
-        action.action === 'bet' ||
-        action.action === 'raise' ||
-        (action.action === 'all_in' && action.amount > 0)
-      ) {
-        // Check if this action actually raised the bet
-        const player = this.state.players.find((p) => p.seat === action.seat);
-        if (player && (player.bet >= this.state.currentBet || player.is_all_in)) {
+      if (action.action === 'bet' || action.action === 'raise') {
+        lastAggressorSeat = action.seat;
+        runningCurrentBet = action.amount;
+      } else if (action.action === 'all_in') {
+        // Only treat all-in as aggression if it RAISED the current bet
+        if (action.amount > runningCurrentBet) {
           lastAggressorSeat = action.seat;
+          runningCurrentBet = action.amount;
         }
       }
     }
@@ -741,7 +741,18 @@ export class HandController {
       if (nextSeat === this.state.currentPlayerSeat) break; // Full circle
     }
 
-    this.state.currentPlayerSeat = nextSeat;
+    // If we looped all the way around without finding a valid seat, set to -1
+    const finalPlayer = this.state.players.find((p) => p.seat === nextSeat);
+    if (
+      finalPlayer &&
+      !finalPlayer.is_folded &&
+      !finalPlayer.is_all_in &&
+      !finalPlayer.is_sitting_out
+    ) {
+      this.state.currentPlayerSeat = nextSeat;
+    } else {
+      this.state.currentPlayerSeat = -1;
+    }
   }
 
   private emitTurnChange(): void {

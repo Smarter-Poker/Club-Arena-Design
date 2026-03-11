@@ -626,7 +626,7 @@ export default function CashierPage() {
         notifyWalletChange(selectedRecipient, value);
       } else if (action === 'mint') {
         // ─── MINT CHIPS ───
-        await mintChips('default', value);
+        await mintChips(clubId!, value);
         setMessage({ type: 'success', text: `Minted ${value.toLocaleString()} chips` });
         loadBalances(user.id);
         notifyWalletChange(user.id, value);
