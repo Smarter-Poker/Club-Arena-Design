@@ -33,6 +33,22 @@ const LAST_CLUB_KEY = 'club_arena_last_club';
 const SWR_CACHE_KEY = 'club_arena_clubs_cache';
 const PINNED_CLUBS_KEY = 'club_arena_pinned_clubs';
 const SOUNDS_ENABLED_KEY = 'club_arena_sounds';
+const CARD_COLOR_KEY = 'club_arena_card_color';
+
+// #14: Card flip sound variety — randomize for natural feel
+const CARD_FLIP_SOUNDS = ['card-flip-1', 'card-flip-2', 'card-flip-3', 'card-flip-4'];
+
+// #6: Card color presets — gradient pairs for club card faces
+const CARD_COLOR_PRESETS: { id: string; name: string; bg: string; overlay: string }[] = [
+    { id: 'default',   name: 'Deep Ocean',    bg: 'linear-gradient(145deg, rgba(8, 20, 40, 0.9), rgba(5, 12, 28, 0.95))',    overlay: 'linear-gradient(135deg, rgba(0, 212, 255, 0.06) 0%, transparent 50%, rgba(0, 255, 136, 0.04) 100%)' },
+    { id: 'emerald',   name: 'Emerald Night', bg: 'linear-gradient(145deg, rgba(5, 30, 20, 0.9), rgba(3, 18, 12, 0.95))',    overlay: 'linear-gradient(135deg, rgba(0, 255, 136, 0.08) 0%, transparent 50%, rgba(0, 212, 180, 0.05) 100%)' },
+    { id: 'crimson',   name: 'Crimson Velvet', bg: 'linear-gradient(145deg, rgba(40, 8, 15, 0.9), rgba(28, 5, 10, 0.95))',   overlay: 'linear-gradient(135deg, rgba(255, 60, 80, 0.08) 0%, transparent 50%, rgba(255, 100, 50, 0.05) 100%)' },
+    { id: 'royal',     name: 'Royal Purple',  bg: 'linear-gradient(145deg, rgba(20, 8, 40, 0.9), rgba(12, 5, 28, 0.95))',    overlay: 'linear-gradient(135deg, rgba(140, 80, 255, 0.08) 0%, transparent 50%, rgba(180, 100, 255, 0.05) 100%)' },
+    { id: 'gold',      name: 'Gold Rush',     bg: 'linear-gradient(145deg, rgba(35, 28, 8, 0.9), rgba(24, 18, 5, 0.95))',    overlay: 'linear-gradient(135deg, rgba(255, 200, 50, 0.08) 0%, transparent 50%, rgba(255, 160, 30, 0.05) 100%)' },
+    { id: 'midnight',  name: 'Midnight Ice',  bg: 'linear-gradient(145deg, rgba(5, 10, 35, 0.9), rgba(3, 6, 22, 0.95))',     overlay: 'linear-gradient(135deg, rgba(80, 140, 255, 0.08) 0%, transparent 50%, rgba(60, 180, 255, 0.05) 100%)' },
+    { id: 'obsidian',  name: 'Obsidian',      bg: 'linear-gradient(145deg, rgba(15, 15, 15, 0.9), rgba(8, 8, 8, 0.95))',     overlay: 'linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, transparent 50%, rgba(200, 200, 200, 0.03) 100%)' },
+    { id: 'neon',      name: 'Neon Cyber',    bg: 'linear-gradient(145deg, rgba(5, 15, 25, 0.9), rgba(3, 8, 18, 0.95))',     overlay: 'linear-gradient(135deg, rgba(0, 255, 200, 0.08) 0%, transparent 50%, rgba(255, 0, 200, 0.05) 100%)' },
+];
 
 // Action button images
 const ACTION_BAR_HORIZONTAL = `${import.meta.env.BASE_URL}images/icons/action-bar-horizontal.png`;
@@ -198,6 +214,11 @@ function HomePageInner() {
     // #15: Online status
     const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
 
+    // #6: Card color preset
+    const [cardColorPreset, setCardColorPreset] = useState<string>(() => {
+        return localStorage.getItem(CARD_COLOR_KEY) || 'default';
+    });
+
     // JOIN A CLUB modal state
     const [showJoinModal, setShowJoinModal] = useState(false);
     const [showCreateClubModal, setShowCreateClubModal] = useState(false);
@@ -229,6 +250,15 @@ function HomePageInner() {
             window.removeEventListener('online', goOnline);
             window.removeEventListener('offline', goOffline);
         };
+    }, []);
+
+    // #6: Listen for card color changes from hamburger menu
+    useEffect(() => {
+        const unsubColor = masterBus.subscribe('CARD_COLOR_CHANGED', (event) => {
+            const preset = event.payload?.preset as string;
+            if (preset) setCardColorPreset(preset);
+        });
+        return () => unsubColor();
     }, []);
 
     // ═══════════════════════════════════════════════════════════════════════════════
@@ -690,7 +720,7 @@ function HomePageInner() {
                     setFlippedCards(prev => new Set(prev).add(idx));
                     // #10: Haptic on each card flip
                     haptic.light();
-                    if (soundsEnabled) SFX.play('card-flip');
+                    if (soundsEnabled) SFX.play(CARD_FLIP_SOUNDS[Math.floor(Math.random() * CARD_FLIP_SOUNDS.length)]);
                 }, 300 + idx * 150);
                 timerIds.push(id);
             });
@@ -905,7 +935,19 @@ function HomePageInner() {
                                         </div>
                                         {/* Card Face (data side) */}
                                         <div className={styles.clubCardBack}>
-                                            <div className={styles.clubCardFace}>
+                                            <div
+                                                className={styles.clubCardFace}
+                                                style={cardColorPreset !== 'default' ? {
+                                                    background: CARD_COLOR_PRESETS.find(p => p.id === cardColorPreset)?.bg,
+                                                } : undefined}
+                                            >
+                                                {/* #6: Color overlay */}
+                                                {cardColorPreset !== 'default' && (
+                                                    <div style={{
+                                                        position: 'absolute', inset: 0, borderRadius: 10, pointerEvents: 'none',
+                                                        background: CARD_COLOR_PRESETS.find(p => p.id === cardColorPreset)?.overlay,
+                                                    }} />
+                                                )}
                                                 <h3 className={styles.clubCardTitle}>
                                                     {club.name?.toUpperCase() || 'MY CLUB'}
                                                 </h3>

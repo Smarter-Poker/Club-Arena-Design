@@ -45,7 +45,17 @@ export type BusEventType =
     | 'HORSE_BUG_REPORT'
     | 'NOTIFICATION_READ'
     | 'WAITLIST_POSITION_CHANGED'
-    | 'SESSION_SUMMARY_DISMISSED';
+    | 'SESSION_SUMMARY_DISMISSED'
+    // Phase 5: Daily challenge game events
+    | 'HAND_COMPLETED'
+    | 'HAND_WON'
+    | 'FLOP_SEEN'
+    | 'ALL_IN_WON'
+    | 'BIG_POT_WON'
+    | 'PREFLOP_WIN'
+    | 'FLUSH_WIN'
+    // Phase 5: Card color customization
+    | 'CARD_COLOR_CHANGED';
 
 // #13: Type-safe payload map — compile-time enforcement of correct payloads
 export interface BusPayloadMap {
@@ -64,6 +74,17 @@ export interface BusPayloadMap {
     NOTIFICATION_READ: { notifId: string | null; allRead: boolean };
     WAITLIST_POSITION_CHANGED: { tableId: string; position: number; tableName: string };
     SESSION_SUMMARY_DISMISSED: { tableId: string };
+    // Gameplay events
+    HAND_WON: Record<string, unknown>;
+    HAND_COMPLETED: Record<string, unknown>;
+    FLOP_SEEN: Record<string, unknown>;
+    ALL_IN_WON: Record<string, unknown>;
+    BIG_POT_WON: Record<string, unknown>;
+    PREFLOP_WIN: Record<string, unknown>;
+    FLUSH_WIN: Record<string, unknown>;
+    PLAY_MINUTES: { minutes: number };
+    // UI customization
+    CARD_COLOR_CHANGED: { preset: string };
 }
 
 export interface BusEvent<T = unknown> {

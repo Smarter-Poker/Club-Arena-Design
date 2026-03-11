@@ -574,6 +574,66 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                     </button>
                 </div>
 
+                {/* #6: Card Color Customization */}
+                <div style={sectionHeaderStyle}>Card Colors</div>
+                <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 10,
+                    padding: '8px 16px 12px',
+                }}>
+                    {[
+                        { id: 'default',  name: 'Deep Ocean',     bg: 'linear-gradient(145deg, rgba(8, 20, 40, 0.9), rgba(5, 12, 28, 0.95))' },
+                        { id: 'emerald',  name: 'Emerald Night',  bg: 'linear-gradient(145deg, rgba(5, 30, 20, 0.9), rgba(3, 18, 12, 0.95))' },
+                        { id: 'crimson',  name: 'Crimson Velvet',  bg: 'linear-gradient(145deg, rgba(40, 8, 15, 0.9), rgba(28, 5, 10, 0.95))' },
+                        { id: 'royal',    name: 'Royal Purple',   bg: 'linear-gradient(145deg, rgba(20, 8, 40, 0.9), rgba(12, 5, 28, 0.95))' },
+                        { id: 'gold',     name: 'Gold Rush',      bg: 'linear-gradient(145deg, rgba(35, 28, 8, 0.9), rgba(24, 18, 5, 0.95))' },
+                        { id: 'midnight', name: 'Midnight Ice',   bg: 'linear-gradient(145deg, rgba(5, 10, 35, 0.9), rgba(3, 6, 22, 0.95))' },
+                        { id: 'obsidian', name: 'Obsidian',       bg: 'linear-gradient(145deg, rgba(15, 15, 15, 0.9), rgba(8, 8, 8, 0.95))' },
+                        { id: 'neon',     name: 'Neon Cyber',     bg: 'linear-gradient(145deg, rgba(5, 15, 25, 0.9), rgba(3, 8, 18, 0.95))' },
+                    ].map((preset) => {
+                        const isSelected = (localStorage.getItem('club_arena_card_color') || 'default') === preset.id;
+                        return (
+                            <button
+                                key={preset.id}
+                                title={preset.name}
+                                onClick={async () => {
+                                    localStorage.setItem('club_arena_card_color', preset.id);
+                                    // Emit bus event for real-time HomePage sync
+                                    try {
+                                        const { masterBus } = await import('../../core/MasterBus');
+                                        masterBus.emit('CARD_COLOR_CHANGED', { preset: preset.id });
+                                    } catch { /* */ }
+                                    // Persist to Supabase
+                                    if (user?.id) {
+                                        try {
+                                            await supabase
+                                                .from('profiles')
+                                                .update({ card_color_preset: preset.id })
+                                                .eq('id', user.id);
+                                        } catch { /* silent */ }
+                                    }
+                                    toast.success(`Card color: ${preset.name}`);
+                                }}
+                                style={{
+                                    width: 36,
+                                    height: 36,
+                                    borderRadius: '50%',
+                                    background: preset.bg,
+                                    border: isSelected
+                                        ? '2px solid rgba(0, 212, 255, 0.8)'
+                                        : '2px solid rgba(255, 255, 255, 0.1)',
+                                    cursor: 'pointer',
+                                    boxShadow: isSelected
+                                        ? '0 0 8px rgba(0, 212, 255, 0.4)'
+                                        : '0 2px 4px rgba(0,0,0,0.3)',
+                                    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                                }}
+                            />
+                        );
+                    })}
+                </div>
+
                 {[
                     { label: 'App Settings', path: '/settings' },
                     { label: 'Notifications', path: '/notifications' },

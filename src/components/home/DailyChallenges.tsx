@@ -1,26 +1,39 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * DAILY CHALLENGES — Extracted Component
+ * DAILY CHALLENGES — Extracted Component (Phase 5: Bus Listeners)
  * ═══════════════════════════════════════════════════════════════════════════════
- * Deterministic daily challenges with localStorage progress tracking.
- * Architecture-ready for Supabase `daily_challenge_progress` table.
+ * Deterministic daily challenges with real-time progress tracking.
+ * Subscribes to masterBus events (TABLE_SEATED, TABLE_LEFT, HAND_COMPLETED,
+ * HAND_WON, FLOP_SEEN, ALL_IN_WON) to auto-increment challenge progress.
+ * Persists to Supabase `daily_challenge_progress` + localStorage fallback.
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
+import { masterBus } from '../../core/MasterBus';
 import styles from '../../pages/HomePage.module.css';
 
-const CHALLENGES = [
-    { title: 'Win 3 Hands', reward: 50, target: 3 },
-    { title: 'Play 20 Hands', reward: 30, target: 20 },
-    { title: 'Win a Pot > 100 BB', reward: 75, target: 1 },
-    { title: 'Play 2 Different Tables', reward: 40, target: 2 },
-    { title: 'Win 5 Hands Pre-Flop', reward: 60, target: 5 },
-    { title: 'Play for 30 Minutes', reward: 45, target: 30 },
-    { title: 'Win 2 All-In Pots', reward: 80, target: 2 },
-    { title: 'See 10 Flops', reward: 25, target: 10 },
-    { title: 'Win a Hand with a Flush', reward: 100, target: 1 },
-] as const;
+// ═══════════════════════════════════════════════════════════════════════════════
+// Challenge definitions — mapped to bus event types
+// ═══════════════════════════════════════════════════════════════════════════════
+interface Challenge {
+    title: string;
+    reward: number;
+    target: number;
+    eventType: string; // masterBus event that increments this challenge
+}
+
+const CHALLENGES: Challenge[] = [
+    { title: 'Win 3 Hands',            reward: 50,  target: 3,  eventType: 'HAND_WON' },
+    { title: 'Play 20 Hands',          reward: 30,  target: 20, eventType: 'HAND_COMPLETED' },
+    { title: 'Win a Pot > 100 BB',     reward: 75,  target: 1,  eventType: 'BIG_POT_WON' },
+    { title: 'Play 2 Different Tables', reward: 40,  target: 2,  eventType: 'TABLE_SEATED' },
+    { title: 'Win 5 Hands Pre-Flop',   reward: 60,  target: 5,  eventType: 'PREFLOP_WIN' },
+    { title: 'Play for 30 Minutes',    reward: 45,  target: 30, eventType: 'PLAY_MINUTES' },
+    { title: 'Win 2 All-In Pots',      reward: 80,  target: 2,  eventType: 'ALL_IN_WON' },
+    { title: 'See 10 Flops',           reward: 25,  target: 10, eventType: 'FLOP_SEEN' },
+    { title: 'Win a Hand with a Flush', reward: 100, target: 1,  eventType: 'FLUSH_WIN' },
+];
 
 function getDayKey(): string {
     const today = new Date();
@@ -33,9 +46,9 @@ function getSeed(): number {
     return today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
 }
 
-function pickChallenges(): typeof CHALLENGES[number][] {
+function pickChallenges(): Challenge[] {
     const seed = getSeed();
-    const picked: typeof CHALLENGES[number][] = [];
+    const picked: Challenge[] = [];
     const usedIndices = new Set<number>();
     for (let i = 0; i < 3; i++) {
         let idx = ((seed * (i + 7) * 7919) % CHALLENGES.length);
@@ -49,8 +62,12 @@ function pickChallenges(): typeof CHALLENGES[number][] {
 export default function DailyChallenges() {
     const [progress, setProgress] = useState<Record<string, number>>({});
     const dayKey = getDayKey();
+    const picked = useRef(pickChallenges()); // stable across re-renders
+    const tableSessionStart = useRef<number | null>(null); // for play-time tracking
 
-    // Enhancement #8: Load from Supabase first, fallback to localStorage
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Load progress from Supabase → fallback to localStorage
+    // ═══════════════════════════════════════════════════════════════════════════
     const loadProgress = useCallback(async () => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
@@ -81,17 +98,133 @@ export default function DailyChallenges() {
         }
     }, [dayKey]);
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Save progress to localStorage + Supabase
+    // ═══════════════════════════════════════════════════════════════════════════
+    const saveProgress = useCallback(async (newProgress: Record<string, number>) => {
+        // Always save to localStorage (instant)
+        try { localStorage.setItem(dayKey, JSON.stringify(newProgress)); } catch { /* */ }
+
+        // Async save to Supabase
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const upserts = Object.entries(newProgress).map(([idx, prog]) => ({
+                user_id: user.id,
+                day_key: dayKey,
+                challenge_index: parseInt(idx, 10),
+                progress: prog,
+                completed: picked.current[parseInt(idx, 10)]
+                    ? prog >= picked.current[parseInt(idx, 10)].target
+                    : false,
+            }));
+
+            if (upserts.length > 0) {
+                await supabase
+                    .from('daily_challenge_progress')
+                    .upsert(upserts, { onConflict: 'user_id,day_key,challenge_index' });
+            }
+        } catch {
+            // Silent — localStorage is the fallback
+        }
+    }, [dayKey]);
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Increment challenge progress by event type
+    // ═══════════════════════════════════════════════════════════════════════════
+    const incrementByEvent = useCallback((eventType: string, amount = 1) => {
+        setProgress(prev => {
+            const updated = { ...prev };
+            let changed = false;
+
+            picked.current.forEach((ch, idx) => {
+                if (ch.eventType === eventType) {
+                    const current = updated[idx] || 0;
+                    if (current < ch.target) {
+                        updated[idx] = Math.min(current + amount, ch.target);
+                        changed = true;
+                    }
+                }
+            });
+
+            if (changed) {
+                saveProgress(updated);
+            }
+            return changed ? updated : prev;
+        });
+    }, [saveProgress]);
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // MasterBus subscriptions for real-time challenge tracking
+    // ═══════════════════════════════════════════════════════════════════════════
     useEffect(() => {
         loadProgress();
-    }, [loadProgress]);
 
-    const picked = pickChallenges();
+        // 🎮 Core game events
+        const unsubHandCompleted = masterBus.subscribe('HAND_COMPLETED', () => {
+            incrementByEvent('HAND_COMPLETED');
+        });
+
+        const unsubHandWon = masterBus.subscribe('HAND_WON', () => {
+            incrementByEvent('HAND_WON');
+        });
+
+        const unsubFlopSeen = masterBus.subscribe('FLOP_SEEN', () => {
+            incrementByEvent('FLOP_SEEN');
+        });
+
+        const unsubAllInWon = masterBus.subscribe('ALL_IN_WON', () => {
+            incrementByEvent('ALL_IN_WON');
+        });
+
+        const unsubBigPot = masterBus.subscribe('BIG_POT_WON', () => {
+            incrementByEvent('BIG_POT_WON');
+        });
+
+        const unsubPreflopWin = masterBus.subscribe('PREFLOP_WIN', () => {
+            incrementByEvent('PREFLOP_WIN');
+        });
+
+        const unsubFlushWin = masterBus.subscribe('FLUSH_WIN', () => {
+            incrementByEvent('FLUSH_WIN');
+        });
+
+        // 🪑 Table session tracking
+        const unsubSeated = masterBus.subscribe('TABLE_SEATED', () => {
+            incrementByEvent('TABLE_SEATED');
+            tableSessionStart.current = Date.now();
+        });
+
+        const unsubLeft = masterBus.subscribe('TABLE_LEFT', () => {
+            // Calculate play minutes when leaving a table
+            if (tableSessionStart.current) {
+                const minutes = Math.floor((Date.now() - tableSessionStart.current) / 60000);
+                if (minutes > 0) {
+                    incrementByEvent('PLAY_MINUTES', minutes);
+                }
+                tableSessionStart.current = null;
+            }
+        });
+
+        return () => {
+            unsubHandCompleted();
+            unsubHandWon();
+            unsubFlopSeen();
+            unsubAllInWon();
+            unsubBigPot();
+            unsubPreflopWin();
+            unsubFlushWin();
+            unsubSeated();
+            unsubLeft();
+        };
+    }, [loadProgress, incrementByEvent]);
 
     return (
         <div className={styles.challengesSection}>
             <h3 className={styles.challengesTitle}>DAILY CHALLENGES</h3>
             <div className={styles.challengesList}>
-                {picked.map((ch, i) => {
+                {picked.current.map((ch, i) => {
                     const prog = progress[i] || 0;
                     const pct = Math.min(100, (prog / ch.target) * 100);
                     const isComplete = pct >= 100;
@@ -106,7 +239,11 @@ export default function DailyChallenges() {
                                         fontSize: '0.65rem',
                                         fontWeight: 700,
                                         color: isComplete ? 'rgba(0, 255, 136, 0.9)' : 'rgba(0, 212, 255, 0.8)',
-                                    }}>+{ch.reward} Diamonds</span>
+                                    }}>+{ch.reward} 💎</span>
+                                </div>
+                                {/* Progress counter */}
+                                <div style={{ fontSize: '0.6rem', color: 'rgba(176, 179, 184, 0.7)', marginBottom: 3, textAlign: 'right' }}>
+                                    {Math.min(prog, ch.target)}/{ch.target}
                                 </div>
                                 <div style={{
                                     height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)',

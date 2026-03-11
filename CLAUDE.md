@@ -50,6 +50,20 @@ src/types/               — TypeScript types
 3. VIP levels must be validated — only render badges for valid levels (bronze/silver/gold/platinum/diamond)
 4. Format numbers with `.toLocaleString()` — never zero-pad with `.padStart()`
 
+## Performance Optimizations
+- **Recharts pages**: Already lazy-loaded via React.lazy() in App.tsx (PlayerStatsPage, RakebackPage, etc.)
+- **Offline queue**: Max size capped at 50 items (see `src/utils/offlineQueue.ts`)
+- **Bundle analysis**: Run `npm run analyze` to visualize bundle size and identify large chunks
+
+## Large Images (>100KB)
+The following images are in `/public` and should be candidates for optimization:
+- Card backs: 3.1-3.7MB (backs/black.jpeg, white.jpeg, blue.jpeg, red.jpeg)
+- Club logos: 695K-948K (preset-*.png files)
+- UI assets: 400K-600K (header-*.png, vip-card.png, poker-chip-logo.png)
+- Frame images: 82K-102K (frames/frame-*.jpg)
+
+Consider WebP conversion or lazy-loading for these assets.
+
 ## Known Bug Patterns (Fixed, Don't Reintroduce)
 - Bad Beat Jackpot: Use `num.toLocaleString()`, NOT `padStart(9, '0')` for formatting
 - VIP Badge: Always validate level against valid list before rendering — return null for invalid/empty/none

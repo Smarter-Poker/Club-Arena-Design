@@ -17,6 +17,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { subscriptionMonitor } from '../utils/subscriptionMonitor';
 import type { RealtimeChannel, RealtimePresenceState } from '@supabase/supabase-js';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -70,9 +71,81 @@ export interface ChannelSubscription {
 // SERVICE
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// Subscription limits and cleanup
+const MAX_CONCURRENT_SUBSCRIPTIONS = 10;
+const SUBSCRIPTION_CLEANUP_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+
 class RealtimeChannelService {
     private subscriptions: Map<string, ChannelSubscription> = new Map();
     private presenceState: Map<string, ClubPresence[]> = new Map();
+    private subscriptionTimestamps: Map<string, number> = new Map();
+    private cleanupInterval: ReturnType<typeof setInterval> | null = null;
+
+    /**
+     * Initialize cleanup interval for stale subscriptions
+     */
+    private initializeCleanupInterval(): void {
+        if (this.cleanupInterval) return;
+
+        this.cleanupInterval = setInterval(() => {
+            const now = Date.now();
+            const staleKeys: string[] = [];
+
+            this.subscriptionTimestamps.forEach((timestamp, key) => {
+                if (now - timestamp > SUBSCRIPTION_CLEANUP_TIMEOUT) {
+                    staleKeys.push(key);
+                }
+            });
+
+            if (staleKeys.length > 0) {
+                console.warn(
+                    `[RealtimeChannelService] Found ${staleKeys.length} stale subscriptions (>30 min old). Cleaning up...`
+                );
+                staleKeys.forEach(key => {
+                    const sub = this.subscriptions.get(key);
+                    if (sub) {
+                        sub.channel.unsubscribe().catch(() => { /* best effort */ });
+                        this.subscriptions.delete(key);
+                        this.subscriptionTimestamps.delete(key);
+                        subscriptionMonitor.unregister(key);
+                    }
+                });
+            }
+        }, 5 * 60 * 1000); // Check every 5 minutes
+    }
+
+    /**
+     * Enforce subscription limit by removing oldest if necessary
+     */
+    private enforceSubscriptionLimit(): void {
+        if (this.subscriptions.size >= MAX_CONCURRENT_SUBSCRIPTIONS) {
+            // Find oldest subscription
+            let oldestKey: string | null = null;
+            let oldestTime = Infinity;
+
+            this.subscriptionTimestamps.forEach((timestamp, key) => {
+                if (timestamp < oldestTime) {
+                    oldestTime = timestamp;
+                    oldestKey = key;
+                }
+            });
+
+            // Remove oldest if found
+            if (oldestKey) {
+                const oldest = this.subscriptions.get(oldestKey);
+                if (oldest) {
+                    oldest.channel.unsubscribe().catch(() => { /* best effort */ });
+                    this.subscriptions.delete(oldestKey);
+                    this.subscriptionTimestamps.delete(oldestKey);
+                    subscriptionMonitor.unregister(oldestKey);
+                    console.warn(
+                        `[RealtimeChannelService] Max subscriptions (${MAX_CONCURRENT_SUBSCRIPTIONS}) reached. ` +
+                        `Removed oldest subscription: ${oldestKey}`
+                    );
+                }
+            }
+        }
+    }
 
     // ─────────────────────────────────────────────────────────────────────────────
     // CLUB CHANNELS
@@ -94,9 +167,15 @@ class RealtimeChannelService {
     ): () => void {
         const channelName = `club:${clubId}`;
 
+        // Initialize cleanup on first subscription
+        this.initializeCleanupInterval();
+
         if (this.subscriptions.has(channelName)) {
             return () => this.unsubscribeFromClub(clubId);
         }
+
+        // Enforce subscription limit before creating new subscription
+        this.enforceSubscriptionLimit();
 
         const channel = supabase.channel(channelName, {
             config: { presence: { key: userId } },
@@ -145,6 +224,10 @@ class RealtimeChannelService {
             onPresenceSync: callbacks.onPresenceSync,
         });
 
+        // Track subscription for monitoring
+        this.subscriptionTimestamps.set(channelName, Date.now());
+        subscriptionMonitor.register(channelName, 'club');
+
         return () => this.unsubscribeFromClub(clubId);
     }
 
@@ -158,7 +241,9 @@ class RealtimeChannelService {
         if (subscription) {
             await subscription.channel.unsubscribe();
             this.subscriptions.delete(channelName);
+            this.subscriptionTimestamps.delete(channelName);
             this.presenceState.delete(clubId);
+            subscriptionMonitor.unregister(channelName);
         }
     }
 
@@ -212,9 +297,15 @@ class RealtimeChannelService {
     ): () => void {
         const channelName = `tournament:${tournamentId}`;
 
+        // Initialize cleanup on first subscription
+        this.initializeCleanupInterval();
+
         if (this.subscriptions.has(channelName)) {
             return () => this.unsubscribeFromTournament(tournamentId);
         }
+
+        // Enforce subscription limit before creating new subscription
+        this.enforceSubscriptionLimit();
 
         const channel = supabase.channel(channelName);
 
@@ -251,6 +342,10 @@ class RealtimeChannelService {
             onEvent: callbacks.onEvent || (() => { }),
         });
 
+        // Track subscription for monitoring
+        this.subscriptionTimestamps.set(channelName, Date.now());
+        subscriptionMonitor.register(channelName, 'tournament');
+
         return () => this.unsubscribeFromTournament(tournamentId);
     }
 
@@ -264,6 +359,8 @@ class RealtimeChannelService {
         if (subscription) {
             await subscription.channel.unsubscribe();
             this.subscriptions.delete(channelName);
+            this.subscriptionTimestamps.delete(channelName);
+            subscriptionMonitor.unregister(channelName);
         }
     }
 
@@ -346,6 +443,8 @@ class RealtimeChannelService {
         if (subscription) {
             await subscription.channel.unsubscribe();
             this.subscriptions.delete(channelName);
+            this.subscriptionTimestamps.delete(channelName);
+            subscriptionMonitor.unregister(channelName);
         }
     }
 
@@ -388,6 +487,16 @@ class RealtimeChannelService {
     ): () => void {
         const channelName = 'lobby:global';
 
+        // Initialize cleanup on first subscription
+        this.initializeCleanupInterval();
+
+        if (this.subscriptions.has(channelName)) {
+            return () => this.unsubscribeFromLobby();
+        }
+
+        // Enforce subscription limit before creating new subscription
+        this.enforceSubscriptionLimit();
+
         const channel = supabase.channel(channelName);
 
         channel.on('broadcast', { event: 'lobby_update' }, ({ payload }) => {
@@ -413,6 +522,10 @@ class RealtimeChannelService {
             onEvent: () => { },
         });
 
+        // Track subscription for monitoring
+        this.subscriptionTimestamps.set(channelName, Date.now());
+        subscriptionMonitor.register(channelName, 'lobby');
+
         return () => this.unsubscribeFromLobby();
     }
 
@@ -426,6 +539,8 @@ class RealtimeChannelService {
         if (subscription) {
             await subscription.channel.unsubscribe();
             this.subscriptions.delete(channelName);
+            this.subscriptionTimestamps.delete(channelName);
+            subscriptionMonitor.unregister(channelName);
         }
     }
 
@@ -453,7 +568,44 @@ class RealtimeChannelService {
         );
         await Promise.all(promises);
         this.subscriptions.clear();
+        this.subscriptionTimestamps.clear();
         this.presenceState.clear();
+        subscriptionMonitor.cleanup();
+
+        // Stop cleanup interval
+        if (this.cleanupInterval) {
+            clearInterval(this.cleanupInterval);
+            this.cleanupInterval = null;
+        }
+    }
+
+    /**
+     * Get diagnostics for subscription health
+     */
+    getDiagnostics() {
+        return {
+            subscriptions: {
+                count: this.subscriptions.size,
+                byType: this.getSubscriptionsByType(),
+                details: Array.from(this.subscriptions.entries()).map(([name, sub]) => ({
+                    name,
+                    type: sub.type,
+                    entityId: sub.entityId,
+                })),
+            },
+            monitor: subscriptionMonitor.getDiagnostics(),
+        };
+    }
+
+    /**
+     * Get subscriptions grouped by type
+     */
+    private getSubscriptionsByType(): Record<string, number> {
+        const grouped: Record<string, number> = {};
+        this.subscriptions.forEach(sub => {
+            grouped[sub.type] = (grouped[sub.type] || 0) + 1;
+        });
+        return grouped;
     }
 }
 

@@ -9,6 +9,13 @@ export default defineConfig({
         environment: 'jsdom',
         include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
         exclude: ['node_modules', 'dist', 'e2e'],
+        setupFiles: ['tests/setup.ts'],
+        coverage: {
+            provider: 'v8',
+            reporter: ['text', 'html', 'lcov'],
+            include: ['src/**/*.{ts,tsx}'],
+            exclude: ['src/**/*.d.ts', 'src/**/*.test.{ts,tsx}', 'src/vite-env.d.ts'],
+        },
     },
     resolve: {
         alias: {
