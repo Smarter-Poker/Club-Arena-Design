@@ -21,6 +21,8 @@
     max-height: 90vh;
     display: flex;
     flex-direction: column;
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
 }
 
 .club-settings__header {

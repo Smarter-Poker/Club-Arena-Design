@@ -7,6 +7,7 @@
     margin-left: -8px;
     border: 2px solid #0a0a0f;
     border-radius: 50%;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .avatar-group>*:first-child {
@@ -30,6 +31,8 @@
     font-weight: 600;
     margin-left: -8px;
     border: 2px solid #0a0a0f;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .size-small .avatar-more {

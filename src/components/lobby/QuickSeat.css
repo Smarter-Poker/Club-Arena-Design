@@ -13,6 +13,9 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     max-width: 280px;
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -60,12 +63,15 @@
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .quick-seat__amount-btn:hover:not(:disabled) {
     background: rgba(24, 119, 242, 0.2);
     border-color: #1877F2;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(24, 119, 242, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .quick-seat__amount-btn--selected {
@@ -116,13 +122,14 @@
     border-radius: 10px;
     color: #0A0A0F;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .quick-seat__main-btn:hover:not(:disabled) {
     background: linear-gradient(135deg, #FFD54F 0%, #FFB800 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(255, 184, 0, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(255, 184, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .quick-seat__main-btn--disabled {

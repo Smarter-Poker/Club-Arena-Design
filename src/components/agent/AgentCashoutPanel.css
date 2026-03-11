@@ -6,6 +6,9 @@
     background: var(--surface, #1a1a2e);
     border-radius: 16px;
     overflow: hidden;
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .panel-header {
@@ -96,11 +99,12 @@
 .cashout-card {
     padding: 20px;
     border-bottom: 1px solid var(--border, #2a2a4a);
-    transition: background 0.2s;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .cashout-card:hover {
     background: var(--surface-elevated, #2a2a4a);
+    transform: translateY(-2px);
 }
 
 .cashout-card:last-child {
@@ -183,7 +187,8 @@
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .action-btn.approve {
@@ -193,7 +198,7 @@
 
 .action-btn.approve:hover:not(:disabled) {
     opacity: 0.9;
-    transform: translateY(-1px);
+    transform: translateY(-2px);
 }
 
 .action-btn.reject {

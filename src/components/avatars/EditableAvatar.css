@@ -4,6 +4,7 @@
     cursor: pointer;
     border-radius: 50%;
     overflow: hidden;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .editable-avatar.size-medium {
@@ -23,6 +24,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .avatar-display img {
@@ -53,7 +55,9 @@
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: opacity 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 .editable-avatar:hover .edit-overlay {
