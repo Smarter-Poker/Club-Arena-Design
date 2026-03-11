@@ -51,6 +51,12 @@ import HandNotation from '../components/table/HandNotation';
 import { soundService, haptic } from '../services/SoundService';
 import { ConfettiCanvas } from '../components/table/ConfettiCanvas';
 import { createChipToPotEvent, createPotToWinnerEvent, type ChipAnimationEvent } from '../components/table/ChipAnimation';
+import MiniHUD from '../components/table/MiniHUD';
+// PotOddsDisplay intentionally NOT used on live tables — available for practice/training mode only
+import HandHistoryPanel from '../components/table/HandHistoryPanel';
+import type { HandRecord } from '../components/table/HandHistoryPanel';
+import { usePlayerStats } from '../hooks/usePlayerStats';
+import { useTableSettings } from '../hooks/useTableSettings';
 import { GTOQueryService, type GTOSolution } from '../services/GTOQueryService';
 import { RakeService, type RakeCalculation } from '../services/RakeService';
 import { tableService } from '../services/TableService';
@@ -685,6 +691,20 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
 
     // All-in dramatic mode
     const [isAllInMode, setIsAllInMode] = useState(false);
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    //  PHASE 4 — Premium Features (HUD, Pot Odds, Hand History, Settings)
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // Smart Mini-HUD — track opponent stats (VPIP/PFR/heat)
+    const { getStats: getPlayerHUDStats, recordHandPlayed, recordVPIP, recordPFR, recordWin: recordHUDWin } = usePlayerStats();
+
+    // User settings with persistence
+    const { settings: userSettings, updateSetting } = useTableSettings();
+
+    // Hand history state
+    const [handHistory, setHandHistory] = useState<HandRecord[]>([]);
+    const [showHandHistory, setShowHandHistory] = useState(false);
 
     // Play win sound — escalates based on pot size
     const playWinSound = (potAmount?: number) => {
@@ -2501,6 +2521,11 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                     <span className="header-blinds">{tableState.blinds}</span>
                 </div>
                 <div className="header-right">
+                    <button className="header-btn" onClick={() => { soundService.playButtonClick(); setShowHandHistory(prev => !prev); }} title="Hand History">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                            <path d="M3 4h12M3 7h8M3 10h10M3 13h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                        </svg>
+                    </button>
                     <button className="header-btn" onClick={() => { soundService.playButtonClick(); setShowSettings(true); }} title="Settings">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                             <circle cx="9" cy="9" r="2" stroke="currentColor" strokeWidth="1.5"/>
@@ -3337,6 +3362,14 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                     onDismiss={() => setTournamentWinner(null)}
                 />
             )}
+
+            {/* Hand History Panel */}
+            <HandHistoryPanel
+                isOpen={showHandHistory}
+                onClose={() => setShowHandHistory(false)}
+                hands={handHistory}
+                heroId={userId || ''}
+            />
         </div>
     );
 }
