@@ -1,6 +1,6 @@
 # CLUB ARENA — Master Knowledge File
-## LAST UPDATED: Session 59 (March 10, 2026)
-## STATUS: Phase 11c DEPLOYED — World Hub Header Match + Table Header Removal + Full Reassessment
+## LAST UPDATED: Session 60 (March 10, 2026)
+## STATUS: UNIFIED IFRAME ARCHITECTURE DEPLOYED + Premium UI Audit Complete
 ## RULE: UPDATE THIS FILE EVERY TIME YOU STOP TO UPDATE THE USER
 
 ---
@@ -29,9 +29,12 @@
 ---
 
 ## INFRASTRUCTURE
-- Git: github.com/Smarter-Poker/Smarter-Poker-Club-Arena
+- Git (SPA): github.com/Smarter-Poker/Smarter-Poker-Club-Arena
+- Git (World Hub): github.com/Smarter-Poker/Smarter-Poker-World-Hub
 - Vercel Team: smarter-poker (team_SVD8r7AOPH065G3usBxVvrBc)
-- Vercel Project: club-arena (prj_oaCq8RYhExLRUYizLG93li0uX468)
+- Vercel Project (SPA): club-arena (prj_oaCq8RYhExLRUYizLG93li0uX468)
+- Vercel Project (World Hub): hub-vanguard (prj_op66GkZyZcygXQKm76iyycfVFAQx)
+- SPA URL: club-arena.vercel.app (direct) / smarter.poker/hub/club-arena (via iframe)
 - Supabase: kuklfnapbkmacvwxktbh.supabase.co
 - Supabase Service Role: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1a2xmbmFwYmttYWN2d3hrdGJoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzczMDg0NCwiZXhwIjoyMDgzMzA2ODQ0fQ.bbDqj-me78PID99npWCZ5qUuINSC1-eCBb1BVhgiSRs
 - Supabase Anon: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1a2xmbmFwYmttYWN2d3hrdGJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc3MzA4NDQsImV4cCI6MjA4MzMwNjg0NH0.ZGFrUYq7yAbkveFdudh4q_Xk0AZ-jnu4FkX9YKjo
@@ -368,6 +371,46 @@
 - [x] **Fully immersive poker table**: No header on cash game or tournament table pages
 - **Files modified**: src/pages/TablePage.tsx
 
+### UNIFIED IFRAME ARCHITECTURE (Session 59-60) — FULLY DEPLOYED
+**MAJOR ARCHITECTURE CHANGE**: World Hub (smarter.poker) now embeds Club Arena SPA via iframe instead of dual-version rendering.
+
+**Architecture**:
+- World Hub (Next.js) → 16 iframe embed pages using `ClubArenaEmbed` component
+- Club Arena SPA (React/Vite) → Hosted at club-arena.vercel.app
+- Auth bridge: World Hub sends Supabase token to SPA iframe via `window.postMessage`
+- Navigation: SPA sends route changes to parent via `postMessage`
+- SPA detects iframe (`window.parent !== window`) and hides its own GlobalHeader
+
+**Verification (Session 60)**:
+- [x] 16/16 World Hub pages confirmed as iframe embeds (zero legacy rendering code)
+- [x] 60 API routes preserved in World Hub (pages/api/club-arena/)
+- [x] 21 legacy components properly isolated (none imported by pages except ClubArenaEmbed)
+- [x] All 15 spaRoute values verified against SPA App.tsx routes — zero mismatches
+
+### Premium UI Fixes (Session 60, Commits dd587d2 + e067d41) — VERIFIED LIVE
+- [x] **ClubStatsPanel label overlap**: "TOTAL CLUB LEVELACTIVE" text running together → Fixed font-size 14px→11px, added white-space:nowrap
+- [x] **9-max table seat clipping**: Seats 3,4 at x:3-5% and seats 8,9 at x:95-97% causing "EMPTY" labels to clip → Shifted to x:10% and x:90%
+- [x] **Pineapple game card labels**: "PINEAP" truncated → OFC Pineapple="OFC", Pineapple="PNPL", Crazy Pineapple="CRAZY"
+- **Files modified**: src/components/club/ClubStatsPanel.css, src/components/table/PokerTable.tsx, src/pages/TablePage.tsx, src/components/lobby/DynamicGameCard.tsx
+
+### Premium Design Audit (Session 60) — COMPARING TO ClubGG/PokerBros/WPT
+**Pages audited with premium design standards**:
+- [x] **Homepage**: Card showcase with featured club, action bar (Create/Find/Join), stat panel — PASS
+- [x] **Club Detail**: Game cards in 2-column grid, color-coded variants, BBJ badges, filter pills — PASS
+- [x] **Tournament Lobby**: Status/type filters, tournament cards with progress bars — PASS
+- [x] **Cashier**: Neon-blue theme, dual wallets (chips + diamonds), Send/Buy-In/Cash-Out/Mint/History — PASS
+- [x] **Members**: Stat cards, search, filter pills, member cards with avatars — PASS
+- [x] **Dashboard**: Purple theme, metrics grid, time range filters, sub-tabs — PASS
+- [x] **Settings/Admin**: Form sections, toggle controls, game rules — PASS
+- [x] **Club Tournaments**: Back nav, create button, tournament cards — PASS
+- [x] **Hand History**: Filter pills, empty state — PASS
+- [x] **Search/Marketplace**: Search bar, category filters, recent searches — PASS
+- [x] **Unions**: Union cards with stats, create union CTA — PASS
+- [x] **Leaderboard**: Top 3 podium, club selector, time filters — PASS
+- [x] **Player Stats**: Summary cards, sub-tabs (Overview/Preflop/Postflop/Results/Charts) — PASS
+- [x] **Table (9-max)**: All seats visible after fix, premium green felt, time bank, straddle — PASS
+- [x] **Messages**: Search, club messages channel, empty state — PASS
+
 ### LIVE E2E TESTING (Session 57) — ALL PASSING
 - [x] **Tournament Registration**: Sign Up modal → wallet deduction (-20 buy-in, -2 fee) → entry confirmed → transactions logged
 - [x] **Tournament Unregistration**: Unregister → full refund (+22) → entry removed → transaction logged
@@ -451,10 +494,17 @@ MTT: Starts at scheduled time when min_players met
 3. Satellite tournaments — type defined, limited functionality
 4. Training system detail pages — ArenaTrainingController exists, UI minimal
 5. Custom blind structure editor — predefined structures work, custom creation limited
-6. **PARENT APP LEADERBOARD**: The smarter.poker parent Next.js app renders its OWN leaderboard at `/hub/club-arena/leaderboard` with different UI (Chip Balance/Profit/Hands Played/Win Rate buttons) — it does NOT load Club Arena's LeaderboardPage.tsx. The "Loading Rankings..." stuck state at that URL is a parent app bug, NOT a Club Arena bug. Club Arena's leaderboard is correctly fixed but only accessible when the SPA loads directly.
+6. **PARENT APP LEADERBOARD**: RESOLVED — World Hub now embeds Club Arena SPA via iframe, so leaderboard at smarter.poker/hub/club-arena/leaderboard loads Club Arena's LeaderboardPage.tsx correctly.
 
 ## GIT LOG (RECENT)
 ```
+e067d41 Fix game variant labels: PINEAP → OFC/PNPL/CRAZY for premium display
+cc4e7bb feat: Phase 3 — Multi-table tab system with swipe navigation + comprehensive upgrade plan
+dd587d2 Fix premium UI issues: stat label overlap and table seat clipping
+3a43821 feat: Phase 2 premium UI — ActionPanel integration, community cards sizing, pill pre-action buttons
+b8dcee6 feat: PokerBros-exact hole cards, winner highlighting, and hand name display
+19672bd feat: premium table UI overhaul — PokerBros/ClubGG style
+dae1230 Add postMessage auth listener for iframe embedding from World Hub
 da73ef0 Remove header from poker table pages — no header on cash games or tournaments
 c5498d5 Phase 11c: Match GlobalHeader to World Hub UniversalHeader exactly
 a0f5dea Phase 11b: World Hub style card showcase — featured center + side clubs
