@@ -69,6 +69,7 @@ export interface TableLiquidityStatus {
 }
 
 // HorseDecision is defined in HorseLogic.ts — use that canonical version
+import type { HorseDecision } from '../engine/HorseLogic';
 export type { HorseDecision } from '../engine/HorseLogic';
 
 export interface HandContext {

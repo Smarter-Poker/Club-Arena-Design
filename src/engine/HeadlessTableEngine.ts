@@ -18,7 +18,7 @@
 import { supabase, broadcastHandState } from '../lib/supabase';
 import { HandController, type HandConfig, type HandEvent } from './HandController';
 import { HandPersistence } from '../services/HandPersistenceService';
-import { HydraService, type HorseDecision } from '../services/HydraService';
+import { HydraService } from '../services/HydraService';
 import { HorseLogic, type HorseStyle, type HorseDecision } from './HorseLogic';
 import { HorseBrainAdapter } from './HorseBrainAdapter';
 import { GTOQueryService } from '../services/GTOQueryService';

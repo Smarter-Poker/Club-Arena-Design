@@ -198,9 +198,9 @@ function CarouselSection({
                 const orderMap = new Map(savedOrder.map((id, idx) => [id, idx]));
                 const sorted = [...displayClubs].sort((a, b) => {
                     // Pinned clubs always first
-                    const aPinned = pinnedClubIds.includes(a.id) ? -1 : 0;
-                    const bPinned = pinnedClubIds.includes(b.id) ? -1 : 0;
-                    if (aPinned !== bPinned) return aPinned - bPinned;
+                    const aPinned = pinnedClubIds.includes(a.id) ? 1 : 0;
+                    const bPinned = pinnedClubIds.includes(b.id) ? 1 : 0;
+                    if (bPinned !== aPinned) return bPinned - aPinned;
                     // Then saved order
                     const aOrder = orderMap.get(a.id) ?? 999;
                     const bOrder = orderMap.get(b.id) ?? 999;
