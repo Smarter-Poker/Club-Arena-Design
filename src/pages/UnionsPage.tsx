@@ -10,6 +10,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import CreateUnionModal from '../components/union/CreateUnionModal';
 import { unionService, type Union } from '../services/UnionService';
 import { masterBus } from '../core/MasterBus';
+import { useToast } from '../components/common/Toast';
 
 const unionCardAnimationStyle = (index: number) => ({
   opacity: 0,
@@ -105,9 +106,9 @@ export default function UnionsPage() {
   useEffect(() => {
     loadUnions();
 
-    // Refresh when club membership changes
-    const unsubJoined = masterBus.subscribe('CLUB_JOINED', () => loadUnions());
-    const unsubLeft = masterBus.subscribe('CLUB_LEFT', () => loadUnions());
+    // Refresh when club membership changes (debounced to prevent rapid-fire reloads)
+    const unsubJoined = masterBus.subscribeDebounced('CLUB_JOINED', () => loadUnions(), 500);
+    const unsubLeft = masterBus.subscribeDebounced('CLUB_LEFT', () => loadUnions(), 500);
     return () => {
       unsubJoined();
       unsubLeft();

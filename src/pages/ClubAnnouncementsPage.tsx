@@ -137,6 +137,7 @@ export default function ClubAnnouncementsPage() {
       }
     } catch (error) {
       console.error('Failed to load announcements:', error);
+      toast.error('Failed to load announcements');
     }
     setLoading(false);
   };
@@ -194,6 +195,7 @@ export default function ClubAnnouncementsPage() {
       }
     } catch (err) {
       console.error('Failed to toggle pin:', err);
+      toast.error('Failed to update pin status');
     }
   };
 

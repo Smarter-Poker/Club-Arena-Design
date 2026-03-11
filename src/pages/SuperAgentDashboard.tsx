@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import { AgentService } from '../services/AgentService';
 import type { Agent, AgentPlayer } from '../services/AgentService';
@@ -18,399 +18,425 @@ import './SuperAgentDashboard.css';
 type DashboardTab = 'overview' | 'agents' | 'players' | 'commissions' | 'transfers';
 
 export default function SuperAgentDashboard() {
-    const navigate = useNavigate();
-    const { clubId } = useParams();
-    const { user } = useUserStore();
-    const toast = useToast();
+  const navigate = useNavigate();
+  const { clubId } = useParams();
+  const { user } = useUserStore();
+  const toast = useToast();
 
-    const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
-    const [agent, setAgent] = useState<Agent | null>(null);
-    const [subAgents, setSubAgents] = useState<Agent[]>([]);
-    const [players, setPlayers] = useState<AgentPlayer[]>([]);
-    const [spread, setSpread] = useState<CommissionSpread | null>(null);
-    const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
+  const [agent, setAgent] = useState<Agent | null>(null);
+  const [subAgents, setSubAgents] = useState<Agent[]>([]);
+  const [players, setPlayers] = useState<AgentPlayer[]>([]);
+  const [spread, setSpread] = useState<CommissionSpread | null>(null);
+  const [loading, setLoading] = useState(true);
 
-    const [transferPlayerId, setTransferPlayerId] = useState('');
-    const [transferAmount, setTransferAmount] = useState('');
-    const [isTransferring, setIsTransferring] = useState(false);
-    const [visibleStatCards, setVisibleStatCards] = useState(new Set<number>());
-    const [visibleAgentRows, setVisibleAgentRows] = useState(new Set<number>());
-    const [visiblePlayerRows, setVisiblePlayerRows] = useState(new Set<number>());
+  const [transferPlayerId, setTransferPlayerId] = useState('');
+  const [transferAmount, setTransferAmount] = useState('');
+  const [isTransferring, setIsTransferring] = useState(false);
+  const [visibleStatCards, setVisibleStatCards] = useState(new Set<number>());
+  const [visibleAgentRows, setVisibleAgentRows] = useState(new Set<number>());
+  const [visiblePlayerRows, setVisiblePlayerRows] = useState(new Set<number>());
 
-    // Stagger stat cards on mount
-    useEffect(() => {
-        const timers = [0, 1, 2, 3].map((i) =>
-            setTimeout(() => setVisibleStatCards(prev => new Set([...prev, i])), i * 60)
-        );
-        return () => timers.forEach(t => clearTimeout(t));
-    }, []);
-
-    // Stagger agent rows
-    useEffect(() => {
-        setVisibleAgentRows(new Set());
-        const timers = subAgents.map((_, i) =>
-            setTimeout(() => setVisibleAgentRows(prev => new Set([...prev, i])), i * 50)
-        );
-        return () => timers.forEach(t => clearTimeout(t));
-    }, [subAgents.length]);
-
-    // Stagger player rows
-    useEffect(() => {
-        setVisiblePlayerRows(new Set());
-        const timers = players.map((_, i) =>
-            setTimeout(() => setVisiblePlayerRows(prev => new Set([...prev, i])), i * 40)
-        );
-        return () => timers.forEach(t => clearTimeout(t));
-    }, [players.length]);
-
-    useEffect(() => {
-        if (clubId && user?.id) {
-            loadDashboardData();
-
-            // Real-time updates for agent activity
-            const channelKey = 'super-agent-live';
-
-            const channel = masterBus.getOrCreateChannel(channelKey);
-                channel
-                .on(
-                    'postgres_changes',
-                    {
-                        event: '*',
-                        schema: 'public',
-                        table: 'club_members',
-                        filter: `club_id=eq.${clubId}`,
-                    },
-                    () => loadDashboardData()
-                )
-                .on(
-                    'postgres_changes',
-                    {
-                        event: '*',
-                        schema: 'public',
-                        table: 'chip_transactions',
-                    },
-                    () => loadDashboardData()
-                )
-                .subscribe();
-
-            return () => {
-                masterBus.removeRegisteredChannel(channelKey);
-            };
-        }
-    }, [clubId, user?.id]);
-
-    // Bus event listeners for cross-component sync (debounced to prevent rapid-fire reloads)
-    useEffect(() => {
-        if (!clubId || !user?.id) return;
-        const unsubWallet = masterBus.subscribeDebounced('WALLET_REFRESHED', () => {
-            loadDashboardData();
-        }, 300);
-        const unsubBalance = masterBus.subscribeDebounced('BALANCE_UPDATED', () => {
-            loadDashboardData();
-        }, 300);
-        return () => { unsubWallet(); unsubBalance(); };
-    }, [clubId, user?.id]);
-
-    const loadDashboardData = async () => {
-        setLoading(true);
-        try {
-            const agents = await AgentService.getAgents(clubId!);
-            const myAgent = agents.find(a => a.userId === user?.id);
-            if (myAgent) {
-                setAgent(myAgent);
-                setSubAgents(agents.filter(a => a.parentAgentId === myAgent.id));
-                const myPlayers = await AgentService.getAgentPlayers(myAgent.id);
-                setPlayers(myPlayers);
-                const commSpread = await CommissionService.calculateSpread(myAgent.id);
-                setSpread(commSpread);
-            }
-        } catch (error) {
-            console.error('Failed to load dashboard:', error);
-            toast.error('Failed to load dashboard data');
-        }
-        setLoading(false);
-    };
-
-    const handleTransfer = async () => {
-        if (!agent || !transferPlayerId || !transferAmount) return;
-        const amount = parseFloat(transferAmount);
-        if (isNaN(amount) || amount <= 0) return;
-
-        setIsTransferring(true);
-        try {
-            await AgentService.transferToPlayer(agent.id, transferPlayerId, clubId!, amount);
-            setTransferPlayerId('');
-            toast.success(`Transferred ${amount.toLocaleString()} chips successfully`);
-            loadDashboardData();
-        } catch (error) {
-            console.error('Transfer failed:', error);
-            toast.error('Transfer failed');
-        }
-        setIsTransferring(false);
-    };
-
-    if (loading) {
-        return (
-            <div className="super-agent-dashboard">
-                <div className="loading-state"><div className="spinner" /></div>
-            </div>
-        );
-    }
-
-    if (!agent) {
-        return (
-            <div className="super-agent-dashboard">
-                <div className="empty-state">
-                    <span className="empty-icon">♠</span>
-                    <p>You are not an agent in this club</p>
-                    <button className="btn btn-primary" onClick={() => navigate(-1)}>Go Back</button>
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="super-agent-dashboard">
-
-            {/* Stats Grid */}
-            <div className="stats-grid">
-                <div
-                    className="stat-card"
-                    style={{
-                        opacity: visibleStatCards.has(0) ? 1 : 0,
-                        transform: visibleStatCards.has(0) ? 'translateY(0)' : 'translateY(8px)',
-                        transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                    }}
-                >
-                    <span className="stat-icon">●</span>
-                    <div className="stat-info">
-                        <span className="stat-value">{agent.totalPlayers}</span>
-                        <span className="stat-label">Total Players</span>
-                    </div>
-                </div>
-                <div
-                    className="stat-card"
-                    style={{
-                        opacity: visibleStatCards.has(1) ? 1 : 0,
-                        transform: visibleStatCards.has(1) ? 'translateY(0)' : 'translateY(8px)',
-                        transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                    }}
-                >
-                    <span className="stat-icon">▶</span>
-                    <div className="stat-info">
-                        <span className="stat-value">{agent.activePlayerCount}</span>
-                        <span className="stat-label">Active Now</span>
-                    </div>
-                </div>
-                <div
-                    className="stat-card"
-                    style={{
-                        opacity: visibleStatCards.has(2) ? 1 : 0,
-                        transform: visibleStatCards.has(2) ? 'translateY(0)' : 'translateY(8px)',
-                        transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                    }}
-                >
-                    <span className="stat-icon">■</span>
-                    <div className="stat-info">
-                        <span className="stat-value">{agent.subAgentCount}</span>
-                        <span className="stat-label">Sub-Agents</span>
-                    </div>
-                </div>
-                <div
-                    className="stat-card highlight"
-                    style={{
-                        opacity: visibleStatCards.has(3) ? 1 : 0,
-                        transform: visibleStatCards.has(3) ? 'translateY(0)' : 'translateY(8px)',
-                        transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                    }}
-                >
-                    <span className="stat-icon">◉</span>
-                    <div className="stat-info">
-                        <span className="stat-value">{agent.weeklyRakeGenerated.toLocaleString()}</span>
-                        <span className="stat-label">Weekly Rake</span>
-                    </div>
-                </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="dashboard-tabs">
-                {(['overview', 'agents', 'players', 'commissions', 'transfers'] as DashboardTab[]).map(tab => (
-                    <button
-                        key={tab}
-                        className={activeTab === tab ? 'active' : ''}
-                        onClick={() => setActiveTab(tab)}
-                    >
-                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                    </button>
-                ))}
-            </div>
-
-            {/* Content */}
-            <div className="dashboard-content">
-                {activeTab === 'overview' && (
-                    <div className="overview-section">
-                        <div className="balance-cards">
-                            <div className="balance-card">
-                                <span className="label">Business Balance</span>
-                                <span className="value">{agent.businessBalance.toLocaleString()}</span>
-                            </div>
-                            <div className="balance-card">
-                                <span className="label">Player Balance</span>
-                                <span className="value">{agent.playerBalance.toLocaleString()}</span>
-                            </div>
-                            <div className="balance-card">
-                                <span className="label">Credit Used</span>
-                                <span className="value">{agent.creditUsed.toLocaleString()} / {agent.creditLimit.toLocaleString()}</span>
-                            </div>
-                        </div>
-                        <div className="rates-card">
-                            <h3>Your Rates</h3>
-                            <div className="rate-row">
-                                <span>Commission Rate</span>
-                                <span className="rate-value">{((agent.commissionRate || 0) * 100).toFixed(1)}%</span>
-                            </div>
-                            <div className="rate-row">
-                                <span>Player Rakeback</span>
-                                <span className="rate-value">{((agent.playerRakebackRate || 0) * 100).toFixed(1)}%</span>
-                            </div>
-                        </div>
-                        {/* Credit Request Widget */}
-                        <div className="credit-section">
-                            <h3>Credit</h3>
-                            <CreditRequestWidget
-                                agentId={agent.id}
-                                agentName={agent.displayName || 'Agent'}
-                                parentAgentId={agent.parentAgentId}
-                                currentCreditLimit={agent.creditLimit}
-                                currentCreditUsed={agent.creditUsed}
-                            />
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'agents' && (
-                    <div className="agents-section">
-                        <h3>Your Sub-Agents ({subAgents.length})</h3>
-                        {subAgents.length === 0 ? (
-                            <p className="empty-text">No sub-agents yet</p>
-                        ) : (
-                            <div className="agent-list">
-                                {subAgents.map((sub, index) => (
-                                    <div
-                                        key={sub.id}
-                                        className="agent-row"
-                                        style={{
-                                            opacity: visibleAgentRows.has(index) ? 1 : 0,
-                                            transform: visibleAgentRows.has(index) ? 'translateY(0)' : 'translateY(8px)',
-                                            transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                                        }}
-                                    >
-                                        <div className="agent-info">
-                                            <span className="agent-name">{sub.displayName || 'Agent'}</span>
-                                            <span className="agent-role">{sub.role}</span>
-                                        </div>
-                                        <div className="agent-stats">
-                                            <span>{sub.totalPlayers} players</span>
-                                            <span className="rake">{sub.weeklyRakeGenerated.toLocaleString()}</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {activeTab === 'players' && (
-                    <div className="players-section">
-                        <h3>Your Players ({players.length})</h3>
-                        <div className="player-list">
-                            {players.map((player, index) => (
-                                <div
-                                    key={player.id}
-                                    className="player-row"
-                                    style={{
-                                        opacity: visiblePlayerRows.has(index) ? 1 : 0,
-                                        transform: visiblePlayerRows.has(index) ? 'translateY(0)' : 'translateY(8px)',
-                                        transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                                    }}
-                                >
-                                    <div className="player-avatar">
-                                        {player.avatarUrl ? (
-                                            <img src={player.avatarUrl} alt="" loading="lazy" />
-                                        ) : (
-                                            <span>{player.displayName[0]?.toUpperCase()}</span>
-                                        )}
-                                        {player.isOnline && <span className="online-dot" />}
-                                    </div>
-                                    <div className="player-info">
-                                        <span className="player-name">{player.displayName}</span>
-                                        <span className="player-rakeback">{((player.rakebackPercent || 0) * 100).toFixed(1)}% rakeback</span>
-                                    </div>
-                                    <div className="player-balance">
-                                        {player.chipBalance.toLocaleString()}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'commissions' && spread && (
-                    <div className="commissions-section">
-                        <h3>Commission Breakdown</h3>
-                        <div className="commission-summary">
-                            <div className="commission-row">
-                                <span>Gross Commission Rate</span>
-                                <span className="value">{((spread.grossCommissionRate || 0) * 100).toFixed(1)}%</span>
-                            </div>
-                            <div className="commission-row">
-                                <span>Paid to Downlines</span>
-                                <span className="value negative">-{spread.payoutToDownlines.toLocaleString()}</span>
-                            </div>
-                            <div className="commission-row total">
-                                <span>Net Margin</span>
-                                <span className="value">{spread.netMargin.toLocaleString()}</span>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'transfers' && (
-                    <div className="transfers-section">
-                        <h3>Transfer to Player</h3>
-                        <div className="transfer-form">
-                            <div className="form-row">
-                                <label>Select Player</label>
-                                <select
-                                    value={transferPlayerId}
-                                    onChange={(e) => setTransferPlayerId(e.target.value)}
-                                >
-                                    <option value="">Choose player...</option>
-                                    {players.map(p => (
-                                        <option key={p.id} value={p.userId}>{p.displayName}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="form-row">
-                                <label>Amount</label>
-                                <input
-                                    type="number"
-                                    placeholder="0.00"
-                                    value={transferAmount}
-                                    onChange={(e) => setTransferAmount(e.target.value)}
-                                />
-                            </div>
-                            <button
-                                className="btn btn-primary"
-                                onClick={handleTransfer}
-                                disabled={isTransferring || !transferPlayerId || !transferAmount}
-                            >
-                                {isTransferring ? 'Sending...' : 'Send Chips'}
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
+  // Stagger stat cards on mount
+  useEffect(() => {
+    const timers = [0, 1, 2, 3].map((i) =>
+      setTimeout(() => setVisibleStatCards((prev) => new Set([...prev, i])), i * 60)
     );
+    return () => timers.forEach((t) => clearTimeout(t));
+  }, []);
+
+  // Stagger agent rows
+  useEffect(() => {
+    setVisibleAgentRows(new Set());
+    const timers = subAgents.map((_, i) =>
+      setTimeout(() => setVisibleAgentRows((prev) => new Set([...prev, i])), i * 50)
+    );
+    return () => timers.forEach((t) => clearTimeout(t));
+  }, [subAgents.length]);
+
+  // Stagger player rows
+  useEffect(() => {
+    setVisiblePlayerRows(new Set());
+    const timers = players.map((_, i) =>
+      setTimeout(() => setVisiblePlayerRows((prev) => new Set([...prev, i])), i * 40)
+    );
+    return () => timers.forEach((t) => clearTimeout(t));
+  }, [players.length]);
+
+  useEffect(() => {
+    if (clubId && user?.id) {
+      loadDashboardData();
+
+      // Real-time updates for agent activity
+      const channelKey = 'super-agent-live';
+
+      const channel = masterBus.getOrCreateChannel(channelKey);
+      channel
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'club_members',
+            filter: `club_id=eq.${clubId}`,
+          },
+          () => loadDashboardData()
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'chip_transactions',
+          },
+          () => loadDashboardData()
+        )
+        .subscribe();
+
+      return () => {
+        masterBus.removeRegisteredChannel(channelKey);
+      };
+    }
+  }, [clubId, user?.id]);
+
+  // Bus event listeners for cross-component sync (debounced to prevent rapid-fire reloads)
+  useEffect(() => {
+    if (!clubId || !user?.id) return;
+    const unsubWallet = masterBus.subscribeDebounced(
+      'WALLET_REFRESHED',
+      () => {
+        loadDashboardData();
+      },
+      300
+    );
+    const unsubBalance = masterBus.subscribeDebounced(
+      'BALANCE_UPDATED',
+      () => {
+        loadDashboardData();
+      },
+      300
+    );
+    return () => {
+      unsubWallet();
+      unsubBalance();
+    };
+  }, [clubId, user?.id]);
+
+  const loadDashboardData = async () => {
+    setLoading(true);
+    try {
+      const agents = await AgentService.getAgents(clubId!);
+      const myAgent = agents.find((a) => a.userId === user?.id);
+      if (myAgent) {
+        setAgent(myAgent);
+        setSubAgents(agents.filter((a) => a.parentAgentId === myAgent.id));
+        const myPlayers = await AgentService.getAgentPlayers(myAgent.id);
+        setPlayers(myPlayers);
+        const commSpread = await CommissionService.calculateSpread(myAgent.id);
+        setSpread(commSpread);
+      }
+    } catch (error) {
+      console.error('Failed to load dashboard:', error);
+      toast.error('Failed to load dashboard data');
+    }
+    setLoading(false);
+  };
+
+  const handleTransfer = async () => {
+    if (!agent || !transferPlayerId || !transferAmount) return;
+    const amount = parseFloat(transferAmount);
+    if (isNaN(amount) || amount <= 0) return;
+
+    setIsTransferring(true);
+    try {
+      await AgentService.transferToPlayer(agent.id, transferPlayerId, clubId!, amount);
+      setTransferPlayerId('');
+      toast.success(`Transferred ${amount.toLocaleString()} chips successfully`);
+      loadDashboardData();
+    } catch (error) {
+      console.error('Transfer failed:', error);
+      toast.error('Transfer failed');
+    }
+    setIsTransferring(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="super-agent-dashboard">
+        <div className="loading-state">
+          <div className="spinner" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!agent) {
+    return (
+      <div className="super-agent-dashboard">
+        <div className="empty-state">
+          <span className="empty-icon">♠</span>
+          <p>You are not an agent in this club</p>
+          <button className="btn btn-primary" onClick={() => navigate(-1)}>
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="super-agent-dashboard">
+      {/* Stats Grid */}
+      <div className="stats-grid">
+        <div
+          className="stat-card"
+          style={{
+            opacity: visibleStatCards.has(0) ? 1 : 0,
+            transform: visibleStatCards.has(0) ? 'translateY(0)' : 'translateY(8px)',
+            transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+          }}
+        >
+          <span className="stat-icon">●</span>
+          <div className="stat-info">
+            <span className="stat-value">{agent.totalPlayers}</span>
+            <span className="stat-label">Total Players</span>
+          </div>
+        </div>
+        <div
+          className="stat-card"
+          style={{
+            opacity: visibleStatCards.has(1) ? 1 : 0,
+            transform: visibleStatCards.has(1) ? 'translateY(0)' : 'translateY(8px)',
+            transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+          }}
+        >
+          <span className="stat-icon">▶</span>
+          <div className="stat-info">
+            <span className="stat-value">{agent.activePlayerCount}</span>
+            <span className="stat-label">Active Now</span>
+          </div>
+        </div>
+        <div
+          className="stat-card"
+          style={{
+            opacity: visibleStatCards.has(2) ? 1 : 0,
+            transform: visibleStatCards.has(2) ? 'translateY(0)' : 'translateY(8px)',
+            transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+          }}
+        >
+          <span className="stat-icon">■</span>
+          <div className="stat-info">
+            <span className="stat-value">{agent.subAgentCount}</span>
+            <span className="stat-label">Sub-Agents</span>
+          </div>
+        </div>
+        <div
+          className="stat-card highlight"
+          style={{
+            opacity: visibleStatCards.has(3) ? 1 : 0,
+            transform: visibleStatCards.has(3) ? 'translateY(0)' : 'translateY(8px)',
+            transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+          }}
+        >
+          <span className="stat-icon">◉</span>
+          <div className="stat-info">
+            <span className="stat-value">{agent.weeklyRakeGenerated.toLocaleString()}</span>
+            <span className="stat-label">Weekly Rake</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="dashboard-tabs">
+        {(['overview', 'agents', 'players', 'commissions', 'transfers'] as DashboardTab[]).map(
+          (tab) => (
+            <button
+              key={tab}
+              className={activeTab === tab ? 'active' : ''}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          )
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="dashboard-content">
+        {activeTab === 'overview' && (
+          <div className="overview-section">
+            <div className="balance-cards">
+              <div className="balance-card">
+                <span className="label">Business Balance</span>
+                <span className="value">{agent.businessBalance.toLocaleString()}</span>
+              </div>
+              <div className="balance-card">
+                <span className="label">Player Balance</span>
+                <span className="value">{agent.playerBalance.toLocaleString()}</span>
+              </div>
+              <div className="balance-card">
+                <span className="label">Credit Used</span>
+                <span className="value">
+                  {agent.creditUsed.toLocaleString()} / {agent.creditLimit.toLocaleString()}
+                </span>
+              </div>
+            </div>
+            <div className="rates-card">
+              <h3>Your Rates</h3>
+              <div className="rate-row">
+                <span>Commission Rate</span>
+                <span className="rate-value">
+                  {((agent.commissionRate || 0) * 100).toFixed(1)}%
+                </span>
+              </div>
+              <div className="rate-row">
+                <span>Player Rakeback</span>
+                <span className="rate-value">
+                  {((agent.playerRakebackRate || 0) * 100).toFixed(1)}%
+                </span>
+              </div>
+            </div>
+            {/* Credit Request Widget */}
+            <div className="credit-section">
+              <h3>Credit</h3>
+              <CreditRequestWidget
+                agentId={agent.id}
+                agentName={agent.displayName || 'Agent'}
+                parentAgentId={agent.parentAgentId}
+                currentCreditLimit={agent.creditLimit}
+                currentCreditUsed={agent.creditUsed}
+              />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'agents' && (
+          <div className="agents-section">
+            <h3>Your Sub-Agents ({subAgents.length})</h3>
+            {subAgents.length === 0 ? (
+              <p className="empty-text">No sub-agents yet</p>
+            ) : (
+              <div className="agent-list">
+                {subAgents.map((sub, index) => (
+                  <div
+                    key={sub.id}
+                    className="agent-row"
+                    style={{
+                      opacity: visibleAgentRows.has(index) ? 1 : 0,
+                      transform: visibleAgentRows.has(index) ? 'translateY(0)' : 'translateY(8px)',
+                      transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    }}
+                  >
+                    <div className="agent-info">
+                      <span className="agent-name">{sub.displayName || 'Agent'}</span>
+                      <span className="agent-role">{sub.role}</span>
+                    </div>
+                    <div className="agent-stats">
+                      <span>{sub.totalPlayers} players</span>
+                      <span className="rake">{sub.weeklyRakeGenerated.toLocaleString()}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'players' && (
+          <div className="players-section">
+            <h3>Your Players ({players.length})</h3>
+            <div className="player-list">
+              {players.map((player, index) => (
+                <div
+                  key={player.id}
+                  className="player-row"
+                  style={{
+                    opacity: visiblePlayerRows.has(index) ? 1 : 0,
+                    transform: visiblePlayerRows.has(index) ? 'translateY(0)' : 'translateY(8px)',
+                    transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                  }}
+                >
+                  <div className="player-avatar">
+                    {player.avatarUrl ? (
+                      <img src={player.avatarUrl} alt="" loading="lazy" />
+                    ) : (
+                      <span>{(player.displayName || 'P')[0].toUpperCase()}</span>
+                    )}
+                    {player.isOnline && <span className="online-dot" />}
+                  </div>
+                  <div className="player-info">
+                    <span className="player-name">{player.displayName}</span>
+                    <span className="player-rakeback">
+                      {((player.rakebackPercent || 0) * 100).toFixed(1)}% rakeback
+                    </span>
+                  </div>
+                  <div className="player-balance">{(player.chipBalance ?? 0).toLocaleString()}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'commissions' && spread && (
+          <div className="commissions-section">
+            <h3>Commission Breakdown</h3>
+            <div className="commission-summary">
+              <div className="commission-row">
+                <span>Gross Commission Rate</span>
+                <span className="value">
+                  {((spread.grossCommissionRate || 0) * 100).toFixed(1)}%
+                </span>
+              </div>
+              <div className="commission-row">
+                <span>Paid to Downlines</span>
+                <span className="value negative">-{spread.payoutToDownlines.toLocaleString()}</span>
+              </div>
+              <div className="commission-row total">
+                <span>Net Margin</span>
+                <span className="value">{spread.netMargin.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'transfers' && (
+          <div className="transfers-section">
+            <h3>Transfer to Player</h3>
+            <div className="transfer-form">
+              <div className="form-row">
+                <label>Select Player</label>
+                <select
+                  value={transferPlayerId}
+                  onChange={(e) => setTransferPlayerId(e.target.value)}
+                >
+                  <option value="">Choose player...</option>
+                  {players.map((p) => (
+                    <option key={p.id} value={p.userId}>
+                      {p.displayName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-row">
+                <label>Amount</label>
+                <input
+                  type="number"
+                  placeholder="0.00"
+                  value={transferAmount}
+                  onChange={(e) => setTransferAmount(e.target.value)}
+                />
+              </div>
+              <button
+                className="btn btn-primary"
+                onClick={handleTransfer}
+                disabled={isTransferring || !transferPlayerId || !transferAmount}
+              >
+                {isTransferring ? 'Sending...' : 'Send Chips'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

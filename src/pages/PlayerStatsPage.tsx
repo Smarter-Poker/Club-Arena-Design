@@ -170,13 +170,21 @@ export default function PlayerStatsPage() {
   // Debounced at 1s to coalesce with postgres_changes subscription above
   // (both fire for the same hand — bus fires immediately, postgres 100-2000ms later)
   useEffect(() => {
-    const unsubHand = masterBus.subscribeDebounced('HAND_COMPLETED', () => {
-      loadStats();
-      loadSessionHistory();
-    }, 1000);
-    const unsubBalance = masterBus.subscribeDebounced('BALANCE_UPDATED', () => {
-      loadStats();
-    }, 1000);
+    const unsubHand = masterBus.subscribeDebounced(
+      'HAND_COMPLETED',
+      () => {
+        loadStats();
+        loadSessionHistory();
+      },
+      1000
+    );
+    const unsubBalance = masterBus.subscribeDebounced(
+      'BALANCE_UPDATED',
+      () => {
+        loadStats();
+      },
+      1000
+    );
     return () => {
       unsubHand();
       unsubBalance();
@@ -254,6 +262,7 @@ export default function PlayerStatsPage() {
       }
     } catch (error) {
       console.error('Failed to load session history:', error);
+      toast.error('Failed to load session history');
     }
   };
 

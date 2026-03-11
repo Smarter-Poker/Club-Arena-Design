@@ -5,20 +5,20 @@ import { BBJService } from './BBJService';
  * ═══════════════════════════════════════════════════════════════════════════════
  *  RAKE WATERFALL ENGINE
  * ═══════════════════════════════════════════════════════════════════════════════
- * 
+ *
  * Complete rake management implementing the financial laws:
- * 
+ *
  * LOCKED SCALING LAWS (Hard Law):
  * - 10% Rake Law: Flat 10.00% of Total Pot (No Flop, No Drop)
  * - 2.5x Cap Law: Rake Cap = Big Blind × 2.5
  * - 0.5x BBJ Law: BBJ Drop = Big Blind × 0.5
- * 
+ *
  * WATERFALL FLOW:
  * 1. Calculate Rake & BBJ from pot
  * 2. Execute Pot Drops (RPC)
  * 3. Attribute Rake to Dealt-In Players
  * 4. Queue Commission Credits → Monday Settlement
- * 
+ *
  * CORE LAWS:
  * 1. Rake is taken from Pot
  * 2. Rake is split EVENLY among DEALT-IN players
@@ -31,41 +31,41 @@ import { BBJService } from './BBJService';
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface RakeCalculation {
-    potSize: number;
-    bigBlind: number;
-    rakePercent: number;
-    rawRake: number;
-    cappedRake: number;
-    rakeCap: number;
-    bbjDrop: number;
-    totalDeduction: number;
-    netPot: number;
+  potSize: number;
+  bigBlind: number;
+  rakePercent: number;
+  rawRake: number;
+  cappedRake: number;
+  rakeCap: number;
+  bbjDrop: number;
+  totalDeduction: number;
+  netPot: number;
 }
 
 export interface RakeAttribution {
-    userId: string;
-    tableId: string;
-    handId: string;
-    rakeCredit: number;
-    timestamp: string;
+  userId: string;
+  tableId: string;
+  handId: string;
+  rakeCredit: number;
+  timestamp: string;
 }
 
 export interface WaterfallResult {
-    handId: string;
-    tableId: string;
-    calculation: RakeCalculation;
-    attributions: RakeAttribution[];
-    bbjContributed: boolean;
-    commissionsQueued: boolean;
+  handId: string;
+  tableId: string;
+  calculation: RakeCalculation;
+  attributions: RakeAttribution[];
+  bbjContributed: boolean;
+  commissionsQueued: boolean;
 }
 
 export interface DealtInPlayer {
-    userId: string;
-    agentId?: string;
-    clubId: string;
-    isSittingOut: boolean;
-    hasCards: boolean;
-    wentToFlop: boolean;
+  userId: string;
+  agentId?: string;
+  clubId: string;
+  isSittingOut: boolean;
+  hasCards: boolean;
+  wentToFlop: boolean;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -73,53 +73,182 @@ export interface DealtInPlayer {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface RakeTier {
-    sb: number;
-    bb: number;
-    rakePercent: number;
-    maxAmount: number;       // Cap in dollars
-    bbjRakeBB: number;       // BBJ drop in BB units
-    mainBBJ: number;         // % of BBJ drop → Main pool
-    backupBBJ: number;       // % of BBJ drop → Backup pool
-    promotional: number;     // % of BBJ drop → Promo pool
+  sb: number;
+  bb: number;
+  rakePercent: number;
+  maxAmount: number; // Cap in dollars
+  bbjRakeBB: number; // BBJ drop in BB units
+  mainBBJ: number; // % of BBJ drop → Main pool
+  backupBBJ: number; // % of BBJ drop → Backup pool
+  promotional: number; // % of BBJ drop → Promo pool
 }
 
 const RAKE_CHART: RakeTier[] = [
-    { sb: 0.10, bb: 0.20, rakePercent: 0.10, maxAmount: 3,    bbjRakeBB: 0.60,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
-    { sb: 0.20, bb: 0.40, rakePercent: 0.10, maxAmount: 3,    bbjRakeBB: 0.60,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
-    { sb: 0.25, bb: 0.50, rakePercent: 0.10, maxAmount: 3,    bbjRakeBB: 0.60,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
-    { sb: 0.30, bb: 0.60, rakePercent: 0.10, maxAmount: 5,    bbjRakeBB: 0.60,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
-    { sb: 0.50, bb: 1.00, rakePercent: 0.10, maxAmount: 5,    bbjRakeBB: 0.25,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
-    { sb: 1.00, bb: 2.00, rakePercent: 0.10, maxAmount: 5,    bbjRakeBB: 0.25,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
-    { sb: 2.00, bb: 4.00, rakePercent: 0.10, maxAmount: 7.50, bbjRakeBB: 0.12,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
-    { sb: 2.00, bb: 5.00, rakePercent: 0.10, maxAmount: 7.50, bbjRakeBB: 0.12,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
-    { sb: 5.00, bb: 5.00, rakePercent: 0.10, maxAmount: 7.50, bbjRakeBB: 0.12,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
-    { sb: 3.00, bb: 6.00, rakePercent: 0.10, maxAmount: 8,    bbjRakeBB: 0.12,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
-    { sb: 4.00, bb: 8.00, rakePercent: 0.10, maxAmount: 10,   bbjRakeBB: 0.12,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
-    { sb: 5.00, bb: 10.0, rakePercent: 0.10, maxAmount: 12.50,bbjRakeBB: 0.06,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
-    { sb: 10.0, bb: 20.0, rakePercent: 0.10, maxAmount: 15,   bbjRakeBB: 0.06,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
-    { sb: 10.0, bb: 25.0, rakePercent: 0.10, maxAmount: 15,   bbjRakeBB: 0.06,  mainBBJ: 0.40, backupBBJ: 0.30, promotional: 0.30 },
+  {
+    sb: 0.1,
+    bb: 0.2,
+    rakePercent: 0.1,
+    maxAmount: 3,
+    bbjRakeBB: 0.6,
+    mainBBJ: 0.4,
+    backupBBJ: 0.3,
+    promotional: 0.3,
+  },
+  {
+    sb: 0.2,
+    bb: 0.4,
+    rakePercent: 0.1,
+    maxAmount: 3,
+    bbjRakeBB: 0.6,
+    mainBBJ: 0.4,
+    backupBBJ: 0.3,
+    promotional: 0.3,
+  },
+  {
+    sb: 0.25,
+    bb: 0.5,
+    rakePercent: 0.1,
+    maxAmount: 3,
+    bbjRakeBB: 0.6,
+    mainBBJ: 0.4,
+    backupBBJ: 0.3,
+    promotional: 0.3,
+  },
+  {
+    sb: 0.3,
+    bb: 0.6,
+    rakePercent: 0.1,
+    maxAmount: 5,
+    bbjRakeBB: 0.6,
+    mainBBJ: 0.4,
+    backupBBJ: 0.3,
+    promotional: 0.3,
+  },
+  {
+    sb: 0.5,
+    bb: 1.0,
+    rakePercent: 0.1,
+    maxAmount: 5,
+    bbjRakeBB: 0.25,
+    mainBBJ: 0.4,
+    backupBBJ: 0.3,
+    promotional: 0.3,
+  },
+  {
+    sb: 1.0,
+    bb: 2.0,
+    rakePercent: 0.1,
+    maxAmount: 5,
+    bbjRakeBB: 0.25,
+    mainBBJ: 0.4,
+    backupBBJ: 0.3,
+    promotional: 0.3,
+  },
+  {
+    sb: 2.0,
+    bb: 4.0,
+    rakePercent: 0.1,
+    maxAmount: 7.5,
+    bbjRakeBB: 0.12,
+    mainBBJ: 0.4,
+    backupBBJ: 0.3,
+    promotional: 0.3,
+  },
+  {
+    sb: 2.0,
+    bb: 5.0,
+    rakePercent: 0.1,
+    maxAmount: 7.5,
+    bbjRakeBB: 0.12,
+    mainBBJ: 0.4,
+    backupBBJ: 0.3,
+    promotional: 0.3,
+  },
+  {
+    sb: 5.0,
+    bb: 5.0,
+    rakePercent: 0.1,
+    maxAmount: 7.5,
+    bbjRakeBB: 0.12,
+    mainBBJ: 0.4,
+    backupBBJ: 0.3,
+    promotional: 0.3,
+  },
+  {
+    sb: 3.0,
+    bb: 6.0,
+    rakePercent: 0.1,
+    maxAmount: 8,
+    bbjRakeBB: 0.12,
+    mainBBJ: 0.4,
+    backupBBJ: 0.3,
+    promotional: 0.3,
+  },
+  {
+    sb: 4.0,
+    bb: 8.0,
+    rakePercent: 0.1,
+    maxAmount: 10,
+    bbjRakeBB: 0.12,
+    mainBBJ: 0.4,
+    backupBBJ: 0.3,
+    promotional: 0.3,
+  },
+  {
+    sb: 5.0,
+    bb: 10.0,
+    rakePercent: 0.1,
+    maxAmount: 12.5,
+    bbjRakeBB: 0.06,
+    mainBBJ: 0.4,
+    backupBBJ: 0.3,
+    promotional: 0.3,
+  },
+  {
+    sb: 10.0,
+    bb: 20.0,
+    rakePercent: 0.1,
+    maxAmount: 15,
+    bbjRakeBB: 0.06,
+    mainBBJ: 0.4,
+    backupBBJ: 0.3,
+    promotional: 0.3,
+  },
+  {
+    sb: 10.0,
+    bb: 25.0,
+    rakePercent: 0.1,
+    maxAmount: 15,
+    bbjRakeBB: 0.06,
+    mainBBJ: 0.4,
+    backupBBJ: 0.3,
+    promotional: 0.3,
+  },
 ];
 
 /** Look up the correct rake tier for given blinds — falls back to closest match */
 function getRakeTier(smallBlind: number, bigBlind: number): RakeTier {
-    // Exact match first
-    const exact = RAKE_CHART.find(t => t.sb === smallBlind && t.bb === bigBlind);
-    if (exact) return exact;
+  // Exact match first
+  const exact = RAKE_CHART.find((t) => t.sb === smallBlind && t.bb === bigBlind);
+  if (exact) return exact;
 
-    // Closest by big blind
-    let closest = RAKE_CHART[0];
-    let minDiff = Math.abs(bigBlind - closest.bb);
-    for (const tier of RAKE_CHART) {
-        const diff = Math.abs(bigBlind - tier.bb);
-        if (diff < minDiff) { minDiff = diff; closest = tier; }
+  // Closest by big blind
+  let closest = RAKE_CHART[0];
+  let minDiff = Math.abs(bigBlind - closest.bb);
+  for (const tier of RAKE_CHART) {
+    const diff = Math.abs(bigBlind - tier.bb);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closest = tier;
     }
-    return closest;
+  }
+  return closest;
 }
 
 const RAKE_LAWS = {
-    RAKE_PERCENT: 0.10,        // 10% of pot (universal)
-    TOURNAMENT_RAKE: 0.10,     // Flat 10% on tournament buy-ins
-    MIN_POT_FOR_RAKE: 0,       // Minimum pot size to take rake
+  RAKE_PERCENT: 0.1, // 10% of pot (universal)
+  TOURNAMENT_RAKE: 0.1, // Flat 10% on tournament buy-ins
+  MIN_POT_FOR_RAKE: 0, // Minimum pot size to take rake
 } as const;
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -127,414 +256,481 @@ const RAKE_LAWS = {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const RakeService = {
-    /**
-     * CALCULATE RAKE & BBJ
-     * Implements the Locked Scaling Laws
-     */
-    calculateRake(potSize: number, bigBlind: number, wentToFlop: boolean = true, smallBlind?: number): RakeCalculation {
-        const sb = smallBlind ?? bigBlind / 2;
-        const tier = getRakeTier(sb, bigBlind);
+  /**
+   * CALCULATE RAKE & BBJ
+   * Implements the Locked Scaling Laws
+   */
+  calculateRake(
+    potSize: number,
+    bigBlind: number,
+    wentToFlop: boolean = true,
+    smallBlind?: number
+  ): RakeCalculation {
+    const sb = smallBlind ?? bigBlind / 2;
+    const tier = getRakeTier(sb, bigBlind);
 
-        // NO FLOP, NO DROP rule
-        if (!wentToFlop) {
-            return {
-                potSize, bigBlind,
-                rakePercent: tier.rakePercent,
-                rawRake: 0, cappedRake: 0,
-                rakeCap: tier.maxAmount,
-                bbjDrop: 0, totalDeduction: 0, netPot: potSize,
-            };
-        }
+    // NO FLOP, NO DROP rule
+    if (!wentToFlop) {
+      return {
+        potSize,
+        bigBlind,
+        rakePercent: tier.rakePercent,
+        rawRake: 0,
+        cappedRake: 0,
+        rakeCap: tier.maxAmount,
+        bbjDrop: 0,
+        totalDeduction: 0,
+        netPot: potSize,
+      };
+    }
 
-        // Integer arithmetic (cents) to avoid floating point — use trunc, never round
-        const potCents = Math.trunc(potSize * 100);
+    // Integer arithmetic (cents) to avoid floating point — use trunc, never round
+    const potCents = Math.trunc(potSize * 100);
 
-        // Raw rake = rakePercent of pot
-        const rawRakeCents = Math.trunc(potCents * tier.rakePercent);
+    // Raw rake = rakePercent of pot
+    const rawRakeCents = Math.trunc(potCents * tier.rakePercent);
 
-        // Cap from chart (in dollars → cents)
-        const rakeCapCents = Math.trunc(tier.maxAmount * 100);
-        const cappedRakeCents = Math.min(rawRakeCents, rakeCapCents);
+    // Cap from chart (in dollars → cents)
+    const rakeCapCents = Math.trunc(tier.maxAmount * 100);
+    const cappedRakeCents = Math.min(rawRakeCents, rakeCapCents);
 
-        // BBJ drop = bbjRakeBB × BB (in BB units → dollars → cents)
-        const bbjDropDollars = tier.bbjRakeBB * bigBlind;
-        const bbjDropCents = Math.trunc(bbjDropDollars * 100);
+    // BBJ drop = bbjRakeBB × BB (in BB units → dollars → cents)
+    const bbjDropDollars = tier.bbjRakeBB * bigBlind;
+    const bbjDropCents = Math.trunc(bbjDropDollars * 100);
 
-        // Total deduction from pot
-        const totalDeductionCents = cappedRakeCents + bbjDropCents;
+    // Total deduction from pot
+    const totalDeductionCents = cappedRakeCents + bbjDropCents;
 
+    return {
+      potSize,
+      bigBlind,
+      rakePercent: tier.rakePercent,
+      rawRake: rawRakeCents / 100,
+      cappedRake: cappedRakeCents / 100,
+      rakeCap: tier.maxAmount,
+      bbjDrop: bbjDropCents / 100,
+      totalDeduction: totalDeductionCents / 100,
+      netPot: potSize - totalDeductionCents / 100,
+    };
+  },
+
+  /** Get the BBJ split percentages for given stakes */
+  getBBJSplit(
+    smallBlind: number,
+    bigBlind: number
+  ): { main: number; backup: number; promo: number } {
+    const tier = getRakeTier(smallBlind, bigBlind);
+    return { main: tier.mainBBJ, backup: tier.backupBBJ, promo: tier.promotional };
+  },
+
+  /** Get the rake tier for given stakes */
+  getTier(smallBlind: number, bigBlind: number): RakeTier {
+    return getRakeTier(smallBlind, bigBlind);
+  },
+
+  /**
+   * EXECUTE WATERFALL
+   * Main entry point - orchestrates the full rake flow
+   */
+  async executeWaterfall(params: {
+    handId: string;
+    tableId: string;
+    clubId: string;
+    unionId?: string;
+    smallBlind?: number;
+    potSize: number;
+    bigBlind: number;
+    wentToFlop: boolean;
+    players: DealtInPlayer[];
+  }): Promise<WaterfallResult> {
+    const { handId, tableId, clubId, unionId, potSize, bigBlind, wentToFlop, players } = params;
+    const sb = params.smallBlind ?? bigBlind / 2;
+
+    // STEP 1: Calculate rake and BBJ using official stake-based chart
+    const calculation = this.calculateRake(potSize, bigBlind, wentToFlop, sb);
+
+    // STEP 2: Execute pot drops (if there's rake to take)
+    if (calculation.cappedRake > 0) {
+      const potDropSuccess = await this.executePotDrops({
+        handId,
+        tableId,
+        clubId,
+        unionId,
+        rakeAmount: calculation.cappedRake,
+        bbjAmount: calculation.bbjDrop,
+        potSize,
+        numPlayers: players.length,
+      });
+
+      // ABORT waterfall if pot drops failed — cannot attribute rake that was never collected
+      if (!potDropSuccess) {
+        console.error('[RakeService] Pot drops failed — aborting waterfall for hand:', handId);
         return {
-            potSize, bigBlind,
-            rakePercent: tier.rakePercent,
-            rawRake: rawRakeCents / 100,
-            cappedRake: cappedRakeCents / 100,
-            rakeCap: tier.maxAmount,
-            bbjDrop: bbjDropCents / 100,
-            totalDeduction: totalDeductionCents / 100,
-            netPot: potSize - (totalDeductionCents / 100),
+          handId,
+          tableId,
+          calculation,
+          attributions: [],
+          bbjContributed: false,
+          commissionsQueued: false,
         };
-    },
+      }
+    }
 
-    /** Get the BBJ split percentages for given stakes */
-    getBBJSplit(smallBlind: number, bigBlind: number): { main: number; backup: number; promo: number } {
-        const tier = getRakeTier(smallBlind, bigBlind);
-        return { main: tier.mainBBJ, backup: tier.backupBBJ, promo: tier.promotional };
-    },
+    // STEP 3: Attribute rake to dealt-in players
+    const attributions = await this.distributeHandRake(
+      tableId,
+      handId,
+      calculation.cappedRake,
+      players
+    );
 
-    /** Get the rake tier for given stakes */
-    getTier(smallBlind: number, bigBlind: number): RakeTier {
-        return getRakeTier(smallBlind, bigBlind);
-    },
+    // STEP 4: Queue commission credits
+    let commissionsQueued = false;
+    if (calculation.cappedRake > 0 && attributions.length > 0) {
+      commissionsQueued = await this.queueCommissionCredits({
+        handId,
+        clubId,
+        rakeAmount: calculation.cappedRake,
+        players: players.filter((p) => !p.isSittingOut && p.hasCards),
+      });
+    }
 
-    /**
-     * EXECUTE WATERFALL
-     * Main entry point - orchestrates the full rake flow
-     */
-    async executeWaterfall(params: {
-        handId: string;
-        tableId: string;
-        clubId: string;
-        unionId?: string;
-        smallBlind?: number;
-        potSize: number;
-        bigBlind: number;
-        wentToFlop: boolean;
-        players: DealtInPlayer[];
-    }): Promise<WaterfallResult> {
-        const { handId, tableId, clubId, unionId, potSize, bigBlind, wentToFlop, players } = params;
-        const sb = params.smallBlind ?? bigBlind / 2;
+    // STEP 5: Record BBJ contribution
+    let bbjContributed = false;
+    if (calculation.bbjDrop > 0) {
+      try {
+        let pool = await BBJService.getPool({ unionId, clubId });
 
-        // STEP 1: Calculate rake and BBJ using official stake-based chart
-        const calculation = this.calculateRake(potSize, bigBlind, wentToFlop, sb);
-
-        // STEP 2: Execute pot drops (if there's rake to take)
-        if (calculation.cappedRake > 0) {
-            const potDropSuccess = await this.executePotDrops({
-                handId,
-                tableId,
-                clubId,
-                unionId,
-                rakeAmount: calculation.cappedRake,
-                bbjAmount: calculation.bbjDrop,
-                potSize,
-                numPlayers: players.length,
-            });
-
-            // ABORT waterfall if pot drops failed — cannot attribute rake that was never collected
-            if (!potDropSuccess) {
-                console.error('[RakeService] Pot drops failed — aborting waterfall for hand:', handId);
-                return {
-                    handId,
-                    tableId,
-                    calculation,
-                    attributions: [],
-                    bbjContributed: false,
-                    commissionsQueued: false,
-                };
-            }
+        // Auto-create pool if missing (backward compatibility)
+        if (!pool && clubId) {
+          pool = await BBJService.ensurePoolExists(clubId);
         }
 
-        // STEP 3: Attribute rake to dealt-in players
-        const attributions = await this.distributeHandRake(
-            tableId,
-            handId,
-            calculation.cappedRake,
-            players
-        );
-
-        // STEP 4: Queue commission credits
-        let commissionsQueued = false;
-        if (calculation.cappedRake > 0 && attributions.length > 0) {
-            commissionsQueued = await this.queueCommissionCredits({
-                handId,
-                clubId,
-                rakeAmount: calculation.cappedRake,
-                players: players.filter(p => !p.isSittingOut && p.hasCards),
-            });
-        }
-
-        // STEP 5: Record BBJ contribution
-        let bbjContributed = false;
-        if (calculation.bbjDrop > 0) {
-            try {
-                let pool = await BBJService.getPool({ unionId, clubId });
-
-                // Auto-create pool if missing (backward compatibility)
-                if (!pool && clubId) {
-                    pool = await BBJService.ensurePoolExists(clubId);
-                }
-
-                if (pool) {
-                    const result = await BBJService.recordContribution({
-                        poolId: pool.id,
-                        handId,
-                        tableId,
-                        bigBlind,
-                        currentMainBalance: pool.main_balance,
-                    });
-                    bbjContributed = result !== null;
-                    if (!result) {
-                        console.error(`[RakeService] BBJ contribution failed for hand ${handId} — pool ${pool.id}`);
-                    }
-                } else {
-                    console.error(`[RakeService] No BBJ pool found for club ${clubId} and hand ${handId} — BBJ money cannot be contributed`);
-                }
-            } catch (e) {
-                console.error(`[RakeService] BBJ contribution failed for hand ${handId}:`, e);
-            }
-        }
-
-        // STEP 6: Update union total_rake if this club belongs to a union
-        if (calculation.cappedRake > 0 && unionId) {
-            try {
-                const { data: unionData } = await supabase
-                    .from('unions')
-                    .select('total_rake')
-                    .eq('id', unionId)
-                    .maybeSingle();
-
-                if (unionData) {
-                    await supabase
-                        .from('unions')
-                        .update({ total_rake: (unionData.total_rake || 0) + calculation.cappedRake })
-                        .eq('id', unionId);
-                }
-            } catch (e) {
-                console.warn(`[RakeService] Failed to update union total_rake for ${unionId}:`, e);
-            }
-        }
-
-        return {
+        if (pool) {
+          const result = await BBJService.recordContribution({
+            poolId: pool.id,
             handId,
             tableId,
-            calculation,
-            attributions,
-            bbjContributed,
-            commissionsQueued,
-        };
-    },
-
-    /**
-     * EXECUTE POT DROPS
-     * Atomically deduct rake and BBJ from pot
-     */
-    async executePotDrops(params: {
-        handId: string;
-        tableId: string;
-        clubId: string;
-        unionId?: string;
-        rakeAmount: number;
-        bbjAmount: number;
-        potSize?: number;
-        numPlayers?: number;
-    }): Promise<boolean> {
-        // Direct INSERT into rake_records (bypasses broken execute_pot_drops RPC)
-        const { error } = await supabase
-            .from('rake_records')
-            .insert({
-                hand_id: params.handId,
-                table_id: params.tableId,
-                club_id: params.clubId,
-                rake_amount: params.rakeAmount,
-                bbj_contribution: params.bbjAmount,
-                pot_size: params.potSize || 0,
-                num_players: params.numPlayers || 0,
-            });
-
-        if (error) {
-            console.error('RakeService.executePotDrops error:', error);
-            return false;
+            bigBlind,
+            currentMainBalance: pool.main_balance,
+            bbjDrop: calculation.bbjDrop, // Pass tier-based amount to avoid mismatch
+          });
+          bbjContributed = result !== null;
+          if (!result) {
+            console.error(
+              `[RakeService] BBJ contribution failed for hand ${handId} — pool ${pool.id}`
+            );
+          }
+        } else {
+          // CRITICAL: BBJ money was already deducted from pot but has no pool destination.
+          // Log with maximum severity so this can be detected and reconciled.
+          console.error(
+            `[RakeService] CRITICAL: No BBJ pool found for club ${clubId}, hand ${handId}. ` +
+              `BBJ drop of ${calculation.bbjDrop.toFixed(2)} was deducted from pot but cannot be recorded. ` +
+              `Manual reconciliation required.`
+          );
         }
+      } catch (e) {
+        console.error(`[RakeService] BBJ contribution failed for hand ${handId}:`, e);
+      }
+    }
 
-        return true;
-    },
-
-    /**
-     * DISTRIBUTE RAKE CREDIT
-     * Split rake evenly among dealt-in players.
-     * NOTE: rake_records INSERT is already handled by executePotDrops().
-     * This method calculates per-player attribution and updates
-     * club_members.rake_generated for each player.
-     */
-    async distributeHandRake(
-        tableId: string,
-        handId: string,
-        totalRake: number,
-        players: DealtInPlayer[]
-    ): Promise<RakeAttribution[]> {
-        // Filter to active players only
-        const activePlayers = players.filter(p => !p.isSittingOut && p.hasCards);
-
-        if (activePlayers.length === 0 || totalRake === 0) {
-            return [];
-        }
-
-        // Calculate equal split using integer arithmetic to avoid floating point loss
-        const totalRakeCents = Math.trunc(totalRake * 100);
-        const baseCreditCents = Math.trunc(totalRakeCents / activePlayers.length);
-        const remainderCents = totalRakeCents - (baseCreditCents * activePlayers.length);
-        const timestamp = new Date().toISOString();
-
-        // Build attribution records — distribute remainder 1 cent at a time
-        const attributions: RakeAttribution[] = activePlayers.map((p, i) => {
-            const extra = i < remainderCents ? 1 : 0;
-            return {
-                userId: p.userId,
-                tableId,
-                handId,
-                rakeCredit: (baseCreditCents + extra) / 100,
-                timestamp,
-            };
-        });
-
-        // Update each player's rake_generated in club_members.
-        // Try atomic RPC first, fall back to read-modify-write if RPC doesn't exist.
-        const clubId = players[0]?.clubId;
-        if (clubId) {
-            for (const attr of attributions) {
-                try {
-                    // Attempt atomic increment via RPC (safest for multi-table horses)
-                    let updated = false;
-                    try {
-                        const { error: rpcError } = await supabase.rpc('increment_rake_generated', {
-                            p_club_id: clubId,
-                            p_user_id: attr.userId,
-                            p_amount: attr.rakeCredit,
-                        });
-                        updated = !rpcError;
-                    } catch { /* RPC may not exist */ }
-
-                    // Fallback: read-modify-write (acceptable since rake credit is additive)
-                    if (!updated) {
-                        const { data: member } = await supabase
-                            .from('club_members')
-                            .select('rake_generated')
-                            .eq('club_id', clubId)
-                            .eq('user_id', attr.userId)
-                            .maybeSingle();
-
-                        if (member) {
-                            const newRake = (member.rake_generated || 0) + attr.rakeCredit;
-                            await supabase
-                                .from('club_members')
-                                .update({ rake_generated: newRake })
-                                .eq('club_id', clubId)
-                                .eq('user_id', attr.userId);
-                        }
-                    }
-                } catch (e) {
-                    console.warn(`[RakeService] Failed to update rake_generated for ${attr.userId.substring(0, 8)}:`, e);
-                }
-            }
-        }
-
-        return attributions;
-    },
-
-    /**
-     * QUEUE COMMISSION CREDITS
-     * Stage rake credits for Monday settlement payout
-     */
-    async queueCommissionCredits(params: {
-        handId: string;
-        clubId: string;
-        rakeAmount: number;
-        players: DealtInPlayer[];
-    }): Promise<boolean> {
-        // Guard against division by zero
-        if (params.players.length === 0 || params.rakeAmount <= 0) return true;
-
+    // STEP 6: Update union total_rake if this club belongs to a union
+    // Use atomic RPC when available, fallback to read-modify-write
+    if (calculation.cappedRake > 0 && unionId) {
+      try {
+        // Try atomic increment RPC first (safe for concurrent hands)
+        let updated = false;
         try {
-            // Group players by agent for commission attribution
-            // Each player contributes an equal share of the rake
-            const byAgent = new Map<string, number>();
-            const perPlayer = params.rakeAmount / params.players.length;
-
-            for (const player of params.players) {
-                if (player.agentId) {
-                    const current = byAgent.get(player.agentId) || 0;
-                    byAgent.set(player.agentId, current + perPlayer);
-                }
-            }
-
-            // No agents at this table — nothing to credit
-            if (byAgent.size === 0) return true;
-
-            // Increment each agent's rake_generated in the agents table
-            // This provides real-time tracking; weekly settlement reads from here
-            for (const [agentId, rakeCredit] of byAgent) {
-                try {
-                    // Try atomic RPC first
-                    const { error: rpcError } = await supabase.rpc('increment_agent_rake', {
-                        p_agent_id: agentId,
-                        p_amount: rakeCredit,
-                    });
-
-                    if (rpcError) {
-                        // Fallback: read-modify-write
-                        const { data: agent } = await supabase
-                            .from('agents')
-                            .select('rake_generated')
-                            .eq('id', agentId)
-                            .maybeSingle();
-
-                        if (agent) {
-                            await supabase
-                                .from('agents')
-                                .update({ rake_generated: (agent.rake_generated || 0) + rakeCredit })
-                                .eq('id', agentId);
-                        }
-                    }
-                } catch (e) {
-                    // Non-blocking: commission tracking should never break the hand pipeline
-                    console.warn(`[RakeService] Failed to credit agent ${agentId.substring(0, 8)}:`, e);
-                }
-            }
-
-            return true;
-        } catch (err) {
-            console.error('[RakeService] Commission queue error:', err);
-            return false;
+          const { error: rpcError } = await supabase.rpc('increment_union_rake', {
+            p_union_id: unionId,
+            p_amount: calculation.cappedRake,
+          });
+          updated = !rpcError;
+        } catch {
+          /* RPC may not exist */
         }
-    },
 
-    /**
-     * CALCULATE TOURNAMENT RAKE
-     * Law: Flat 10% on Buy-in
-     */
-    calculateTournamentRake(buyIn: number): { rake: number; prizePoolContribution: number } {
-        const rake = buyIn * RAKE_LAWS.TOURNAMENT_RAKE;
-        const contribution = buyIn - rake;
+        // Fallback: read-modify-write (inherent race condition, but better than nothing)
+        if (!updated) {
+          const { data: unionData } = await supabase
+            .from('unions')
+            .select('total_rake')
+            .eq('id', unionId)
+            .maybeSingle();
 
-        return {
-            rake,
-            prizePoolContribution: contribution,
-        };
-    },
+          if (unionData) {
+            const { error: updateErr } = await supabase
+              .from('unions')
+              .update({ total_rake: (unionData.total_rake || 0) + calculation.cappedRake })
+              .eq('id', unionId);
+            if (updateErr) {
+              console.error(
+                `[RakeService] Failed to update union total_rake for ${unionId}:`,
+                updateErr
+              );
+            }
+          }
+        }
+      } catch (e) {
+        console.warn(`[RakeService] Failed to update union total_rake for ${unionId}:`, e);
+      }
+    }
 
-    /**
-     * GET SCALING MATRIX
-     * Reference table for stake-based caps
-     */
-    getScalingMatrix(): { stakeLevel: string; bigBlind: number; rakeCap: number; bbjDrop: number; mainBBJ: number; backupBBJ: number; promo: number }[] {
-        return RAKE_CHART.map(t => ({
-            stakeLevel: `${t.sb} / ${t.bb}`,
-            bigBlind: t.bb,
-            rakeCap: t.maxAmount,
-            bbjDrop: t.bbjRakeBB * t.bb,
-            mainBBJ: t.mainBBJ,
-            backupBBJ: t.backupBBJ,
-            promo: t.promotional,
-        }));
-    },
+    return {
+      handId,
+      tableId,
+      calculation,
+      attributions,
+      bbjContributed,
+      commissionsQueued,
+    };
+  },
 
-    /**
-     * GET LAWS
-     * Expose rake laws for external reference
-     */
-    getLaws(): typeof RAKE_LAWS {
-        return { ...RAKE_LAWS };
-    },
+  /**
+   * EXECUTE POT DROPS
+   * Atomically deduct rake and BBJ from pot
+   */
+  async executePotDrops(params: {
+    handId: string;
+    tableId: string;
+    clubId: string;
+    unionId?: string;
+    rakeAmount: number;
+    bbjAmount: number;
+    potSize?: number;
+    numPlayers?: number;
+  }): Promise<boolean> {
+    // Direct INSERT into rake_records (bypasses broken execute_pot_drops RPC)
+    const { error } = await supabase.from('rake_records').insert({
+      hand_id: params.handId,
+      table_id: params.tableId,
+      club_id: params.clubId,
+      rake_amount: params.rakeAmount,
+      bbj_contribution: params.bbjAmount,
+      pot_size: params.potSize || 0,
+      num_players: params.numPlayers || 0,
+    });
+
+    if (error) {
+      console.error('RakeService.executePotDrops error:', error);
+      return false;
+    }
+
+    return true;
+  },
+
+  /**
+   * DISTRIBUTE RAKE CREDIT
+   * Split rake evenly among dealt-in players.
+   * NOTE: rake_records INSERT is already handled by executePotDrops().
+   * This method calculates per-player attribution and updates
+   * club_members.rake_generated for each player.
+   */
+  async distributeHandRake(
+    tableId: string,
+    handId: string,
+    totalRake: number,
+    players: DealtInPlayer[]
+  ): Promise<RakeAttribution[]> {
+    // Filter to active players only
+    const activePlayers = players.filter((p) => !p.isSittingOut && p.hasCards);
+
+    if (activePlayers.length === 0 || totalRake === 0) {
+      return [];
+    }
+
+    // Calculate equal split using integer arithmetic to avoid floating point loss
+    const totalRakeCents = Math.trunc(totalRake * 100);
+    const baseCreditCents = Math.trunc(totalRakeCents / activePlayers.length);
+    const remainderCents = totalRakeCents - baseCreditCents * activePlayers.length;
+    const timestamp = new Date().toISOString();
+
+    // Build attribution records — distribute remainder 1 cent at a time
+    const attributions: RakeAttribution[] = activePlayers.map((p, i) => {
+      const extra = i < remainderCents ? 1 : 0;
+      return {
+        userId: p.userId,
+        tableId,
+        handId,
+        rakeCredit: (baseCreditCents + extra) / 100,
+        timestamp,
+      };
+    });
+
+    // Update each player's rake_generated in club_members.
+    // Try atomic RPC first, fall back to read-modify-write if RPC doesn't exist.
+    const clubId = players[0]?.clubId;
+    if (clubId) {
+      for (const attr of attributions) {
+        try {
+          // Attempt atomic increment via RPC (safest for multi-table horses)
+          let updated = false;
+          try {
+            const { error: rpcError } = await supabase.rpc('increment_rake_generated', {
+              p_club_id: clubId,
+              p_user_id: attr.userId,
+              p_amount: attr.rakeCredit,
+            });
+            updated = !rpcError;
+          } catch {
+            /* RPC may not exist */
+          }
+
+          // Fallback: read-modify-write (acceptable since rake credit is additive)
+          if (!updated) {
+            const { data: member } = await supabase
+              .from('club_members')
+              .select('rake_generated')
+              .eq('club_id', clubId)
+              .eq('user_id', attr.userId)
+              .maybeSingle();
+
+            if (member) {
+              const newRake = (member.rake_generated || 0) + attr.rakeCredit;
+              await supabase
+                .from('club_members')
+                .update({ rake_generated: newRake })
+                .eq('club_id', clubId)
+                .eq('user_id', attr.userId);
+            }
+          }
+        } catch (e) {
+          console.warn(
+            `[RakeService] Failed to update rake_generated for ${attr.userId.substring(0, 8)}:`,
+            e
+          );
+        }
+      }
+    }
+
+    return attributions;
+  },
+
+  /**
+   * QUEUE COMMISSION CREDITS
+   * Stage rake credits for Monday settlement payout
+   */
+  async queueCommissionCredits(params: {
+    handId: string;
+    clubId: string;
+    rakeAmount: number;
+    players: DealtInPlayer[];
+  }): Promise<boolean> {
+    // Guard against division by zero
+    if (params.players.length === 0 || params.rakeAmount <= 0) return true;
+
+    try {
+      // Group players by agent for commission attribution
+      // Use integer-cents arithmetic to avoid floating-point loss
+      const byAgentCents = new Map<string, number>();
+      const totalRakeCents = Math.trunc(params.rakeAmount * 100);
+      const perPlayerCents = Math.trunc(totalRakeCents / params.players.length);
+      const remainderCents = totalRakeCents - perPlayerCents * params.players.length;
+
+      let playerIdx = 0;
+      for (const player of params.players) {
+        if (player.agentId) {
+          // Distribute remainder 1 cent at a time to first N players
+          const extra = playerIdx < remainderCents ? 1 : 0;
+          const current = byAgentCents.get(player.agentId) || 0;
+          byAgentCents.set(player.agentId, current + perPlayerCents + extra);
+        }
+        playerIdx++;
+      }
+
+      // Convert back to dollars
+      const byAgent = new Map<string, number>();
+      for (const [agentId, cents] of byAgentCents) {
+        byAgent.set(agentId, cents / 100);
+      }
+
+      // No agents at this table — nothing to credit
+      if (byAgent.size === 0) return true;
+
+      // Increment each agent's rake_generated in the agents table
+      // This provides real-time tracking; weekly settlement reads from here
+      for (const [agentId, rakeCredit] of byAgent) {
+        try {
+          // Try atomic RPC first
+          const { error: rpcError } = await supabase.rpc('increment_agent_rake', {
+            p_agent_id: agentId,
+            p_amount: rakeCredit,
+          });
+
+          if (rpcError) {
+            // Fallback: read-modify-write
+            const { data: agent } = await supabase
+              .from('agents')
+              .select('rake_generated')
+              .eq('id', agentId)
+              .maybeSingle();
+
+            if (agent) {
+              await supabase
+                .from('agents')
+                .update({ rake_generated: (agent.rake_generated || 0) + rakeCredit })
+                .eq('id', agentId);
+            }
+          }
+        } catch (e) {
+          // Non-blocking: commission tracking should never break the hand pipeline
+          console.warn(`[RakeService] Failed to credit agent ${agentId.substring(0, 8)}:`, e);
+        }
+      }
+
+      return true;
+    } catch (err) {
+      console.error('[RakeService] Commission queue error:', err);
+      return false;
+    }
+  },
+
+  /**
+   * CALCULATE TOURNAMENT RAKE
+   * Law: Flat 10% on Buy-in
+   */
+  calculateTournamentRake(buyIn: number): { rake: number; prizePoolContribution: number } {
+    const rake = buyIn * RAKE_LAWS.TOURNAMENT_RAKE;
+    const contribution = buyIn - rake;
+
+    return {
+      rake,
+      prizePoolContribution: contribution,
+    };
+  },
+
+  /**
+   * GET SCALING MATRIX
+   * Reference table for stake-based caps
+   */
+  getScalingMatrix(): {
+    stakeLevel: string;
+    bigBlind: number;
+    rakeCap: number;
+    bbjDrop: number;
+    mainBBJ: number;
+    backupBBJ: number;
+    promo: number;
+  }[] {
+    return RAKE_CHART.map((t) => ({
+      stakeLevel: `${t.sb} / ${t.bb}`,
+      bigBlind: t.bb,
+      rakeCap: t.maxAmount,
+      bbjDrop: t.bbjRakeBB * t.bb,
+      mainBBJ: t.mainBBJ,
+      backupBBJ: t.backupBBJ,
+      promo: t.promotional,
+    }));
+  },
+
+  /**
+   * GET LAWS
+   * Expose rake laws for external reference
+   */
+  getLaws(): typeof RAKE_LAWS {
+    return { ...RAKE_LAWS };
+  },
 };
 
 export default RakeService;

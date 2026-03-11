@@ -15,6 +15,9 @@ interface JackpotInfo {
   id: string;
   club_id: string;
   pool_amount: number;
+  main_balance: number;
+  backup_balance: number;
+  promo_balance: number;
   hands_contributed: number;
   last_hit_at?: string;
   last_hit_amount?: number;
@@ -169,11 +172,41 @@ export default function BadBeatJackpotPage() {
 
   return (
     <div className="bbj-page">
-      {/* Current Jackpot */}
+      {/* Current Jackpot — Main Balance */}
       <div className="jackpot-display">
         <div className="jackpot-glow" />
-        <span className="jackpot-label">Current Jackpot</span>
-        <span className="jackpot-amount">{(jackpot?.pool_amount || 0).toLocaleString()}</span>
+        <span className="jackpot-label">Main Jackpot</span>
+        <span className="jackpot-amount">
+          {(jackpot?.main_balance || jackpot?.pool_amount || 0).toLocaleString()}
+        </span>
+      </div>
+
+      {/* Triple-Bank Breakdown */}
+      <div className="jackpot-info" style={{ marginBottom: '0.5rem' }}>
+        <div
+          className="info-card"
+          style={{
+            border: '1px solid rgba(0, 122, 255, 0.3)',
+            background: 'rgba(0, 122, 255, 0.08)',
+          }}
+        >
+          <span className="info-label">🏦 Backup Pool</span>
+          <span className="info-value" style={{ color: '#007aff' }}>
+            {(jackpot?.backup_balance || 0).toLocaleString()} chips
+          </span>
+        </div>
+        <div
+          className="info-card"
+          style={{
+            border: '1px solid rgba(175, 82, 222, 0.3)',
+            background: 'rgba(175, 82, 222, 0.08)',
+          }}
+        >
+          <span className="info-label">🎁 Promo Pool</span>
+          <span className="info-value" style={{ color: '#af52de' }}>
+            {(jackpot?.promo_balance || 0).toLocaleString()} chips
+          </span>
+        </div>
       </div>
 
       {/* Info Cards */}
@@ -184,9 +217,7 @@ export default function BadBeatJackpotPage() {
         </div>
         <div className="info-card">
           <span className="info-label">Hands Dealt</span>
-          <span className="info-value">
-            {(jackpot?.hands_contributed || 0).toLocaleString()}
-          </span>
+          <span className="info-value">{(jackpot?.hands_contributed || 0).toLocaleString()}</span>
         </div>
         {playerContribution > 0 && (
           <div
@@ -210,26 +241,17 @@ export default function BadBeatJackpotPage() {
         <div className="payout-bars">
           <div className="payout-bar">
             <span className="payout-label">Loser (Bad Beat)</span>
-            <div
-              className="bar-fill"
-              style={{ width: '50%' }}
-            />
+            <div className="bar-fill" style={{ width: '50%' }} />
             <span className="payout-percent">50%</span>
           </div>
           <div className="payout-bar">
             <span className="payout-label">Winner</span>
-            <div
-              className="bar-fill"
-              style={{ width: '25%' }}
-            />
+            <div className="bar-fill" style={{ width: '25%' }} />
             <span className="payout-percent">25%</span>
           </div>
           <div className="payout-bar">
             <span className="payout-label">Table Share</span>
-            <div
-              className="bar-fill"
-              style={{ width: '25%' }}
-            />
+            <div className="bar-fill" style={{ width: '25%' }} />
             <span className="payout-percent">25%</span>
           </div>
         </div>

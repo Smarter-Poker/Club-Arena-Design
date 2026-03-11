@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import ClubPromotionRulesModal from '../components/modals/ClubPromotionRulesModal';
 import { ClubService } from '../services/ClubService';
+import { sanitizeInput } from '../utils/sanitizeInput';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -594,8 +595,8 @@ export default function CreateClubPage() {
         .from('clubs')
         .insert({
           club_id: clubIdNumber,
-          name: form.name.trim(),
-          description: form.description.trim() || null,
+          name: sanitizeInput(form.name.trim()),
+          description: sanitizeInput(form.description.trim()) || null,
           owner_id: user?.id,
           is_public: form.isPublic,
           requires_approval: form.requiresApproval,

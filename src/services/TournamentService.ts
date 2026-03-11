@@ -608,6 +608,58 @@ class TournamentService {
         undefined,
         tournamentId
       );
+
+      // ── Credit tournament rake to club + track at union level ──
+      // Record in rake_records for audit trail
+      try {
+        await supabase.from('rake_records').insert({
+          hand_id: `tournament-reg-${tournamentId}-${userId}`,
+          table_id: tournamentId,
+          club_id: clubId,
+          rake_amount: rake,
+          pot_size: totalCost,
+          num_players: 1,
+          bbj_contribution: 0,
+        });
+      } catch (e) {
+        console.warn(`[TournamentService] Failed to insert tournament rake_record:`, e);
+      }
+
+      // Update tournament total_rake field
+      try {
+        const { data: tData } = await supabase
+          .from('tournaments')
+          .select('total_rake')
+          .eq('id', tournamentId)
+          .maybeSingle();
+        if (tData) {
+          await supabase
+            .from('tournaments')
+            .update({ total_rake: (tData.total_rake || 0) + rake })
+            .eq('id', tournamentId);
+        }
+      } catch (e) {
+        console.warn(`[TournamentService] Failed to update tournament total_rake:`, e);
+      }
+
+      // Track at union level if club belongs to a union
+      if (tournament.union_id) {
+        try {
+          const { data: unionData } = await supabase
+            .from('unions')
+            .select('total_rake')
+            .eq('id', tournament.union_id)
+            .maybeSingle();
+          if (unionData) {
+            await supabase
+              .from('unions')
+              .update({ total_rake: (unionData.total_rake || 0) + rake })
+              .eq('id', tournament.union_id);
+          }
+        } catch (e) {
+          console.warn(`[TournamentService] Failed to update union total_rake:`, e);
+        }
+      }
     }
 
     // Initialize bounty values for bounty tournaments

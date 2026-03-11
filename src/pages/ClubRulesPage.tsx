@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
@@ -35,6 +36,20 @@ export default function ClubRulesPage() {
   useEffect(() => {
     if (clubId && user?.id) loadRules();
   }, [clubId, user?.id]);
+
+  // ── Bus Listener: reload rules if another admin updates the club ──
+  useEffect(() => {
+    const unsub = masterBus.subscribeDebounced(
+      'CLUB_UPDATED',
+      () => {
+        if (clubId && user?.id && !isEditing) loadRules();
+      },
+      1000
+    );
+    return () => {
+      unsub();
+    };
+  }, [clubId, user?.id, isEditing]);
 
   const loadRules = async () => {
     setLoading(true);
@@ -69,6 +84,7 @@ export default function ClubRulesPage() {
       }
     } catch (err) {
       console.error('Failed to load rules:', err);
+      toast.error('Failed to load rules');
     }
     setLoading(false);
   };
