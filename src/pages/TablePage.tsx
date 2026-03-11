@@ -48,7 +48,9 @@ import { BBJService } from '../services/BBJService';
 import RabbitHunt from '../components/table/RabbitHunt';
 import LeaderboardPanel from '../components/table/LeaderboardPanel';
 import HandNotation from '../components/table/HandNotation';
-import { soundService } from '../services/SoundService';
+import { soundService, haptic } from '../services/SoundService';
+import { ConfettiCanvas } from '../components/table/ConfettiCanvas';
+import { createChipToPotEvent, createPotToWinnerEvent, type ChipAnimationEvent } from '../components/table/ChipAnimation';
 import { GTOQueryService, type GTOSolution } from '../services/GTOQueryService';
 import { RakeService, type RakeCalculation } from '../services/RakeService';
 import { tableService } from '../services/TableService';
@@ -678,11 +680,25 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
         }
     };
 
-    // Play win sound on hand win
-    const playWinSound = () => {
-        if (isSoundEnabled) {
+    // Confetti state for big wins
+    const [showConfetti, setShowConfetti] = useState(false);
+
+    // All-in dramatic mode
+    const [isAllInMode, setIsAllInMode] = useState(false);
+
+    // Play win sound — escalates based on pot size
+    const playWinSound = (potAmount?: number) => {
+        if (!isSoundEnabled) return;
+        const bb = parseFloat(tableState.blinds.split('/')[1]) || 2;
+        const bbWon = (potAmount || tableState.pot) / bb;
+
+        if (bbWon >= 50) {
+            soundService.playBigWin();
+            setShowConfetti(true);
+        } else {
             soundService.playWin();
         }
+        soundService.playPotCollect();
     };
 
     // GTO advisor state
@@ -1563,6 +1579,9 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                     break;
 
                 case 'CARDS_DEALT':
+                    // Play card deal sound
+                    if (isSoundEnabled) soundService.playDeal();
+
                     // Convert HandController Card format to UI format
                     const suitMapDeal: Record<string, 'h' | 'd' | 'c' | 's'> = {
                         'hearts': 'h', 'diamonds': 'd', 'clubs': 'c', 'spades': 's'
@@ -1587,6 +1606,13 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                     break;
 
                 case 'COMMUNITY_CARDS':
+                    // Play community card reveal sound (stagger for each card)
+                    if (isSoundEnabled) {
+                        event.cards.forEach((_: any, i: number) => {
+                            setTimeout(() => soundService.playCommunityCard(), i * 120);
+                        });
+                    }
+
                     const suitMap: Record<string, 'h' | 'd' | 'c' | 's'> = {
                         'hearts': 'h', 'diamonds': 'd', 'clubs': 'c', 'spades': 's'
                     };
@@ -1784,6 +1810,9 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                     break;
 
                 case 'SHOWDOWN':
+                    // Play showdown dramatic sound
+                    if (isSoundEnabled) soundService.playShowdown();
+
                     // Reveal all cards for showdown
                     setTableState(prev => {
                         const updatedPlayers = [...prev.players];
@@ -1827,7 +1856,12 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                         }
                         return { ...prev, players: updatedPlayers, pot: 0 };
                     });
-                    playWinSound();
+                    {
+                        const totalWon = event.winners.reduce((sum: number, w: any) => sum + (w.amount || 0), 0);
+                        playWinSound(totalWon);
+                    }
+                    // Clear all-in mode when winners declared
+                    setIsAllInMode(false);
 
                     // NOTE: No wallet transactions here — chips stay on the table.
                     // Wallet transfers only happen on buy-in (debit) and leave-table (credit).
@@ -2184,7 +2218,7 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                             handControllerRef.current.performAction(heroSeat, 'raise', clamped);
                         }
                     });
-                    soundService.playChips();
+                    soundService.playRaise();
                     if (tableId) {
                         const result = await submitAction(tableId, userId, 'raise', clamped);
                         if (!result.success) console.warn('[TablePage] Server raise failed:', result.error);
@@ -2196,7 +2230,8 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                 startTransition(() => {
                     if (handControllerRef.current) handControllerRef.current.performAction(heroSeat, 'all_in');
                 });
-                soundService.playChips();
+                soundService.playAllIn();
+                setIsAllInMode(true);
                 if (tableId) {
                     const result = await submitAction(tableId, userId, 'allin', heroStack);
                     if (!result.success) console.warn('[TablePage] Server all-in failed:', result.error);
@@ -2428,19 +2463,31 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [tableState.currentPlayerSeat, tableState.heroSeat]);
 
+    // Timer warning sound — tick when hero's time is running low
+    useEffect(() => {
+        const isHeroTurn = tableState.currentPlayerSeat === tableState.heroSeat && tableState.isHandInProgress;
+        if (isHeroTurn && actionTimeRemaining <= 5 && actionTimeRemaining > 0 && isSoundEnabled) {
+            soundService.startTimerWarning();
+        } else {
+            soundService.stopTimerWarning();
+        }
+        return () => soundService.stopTimerWarning();
+    }, [actionTimeRemaining, tableState.currentPlayerSeat, tableState.heroSeat, tableState.isHandInProgress, isSoundEnabled]);
+
     return (
-        <div className="table-page">
+        <div className={`table-page ${isAllInMode ? 'table-page--allin-mode' : ''}`}>
             {/* ═══════════════════════════════════════════════════════════════════════
           HEADER BAR — Compact PokerBros-style with game info
           ═══════════════════════════════════════════════════════════════════════ */}
             <div className="table-header">
                 <div className="header-left">
-                    <button className="header-btn back-btn" onClick={() => navigate(-1)} title="Back">
+                    <button className="header-btn back-btn" onClick={() => { soundService.playButtonClick(); navigate(-1); }} title="Back">
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                             <path d="M12 4l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                     </button>
                     <button className="header-btn add-chips-icon" onClick={() => {
+                        soundService.playButtonClick();
                         if (tableState.players[tableState.heroSeat - 1]) setShowBuyInModal(true);
                     }} title="Add Chips">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -2454,13 +2501,13 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                     <span className="header-blinds">{tableState.blinds}</span>
                 </div>
                 <div className="header-right">
-                    <button className="header-btn" onClick={() => setShowSettings(true)} title="Settings">
+                    <button className="header-btn" onClick={() => { soundService.playButtonClick(); setShowSettings(true); }} title="Settings">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                             <circle cx="9" cy="9" r="2" stroke="currentColor" strokeWidth="1.5"/>
                             <path d="M9 1v2M9 15v2M1 9h2M15 9h2M3.3 3.3l1.4 1.4M13.3 13.3l1.4 1.4M3.3 14.7l1.4-1.4M13.3 4.7l1.4-1.4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                         </svg>
                     </button>
-                    <button className="header-btn menu-btn" onClick={() => setShowTableMenu(true)} title="Menu">
+                    <button className="header-btn menu-btn" onClick={() => { soundService.playButtonClick(); setShowTableMenu(true); }} title="Menu">
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                             <circle cx="9" cy="4" r="1.5" fill="currentColor"/>
                             <circle cx="9" cy="9" r="1.5" fill="currentColor"/>
@@ -2903,6 +2950,14 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                 events={activeThrows}
                 seatPositions={getSeatPositions()}
                 onEventComplete={handleThrowComplete}
+            />
+
+            {/* Win Confetti Overlay */}
+            <ConfettiCanvas
+                active={showConfetti}
+                duration={3500}
+                count={55}
+                onComplete={() => setShowConfetti(false)}
             />
 
             {/* Tip Dealer Modal */}
