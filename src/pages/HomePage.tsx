@@ -136,6 +136,8 @@ class HomePageErrorBoundary extends Component<{ children: ReactNode }, ErrorBoun
 // ═══════════════════════════════════════════════════════════════════════════════
 // CAROUSEL SECTION — Club cards flanking the Shark Club in one swipeable row
 // ═══════════════════════════════════════════════════════════════════════════════
+const CLUB_ORDER_KEY = 'club_arena_club_order';
+
 interface CarouselSectionProps {
     displayClubs: any[];
     sharkClubId: string | null;
@@ -152,6 +154,8 @@ interface CarouselSectionProps {
     handleClubHoverEnd: () => void;
     handleTooltipEnter: (club: any, e: React.MouseEvent) => void;
     handleTooltipLeave: () => void;
+    onOpenJoinModal: () => void;
+    onOpenCreateModal: () => void;
 }
 
 function CarouselSection({
@@ -170,25 +174,61 @@ function CarouselSection({
     handleClubHoverEnd,
     handleTooltipEnter,
     handleTooltipLeave,
+    onOpenJoinModal,
+    onOpenCreateModal,
 }: CarouselSectionProps) {
     const carouselRef = useRef<HTMLDivElement>(null);
     const sharkCardRef = useRef<HTMLDivElement>(null);
     const hasScrolledRef = useRef(false);
 
+    // Enhancement #3: Quick-flip toggle (single tap = flip, double tap = navigate)
+    const [quickFlipped, setQuickFlipped] = useState<Set<string>>(new Set());
+    const lastTapRef = useRef<{ id: string; time: number }>({ id: '', time: 0 });
+
+    // Enhancement #8: Drag-to-reorder state
+    const [draggedId, setDraggedId] = useState<string | null>(null);
+    const [dragOverId, setDragOverId] = useState<string | null>(null);
+    const [orderedClubs, setOrderedClubs] = useState<any[]>(displayClubs);
+
+    // Keep orderedClubs in sync with displayClubs (respecting saved order)
+    useEffect(() => {
+        try {
+            const savedOrder: string[] = JSON.parse(localStorage.getItem(CLUB_ORDER_KEY) || '[]');
+            if (savedOrder.length > 0) {
+                const orderMap = new Map(savedOrder.map((id, idx) => [id, idx]));
+                const sorted = [...displayClubs].sort((a, b) => {
+                    // Pinned clubs always first
+                    const aPinned = pinnedClubIds.includes(a.id) ? -1 : 0;
+                    const bPinned = pinnedClubIds.includes(b.id) ? -1 : 0;
+                    if (aPinned !== bPinned) return aPinned - bPinned;
+                    // Then saved order
+                    const aOrder = orderMap.get(a.id) ?? 999;
+                    const bOrder = orderMap.get(b.id) ?? 999;
+                    return aOrder - bOrder;
+                });
+                setOrderedClubs(sorted);
+            } else {
+                setOrderedClubs(displayClubs);
+            }
+        } catch {
+            setOrderedClubs(displayClubs);
+        }
+    }, [displayClubs, pinnedClubIds]);
+
     // Split user clubs into left half and right half around the Shark Club
     const leftClubs = useMemo(() => {
-        const half = Math.ceil(displayClubs.length / 2);
-        return displayClubs.slice(0, half);
-    }, [displayClubs]);
+        const half = Math.ceil(orderedClubs.length / 2);
+        return orderedClubs.slice(0, half);
+    }, [orderedClubs]);
 
     const rightClubs = useMemo(() => {
-        const half = Math.ceil(displayClubs.length / 2);
-        return displayClubs.slice(half);
-    }, [displayClubs]);
+        const half = Math.ceil(orderedClubs.length / 2);
+        return orderedClubs.slice(half);
+    }, [orderedClubs]);
 
     // Auto-scroll to center the Shark Club card on initial mount only
     useEffect(() => {
-        if (hasScrolledRef.current) return; // Only scroll once on initial load
+        if (hasScrolledRef.current) return;
         const timeout = setTimeout(() => {
             if (sharkCardRef.current && carouselRef.current) {
                 sharkCardRef.current.scrollIntoView({
@@ -198,23 +238,113 @@ function CarouselSection({
                 });
                 hasScrolledRef.current = true;
             }
-        }, 400); // Wait for entrance animations to start
+        }, 400);
         return () => clearTimeout(timeout);
-    }, [displayClubs.length]);
+    }, [orderedClubs.length]);
+
+    // Enhancement #7: Haptic on scroll snap
+    useEffect(() => {
+        const el = carouselRef.current;
+        if (!el) return;
+        let snapTimer: ReturnType<typeof setTimeout> | null = null;
+        const handleScroll = () => {
+            if (snapTimer) clearTimeout(snapTimer);
+            snapTimer = setTimeout(() => {
+                haptic.light();
+            }, 150);
+        };
+        el.addEventListener('scroll', handleScroll, { passive: true });
+        return () => {
+            el.removeEventListener('scroll', handleScroll);
+            if (snapTimer) clearTimeout(snapTimer);
+        };
+    }, []);
+
+    // Enhancement #8: Drag handlers
+    const handleDragStart = useCallback((clubId: string) => {
+        setDraggedId(clubId);
+    }, []);
+
+    const handleDragOver = useCallback((e: React.DragEvent, clubId: string) => {
+        e.preventDefault();
+        setDragOverId(clubId);
+    }, []);
+
+    const handleDrop = useCallback((targetId: string) => {
+        if (!draggedId || draggedId === targetId) {
+            setDraggedId(null);
+            setDragOverId(null);
+            return;
+        }
+        setOrderedClubs(prev => {
+            const arr = [...prev];
+            const fromIdx = arr.findIndex(c => c.id === draggedId);
+            const toIdx = arr.findIndex(c => c.id === targetId);
+            if (fromIdx === -1 || toIdx === -1) return prev;
+            const [moved] = arr.splice(fromIdx, 1);
+            arr.splice(toIdx, 0, moved);
+            // Persist order
+            try { localStorage.setItem(CLUB_ORDER_KEY, JSON.stringify(arr.map(c => c.id))); } catch { /* */ }
+            return arr;
+        });
+        setDraggedId(null);
+        setDragOverId(null);
+        haptic.medium();
+    }, [draggedId]);
+
+    const handleDragEnd = useCallback(() => {
+        setDraggedId(null);
+        setDragOverId(null);
+    }, []);
+
+    // Enhancement #3: Tap handler — single tap flips, double tap navigates
+    const handleCardTap = useCallback((club: any) => {
+        const now = Date.now();
+        const last = lastTapRef.current;
+        if (last.id === club.id && now - last.time < 350) {
+            // Double tap → navigate
+            haptic.medium();
+            localStorage.setItem(LAST_VISITED_KEY, club.id);
+            localStorage.setItem(LAST_CLUB_KEY, club.id);
+            navigate(`/clubs/${club.id}`);
+            lastTapRef.current = { id: '', time: 0 };
+        } else {
+            // Single tap → flip for stats preview
+            lastTapRef.current = { id: club.id, time: now };
+            setTimeout(() => {
+                if (lastTapRef.current.id === club.id && lastTapRef.current.time === now) {
+                    haptic.light();
+                    setQuickFlipped(prev => {
+                        const next = new Set(prev);
+                        if (next.has(club.id)) next.delete(club.id);
+                        else next.add(club.id);
+                        return next;
+                    });
+                }
+            }, 350);
+        }
+    }, [navigate]);
 
     // Render a single user club card in carousel style
     const renderClubCard = (club: any, idx: number) => {
         const isFlipped = flippedCards.has(idx);
+        const isQuickFlipped = quickFlipped.has(club.id);
+        const isLive = (club.active_tables || 0) > 0;
+        const isDragging = draggedId === club.id;
+        const isDragTarget = dragOverId === club.id;
+
         return (
             <div
                 key={club.id}
-                className={`${styles.carouselCard} ${isFlipped ? styles.clubCardFlipped : ''}`}
-                onClick={() => {
-                    haptic.medium();
-                    localStorage.setItem(LAST_VISITED_KEY, club.id);
-                    localStorage.setItem(LAST_CLUB_KEY, club.id);
-                    navigate(`/clubs/${club.id}`);
-                }}
+                className={[
+                    styles.carouselCard,
+                    isFlipped ? styles.clubCardFlipped : '',
+                    isQuickFlipped ? styles.carouselCardQuickFlipped : '',
+                    isLive ? styles.carouselCardLive : '',
+                    isDragging ? styles.cardDragging : '',
+                    isDragTarget ? styles.cardDragOver : '',
+                ].filter(Boolean).join(' ')}
+                onClick={() => handleCardTap(club)}
                 onContextMenu={(e) => handleContextMenu(e, club)}
                 onTouchStart={(e) => handleLongPressStart(club, e)}
                 onTouchEnd={handleLongPressEnd}
@@ -227,14 +357,19 @@ function CarouselSection({
                     handleClubHoverEnd();
                     handleTooltipLeave();
                 }}
+                draggable
+                onDragStart={() => handleDragStart(club.id)}
+                onDragOver={(e) => handleDragOver(e, club.id)}
+                onDrop={() => handleDrop(club.id)}
+                onDragEnd={handleDragEnd}
                 role="button"
-                aria-label={`${club.name || 'Club'} — ${club.is_owner ? 'Owner' : 'Member'}`}
+                aria-label={`${club.name || 'Club'} — ${club.is_owner ? 'Owner' : 'Member'}${isLive ? ' — Live' : ''}`}
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === 'Enter') { haptic.medium(); navigate(`/clubs/${club.id}`); }}}
             >
                 {/* Pinned badge */}
                 {pinnedClubIds.includes(club.id) && (
-                    <span className={styles.pinnedBadge} title="Pinned">*</span>
+                    <span className={styles.pinnedBadge} title="Pinned">⭐</span>
                 )}
                 <div className={styles.carouselCardPedestal}></div>
                 <div className={styles.clubCardFlipInner} style={{ height: '100%' }}>
@@ -244,56 +379,89 @@ function CarouselSection({
                     </div>
                     {/* Card Face (data side) */}
                     <div className={styles.clubCardBack}>
-                        <div
-                            className={styles.carouselCardFace}
-                            style={cardColorPreset !== 'default' ? {
-                                background: CARD_COLOR_PRESETS.find(p => p.id === cardColorPreset)?.bg,
-                            } : undefined}
-                        >
-                            {/* Color overlay */}
-                            {cardColorPreset !== 'default' && (
-                                <div style={{
-                                    position: 'absolute', inset: 0, borderRadius: 12, pointerEvents: 'none',
-                                    background: CARD_COLOR_PRESETS.find(p => p.id === cardColorPreset)?.overlay,
-                                }} />
-                            )}
-                            <h3 className={styles.carouselCardTitle}>
-                                {club.name?.toUpperCase() || 'MY CLUB'}
-                            </h3>
-                            <span className={styles.carouselCardRole}>
-                                {club.is_owner ? 'OWNER' : 'MEMBER'}
-                            </span>
-                            <div className={styles.carouselCardCenter}>
-                                {club.logo_url ? (
-                                    <img src={club.logo_url} alt="" className={styles.carouselCardLogo} />
-                                ) : (
-                                    <div className={`${styles.carouselCardIcon} ${GRADIENT_CLASSES[idx % GRADIENT_CLASSES.length]}`}>♣</div>
-                                )}
-                            </div>
-                            <div className={styles.carouselCardMeta}>
-                                <span>{club.member_count || 0} MEMBERS</span>
-                                {(club.active_tables || 0) > 0 && (
-                                    <div className={styles.activeTablesBadge}>
-                                        <span className={styles.activeTablesDot}></span>
-                                        <span>{club.active_tables} Live</span>
-                                    </div>
-                                )}
-                                {/* Last active timestamp */}
-                                {club.last_active_at && (
-                                    <div className={styles.clubCardTimestamp}>
-                                        {(() => {
+                        {isQuickFlipped ? (
+                            /* Enhancement #3: Quick stats back-face */
+                            <div className={styles.carouselCardStatsBack}>
+                                <span className={styles.statsBackTitle}>STATS</span>
+                                <div className={styles.statsBackRow}>
+                                    <span className={styles.statsBackLabel}>Members</span>
+                                    <span className={styles.statsBackValue}>{club.member_count || 0}</span>
+                                </div>
+                                <div className={styles.statsBackRow}>
+                                    <span className={styles.statsBackLabel}>Tables</span>
+                                    <span className={styles.statsBackValue}>{club.active_tables || 0}</span>
+                                </div>
+                                <div className={styles.statsBackRow}>
+                                    <span className={styles.statsBackLabel}>Role</span>
+                                    <span className={styles.statsBackValue}>{club.is_owner ? 'Owner' : 'Member'}</span>
+                                </div>
+                                <div className={styles.statsBackRow}>
+                                    <span className={styles.statsBackLabel}>Activity</span>
+                                    <span className={styles.statsBackValue}>
+                                        {club.last_active_at ? (() => {
                                             const diff = Date.now() - new Date(club.last_active_at).getTime();
                                             const mins = Math.floor(diff / 60000);
-                                            if (mins < 1) return 'Active now';
-                                            if (mins < 60) return `${mins}m ago`;
+                                            if (mins < 1) return 'Now';
+                                            if (mins < 60) return `${mins}m`;
                                             const hrs = Math.floor(mins / 60);
-                                            if (hrs < 24) return `${hrs}h ago`;
-                                            return `${Math.floor(hrs / 24)}d ago`;
-                                        })()}
-                                    </div>
-                                )}
+                                            if (hrs < 24) return `${hrs}h`;
+                                            return `${Math.floor(hrs / 24)}d`;
+                                        })() : '—'}
+                                    </span>
+                                </div>
+                                <span className={styles.statsBackHint}>Double-tap to enter</span>
                             </div>
-                        </div>
+                        ) : (
+                            <div
+                                className={styles.carouselCardFace}
+                                style={cardColorPreset !== 'default' ? {
+                                    background: CARD_COLOR_PRESETS.find(p => p.id === cardColorPreset)?.bg,
+                                } : undefined}
+                            >
+                                {/* Color overlay */}
+                                {cardColorPreset !== 'default' && (
+                                    <div style={{
+                                        position: 'absolute', inset: 0, borderRadius: 12, pointerEvents: 'none',
+                                        background: CARD_COLOR_PRESETS.find(p => p.id === cardColorPreset)?.overlay,
+                                    }} />
+                                )}
+                                <h3 className={styles.carouselCardTitle}>
+                                    {club.name?.toUpperCase() || 'MY CLUB'}
+                                </h3>
+                                <span className={styles.carouselCardRole}>
+                                    {club.is_owner ? 'OWNER' : 'MEMBER'}
+                                </span>
+                                <div className={styles.carouselCardCenter}>
+                                    {club.logo_url ? (
+                                        <img src={club.logo_url} alt="" className={styles.carouselCardLogo} loading="lazy" />
+                                    ) : (
+                                        <div className={`${styles.carouselCardIcon} ${GRADIENT_CLASSES[idx % GRADIENT_CLASSES.length]}`}>♣</div>
+                                    )}
+                                </div>
+                                <div className={styles.carouselCardMeta}>
+                                    <span>{club.member_count || 0} MEMBERS</span>
+                                    {(club.active_tables || 0) > 0 && (
+                                        <div className={styles.activeTablesBadge}>
+                                            <span className={styles.activeTablesDot}></span>
+                                            <span>{club.active_tables} Live</span>
+                                        </div>
+                                    )}
+                                    {club.last_active_at && (
+                                        <div className={styles.clubCardTimestamp}>
+                                            {(() => {
+                                                const diff = Date.now() - new Date(club.last_active_at).getTime();
+                                                const mins = Math.floor(diff / 60000);
+                                                if (mins < 1) return 'Active now';
+                                                if (mins < 60) return `${mins}m ago`;
+                                                const hrs = Math.floor(mins / 60);
+                                                if (hrs < 24) return `${hrs}h ago`;
+                                                return `${Math.floor(hrs / 24)}d ago`;
+                                            })()}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -302,6 +470,21 @@ function CarouselSection({
 
     return (
         <div className={styles.clubCarousel} ref={carouselRef}>
+            {/* Enhancement #2: CTA card — Join a Club (when 0 clubs) */}
+            {orderedClubs.length === 0 && (
+                <div
+                    className={styles.ctaCard}
+                    onClick={() => { haptic.light(); onOpenJoinModal(); }}
+                    role="button"
+                    aria-label="Join a Club"
+                    tabIndex={0}
+                >
+                    <div className={styles.ctaCardIcon}>🎯</div>
+                    <span className={styles.ctaCardLabel}>Join a Club</span>
+                    <span className={styles.ctaCardSub}>Enter a club code to join an existing club</span>
+                </div>
+            )}
+
             {/* Left half of user clubs */}
             {leftClubs.map((club, idx) => renderClubCard(club, idx))}
 
@@ -332,6 +515,21 @@ function CarouselSection({
 
             {/* Right half of user clubs */}
             {rightClubs.map((club, idx) => renderClubCard(club, leftClubs.length + idx))}
+
+            {/* Enhancement #2: CTA card — Create a Club (when 0 clubs) */}
+            {orderedClubs.length === 0 && (
+                <div
+                    className={styles.ctaCard}
+                    onClick={() => { haptic.light(); onOpenCreateModal(); }}
+                    role="button"
+                    aria-label="Create a Club"
+                    tabIndex={0}
+                >
+                    <div className={styles.ctaCardIcon}>✦</div>
+                    <span className={styles.ctaCardLabel}>Create Club</span>
+                    <span className={styles.ctaCardSub}>Start your own poker club and invite players</span>
+                </div>
+            )}
         </div>
     );
 }
@@ -482,6 +680,31 @@ function HomePageInner() {
                 setUserClubs(clubs);
                 // Enhancement #9: Update SWR cache
                 try { localStorage.setItem(SWR_CACHE_KEY, JSON.stringify(clubs)); } catch { /* quota */ }
+
+                // Phase 7 #1: Fetch unread notification count for tile badges
+                try {
+                    const { count } = await supabase
+                        .from('notifications')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('user_id', authUser.id)
+                        .eq('is_read', false);
+                    if (count && count > 0) {
+                        setTileBadges({ 'Player Stats': count });
+                    }
+                } catch { /* silent -- table may not exist yet */ }
+
+                // Phase 7 #2: Card color sync from Supabase (new device recovery)
+                try {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('card_color_preset')
+                        .eq('id', authUser.id)
+                        .maybeSingle();
+                    if (profile?.card_color_preset && profile.card_color_preset !== localStorage.getItem(CARD_COLOR_KEY)) {
+                        localStorage.setItem(CARD_COLOR_KEY, profile.card_color_preset);
+                        setCardColorPreset(profile.card_color_preset);
+                    }
+                } catch { /* silent */ }
             } else {
                 setUserClubs([]);
                 try { localStorage.removeItem(SWR_CACHE_KEY); } catch { /* */ }
@@ -625,6 +848,28 @@ function HomePageInner() {
             masterBus.removeRegisteredChannel(sharkChannelKey);
         };
     }, []);
+
+    // Enhancement #6: Real-time stats refresh for ALL club cards
+    useEffect(() => {
+        const allClubsKey = 'clubs-all-live-stats';
+        const allClubsChannel = masterBus.getOrCreateChannel(allClubsKey);
+        allClubsChannel
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'club_members' },
+                () => { fetchUserData(true); }
+            )
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'table_seats' },
+                () => { fetchUserData(true); }
+            )
+            .subscribe();
+
+        return () => {
+            masterBus.removeRegisteredChannel(allClubsKey);
+        };
+    }, [fetchUserData]);
 
     // ═══════════════════════════════════════════════════════════════════════════════
     // Enhancement #1: Pull-to-Refresh handlers
@@ -903,11 +1148,12 @@ function HomePageInner() {
             const q = searchQuery.toLowerCase();
             clubs = clubs.filter(c => c.name?.toLowerCase().includes(q));
         }
-        // #2: Sort — pinned first
+        // Phase 7 #3: Sort -- pinned first, then by member count descending
         clubs.sort((a, b) => {
-            const aPinned = pinnedClubIds.includes(a.id) ? -1 : 0;
-            const bPinned = pinnedClubIds.includes(b.id) ? -1 : 0;
-            return aPinned - bPinned;
+            const aPinned = pinnedClubIds.includes(a.id) ? 1 : 0;
+            const bPinned = pinnedClubIds.includes(b.id) ? 1 : 0;
+            if (bPinned !== aPinned) return bPinned - aPinned;
+            return (b.member_count || 0) - (a.member_count || 0);
         });
         return clubs;
     }, [userClubs, sharkClubId, searchQuery, pinnedClubIds]);
@@ -1081,6 +1327,8 @@ function HomePageInner() {
                     handleClubHoverEnd={handleClubHoverEnd}
                     handleTooltipEnter={handleTooltipEnter}
                     handleTooltipLeave={handleTooltipLeave}
+                    onOpenJoinModal={() => setShowJoinModal(true)}
+                    onOpenCreateModal={() => setShowCreateClubModal(true)}
                 />
 
                 {/* Enhancement #5: Skeleton loading while clubs data is loading */}

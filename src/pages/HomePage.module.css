@@ -480,6 +480,227 @@
     z-index: 0;
 }
 
+/* ── ENHANCEMENT #2: Empty State CTA Cards ─────────────────────────────── */
+
+.ctaCard {
+    flex: 0 0 auto;
+    width: 220px;
+    aspect-ratio: 7 / 11;
+    cursor: pointer;
+    position: relative;
+    scroll-snap-align: center;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.3s;
+    animation: cardRise 0.6s ease-out both;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    border: 2px dashed rgba(0, 212, 255, 0.25);
+    background: linear-gradient(145deg, rgba(8, 20, 40, 0.5), rgba(5, 12, 28, 0.6));
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 24px;
+    box-sizing: border-box;
+}
+
+.ctaCard:nth-child(1) { animation-delay: 300ms; }
+.ctaCard:nth-child(odd):not(:first-child) { animation-delay: 500ms; }
+
+.ctaCard:hover {
+    transform: translateY(-8px) scale(1.03);
+    border-color: rgba(0, 212, 255, 0.5);
+    background: linear-gradient(145deg, rgba(8, 20, 40, 0.7), rgba(5, 12, 28, 0.8));
+}
+
+.ctaCardIcon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 212, 255, 0.15) 0%, transparent 70%);
+    border: 2px solid rgba(0, 212, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: rgba(0, 212, 255, 0.8);
+    transition: all 0.3s;
+}
+
+.ctaCard:hover .ctaCardIcon {
+    border-color: rgba(0, 212, 255, 0.6);
+    color: rgba(0, 212, 255, 1);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+}
+
+.ctaCardLabel {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(0, 212, 255, 0.75);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-align: center;
+}
+
+.ctaCardSub {
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.4);
+    text-align: center;
+    line-height: 1.4;
+}
+
+/* ── ENHANCEMENT #3: Quick-Flip Stats Back ─────────────────────────────── */
+
+.carouselCardQuickFlipped .clubCardFlipInner {
+    transform: rotateY(180deg) !important;
+}
+
+.carouselCardStatsBack {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    background: linear-gradient(145deg, rgba(5, 15, 35, 0.96), rgba(3, 10, 25, 0.98));
+    border: 1px solid rgba(0, 212, 255, 0.22);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px 14px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.carouselCardStatsBack::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.04) 0%, transparent 50%, rgba(0, 255, 136, 0.03) 100%);
+    pointer-events: none;
+}
+
+.statsBackTitle {
+    font-size: 11px;
+    font-weight: 800;
+    color: rgba(0, 212, 255, 0.9);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
+}
+
+.statsBackRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.06);
+}
+
+.statsBackLabel {
+    font-size: 9px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.statsBackValue {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+}
+
+.statsBackHint {
+    font-size: 8px;
+    font-weight: 600;
+    color: rgba(0, 212, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-top: 8px;
+}
+
+/* ── ENHANCEMENT #8: Drag-to-Reorder Visual States ─────────────────────── */
+
+.cardDragging {
+    opacity: 0.4;
+    transform: scale(0.92) !important;
+    filter: grayscale(0.3);
+    transition: all 0.2s ease;
+}
+
+.cardDragOver {
+    border: 2px solid rgba(0, 212, 255, 0.5) !important;
+    border-radius: 14px;
+    box-shadow: 0 0 30px rgba(0, 212, 255, 0.15);
+}
+
+/* ── ENHANCEMENT #9: Holographic Shimmer Effect ────────────────────────── */
+
+.carouselCardFace::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    background: linear-gradient(
+        105deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.06) 45%,
+        rgba(0, 212, 255, 0.08) 50%,
+        rgba(255, 255, 255, 0.06) 55%,
+        transparent 70%
+    );
+    background-size: 250% 100%;
+    animation: shimmerSweep 6s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.carouselCard:nth-child(6n+1) .carouselCardFace::after { animation-delay: 0s; }
+.carouselCard:nth-child(6n+2) .carouselCardFace::after { animation-delay: 1s; }
+.carouselCard:nth-child(6n+3) .carouselCardFace::after { animation-delay: 2s; }
+.carouselCard:nth-child(6n+4) .carouselCardFace::after { animation-delay: 3s; }
+.carouselCard:nth-child(6n+5) .carouselCardFace::after { animation-delay: 4s; }
+.carouselCard:nth-child(6n+6) .carouselCardFace::after { animation-delay: 5s; }
+
+@keyframes shimmerSweep {
+    0%   { background-position: 200% 0; }
+    50%  { background-position: -50% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* ── ENHANCEMENT #10: Active Table Pulsing Green Ring ──────────────────── */
+
+.carouselCardLive {
+    border: 2px solid rgba(0, 255, 100, 0.4);
+    border-radius: 14px;
+    animation: cardRise 0.6s ease-out both, pulseRing 2.5s ease-in-out infinite;
+}
+
+.carouselCardLive .carouselCardPedestal {
+    background: radial-gradient(ellipse, rgba(0, 255, 100, 0.35), rgba(0, 200, 80, 0.15), transparent 70%) !important;
+}
+
+.carouselCardLive .carouselCardFace {
+    border-color: rgba(0, 255, 100, 0.25);
+}
+
+@keyframes pulseRing {
+    0%, 100% {
+        border-color: rgba(0, 255, 100, 0.3);
+        box-shadow: 0 0 15px rgba(0, 255, 100, 0.1);
+    }
+    50% {
+        border-color: rgba(0, 255, 100, 0.6);
+        box-shadow: 0 0 30px rgba(0, 255, 100, 0.2), 0 0 60px rgba(0, 255, 100, 0.08);
+    }
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════════
    USER CLUBS — Old Row (kept for backward compat but hidden by default)
    Now absorbed into .clubCarousel. Legacy class left for CSS module reference.
@@ -1170,6 +1391,10 @@
         width: 180px;
     }
 
+    .ctaCard {
+        width: 180px;
+    }
+
     .carouselCardFeatured {
         width: 240px;
     }
@@ -1224,6 +1449,21 @@
 
     .carouselCard {
         width: 150px;
+    }
+
+    .ctaCard {
+        width: 150px;
+        gap: 10px;
+    }
+
+    .ctaCardIcon {
+        width: 48px;
+        height: 48px;
+        font-size: 22px;
+    }
+
+    .ctaCardLabel {
+        font-size: 10px;
     }
 
     .carouselCardFeatured {
@@ -1304,6 +1544,27 @@
 
     .carouselCard {
         width: 130px;
+    }
+
+    .ctaCard {
+        width: 130px;
+        gap: 8px;
+        padding: 14px;
+    }
+
+    .ctaCardIcon {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+    }
+
+    .ctaCardLabel {
+        font-size: 9px;
+        letter-spacing: 1px;
+    }
+
+    .ctaCardSub {
+        display: none;
     }
 
     .carouselCardFeatured {
