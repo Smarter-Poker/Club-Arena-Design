@@ -476,6 +476,7 @@ export default function ClubDetailPage() {
             };
             await ClubsService.updateClub(clubId, updates);
             toast.success('Settings saved successfully!');
+            masterBus.emit('CLUB_UPDATED', { clubId });
             loadClubData(); // Reload to get fresh data
         } catch (error) {
             console.error('Failed to save settings:', error);

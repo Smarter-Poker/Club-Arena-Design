@@ -153,11 +153,12 @@ export default function ClubAnnouncementsPage() {
         is_pinned: false,
       });
 
-      if (!error) {
+      if (!error && clubId) {
         setNewTitle('');
         setNewContent('');
         setShowComposer(false);
         loadAnnouncements();
+        masterBus.emit('ANNOUNCEMENT_CHANGED', { clubId, action: 'created' });
       }
     } catch (error) {
       console.error('Failed to post announcement:', error);
@@ -206,6 +207,7 @@ export default function ClubAnnouncementsPage() {
       if (!error) {
         setAnnouncements((prev) => prev.filter((a) => a.id !== id));
         toast.success('Announcement deleted');
+        if (clubId) masterBus.emit('ANNOUNCEMENT_CHANGED', { clubId, action: 'deleted' });
       } else {
         toast.error('Failed to delete announcement');
       }
