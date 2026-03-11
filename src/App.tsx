@@ -10,7 +10,6 @@ import { Routes, Route } from 'react-router-dom';
 import { Suspense, lazy, useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import { realtimeChannelService } from './services/RealtimeChannelService';
-import { getOfflineQueue, clearOfflineQueue } from './utils/offlineQueue';
 import { replayOfflineQueue } from './utils/offlineQueue';
 import { busEventLogger } from './services/BusEventLogger';
 import GlobalWaitlistListener from './components/common/GlobalWaitlistListener';

@@ -315,12 +315,12 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                     <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 600, fontSize: 16, color: colors.text, display: 'flex', alignItems: 'center', gap: 6 }}>
                             {userName || 'Player'}
-                            {isVIP && <span style={{ fontSize: 14 }} title="VIP Diamond Member">👑</span>}
+                            {isVIP && <span style={{ fontSize: 11, fontWeight: 800, color: '#fbbf24', letterSpacing: '0.05em' }} title="VIP Diamond Member">VIP</span>}
                         </div>
                         <div style={{ fontSize: 13, color: colors.textSecondary, display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span>View Profile</span>
                             {diamondBalance > 0 && (
-                                <span style={{ color: '#60a5fa', fontWeight: 600 }}>💎 {diamondBalance.toLocaleString()}</span>
+                                <span style={{ color: '#60a5fa', fontWeight: 600 }}>{diamondBalance.toLocaleString()} DIA</span>
                             )}
                         </div>
                     </div>

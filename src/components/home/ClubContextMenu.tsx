@@ -66,16 +66,16 @@ export default function ClubContextMenu({ club, x, y, onClose, onLeave, onPin, i
                 aria-label="Club actions"
             >
                 <button className={styles.contextMenuItem} onClick={handleGoToLobby} role="menuitem">
-                    🏠 Go to Lobby
+                    Go to Lobby
                 </button>
                 <button className={styles.contextMenuItem} onClick={handleCashier} role="menuitem">
-                    💰 View Cashier
+                    View Cashier
                 </button>
                 <button className={styles.contextMenuItem} onClick={handleShareCode} role="menuitem">
-                    🔗 Share Invite Code
+                    Share Invite Code
                 </button>
                 <button className={styles.contextMenuItem} onClick={handlePin} role="menuitem">
-                    {isPinned ? '📌 Unpin from Top' : '📌 Pin to Top'}
+                    {isPinned ? 'Unpin from Top' : 'Pin to Top'}
                 </button>
                 <div className={styles.contextMenuDivider} />
                 {!club.is_owner && (
@@ -84,7 +84,7 @@ export default function ClubContextMenu({ club, x, y, onClose, onLeave, onPin, i
                         onClick={handleLeave}
                         role="menuitem"
                     >
-                        🚪 Leave Club
+                        Leave Club
                     </button>
                 )}
             </div>

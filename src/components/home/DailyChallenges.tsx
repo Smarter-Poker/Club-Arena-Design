@@ -270,7 +270,7 @@ export default function DailyChallenges() {
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: 3,
-                                }}>+{ch.reward} 💎</span>
+                                }}>+{ch.reward} DIA</span>
                             </div>
                             {/* Progress counter */}
                             <div style={{

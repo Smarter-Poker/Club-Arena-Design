@@ -54,6 +54,7 @@ export type BusEventType =
     | 'BIG_POT_WON'
     | 'PREFLOP_WIN'
     | 'FLUSH_WIN'
+    | 'PLAY_MINUTES'
     // Phase 5: Card color customization
     | 'CARD_COLOR_CHANGED';
 

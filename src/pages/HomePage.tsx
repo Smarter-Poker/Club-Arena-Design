@@ -115,7 +115,7 @@ class HomePageErrorBoundary extends Component<{ children: ReactNode }, ErrorBoun
         if (this.state.hasError) {
             return (
                 <div className={styles.errorBoundary}>
-                    <div className={styles.errorBoundaryIcon}>⚠️</div>
+                    <div className={styles.errorBoundaryIcon}>!</div>
                     <h2 className={styles.errorBoundaryTitle}>Something Went Wrong</h2>
                     <p className={styles.errorBoundaryMessage}>
                         {this.state.errorMessage || 'An unexpected error occurred. Please try again.'}
@@ -234,7 +234,7 @@ function CarouselSection({
             >
                 {/* Pinned badge */}
                 {pinnedClubIds.includes(club.id) && (
-                    <span className={styles.pinnedBadge} title="Pinned">⭐</span>
+                    <span className={styles.pinnedBadge} title="Pinned">*</span>
                 )}
                 <div className={styles.carouselCardPedestal}></div>
                 <div className={styles.clubCardFlipInner} style={{ height: '100%' }}>
@@ -1165,7 +1165,7 @@ function HomePageInner() {
                         aria-label={soundsEnabled ? 'Mute sounds' : 'Enable sounds'}
                         title={soundsEnabled ? 'Sounds On' : 'Sounds Off'}
                     >
-                        {soundsEnabled ? '🔊' : '🔇'}
+                        {soundsEnabled ? 'ON' : 'OFF'}
                         <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.03em' }}>
                             {soundsEnabled ? 'Sound On' : 'Sound Off'}
                         </span>
@@ -1176,7 +1176,7 @@ function HomePageInner() {
                         aria-label="Keyboard shortcuts"
                         title="Keyboard Shortcuts (?)"
                     >
-                        ⌨️
+                        ?
                         <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.03em' }}>Shortcuts</span>
                     </button>
                 </div>
