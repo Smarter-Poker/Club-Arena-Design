@@ -5,6 +5,7 @@
 
 import { create } from 'zustand';
 import { tableService } from '../services/TableService';
+import { masterBus } from '../core/MasterBus';
 import type { PokerTable, HandState, SeatPlayer, ActionType, Card } from '../types/database.types';
 
 // WebSocket send function type
@@ -121,9 +122,7 @@ export const useTableStore = create<TableState>((set, get) => ({
         });
 
         // Notify Master Bus
-        import('../core/MasterBus').then(({ masterBus }) => {
-            masterBus.emit('TABLE_SEATED', { tableId, seat });
-        });
+        masterBus.emit('TABLE_SEATED', { tableId, seat });
 
         // Update table player count
         await tableService.updatePlayerCount(

@@ -12,7 +12,8 @@
  * - Bottom tiles: Holographic standing cards
  */
 
-import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense, Component } from 'react';
+import type { ReactNode, ErrorInfo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ClubsService } from '../services/ClubsService';
@@ -29,6 +30,7 @@ const ClubStatsPanel = lazy(() => import('../components/club/ClubStatsPanel'));
 
 const LAST_VISITED_KEY = 'club_arena_last_visited';
 const LAST_CLUB_KEY = 'club_arena_last_club'; // For Cashier routing
+const SWR_CACHE_KEY = 'club_arena_clubs_cache'; // Enhancement #9: SWR cache
 
 // Action button images
 const ACTION_BAR_HORIZONTAL = `${import.meta.env.BASE_URL}images/icons/action-bar-horizontal.png`;
@@ -40,7 +42,6 @@ const TILE_CASHIER = `${import.meta.env.BASE_URL}images/tiles/cashier.jpg`;
 const TILE_MARKETPLACE = `${import.meta.env.BASE_URL}images/tiles/marketplace.jpg`;
 const TILE_HAND_HISTORIES = `${import.meta.env.BASE_URL}images/tiles/hand-histories.jpg`;
 
-
 // Enhancement #9: Unique gradient CSS classes for logo-less club cards
 const GRADIENT_CLASSES = [
     styles.clubCardGradient1,
@@ -50,7 +51,45 @@ const GRADIENT_CLASSES = [
     styles.clubCardGradient5,
 ] as const;
 
-export default function HomePage() {
+// ═══════════════════════════════════════════════════════════════════════════════
+// Enhancement #10: Error Boundary Wrapper
+// ═══════════════════════════════════════════════════════════════════════════════
+interface ErrorBoundaryState { hasError: boolean; errorMessage: string; }
+
+class HomePageErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
+    state: ErrorBoundaryState = { hasError: false, errorMessage: '' };
+
+    static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+        return { hasError: true, errorMessage: error.message };
+    }
+
+    componentDidCatch(error: Error, info: ErrorInfo) {
+        console.error('[HomePage ErrorBoundary]', error, info);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className={styles.errorBoundary}>
+                    <div className={styles.errorBoundaryIcon}>⚠️</div>
+                    <h2 className={styles.errorBoundaryTitle}>Something Went Wrong</h2>
+                    <p className={styles.errorBoundaryMessage}>
+                        {this.state.errorMessage || 'An unexpected error occurred. Please try again.'}
+                    </p>
+                    <button
+                        className={styles.errorBoundaryRetry}
+                        onClick={() => this.setState({ hasError: false, errorMessage: '' })}
+                    >
+                        Retry
+                    </button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
+function HomePageInner() {
     const navigate = useNavigate();
     const toast = useToast();
 
@@ -70,7 +109,37 @@ export default function HomePage() {
 
     // Real data states
     const [isLoading, setIsLoading] = useState(true);
-    const [userClubs, setUserClubs] = useState<any[]>([]);
+    const [userClubs, setUserClubs] = useState<any[]>(() => {
+        // Enhancement #9: SWR — instant render from cache
+        try {
+            const cached = localStorage.getItem(SWR_CACHE_KEY);
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+        } catch { /* ignore corrupt cache */ }
+        return [];
+    });
+
+    // Enhancement #5: Card flip — track which cards have flipped
+    const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set());
+
+    // Enhancement #2: Context menu state
+    const [contextMenu, setContextMenu] = useState<{
+        visible: boolean;
+        x: number;
+        y: number;
+        club: any;
+    } | null>(null);
+    const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Enhancement #1: Pull-to-refresh
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const pullStartY = useRef(0);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Enhancement #8: Notification badges (unread counts)
+    const [tileBadges, setTileBadges] = useState<Record<string, number>>({});
 
     // JOIN A CLUB modal state
     const [showJoinModal, setShowJoinModal] = useState(false);
@@ -93,32 +162,37 @@ export default function HomePage() {
         activePlayers: 0,
     });
 
-    // Fetch user stats and clubs from Supabase
-    useEffect(() => {
-        async function fetchUserData() {
-            setIsLoading(true);
-            try {
-                const { data: { user: authUser } } = await supabase.auth.getUser();
-                if (authUser) {
-                    // Fetch user's clubs (unlimited)
-                    const memberships = await ClubsService.getUserMemberships();
-                    const clubs = memberships?.map((m: any) => ({
-                        ...m.club,
-                        is_owner: m.role === 'owner',
-                        member_count: m.club?.member_count || 0,
-                        active_tables: m.club?.active_tables || 0,
-                    })) || [];
-                    setUserClubs(clubs);
-                } else {
-                    setUserClubs([]);
-                }
-            } catch (err) {
-                console.error('Error fetching user data:', err);
-                toast.error('Failed to load user data');
-            } finally {
-                setIsLoading(false);
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // DATA FETCHING (with SWR cache)
+    // ═══════════════════════════════════════════════════════════════════════════════
+    const fetchUserData = useCallback(async (skipLoading = false) => {
+        if (!skipLoading) setIsLoading(true);
+        try {
+            const { data: { user: authUser } } = await supabase.auth.getUser();
+            if (authUser) {
+                const memberships = await ClubsService.getUserMemberships();
+                const clubs = memberships?.map((m: any) => ({
+                    ...m.club,
+                    is_owner: m.role === 'owner',
+                    member_count: m.club?.member_count || 0,
+                    active_tables: m.club?.active_tables || 0,
+                })) || [];
+                setUserClubs(clubs);
+                // Enhancement #9: Update SWR cache
+                try { localStorage.setItem(SWR_CACHE_KEY, JSON.stringify(clubs)); } catch { /* quota */ }
+            } else {
+                setUserClubs([]);
+                try { localStorage.removeItem(SWR_CACHE_KEY); } catch { /* */ }
             }
+        } catch (err) {
+            console.error('Error fetching user data:', err);
+            toast.error('Failed to load user data');
+        } finally {
+            setIsLoading(false);
         }
+    }, [toast]);
+
+    useEffect(() => {
         fetchUserData();
 
         // Real-time subscription via MasterBus channel registry (deduplicated)
@@ -138,7 +212,7 @@ export default function HomePage() {
                         filter: `user_id=eq.${authUser.id}`,
                     },
                     () => {
-                        fetchUserData();
+                        fetchUserData(true);
                     }
                 )
                 .subscribe();
@@ -150,16 +224,14 @@ export default function HomePage() {
         // MASTER BUS LISTENERS — cross-page state sync
         // ═══════════════════════════════════════════════════════════════════════
 
-        // When user joins/leaves a club on ANY page, refresh our list instantly
         const unsubJoined = masterBus.subscribeDebounced('CLUB_JOINED', () => {
-            fetchUserData();
+            fetchUserData(true);
         }, 500);
 
         const unsubLeft = masterBus.subscribeDebounced('CLUB_LEFT', () => {
-            fetchUserData();
+            fetchUserData(true);
         }, 500);
 
-        // Re-fetch everything when auth state changes (login/logout)
         const unsubAuth = masterBus.subscribe('AUTH_STATE_CHANGED', (event) => {
             if (event.payload.isAuthenticated) {
                 fetchUserData();
@@ -168,19 +240,24 @@ export default function HomePage() {
             }
         });
 
+        // Enhancement #8: Listen for notification badge updates
+        const unsubNotif = masterBus.subscribe('NOTIFICATION_READ', () => {
+            // Clear all badges when notifications are read
+            setTileBadges({});
+        });
+
         return () => {
-            // Clean up MasterBus channel
             supabase.auth.getUser().then(({ data: { user: authUser } }) => {
                 if (authUser?.id) {
                     masterBus.removeRegisteredChannel(`home-clubs-${authUser.id}`);
                 }
             });
-            // Unsubscribe bus listeners
             unsubJoined();
             unsubLeft();
             unsubAuth();
+            unsubNotif();
         };
-    }, []);
+    }, [fetchUserData]);
 
     // Fetch Shark Club stats — ALL data from live Supabase queries
     useEffect(() => {
@@ -245,6 +322,60 @@ export default function HomePage() {
         return () => {
             masterBus.removeRegisteredChannel(sharkChannelKey);
         };
+    }, []);
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // Enhancement #1: Pull-to-Refresh handlers
+    // ═══════════════════════════════════════════════════════════════════════════════
+    const handleTouchStart = useCallback((e: React.TouchEvent) => {
+        if (containerRef.current && containerRef.current.scrollTop <= 0) {
+            pullStartY.current = e.touches[0].clientY;
+        }
+    }, []);
+
+    const handleTouchMove = useCallback((e: React.TouchEvent) => {
+        if (pullStartY.current && !isRefreshing) {
+            const delta = e.touches[0].clientY - pullStartY.current;
+            if (delta > 80 && containerRef.current && containerRef.current.scrollTop <= 0) {
+                setIsRefreshing(true);
+                haptic.medium();
+                fetchUserData(true).finally(() => {
+                    setTimeout(() => setIsRefreshing(false), 800);
+                });
+                pullStartY.current = 0;
+            }
+        }
+    }, [isRefreshing, fetchUserData]);
+
+    const handleTouchEnd = useCallback(() => {
+        pullStartY.current = 0;
+    }, []);
+
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // Enhancement #2: Context Menu handlers
+    // ═══════════════════════════════════════════════════════════════════════════════
+    const handleContextMenu = useCallback((e: React.MouseEvent, club: any) => {
+        e.preventDefault();
+        setContextMenu({ visible: true, x: e.clientX, y: e.clientY, club });
+    }, []);
+
+    const handleLongPressStart = useCallback((club: any, e: React.TouchEvent) => {
+        longPressTimer.current = setTimeout(() => {
+            haptic.medium();
+            const touch = e.touches[0];
+            setContextMenu({ visible: true, x: touch.clientX, y: touch.clientY, club });
+        }, 500);
+    }, []);
+
+    const handleLongPressEnd = useCallback(() => {
+        if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+        }
+    }, []);
+
+    const closeContextMenu = useCallback(() => {
+        setContextMenu(null);
     }, []);
 
     // ═══════════════════════════════════════════════════════════════════════════════
@@ -335,8 +466,26 @@ export default function HomePage() {
         (club) => club.id !== sharkClubId
     );
 
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // Enhancement #5: Staggered card flip after data loads
+    // ═══════════════════════════════════════════════════════════════════════════════
+    useEffect(() => {
+        if (!isLoading && displayClubs.length > 0) {
+            displayClubs.forEach((_: any, idx: number) => {
+                setTimeout(() => {
+                    setFlippedCards(prev => new Set(prev).add(idx));
+                }, 300 + idx * 150);
+            });
+        }
+    }, [isLoading, displayClubs.length]);
     return (
-        <div className={styles.container}>
+        <div
+            className={styles.container}
+            ref={containerRef}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+        >
             {/* ═══════════════════════════════════════════════════════════════════════
                 CINEMATIC BACKGROUND LAYERS — World Hub Aesthetic
             ═══════════════════════════════════════════════════════════════════════ */}
@@ -355,6 +504,16 @@ export default function HomePage() {
                 MAIN CONTENT — Scrollable card layout
             ═══════════════════════════════════════════════════════════════════════ */}
             <div className={styles.mainContent}>
+
+                {/* Enhancement #1: Pull-to-Refresh Indicator */}
+                <div className={`${styles.pullToRefresh} ${isRefreshing ? styles.pullToRefreshActive : ''}`}>
+                    {isRefreshing && (
+                        <>
+                            <div className={styles.pullSpinner}></div>
+                            <span className={styles.pullText}>Refreshing</span>
+                        </>
+                    )}
+                </div>
 
                 {/* ═══════════════════════════════════════════════════════════════════════
                     HORIZONTAL ACTION BAR
@@ -388,7 +547,7 @@ export default function HomePage() {
                     FEATURED SHARK CLUB — Center Holographic Card
                 ═══════════════════════════════════════════════════════════════════════ */}
                 <div
-                    className={styles.featuredCardContainer}
+                    className={`${styles.featuredCardContainer} ${styles.featuredCardFloat}`}
                 >
                     <div className={styles.featuredPedestal}></div>
                     <div
@@ -420,35 +579,55 @@ export default function HomePage() {
                 {displayClubs.length > 0 && (
                     <div className={styles.clubCardsRow}>
                         {displayClubs.map((club: any, idx: number) => {
+                            const isFlipped = flippedCards.has(idx);
                             return (
                                 <div
                                     key={club.id}
-                                    className={styles.clubCard}
+                                    className={`${styles.clubCard} ${isFlipped ? styles.clubCardFlipped : ''}`}
                                     onClick={() => {
                                         haptic.medium();
                                         localStorage.setItem(LAST_VISITED_KEY, club.id);
                                         localStorage.setItem(LAST_CLUB_KEY, club.id);
                                         navigate(`/clubs/${club.id}`);
                                     }}
+                                    onContextMenu={(e) => handleContextMenu(e, club)}
+                                    onTouchStart={(e) => handleLongPressStart(club, e)}
+                                    onTouchEnd={handleLongPressEnd}
+                                    onTouchCancel={handleLongPressEnd}
                                 >
                                     <div className={styles.clubCardPedestal}></div>
-                                    <div className={styles.clubCardFace}>
-                                        <h3 className={styles.clubCardTitle}>
-                                            {club.name?.toUpperCase() || 'MY CLUB'}
-                                        </h3>
-                                        <span className={styles.clubCardRole}>
-                                            {club.is_owner ? 'OWNER' : 'MEMBER'}
-                                        </span>
-                                        {/* Enhancement #9: Unique gradient or logo */}
-                                        <div className={styles.clubCardCenter}>
-                                            {club.logo_url ? (
-                                                <img src={club.logo_url} alt="" className={styles.clubCardLogo} />
-                                            ) : (
-                                                <div className={`${styles.clubCardIcon} ${GRADIENT_CLASSES[idx % GRADIENT_CLASSES.length]}`}>♣</div>
-                                            )}
+                                    <div className={styles.clubCardFlipInner} style={{ height: '100%' }}>
+                                        {/* Card Back (face-down) */}
+                                        <div className={styles.clubCardFront}>
+                                            <div className={styles.clubCardBackFace}></div>
                                         </div>
-                                        <div className={styles.clubCardStats}>
-                                            <span>{club.member_count || 0} Members</span>
+                                        {/* Card Face (data side) */}
+                                        <div className={styles.clubCardBack}>
+                                            <div className={styles.clubCardFace}>
+                                                <h3 className={styles.clubCardTitle}>
+                                                    {club.name?.toUpperCase() || 'MY CLUB'}
+                                                </h3>
+                                                <span className={styles.clubCardRole}>
+                                                    {club.is_owner ? 'OWNER' : 'MEMBER'}
+                                                </span>
+                                                <div className={styles.clubCardCenter}>
+                                                    {club.logo_url ? (
+                                                        <img src={club.logo_url} alt="" className={styles.clubCardLogo} />
+                                                    ) : (
+                                                        <div className={`${styles.clubCardIcon} ${GRADIENT_CLASSES[idx % GRADIENT_CLASSES.length]}`}>♣</div>
+                                                    )}
+                                                </div>
+                                                <div className={styles.clubCardStats}>
+                                                    <span>{club.member_count || 0} Members</span>
+                                                    {/* Enhancement #4: Active tables badge */}
+                                                    {(club.active_tables || 0) > 0 && (
+                                                        <div className={styles.activeTablesBadge}>
+                                                            <span className={styles.activeTablesDot}></span>
+                                                            <span>{club.active_tables} Live</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                     <div className={styles.clubCardEdge}></div>
@@ -602,12 +781,64 @@ export default function HomePage() {
                             <div className={styles.tilePedestal}></div>
                             <div className={styles.tileImageWrapper}>
                                 <img src={tile.img} alt={tile.alt} className={styles.tileImage} />
+                                {/* Enhancement #8: Notification badge */}
+                                {tileBadges[tile.alt] && tileBadges[tile.alt] > 0 && (
+                                    <span className={styles.tileBadge}>{tileBadges[tile.alt]}</span>
+                                )}
                             </div>
                             <div className={styles.tileEdge}></div>
                         </button>
                     ))}
                 </div>
             </div>
+
+            {/* Enhancement #2: Context Menu */}
+            {contextMenu?.visible && (
+                <>
+                    <div className={styles.contextMenuOverlay} onClick={closeContextMenu} />
+                    <div
+                        className={styles.contextMenu}
+                        style={{ top: contextMenu.y, left: Math.min(contextMenu.x, window.innerWidth - 200) }}
+                    >
+                        <button className={styles.contextMenuItem} onClick={() => {
+                            closeContextMenu();
+                            navigate(`/clubs/${contextMenu.club.id}`);
+                        }}>
+                            🏠 Go to Lobby
+                        </button>
+                        <button className={styles.contextMenuItem} onClick={() => {
+                            closeContextMenu();
+                            navigate(`/clubs/${contextMenu.club.id}/cashier`);
+                        }}>
+                            💰 View Cashier
+                        </button>
+                        <button className={styles.contextMenuItem} onClick={() => {
+                            closeContextMenu();
+                            const code = contextMenu.club.club_id || '';
+                            navigator.clipboard?.writeText(String(code));
+                            toast.success(`Club code ${code} copied!`);
+                        }}>
+                            🔗 Share Invite Code
+                        </button>
+                        <div className={styles.contextMenuDivider}></div>
+                        {!contextMenu.club.is_owner && (
+                            <button className={`${styles.contextMenuItem} ${styles.contextMenuDanger}`} onClick={async () => {
+                                closeContextMenu();
+                                try {
+                                    await ClubsService.leave(contextMenu.club.id);
+                                    toast.success('Left the club');
+                                    masterBus.emit('CLUB_LEFT', { clubId: contextMenu.club.id });
+                                    fetchUserData(true);
+                                } catch (err: any) {
+                                    toast.error(err.message || 'Failed to leave club');
+                                }
+                            }}>
+                                🚪 Leave Club
+                            </button>
+                        )}
+                    </div>
+                </>
+            )}
 
             {/* ═══════════════════════════════════════════════════════════════════════
                 JOIN A CLUB MODAL
@@ -710,11 +941,20 @@ export default function HomePage() {
             </Suspense>
 
             {/* Loading indicator */}
-            {isLoading && (
+            {isLoading && !userClubs.length && (
                 <div className={styles.loadingOverlay}>
                     <div className={styles.spinner}></div>
                 </div>
             )}
         </div>
+    );
+}
+
+// Enhancement #10: Export wrapped with Error Boundary
+export default function HomePage() {
+    return (
+        <HomePageErrorBoundary>
+            <HomePageInner />
+        </HomePageErrorBoundary>
     );
 }
