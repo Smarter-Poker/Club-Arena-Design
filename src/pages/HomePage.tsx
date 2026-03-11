@@ -360,6 +360,7 @@ function HomePageInner() {
     }, []);
 
     const handleLongPressStart = useCallback((club: any, e: React.TouchEvent) => {
+        e.stopPropagation(); // Prevent pull-to-refresh from activating
         longPressTimer.current = setTimeout(() => {
             haptic.medium();
             const touch = e.touches[0];
@@ -376,6 +377,15 @@ function HomePageInner() {
 
     const closeContextMenu = useCallback(() => {
         setContextMenu(null);
+    }, []);
+
+    // Cleanup longPressTimer on unmount to prevent stale state updates
+    useEffect(() => {
+        return () => {
+            if (longPressTimer.current) {
+                clearTimeout(longPressTimer.current);
+            }
+        };
     }, []);
 
     // ═══════════════════════════════════════════════════════════════════════════════
@@ -473,11 +483,17 @@ function HomePageInner() {
     // ═══════════════════════════════════════════════════════════════════════════════
     useEffect(() => {
         if (!isLoading && displayClubs.length > 0) {
+            const timerIds: ReturnType<typeof setTimeout>[] = [];
             displayClubs.forEach((_: any, idx: number) => {
-                setTimeout(() => {
+                const id = setTimeout(() => {
                     setFlippedCards(prev => new Set(prev).add(idx));
                 }, 300 + idx * 150);
+                timerIds.push(id);
             });
+            // Cleanup: cancel pending flip timers on unmount or re-render
+            return () => {
+                timerIds.forEach(id => clearTimeout(id));
+            };
         }
     }, [isLoading, displayClubs.length]);
     return (
