@@ -106,7 +106,7 @@ export default function ClubBottomNav({ clubId, userRole = 'member', clubName }:
                             {unreadCount > 99 ? '99+' : unreadCount}
                         </span>
                     )}
-                    <span className={styles.label}>Messages</span>
+                    <span className={styles.label}>Msgs</span>
                 </Link>
 
                 {/* Players - Always visible */}

@@ -423,7 +423,8 @@ export default function ClubHomePage() {
     };
 
     const formatJackpot = (num: number) => {
-        return num.toString().padStart(9, '0').replace(/(\d{3})(?=\d)/g, '$1,');
+        if (num === 0) return '—';
+        return num.toLocaleString();
     };
 
     if (loading) {
