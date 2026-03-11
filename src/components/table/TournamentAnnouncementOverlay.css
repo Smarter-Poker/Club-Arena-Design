@@ -11,7 +11,9 @@
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.5s ease;
-    background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.7) 0%, transparent 70%);
+    background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 70%);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 .tournamentAnnouncement.visible {
@@ -20,13 +22,19 @@
 
 .announcementContent {
     text-align: center;
-    animation: announcePulse 0.6s ease-out;
+    animation: announcePulse 0.6s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .announcementIcon {
     font-size: 3rem;
     margin-bottom: 0.5rem;
-    filter: drop-shadow(0 0 12px var(--accent-color));
+    filter: drop-shadow(0 0 16px var(--accent-color)) drop-shadow(0 0 40px var(--accent-color));
+    animation: announceIconFloat 2s ease-in-out infinite;
+}
+
+@keyframes announceIconFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
 }
 
 .announcementTitle {
@@ -35,7 +43,7 @@
     color: var(--accent-color);
     text-transform: uppercase;
     letter-spacing: 0.15em;
-    text-shadow: 0 0 20px var(--accent-color), 0 2px 4px rgba(0, 0, 0, 0.8);
+    text-shadow: 0 0 20px var(--accent-color), 0 0 40px var(--accent-color), 0 2px 4px rgba(0, 0, 0, 0.8);
     margin-bottom: 0.5rem;
 }
 
@@ -45,6 +53,13 @@
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
     max-width: 400px;
     margin: 0 auto;
+    opacity: 0;
+    animation: subtitleFadeIn 0.4s ease 0.3s forwards;
+}
+
+@keyframes subtitleFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes announcePulse {
@@ -52,8 +67,8 @@
         transform: scale(0.5);
         opacity: 0;
     }
-    50% {
-        transform: scale(1.1);
+    60% {
+        transform: scale(1.08);
     }
     100% {
         transform: scale(1);

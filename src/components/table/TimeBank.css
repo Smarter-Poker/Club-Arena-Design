@@ -16,16 +16,23 @@
     align-items: center;
     gap: 4px;
     background: rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 184, 0, 0.2);
+    border-radius: 10px;
     padding: 6px 10px;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .time-bank__trigger:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 184, 0, 0.1);
+    border-color: rgba(255, 184, 0, 0.5);
+    box-shadow: 0 0 16px rgba(255, 184, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+.time-bank__trigger:active:not(:disabled) {
+    transform: scale(0.95);
 }
 
 .time-bank__trigger:disabled {
@@ -67,20 +74,23 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(255, 184, 0, 0.15);
+    background: rgba(255, 184, 0, 0.12);
+    backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 184, 0, 0.4);
     border-radius: 20px;
     padding: 6px 12px;
-    animation: pulse 1s infinite alternate;
+    animation: timeBankActivePulse 1.2s ease-in-out infinite;
 }
 
-@keyframes pulse {
-    from {
-        box-shadow: 0 0 0 rgba(255, 184, 0, 0);
+@keyframes timeBankActivePulse {
+    0%, 100% {
+        box-shadow: 0 0 4px rgba(255, 184, 0, 0.1);
+        border-color: rgba(255, 184, 0, 0.3);
     }
 
-    to {
-        box-shadow: 0 0 10px rgba(255, 184, 0, 0.3);
+    50% {
+        box-shadow: 0 0 16px rgba(255, 184, 0, 0.3), 0 0 32px rgba(255, 184, 0, 0.1);
+        border-color: rgba(255, 184, 0, 0.6);
     }
 }
 
@@ -98,8 +108,10 @@
 
 .time-bank__bar {
     height: 100%;
-    background: #FFB800;
+    background: linear-gradient(90deg, #FFB800 0%, #FFD54F 100%);
     transition: width 1s linear;
+    box-shadow: 0 0 6px rgba(255, 184, 0, 0.4);
+    border-radius: 3px;
 }
 
 .time-bank__countdown {
@@ -107,6 +119,7 @@
     font-weight: 700;
     font-family: 'JetBrains Mono', monospace;
     color: #FFB800;
+    text-shadow: 0 0 8px rgba(255, 184, 0, 0.3);
     min-width: 24px;
     text-align: right;
 }
