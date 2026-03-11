@@ -105,6 +105,12 @@ const VIPBadge = ({ level }: { level: string }) => {
         diamond: 'linear-gradient(135deg, #b9f2ff 0%, #7df9ff 50%, #00bfff 100%)',
     };
 
+    // Don't render badge for invalid/empty/none levels
+    const validLevels = ['bronze', 'silver', 'gold', 'platinum', 'diamond'];
+    if (!level || !validLevels.includes(level.toLowerCase())) {
+        return null;
+    }
+
     return (
         <span
             className={styles.vipBadge}
@@ -117,8 +123,12 @@ const VIPBadge = ({ level }: { level: string }) => {
 
 
 
-const StatCard = ({ value, label, positive }: { value: string | number; label: string; positive?: boolean | null }) => (
-    <div className={styles.statCard}>
+const StatCard = ({ value, label, positive, index, isVisible }: { value: string | number; label: string; positive?: boolean | null; index?: number; isVisible?: boolean }) => (
+    <div className={styles.statCard} style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? 'translateY(0)' : 'translateY(8px)',
+        transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+    }}>
         <span className={`${styles.statValue} ${positive === true ? styles.positive : positive === false ? styles.negative : ''}`}>
             {value}
         </span>
@@ -167,6 +177,18 @@ export default function ProfilePage() {
     const [diamonds, setDiamonds] = useState(0);
     const [isVIP, setIsVIP] = useState(false);
     const [transactions, setTransactions] = useState<any[]>([]);
+    const [visibleStats, setVisibleStats] = useState<Set<number>>(new Set());
+
+    // Stat stagger animation
+    useEffect(() => {
+        if (!isLoading && user) {
+            setVisibleStats(new Set());
+            const statCount = 11; // Update based on actual stat count
+            for (let i = 0; i < statCount; i++) {
+                setTimeout(() => setVisibleStats(prev => new Set(prev).add(i)), i * 50);
+            }
+        }
+    }, [activeTab, isLoading, user]);
 
     // Load profile data from Supabase
     useEffect(() => {
@@ -545,31 +567,31 @@ export default function ProfilePage() {
                         <div className={styles.statsGroup}>
                             <h3>Core Stats</h3>
                             <div className={styles.statsGrid}>
-                                <StatCard value={stats.totalHands.toLocaleString()} label="Hands Played" />
-                                <StatCard value={`${stats.vpip}%`} label="VPIP" />
-                                <StatCard value={`${stats.pfr}%`} label="PFR" />
-                                <StatCard value={`${stats.threeBet}%`} label="3-Bet" />
-                                <StatCard value={stats.aggression.toFixed(1)} label="Aggression" />
-                                <StatCard value={`${stats.winRate}%`} label="Win Rate" positive={stats.winRate > 50} />
+                                <StatCard value={stats.totalHands.toLocaleString()} label="Hands Played" index={0} isVisible={visibleStats.has(0)} />
+                                <StatCard value={`${stats.vpip}%`} label="VPIP" index={1} isVisible={visibleStats.has(1)} />
+                                <StatCard value={`${stats.pfr}%`} label="PFR" index={2} isVisible={visibleStats.has(2)} />
+                                <StatCard value={`${stats.threeBet}%`} label="3-Bet" index={3} isVisible={visibleStats.has(3)} />
+                                <StatCard value={stats.aggression.toFixed(1)} label="Aggression" index={4} isVisible={visibleStats.has(4)} />
+                                <StatCard value={`${stats.winRate}%`} label="Win Rate" positive={stats.winRate > 50} index={5} isVisible={visibleStats.has(5)} />
                             </div>
                         </div>
 
                         <div className={styles.statsGroup}>
                             <h3>Financial</h3>
                             <div className={styles.statsGrid}>
-                                <StatCard value={`${stats.bbPer100 > 0 ? '+' : ''}${stats.bbPer100}`} label="BB/100" positive={stats.bbPer100 > 0 ? true : stats.bbPer100 < 0 ? false : null} />
-                                <StatCard value={stats.biggestPot.toLocaleString()} label="Biggest Pot" />
-                                <StatCard value={`${stats.totalProfit > 0 ? '+' : ''}${stats.totalProfit.toLocaleString()}`} label="Total Profit" positive={stats.totalProfit > 0} />
+                                <StatCard value={`${stats.bbPer100 > 0 ? '+' : ''}${stats.bbPer100}`} label="BB/100" positive={stats.bbPer100 > 0 ? true : stats.bbPer100 < 0 ? false : null} index={6} isVisible={visibleStats.has(6)} />
+                                <StatCard value={stats.biggestPot.toLocaleString()} label="Biggest Pot" index={7} isVisible={visibleStats.has(7)} />
+                                <StatCard value={`${stats.totalProfit > 0 ? '+' : ''}${stats.totalProfit.toLocaleString()}`} label="Total Profit" positive={stats.totalProfit > 0} index={8} isVisible={visibleStats.has(8)} />
                             </div>
                         </div>
 
                         <div className={styles.statsGroup}>
                             <h3>Tournaments</h3>
                             <div className={styles.statsGrid}>
-                                <StatCard value={stats.tournamentsPlayed} label="Played" />
-                                <StatCard value={stats.tournamentsWon} label="Won" />
-                                <StatCard value={stats.bountyKOs} label="Bounty KOs" />
-                                <StatCard value={stats.tournamentsPlayed > 0 ? `${((stats.tournamentsWon / stats.tournamentsPlayed) * 100).toFixed(1)}%` : '0%'} label="Win Rate" />
+                                <StatCard value={stats.tournamentsPlayed} label="Played" index={9} isVisible={visibleStats.has(9)} />
+                                <StatCard value={stats.tournamentsWon} label="Won" index={10} isVisible={visibleStats.has(10)} />
+                                <StatCard value={stats.bountyKOs} label="Bounty KOs" index={11} isVisible={visibleStats.has(11)} />
+                                <StatCard value={stats.tournamentsPlayed > 0 ? `${((stats.tournamentsWon / stats.tournamentsPlayed) * 100).toFixed(1)}%` : '0%'} label="Win Rate" index={12} isVisible={visibleStats.has(12)} />
                             </div>
                         </div>
                     </div>
