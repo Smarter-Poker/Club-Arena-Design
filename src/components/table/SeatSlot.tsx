@@ -17,9 +17,11 @@
  * that DISAPPEARS as the clock counts down (CSS conic-gradient mask).
  */
 
-import React, { useMemo, memo } from 'react';
+import React, { useMemo, useState, useEffect, memo } from 'react';
 import './SeatSlot.css';
 import { CardImage, CardBack } from './CardImage';
+import MiniHUD from './MiniHUD';
+import type { MiniHUDStats } from './MiniHUD';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -58,6 +60,8 @@ export interface SeatSlotProps {
     bountyValue?: number;
     isWinner?: boolean;
     winningHandName?: string; // e.g. "Straight", "Full House"
+    hudStats?: MiniHUDStats | null; // Opponent VPIP/PFR stats
+    showHUD?: boolean;              // Whether to show the HUD overlay
     onSit?: () => void;
     onAction?: () => void;
     onAvatarClick?: () => void;
@@ -164,7 +168,21 @@ function PositionChip({ position }: { position: PositionBadge }) {
 
 // Memoize — only re-render when seat-relevant props change
 export const SeatSlot = memo(function SeatSlot(props: SeatSlotProps) {
-    const { seatNumber, player, position, isActive, lastAction, lastBetAmount, timerProgress, bigBlind = 2, isTournament = false, bountyValue, isWinner = false, winningHandName, onSit, onAction, onAvatarClick } = props;
+    const { seatNumber, player, position, isActive, lastAction, lastBetAmount, timerProgress, bigBlind = 2, isTournament = false, bountyValue, isWinner = false, winningHandName, hudStats, showHUD = false, onSit, onAction, onAvatarClick } = props;
+
+    // Animated stack change — flash green/red when stack changes
+    const [stackDelta, setStackDelta] = useState<number>(0);
+    const prevStackRef = React.useRef<number>(player?.stack ?? 0);
+    useEffect(() => {
+        if (!player) return;
+        const diff = player.stack - prevStackRef.current;
+        if (diff !== 0 && prevStackRef.current > 0) {
+            setStackDelta(diff);
+            const t = setTimeout(() => setStackDelta(0), 2000);
+            return () => clearTimeout(t);
+        }
+        prevStackRef.current = player.stack;
+    }, [player?.stack]);
 
     const containerClasses = useMemo(() => {
         const cls = ['seat'];
@@ -277,10 +295,26 @@ export const SeatSlot = memo(function SeatSlot(props: SeatSlotProps) {
             <div className="seat__info" style={timerStyle}>
                 {/* Neon border overlay (rendered via CSS ::before when --active) */}
                 <span className="seat__name">{player.name}</span>
-                <span className="seat__stack">
+                <span className={`seat__stack${stackDelta > 0 ? ' seat__stack--up' : stackDelta < 0 ? ' seat__stack--down' : ''}`}>
                     {isTournament ? formatStack(player.stack) : formatStackAsBB(player.stack, bigBlind)}
                 </span>
+
+                {/* Stack Change Delta */}
+                {stackDelta !== 0 && (
+                    <span className={`seat__stack-delta ${stackDelta > 0 ? 'seat__stack-delta--win' : 'seat__stack-delta--loss'}`}>
+                        {stackDelta > 0 ? '+' : ''}{formatStack(stackDelta)}
+                    </span>
+                )}
             </div>
+
+            {/* Mini-HUD — opponent stats (VPIP/PFR) below info box */}
+            {!player.isHero && showHUD && (
+                <MiniHUD
+                    stats={hudStats || null}
+                    isVisible={showHUD}
+                    compact={true}
+                />
+            )}
 
             {/* Hero Hole Cards — large, PokerBros style beside avatar */}
             {player.holeCards && player.holeCards.length > 0 && player.isHero && (
@@ -334,6 +368,16 @@ export const SeatSlot = memo(function SeatSlot(props: SeatSlotProps) {
     if (prev.winningHandName !== next.winningHandName) return false;
     if (prev.lastAction !== next.lastAction) return false;
     if (prev.lastBetAmount !== next.lastBetAmount) return false;
+    if (prev.showHUD !== next.showHUD) return false;
+
+    // HUD stats — only compare if visible
+    if (prev.showHUD && next.showHUD) {
+        const ps = prev.hudStats;
+        const ns = next.hudStats;
+        if (!ps && !ns) { /* equal */ }
+        else if (!ps || !ns) return false;
+        else if (ps.handsPlayed !== ns.handsPlayed || ps.vpipCount !== ns.vpipCount || ps.pfrCount !== ns.pfrCount) return false;
+    }
 
     const pp = prev.player;
     const np = next.player;

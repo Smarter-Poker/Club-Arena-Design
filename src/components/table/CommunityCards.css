@@ -1,8 +1,10 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- *  COMMUNITY CARDS — Styles
+ *  COMMUNITY CARDS — Premium Styles with Design Tokens
  * ═══════════════════════════════════════════════════════════════════════════════
  */
+
+@import '../../styles/design-tokens.css';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    CONTAINER
@@ -71,24 +73,39 @@
 }
 
 .community-cards__card--dealing {
-    animation: cardFlip calc(0.6s * var(--animation-speed, 1)) ease-out forwards;
-    will-change: transform;
+    animation: cardFlip3D calc(0.65s * var(--animation-speed, 1)) var(--ease-spring) forwards;
+    will-change: transform, opacity;
+    transform-style: preserve-3d;
 }
 
-@keyframes cardFlip {
+@keyframes cardFlip3D {
     0% {
-        transform: rotateY(180deg) translateY(-60px) scale(0.6);
+        transform: rotateY(180deg) translateY(-70px) scale(0.5);
         opacity: 0;
+        filter: brightness(0.3);
     }
 
-    50% {
-        transform: rotateY(90deg) translateY(-20px) scale(0.9);
-        opacity: 0.5;
+    35% {
+        transform: rotateY(90deg) translateY(-25px) scale(0.85);
+        opacity: 0.6;
+        filter: brightness(0.7);
+    }
+
+    65% {
+        transform: rotateY(15deg) translateY(3px) scale(1.04);
+        opacity: 1;
+        filter: brightness(1.15);
+    }
+
+    85% {
+        transform: rotateY(-5deg) translateY(-1px) scale(1.01);
+        filter: brightness(1.05);
     }
 
     100% {
         transform: rotateY(0deg) translateY(0) scale(1);
         opacity: 1;
+        filter: brightness(1);
     }
 }
 
@@ -246,19 +263,24 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 .community-cards__hand-name {
-    margin-top: 6px;
-    padding: 3px 16px;
-    font-size: 1.1rem;
-    font-weight: 800;
+    margin-top: var(--space-sm);
+    padding: var(--space-xs) var(--space-lg);
+    font-size: var(--font-xl);
+    font-weight: var(--weight-extrabold);
     font-style: italic;
     color: #FFD700;
+    background: linear-gradient(180deg, rgba(255, 215, 0, 0.12) 0%, rgba(255, 180, 0, 0.06) 100%);
+    border: 1px solid rgba(255, 215, 0, 0.25);
+    border-radius: var(--radius-pill);
     text-shadow:
-        0 0 12px rgba(255, 215, 0, 0.6),
+        0 0 16px rgba(255, 215, 0, 0.7),
         0 2px 4px rgba(0, 0, 0, 0.8);
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     text-align: center;
-    animation: handNameFadeIn 0.5s ease-out;
+    animation: handNameFadeIn 0.5s var(--ease-spring);
     white-space: nowrap;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 @keyframes handNameFadeIn {

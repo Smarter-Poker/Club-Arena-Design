@@ -35,7 +35,11 @@
     z-index: 1100;
     display: flex;
     flex-direction: column;
-    background: linear-gradient(180deg, #0B1120 0%, #0A0F1A 40%, #080D15 100%);
+    background:
+        /* Subtle radial vignette */
+        radial-gradient(ellipse 120% 100% at 50% 60%, transparent 30%, rgba(0, 0, 0, 0.4) 100%),
+        /* Base gradient using design tokens */
+        linear-gradient(180deg, var(--bg-primary, #0a0e17) 0%, var(--bg-secondary, #111827) 40%, #080d15 100%);
     overflow: hidden;
     /* Mobile touch optimizations */
     touch-action: manipulation;
@@ -205,42 +209,49 @@
     width: 100%;
     height: 100%;
     padding: 6px;
-    /* Refined dark wood rail — less gaudy than gold */
-    background: linear-gradient(180deg,
+    /* Premium dark wood rail with subtle grain highlights */
+    background: var(--rail-gradient, linear-gradient(180deg,
             #4A3728 0%,
             #3A2A1E 20%,
             #5A4232 40%,
             #3A2A1E 60%,
             #4A3728 80%,
-            #3A2A1E 100%);
+            #3A2A1E 100%));
     border-radius: 45% / 35%;
     box-shadow:
-        0 0 0 2px rgba(0, 0, 0, 0.6),
-        0 8px 40px rgba(0, 0, 0, 0.5),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05),
-        inset 0 0 16px rgba(0, 0, 0, 0.4);
+        0 0 0 2px rgba(0, 0, 0, 0.7),
+        0 0 0 4px rgba(0, 0, 0, 0.3),
+        0 12px 48px rgba(0, 0, 0, 0.6),
+        inset 0 2px 0 var(--rail-highlight, rgba(255, 255, 255, 0.08)),
+        inset 0 -2px 4px var(--rail-shadow, rgba(0, 0, 0, 0.5)),
+        inset 0 0 24px rgba(0, 0, 0, 0.4);
 }
 
 .table-surface {
     width: 100%;
     height: 100%;
-    /* Rich deep green felt with texture */
+    /* Premium felt with subtle noise texture — theme-aware */
     background:
-        repeating-conic-gradient(rgba(255,255,255,0.01) 0% 25%, transparent 0% 50%) 0 0 / 3px 3px,
-        linear-gradient(180deg, #1B4332 0%, #143D2B 40%, #0D2E1F 100%);
+        /* Fine noise texture */
+        repeating-conic-gradient(rgba(255,255,255,0.008) 0% 25%, transparent 0% 50%) 0 0 / 2px 2px,
+        /* Second noise layer for depth */
+        repeating-conic-gradient(rgba(0,0,0,0.02) 0% 25%, transparent 0% 50%) 1px 1px / 4px 4px,
+        /* Main radial felt gradient — uses theme tokens */
+        var(--felt-gradient, radial-gradient(ellipse at 50% 40%, #1a7a4a 0%, #0f5132 50%, #0a3d24 100%));
     border-radius: 44% / 34%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: var(--space-sm);
     position: relative;
     box-shadow:
-        inset 0 2px 6px rgba(255, 255, 255, 0.06),
-        inset 0 -2px 6px rgba(0, 0, 0, 0.3),
-        0 4px 16px rgba(0, 0, 0, 0.5),
-        0 0 0 3px rgba(255, 255, 255, 0.08);
-    border: 1.5px solid rgba(255, 255, 255, 0.04);
+        inset 0 3px 8px rgba(255, 255, 255, 0.08),
+        inset 0 -3px 8px rgba(0, 0, 0, 0.35),
+        inset 0 0 60px rgba(0, 0, 0, 0.15),
+        0 4px 20px rgba(0, 0, 0, 0.5),
+        0 0 0 3px rgba(255, 255, 255, 0.06);
+    border: var(--table-border, 1.5px solid rgba(255, 255, 255, 0.04));
 }
 
 /* Pot Area — Clean centered display */

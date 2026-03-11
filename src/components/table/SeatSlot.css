@@ -1,19 +1,10 @@
 /**
  * ♠ CLUB ARENA — Seat Slot Styles
  * ═══════════════════════════════════════════════════════════════════════════════
- * EXACT PokerBros seat design
- *
- * Structure:
- *   .seat
- *     .seat__action         ← Fold/Check/Raise badge floating above
- *     .seat__cards--opponent← Hole cards behind avatar
- *     .seat__avatar-wrap    ← Avatar circle container
- *       .seat__avatar       ← 56px custom avatar
- *       .seat__position-chip← D/SB/BB near avatar
- *     .seat__info           ← Dark box: name + stack
- *       ::before            ← NEON YELLOW countdown border (conic-gradient)
- *     .seat__cards--hero    ← Hero cards below info
+ * Premium PokerBros-style seat design with design token integration
  */
+
+@import '../../styles/design-tokens.css';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    BASE CONTAINER
@@ -71,15 +62,19 @@
 }
 
 .seat__avatar {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
+    width: var(--seat-avatar-size, 56px);
+    height: var(--seat-avatar-size, 56px);
+    border-radius: var(--radius-circle);
     overflow: hidden;
     position: relative;
-    border: 2.5px solid rgba(255, 255, 255, 0.2);
-    background: #1A1A2E;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    border: 2.5px solid rgba(255, 255, 255, 0.15);
+    background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.5),
+        inset 0 1px 2px rgba(255, 255, 255, 0.05);
+    transition: border-color var(--duration-normal) var(--ease-out),
+                box-shadow var(--duration-normal) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
 }
 
 .seat__avatar-img {
@@ -163,19 +158,21 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 8px 10px 4px;
-    background: rgba(15, 20, 35, 0.92);
-    border-radius: 8px;
-    border: 1.5px solid rgba(255, 255, 255, 0.08);
+    padding: var(--space-sm) 10px var(--space-xs);
+    background: var(--seat-bg, rgba(15, 20, 35, 0.92));
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--seat-border, rgba(255, 255, 255, 0.08));
     min-width: 72px;
     max-width: 90px;
     z-index: 1;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .seat__name {
-    font-size: 0.6875rem;
-    font-weight: 600;
-    color: #E2E8F0;
+    font-size: var(--font-xs);
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -187,10 +184,64 @@
 .seat__stack {
     font-size: 0.6875rem;
     font-weight: 700;
-    color: #22C55E;
+    color: var(--stack-healthy, #f3f4f6);
     font-family: 'JetBrains Mono', 'SF Mono', monospace;
     line-height: 1.3;
-    transition: color 0.3s ease;
+    transition: color 0.4s ease, transform 0.2s ease;
+}
+
+/* Stack color by health (set via CSS class or inline) */
+.seat__stack--up {
+    color: #22c55e;
+    animation: stackBounceUp 0.4s ease-out;
+}
+
+.seat__stack--down {
+    color: #ef4444;
+    animation: stackBounceDown 0.3s ease-out;
+}
+
+@keyframes stackBounceUp {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+
+@keyframes stackBounceDown {
+    0% { transform: scale(1); }
+    40% { transform: scale(0.92); }
+    100% { transform: scale(1); }
+}
+
+/* Stack Change Delta — floating +/- indicator */
+.seat__stack-delta {
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.5625rem;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    white-space: nowrap;
+    pointer-events: none;
+    animation: stackDeltaFloat 2s ease-out forwards;
+    z-index: 10;
+}
+
+.seat__stack-delta--win {
+    color: #22c55e;
+    text-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+}
+
+.seat__stack-delta--loss {
+    color: #ef4444;
+    text-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+}
+
+@keyframes stackDeltaFloat {
+    0% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    70% { opacity: 1; transform: translateX(-50%) translateY(-16px); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-24px); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -269,14 +320,31 @@
     border-color: rgba(255, 215, 0, 0.25);
 }
 
-/* ─── ACTIVE PLAYER (avatar also glows) ───────────────────────────────── */
+/* ─── ACTIVE PLAYER (avatar pulses with golden ring) ─────────────────── */
 
 .seat--active .seat__avatar {
-    border-color: #FFD700;
+    border-color: var(--timer-color, #FFD700);
     box-shadow:
-        0 0 16px rgba(255, 215, 0, 0.4),
-        0 0 32px rgba(255, 215, 0, 0.15),
-        0 4px 12px rgba(0, 0, 0, 0.5);
+        0 0 20px rgba(255, 215, 0, 0.5),
+        0 0 40px rgba(255, 215, 0, 0.2),
+        0 4px 16px rgba(0, 0, 0, 0.5);
+    animation: activeAvatarPulse 2s ease-in-out infinite;
+    transform: scale(1.04);
+}
+
+@keyframes activeAvatarPulse {
+    0%, 100% {
+        box-shadow:
+            0 0 20px rgba(255, 215, 0, 0.5),
+            0 0 40px rgba(255, 215, 0, 0.2),
+            0 4px 16px rgba(0, 0, 0, 0.5);
+    }
+    50% {
+        box-shadow:
+            0 0 28px rgba(255, 215, 0, 0.65),
+            0 0 56px rgba(255, 215, 0, 0.25),
+            0 6px 20px rgba(0, 0, 0, 0.5);
+    }
 }
 
 /* ─── FOLDED ──────────────────────────────────────────────────────────── */
@@ -492,27 +560,42 @@
 .seat--winner .seat__avatar {
     border-color: #FFD700;
     box-shadow:
-        0 0 20px rgba(255, 215, 0, 0.5),
-        0 0 40px rgba(255, 215, 0, 0.2),
-        0 4px 12px rgba(0, 0, 0, 0.5);
-    animation: winnerAvatarGlow 1.5s ease-in-out infinite;
+        0 0 24px rgba(255, 215, 0, 0.6),
+        0 0 48px rgba(255, 215, 0, 0.25),
+        0 0 80px rgba(255, 215, 0, 0.1),
+        0 4px 16px rgba(0, 0, 0, 0.5);
+    animation: winnerAvatarGlow 1.2s ease-in-out infinite;
+    transform: scale(1.08);
 }
 
 @keyframes winnerAvatarGlow {
     0%, 100% {
-        box-shadow: 0 0 20px rgba(255, 215, 0, 0.5), 0 0 40px rgba(255, 215, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.5);
+        box-shadow:
+            0 0 24px rgba(255, 215, 0, 0.6),
+            0 0 48px rgba(255, 215, 0, 0.25),
+            0 0 80px rgba(255, 215, 0, 0.1),
+            0 4px 16px rgba(0, 0, 0, 0.5);
+        border-color: #FFD700;
     }
     50% {
-        box-shadow: 0 0 28px rgba(255, 215, 0, 0.7), 0 0 56px rgba(255, 215, 0, 0.3), 0 6px 16px rgba(0, 0, 0, 0.5);
+        box-shadow:
+            0 0 36px rgba(255, 215, 0, 0.8),
+            0 0 72px rgba(255, 215, 0, 0.35),
+            0 0 100px rgba(255, 215, 0, 0.15),
+            0 6px 20px rgba(0, 0, 0, 0.5);
+        border-color: #FFF5CC;
     }
 }
 
 .seat--winner .seat__info {
-    border-color: rgba(255, 215, 0, 0.5);
+    border-color: rgba(255, 215, 0, 0.6);
+    box-shadow: 0 0 16px rgba(255, 215, 0, 0.2);
 }
 
 .seat--winner .seat__stack {
     color: #FFD700;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+    font-weight: var(--weight-extrabold);
 }
 
 /* ─── WINNING HAND NAME — "Straight", "Full House" etc. ────────── */

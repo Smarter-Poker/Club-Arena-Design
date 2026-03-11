@@ -54,7 +54,7 @@ import { createChipToPotEvent, createPotToWinnerEvent, type ChipAnimationEvent }
 import MiniHUD from '../components/table/MiniHUD';
 // PotOddsDisplay intentionally NOT used on live tables — available for practice/training mode only
 import HandHistoryPanel from '../components/table/HandHistoryPanel';
-import type { HandRecord } from '../components/table/HandHistoryPanel';
+import type { HandRecord, HandHistoryAction, HandHistoryStreet } from '../components/table/HandHistoryPanel';
 import { usePlayerStats } from '../hooks/usePlayerStats';
 import { useTableSettings } from '../hooks/useTableSettings';
 import { GTOQueryService, type GTOSolution } from '../services/GTOQueryService';
@@ -714,6 +714,11 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
     // Hand history state
     const [handHistory, setHandHistory] = useState<HandRecord[]>([]);
     const [showHandHistory, setShowHandHistory] = useState(false);
+
+    // Hand history recording refs — accumulate actions during a hand
+    const handActionsRef = useRef<Array<{ seat: number; action: string; amount?: number; street: string }>>([]);
+    const historyHandCountRef = useRef(0);
+    const handStartStacksRef = useRef<Record<number, number>>({});
 
     // Play win sound — escalates based on pot size
     const playWinSound = (potAmount?: number) => {
@@ -1606,6 +1611,26 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                         pot: 0,
                         lastActions: Array(prev.maxPlayers).fill(null), // Clear action labels
                     }));
+                    // Track hand for HUD stats — record all seated players
+                    {
+                        const currentState = tableStateRef.current;
+                        currentState.players.forEach(p => {
+                            if (p && !p.isHero && p.status !== 'sitting_out' && p.status !== 'away') {
+                                recordHandPlayed(p.id);
+                            }
+                        });
+                    }
+                    // Reset hand history recording for this hand
+                    handActionsRef.current = [];
+                    historyHandCountRef.current += 1;
+                    {
+                        const currentState = tableStateRef.current;
+                        const stacks: Record<number, number> = {};
+                        currentState.players.forEach((p, i) => {
+                            if (p) stacks[i + 1] = p.stack;
+                        });
+                        handStartStacksRef.current = stacks;
+                    }
                     // Play deal/chips sound
                     soundService.playChips();
                     break;
@@ -1665,6 +1690,32 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                     break;
 
                 case 'PLAYER_ACTION':
+                    // Track VPIP/PFR for HUD stats (preflop voluntary actions)
+                    {
+                        const currentState = tableStateRef.current;
+                        const actionPlayer = currentState.players[event.seat - 1];
+                        if (actionPlayer && !actionPlayer.isHero && currentState.boardStage === 'preflop') {
+                            const act = (event.action || '').toLowerCase();
+                            // VPIP = any voluntary money in (call, bet, raise, all_in) — not check/fold
+                            if (['call', 'bet', 'raise', 'all_in', 'allin'].includes(act)) {
+                                recordVPIP(actionPlayer.id);
+                            }
+                            // PFR = preflop raise or 3bet+
+                            if (['raise', 'bet', 'all_in', 'allin'].includes(act)) {
+                                recordPFR(actionPlayer.id);
+                            }
+                        }
+                    }
+                    // Record action for hand history
+                    {
+                        const currentState = tableStateRef.current;
+                        handActionsRef.current.push({
+                            seat: event.seat,
+                            action: (event.action || '').toLowerCase(),
+                            amount: event.amount,
+                            street: currentState.boardStage || 'preflop',
+                        });
+                    }
                     // Update last actions display and player status
                     setTableState(prev => {
                         const newLastActions = [...prev.lastActions];
@@ -1920,6 +1971,12 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                         setWinnerInfo({ playerIds: winnerIds, handName, cardIndices: winCardIndices });
                     }
 
+                    // Track wins for HUD stats
+                    for (const winner of event.winners) {
+                        if (winner.userId) {
+                            recordHUDWin(winner.userId);
+                        }
+                    }
                     // Trigger achievements for winners
                     for (const winner of event.winners) {
                         achievementTriggerService.onHandComplete(winner.userId, {
@@ -1941,6 +1998,67 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                     }));
                     setLastHandId(`hand-${event.handNumber}`);
 
+                    // Build HandRecord from accumulated actions
+                    {
+                        const currentState = tableStateRef.current;
+                        const posLabels = ['D', 'SB', 'BB', 'UTG', 'MP', 'CO', 'BTN', 'UTG+1', 'UTG+2'];
+                        const streetMap: Record<string, HandHistoryAction[]> = { preflop: [], flop: [], turn: [], river: [] };
+                        for (const a of handActionsRef.current) {
+                            const player = currentState.players[a.seat - 1];
+                            if (streetMap[a.street]) {
+                                streetMap[a.street].push({
+                                    playerName: player?.name || `Seat ${a.seat}`,
+                                    playerId: player?.id || '',
+                                    action: a.action as any,
+                                    amount: a.amount,
+                                });
+                            }
+                        }
+                        const streets: HandHistoryStreet[] = [];
+                        for (const name of ['preflop', 'flop', 'turn', 'river'] as const) {
+                            if (streetMap[name].length > 0) {
+                                streets.push({
+                                    name,
+                                    actions: streetMap[name],
+                                    pot: currentState.pot,
+                                });
+                            }
+                        }
+                        const heroPlayer = currentState.players[currentState.heroSeat - 1];
+                        const heroStartStack = handStartStacksRef.current[currentState.heroSeat] || 0;
+                        const heroEndStack = heroPlayer?.stack || 0;
+                        const record: HandRecord = {
+                            id: `hand-${event.handNumber || historyHandCountRef.current}`,
+                            handNumber: event.handNumber || historyHandCountRef.current,
+                            timestamp: Date.now(),
+                            gameType: currentState.gameType,
+                            blinds: currentState.blinds,
+                            players: currentState.players
+                                .filter((p): p is NonNullable<typeof p> => !!p)
+                                .map((p, i) => ({
+                                    id: p.id,
+                                    name: p.name,
+                                    seat: i + 1,
+                                    stack: handStartStacksRef.current[i + 1] || p.stack,
+                                    position: (currentState.positions[i] || posLabels[Math.min(i, posLabels.length - 1)] || '') as string,
+                                })),
+                            streets,
+                            winners: winnerInfo.playerIds.map(pid => {
+                                const wp = currentState.players.find(p => p?.id === pid);
+                                return {
+                                    playerId: pid,
+                                    playerName: wp?.name || 'Unknown',
+                                    amount: 0,
+                                    hand: winnerInfo.handName || undefined,
+                                };
+                            }),
+                            heroId: userId || '',
+                            heroResult: heroEndStack - heroStartStack,
+                            potTotal: currentState.pot,
+                        };
+                        setHandHistory(prev => [record, ...prev].slice(0, 50)); // Keep last 50 hands
+                    }
+
                     // Delayed cleanup: clear board and cards after 3 seconds, then start next hand
                     workerTimeout(() => {
                         // Clear ALL locks to allow next hand
@@ -1948,7 +2066,6 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                         handControllerRef.current = null;
                         _win.__pokerLocks.handActive = false;
                         _win.__pokerLocks.activeHC = null;
-                        handNumberRef.current += 1;
                         // Clear winner highlights
                         setWinnerInfo({ playerIds: [], handName: '', cardIndices: [] });
                         setTableState(prev => {
@@ -2647,6 +2764,8 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                                     bountyValue={tableState.isBountyTournament && player ? tableState.bountyMap[player.id] : undefined}
                                     isWinner={player ? winnerInfo.playerIds.includes(player.id) : false}
                                     winningHandName={player && winnerInfo.playerIds.includes(player.id) ? winnerInfo.handName : undefined}
+                                    hudStats={player && !player.isHero ? getPlayerHUDStats(player.id) : null}
+                                    showHUD={userSettings.showHUD && !!player && !player.isHero}
                                     onSit={() => handleSeatClick(seatNumber)}
                                     onAvatarClick={() => {
                                         // Open throwable selector targeting this seat
