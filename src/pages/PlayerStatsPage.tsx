@@ -166,15 +166,17 @@ export default function PlayerStatsPage() {
     };
   }, [targetUserId]);
 
-  // ── Bus Listeners: instant refresh from engine events ──
+  // ── Bus Listeners: debounced refresh from engine events ──
+  // Debounced at 1s to coalesce with postgres_changes subscription above
+  // (both fire for the same hand — bus fires immediately, postgres 100-2000ms later)
   useEffect(() => {
-    const unsubHand = masterBus.subscribe('HAND_COMPLETED', () => {
+    const unsubHand = masterBus.subscribeDebounced('HAND_COMPLETED', () => {
       loadStats();
       loadSessionHistory();
-    });
-    const unsubBalance = masterBus.subscribe('BALANCE_UPDATED', () => {
+    }, 1000);
+    const unsubBalance = masterBus.subscribeDebounced('BALANCE_UPDATED', () => {
       loadStats();
-    });
+    }, 1000);
     return () => {
       unsubHand();
       unsubBalance();

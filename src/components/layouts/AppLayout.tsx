@@ -10,6 +10,7 @@
  */
 
 import { Outlet, useLocation } from 'react-router-dom';
+import RouteErrorBoundary from '../common/RouteErrorBoundary';
 import { useState, useEffect } from 'react';
 import styles from './AppLayout.module.css';
 import ClubArenaWelcomeModal, { useClubArenaWelcome } from '../modals/ClubArenaWelcomeModal';
@@ -56,7 +57,9 @@ export default function AppLayout() {
 
       {/* Main Content */}
       <main id="main-content" className={styles.main}>
-        <Outlet />
+        <RouteErrorBoundary>
+          <Outlet />
+        </RouteErrorBoundary>
       </main>
 
       {/* Footer - Hide when in iframe */}

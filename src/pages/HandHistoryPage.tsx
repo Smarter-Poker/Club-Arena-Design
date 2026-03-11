@@ -83,11 +83,13 @@ export default function HandHistoryPage() {
     };
   }, [user?.id]);
 
-  // ── Bus Listener: instant refresh when engine completes a hand ──
+  // ── Bus Listener: debounced refresh when engine completes a hand ──
+  // Debounced at 1s to coalesce with postgres_changes subscription above
+  // (both fire for the same hand — bus fires immediately, postgres 100-2000ms later)
   useEffect(() => {
-    const unsub = masterBus.subscribe('HAND_COMPLETED', () => {
+    const unsub = masterBus.subscribeDebounced('HAND_COMPLETED', () => {
       loadHands(true);
-    });
+    }, 1000);
     return () => {
       unsub();
     };
