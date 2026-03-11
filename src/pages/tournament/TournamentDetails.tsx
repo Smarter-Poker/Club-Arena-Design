@@ -11,10 +11,14 @@ import { masterBus } from '../../core/MasterBus';
 import type { Tournament } from '../../types/database.types';
 import { useAuthUser } from '../../hooks/useAuthUser';
 import TournamentBracket from '../../components/tournament/TournamentBracket';
+import BlindLevelProgress from '../../components/tournament/BlindLevelProgress';
+import LiveChipCounts from '../../components/tournament/LiveChipCounts';
+import PayoutStructure from '../../components/tournament/PayoutStructure';
+import TournamentStatsDashboard from '../../components/tournament/TournamentStatsDashboard';
 import './TournamentDetails.css';
 import { useToast } from '../../components/common/Toast';
 
-type TabId = 'detail' | 'entries' | 'ranking' | 'unions' | 'tables' | 'rewards';
+type TabId = 'detail' | 'blinds' | 'chips' | 'payouts' | 'entries' | 'ranking' | 'unions' | 'tables' | 'rewards';
 
 interface TournamentEntry {
     id: string;

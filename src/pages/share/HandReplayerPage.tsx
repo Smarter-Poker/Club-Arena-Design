@@ -4,9 +4,10 @@
  * URL: /share/hand/:handId
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { handHistoryService } from '../../services/HandHistoryService';
+import { PositionAnalysis, OddsDisplay, ShareableHighlight } from '../../components/hand-replayer';
 import './HandReplayerPage.css';
 
 const playerSeatAnimationStyle = (index: number) => ({
@@ -49,6 +50,8 @@ export default function HandReplayerPage() {
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
     const [soundEnabled, setSoundEnabled] = useState(true);
+    const [showAnalysis, setShowAnalysis] = useState(true);
+    const [activeTab, setActiveTab] = useState<'replay' | 'analysis'>('replay');
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     useEffect(() => {
@@ -148,6 +151,42 @@ export default function HandReplayerPage() {
 
     const shareUrl = `https://smarter.poker/hub/club-arena/share/hand/${handId}`;
 
+    // Find hero player (first player with cards visible)
+    const heroPlayer = useMemo(() => {
+        if (!hand) return null;
+        return hand.players.find(p => p.cards) || null;
+    }, [hand]);
+
+    // Get boards at different streets for odds display
+    const boardByStreet = useMemo(() => {
+        if (!hand) return { flop: [], turn: [], river: [] };
+        const flop = hand.community_cards.slice(0, 3);
+        const turn = hand.community_cards.slice(0, 4);
+        const river = hand.community_cards.slice(0, 5);
+        return { flop, turn, river };
+    }, [hand]);
+
+    // Get current board for odds display
+    const currentBoard = useMemo(() => {
+        if (!hand) return [];
+        if (currentStep < 4) return boardByStreet.flop;
+        if (currentStep < 6) return boardByStreet.turn;
+        return boardByStreet.river;
+    }, [currentStep, boardByStreet, hand]);
+
+    // Determine action summary for shareable highlight
+    const actionSummary = useMemo(() => {
+        if (!hand) return '';
+        const actionCounts: Record<string, number> = {};
+        hand.actions.forEach(a => {
+            actionCounts[a.action] = (actionCounts[a.action] || 0) + 1;
+        });
+        const actions = Object.entries(actionCounts)
+            .map(([action, count]) => `${count}x ${action}`)
+            .join(', ');
+        return actions;
+    }, [hand]);
+
     if (loading) {
         return (
             <div className="hand-replayer loading">
@@ -186,89 +225,154 @@ export default function HandReplayerPage() {
                     {soundEnabled ? '🔊' : '🔇'}
                 </button>
 
-                {/* Table */}
-                <div className="replay-table">
-                    <div className="table-felt">
-                        <div className="table-center">
-                            <div className="game-info">
-                                <span className="game-type">{hand.game_type}</span>
-                                <span className="stakes">{hand.stakes}</span>
+                {/* Tab navigation */}
+                <div className="replayer-tabs">
+                    <button
+                        className={`tab-btn ${activeTab === 'replay' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('replay')}
+                    >
+                        ▶ Replay
+                    </button>
+                    <button
+                        className={`tab-btn ${activeTab === 'analysis' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('analysis')}
+                    >
+                        📊 Analysis
+                    </button>
+                </div>
+
+                {/* Replay view */}
+                {activeTab === 'replay' && (
+                    <>
+                        {/* Table */}
+                        <div className="replay-table">
+                            <div className="table-felt">
+                                <div className="table-center">
+                                    <div className="game-info">
+                                        <span className="game-type">{hand.game_type}</span>
+                                        <span className="stakes">{hand.stakes}</span>
+                                    </div>
+                                    <div className="pot-display">
+                                        <span className="pot-label">POT</span>
+                                        <span className="pot-amount">{hand.pot.toLocaleString()}</span>
+                                    </div>
+                                    {/* Community cards */}
+                                    <div className="community-cards">
+                                        {hand.community_cards.map((card, idx) => {
+                                            const { rank, symbol, isRed } = getCardDisplay(card);
+                                            return (
+                                                <div key={idx} className={`card ${isRed ? 'red' : 'black'}`}>
+                                                    <span className="card-rank">{rank}</span>
+                                                    <span className="card-suit">{symbol}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
                             </div>
-                            <div className="pot-display">
-                                <span className="pot-label">POT</span>
-                                <span className="pot-amount">{hand.pot.toLocaleString()}</span>
-                            </div>
-                            {/* Community cards */}
-                            <div className="community-cards">
-                                {hand.community_cards.map((card, idx) => {
-                                    const { rank, symbol, isRed } = getCardDisplay(card);
-                                    return (
-                                        <div key={idx} className={`card ${isRed ? 'red' : 'black'}`}>
-                                            <span className="card-rank">{rank}</span>
-                                            <span className="card-suit">{symbol}</span>
+
+                            {/* Player seats */}
+                            {hand.players.map((player, idx) => (
+                                <div
+                                    key={player.seat}
+                                    style={playerSeatAnimationStyle(idx)}
+                                    className={`player-seat seat-${player.seat} ${player.is_winner ? 'winner' : ''}`}
+                                >
+                                    <div className="player-avatar">
+                                        {player.avatar || player.name.charAt(0)}
+                                    </div>
+                                    <div className="player-info-pod">
+                                        <span className="player-name">{player.name}</span>
+                                        <span className="player-stack">{player.stack.toLocaleString()}</span>
+                                    </div>
+                                    {player.cards && (
+                                        <div className="player-cards">
+                                            {player.cards.map((card, cIdx) => {
+                                                const { rank, symbol, isRed } = getCardDisplay(card);
+                                                return (
+                                                    <div key={cIdx} className={`hole-card ${isRed ? 'red' : 'black'}`}>
+                                                        <span>{rank}{symbol}</span>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
-                                    );
-                                })}
-                            </div>
+                                    )}
+                                    {/* Action bubble for current step */}
+                                    {hand.actions[currentStep]?.player === player.name && (
+                                        <div className="action-bubble">
+                                            {(hand.actions[currentStep]?.action || '').toUpperCase()}
+                                            {hand.actions[currentStep].amount &&
+                                                ` ${hand.actions[currentStep].amount}`}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Playback controls */}
+                        <div className="playback-controls">
+                            <button className="ctrl-btn" onClick={rewind}>⏮</button>
+                            <button className="ctrl-btn play" onClick={togglePlay}>
+                                {isPlaying ? '⏸' : '▶'}
+                            </button>
+                            <button className="ctrl-btn" onClick={forward}>⏭</button>
+                        </div>
+
+                        {/* Action timeline */}
+                        <div className="action-timeline">
+                            {hand.actions.map((action, idx) => (
+                                <div
+                                    key={idx}
+                                    className={`timeline-step ${idx <= currentStep ? 'active' : ''}`}
+                                />
+                            ))}
+                        </div>
+                    </>
+                )}
+
+                {/* Analysis view */}
+                {activeTab === 'analysis' && hand && (
+                    <div className="analysis-container">
+                        {/* Position and odds panels */}
+                        <div className="analysis-grid">
+                            {heroPlayer && (
+                                <>
+                                    <div className="analysis-panel">
+                                        <PositionAnalysis
+                                            position="BTN"
+                                            totalSeats={hand.players.length}
+                                            seatIndex={heroPlayer.seat}
+                                            dealerSeat={0}
+                                        />
+                                    </div>
+
+                                    <div className="analysis-panel">
+                                        <OddsDisplay
+                                            holeCards={heroPlayer.cards || []}
+                                            boardCards={currentBoard}
+                                            potSize={hand.pot}
+                                            isHero={true}
+                                        />
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Shareable highlight */}
+                        <div className="analysis-highlight">
+                            <ShareableHighlight
+                                handId={hand.id}
+                                playerName={heroPlayer?.name || 'Hero'}
+                                playerCards={heroPlayer?.cards || []}
+                                boardCards={hand.community_cards}
+                                potSize={hand.pot}
+                                result={heroPlayer?.is_winner ? 'win' : 'loss'}
+                                actionSummary={actionSummary}
+                                playedAt={hand.played_at}
+                            />
                         </div>
                     </div>
-
-                    {/* Player seats */}
-                    {hand.players.map((player, idx) => (
-                        <div
-                            key={player.seat}
-                            style={playerSeatAnimationStyle(idx)}
-                            className={`player-seat seat-${player.seat} ${player.is_winner ? 'winner' : ''}`}
-                        >
-                            <div className="player-avatar">
-                                {player.avatar || player.name.charAt(0)}
-                            </div>
-                            <div className="player-info-pod">
-                                <span className="player-name">{player.name}</span>
-                                <span className="player-stack">{player.stack.toLocaleString()}</span>
-                            </div>
-                            {player.cards && (
-                                <div className="player-cards">
-                                    {player.cards.map((card, cIdx) => {
-                                        const { rank, symbol, isRed } = getCardDisplay(card);
-                                        return (
-                                            <div key={cIdx} className={`hole-card ${isRed ? 'red' : 'black'}`}>
-                                                <span>{rank}{symbol}</span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                            {/* Action bubble for current step */}
-                            {hand.actions[currentStep]?.player === player.name && (
-                                <div className="action-bubble">
-                                    {(hand.actions[currentStep]?.action || '').toUpperCase()}
-                                    {hand.actions[currentStep].amount &&
-                                        ` ${hand.actions[currentStep].amount}`}
-                                </div>
-                            )}
-                        </div>
-                    ))}
-                </div>
-
-                {/* Playback controls */}
-                <div className="playback-controls">
-                    <button className="ctrl-btn" onClick={rewind}>⏮</button>
-                    <button className="ctrl-btn play" onClick={togglePlay}>
-                        {isPlaying ? '⏸' : '▶'}
-                    </button>
-                    <button className="ctrl-btn" onClick={forward}>⏭</button>
-                </div>
-
-                {/* Action timeline */}
-                <div className="action-timeline">
-                    {hand.actions.map((action, idx) => (
-                        <div
-                            key={idx}
-                            className={`timeline-step ${idx <= currentStep ? 'active' : ''}`}
-                        />
-                    ))}
-                </div>
+                )}
 
                 {/* Share button */}
                 <button

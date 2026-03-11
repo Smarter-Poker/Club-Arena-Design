@@ -25,6 +25,10 @@ import {
     ResponsiveContainer,
     Legend,
 } from 'recharts';
+import PositionWinRates from '../components/stats/PositionWinRates';
+import SessionHistory from '../components/stats/SessionHistory';
+import BankrollTracker from '../components/stats/BankrollTracker';
+import AdvancedStatsSummary from '../components/stats/AdvancedStatsSummary';
 import './PlayerStatsPage.css';
 
 interface DetailedStats {
@@ -62,7 +66,7 @@ interface SessionData {
     cumulative: number;
 }
 
-type StatCategory = 'overview' | 'preflop' | 'postflop' | 'results' | 'charts';
+type StatCategory = 'overview' | 'preflop' | 'postflop' | 'results' | 'charts' | 'advanced' | 'positions' | 'sessions' | 'bankroll';
 
 const CHART_COLORS = ['#4169E1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
@@ -292,13 +296,18 @@ export default function PlayerStatsPage() {
 
             {/* Category Tabs */}
             <div className="stats-tabs">
-                {(['overview', 'preflop', 'postflop', 'results', 'charts'] as StatCategory[]).map(cat => (
+                {(['overview', 'advanced', 'positions', 'sessions', 'bankroll', 'preflop', 'postflop', 'results', 'charts'] as StatCategory[]).map(cat => (
                     <button
                         key={cat}
                         className={category === cat ? 'active' : ''}
                         onClick={() => setCategory(cat)}
                     >
-                        {cat === 'charts' ? ' Charts' : cat.charAt(0).toUpperCase() + cat.slice(1)}
+                        {cat === 'charts' ? 'Charts' :
+                         cat === 'advanced' ? 'Advanced' :
+                         cat === 'positions' ? 'Positions' :
+                         cat === 'sessions' ? 'Sessions' :
+                         cat === 'bankroll' ? 'Bankroll' :
+                         cat.charAt(0).toUpperCase() + cat.slice(1)}
                     </button>
                 ))}
             </div>

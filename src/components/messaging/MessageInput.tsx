@@ -7,6 +7,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import styles from './MessageInput.module.css';
+import { ImageUpload, ImagePreview } from './ImageMessage';
 
 interface MessageInputProps {
     onSend: (text: string, imageUrl?: string) => void;
@@ -95,23 +96,18 @@ export default function MessageInput({ onSend, onTyping, disabled = false, place
         <div className={styles.container}>
             {/* Attachment Preview */}
             {attachmentPreview && (
-                <div className={styles.attachmentPreview}>
-                    <img src={attachmentPreview} alt="Attachment" className={styles.previewImage} />
-                    <button className={styles.removeBtn} onClick={removeAttachment}>✕</button>
-                </div>
+                <ImagePreview
+                    imageUrl={attachmentPreview}
+                    onRemove={removeAttachment}
+                />
             )}
 
             <div className={styles.inputRow}>
-                {/* Attachment Button */}
-                <label className={styles.attachBtn}>
-                    📎
-                    <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileSelect}
-                        hidden
-                    />
-                </label>
+                {/* Image Upload Button */}
+                <ImageUpload
+                    onPreview={setAttachmentPreview}
+                    maxSizeMB={5}
+                />
 
                 {/* Text Input */}
                 <textarea

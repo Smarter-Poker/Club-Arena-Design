@@ -280,7 +280,210 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   USER CLUBS — Holographic Card Row (World Hub Footer-Card Style)
+   CLUB CAROUSEL — Horizontally Swipeable Row (Shark Club Center)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.clubCarousel {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    padding: 16px 40px 28px 40px;
+    box-sizing: border-box;
+    overflow-x: auto;
+    overflow-y: visible;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    z-index: 10;
+    position: relative;
+}
+
+.clubCarousel::-webkit-scrollbar {
+    display: none;
+}
+
+/* ── USER CLUB CARDS in the carousel ────────────────────────────────────── */
+
+.carouselCard {
+    flex: 0 0 auto;
+    width: 220px;
+    cursor: pointer;
+    position: relative;
+    scroll-snap-align: center;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: cardRise 0.6s ease-out both;
+    perspective: 800px;
+}
+
+.carouselCard:nth-child(1) { animation-delay: 200ms; }
+.carouselCard:nth-child(2) { animation-delay: 280ms; }
+.carouselCard:nth-child(3) { animation-delay: 360ms; }
+.carouselCard:nth-child(4) { animation-delay: 440ms; }
+.carouselCard:nth-child(5) { animation-delay: 520ms; }
+.carouselCard:nth-child(6) { animation-delay: 600ms; }
+.carouselCard:nth-child(7) { animation-delay: 680ms; }
+
+.carouselCard:hover {
+    transform: translateY(-10px) scale(1.05);
+}
+
+.carouselCard:hover .carouselCardFace {
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 212, 255, 0.2);
+}
+
+/* Pedestal glow under carousel cards */
+.carouselCardPedestal {
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 180px;
+    height: 35px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(0, 212, 255, 0.3), rgba(0, 136, 255, 0.15), transparent 70%);
+    filter: blur(8px);
+    opacity: 0.5;
+    z-index: 0;
+    animation: pedestalPulse 4s ease-in-out infinite;
+}
+
+/* Card face — tall, premium glass style matching Shark Club */
+.carouselCardFace {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 7 / 11;
+    border-radius: 12px;
+    overflow: hidden;
+    background: linear-gradient(145deg, rgba(8, 20, 40, 0.92), rgba(5, 12, 28, 0.96));
+    border: 1px solid rgba(0, 212, 255, 0.18);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 212, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 14px;
+    z-index: 2;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
+}
+
+.carouselCardFace::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.06) 0%, transparent 50%, rgba(0, 255, 136, 0.04) 100%);
+    pointer-events: none;
+}
+
+/* Unique color accents per carousel card */
+.carouselCard:nth-child(6n+1) .carouselCardFace { border-color: rgba(0, 212, 255, 0.22); }
+.carouselCard:nth-child(6n+2) .carouselCardFace { border-color: rgba(0, 255, 136, 0.2); }
+.carouselCard:nth-child(6n+3) .carouselCardFace { border-color: rgba(0, 191, 255, 0.2); }
+.carouselCard:nth-child(6n+4) .carouselCardFace { border-color: rgba(77, 210, 255, 0.2); }
+.carouselCard:nth-child(6n+5) .carouselCardFace { border-color: rgba(0, 255, 159, 0.2); }
+.carouselCard:nth-child(6n+6) .carouselCardFace { border-color: rgba(200, 255, 255, 0.17); }
+
+.carouselCardTitle {
+    font-size: 13px;
+    font-weight: 800;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    text-shadow: 0 0 14px rgba(0, 212, 255, 0.5);
+    margin: 0;
+    text-align: center;
+    line-height: 1.3;
+    word-wrap: break-word;
+}
+
+.carouselCardRole {
+    font-size: 9px;
+    font-weight: 700;
+    color: rgba(0, 212, 255, 0.85);
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    margin-top: 2px;
+}
+
+.carouselCardCenter {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 0;
+}
+
+.carouselCardLogo {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    border-radius: 10px;
+    filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.3));
+}
+
+.carouselCardIcon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 212, 255, 0.12) 0%, transparent 70%);
+    border: 2px solid rgba(0, 212, 255, 0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: rgba(0, 212, 255, 0.65);
+    filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.3));
+}
+
+.carouselCardMeta {
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.65);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    text-align: center;
+}
+
+/* ── SHARK CLUB FEATURED CARD in the carousel ──────────────────────────── */
+
+.carouselCardFeatured {
+    flex: 0 0 auto;
+    width: 280px;
+    cursor: pointer;
+    position: relative;
+    scroll-snap-align: center;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: scaleIn 0.7s ease-out 100ms both, idleFloat 6s ease-in-out infinite;
+    border-radius: 12px;
+    overflow: hidden;
+    z-index: 10;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 212, 255, 0.15);
+}
+
+.carouselCardFeatured:hover {
+    transform: scale(1.04) translateY(-6px);
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5), 0 0 50px rgba(0, 212, 255, 0.25);
+}
+
+/* Pedestal glow under the featured Shark Club card */
+.carouselFeaturedPedestal {
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 260px;
+    height: 40px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(0, 212, 255, 0.4), rgba(0, 136, 255, 0.2), transparent 70%);
+    filter: blur(10px);
+    animation: pedestalPulse 4s ease-in-out infinite;
+    z-index: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   USER CLUBS — Old Row (kept for backward compat but hidden by default)
+   Now absorbed into .clubCarousel. Legacy class left for CSS module reference.
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .clubCardsRow {

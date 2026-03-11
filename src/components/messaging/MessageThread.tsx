@@ -9,9 +9,16 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { supabase } from '../../lib/supabase'
 import { masterBus } from '../../core/MasterBus';
 import { useUserStore } from '../../stores/useUserStore';
-import ChatBubble from './ChatBubble';
+import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
 import styles from './MessageThread.module.css';
+
+interface Reaction {
+    emoji: string;
+    userId: string;
+    userName: string;
+    timestamp: number;
+}
 
 interface Message {
     id: string;
@@ -25,6 +32,8 @@ interface Message {
     isSeen: boolean;
     reactions: { [emoji: string]: number };
     myReaction?: string;
+    reactionDetails?: Reaction[];
+    threadReplyCount?: number;
 }
 
 interface Participant {
@@ -51,6 +60,8 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
     const [typingUsers, setTypingUsers] = useState<string[]>([]);
     const [seenBy, setSeenBy] = useState<string[]>([]);
     const [visibleMessages, setVisibleMessages] = useState<Set<number>>(new Set());
+    const [replyingToId, setReplyingToId] = useState<string | null>(null);
+    const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const heartbeatRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -123,7 +134,9 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
                     createdAt: m.created_at,
                     isSeen: m.is_seen,
                     reactions: {},
-                    myReaction: undefined
+                    myReaction: undefined,
+                    reactionDetails: [],
+                    threadReplyCount: 0
                 })).reverse();
 
                 if (replace) {
@@ -170,7 +183,9 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
                     createdAt: data.created_at,
                     isSeen: false,
                     reactions: {},
-                    myReaction: undefined
+                    myReaction: undefined,
+                    reactionDetails: [],
+                    threadReplyCount: 0
                 };
                 setMessages(prev => [...prev, newMessage]);
 
@@ -203,6 +218,19 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
             .update({ is_typing: isTyping })
             .eq('conversation_id', conversationId)
             .eq('user_id', user.id);
+    };
+
+    // Handle reply to message
+    const handleReply = (messageId: string) => {
+        const message = messages.find(m => m.id === messageId);
+        setReplyingToId(messageId);
+        setReplyingToMessage(message || null);
+    };
+
+    // Cancel reply
+    const cancelReply = () => {
+        setReplyingToId(null);
+        setReplyingToMessage(null);
     };
 
     // React to message
@@ -343,11 +371,12 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
                             transform: visibleMessages.has(idx) ? 'translateY(0)' : 'translateY(8px)',
                             transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                         }}>
-                            <ChatBubble
+                            <MessageBubble
                                 message={message}
                                 isCurrentUser={message.userId === user?.id}
                                 onReact={reactToMessage}
                                 onDelete={deleteMessage}
+                                onReply={handleReply}
                             />
                         </div>
                     ))
@@ -370,6 +399,17 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
                     </div>
                 )}
             </div>
+
+            {/* Reply Preview */}
+            {replyingToMessage && (
+                <div className={styles.replyPreview}>
+                    <div className={styles.replyContent}>
+                        <span className={styles.replyLabel}>Replying to {replyingToMessage.userFullname}</span>
+                        <p className={styles.replyText}>{replyingToMessage.content || replyingToMessage.imageUrl ? '📷 Image' : ''}</p>
+                    </div>
+                    <button className={styles.replyCancel} onClick={cancelReply}>✕</button>
+                </div>
+            )}
 
             {/* Input */}
             <MessageInput

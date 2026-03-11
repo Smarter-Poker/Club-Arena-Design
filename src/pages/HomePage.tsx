@@ -9,7 +9,7 @@
  * - Accessibility: ARIA, focus traps, keyboard nav, offline indicator
  */
 
-import { useState, useEffect, useRef, useCallback, lazy, Suspense, Component, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense, Component, useMemo, type RefObject } from 'react';
 import type { ReactNode, ErrorInfo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -131,6 +131,206 @@ class HomePageErrorBoundary extends Component<{ children: ReactNode }, ErrorBoun
         }
         return this.props.children;
     }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CAROUSEL SECTION — Club cards flanking the Shark Club in one swipeable row
+// ═══════════════════════════════════════════════════════════════════════════════
+interface CarouselSectionProps {
+    displayClubs: any[];
+    sharkClubId: string | null;
+    sharkClubStats: { totalMembers: number; clubLevel: number; activePlayers: number };
+    flippedCards: Set<number>;
+    pinnedClubIds: string[];
+    cardColorPreset: string;
+    navigate: (path: string) => void;
+    toast: any;
+    handleContextMenu: (e: React.MouseEvent, club: any) => void;
+    handleLongPressStart: (club: any, e: React.TouchEvent) => void;
+    handleLongPressEnd: () => void;
+    handleClubHoverStart: (clubId: string) => void;
+    handleClubHoverEnd: () => void;
+    handleTooltipEnter: (club: any, e: React.MouseEvent) => void;
+    handleTooltipLeave: () => void;
+}
+
+function CarouselSection({
+    displayClubs,
+    sharkClubId,
+    sharkClubStats,
+    flippedCards,
+    pinnedClubIds,
+    cardColorPreset,
+    navigate,
+    toast,
+    handleContextMenu,
+    handleLongPressStart,
+    handleLongPressEnd,
+    handleClubHoverStart,
+    handleClubHoverEnd,
+    handleTooltipEnter,
+    handleTooltipLeave,
+}: CarouselSectionProps) {
+    const carouselRef = useRef<HTMLDivElement>(null);
+    const sharkCardRef = useRef<HTMLDivElement>(null);
+
+    // Split user clubs into left half and right half around the Shark Club
+    const leftClubs = useMemo(() => {
+        const half = Math.ceil(displayClubs.length / 2);
+        return displayClubs.slice(0, half);
+    }, [displayClubs]);
+
+    const rightClubs = useMemo(() => {
+        const half = Math.ceil(displayClubs.length / 2);
+        return displayClubs.slice(half);
+    }, [displayClubs]);
+
+    // Auto-scroll to center the Shark Club card on mount
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            if (sharkCardRef.current && carouselRef.current) {
+                sharkCardRef.current.scrollIntoView({
+                    behavior: 'smooth',
+                    inline: 'center',
+                    block: 'nearest',
+                });
+            }
+        }, 400); // Wait for entrance animations to start
+        return () => clearTimeout(timeout);
+    }, [displayClubs.length]);
+
+    // Render a single user club card in carousel style
+    const renderClubCard = (club: any, idx: number) => {
+        const isFlipped = flippedCards.has(idx);
+        return (
+            <div
+                key={club.id}
+                className={`${styles.carouselCard} ${isFlipped ? styles.clubCardFlipped : ''}`}
+                onClick={() => {
+                    haptic.medium();
+                    localStorage.setItem(LAST_VISITED_KEY, club.id);
+                    localStorage.setItem(LAST_CLUB_KEY, club.id);
+                    navigate(`/clubs/${club.id}`);
+                }}
+                onContextMenu={(e) => handleContextMenu(e, club)}
+                onTouchStart={(e) => handleLongPressStart(club, e)}
+                onTouchEnd={handleLongPressEnd}
+                onTouchCancel={handleLongPressEnd}
+                onMouseEnter={(e) => {
+                    handleClubHoverStart(club.id);
+                    handleTooltipEnter(club, e);
+                }}
+                onMouseLeave={() => {
+                    handleClubHoverEnd();
+                    handleTooltipLeave();
+                }}
+                role="button"
+                aria-label={`${club.name || 'Club'} — ${club.is_owner ? 'Owner' : 'Member'}`}
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter') { haptic.medium(); navigate(`/clubs/${club.id}`); }}}
+            >
+                {/* Pinned badge */}
+                {pinnedClubIds.includes(club.id) && (
+                    <span className={styles.pinnedBadge} title="Pinned">⭐</span>
+                )}
+                <div className={styles.carouselCardPedestal}></div>
+                <div className={styles.clubCardFlipInner} style={{ height: '100%' }}>
+                    {/* Card Back (face-down) */}
+                    <div className={styles.clubCardFront}>
+                        <div className={styles.clubCardBackFace}></div>
+                    </div>
+                    {/* Card Face (data side) */}
+                    <div className={styles.clubCardBack}>
+                        <div
+                            className={styles.carouselCardFace}
+                            style={cardColorPreset !== 'default' ? {
+                                background: CARD_COLOR_PRESETS.find(p => p.id === cardColorPreset)?.bg,
+                            } : undefined}
+                        >
+                            {/* Color overlay */}
+                            {cardColorPreset !== 'default' && (
+                                <div style={{
+                                    position: 'absolute', inset: 0, borderRadius: 12, pointerEvents: 'none',
+                                    background: CARD_COLOR_PRESETS.find(p => p.id === cardColorPreset)?.overlay,
+                                }} />
+                            )}
+                            <h3 className={styles.carouselCardTitle}>
+                                {club.name?.toUpperCase() || 'MY CLUB'}
+                            </h3>
+                            <span className={styles.carouselCardRole}>
+                                {club.is_owner ? 'OWNER' : 'MEMBER'}
+                            </span>
+                            <div className={styles.carouselCardCenter}>
+                                {club.logo_url ? (
+                                    <img src={club.logo_url} alt="" className={styles.carouselCardLogo} />
+                                ) : (
+                                    <div className={`${styles.carouselCardIcon} ${GRADIENT_CLASSES[idx % GRADIENT_CLASSES.length]}`}>♣</div>
+                                )}
+                            </div>
+                            <div className={styles.carouselCardMeta}>
+                                <span>{club.member_count || 0} MEMBERS</span>
+                                {(club.active_tables || 0) > 0 && (
+                                    <div className={styles.activeTablesBadge}>
+                                        <span className={styles.activeTablesDot}></span>
+                                        <span>{club.active_tables} Live</span>
+                                    </div>
+                                )}
+                                {/* Last active timestamp */}
+                                {club.last_active_at && (
+                                    <div className={styles.clubCardTimestamp}>
+                                        {(() => {
+                                            const diff = Date.now() - new Date(club.last_active_at).getTime();
+                                            const mins = Math.floor(diff / 60000);
+                                            if (mins < 1) return 'Active now';
+                                            if (mins < 60) return `${mins}m ago`;
+                                            const hrs = Math.floor(mins / 60);
+                                            if (hrs < 24) return `${hrs}h ago`;
+                                            return `${Math.floor(hrs / 24)}d ago`;
+                                        })()}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <div className={styles.clubCarousel} ref={carouselRef}>
+            {/* Left half of user clubs */}
+            {leftClubs.map((club, idx) => renderClubCard(club, idx))}
+
+            {/* SHARK CLUB — featured center card */}
+            <div
+                className={styles.carouselCardFeatured}
+                ref={sharkCardRef}
+                onClick={() => {
+                    haptic.success();
+                    if (sharkClubId) {
+                        localStorage.setItem(LAST_VISITED_KEY, sharkClubId);
+                        localStorage.setItem(LAST_CLUB_KEY, sharkClubId);
+                        navigate(`/clubs/${sharkClubId}`);
+                    } else {
+                        toast.info('Shark Club not found. Join or create a club!');
+                    }
+                }}
+            >
+                <div className={styles.carouselFeaturedPedestal}></div>
+                <Suspense fallback={<div className={styles.cardSkeleton}>Loading...</div>}>
+                    <ClubStatsPanel
+                        totalMembers={sharkClubStats.totalMembers}
+                        clubLevel={sharkClubStats.clubLevel}
+                        activePlayers={sharkClubStats.activePlayers}
+                    />
+                </Suspense>
+            </div>
+
+            {/* Right half of user clubs */}
+            {rightClubs.map((club, idx) => renderClubCard(club, leftClubs.length + idx))}
+        </div>
+    );
 }
 
 function HomePageInner() {
@@ -860,142 +1060,25 @@ function HomePageInner() {
                 </div>
 
                 {/* ═══════════════════════════════════════════════════════════════════════
-                    FEATURED SHARK CLUB — Center Holographic Card
+                    CLUB CAROUSEL — Swipeable: [User Clubs ← SHARK CLUB (center) → User Clubs]
                 ═══════════════════════════════════════════════════════════════════════ */}
-                <div
-                    className={`${styles.featuredCardContainer} ${styles.featuredCardFloat}`}
-                >
-                    <div className={styles.featuredPedestal}></div>
-                    <div
-                        className={styles.featuredCard}
-                        onClick={() => {
-                            haptic.success();
-                            if (sharkClubId) {
-                                localStorage.setItem(LAST_VISITED_KEY, sharkClubId);
-                                localStorage.setItem(LAST_CLUB_KEY, sharkClubId);
-                                navigate(`/clubs/${sharkClubId}`);
-                            } else {
-                                toast.info('Shark Club not found. Join or create a club!');
-                            }
-                        }}
-                    >
-                        <Suspense fallback={<div className={styles.cardSkeleton}>Loading...</div>}>
-                            <ClubStatsPanel
-                                totalMembers={sharkClubStats.totalMembers}
-                                clubLevel={sharkClubStats.clubLevel}
-                                activePlayers={sharkClubStats.activePlayers}
-                            />
-                        </Suspense>
-                    </div>
-                </div>
-
-                {/* ═══════════════════════════════════════════════════════════════════════
-                    MY CLUBS — Holographic Card Row
-                ═══════════════════════════════════════════════════════════════════════ */}
-                {displayClubs.length > 0 && (
-                    <div className={styles.clubCardsRow}>
-                        {displayClubs.map((club: any, idx: number) => {
-                            const isFlipped = flippedCards.has(idx);
-                            return (
-                                <div
-                                    key={club.id}
-                                    className={`${styles.clubCard} ${isFlipped ? styles.clubCardFlipped : ''}`}
-                                    onClick={() => {
-                                        haptic.medium();
-                                        localStorage.setItem(LAST_VISITED_KEY, club.id);
-                                        localStorage.setItem(LAST_CLUB_KEY, club.id);
-                                        navigate(`/clubs/${club.id}`);
-                                    }}
-                                    onContextMenu={(e) => handleContextMenu(e, club)}
-                                    onTouchStart={(e) => handleLongPressStart(club, e)}
-                                    onTouchEnd={handleLongPressEnd}
-                                    onTouchCancel={handleLongPressEnd}
-                                    onMouseEnter={(e) => {
-                                        handleClubHoverStart(club.id);
-                                        handleTooltipEnter(club, e);
-                                    }}
-                                    onMouseLeave={() => {
-                                        handleClubHoverEnd();
-                                        handleTooltipLeave();
-                                    }}
-                                    role="button"
-                                    aria-label={`${club.name || 'Club'} — ${club.is_owner ? 'Owner' : 'Member'}`}
-                                    tabIndex={0}
-                                    onKeyDown={(e) => { if (e.key === 'Enter') { haptic.medium(); navigate(`/clubs/${club.id}`); }}}
-                                >
-                                    {/* #2: Pinned badge */}
-                                    {pinnedClubIds.includes(club.id) && (
-                                        <span className={styles.pinnedBadge} title="Pinned">⭐</span>
-                                    )}
-                                    <div className={styles.clubCardPedestal}></div>
-                                    <div className={styles.clubCardFlipInner} style={{ height: '100%' }}>
-                                        {/* Card Back (face-down) */}
-                                        <div className={styles.clubCardFront}>
-                                            <div className={styles.clubCardBackFace}></div>
-                                        </div>
-                                        {/* Card Face (data side) */}
-                                        <div className={styles.clubCardBack}>
-                                            <div
-                                                className={styles.clubCardFace}
-                                                style={cardColorPreset !== 'default' ? {
-                                                    background: CARD_COLOR_PRESETS.find(p => p.id === cardColorPreset)?.bg,
-                                                } : undefined}
-                                            >
-                                                {/* #6: Color overlay */}
-                                                {cardColorPreset !== 'default' && (
-                                                    <div style={{
-                                                        position: 'absolute', inset: 0, borderRadius: 10, pointerEvents: 'none',
-                                                        background: CARD_COLOR_PRESETS.find(p => p.id === cardColorPreset)?.overlay,
-                                                    }} />
-                                                )}
-                                                <h3 className={styles.clubCardTitle}>
-                                                    {club.name?.toUpperCase() || 'MY CLUB'}
-                                                </h3>
-                                                <span className={styles.clubCardRole}>
-                                                    {club.is_owner ? 'OWNER' : 'MEMBER'}
-                                                </span>
-                                                <div className={styles.clubCardCenter}>
-                                                    {club.logo_url ? (
-                                                        <img src={club.logo_url} alt="" className={styles.clubCardLogo} />
-                                                    ) : (
-                                                        <div className={`${styles.clubCardIcon} ${GRADIENT_CLASSES[idx % GRADIENT_CLASSES.length]}`}>♣</div>
-                                                    )}
-                                                </div>
-                                                <div className={styles.clubCardStats}>
-                                                    <span>{club.member_count || 0} Members</span>
-                                                    {(club.active_tables || 0) > 0 && (
-                                                        <div className={styles.activeTablesBadge}>
-                                                            <span className={styles.activeTablesDot}></span>
-                                                            <span>{club.active_tables} Live</span>
-                                                        </div>
-                                                    )}
-                                                    {/* #5: Last active timestamp */}
-                                                    {club.last_active_at && (
-                                                        <div className={styles.clubCardTimestamp}>
-                                                            {(() => {
-                                                                const diff = Date.now() - new Date(club.last_active_at).getTime();
-                                                                const mins = Math.floor(diff / 60000);
-                                                                if (mins < 1) return 'Active now';
-                                                                if (mins < 60) return `${mins}m ago`;
-                                                                const hrs = Math.floor(mins / 60);
-                                                                if (hrs < 24) return `${hrs}h ago`;
-                                                                return `${Math.floor(hrs / 24)}d ago`;
-                                                            })()}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className={styles.clubCardEdge}></div>
-                                    <div className={styles.clubCardLabel}>
-                                        {club.name || 'My Club'}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
+                <CarouselSection
+                    displayClubs={displayClubs}
+                    sharkClubId={sharkClubId}
+                    sharkClubStats={sharkClubStats}
+                    flippedCards={flippedCards}
+                    pinnedClubIds={pinnedClubIds}
+                    cardColorPreset={cardColorPreset}
+                    navigate={navigate}
+                    toast={toast}
+                    handleContextMenu={handleContextMenu}
+                    handleLongPressStart={handleLongPressStart}
+                    handleLongPressEnd={handleLongPressEnd}
+                    handleClubHoverStart={handleClubHoverStart}
+                    handleClubHoverEnd={handleClubHoverEnd}
+                    handleTooltipEnter={handleTooltipEnter}
+                    handleTooltipLeave={handleTooltipLeave}
+                />
 
                 {/* Enhancement #5: Skeleton loading while clubs data is loading */}
                 {isLoading && (

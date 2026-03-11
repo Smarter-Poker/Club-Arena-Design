@@ -192,3 +192,64 @@
     font-size: 3rem;
     margin-bottom: 1rem;
 }
+
+/* Reply Preview */
+.replyPreview {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: rgba(139, 92, 246, 0.15);
+    border-left: 3px solid rgba(139, 92, 246, 0.6);
+    border-top: 1px solid rgba(139, 92, 246, 0.3);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.replyContent {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.replyLabel {
+    font-size: 0.75rem;
+    color: #a78bfa;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.replyText {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #cbd5e1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.replyCancel {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    color: #9ca3af;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.replyCancel:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #e5e7eb;
+    transform: scale(1.1);
+}
