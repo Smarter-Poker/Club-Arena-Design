@@ -174,13 +174,13 @@ export default function AgentManagementPage() {
             )
             .subscribe();
 
-        // Bus event listeners for cross-component sync
-        const unsubWallet = masterBus.subscribe('WALLET_REFRESHED', () => {
+        // Bus event listeners for cross-component sync (debounced to prevent rapid-fire reloads)
+        const unsubWallet = masterBus.subscribeDebounced('WALLET_REFRESHED', () => {
             loadAgentsData();
-        });
-        const unsubBalance = masterBus.subscribe('BALANCE_UPDATED', () => {
+        }, 300);
+        const unsubBalance = masterBus.subscribeDebounced('BALANCE_UPDATED', () => {
             loadAgentsData();
-        });
+        }, 300);
 
         return () => {
             masterBus.removeRegisteredChannel(channelKey);

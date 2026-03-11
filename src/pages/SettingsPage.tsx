@@ -320,7 +320,7 @@ export default function SettingsPage() {
 
             // Fetch user data from various tables
             const [profiles, wallets, achievements, handHistory] = await Promise.all([
-                supabase.from('profiles').select('*').eq('id', user.id).single(),
+                supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
                 supabase.from('wallets').select('*').eq('user_id', user.id),
                 supabase.from('user_achievements').select('*').eq('user_id', user.id),
                 supabase.from('hand_history').select('*').eq('player_id', user.id).limit(100),

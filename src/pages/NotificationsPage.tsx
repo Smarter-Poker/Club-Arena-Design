@@ -110,14 +110,17 @@ export default function NotificationsPage() {
 
     const markAllRead = async () => {
         try {
-            await supabase
+            const { error } = await supabase
                 .from('notifications')
                 .update({ read: true })
                 .eq('user_id', user?.id);
 
+            if (error) throw error;
             setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            masterBus.emit('NOTIFICATION_READ', { notifId: null, allRead: true });
         } catch (err) {
             console.error('[Notifications] markAllRead error:', err);
+            toast.error('Failed to mark notifications as read');
         }
     };
 

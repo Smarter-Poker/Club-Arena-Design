@@ -136,6 +136,7 @@ export default function TransactionHistoryPage() {
             }
         } catch (error) {
             console.error('Failed to load transactions:', error);
+            toast.error('Failed to load transactions');
         }
         setLoading(false);
         setLoadingMore(false);

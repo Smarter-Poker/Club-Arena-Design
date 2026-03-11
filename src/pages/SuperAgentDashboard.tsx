@@ -99,15 +99,15 @@ export default function SuperAgentDashboard() {
         }
     }, [clubId, user?.id]);
 
-    // Bus event listeners for cross-component sync
+    // Bus event listeners for cross-component sync (debounced to prevent rapid-fire reloads)
     useEffect(() => {
         if (!clubId || !user?.id) return;
-        const unsubWallet = masterBus.subscribe('WALLET_REFRESHED', () => {
+        const unsubWallet = masterBus.subscribeDebounced('WALLET_REFRESHED', () => {
             loadDashboardData();
-        });
-        const unsubBalance = masterBus.subscribe('BALANCE_UPDATED', () => {
+        }, 300);
+        const unsubBalance = masterBus.subscribeDebounced('BALANCE_UPDATED', () => {
             loadDashboardData();
-        });
+        }, 300);
         return () => { unsubWallet(); unsubBalance(); };
     }, [clubId, user?.id]);
 

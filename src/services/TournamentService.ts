@@ -693,7 +693,8 @@ class TournamentService {
       .select('current_players, guaranteed_prize')
       .eq('id', tournamentId)
       .maybeSingle();
-    const freshPlayerCount = (freshTournament?.current_players || 0) + 1;
+    // Use fresh DB count (not stale registrations.length) for accurate player tracking
+    const freshPlayerCount = (freshTournament?.current_players ?? tournament.current_players ?? 0) + 1;
     const entriesPrize = buyIn * freshPlayerCount;
     const freshGuarantee = freshTournament?.guaranteed_prize ?? tournament.guaranteed_prize;
     const newPrizePool = freshGuarantee ? Math.max(entriesPrize, freshGuarantee) : entriesPrize;

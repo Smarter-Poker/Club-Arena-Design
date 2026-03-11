@@ -734,9 +734,10 @@ export class HeadlessTableEngine {
         }
 
         // Feed hand result to Horse AI Brain's 32 anti-exploit modules
-        if (HorseBrainAdapter.isBrainAvailable()) {
-          const state = this.handController?.getState();
-          const stage = state?.stage || 'river';
+        // Capture state BEFORE handController is nullified (may already be null after invalidation)
+        const brainState = this.handController?.getState() ?? null;
+        if (HorseBrainAdapter.isBrainAvailable() && brainState) {
+          const stage = brainState.stage || 'river';
 
           HorseBrainAdapter.processHandResult(
             this.tableId,
@@ -745,7 +746,7 @@ export class HeadlessTableEngine {
             this.currentHandPotSize,
             players.map((p) => {
               // Calculate actual chip delta from pre-hand stacks vs final stacks
-              const enginePlayer = state?.players.find((ep: any) => ep.user_id === p.user_id);
+              const enginePlayer = brainState?.players.find((ep: any) => ep.user_id === p.user_id);
               // Use captured pre-hand stacks (p.stack was mutated by WINNERS event)
               const initialStack = this.currentHandInitialStacks.get(p.user_id) ?? p.stack;
               const finalStack = enginePlayer?.stack ?? p.stack;

@@ -411,7 +411,8 @@ export class HandController {
             // They still need to have acted this round (or their bet equals current bet)
             const stageActions = this.state.actionHistory.filter(a => a.stage === this.state.stage);
             const hasActed = stageActions.some(a => a.seat === playersToAct[0].seat);
-            if (hasActed && playersToAct[0].bet >= this.state.currentBet) return true;
+            // Must have acted AND bet exactly matches currentBet (=== not >= to prevent unequalized bets)
+            if (hasActed && playersToAct[0].bet === this.state.currentBet) return true;
             if (!hasActed) return false;
         }
 
