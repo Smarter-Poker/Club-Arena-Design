@@ -1401,15 +1401,15 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
             unsubscribe();
             roomService.leaveRoom(tableId);
             if (breakChannelRef.current) {
-                supabase.removeChannel(breakChannelRef.current);
+                masterBus.removeRegisteredChannel(`t-break-${tableState.tournamentId || tableId}`);
                 breakChannelRef.current = null;
             }
             if (addOnChannelRef.current) {
-                supabase.removeChannel(addOnChannelRef.current);
+                // Add-on events handled via break channel — no separate channel needed
                 addOnChannelRef.current = null;
             }
             if (bountyChannelRef.current) {
-                supabase.removeChannel(bountyChannelRef.current);
+                masterBus.removeRegisteredChannel(`bounty-${tableState.tournamentId || tableId}`);
                 bountyChannelRef.current = null;
             }
         };

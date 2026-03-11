@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { ClubsService } from '../../services/ClubsService';
 import { masterBus } from '../../core/MasterBus';
 import { useToast } from '../../components/common/Toast';
-import styles from '../HomePage.module.css';
+import styles from '../../pages/HomePage.module.css';
 
 interface ClubContextMenuProps {
     club: any;

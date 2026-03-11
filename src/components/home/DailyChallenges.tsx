@@ -8,7 +8,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
-import styles from '../HomePage.module.css';
+import styles from '../../pages/HomePage.module.css';
 
 const CHALLENGES = [
     { title: 'Win 3 Hands', reward: 50, target: 3 },

@@ -457,6 +457,112 @@ function HomePageInner() {
         };
     }, []);
 
+    // #1: Keyboard shortcut navigation
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Don't trigger when typing in inputs
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+            const key = e.key.toLowerCase();
+            switch (key) {
+                case '1': haptic.light(); navigate('/profile'); break;
+                case '2': haptic.light(); navigate('/leaderboard'); break;
+                case '3': {
+                    haptic.light();
+                    const lastClub = localStorage.getItem(LAST_CLUB_KEY);
+                    if (lastClub) navigate(`/clubs/${lastClub}/cashier`);
+                    else if (userClubs.length > 0) navigate(`/clubs/${userClubs[0].id}/cashier`);
+                    break;
+                }
+                case '4': haptic.light(); window.location.href = 'https://smarter.poker/hub/marketplace'; break;
+                case '5': haptic.light(); navigate('/hands'); break;
+                case 'j': setShowJoinModal(true); break;
+                case 'c': setShowCreateClubModal(true); break;
+                case 'f': setShowFindPlayerModal(true); break;
+                case '/': e.preventDefault(); setSearchQuery(''); document.getElementById('club-search-input')?.focus(); break;
+                case '?': setShowShortcutHint(prev => !prev); break;
+                case 'escape':
+                    setContextMenu(null);
+                    setShowJoinModal(false);
+                    setShowCreateClubModal(false);
+                    setShowFindPlayerModal(false);
+                    setLeaveConfirm(null);
+                    setShowShortcutHint(false);
+                    setTooltipClub(null);
+                    break;
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [navigate, userClubs]);
+
+    // #2: Pin/unpin club
+    const togglePinClub = useCallback((clubId: string) => {
+        setPinnedClubIds(prev => {
+            const next = prev.includes(clubId)
+                ? prev.filter(id => id !== clubId)
+                : [...prev, clubId];
+            try { localStorage.setItem(PINNED_CLUBS_KEY, JSON.stringify(next)); } catch { /* */ }
+            return next;
+        });
+    }, []);
+
+    // #4: Leave club with confirmation
+    const handleLeaveClub = useCallback(async (club: any) => {
+        try {
+            await ClubsService.leave(club.id);
+            toast.success('Left the club');
+            masterBus.emit('CLUB_LEFT', { clubId: club.id });
+            fetchUserData(true);
+            setLeaveConfirm(null);
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to leave club');
+        }
+    }, [toast, fetchUserData]);
+
+    // #7: Prefetch club lobby data on hover
+    const prefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const handleClubHoverStart = useCallback((clubId: string) => {
+        prefetchTimerRef.current = setTimeout(async () => {
+            try {
+                // Prefetch basic club data into browser fetch cache
+                const { data } = await supabase
+                    .from('club_members')
+                    .select('*, club:clubs(*)', { count: 'exact', head: false })
+                    .eq('club_id', clubId)
+                    .limit(5);
+                // Store in sessionStorage for instant lobby render
+                if (data) {
+                    try { sessionStorage.setItem(`prefetch_club_${clubId}`, JSON.stringify(data)); } catch { /* */ }
+                }
+            } catch { /* silent prefetch */ }
+        }, 300);
+    }, []);
+
+    const handleClubHoverEnd = useCallback(() => {
+        if (prefetchTimerRef.current) {
+            clearTimeout(prefetchTimerRef.current);
+            prefetchTimerRef.current = null;
+        }
+    }, []);
+
+    // #11: Toggle sound effects
+    const toggleSounds = useCallback(() => {
+        setSoundsEnabled(prev => {
+            const next = !prev;
+            localStorage.setItem(SOUNDS_ENABLED_KEY, String(next));
+            if (next) SFX.play('toggle-on');
+            return next;
+        });
+    }, []);
+
+    // #13: Tooltip for desktop hover (club stats)
+    const handleTooltipEnter = useCallback((club: any, e: React.MouseEvent) => {
+        setTooltipClub({ club, x: e.clientX, y: e.clientY });
+    }, []);
+    const handleTooltipLeave = useCallback(() => {
+        setTooltipClub(null);
+    }, []);
+
     // ═══════════════════════════════════════════════════════════════════════════════
     // JOIN A CLUB LOGIC
     // ═══════════════════════════════════════════════════════════════════════════════
@@ -541,11 +647,23 @@ function HomePageInner() {
     };
 
     // ═══════════════════════════════════════════════════════════════════════════════
-    // USER'S CLUBS — excluding the featured Shark Club (25450) to avoid duplicate
+    // USER'S CLUBS — sorted (pinned first), filtered, excluding Shark Club
     // ═══════════════════════════════════════════════════════════════════════════════
-    const displayClubs = userClubs.filter(
-        (club) => club.id !== sharkClubId
-    );
+    const displayClubs = useMemo(() => {
+        let clubs = userClubs.filter((club) => club.id !== sharkClubId);
+        // #9: Search filter
+        if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase();
+            clubs = clubs.filter(c => c.name?.toLowerCase().includes(q));
+        }
+        // #2: Sort — pinned first
+        clubs.sort((a, b) => {
+            const aPinned = pinnedClubIds.includes(a.id) ? -1 : 0;
+            const bPinned = pinnedClubIds.includes(b.id) ? -1 : 0;
+            return aPinned - bPinned;
+        });
+        return clubs;
+    }, [userClubs, sharkClubId, searchQuery, pinnedClubIds]);
 
     // ═══════════════════════════════════════════════════════════════════════════════
     // Enhancement #5: Staggered card flip after data loads
@@ -556,15 +674,47 @@ function HomePageInner() {
             displayClubs.forEach((_: any, idx: number) => {
                 const id = setTimeout(() => {
                     setFlippedCards(prev => new Set(prev).add(idx));
+                    // #10: Haptic on each card flip
+                    haptic.light();
+                    if (soundsEnabled) SFX.play('card-flip');
                 }, 300 + idx * 150);
                 timerIds.push(id);
             });
-            // Cleanup: cancel pending flip timers on unmount or re-render
             return () => {
                 timerIds.forEach(id => clearTimeout(id));
             };
         }
-    }, [isLoading, displayClubs.length]);
+    }, [isLoading, displayClubs.length, soundsEnabled]);
+    // Tile action handlers (for bottom row tiles using LOBBY_TILES config)
+    const tileActions: Record<string, () => void> = useMemo(() => ({
+        'Cashier': () => {
+            haptic.light();
+            const lastClub = localStorage.getItem(LAST_CLUB_KEY);
+            if (lastClub) navigate(`/clubs/${lastClub}/cashier`);
+            else if (userClubs.length > 0) navigate(`/clubs/${userClubs[0].id}/cashier`);
+            else toast.info('Join a club first to access the cashier');
+        },
+        'Marketplace': () => {
+            haptic.light();
+            if (window.parent !== window) {
+                window.parent.postMessage({ type: 'NAVIGATE', path: '/hub/marketplace' }, '*');
+                const fallbackTimer = setTimeout(() => {
+                    window.location.href = 'https://smarter.poker/hub/marketplace';
+                }, 1000);
+                const handleAck = (event: MessageEvent) => {
+                    if (event.data?.type === 'NAVIGATE_ACK') {
+                        clearTimeout(fallbackTimer);
+                        window.removeEventListener('message', handleAck);
+                    }
+                };
+                window.addEventListener('message', handleAck);
+                setTimeout(() => window.removeEventListener('message', handleAck), 1200);
+            } else {
+                window.location.href = 'https://smarter.poker/hub/marketplace';
+            }
+        },
+    }), [navigate, userClubs, toast]);
+
     return (
         <div
             className={styles.container}
@@ -572,6 +722,9 @@ function HomePageInner() {
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
+            style={SEASONAL_GRADIENTS[seasonalTheme] ? { background: SEASONAL_GRADIENTS[seasonalTheme] } : undefined}
+            role="main"
+            aria-label="Club Arena Home"
         >
             {/* ═══════════════════════════════════════════════════════════════════════
                 CINEMATIC BACKGROUND LAYERS — World Hub Aesthetic
@@ -586,6 +739,38 @@ function HomePageInner() {
 
             {/* GLOBAL HEADER - Hub-style, hide when embedded in iframe */}
             {!isInIframe && <GlobalHeader />}
+
+            {/* #15: Offline indicator banner */}
+            {!isOnline && (
+                <div className={styles.offlineBanner} role="alert">
+                    <span>📡 Offline — showing cached data</span>
+                </div>
+            )}
+
+            {/* #1: Keyboard shortcut hint overlay */}
+            {showShortcutHint && (
+                <div className={styles.shortcutOverlay} onClick={() => setShowShortcutHint(false)}>
+                    <div className={styles.shortcutPanel} onClick={(e) => e.stopPropagation()}>
+                        <h3 className={styles.shortcutTitle}>Keyboard Shortcuts</h3>
+                        <div className={styles.shortcutGrid}>
+                            {[
+                                ['1-5', 'Navigate Bottom Tiles'],
+                                ['J', 'Join a Club'],
+                                ['C', 'Create a Club'],
+                                ['F', 'Find a Player'],
+                                ['/', 'Search Clubs'],
+                                ['?', 'Toggle This Help'],
+                                ['Esc', 'Close Modals'],
+                            ].map(([key, desc]) => (
+                                <div key={key} className={styles.shortcutRow}>
+                                    <kbd className={styles.shortcutKey}>{key}</kbd>
+                                    <span className={styles.shortcutDesc}>{desc}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* ═══════════════════════════════════════════════════════════════════════
                 MAIN CONTENT — Scrollable card layout
@@ -681,7 +866,23 @@ function HomePageInner() {
                                     onTouchStart={(e) => handleLongPressStart(club, e)}
                                     onTouchEnd={handleLongPressEnd}
                                     onTouchCancel={handleLongPressEnd}
+                                    onMouseEnter={(e) => {
+                                        handleClubHoverStart(club.id);
+                                        handleTooltipEnter(club, e);
+                                    }}
+                                    onMouseLeave={() => {
+                                        handleClubHoverEnd();
+                                        handleTooltipLeave();
+                                    }}
+                                    role="button"
+                                    aria-label={`${club.name || 'Club'} — ${club.is_owner ? 'Owner' : 'Member'}`}
+                                    tabIndex={0}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') { haptic.medium(); navigate(`/clubs/${club.id}`); }}}
                                 >
+                                    {/* #2: Pinned badge */}
+                                    {pinnedClubIds.includes(club.id) && (
+                                        <span className={styles.pinnedBadge} title="Pinned">⭐</span>
+                                    )}
                                     <div className={styles.clubCardPedestal}></div>
                                     <div className={styles.clubCardFlipInner} style={{ height: '100%' }}>
                                         {/* Card Back (face-down) */}
@@ -706,11 +907,24 @@ function HomePageInner() {
                                                 </div>
                                                 <div className={styles.clubCardStats}>
                                                     <span>{club.member_count || 0} Members</span>
-                                                    {/* Enhancement #4: Active tables badge */}
                                                     {(club.active_tables || 0) > 0 && (
                                                         <div className={styles.activeTablesBadge}>
                                                             <span className={styles.activeTablesDot}></span>
                                                             <span>{club.active_tables} Live</span>
+                                                        </div>
+                                                    )}
+                                                    {/* #5: Last active timestamp */}
+                                                    {club.last_active_at && (
+                                                        <div className={styles.clubCardTimestamp}>
+                                                            {(() => {
+                                                                const diff = Date.now() - new Date(club.last_active_at).getTime();
+                                                                const mins = Math.floor(diff / 60000);
+                                                                if (mins < 1) return 'Active now';
+                                                                if (mins < 60) return `${mins}m ago`;
+                                                                const hrs = Math.floor(mins / 60);
+                                                                if (hrs < 24) return `${hrs}h ago`;
+                                                                return `${Math.floor(hrs / 24)}d ago`;
+                                                            })()}
                                                         </div>
                                                     )}
                                                 </div>
@@ -744,131 +958,54 @@ function HomePageInner() {
                     </div>
                 )}
 
-                {/* ═══════════════════════════════════════════════════════════════════════
-                    DAILY CHALLENGES — Glass-morphism Panel
-                ═══════════════════════════════════════════════════════════════════════ */}
-                <div className={styles.challengesSection}>
-                    <h3 className={styles.challengesTitle}>DAILY CHALLENGES</h3>
-                    <div className={styles.challengesList}>
-                        {(() => {
-                            const today = new Date();
-                            const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-                            const CHALLENGES = [
-                                { title: 'Win 3 Hands', reward: 50, target: 3 },
-                                { title: 'Play 20 Hands', reward: 30, target: 20 },
-                                { title: 'Win a Pot > 100 BB', reward: 75, target: 1 },
-                                { title: 'Play 2 Different Tables', reward: 40, target: 2 },
-                                { title: 'Win 5 Hands Pre-Flop', reward: 60, target: 5 },
-                                { title: 'Play for 30 Minutes', reward: 45, target: 30 },
-                                { title: 'Win 2 All-In Pots', reward: 80, target: 2 },
-                                { title: 'See 10 Flops', reward: 25, target: 10 },
-                                { title: 'Win a Hand with a Flush', reward: 100, target: 1 },
-                            ];
-                            // Pick 3 unique deterministic challenges for today
-                            const picked: typeof CHALLENGES[0][] = [];
-                            const usedIndices = new Set<number>();
-                            for (let i = 0; i < 3; i++) {
-                                let idx = ((seed * (i + 7) * 7919) % CHALLENGES.length);
-                                while (usedIndices.has(idx)) idx = (idx + 1) % CHALLENGES.length;
-                                usedIndices.add(idx);
-                                picked.push(CHALLENGES[idx]);
-                            }
-                            const dayKey = `challenges_${seed}`;
-                            let stored: Record<string, number> = {};
-                            try { stored = JSON.parse(localStorage.getItem(dayKey) || '{}'); }
-                            catch { localStorage.removeItem(dayKey); }
-
-                            return picked.map((ch, i) => {
-                                const progress = stored[i] || 0;
-                                const pct = Math.min(100, (progress / ch.target) * 100);
-                                const isComplete = pct >= 100;
-                                return (
-                                    <div key={i} className={isComplete ? styles.challengeItemComplete : styles.challengeItem}>
-                                        <div style={{ flex: 1 }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(224, 232, 240, 0.9)' }}>{ch.title}</span>
-                                                <span style={{
-                                                    fontSize: '0.65rem',
-                                                    fontWeight: 700,
-                                                    color: isComplete ? 'rgba(0, 255, 136, 0.9)' : 'rgba(0, 212, 255, 0.8)',
-                                                }}>+{ch.reward} Diamonds</span>
-                                            </div>
-                                            <div style={{
-                                                height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)',
-                                                overflow: 'hidden',
-                                            }}>
-                                                <div style={{
-                                                    height: '100%', borderRadius: 2, width: `${pct}%`,
-                                                    background: isComplete
-                                                        ? 'linear-gradient(90deg, #00ff88, #00d4ff)'
-                                                        : 'linear-gradient(90deg, #00d4ff, #0088ff)',
-                                                    transition: 'width 0.3s ease',
-                                                }} />
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            });
-                        })()}
+                {/* #9: Search bar (show when user has 3+ clubs) */}
+                {displayClubs.length >= 3 && (
+                    <div className={styles.searchBarContainer}>
+                        <input
+                            id="club-search-input"
+                            type="text"
+                            className={styles.searchInput}
+                            placeholder="Search clubs... (press /)"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            aria-label="Search clubs"
+                        />
+                        {searchQuery && (
+                            <button
+                                className={styles.searchClear}
+                                onClick={() => setSearchQuery('')}
+                                aria-label="Clear search"
+                            >✕</button>
+                        )}
                     </div>
-                </div>
+                )}
 
                 {/* ═══════════════════════════════════════════════════════════════════════
-                    BOTTOM ROW — 5 Holographic Standing Cards
+                    DAILY CHALLENGES — Extracted Component (#16)
                 ═══════════════════════════════════════════════════════════════════════ */}
-                <div className={styles.bottomRow}>
-                    {[
-                        { img: TILE_PLAYER_STATS, alt: 'Player Stats', action: () => { haptic.light(); navigate('/profile'); } },
-                        { img: TILE_LEADERBOARDS, alt: 'Leaderboards', action: () => { haptic.light(); navigate('/leaderboard'); } },
-                        {
-                            img: TILE_CASHIER, alt: 'Cashier', action: () => {
-                                haptic.light();
-                                const lastClub = localStorage.getItem(LAST_CLUB_KEY);
-                                if (lastClub) {
-                                    navigate(`/clubs/${lastClub}/cashier`);
-                                } else if (userClubs.length > 0) {
-                                    navigate(`/clubs/${userClubs[0].id}/cashier`);
-                                } else {
-                                    toast.info('Join a club first to access the cashier');
-                                }
-                            }
-                        },
-                        {
-                            img: TILE_MARKETPLACE, alt: 'Marketplace', action: () => {
-                                haptic.light();
-                                // Enhancement #7: Marketplace deep-link timeout fallback
-                                if (window.parent !== window) {
-                                    window.parent.postMessage({ type: 'NAVIGATE', path: '/hub/marketplace' }, '*');
-                                    // Fallback if parent doesn't handle the message within 1s
-                                    const fallbackTimer = setTimeout(() => {
-                                        window.location.href = 'https://smarter.poker/hub/marketplace';
-                                    }, 1000);
-                                    // Listen for acknowledgment from parent
-                                    const handleAck = (event: MessageEvent) => {
-                                        if (event.data?.type === 'NAVIGATE_ACK') {
-                                            clearTimeout(fallbackTimer);
-                                            window.removeEventListener('message', handleAck);
-                                        }
-                                    };
-                                    window.addEventListener('message', handleAck);
-                                    // Cleanup listener after timeout period
-                                    setTimeout(() => window.removeEventListener('message', handleAck), 1200);
-                                } else {
-                                    window.location.href = 'https://smarter.poker/hub/marketplace';
-                                }
-                            }
-                        },
-                        { img: TILE_HAND_HISTORIES, alt: 'Hand Histories', action: () => { haptic.light(); navigate('/hands'); } },
-                    ].map((tile, idx) => (
+                <DailyChallenges />
+
+                {/* ═══════════════════════════════════════════════════════════════════════
+                    BOTTOM ROW — from lobbyTiles.config.ts (#18)
+                ═══════════════════════════════════════════════════════════════════════ */}
+                <div className={styles.bottomRow} role="navigation" aria-label="Quick actions">
+                    {LOBBY_TILES.map((tile) => (
                         <button
                             key={tile.alt}
                             className={styles.tileCard}
-                            onClick={tile.action}
+                            onClick={() => {
+                                if (tile.route) {
+                                    haptic.light();
+                                    navigate(tile.route);
+                                } else if (tileActions[tile.alt]) {
+                                    tileActions[tile.alt]();
+                                }
+                            }}
+                            aria-label={`${tile.alt} (press ${tile.shortcutKey})`}
                         >
                             <div className={styles.tilePedestal}></div>
                             <div className={styles.tileImageWrapper}>
                                 <img src={tile.img} alt={tile.alt} className={styles.tileImage} />
-                                {/* Enhancement #8: Notification badge */}
                                 {tileBadges[tile.alt] && tileBadges[tile.alt] > 0 && (
                                     <span className={styles.tileBadge}>{tileBadges[tile.alt]}</span>
                                 )}
@@ -877,54 +1014,86 @@ function HomePageInner() {
                         </button>
                     ))}
                 </div>
+
+                {/* #11: Sound toggle + #1: Shortcut hint button */}
+                <div className={styles.controlsRow}>
+                    <button
+                        className={styles.controlButton}
+                        onClick={toggleSounds}
+                        aria-label={soundsEnabled ? 'Mute sounds' : 'Enable sounds'}
+                        title={soundsEnabled ? 'Sounds On' : 'Sounds Off'}
+                    >
+                        {soundsEnabled ? '🔊' : '🔇'}
+                    </button>
+                    <button
+                        className={styles.controlButton}
+                        onClick={() => setShowShortcutHint(true)}
+                        aria-label="Keyboard shortcuts"
+                        title="Keyboard Shortcuts (?)"
+                    >
+                        ⌨️
+                    </button>
+                </div>
             </div>
 
-            {/* Enhancement #2: Context Menu */}
+            {/* #17: Extracted Context Menu Component */}
             {contextMenu?.visible && (
-                <>
-                    <div className={styles.contextMenuOverlay} onClick={closeContextMenu} />
-                    <div
-                        className={styles.contextMenu}
-                        style={{ top: contextMenu.y, left: Math.min(contextMenu.x, window.innerWidth - 200) }}
-                    >
-                        <button className={styles.contextMenuItem} onClick={() => {
-                            closeContextMenu();
-                            navigate(`/clubs/${contextMenu.club.id}`);
-                        }}>
-                            🏠 Go to Lobby
-                        </button>
-                        <button className={styles.contextMenuItem} onClick={() => {
-                            closeContextMenu();
-                            navigate(`/clubs/${contextMenu.club.id}/cashier`);
-                        }}>
-                            💰 View Cashier
-                        </button>
-                        <button className={styles.contextMenuItem} onClick={() => {
-                            closeContextMenu();
-                            const code = contextMenu.club.club_id || '';
-                            navigator.clipboard?.writeText(String(code));
-                            toast.success(`Club code ${code} copied!`);
-                        }}>
-                            🔗 Share Invite Code
-                        </button>
-                        <div className={styles.contextMenuDivider}></div>
-                        {!contextMenu.club.is_owner && (
-                            <button className={`${styles.contextMenuItem} ${styles.contextMenuDanger}`} onClick={async () => {
-                                closeContextMenu();
-                                try {
-                                    await ClubsService.leave(contextMenu.club.id);
-                                    toast.success('Left the club');
-                                    masterBus.emit('CLUB_LEFT', { clubId: contextMenu.club.id });
-                                    fetchUserData(true);
-                                } catch (err: any) {
-                                    toast.error(err.message || 'Failed to leave club');
-                                }
-                            }}>
-                                🚪 Leave Club
+                <ClubContextMenu
+                    club={contextMenu.club}
+                    x={contextMenu.x}
+                    y={contextMenu.y}
+                    onClose={closeContextMenu}
+                    onLeave={() => {
+                        // #4: Show leave confirmation instead of immediate leave
+                        setLeaveConfirm({ visible: true, club: contextMenu.club });
+                        closeContextMenu();
+                    }}
+                />
+            )}
+
+            {/* #4: Leave Confirmation Modal */}
+            {leaveConfirm?.visible && (
+                <div className={styles.modalOverlay} onClick={() => setLeaveConfirm(null)}>
+                    <div className={styles.modalContent} onClick={(e) => e.stopPropagation()} role="alertdialog" aria-labelledby="leave-confirm-title">
+                        <h2 className={styles.modalTitle} id="leave-confirm-title">Leave Club?</h2>
+                        <p className={styles.modalSubtitle}>
+                            Are you sure you want to leave <strong>{leaveConfirm.club?.name || 'this club'}</strong>? This action cannot be undone.
+                        </p>
+                        <div className={styles.modalButtons}>
+                            <button
+                                className={`${styles.modalButtonPrimary} ${styles.modalButtonDanger}`}
+                                onClick={() => handleLeaveClub(leaveConfirm.club)}
+                            >
+                                Yes, Leave Club
                             </button>
-                        )}
+                            <button
+                                className={styles.modalButtonSecondary}
+                                onClick={() => setLeaveConfirm(null)}
+                            >
+                                Cancel
+                            </button>
+                        </div>
                     </div>
-                </>
+                </div>
+            )}
+
+            {/* #13: Club tooltip (desktop hover) */}
+            {tooltipClub && (
+                <div
+                    className={styles.clubTooltip}
+                    style={{
+                        top: Math.min(tooltipClub.y - 10, window.innerHeight - 120),
+                        left: Math.min(tooltipClub.x + 15, window.innerWidth - 220),
+                    }}
+                >
+                    <div className={styles.tooltipTitle}>{tooltipClub.club.name}</div>
+                    <div className={styles.tooltipRow}>Members: {tooltipClub.club.member_count || 0}</div>
+                    <div className={styles.tooltipRow}>Active Tables: {tooltipClub.club.active_tables || 0}</div>
+                    <div className={styles.tooltipRow}>Role: {tooltipClub.club.is_owner ? 'Owner' : 'Member'}</div>
+                    {tooltipClub.club.club_id && (
+                        <div className={styles.tooltipRow}>Code: {tooltipClub.club.club_id}</div>
+                    )}
+                </div>
             )}
 
             {/* ═══════════════════════════════════════════════════════════════════════

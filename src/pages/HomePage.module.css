@@ -1331,3 +1331,245 @@
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(0, 212, 255, 0.3);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PHASE 4 ENHANCEMENTS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* #9: Search Bar */
+.searchBarContainer {
+    width: 100%;
+    max-width: 400px;
+    position: relative;
+    margin: 0 auto 16px;
+    z-index: 10;
+}
+
+.searchInput {
+    width: 100%;
+    padding: 10px 40px 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    background: rgba(8, 20, 40, 0.7);
+    border: 1px solid rgba(0, 212, 255, 0.15);
+    border-radius: 10px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: border-color 0.3s;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.searchInput::placeholder { color: rgba(0, 212, 255, 0.3); }
+.searchInput:focus {
+    outline: none;
+    border-color: rgba(0, 212, 255, 0.5);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.1);
+}
+
+.searchClear {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+/* #15: Offline Banner */
+.offlineBanner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 8px 16px;
+    background: linear-gradient(90deg, rgba(255, 80, 0, 0.9), rgba(255, 40, 0, 0.9));
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    z-index: 2000;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    animation: offlineSlideIn 0.3s ease-out;
+}
+
+@keyframes offlineSlideIn {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0); }
+}
+
+/* #1: Keyboard Shortcut Overlay */
+.shortcutOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 1500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.shortcutPanel {
+    background: linear-gradient(145deg, rgba(8, 20, 40, 0.95), rgba(5, 15, 35, 0.95));
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    border-radius: 16px;
+    padding: 32px;
+    min-width: 280px;
+    max-width: 360px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 212, 255, 0.1);
+    animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.shortcutTitle {
+    font-size: 16px;
+    font-weight: 800;
+    color: rgba(0, 212, 255, 0.9);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin: 0 0 20px;
+    text-align: center;
+    text-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+}
+
+.shortcutGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.shortcutRow {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.shortcutKey {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 28px;
+    padding: 0 8px;
+    background: rgba(0, 212, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.25);
+    border-radius: 6px;
+    color: rgba(0, 212, 255, 0.9);
+    font-size: 12px;
+    font-weight: 700;
+    font-family: 'SF Mono', 'Cousine', monospace;
+}
+
+.shortcutDesc {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+}
+
+/* #11: Controls Row (sound toggle + shortcut button) */
+.controlsRow {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    padding: 8px 0 20px;
+    z-index: 10;
+}
+
+.controlButton {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(8, 20, 40, 0.6);
+    border: 1px solid rgba(0, 212, 255, 0.12);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.controlButton:hover {
+    background: rgba(0, 212, 255, 0.08);
+    border-color: rgba(0, 212, 255, 0.3);
+    color: #fff;
+}
+
+/* #13: Club Tooltip (desktop hover) */
+.clubTooltip {
+    position: fixed;
+    z-index: 1200;
+    min-width: 180px;
+    background: linear-gradient(145deg, rgba(12, 25, 50, 0.97), rgba(8, 18, 38, 0.97));
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    border-radius: 10px;
+    padding: 12px 16px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 212, 255, 0.06);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    pointer-events: none;
+    animation: contextMenuIn 0.12s ease-out;
+}
+
+.tooltipTitle {
+    font-size: 13px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tooltipRow {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 3px;
+    font-weight: 500;
+}
+
+/* #4: Danger Button Variant */
+.modalButtonDanger {
+    background: linear-gradient(135deg, #ff4444, #cc2222) !important;
+    color: #fff !important;
+}
+
+.modalButtonDanger:hover {
+    background: linear-gradient(135deg, #ff6666, #dd3333) !important;
+    box-shadow: 0 12px 30px rgba(255, 0, 0, 0.3) !important;
+}
+
+/* #2: Pinned Club Badge */
+.pinnedBadge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffd700, #ffaa00);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    z-index: 30;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+}
+
+/* #5: Last active timestamp */
+.clubCardTimestamp {
+    font-size: 7px;
+    font-weight: 500;
+    color: rgba(0, 212, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+}
