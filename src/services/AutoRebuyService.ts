@@ -43,6 +43,7 @@ class AutoRebuyServiceCore {
   private minHorsesPerTable: number;
   private minWalletBalance: number;
   private intervalHandle: ReturnType<typeof setInterval> | null = null;
+  private rebuyInProgress: Set<string> = new Set(); // Track concurrent rebuys by horse:table
 
   constructor(config: Partial<AutoRebuyConfig> = {}) {
     this.monitoringInterval = config.monitoringInterval ?? 30000;
@@ -162,8 +163,18 @@ class AutoRebuyServiceCore {
 
   /**
    * Rebuy a horse (top up stack via wallet)
+   * Prevents concurrent rebuys for same horse:table combination
    */
   async rebuyHorse(horseId: string, tableId: string, amount: number): Promise<boolean> {
+    const rebuyKey = `${horseId}:${tableId}`;
+
+    // Skip if rebuy already in progress for this horse:table
+    if (this.rebuyInProgress.has(rebuyKey)) {
+      console.warn('[AutoRebuy] Rebuy already in progress for ' + rebuyKey);
+      return false;
+    }
+
+    this.rebuyInProgress.add(rebuyKey);
     try {
       // Step 1: Deduct from wallet
       const { data: deductResult, error: deductError } = await supabase.rpc('deduct_player_wallet', {
@@ -236,13 +247,25 @@ class AutoRebuyServiceCore {
     } catch (err) {
       console.error('[AutoRebuy] Error in rebuyHorse:', err);
       return false;
+    } finally {
+      this.rebuyInProgress.delete(rebuyKey);
     }
   }
 
   /**
    * Reseat a busted horse with fresh stack
+   * Prevents concurrent reseating for same horse:table combination
    */
   async reseatHorse(horseId: string, tableId: string): Promise<boolean> {
+    const reseatKey = `reseat:${horseId}:${tableId}`;
+
+    // Skip if reseat already in progress for this horse:table
+    if (this.rebuyInProgress.has(reseatKey)) {
+      console.warn('[AutoRebuy] Reseat already in progress for ' + reseatKey);
+      return false;
+    }
+
+    this.rebuyInProgress.add(reseatKey);
     try {
       // Get table info for BB
       const { data: tableData } = await supabase.from('tables').select('big_blind').eq('id', tableId).single();
@@ -293,6 +316,9 @@ class AutoRebuyServiceCore {
     } catch (err) {
       console.error('[AutoRebuy] Error in reseatHorse:', err);
       return false;
+    } finally {
+      const reseatKey = `reseat:${horseId}:${tableId}`;
+      this.rebuyInProgress.delete(reseatKey);
     }
   }
 

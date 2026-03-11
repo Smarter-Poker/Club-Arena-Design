@@ -166,7 +166,8 @@ export class BotLogic {
         // Faster heads-up, slower on big decisions
         if (gameState.players.filter(p => !p.is_folded).length === 2) thinkTime *= 0.7;
         if (stage === 'river' && toCall > pot * 0.5) thinkTime *= 1.3;
-        decision.thinkTime = Math.round(Math.min(thinkTime, 600));
+        // Ensure decision delay is enforced (min 250ms, max 1000ms)
+        decision.thinkTime = Math.round(Math.max(250, Math.min(thinkTime, 1000)));
 
         return decision;
     }

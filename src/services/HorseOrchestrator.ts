@@ -503,6 +503,14 @@ const SPIN_CONFIGS = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// MULTI-TABLE ENFORCEMENT CONSTANTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const MAX_TABLES_PER_HORSE = 4;
+const MAX_CASH_TABLES = 2;
+const MAX_TOURNAMENT_TABLES = 2;
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // ORCHESTRATOR SINGLETON
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -514,6 +522,7 @@ class HorseOrchestrator {
     private totalRake = 0;
     private totalBBJ = 0;
     private errors: string[] = [];
+    private horseTableAssignments: Map<string, Set<string>> = new Map(); // horseId -> tableIds
 
     // ─── MIDWAY UNION — both clubs are members ───────────────────────────────
     private unionId = 'fade0000-0000-0000-0000-000000000001'; // Midway Union
@@ -646,8 +655,19 @@ class HorseOrchestrator {
         let seated = 0;
         const horses = await HydraService.getAvailableHorses(config.horsesPerTable);
 
+        // Determine table type for multi-table enforcement
+        const { data: tableData } = await supabase.from('tables').select('type').eq('id', tableId).single();
+        const tableType = (tableData?.type === 'tournament' ? 'tournament' : 'cash') as 'cash' | 'tournament';
+
         for (const horse of horses) {
             try {
+                // Multi-table enforcement: check if horse can sit at another table
+                const canSit = await this.canHorseSitAtTable(horse.id, tableType);
+                if (!canSit) {
+                    console.warn(`[Orchestrator] Horse ${horse.name} cannot sit at another ${tableType} table (limit reached)`);
+                    continue;
+                }
+
                 const buyIn = config.bigBlind * 100; // 100 BB
 
                 // Insert seat
@@ -671,6 +691,8 @@ class HorseOrchestrator {
                     .from('profiles')
                     .update({ horse_status: 'seated' })
                     .eq('id', horse.id);
+
+                await this.updateHorseTableAssignment(horse.id, tableId, true);
 
                 seated++;
             } catch (err: any) {
@@ -1128,6 +1150,141 @@ class HorseOrchestrator {
         }
 
         console.log(`[Orchestrator] Shutdown complete. ${this.handCount} hands played, ${this.totalRake.toFixed(2)} rake collected`);
+    }
+
+    /**
+     * Check if a horse can sit at a table based on multi-table limits
+     * MAX_TABLES_PER_HORSE = 4 total (2 cash + 2 tournament max)
+     */
+    async canHorseSitAtTable(horseId: string, tableType: 'cash' | 'tournament'): Promise<boolean> {
+        try {
+            const activeTables = await this.getActiveTablesForHorse(horseId);
+            const cashCount = activeTables.filter(t => t.type === 'cash').length;
+            const tournamentCount = activeTables.filter(t => t.type === 'tournament').length;
+
+            // Total limit check
+            if (activeTables.length >= MAX_TABLES_PER_HORSE) {
+                console.warn(`[Orchestrator] Horse ${horseId} already at ${activeTables.length} tables (max: ${MAX_TABLES_PER_HORSE})`);
+                return false;
+            }
+
+            // Type-specific checks
+            if (tableType === 'cash' && cashCount >= MAX_CASH_TABLES) {
+                console.warn(`[Orchestrator] Horse ${horseId} already at ${cashCount} cash tables (max: ${MAX_CASH_TABLES})`);
+                return false;
+            }
+
+            if (tableType === 'tournament' && tournamentCount >= MAX_TOURNAMENT_TABLES) {
+                console.warn(`[Orchestrator] Horse ${horseId} already at ${tournamentCount} tournament tables (max: ${MAX_TOURNAMENT_TABLES})`);
+                return false;
+            }
+
+            return true;
+        } catch (err: any) {
+            this.logError(`canHorseSitAtTable error for ${horseId}: ${err.message}`);
+            return false;
+        }
+    }
+
+    /**
+     * Track horse table assignment in memory for fast lookups
+     */
+    private updateHorseTableAssignment(horseId: string, tableId: string, add: boolean): void {
+        if (add) {
+            if (!this.horseTableAssignments.has(horseId)) {
+                this.horseTableAssignments.set(horseId, new Set());
+            }
+            this.horseTableAssignments.get(horseId)!.add(tableId);
+        } else {
+            this.horseTableAssignments.get(horseId)?.delete(tableId);
+        }
+    }
+
+    /**
+     * Get all active tables where a horse is currently seated
+     */
+    private async getActiveTablesForHorse(horseId: string): Promise<Array<{ tableId: string; type: 'cash' | 'tournament' }>> {
+        try {
+            // Get table_seats where horse is active (not left)
+            const { data: seats, error: seatsError } = await supabase
+                .from('table_seats')
+                .select('table_id')
+                .eq('user_id', horseId)
+                .is('left_at', null);
+
+            if (seatsError || !seats) {
+                return [];
+            }
+
+            const tableIds = seats.map(s => s.table_id);
+            if (tableIds.length === 0) return [];
+
+            // Get table info to determine type
+            const { data: tables, error: tableError } = await supabase
+                .from('tables')
+                .select('id, type')
+                .in('id', tableIds);
+
+            if (tableError || !tables) {
+                return [];
+            }
+
+            return tables.map(t => ({
+                tableId: t.id,
+                type: (t.type === 'tournament' ? 'tournament' : 'cash') as 'cash' | 'tournament'
+            }));
+        } catch (err: any) {
+            this.logError(`getActiveTablesForHorse error for ${horseId}: ${err.message}`);
+            return [];
+        }
+    }
+
+    /**
+     * Activate all horses for a given club
+     */
+    async activateAllHorses(clubId: string): Promise<{ activated: number; errors: string[] }> {
+        try {
+            const { data: horses, error: horsesError } = await supabase
+                .from('profiles')
+                .select('id, display_name')
+                .eq('is_horse', true)
+                .limit(300);
+
+            if (horsesError || !horses?.length) {
+                const error = `Failed to fetch horses: ${horsesError?.message || 'No horses found'}`;
+                this.logError(error);
+                return { activated: 0, errors: [error] };
+            }
+
+            console.log(`[Orchestrator] Activating ${horses.length} horses for club ${clubId}...`);
+
+            const errors: string[] = [];
+            let activated = 0;
+
+            // Batch update in groups of 50
+            for (let i = 0; i < horses.length; i += 50) {
+                const batch = horses.slice(i, i + 50);
+                const { error: updateError } = await supabase
+                    .from('profiles')
+                    .update({ horse_status: 'active' })
+                    .in('id', batch.map(h => h.id));
+
+                if (updateError) {
+                    const msg = `Failed to activate batch: ${updateError.message}`;
+                    errors.push(msg);
+                    this.logError(msg);
+                } else {
+                    activated += batch.length;
+                }
+            }
+
+            console.log(`[Orchestrator] Activated ${activated}/${horses.length} horses for club ${clubId}`);
+            return { activated, errors };
+        } catch (err: any) {
+            const error = `activateAllHorses error: ${err.message}`;
+            this.logError(error);
+            return { activated: 0, errors: [error] };
+        }
     }
 
     /**
