@@ -2390,7 +2390,7 @@ export default function TablePage({
               }),
               heroId: userId || '',
               heroResult: heroEndStack - heroStartStack,
-              potTotal: currentState.pot,
+              potTotal: event.pot || currentState.pot, // Use HC's authoritative pot value
             };
             setHandHistory((prev) => [record, ...prev].slice(0, 50)); // Keep last 50 hands
 

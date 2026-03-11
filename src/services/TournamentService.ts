@@ -5,6 +5,7 @@
 
 import { supabase } from '../lib/supabase';
 import { WalletService } from './WalletService';
+import { retryAsync } from '../utils/retryAsync';
 import type { Tournament, TournamentPlayer } from '../types/database.types';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1854,9 +1855,12 @@ class TournamentService {
    * Balance tables in a multi-table tournament
    */
   async balanceTables(tournamentId: string): Promise<{ movesMade: number }> {
-    const { data, error } = await supabase.rpc('balance_tournament_tables', {
-      p_tournament_id: tournamentId,
-    });
+    const { data, error } = await retryAsync(async () => {
+      const result = await supabase.rpc('balance_tournament_tables', {
+        p_tournament_id: tournamentId,
+      });
+      return result;
+    }, 2);
 
     if (error) {
       console.error('Table balancing error:', error);

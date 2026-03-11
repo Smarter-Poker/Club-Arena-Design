@@ -72,7 +72,10 @@ export type BusEventType =
   | 'SETTINGS_UPDATED'
   // Club data mutations (cross-page sync)
   | 'CLUB_UPDATED'
-  | 'ANNOUNCEMENT_CHANGED';
+  | 'ANNOUNCEMENT_CHANGED'
+  // Financial events
+  | 'COMMISSION_PAID'
+  | 'SETTLEMENT_COMPLETED';
 
 // #13: Type-safe payload map — compile-time enforcement of correct payloads
 export interface BusPayloadMap {
@@ -117,6 +120,9 @@ export interface BusPayloadMap {
   // Club data mutations (cross-page sync)
   CLUB_UPDATED: { clubId: string };
   ANNOUNCEMENT_CHANGED: { clubId: string; action: 'created' | 'deleted' };
+  // Financial events
+  COMMISSION_PAID: { agentId: string; amount: number };
+  SETTLEMENT_COMPLETED: { clubId: string; periodId: string };
 }
 
 export interface BusEvent<T = unknown> {

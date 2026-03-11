@@ -212,19 +212,21 @@ export default function CashierPage() {
 
   // Subscribe to wallet updates
   useEffect(() => {
-    const unsubscribe = masterBus.on('WALLET_UPDATED', () => {
-      loadBalances();
+    if (!user?.id) return;
+
+    const unsubscribe = masterBus.subscribe('BALANCE_UPDATED', () => {
+      loadBalances(user.id);
     });
 
-    const unsubscribe2 = masterBus.on('CHIPS_TRANSFERRED', () => {
-      loadBalances();
+    const unsubscribe2 = masterBus.subscribe('WALLET_REFRESHED', () => {
+      loadBalances(user.id);
     });
 
     return () => {
       unsubscribe?.();
       unsubscribe2?.();
     };
-  }, [loadBalances]);
+  }, [loadBalances, user?.id]);
 
   const loadPendingCashouts = async () => {
     if (!clubId || !user?.id) return;

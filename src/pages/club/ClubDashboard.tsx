@@ -21,6 +21,8 @@ import ClubStatsCards from '../../components/club/ClubStatsCards';
 import ClubActivityFeed from '../../components/club/ClubActivityFeed';
 import LeaderboardCard from '../../components/leaderboard/LeaderboardCard';
 import ClubBottomNav from '../../components/club/ClubBottomNav';
+import PageSkeleton from '../../components/common/PageSkeleton';
+import { useToast } from '../../components/common/Toast';
 import styles from './ClubDashboard.module.css';
 
 interface ClubInfo {
@@ -46,6 +48,7 @@ export default function ClubDashboard() {
   const { clubId: routeClubId } = useParams<{ clubId?: string }>();
   const clubId = routeClubId || searchParams.get('club') || undefined;
   const { user } = useUserStore();
+  const toast = useToast();
   const [club, setClub] = useState<ClubInfo | null>(null);
   const [topPlayers, setTopPlayers] = useState<TopPlayer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -171,6 +174,24 @@ export default function ClubDashboard() {
     };
   }, [clubId]);
 
+  // ── Bus Listeners: cross-page event reactivity ──
+  useEffect(() => {
+    const unsubClub = masterBus.subscribe('CLUB_UPDATED', () => {
+      loadDashboardData();
+    });
+    const unsubBalance = masterBus.subscribe('BALANCE_UPDATED', () => {
+      loadDashboardData();
+    });
+    const unsubSeated = masterBus.subscribe('TABLE_SEATED', () => {
+      loadDashboardData();
+    });
+    return () => {
+      unsubClub();
+      unsubBalance();
+      unsubSeated();
+    };
+  }, []);
+
   const loadDashboardData = async () => {
     setLoading(true);
     try {
@@ -240,6 +261,7 @@ export default function ClubDashboard() {
       }
     } catch (error) {
       console.error('Failed to load dashboard:', error);
+      toast.error('Failed to load dashboard data');
     }
     setLoading(false);
   };
@@ -258,8 +280,7 @@ export default function ClubDashboard() {
   if (loading) {
     return (
       <div className={styles.loading}>
-        <div className={styles.spinner} />
-        <p>Loading dashboard...</p>
+        <PageSkeleton variant="dashboard" />
       </div>
     );
   }
@@ -370,7 +391,11 @@ export default function ClubDashboard() {
                         {player.rank <= 3 ? ['', '', ''][player.rank - 1] : `#${player.rank}`}
                       </span>
                       <div className={styles.playerAvatar}>
-                        {player.avatarUrl ? <img src={player.avatarUrl} alt="" loading="lazy" /> : ''}
+                        {player.avatarUrl ? (
+                          <img src={player.avatarUrl} alt="" loading="lazy" />
+                        ) : (
+                          ''
+                        )}
                       </div>
                       <span className={styles.playerName}>{player.displayName}</span>
                       <span

@@ -119,9 +119,25 @@ export default function ClubFinancialsPage() {
       },
       500
     );
+    const unsubCommission = masterBus.subscribeDebounced(
+      'COMMISSION_PAID',
+      () => {
+        loadFinancials();
+      },
+      500
+    );
+    const unsubSettlement = masterBus.subscribeDebounced(
+      'SETTLEMENT_COMPLETED',
+      () => {
+        loadFinancials();
+      },
+      500
+    );
     return () => {
       unsubBalance();
       unsubWallet();
+      unsubCommission();
+      unsubSettlement();
     };
   }, []);
 

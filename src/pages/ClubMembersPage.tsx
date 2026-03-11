@@ -2,7 +2,7 @@
  *  CLUB MEMBERS PAGE — Member Management with Live Presence & Role Promotion
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
@@ -542,14 +542,19 @@ export default function ClubMembersPage() {
     is_online: onlineUserIds.has(m.user_id),
   }));
 
-  const filteredMembers = membersWithStatus.filter((m) => {
-    if (filter === 'online' && !m.is_online) return false;
-    if (filter === 'agents' && !['super_agent', 'agent', 'sub_agent'].includes(m.role))
-      return false;
-    if (filter === 'admins' && !['owner', 'admin'].includes(m.role)) return false;
-    if (searchQuery && !m.username.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    return true;
-  });
+  const filteredMembers = useMemo(
+    () =>
+      membersWithStatus.filter((m) => {
+        if (filter === 'online' && !m.is_online) return false;
+        if (filter === 'agents' && !['super_agent', 'agent', 'sub_agent'].includes(m.role))
+          return false;
+        if (filter === 'admins' && !['owner', 'admin'].includes(m.role)) return false;
+        if (searchQuery && !m.username.toLowerCase().includes(searchQuery.toLowerCase()))
+          return false;
+        return true;
+      }),
+    [membersWithStatus, filter, searchQuery]
+  );
 
   // Virtual scrolling: only render visible members for large clubs
   const virtualScroll = useVirtualScroll(filteredMembers, { initialCount: 30, pageSize: 20 });
