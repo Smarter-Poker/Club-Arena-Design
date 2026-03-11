@@ -7,7 +7,7 @@
  * NO DEMO MODE - All authentication is real.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
@@ -25,6 +25,12 @@ export default function AuthPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    const [cardOpacity, setCardOpacity] = useState(0);
+
+    // Form entrance animation
+    useEffect(() => {
+        setCardOpacity(1);
+    }, []);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -190,7 +196,23 @@ export default function AuthPage() {
 
     return (
         <div className={styles.container}>
-            <div className={styles.authCard}>
+            <style>{`
+                @keyframes slideUpIn {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes focusGlow {
+                    from { box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.4); }
+                    to { box-shadow: 0 0 0 8px rgba(0, 212, 255, 0); }
+                }
+                .auth-card-animated {
+                    animation: slideUpIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+                }
+                .auth-input-premium:focus {
+                    animation: focusGlow 0.6s ease-out;
+                }
+            `}</style>
+            <div className={styles.authCard} style={{ animation: `slideUpIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)` }}>
                 {/* Logo */}
                 <div className={styles.logo}>
                     <img
@@ -265,7 +287,24 @@ export default function AuthPage() {
                             type="submit"
                             className={styles.submitButton}
                             disabled={isLoading}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px'
+                            }}
                         >
+                            {isLoading && (
+                                <span style={{
+                                    display: 'inline-block',
+                                    width: '14px',
+                                    height: '14px',
+                                    border: '2px solid rgba(255,255,255,0.3)',
+                                    borderTop: '2px solid #fff',
+                                    borderRadius: '50%',
+                                    animation: 'spin 0.8s linear infinite'
+                                }} />
+                            )}
                             {isLoading ? 'Logging in...' : 'Login'}
                         </button>
 
@@ -339,7 +378,24 @@ export default function AuthPage() {
                             type="submit"
                             className={styles.submitButton}
                             disabled={isLoading}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px'
+                            }}
                         >
+                            {isLoading && (
+                                <span style={{
+                                    display: 'inline-block',
+                                    width: '14px',
+                                    height: '14px',
+                                    border: '2px solid rgba(255,255,255,0.3)',
+                                    borderTop: '2px solid #fff',
+                                    borderRadius: '50%',
+                                    animation: 'spin 0.8s linear infinite'
+                                }} />
+                            )}
                             {isLoading ? 'Creating Account...' : 'Create Account'}
                         </button>
                     </form>
@@ -368,7 +424,24 @@ export default function AuthPage() {
                             type="submit"
                             className={styles.submitButton}
                             disabled={isLoading}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px'
+                            }}
                         >
+                            {isLoading && (
+                                <span style={{
+                                    display: 'inline-block',
+                                    width: '14px',
+                                    height: '14px',
+                                    border: '2px solid rgba(255,255,255,0.3)',
+                                    borderTop: '2px solid #fff',
+                                    borderRadius: '50%',
+                                    animation: 'spin 0.8s linear infinite'
+                                }} />
+                            )}
                             {isLoading ? 'Sending...' : 'Send Reset Link'}
                         </button>
 

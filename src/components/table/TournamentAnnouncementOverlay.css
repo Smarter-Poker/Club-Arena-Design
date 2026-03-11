@@ -22,7 +22,7 @@
 
 .announcementContent {
     text-align: center;
-    animation: announcePulse 0.6s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    animation: announcementDramaticEntrance 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .announcementIcon {
@@ -45,6 +45,7 @@
     letter-spacing: 0.15em;
     text-shadow: 0 0 20px var(--accent-color), 0 0 40px var(--accent-color), 0 2px 4px rgba(0, 0, 0, 0.8);
     margin-bottom: 0.5rem;
+    animation: titleGlowPulse 1s ease-in-out infinite 0.3s;
 }
 
 .announcementSubtitle {
@@ -60,6 +61,31 @@
 @keyframes subtitleFadeIn {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes titleGlowPulse {
+    0%, 100% {
+        text-shadow: 0 0 20px var(--accent-color), 0 0 40px var(--accent-color), 0 2px 4px rgba(0, 0, 0, 0.8);
+    }
+    50% {
+        text-shadow: 0 0 30px var(--accent-color), 0 0 60px var(--accent-color), 0 2px 4px rgba(0, 0, 0, 0.8);
+    }
+}
+
+@keyframes announcementDramaticEntrance {
+    0% {
+        opacity: 0;
+        transform: scale(0.3) translateY(40px);
+        filter: blur(20px);
+    }
+    50% {
+        transform: scale(1.1) translateY(0);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+        filter: blur(0);
+    }
 }
 
 @keyframes announcePulse {

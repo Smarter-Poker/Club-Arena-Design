@@ -73,22 +73,33 @@
 .tournament-list__section-indicator--live {
     background: #F85149;
     box-shadow: 0 0 8px rgba(248, 81, 73, 0.5);
-    animation: pulse 2s ease-in-out infinite;
+    animation: livePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .tournament-list__section-indicator--open {
     background: #3FB950;
+    animation: openPulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-@keyframes pulse {
-
-    0%,
-    100% {
+@keyframes livePulse {
+    0%, 100% {
         opacity: 1;
+        box-shadow: 0 0 6px rgba(248, 81, 73, 0.6), 0 0 12px rgba(248, 81, 73, 0.2);
     }
-
     50% {
         opacity: 0.5;
+        box-shadow: 0 0 12px rgba(248, 81, 73, 0.9), 0 0 20px rgba(248, 81, 73, 0.4);
+    }
+}
+
+@keyframes openPulse {
+    0%, 100% {
+        opacity: 0.8;
+        box-shadow: 0 0 4px rgba(63, 185, 80, 0.4);
+    }
+    50% {
+        opacity: 1;
+        box-shadow: 0 0 8px rgba(63, 185, 80, 0.6);
     }
 }
 
@@ -103,12 +114,32 @@
     padding: 14px 16px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     cursor: pointer;
-    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: tournamentRowEnter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+.tournament-row:nth-child(1) { animation-delay: 0ms; }
+.tournament-row:nth-child(2) { animation-delay: 40ms; }
+.tournament-row:nth-child(3) { animation-delay: 80ms; }
+.tournament-row:nth-child(4) { animation-delay: 120ms; }
+.tournament-row:nth-child(5) { animation-delay: 160ms; }
+.tournament-row:nth-child(n+6) { animation-delay: 200ms; }
+
+@keyframes tournamentRowEnter {
+    from {
+        opacity: 0;
+        transform: translateX(-12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 .tournament-row:hover {
-    background: rgba(255, 255, 255, 0.03);
-    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-4px);
+    border-bottom-color: rgba(255, 255, 255, 0.1);
 }
 
 .tournament-row:last-child {
@@ -279,6 +310,14 @@
     font-size: 0.6875rem;
     font-weight: 600;
     text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.25s ease;
+}
+
+.tournament-row:hover .tournament-row__status {
+    box-shadow: 0 0 8px currentColor;
+    text-shadow: 0 0 4px currentColor;
 }
 
 /* Actions */
@@ -299,13 +338,15 @@
     border-radius: 6px;
     color: #FFFFFF;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 4px 12px rgba(63, 185, 80, 0.2);
 }
 
 .tournament-row__register-btn:hover,
 .tournament-row__open-btn:hover {
     background: linear-gradient(135deg, #4DC660 0%, #3FB950 100%);
-    transform: translateY(-2px);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(63, 185, 80, 0.35);
 }
 
 .tournament-row__unregister-btn {

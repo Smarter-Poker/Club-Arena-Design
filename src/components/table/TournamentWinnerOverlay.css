@@ -39,7 +39,8 @@
     opacity: 1;
 }
 
-.confettiContainer {
+/* Gold sparkle particles instead of confetti */
+.sparkleContainer {
     position: absolute;
     top: 0;
     left: 0;
@@ -49,23 +50,24 @@
     pointer-events: none;
 }
 
-.confettiParticle {
+.sparkle {
     position: absolute;
-    top: -10px;
-    width: 8px;
-    height: 12px;
-    border-radius: 2px;
-    animation: confettiFall 3s ease-in forwards;
+    width: 6px;
+    height: 6px;
+    background: radial-gradient(circle, #FFD700 0%, #FFA500 100%);
+    border-radius: 50%;
+    animation: sparkleFloat 4s ease-out forwards;
+    box-shadow: 0 0 8px #FFD700, 0 0 16px rgba(255, 215, 0, 0.5);
 }
 
-@keyframes confettiFall {
+@keyframes sparkleFloat {
     0% {
-        transform: translateY(0) rotate(0deg);
         opacity: 1;
+        transform: translateY(0) translateX(0) scale(1);
     }
     100% {
-        transform: translateY(100vh) rotate(720deg);
         opacity: 0;
+        transform: translateY(-200px) translateX(100px) scale(0);
     }
 }
 
@@ -75,11 +77,36 @@
     animation: winnerBounce 0.8s ease-out;
 }
 
+.winner-entrance {
+    animation: winnerGrandEntrance 0.9s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes winnerGrandEntrance {
+    0% {
+        opacity: 0;
+        transform: scale(0.5) translateY(40px);
+        filter: blur(10px);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+        filter: blur(0);
+    }
+}
+
 .winnerTrophy {
     font-size: 5rem;
     margin-bottom: 1rem;
     animation: trophySpin 1.5s ease-out;
     filter: drop-shadow(0 0 30px rgba(245, 158, 11, 0.6)) drop-shadow(0 0 60px rgba(245, 158, 11, 0.3));
+}
+
+.trophy-bounce {
+    animation: trophyBounce 2s ease-in-out infinite;
+    animation-delay: 1s;
 }
 
 @keyframes trophySpin {
@@ -91,6 +118,15 @@
     }
     100% {
         transform: scale(1) rotate(0deg);
+    }
+}
+
+@keyframes trophyBounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-20px);
     }
 }
 
@@ -107,6 +143,10 @@
     margin-bottom: 0.5rem;
     text-shadow: none;
     animation: winnerTitleShimmer 3s ease-in-out infinite;
+}
+
+.winner-golden {
+    filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.6)) drop-shadow(0 0 20px rgba(255, 184, 0, 0.3));
 }
 
 @keyframes winnerTitleShimmer {
@@ -127,6 +167,21 @@
     text-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
     margin-bottom: 1.5rem;
     font-family: 'JetBrains Mono', monospace;
+}
+
+.prize-counter {
+    animation: prizeCounterSlideIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.3s both;
+}
+
+@keyframes prizeCounterSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .winnerDismissBtn {

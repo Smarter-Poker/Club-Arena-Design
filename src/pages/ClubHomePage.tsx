@@ -12,7 +12,7 @@
  * - Active tables/games grid
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
@@ -77,6 +77,24 @@ interface UserProfileData {
 
 type GameFilter = 'ALL' | 'Hold\'em' | 'Omaha' | 'Mixed' | 'MTT' | 'Spin-It' | 'SN';
 
+// Premium number animation hook
+function useCountAnimation(target: number, duration: number = 1000) {
+    const [display, setDisplay] = useState(0);
+    useEffect(() => {
+        let startTime: number;
+        let animationFrame: number;
+        const animate = (time: number) => {
+            if (!startTime) startTime = time;
+            const progress = Math.min((time - startTime) / duration, 1);
+            setDisplay(Math.floor(target * progress));
+            if (progress < 1) animationFrame = requestAnimationFrame(animate);
+        };
+        animationFrame = requestAnimationFrame(animate);
+        return () => cancelAnimationFrame(animationFrame);
+    }, [target, duration]);
+    return display;
+}
+
 export default function ClubHomePage() {
     const { clubId } = useParams<{ clubId: string }>();
     const navigate = useNavigate();
@@ -103,6 +121,10 @@ export default function ClubHomePage() {
     const [playerNumber, setPlayerNumber] = useState<string>('0000000');
 
     const filters: GameFilter[] = ['ALL', 'Hold\'em', 'Omaha', 'Mixed', 'MTT', 'Spin-It', 'SN'];
+
+    // Premium number animations for stats
+    const animatedMemberCount = useCountAnimation(club?.member_count || 0, 800);
+    const animatedTableCount = useCountAnimation(club ? (tables.filter(t => t.status === 'running').length) : 0, 800);
 
     // Load user profile on mount
     useEffect(() => {
@@ -423,6 +445,14 @@ export default function ClubHomePage() {
 
     return (
         <div className="club-home">
+            <style>{`
+                @keyframes slideInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+                @keyframes slideInLeft { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: translateX(0); } }
+                .club-home__stats-animated { animation: slideInUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+                .club-home__games-item-animated { animation: slideInUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; opacity: 0; }
+                @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
+                .club-home__skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1) 75%, rgba(255,255,255,0.1)); background-size: 1000px 100%; animation: shimmer 2s infinite; }
+            `}</style>
             {/* ═══════════════════════════════════════════════════════════════════
                 QUICK ACTION ICONS ROW
             ═══════════════════════════════════════════════════════════════════ */}
@@ -438,7 +468,7 @@ export default function ClubHomePage() {
                         <span className="icon-leaderboard"></span>
                     </button>
                 </div>
-                <div className="club-home__bbj">
+                <div className="club-home__bbj" style={{ animation: `slideInUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both` }}>
                     <div className="bbj-label">BAD BEAT<br />JACKPOT</div>
                     <div className="bbj-amount">{formatJackpot(jackpotAmount)}</div>
                 </div>
@@ -520,12 +550,17 @@ export default function ClubHomePage() {
                 )}
 
                 {/* EXISTING TABLES — Dynamic PokerBros-style cards */}
-                {filteredTables.map(table => (
-                    <CashGameCard
+                {filteredTables.map((table, idx) => (
+                    <div
                         key={table.id}
-                        table={table}
-                        isAdmin={isOwner || userRole === 'admin'}
-                        onDelete={async (id) => {
+                        style={{
+                            animation: `slideInUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) ${idx * 0.08}s both`
+                        }}
+                    >
+                        <CashGameCard
+                            table={table}
+                            isAdmin={isOwner || userRole === 'admin'}
+                            onDelete={async (id) => {
                             if (!confirm(`Delete table "${table.name}"?`)) return;
                             setDeletingTableId(id);
                             try {
@@ -539,21 +574,28 @@ export default function ClubHomePage() {
                                 setDeletingTableId(null);
                             }
                         }}
-                    />
+                        />
+                    </div>
                 ))}
 
                 {/* TOURNAMENT CARDS — Dynamic PokerBros-style cards */}
-                {filteredTournaments.map(tournament => {
+                {filteredTournaments.map((tournament, idx) => {
                     const isSNG = tournament.name.toLowerCase().includes('sng') || tournament.max_players <= 10;
                     const isSpin = tournament.name.toLowerCase().includes('spin');
+                    const staggerIdx = filteredTables.length + idx;
 
-                    if (isSpin) {
-                        return <SpinCard key={tournament.id} tournament={tournament} />;
-                    }
-                    if (isSNG) {
-                        return <SNGCard key={tournament.id} tournament={tournament} />;
-                    }
-                    return <TournamentCard key={tournament.id} tournament={tournament} />;
+                    return (
+                        <div
+                            key={tournament.id}
+                            style={{
+                                animation: `slideInUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) ${staggerIdx * 0.08}s both`
+                            }}
+                        >
+                            {isSpin && <SpinCard tournament={tournament} />}
+                            {isSNG && !isSpin && <SNGCard tournament={tournament} />}
+                            {!isSpin && !isSNG && <TournamentCard tournament={tournament} />}
+                        </div>
+                    );
                 })}
 
                 {/* EMPTY STATE */}

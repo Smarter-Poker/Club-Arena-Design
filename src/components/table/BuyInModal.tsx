@@ -10,7 +10,7 @@
  * - Account balance display
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import './BuyInModal.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -61,6 +61,10 @@ export function BuyInModal({
     const [buyInAmount, setBuyInAmount] = useState(defaultBuyIn || Math.min(minBuyIn * 2, maxBuyIn));
     const [autoRebuy, setAutoRebuy] = useState(false);
     const [rebuyThreshold, setRebuyThreshold] = useState(0);
+    const [displayAmount, setDisplayAmount] = useState(defaultBuyIn || Math.min(minBuyIn * 2, maxBuyIn));
+    const [isConfirmPulsing, setIsConfirmPulsing] = useState(false);
+    const animationFrameRef = useRef<number>(0);
+    const countStartRef = useRef<number>(0);
 
     // Clamp buy-in to valid range
     const clampedBuyIn = useMemo(() => {
@@ -75,6 +79,47 @@ export function BuyInModal({
 
     // Check if user has enough balance
     const hasEnoughBalance = accountBalance >= clampedBuyIn;
+
+    // Animate amount counter when buyInAmount changes
+    useEffect(() => {
+        if (!isOpen) return;
+
+        countStartRef.current = displayAmount;
+        const startTime = Date.now();
+        const duration = 400;
+
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(1, elapsed / duration);
+
+            // Easing function for smooth spring-like animation
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            const current = countStartRef.current + (clampedBuyIn - countStartRef.current) * easeOut;
+
+            setDisplayAmount(current);
+
+            if (progress < 1) {
+                animationFrameRef.current = requestAnimationFrame(animate);
+            }
+        };
+
+        animationFrameRef.current = requestAnimationFrame(animate);
+
+        return () => {
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+            }
+        };
+    }, [clampedBuyIn, isOpen]);
+
+    // Pulse confirm button when ready
+    useEffect(() => {
+        if (hasEnoughBalance) {
+            setIsConfirmPulsing(true);
+            const timer = setTimeout(() => setIsConfirmPulsing(false), 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [hasEnoughBalance]);
 
     // Handle slider change
     const handleSliderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,7 +159,7 @@ export function BuyInModal({
                 <div className="buy-in-modal__amount-display">
                     <span className="buy-in-modal__min-label">{formatAmount(minBuyIn, currency)}</span>
                     <div className="buy-in-modal__current-amount">
-                        <span className="buy-in-modal__amount-value">{clampedBuyIn.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span className="buy-in-modal__amount-value">{displayAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         <span className="buy-in-modal__chip-icon">◉</span>
                     </div>
                     <span className="buy-in-modal__max-label">{formatAmount(maxBuyIn, currency)}</span>
@@ -196,7 +241,7 @@ export function BuyInModal({
 
                 {/* Confirm Button */}
                 <button
-                    className={`buy-in-modal__confirm ${!hasEnoughBalance ? 'buy-in-modal__confirm--disabled' : ''}`}
+                    className={`buy-in-modal__confirm ${!hasEnoughBalance ? 'buy-in-modal__confirm--disabled' : ''} ${isConfirmPulsing ? 'buy-in-modal__confirm--pulse' : ''}`}
                     onClick={handleConfirm}
                     disabled={!hasEnoughBalance}
                 >

@@ -112,6 +112,14 @@ export function TournamentBreakScreen({
         return Math.max(0, displayTime / (nextLevel.duration * 60)) * 100;
     }, [displayTime, nextLevel.duration]);
 
+    // Calculate timer color based on remaining time
+    const getTimerColor = () => {
+        const percent = (displayTime / (nextLevel.duration * 60)) * 100;
+        if (percent > 50) return '#3b82f6';
+        if (percent > 25) return '#f59e0b';
+        return '#ef4444';
+    };
+
     if (!isVisible) return null;
 
     // Minimized view — small floating badge showing time remaining
@@ -145,7 +153,7 @@ export function TournamentBreakScreen({
 
                 {/* Timer */}
                 <div className="break-screen__timer-container">
-                    <div className="break-screen__timer-ring">
+                    <div className="break-screen__timer-ring break-screen__timer-ring--animated">
                         <svg viewBox="0 0 100 100">
                             <circle className="break-screen__ring-bg" cx="50" cy="50" r="45" />
                             <circle
@@ -154,13 +162,15 @@ export function TournamentBreakScreen({
                                 cy="50"
                                 r="45"
                                 strokeDasharray={`${progressPercent * 2.83} 283`}
+                                style={{ stroke: getTimerColor() }}
                             />
                         </svg>
                         <div className="break-screen__timer-text">
-                            <span className="break-screen__time">{formatTime(displayTime)}</span>
+                            <span className="break-screen__time" style={{ color: getTimerColor() }}>{formatTime(displayTime)}</span>
                             <span className="break-screen__time-label">until next level</span>
                         </div>
                     </div>
+                    <div className="break-screen__progress-bar" style={{ width: `${progressPercent}%`, backgroundColor: getTimerColor() }} />
                 </div>
 
                 {/* Next Level Info */}

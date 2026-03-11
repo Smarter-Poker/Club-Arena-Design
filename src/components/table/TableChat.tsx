@@ -67,9 +67,10 @@ const QUICK_CHAT_PHRASES = ['Nice hand 👏', 'Good game', 'Well played!', 'Unlu
 interface MessageRowProps {
     message: ChatMessage;
     isOwnMessage: boolean;
+    isNew?: boolean;
 }
 
-function MessageRow({ message, isOwnMessage }: MessageRowProps) {
+function MessageRow({ message, isOwnMessage, isNew = false }: MessageRowProps) {
     if (message.type === 'SYSTEM') {
         return (
             <div className="chat-message chat-message--system">
@@ -89,7 +90,7 @@ function MessageRow({ message, isOwnMessage }: MessageRowProps) {
 
     if (message.type === 'EMOJI') {
         return (
-            <div className={`chat-message chat-message--emoji ${isOwnMessage ? 'chat-message--own' : ''}`}>
+            <div className={`chat-message chat-message--emoji ${isOwnMessage ? 'chat-message--own' : ''} ${isNew ? 'chat-message--emoji-pop' : ''}`}>
                 <span className="chat-message__emoji-large">{message.content}</span>
                 <span className="chat-message__sender">{message.playerName}</span>
             </div>
@@ -97,7 +98,7 @@ function MessageRow({ message, isOwnMessage }: MessageRowProps) {
     }
 
     return (
-        <div className={`chat-message ${isOwnMessage ? 'chat-message--own' : ''} ${message.isHighlighted ? 'chat-message--highlighted' : ''}`}>
+        <div className={`chat-message ${isOwnMessage ? 'chat-message--own' : ''} ${message.isHighlighted ? 'chat-message--highlighted' : ''} ${isNew ? 'chat-message--slide-in' : ''}`}>
             {!isOwnMessage && (
                 <div className="chat-message__avatar">
                     {message.playerAvatar ? (
@@ -135,11 +136,23 @@ export function TableChat({
 }: TableChatProps) {
     const [inputValue, setInputValue] = useState('');
     const [showEmojis, setShowEmojis] = useState(false);
+    const [newMessageIds, setNewMessageIds] = useState<Set<string>>(new Set());
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const previousMessagesLengthRef = useRef(0);
 
-    // Auto-scroll to bottom on new messages
+    // Auto-scroll to bottom on new messages and track which are new
     useEffect(() => {
+        if (messages.length > previousMessagesLengthRef.current) {
+            const newIds = new Set<string>();
+            const newMessages = messages.slice(previousMessagesLengthRef.current);
+            newMessages.forEach(msg => newIds.add(msg.id));
+            setNewMessageIds(newIds);
+
+            // Clear animation after 600ms
+            setTimeout(() => setNewMessageIds(new Set()), 600);
+        }
+        previousMessagesLengthRef.current = messages.length;
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages.length]);
 
@@ -214,6 +227,7 @@ export function TableChat({
                             key={msg.id}
                             message={msg}
                             isOwnMessage={msg.playerId === myPlayerId}
+                            isNew={newMessageIds.has(msg.id)}
                         />
                     ))
                 )}

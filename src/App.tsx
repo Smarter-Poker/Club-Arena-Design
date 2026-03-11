@@ -10,6 +10,7 @@ import { Routes, Route } from 'react-router-dom';
 import { Suspense, lazy, useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import GlobalWaitlistListener from './components/common/GlobalWaitlistListener';
+import WaitlistBanner from './components/common/WaitlistBanner';
 
 // Intro Video for first-time load
 import IntroVideo from './components/IntroVideo';
@@ -184,6 +185,7 @@ export default function App() {
 
             <TOSGuard>
                 <GlobalWaitlistListener />
+                <WaitlistBanner />
                 {/* Offline Banner */}
                 {isOffline && (
                     <div style={{

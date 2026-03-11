@@ -83,12 +83,32 @@
     gap: 12px;
     padding: 14px 16px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: tableRowEnter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+.cash-table-row:nth-child(1) { animation-delay: 0ms; }
+.cash-table-row:nth-child(2) { animation-delay: 40ms; }
+.cash-table-row:nth-child(3) { animation-delay: 80ms; }
+.cash-table-row:nth-child(4) { animation-delay: 120ms; }
+.cash-table-row:nth-child(5) { animation-delay: 160ms; }
+.cash-table-row:nth-child(n+6) { animation-delay: 200ms; }
+
+@keyframes tableRowEnter {
+    from {
+        opacity: 0;
+        transform: translateX(-12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 .cash-table-row:hover {
-    background: rgba(255, 255, 255, 0.03);
-    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-4px);
+    border-bottom-color: rgba(255, 255, 255, 0.1);
 }
 
 .cash-table-row--inactive {
@@ -262,11 +282,14 @@
 .cash-table-row__join-btn {
     background: linear-gradient(135deg, #3FB950 0%, #2EA043 100%);
     color: #FFFFFF;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 4px 12px rgba(63, 185, 80, 0.2);
 }
 
 .cash-table-row__join-btn:hover {
     background: linear-gradient(135deg, #4DC660 0%, #3FB950 100%);
-    transform: translateY(-2px);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(63, 185, 80, 0.35);
 }
 
 .cash-table-row__waitlist-btn {

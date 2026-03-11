@@ -5,7 +5,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import styles from './ClubDetailPage.module.css';
 import { getLocalStorage, setLocalStorage } from '../lib/storage';
@@ -126,6 +126,24 @@ const StatusBadge = ({ status }: { status: string }) => {
     );
 };
 
+// Premium counter hook
+function useCountAnimation(target: number, duration: number = 800) {
+    const [display, setDisplay] = useState(0);
+    useEffect(() => {
+        let startTime: number;
+        let animationFrame: number;
+        const animate = (time: number) => {
+            if (!startTime) startTime = time;
+            const progress = Math.min((time - startTime) / duration, 1);
+            setDisplay(Math.floor(target * progress));
+            if (progress < 1) animationFrame = requestAnimationFrame(animate);
+        };
+        animationFrame = requestAnimationFrame(animate);
+        return () => cancelAnimationFrame(animationFrame);
+    }, [target, duration]);
+    return display;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -170,6 +188,11 @@ export default function ClubDetailPage() {
     const [editedSettings, setEditedSettings] = useState<Partial<ClubSettings>>({});
     const [showMemberMenu, setShowMemberMenu] = useState<string | null>(null);
     const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
+
+    // Animated stats
+    const animatedOnlineCount = useCountAnimation(onlineCount, 800);
+    const animatedMemberCount = useCountAnimation(club?.memberCount || 0, 800);
+    const animatedTableCount = useCountAnimation(club?.activeTableCount || 0, 800);
 
     useEffect(() => {
         loadClubData();
@@ -463,11 +486,19 @@ export default function ClubDetailPage() {
 
     return (
         <div className={styles.page}>
+            <style>{`
+                @keyframes slideInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+                .club-detail-stats { animation: slideInUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+                .member-row-animated { animation: slideInUp 0.5s ease-out forwards; opacity: 0; }
+                .table-row-animated { animation: slideInUp 0.5s ease-out forwards; opacity: 0; }
+                @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
+                .club-detail-skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1)); background-size: 1000px 100%; animation: shimmer 2s infinite; }
+            `}</style>
             {/* Quick Stats */}
-            <section className={styles.statsRow}>
-                <StatCard value={onlineCount} label="Online Now" icon="" />
-                <StatCard value={club.memberCount} label="Members" icon="" />
-                <StatCard value={club.activeTableCount} label="Active Tables" icon="" />
+            <section className={styles.statsRow} style={{ animation: `slideInUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)` }}>
+                <StatCard value={animatedOnlineCount} label="Online Now" icon="" />
+                <StatCard value={animatedMemberCount} label="Members" icon="" />
+                <StatCard value={animatedTableCount} label="Active Tables" icon="" />
                 <StatCard value={`${club.settings.defaultRakePercent}%`} label="Rake" icon="" />
             </section>
 
@@ -554,8 +585,8 @@ export default function ClubDetailPage() {
                             <button className={styles.createButton} onClick={() => navigate(`/clubs/${clubId}/create-table`)}>+ Create Table</button>
                         </div>
                         <div className={styles.tablesGrid}>
-                            {tables.map(table => (
-                                <div key={table.id} className={styles.tableCard}>
+                            {tables.map((table, idx) => (
+                                <div key={table.id} className={styles.tableCard} style={{ animation: `slideInUp 0.5s ease-out ${idx * 0.06}s both` }}>
                                     <div className={styles.tableCardHeader}>
                                         <h4>{table.name}</h4>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -630,8 +661,8 @@ export default function ClubDetailPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredMembers.map(member => (
-                                    <tr key={member.id}>
+                                {filteredMembers.map((member, idx) => (
+                                    <tr key={member.id} style={{ animation: `slideInUp 0.5s ease-out ${idx * 0.05}s both` }}>
                                         <td>
                                             <div className={styles.memberCell}>
                                                 <div className={styles.memberAvatarSmall}>{member.username.charAt(0)}</div>
@@ -697,8 +728,8 @@ export default function ClubDetailPage() {
                             </div>
                         ) : (
                             <div className={styles.agentsList}>
-                                {agents.map(agent => (
-                                    <div key={agent.id} className={styles.agentCard}>
+                                {agents.map((agent, idx) => (
+                                    <div key={agent.id} className={styles.agentCard} style={{ animation: `slideInUp 0.5s ease-out ${idx * 0.06}s both` }}>
                                         <div className={styles.agentAvatar}>
                                             {agent.displayName?.charAt(0) || '?'}
                                         </div>

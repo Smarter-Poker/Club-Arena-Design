@@ -18,7 +18,7 @@
  *  Every single chip transaction is recorded with full audit trail.
  */
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { useWalletStore } from '../stores/useWalletStore';
 import { useUserStore } from '../stores/useUserStore';
@@ -64,6 +64,24 @@ const CATEGORY_ICONS: Record<string, string> = {
     promo: '★', bbj: '♣', horse_refill: '↺', transfer: '→',
     deposit: '+', withdrawal: '-', refund: '↻', bonus: '★',
 };
+
+// Premium balance counter
+function useCountAnimation(target: number, duration: number = 800) {
+    const [display, setDisplay] = useState(0);
+    useEffect(() => {
+        let startTime: number;
+        let animationFrame: number;
+        const animate = (time: number) => {
+            if (!startTime) startTime = time;
+            const progress = Math.min((time - startTime) / duration, 1);
+            setDisplay(Math.floor(target * progress));
+            if (progress < 1) animationFrame = requestAnimationFrame(animate);
+        };
+        animationFrame = requestAnimationFrame(animate);
+        return () => cancelAnimationFrame(animationFrame);
+    }, [target, duration]);
+    return display;
+}
 
 export default function CashierPage() {
     const navigate = useNavigate();
@@ -120,6 +138,9 @@ export default function CashierPage() {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loadingTx, setLoadingTx] = useState(false);
     const [txFilter, setTxFilter] = useState('all');
+
+    // Animated balance
+    const animatedPlayerBalance = useCountAnimation(balances.PLAYER.available, 900);
 
     // ─────────────────────────────────────────────────────────────────────────────
     // LOAD ROLE, UNION STATUS, AND RECIPIENTS
@@ -266,7 +287,7 @@ export default function CashierPage() {
     }, [action, loadTransactions]);
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // REALTIME WALLET SUBSCRIPTION
+    // REALTIME WALLET SUBSCRIPTION (#1: Using Channel Registry)
     // ─────────────────────────────────────────────────────────────────────────────
     // Subscribes to both wallets and wallet_transactions tables for live updates
 
@@ -277,45 +298,48 @@ export default function CashierPage() {
         loadBalances(user.id);
         if (action === 'history') loadTransactions();
 
-        // Create realtime channel with combined subscriptions
-        const channel = supabase
-            .channel(`cashier-realtime-${user.id}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'wallets',
-                    filter: `user_id=eq.${user.id}`,
-                },
-                (payload) => {
-                    // On any wallet change (INSERT/UPDATE), refresh balances
-                    if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-                        loadBalances(user.id);
+        // #1: Use Channel Registry for deduplication
+        const channelKey = `cashier-realtime-${user.id}`;
+        import('../core/MasterBus').then(({ masterBus }) => {
+            const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'wallets',
+                        filter: `user_id=eq.${user.id}`,
+                    },
+                    (payload) => {
+                        if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+                            loadBalances(user.id);
+                        }
                     }
-                }
-            )
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'wallet_transactions',
-                    filter: `user_id=eq.${user.id}`,
-                },
-                (payload) => {
-                    // On any transaction change (INSERT/UPDATE), refresh balances and transactions
-                    if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-                        loadBalances(user.id);
-                        if (action === 'history') loadTransactions();
+                )
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'wallet_transactions',
+                        filter: `user_id=eq.${user.id}`,
+                    },
+                    (payload) => {
+                        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+                            loadBalances(user.id);
+                            if (action === 'history') loadTransactions();
+                        }
                     }
-                }
-            )
-            .subscribe();
+                )
+                .subscribe();
+        });
 
-        // Cleanup: remove channel on unmount
+        // Cleanup: remove channel via registry on unmount
         return () => {
-            supabase.removeChannel(channel);
+            import('../core/MasterBus').then(({ masterBus }) => {
+                masterBus.removeRegisteredChannel(`cashier-realtime-${user.id}`);
+            });
         };
     }, [user?.id, loadBalances, loadTransactions, action]);
 
@@ -539,18 +563,27 @@ export default function CashierPage() {
 
     return (
         <div className="cashier-page" style={{ padding: '16px', paddingBottom: '100px' }}>
+            <style>{`
+                @keyframes slideInDown { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
+                @keyframes fadeInStagger { from { opacity: 0; } to { opacity: 1; } }
+                .cashier-balance-card { animation: slideInDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+                .cashier-balance-card:nth-child(2) { animation: slideInDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both; }
+                .cashier-tx-item { animation: fadeInStagger 0.5s ease-out forwards; opacity: 0; }
+                @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
+                .cashier-skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1)); background-size: 1000px 100%; animation: shimmer 2s infinite; }
+            `}</style>
             {/* Balance Cards */}
             <div className="balance-cards-grid">
-                <MetalCard size="sm" glow>
+                <MetalCard size="sm" glow className="cashier-balance-card">
                     <div className="balance-card-content">
                         <span className="balance-icon">♠</span>
                         <div className="balance-label">Player Wallet</div>
                         <div className="balance-value">
-                            {balances.PLAYER.available.toLocaleString()} chips
+                            {animatedPlayerBalance.toLocaleString()} chips
                         </div>
                     </div>
                 </MetalCard>
-                <MetalCard size="sm" glow>
+                <MetalCard size="sm" glow className="cashier-balance-card">
                     <div className="balance-card-content">
                         <span className="balance-icon">◆</span>
                         <div className="balance-label">Diamonds</div>
@@ -765,8 +798,8 @@ export default function CashierPage() {
                             <div className="tx-empty">No transactions recorded yet</div>
                         ) : (
                             <div className="tx-list">
-                                {filteredTransactions.map((tx) => (
-                                    <div key={tx.id} className={`tx-row ${tx.type}`}>
+                                {filteredTransactions.map((tx, idx) => (
+                                    <div key={tx.id} className={`tx-row ${tx.type}`} style={{ animation: `fadeInStagger 0.5s ease-out ${idx * 0.05}s both` }}>
                                         <span className="tx-icon">
                                             {CATEGORY_ICONS[tx.category] || '●'}
                                         </span>

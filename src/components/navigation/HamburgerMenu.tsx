@@ -204,7 +204,7 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
         cursor: 'pointer',
         borderRadius: 8,
         margin: '0 8px',
-        transition: 'background-color 0.15s ease'
+        transition: 'background-color 0.15s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)'
     };
 
     const dividerStyle: React.CSSProperties = {
@@ -215,6 +215,20 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
 
     return (
         <>
+            {/* Animation keyframes */}
+            <style>{`
+                @keyframes slideInLeft {
+                    from {
+                        opacity: 0;
+                        transform: translateX(-12px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateX(0);
+                    }
+                }
+            `}</style>
+
             {/* Backdrop */}
             {isOpen && (
                 <div
@@ -332,9 +346,12 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                     <div
                         key={`games-${i}`}
                         onClick={() => handleNavigate(item.path)}
-                        style={menuItemStyle}
-                        onMouseEnter={(e) => e.currentTarget.style.background = colors.bgHover}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                        style={{
+                            ...menuItemStyle,
+                            animation: isOpen ? `slideInLeft 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 30}ms both` : 'none'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = colors.bgHover; e.currentTarget.style.transform = 'translateX(4px)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.transform = 'translateX(0)'; }}
                     >
                         <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: colors.text }}>{item.label}</span>
                         <span style={{ color: colors.textSecondary }}>›</span>
@@ -359,9 +376,12 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                     <div
                         key={`clubs-${i}`}
                         onClick={() => handleNavigate(item.path)}
-                        style={menuItemStyle}
-                        onMouseEnter={(e) => e.currentTarget.style.background = colors.bgHover}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                        style={{
+                            ...menuItemStyle,
+                            animation: isOpen ? `slideInLeft 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) ${(i + 8) * 30}ms both` : 'none'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = colors.bgHover; e.currentTarget.style.transform = 'translateX(4px)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.transform = 'translateX(0)'; }}
                     >
                         <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: colors.text }}>{item.label}</span>
                         <span style={{ color: colors.textSecondary }}>›</span>
@@ -381,9 +401,12 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                     <div
                         key={`unions-${i}`}
                         onClick={() => handleNavigate(item.path)}
-                        style={menuItemStyle}
-                        onMouseEnter={(e) => e.currentTarget.style.background = colors.bgHover}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                        style={{
+                            ...menuItemStyle,
+                            animation: isOpen ? `slideInLeft 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) ${(i + 15) * 30}ms both` : 'none'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = colors.bgHover; e.currentTarget.style.transform = 'translateX(4px)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.transform = 'translateX(0)'; }}
                     >
                         <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: colors.text }}>{item.label}</span>
                         <span style={{ color: colors.textSecondary }}>›</span>
@@ -413,9 +436,12 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                     <div
                         key={`player-${i}`}
                         onClick={() => handleNavigate(item.path)}
-                        style={menuItemStyle}
-                        onMouseEnter={(e) => e.currentTarget.style.background = colors.bgHover}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                        style={{
+                            ...menuItemStyle,
+                            animation: isOpen ? `slideInLeft 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) ${(i + 17) * 30}ms both` : 'none'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = colors.bgHover; e.currentTarget.style.transform = 'translateX(4px)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.transform = 'translateX(0)'; }}
                     >
                         <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: colors.text }}>{item.label}</span>
                         <span style={{ color: colors.textSecondary }}>›</span>
@@ -436,9 +462,12 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                     <div
                         key={`admin-${i}`}
                         onClick={() => handleNavigate(item.path)}
-                        style={menuItemStyle}
-                        onMouseEnter={(e) => e.currentTarget.style.background = colors.bgHover}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                        style={{
+                            ...menuItemStyle,
+                            animation: isOpen ? `slideInLeft 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) ${(i + 29) * 30}ms both` : 'none'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = colors.bgHover; e.currentTarget.style.transform = 'translateX(4px)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.transform = 'translateX(0)'; }}
                     >
                         <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: colors.text }}>{item.label}</span>
                         <span style={{ color: colors.textSecondary }}>›</span>
@@ -552,9 +581,12 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                     <div
                         key={`settings-${i}`}
                         onClick={() => handleNavigate(item.path)}
-                        style={menuItemStyle}
-                        onMouseEnter={(e) => e.currentTarget.style.background = colors.bgHover}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                        style={{
+                            ...menuItemStyle,
+                            animation: isOpen ? `slideInLeft 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) ${(i + 32) * 30}ms both` : 'none'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = colors.bgHover; e.currentTarget.style.transform = 'translateX(4px)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.transform = 'translateX(0)'; }}
                     >
                         <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: colors.text }}>{item.label}</span>
                         <span style={{ color: colors.textSecondary }}>›</span>
@@ -577,9 +609,12 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                     <div
                         key={`support-${i}`}
                         onClick={() => handleNavigate(item.path)}
-                        style={menuItemStyle}
-                        onMouseEnter={(e) => e.currentTarget.style.background = colors.bgHover}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                        style={{
+                            ...menuItemStyle,
+                            animation: isOpen ? `slideInLeft 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) ${(i + 34) * 30}ms both` : 'none'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = colors.bgHover; e.currentTarget.style.transform = 'translateX(4px)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.transform = 'translateX(0)'; }}
                     >
                         <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: colors.text }}>{item.label}</span>
                         <span style={{ color: colors.textSecondary }}>›</span>
@@ -589,9 +624,12 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                 {/* Reset Tutorial */}
                 <div
                     onClick={handleResetTutorial}
-                    style={menuItemStyle}
-                    onMouseEnter={(e) => e.currentTarget.style.background = colors.bgHover}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    style={{
+                        ...menuItemStyle,
+                        animation: isOpen ? `slideInLeft 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 1140ms both` : 'none'
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = colors.bgHover; e.currentTarget.style.transform = 'translateX(4px)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.transform = 'translateX(0)'; }}
                 >
                     <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: colors.text }}>Reset Tutorial</span>
                     <span style={{ color: colors.textSecondary }}>›</span>
@@ -602,9 +640,13 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                 {/* Log Out */}
                 <div
                     onClick={handleLogOut}
-                    style={{ ...menuItemStyle, marginBottom: 16 }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = colors.bgHover}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    style={{
+                        ...menuItemStyle,
+                        marginBottom: 16,
+                        animation: isOpen ? `slideInLeft 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 1170ms both` : 'none'
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = colors.bgHover; e.currentTarget.style.transform = 'translateX(4px)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.transform = 'translateX(0)'; }}
                 >
                     <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: colors.danger }}>Log Out</span>
                 </div>

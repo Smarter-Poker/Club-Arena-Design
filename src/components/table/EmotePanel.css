@@ -100,6 +100,23 @@
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s ease;
+    animation: emoteStaggerIn 0.5s ease forwards;
+    opacity: 0;
+}
+
+.emote-panel--entrance .emote-panel__emote {
+    animation: emoteStaggerIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes emoteStaggerIn {
+    from {
+        opacity: 0;
+        transform: scale(0.6) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
 .emote-panel__emote:hover:not(:disabled) {
@@ -113,19 +130,22 @@
     transform: scale(0.9);
 }
 
-.emote-panel__emote--animating {
-    animation: emoteClick 0.3s ease;
+.emote-panel__emote--selected {
+    background: rgba(24, 119, 242, 0.3);
+    border-color: rgba(24, 119, 242, 0.5);
 }
 
-@keyframes emoteClick {
+.emote-panel__emote--animating {
+    animation: emoteClickPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes emoteClickPop {
     0% {
         transform: scale(1);
     }
-
     50% {
         transform: scale(1.4);
     }
-
     100% {
         transform: scale(1);
     }

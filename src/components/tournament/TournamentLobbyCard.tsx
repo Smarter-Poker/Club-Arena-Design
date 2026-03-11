@@ -221,6 +221,8 @@ export default function TournamentLobbyCard({
         }
     };
 
+    const isCountdownCritical = countdown && (countdown.includes('m') && parseInt(countdown) < 5);
+
     const isFreezout = (tournament: Tournament): boolean => {
         return !tournament.isRebuy && !tournament.rebuyAllowed &&
                !tournament.addonAllowed && !tournament.lateRegMins;
@@ -336,7 +338,7 @@ export default function TournamentLobbyCard({
 
             {/* Countdown */}
             {tournament.startsAt && tournament.status === 'registering' && (
-                <div className={styles.countdown}>
+                <div className={`${styles.countdown} ${isCountdownCritical ? styles.critical : ''}`}>
                     <span className={styles.countdownLabel}>Starts in</span>
                     <span className={styles.countdownValue}>{countdown}</span>
                 </div>

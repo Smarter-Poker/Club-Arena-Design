@@ -78,6 +78,7 @@ export function EmotePanel({
 }: EmotePanelProps) {
     const [lastEmoteTime, setLastEmoteTime] = useState(0);
     const [animatingEmote, setAnimatingEmote] = useState<string | null>(null);
+    const [selectedEmote, setSelectedEmote] = useState<string | null>(null);
 
     const emotes = customEmotes || DEFAULT_EMOTES;
 
@@ -90,11 +91,15 @@ export function EmotePanel({
         if (isOnCooldown) return;
 
         setAnimatingEmote(emoteId);
+        setSelectedEmote(emoteId);
         setLastEmoteTime(Date.now());
         onEmote(emoteId);
 
-        // Clear animation
-        setTimeout(() => setAnimatingEmote(null), 500);
+        // Clear animations
+        setTimeout(() => {
+            setAnimatingEmote(null);
+            setSelectedEmote(null);
+        }, 500);
     }, [isOnCooldown, onEmote]);
 
     // Close on escape
@@ -113,7 +118,7 @@ export function EmotePanel({
     return (
         <div className="emote-overlay" onClick={onClose}>
             <div
-                className="emote-panel"
+                className="emote-panel emote-panel--entrance"
                 onClick={(e) => e.stopPropagation()}
                 style={position ? { left: position.x, top: position.y } : undefined}
             >
@@ -129,13 +134,16 @@ export function EmotePanel({
 
                 {/* Emoji Grid */}
                 <div className="emote-panel__grid">
-                    {emotes.map((emote) => (
+                    {emotes.map((emote, index) => (
                         <button
                             key={emote.id}
-                            className={`emote-panel__emote ${animatingEmote === emote.id ? 'emote-panel__emote--animating' : ''} ${isOnCooldown ? 'emote-panel__emote--disabled' : ''}`}
+                            className={`emote-panel__emote ${selectedEmote === emote.id ? 'emote-panel__emote--selected' : ''} ${animatingEmote === emote.id ? 'emote-panel__emote--animating' : ''} ${isOnCooldown ? 'emote-panel__emote--disabled' : ''}`}
                             onClick={() => handleEmote(emote.id)}
                             disabled={isOnCooldown}
                             title={emote.label}
+                            style={{
+                                animationDelay: `${index * 0.05}s`
+                            }}
                         >
                             {emote.emoji}
                         </button>

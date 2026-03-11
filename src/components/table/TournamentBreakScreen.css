@@ -86,12 +86,28 @@
 
 .break-screen__timer-container {
     padding: 20px;
+    position: relative;
+    width: 100%;
 }
 
 .break-screen__timer-ring {
     position: relative;
     width: 200px;
     height: 200px;
+    margin: 0 auto;
+}
+
+.break-screen__timer-ring--animated {
+    animation: timerRingPulse 2s ease-in-out infinite;
+}
+
+@keyframes timerRingPulse {
+    0%, 100% {
+        filter: drop-shadow(0 0 8px rgba(255, 184, 0, 0.3));
+    }
+    50% {
+        filter: drop-shadow(0 0 20px rgba(255, 184, 0, 0.5));
+    }
 }
 
 .break-screen__timer-ring svg {
@@ -133,6 +149,17 @@
 .break-screen__time-label {
     font-size: 0.875rem;
     color: #6E7681;
+}
+
+/* Progress bar animation */
+.break-screen__progress-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #3b82f6, #f59e0b, #ef4444);
+    transition: width 0.5s linear, background-color 0.3s ease;
+    border-radius: 2px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════

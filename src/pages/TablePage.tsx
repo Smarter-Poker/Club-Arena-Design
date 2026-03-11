@@ -13,7 +13,7 @@
  * - WebSocket connection for real-time game state
  */
 
-import { useState, useEffect, useCallback, useRef, startTransition } from 'react';
+import { useState, useEffect, useCallback, useRef, startTransition, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { SeatSlot, PotDisplay, CommunityCards } from '../components/table';
 import type { SeatPlayer, Card, LastAction, PositionBadge } from '../components/table/SeatSlot';
@@ -279,6 +279,7 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
     const [userId, setUserId] = useState<string>('guest');
     const [username, setUsername] = useState<string>('Player');
     const [isLoading, setIsLoading] = useState(true);
+    const [boardStageKey, setBoardStageKey] = useState(0); // Trigger board transitions
 
     // Initialize user on mount
     useEffect(() => {
@@ -2594,6 +2595,11 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
         }
     }, [tableState.currentPlayerSeat, tableState.heroSeat, preAction, tableState.isHandInProgress, userId]);
 
+    // Trigger board animation on stage transition
+    useEffect(() => {
+        setBoardStageKey(prev => prev + 1);
+    }, [tableState.boardStage]);
+
     // Clear pre-action if game state changes significantly (new hand, someone raises after preaction set, etc)
     useEffect(() => {
         // Reset pre-actions when a new hand starts or board changes
@@ -2646,6 +2652,12 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
 
     return (
         <div className={`table-page${isAllInMode ? ' table-page--allin-mode' : ''}${tableState.currentPlayerSeat === tableState.heroSeat && tableState.isHandInProgress ? ' table-page--hero-turn' : ''}${winnerInfo.playerIds.length > 0 ? ' table-page--winner-flash' : ''}`}>
+            <style>{`
+                @keyframes boardSlideIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+                @keyframes boardFade { from { opacity: 0.7; } to { opacity: 1; } }
+                .community-area { animation: boardFade 0.4s ease-out; }
+                .board-transition { animation: boardSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+            `}</style>
             {/* ═══════════════════════════════════════════════════════════════════════
           HEADER BAR — Compact PokerBros-style with game info
           ═══════════════════════════════════════════════════════════════════════ */}
@@ -2714,7 +2726,7 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                                 </div>
 
                                 {/* Community Cards */}
-                                <div className="community-area">
+                                <div className="community-area" key={`board-${boardStageKey}`}>
                                     <CommunityCards
                                         cards={tableState.communityCards}
                                         stage={tableState.boardStage}

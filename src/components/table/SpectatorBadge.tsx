@@ -5,6 +5,7 @@
  */
 
 import React, { useState } from 'react';
+import './SpectatorBadge.css';
 import type { PlayerPresence } from '../../services/TableWebSocket';
 
 interface SpectatorBadgeProps {
@@ -35,6 +36,8 @@ export const SpectatorBadge: React.FC<SpectatorBadgeProps> = ({ observers, class
                     fontSize: '13px',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
+                    backdropFilter: 'blur(8px)',
+                    animation: 'spectatorFloating 3s ease-in-out infinite',
                 }}
                 onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.85)';

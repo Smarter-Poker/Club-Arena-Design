@@ -23,19 +23,35 @@ interface ModalProps {
 }
 
 const overlayVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1 },
+    hidden: { opacity: 0, backdropFilter: 'blur(0px)' },
+    visible: {
+        opacity: 1,
+        backdropFilter: 'blur(4px)',
+        transition: { duration: 0.25, ease: 'easeInOut' }
+    },
+    exit: { opacity: 0, backdropFilter: 'blur(0px)', transition: { duration: 0.2 } }
 };
 
 const modalVariants = {
-    hidden: { opacity: 0, scale: 0.95, y: 20 },
+    hidden: { opacity: 0, scale: 0.92, y: 30 },
     visible: {
         opacity: 1,
         scale: 1,
         y: 0,
-        transition: { type: 'spring', damping: 25, stiffness: 300 }
+        transition: {
+            type: 'spring',
+            damping: 28,
+            stiffness: 350,
+            mass: 1.2,
+            velocity: 2
+        }
     },
-    exit: { opacity: 0, scale: 0.95, y: 10 },
+    exit: {
+        opacity: 0,
+        scale: 0.9,
+        y: 20,
+        transition: { type: 'spring', damping: 30, stiffness: 300, duration: 0.2 }
+    }
 };
 
 /**

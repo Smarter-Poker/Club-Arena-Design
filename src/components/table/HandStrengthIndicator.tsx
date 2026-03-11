@@ -3,7 +3,7 @@
  * Visual display of hand strength during gameplay
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import './HandStrengthIndicator.css';
 
 interface HandStrengthIndicatorProps {
@@ -42,6 +42,10 @@ export const HandStrengthIndicator: React.FC<HandStrengthIndicatorProps> = ({
         return evaluateHand(cards, communityCards);
     }, [cards, communityCards]);
 
+    const [fillWidth, setFillWidth] = useState(0);
+    const [glowPulse, setGlowPulse] = useState(false);
+    const prevEvaluationRef = useRef(evaluation);
+
     const getStrengthLabel = (strength: number): string => {
         if (strength >= 90) return 'Monster';
         if (strength >= 75) return 'Strong';
@@ -50,13 +54,31 @@ export const HandStrengthIndicator: React.FC<HandStrengthIndicatorProps> = ({
         return 'Weak';
     };
 
+    // Animate bar fill on mount and change
+    useEffect(() => {
+        const timer = setTimeout(() => setFillWidth(evaluation.strength), 50);
+        return () => clearTimeout(timer);
+    }, [evaluation.strength]);
+
+    // Glow pulse when strength changes significantly
+    useEffect(() => {
+        const prevStrength = prevEvaluationRef.current.strength;
+        if (Math.abs(evaluation.strength - prevStrength) >= 10) {
+            setGlowPulse(true);
+            const timer = setTimeout(() => setGlowPulse(false), 600);
+            prevEvaluationRef.current = evaluation;
+            return () => clearTimeout(timer);
+        }
+        prevEvaluationRef.current = evaluation;
+    }, [evaluation.strength]);
+
     return (
-        <div className={`hand-strength-indicator size-${size}`}>
+        <div className={`hand-strength-indicator size-${size} ${glowPulse ? 'hand-strength-indicator--glow-pulse' : ''}`}>
             <div className="strength-bar-container">
                 <div
                     className="strength-bar-fill"
                     style={{
-                        width: `${evaluation.strength}%`,
+                        width: `${fillWidth}%`,
                         background: evaluation.color,
                     }}
                 />

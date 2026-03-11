@@ -268,15 +268,20 @@ export default function ProfilePage() {
         loadProfile();
     }, []);
 
-    // Setup Supabase Realtime subscription for profile updates
+    // #1+#2: Setup Supabase Realtime via Channel Registry (fixed cleanup leak)
     useEffect(() => {
+        let channelKey = '';
+
         async function setupRealtimeSubscription() {
             try {
                 const { data: { user: authUser } } = await supabase.auth.getUser();
                 if (!authUser) return;
 
-                // Create a channel for profile changes
-                const channel = supabase.channel(`profile-${authUser.id}`);
+                channelKey = `profile-${authUser.id}`;
+
+                // #1: Use Channel Registry for deduplication
+                const { masterBus } = await import('../core/MasterBus');
+                const channel = masterBus.getOrCreateChannel(channelKey);
 
                 // Subscribe to profile changes
                 channel
@@ -290,7 +295,6 @@ export default function ProfilePage() {
                         },
                         async (payload) => {
                             console.log('[PROFILE] Profile updated:', payload);
-                            // Refetch profile data
                             const { data: updatedProfile } = await supabase
                                 .from('profiles')
                                 .select('*')
@@ -341,7 +345,6 @@ export default function ProfilePage() {
                         },
                         async (payload) => {
                             console.log('[PROFILE] Wallet updated:', payload);
-                            // Refetch profile to get updated diamonds
                             const { data: updatedProfile } = await supabase
                                 .from('profiles')
                                 .select('diamonds, is_vip')
@@ -355,17 +358,21 @@ export default function ProfilePage() {
                         }
                     )
                     .subscribe();
-
-                // Cleanup function
-                return () => {
-                    supabase.removeChannel(channel);
-                };
             } catch (err) {
                 console.error('[PROFILE] Realtime subscription failed:', err);
             }
         }
 
         setupRealtimeSubscription();
+
+        // #2: FIX — cleanup is now synchronous and correctly removes the channel
+        return () => {
+            if (channelKey) {
+                import('../core/MasterBus').then(({ masterBus }) => {
+                    masterBus.removeRegisteredChannel(channelKey);
+                });
+            }
+        };
     }, []);
 
     if (isLoading) {

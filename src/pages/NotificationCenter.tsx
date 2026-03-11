@@ -77,61 +77,78 @@ export default function NotificationCenter() {
     useEffect(() => {
         loadNotifications();
 
-        // Real-time updates
+        // #1: Real-time updates via Channel Registry
         if (!user?.id) return;
-        const channel = supabase
-            .channel(`notifications-${user.id}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'notifications',
-                    filter: `user_id=eq.${user.id}`,
-                },
-                (payload) => {
-                    const n = payload.new as any;
-                    setNotifications(prev => [{
-                        id: n.id,
-                        type: n.type || 'system',
-                        title: n.title || 'Notification',
-                        message: n.message || n.body || '',
-                        link: n.link || n.action_url,
-                        read: false,
-                        created_at: n.created_at,
-                        icon: ICON_MAP[n.type] || '📬',
-                    }, ...prev]);
-                }
-            )
-            .on(
-                'postgres_changes',
-                {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'notifications',
-                    filter: `user_id=eq.${user.id}`,
-                },
-                (payload) => {
-                    const updated = payload.new as any;
-                    setNotifications(prev => 
-                        prev.map(n => n.id === updated.id ? { ...n, read: updated.read } : n)
-                    );
-                }
-            )
-            .subscribe();
+        const channelKey = `notifications-${user.id}`;
+        let registeredKey = channelKey;
 
-        return () => { supabase.removeChannel(channel); };
+        import('../core/MasterBus').then(({ masterBus }) => {
+            const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'notifications',
+                        filter: `user_id=eq.${user.id}`,
+                    },
+                    (payload) => {
+                        const n = payload.new as any;
+                        setNotifications(prev => [{
+                            id: n.id,
+                            type: n.type || 'system',
+                            title: n.title || 'Notification',
+                            message: n.message || n.body || '',
+                            link: n.link || n.action_url,
+                            read: false,
+                            created_at: n.created_at,
+                            icon: ICON_MAP[n.type] || '📬',
+                        }, ...prev]);
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'notifications',
+                        filter: `user_id=eq.${user.id}`,
+                    },
+                    (payload) => {
+                        const updated = payload.new as any;
+                        setNotifications(prev => 
+                            prev.map(n => n.id === updated.id ? { ...n, read: updated.read } : n)
+                        );
+                    }
+                )
+                .subscribe();
+        });
+
+        return () => {
+            import('../core/MasterBus').then(({ masterBus }) => {
+                masterBus.removeRegisteredChannel(registeredKey);
+            });
+        };
     }, [user?.id, loadNotifications]);
 
     const markAsRead = async (notifId: string) => {
         await supabase.from('notifications').update({ read: true }).eq('id', notifId);
         setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
+        // #3: Emit NOTIFICATION_READ for instant bell badge sync
+        import('../core/MasterBus').then(({ masterBus }) => {
+            masterBus.emit('NOTIFICATION_READ', { notifId, allRead: false });
+        });
     };
 
     const markAllRead = async () => {
         if (!user?.id) return;
         await supabase.from('notifications').update({ read: true }).eq('user_id', user.id).eq('read', false);
         setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+        // #3: Emit NOTIFICATION_READ for instant bell badge sync
+        import('../core/MasterBus').then(({ masterBus }) => {
+            masterBus.emit('NOTIFICATION_READ', { notifId: null, allRead: true });
+        });
     };
 
     const handleClick = (notif: Notification) => {

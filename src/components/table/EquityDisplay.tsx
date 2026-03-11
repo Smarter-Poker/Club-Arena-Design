@@ -9,7 +9,7 @@
  * Also supports legacy single-equity display for backward compatibility.
  */
 
-import React, { memo } from 'react';
+import React, { memo, useState, useEffect, useRef } from 'react';
 import './EquityDisplay.css';
 
 // Legacy single equity display
@@ -21,23 +21,64 @@ interface LegacyEquityDisplayProps {
 }
 
 function LegacyEquityDisplay({ equity, showBar = true, size = 'medium', outs }: LegacyEquityDisplayProps) {
+    const [displayEquity, setDisplayEquity] = useState(equity);
+    const [fillWidth, setFillWidth] = useState(0);
+    const animationFrameRef = useRef<number>(0);
+    const countStartRef = useRef(0);
+
     const getColor = () => {
         if (equity >= 60) return '#4ade80';
         if (equity >= 40) return '#fbbf24';
         return '#f87171';
     };
 
+    // Animate equity value on change
+    useEffect(() => {
+        countStartRef.current = displayEquity;
+        const startTime = Date.now();
+        const duration = 600;
+
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(1, elapsed / duration);
+
+            // Cubic easing for smooth animation
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            const current = countStartRef.current + (equity - countStartRef.current) * easeOut;
+
+            setDisplayEquity(current);
+
+            if (progress < 1) {
+                animationFrameRef.current = requestAnimationFrame(animate);
+            }
+        };
+
+        animationFrameRef.current = requestAnimationFrame(animate);
+
+        return () => {
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+            }
+        };
+    }, [equity]);
+
+    // Animate bar fill on mount
+    useEffect(() => {
+        const timer = setTimeout(() => setFillWidth(equity), 50);
+        return () => clearTimeout(timer);
+    }, [equity]);
+
     return (
         <div className={`equity-display ${size}`}>
             <span className="equity-value" style={{ color: getColor() }}>
-                {equity.toFixed(1)}%
+                {displayEquity.toFixed(1)}%
             </span>
 
             {showBar && (
                 <div className="equity-bar">
                     <div
                         className="equity-fill"
-                        style={{ width: `${equity}%`, backgroundColor: getColor() }}
+                        style={{ width: `${fillWidth}%`, backgroundColor: getColor() }}
                     />
                 </div>
             )}
@@ -58,23 +99,63 @@ export interface EquityBarProps {
 }
 
 export const EquityBar = memo(function EquityBar({ equity, isHero, playerName, isLeading }: EquityBarProps) {
+    const [displayEquity, setDisplayEquity] = useState(equity);
+    const [fillWidth, setFillWidth] = useState(0);
+    const animationFrameRef = useRef<number>(0);
+    const countStartRef = useRef(0);
+
     const barColor = isLeading ? '#22c55e' : '#ef4444';
     const bgColor = isLeading ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)';
 
+    // Animate equity value on change
+    useEffect(() => {
+        countStartRef.current = displayEquity;
+        const startTime = Date.now();
+        const duration = 500;
+
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(1, elapsed / duration);
+
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            const current = countStartRef.current + (equity - countStartRef.current) * easeOut;
+
+            setDisplayEquity(current);
+
+            if (progress < 1) {
+                animationFrameRef.current = requestAnimationFrame(animate);
+            }
+        };
+
+        animationFrameRef.current = requestAnimationFrame(animate);
+
+        return () => {
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+            }
+        };
+    }, [equity]);
+
+    // Animate bar fill
+    useEffect(() => {
+        const timer = setTimeout(() => setFillWidth(Math.min(100, Math.max(0, equity))), 50);
+        return () => clearTimeout(timer);
+    }, [equity]);
+
     return (
-        <div className={`equity-bar ${isHero ? 'equity-bar--hero' : ''}`}>
+        <div className={`equity-bar ${isHero ? 'equity-bar--hero' : ''} equity-bar--animated`}>
             <div className="equity-bar__track" style={{ background: bgColor }}>
                 <div
                     className="equity-bar__fill"
                     style={{
-                        width: `${Math.min(100, Math.max(0, equity))}%`,
+                        width: `${fillWidth}%`,
                         background: barColor,
                         boxShadow: `0 0 8px ${barColor}60`
                     }}
                 />
             </div>
             <span className="equity-bar__pct" style={{ color: barColor }}>
-                {Math.round(equity)}%
+                {Math.round(displayEquity)}%
             </span>
         </div>
     );
