@@ -9,6 +9,7 @@
 import { Routes, Route } from 'react-router-dom';
 import { Suspense, lazy, useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
+import { getOfflineQueue, clearOfflineQueue } from './utils/offlineQueue';
 import GlobalWaitlistListener from './components/common/GlobalWaitlistListener';
 import WaitlistBanner from './components/common/WaitlistBanner';
 
@@ -126,10 +127,10 @@ export default function App() {
             setIsOffline(false);
             // Replay queued mutations on reconnect
             try {
-                const queue = JSON.parse(localStorage.getItem('offline_mutation_queue') || '[]');
+                const queue = getOfflineQueue();
                 if (queue.length > 0) {
                     console.log('[Offline Queue] Replaying', queue.length, 'queued mutations');
-                    localStorage.removeItem('offline_mutation_queue');
+                    clearOfflineQueue();
                     // Mutations would be replayed here against Supabase
                 }
             } catch { /* ignore parse errors */ }
@@ -173,6 +174,9 @@ export default function App() {
     return (
         <ErrorBoundary>
         <ToastProvider>
+            {/* Accessibility: Skip to main content link */}
+            <a href="#main-content" className="skip-link">Skip to main content</a>
+
             {/* Intro video overlay - app loads in background while video plays */}
             {showIntro && (
                 <IntroVideo

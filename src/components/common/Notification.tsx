@@ -101,7 +101,7 @@ export function NotificationList({
     const hasMore = notifications.length > maxVisible;
 
     return (
-        <div className="notification-list">
+        <div className="notification-list" role="region" aria-live="polite" aria-label="Notifications">
             {notifications.length > 0 && onClearAll && (
                 <div className="notification-list-header">
                     <span className="notification-count">

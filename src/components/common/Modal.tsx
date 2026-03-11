@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconButton } from './Button';
@@ -68,6 +68,9 @@ export function Modal({
     showCloseButton = true,
     className = '',
 }: ModalProps) {
+    const modalRef = useRef<HTMLDivElement>(null);
+    const previousActiveElement = useRef<HTMLElement | null>(null);
+
     // Handle escape key
     const handleEscape = useCallback((e: KeyboardEvent) => {
         if (e.key === 'Escape' && closeOnEscape) {
@@ -75,16 +78,59 @@ export function Modal({
         }
     }, [onClose, closeOnEscape]);
 
+    // Focus trap: handle Tab key to cycle focus within modal
+    const handleKeyDown = useCallback((e: KeyboardEvent) => {
+        if (e.key !== 'Tab' || !modalRef.current) return;
+
+        const focusableElements = modalRef.current.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const firstElement = focusableElements[0] as HTMLElement;
+        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+        if (e.shiftKey) {
+            if (document.activeElement === firstElement) {
+                e.preventDefault();
+                lastElement?.focus();
+            }
+        } else {
+            if (document.activeElement === lastElement) {
+                e.preventDefault();
+                firstElement?.focus();
+            }
+        }
+    }, []);
+
     useEffect(() => {
         if (isOpen) {
+            // Store the previously focused element
+            previousActiveElement.current = document.activeElement as HTMLElement;
+
             document.addEventListener('keydown', handleEscape);
+            document.addEventListener('keydown', handleKeyDown);
             document.body.style.overflow = 'hidden';
+
+            // Focus the first focusable element in the modal
+            setTimeout(() => {
+                if (modalRef.current) {
+                    const focusable = modalRef.current.querySelector(
+                        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                    ) as HTMLElement;
+                    focusable?.focus();
+                }
+            }, 0);
         }
         return () => {
             document.removeEventListener('keydown', handleEscape);
+            document.removeEventListener('keydown', handleKeyDown);
             document.body.style.overflow = '';
+
+            // Return focus to the element that triggered the modal
+            if (!isOpen && previousActiveElement.current) {
+                previousActiveElement.current.focus();
+            }
         };
-    }, [isOpen, handleEscape]);
+    }, [isOpen, handleEscape, handleKeyDown]);
 
     const content = (
         <AnimatePresence>
@@ -99,6 +145,7 @@ export function Modal({
                         onClick={closeOnOverlay ? onClose : undefined}
                     />
                     <motion.div
+                        ref={modalRef}
                         className={`modal modal-${size} ${className}`}
                         variants={modalVariants}
                         initial="hidden"
@@ -107,14 +154,15 @@ export function Modal({
                         onClick={(e) => e.stopPropagation()}
                         role="dialog"
                         aria-modal="true"
+                        aria-labelledby={title ? 'modal-title' : undefined}
                     >
                         {(title || showCloseButton) && (
                             <div className="modal-header">
-                                {title && <h2 className="modal-title">{title}</h2>}
+                                {title && <h2 id="modal-title" className="modal-title">{title}</h2>}
                                 {showCloseButton && (
                                     <IconButton
                                         icon="✕"
-                                        label="Close"
+                                        label="Close dialog"
                                         variant="ghost"
                                         size="small"
                                         onClick={onClose}

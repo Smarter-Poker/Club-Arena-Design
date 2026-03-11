@@ -98,7 +98,7 @@ function ToastContainer({ toasts, removeToast }: { toasts: Toast[]; removeToast:
     if (toasts.length === 0) return null;
 
     return (
-        <div className="toast-container">
+        <div className="toast-container" role="region" aria-live="polite" aria-label="Notifications">
             {toasts.map((toast) => (
                 <ToastItem key={toast.id} toast={toast} onRemove={() => removeToast(toast.id)} />
             ))}

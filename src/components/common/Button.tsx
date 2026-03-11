@@ -45,6 +45,8 @@ export function Button({
         <motion.button
             className={`btn btn-${variant} btn-${size} ${fullWidth ? 'btn-full' : ''} ${isDisabled ? 'btn-disabled' : ''} ${className}`}
             disabled={isDisabled}
+            aria-busy={loading}
+            aria-disabled={disabled}
             whileTap={!isDisabled ? { scale: 0.97 } : undefined}
             whileHover={!isDisabled ? { scale: 1.02 } : undefined}
             {...props}

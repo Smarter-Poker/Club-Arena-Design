@@ -59,7 +59,7 @@ export default function AppLayout() {
 
 
             {/* Main Content */}
-            <main className={styles.main}>
+            <main id="main-content" className={styles.main}>
                 <Outlet />
             </main>
 

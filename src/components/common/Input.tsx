@@ -16,6 +16,7 @@ interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, '
     size?: 'small' | 'medium' | 'large';
     variant?: 'default' | 'filled' | 'outlined';
     fullWidth?: boolean;
+    required?: boolean;
 }
 
 /**
@@ -32,21 +33,33 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
     fullWidth = false,
     className = '',
     disabled,
+    required,
+    id,
     ...props
 }, ref) => {
     const [focused, setFocused] = useState(false);
+    const messageId = `${id}-message`;
 
     return (
         <div className={`input-wrapper ${fullWidth ? 'input-full' : ''} ${className}`}>
-            {label && <label className="input-label">{label}</label>}
+            {label && (
+                <label className="input-label" htmlFor={id}>
+                    {label}
+                    {required && <span aria-label="required"> *</span>}
+                </label>
+            )}
             <div className={`input-container input-${size} input-${variant} ${focused ? 'input-focused' : ''} ${error ? 'input-error' : ''} ${disabled ? 'input-disabled' : ''}`}>
                 {icon && iconPosition === 'left' && (
                     <span className="input-icon input-icon-left">{icon}</span>
                 )}
                 <input
                     ref={ref}
+                    id={id}
                     className="input-field"
                     disabled={disabled}
+                    aria-required={required}
+                    aria-invalid={!!error}
+                    aria-describedby={(error || hint) ? messageId : undefined}
                     onFocus={(e) => {
                         setFocused(true);
                         props.onFocus?.(e);
@@ -62,7 +75,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
                 )}
             </div>
             {(error || hint) && (
-                <span className={`input-message ${error ? 'input-message-error' : ''}`}>
+                <span id={messageId} className={`input-message ${error ? 'input-message-error' : ''}`}>
                     {error || hint}
                 </span>
             )}
@@ -82,6 +95,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, {
     rows?: number;
     fullWidth?: boolean;
     className?: string;
+    required?: boolean;
 } & React.TextareaHTMLAttributes<HTMLTextAreaElement>>(({
     label,
     error,
@@ -90,18 +104,30 @@ export const Textarea = forwardRef<HTMLTextAreaElement, {
     fullWidth = false,
     className = '',
     disabled,
+    required,
+    id,
     ...props
 }, ref) => {
     const [focused, setFocused] = useState(false);
+    const messageId = `${id}-message`;
 
     return (
         <div className={`input-wrapper ${fullWidth ? 'input-full' : ''} ${className}`}>
-            {label && <label className="input-label">{label}</label>}
+            {label && (
+                <label className="input-label" htmlFor={id}>
+                    {label}
+                    {required && <span aria-label="required"> *</span>}
+                </label>
+            )}
             <textarea
                 ref={ref}
+                id={id}
                 className={`textarea-field ${focused ? 'input-focused' : ''} ${error ? 'input-error' : ''} ${disabled ? 'input-disabled' : ''}`}
                 rows={rows}
                 disabled={disabled}
+                aria-required={required}
+                aria-invalid={!!error}
+                aria-describedby={(error || hint) ? messageId : undefined}
                 onFocus={(e) => {
                     setFocused(true);
                     props.onFocus?.(e);
@@ -113,7 +139,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, {
                 {...props}
             />
             {(error || hint) && (
-                <span className={`input-message ${error ? 'input-message-error' : ''}`}>
+                <span id={messageId} className={`input-message ${error ? 'input-message-error' : ''}`}>
                     {error || hint}
                 </span>
             )}
@@ -135,6 +161,7 @@ export const Select = forwardRef<HTMLSelectElement, {
     size?: 'small' | 'medium' | 'large';
     fullWidth?: boolean;
     className?: string;
+    required?: boolean;
 } & Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size'>>(({
     label,
     error,
@@ -145,16 +172,29 @@ export const Select = forwardRef<HTMLSelectElement, {
     fullWidth = false,
     className = '',
     disabled,
+    required,
+    id,
     ...props
 }, ref) => {
+    const messageId = `${id}-message`;
+
     return (
         <div className={`input-wrapper ${fullWidth ? 'input-full' : ''} ${className}`}>
-            {label && <label className="input-label">{label}</label>}
+            {label && (
+                <label className="input-label" htmlFor={id}>
+                    {label}
+                    {required && <span aria-label="required"> *</span>}
+                </label>
+            )}
             <div className={`select-container input-${size} ${error ? 'input-error' : ''} ${disabled ? 'input-disabled' : ''}`}>
                 <select
                     ref={ref}
+                    id={id}
                     className="select-field"
                     disabled={disabled}
+                    aria-required={required}
+                    aria-invalid={!!error}
+                    aria-describedby={(error || hint) ? messageId : undefined}
                     {...props}
                 >
                     {placeholder && (
@@ -171,7 +211,7 @@ export const Select = forwardRef<HTMLSelectElement, {
                 <span className="select-arrow">▼</span>
             </div>
             {(error || hint) && (
-                <span className={`input-message ${error ? 'input-message-error' : ''}`}>
+                <span id={messageId} className={`input-message ${error ? 'input-message-error' : ''}`}>
                     {error || hint}
                 </span>
             )}
