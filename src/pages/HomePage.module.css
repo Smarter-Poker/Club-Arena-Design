@@ -285,13 +285,12 @@
 
 .clubCarousel {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     gap: 20px;
     width: 100%;
-    padding: 16px 40px 28px 40px;
+    padding: 20px 40px 40px 40px;
     box-sizing: border-box;
     overflow-x: auto;
-    overflow-y: visible;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
@@ -308,6 +307,7 @@
 .carouselCard {
     flex: 0 0 auto;
     width: 220px;
+    aspect-ratio: 7 / 11;
     cursor: pointer;
     position: relative;
     scroll-snap-align: center;
@@ -456,7 +456,6 @@
     transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     animation: scaleIn 0.7s ease-out 100ms both, idleFloat 6s ease-in-out infinite;
     border-radius: 12px;
-    overflow: hidden;
     z-index: 10;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 212, 255, 0.15);
 }
