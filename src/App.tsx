@@ -40,6 +40,7 @@ const TournamentDetails = lazy(() => import('./pages/tournament/TournamentDetail
 const TournamentLobbyPage = lazy(() => import('./pages/tournament/TournamentLobbyPage'));
 const TournamentResultsPage = lazy(() => import('./pages/tournament/TournamentResultsPage'));
 const TablePage = lazy(() => import('./pages/TablePage'));
+const MultiTablePage = lazy(() => import('./pages/MultiTablePage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const UnionsPage = lazy(() => import('./pages/UnionsPage'));
@@ -192,7 +193,7 @@ export default function App() {
                             path="table/:tableId"
                             element={
                                 <AuthGuard>
-                                    <TablePage />
+                                    <MultiTablePage />
                                 </AuthGuard>
                             }
                         />

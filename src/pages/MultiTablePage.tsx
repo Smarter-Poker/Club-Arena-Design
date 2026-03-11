@@ -1,0 +1,282 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  MULTI-TABLE PAGE — PokerBros-Style Multi-Table Container
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * Wraps up to 4 concurrent TablePage instances with:
+ * - Top tab bar for switching tables
+ * - Horizontal swipe navigation between tables
+ * - Auto-switch when action timer is urgent
+ * - Add/remove table management
+ *
+ * URL pattern: /tables (manages its own table instances)
+ * Legacy URL: /table/:tableId still routes here with a single table
+ */
+
+import React, { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { TableTabBar, type TabInfo } from '../components/table/TableTabBar';
+import './MultiTablePage.css';
+
+// Lazy-load TablePage for code splitting
+const TablePage = lazy(() => import('./TablePage'));
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface TableInstance {
+    id: string;
+    name: string;
+    stakes: string;
+    isMyTurn: boolean;
+    timeRemaining?: number;
+    pot: number;
+}
+
+const MAX_TABLES = 4;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export default function MultiTablePage() {
+    const { tableId: routeTableId } = useParams<{ tableId: string }>();
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+
+    // ─── State ───────────────────────────────────────────────────────────
+    const [tables, setTables] = useState<TableInstance[]>(() => {
+        // Initialize with the table from URL
+        if (routeTableId) {
+            return [{
+                id: routeTableId,
+                name: searchParams.get('name') || 'Table 1',
+                stakes: searchParams.get('stakes') || '',
+                isMyTurn: false,
+                pot: 0,
+            }];
+        }
+        return [];
+    });
+
+    const [activeIndex, setActiveIndex] = useState(0);
+    const [swipeOffset, setSwipeOffset] = useState(0);
+    const [isTransitioning, setIsTransitioning] = useState(false);
+
+    // Swipe tracking refs
+    const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // ─── Derived state ───────────────────────────────────────────────────
+    const activeTableId = tables[activeIndex]?.id || '';
+
+    const tabInfos: TabInfo[] = useMemo(() =>
+        tables.map(t => ({
+            id: t.id,
+            name: t.name,
+            stakes: t.stakes,
+            isMyTurn: t.isMyTurn,
+            timeRemaining: t.timeRemaining,
+            pot: t.pot,
+        })),
+        [tables]
+    );
+
+    // ─── Table Management ────────────────────────────────────────────────
+    const handleTabSelect = useCallback((tabId: string) => {
+        const idx = tables.findIndex(t => t.id === tabId);
+        if (idx !== -1 && idx !== activeIndex) {
+            setIsTransitioning(true);
+            setActiveIndex(idx);
+            setTimeout(() => setIsTransitioning(false), 320);
+        }
+    }, [tables, activeIndex]);
+
+    const handleTabClose = useCallback((tabId: string) => {
+        if (tables.length <= 1) return;
+
+        setTables(prev => {
+            const newTables = prev.filter(t => t.id !== tabId);
+            return newTables;
+        });
+
+        // Adjust active index if needed
+        const closedIdx = tables.findIndex(t => t.id === tabId);
+        if (closedIdx <= activeIndex && activeIndex > 0) {
+            setActiveIndex(prev => prev - 1);
+        }
+
+        // If we closed the last table, navigate back to lobby
+        if (tables.length <= 1) {
+            navigate('/lobby');
+        }
+    }, [tables, activeIndex, navigate]);
+
+    const handleAddTable = useCallback(() => {
+        if (tables.length >= MAX_TABLES) return;
+        // Navigate to lobby to pick a table
+        // The lobby will redirect back here with the new table ID
+        navigate('/lobby?returnToMulti=true');
+    }, [tables.length, navigate]);
+
+    // ─── Update table info (called by child TablePage instances) ─────────
+    const updateTableInfo = useCallback((tableId: string, updates: Partial<TableInstance>) => {
+        setTables(prev =>
+            prev.map(t => t.id === tableId ? { ...t, ...updates } : t)
+        );
+    }, []);
+
+    // ─── Auto-switch on urgent timer ─────────────────────────────────────
+    useEffect(() => {
+        const urgentTable = tables.find(
+            (t, idx) => idx !== activeIndex && t.isMyTurn && t.timeRemaining !== undefined && t.timeRemaining < 5
+        );
+        if (urgentTable) {
+            const idx = tables.findIndex(t => t.id === urgentTable.id);
+            if (idx !== -1) {
+                setIsTransitioning(true);
+                setActiveIndex(idx);
+                setTimeout(() => setIsTransitioning(false), 320);
+            }
+        }
+    }, [tables, activeIndex]);
+
+    // ─── Swipe Gesture Handling ──────────────────────────────────────────
+    const handleTouchStart = useCallback((e: React.TouchEvent) => {
+        if (tables.length <= 1) return;
+        const touch = e.touches[0];
+        touchStartRef.current = {
+            x: touch.clientX,
+            y: touch.clientY,
+            time: Date.now(),
+        };
+    }, [tables.length]);
+
+    const handleTouchMove = useCallback((e: React.TouchEvent) => {
+        if (!touchStartRef.current || tables.length <= 1) return;
+        const touch = e.touches[0];
+        const dx = touch.clientX - touchStartRef.current.x;
+        const dy = touch.clientY - touchStartRef.current.y;
+
+        // Only swipe horizontally if horizontal movement > vertical
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
+            // Clamp the offset — don't allow overscroll past first/last table
+            const maxLeft = activeIndex > 0 ? window.innerWidth * 0.4 : 60;
+            const maxRight = activeIndex < tables.length - 1 ? window.innerWidth * 0.4 : 60;
+            const clamped = Math.max(-maxRight, Math.min(maxLeft, dx));
+            setSwipeOffset(clamped);
+        }
+    }, [tables.length, activeIndex]);
+
+    const handleTouchEnd = useCallback(() => {
+        if (!touchStartRef.current || tables.length <= 1) {
+            touchStartRef.current = null;
+            return;
+        }
+
+        const SWIPE_THRESHOLD = 50;
+        const VELOCITY_THRESHOLD = 0.3; // px/ms
+        const elapsed = Date.now() - touchStartRef.current.time;
+        const velocity = Math.abs(swipeOffset) / elapsed;
+
+        let newIndex = activeIndex;
+
+        if (swipeOffset > SWIPE_THRESHOLD || (velocity > VELOCITY_THRESHOLD && swipeOffset > 20)) {
+            // Swiped right → go to previous table
+            if (activeIndex > 0) {
+                newIndex = activeIndex - 1;
+            }
+        } else if (swipeOffset < -SWIPE_THRESHOLD || (velocity > VELOCITY_THRESHOLD && swipeOffset < -20)) {
+            // Swiped left → go to next table
+            if (activeIndex < tables.length - 1) {
+                newIndex = activeIndex + 1;
+            }
+        }
+
+        if (newIndex !== activeIndex) {
+            setIsTransitioning(true);
+            setActiveIndex(newIndex);
+            setTimeout(() => setIsTransitioning(false), 320);
+        }
+
+        setSwipeOffset(0);
+        touchStartRef.current = null;
+    }, [swipeOffset, activeIndex, tables.length]);
+
+    // ─── Handle route-based table ID changes ─────────────────────────────
+    useEffect(() => {
+        if (routeTableId && !tables.find(t => t.id === routeTableId)) {
+            // New table from URL — add it if room
+            if (tables.length < MAX_TABLES) {
+                setTables(prev => [...prev, {
+                    id: routeTableId,
+                    name: searchParams.get('name') || `Table ${prev.length + 1}`,
+                    stakes: searchParams.get('stakes') || '',
+                    isMyTurn: false,
+                    pot: 0,
+                }]);
+                setActiveIndex(tables.length); // Switch to new table
+            }
+        }
+    }, [routeTableId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // ─── Render ──────────────────────────────────────────────────────────
+    if (tables.length === 0) {
+        return (
+            <div className="multi-table-page multi-table-page--empty">
+                <p>No tables open</p>
+                <button onClick={() => navigate('/lobby')}>Go to Lobby</button>
+            </div>
+        );
+    }
+
+    const containerTransform = swipeOffset !== 0
+        ? `translateX(calc(${-activeIndex * 100}% + ${swipeOffset}px))`
+        : `translateX(${-activeIndex * 100}%)`;
+
+    return (
+        <div className="multi-table-page">
+            {/* Tab Bar */}
+            {tables.length > 1 && (
+                <TableTabBar
+                    tabs={tabInfos}
+                    activeTabId={activeTableId}
+                    onTabSelect={handleTabSelect}
+                    onTabClose={handleTabClose}
+                    onAddTable={handleAddTable}
+                />
+            )}
+
+            {/* Swipe Container */}
+            <div
+                ref={containerRef}
+                className={`multi-table-page__container ${isTransitioning ? 'multi-table-page__container--transitioning' : ''}`}
+                style={{ transform: containerTransform }}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+            >
+                {tables.map((table, idx) => (
+                    <div
+                        key={table.id}
+                        className={`multi-table-page__table-slot ${idx === activeIndex ? 'multi-table-page__table-slot--active' : ''}`}
+                    >
+                        <Suspense fallback={
+                            <div className="multi-table-page__loading">
+                                <div className="multi-table-page__spinner" />
+                            </div>
+                        }>
+                            <TablePage
+                                key={table.id}
+                                embeddedTableId={table.id}
+                                onTableInfoUpdate={(info: Partial<TableInstance>) => updateTableInfo(table.id, info)}
+                                isMultiTable={tables.length > 1}
+                            />
+                        </Suspense>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}

@@ -1,0 +1,135 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  TABLE TAB BAR — PokerBros-Style Multi-Table Navigation
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * Top tab strip for switching between up to 4 concurrent tables.
+ * Features:
+ * - Pill-shaped tabs with table name
+ * - Active tab highlighted
+ * - Pulsing indicator when action is on you at another table
+ * - Timer countdown on tabs where it's your turn
+ * - "+" button to add new tables (up to 4)
+ * - Jackpot badge inline
+ */
+
+import React, { useCallback, useMemo } from 'react';
+import './TableTabBar.css';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface TabInfo {
+    id: string;
+    name: string;          // e.g., "NLH 1/2" or "PLO4 Hi"
+    stakes: string;        // e.g., "1/2" or "0.05/0.10"
+    isMyTurn: boolean;
+    timeRemaining?: number; // Seconds remaining when it's your turn
+    pot?: number;
+}
+
+export interface TableTabBarProps {
+    tabs: TabInfo[];
+    activeTabId: string;
+    onTabSelect: (tabId: string) => void;
+    onTabClose: (tabId: string) => void;
+    onAddTable: () => void;
+    jackpotAmount?: number;
+    maxTables?: number;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export function TableTabBar({
+    tabs,
+    activeTabId,
+    onTabSelect,
+    onTabClose,
+    onAddTable,
+    jackpotAmount,
+    maxTables = 4,
+}: TableTabBarProps) {
+    const canAddMore = tabs.length < maxTables;
+    const emptySlots = maxTables - tabs.length;
+
+    const handleClose = useCallback((e: React.MouseEvent, tabId: string) => {
+        e.stopPropagation();
+        // Don't close if it's the only table
+        if (tabs.length <= 1) return;
+        onTabClose(tabId);
+    }, [tabs.length, onTabClose]);
+
+    return (
+        <div className="table-tab-bar">
+            {/* Table Tabs */}
+            <div className="table-tab-bar__tabs">
+                {tabs.map((tab) => {
+                    const isActive = tab.id === activeTabId;
+                    const isUrgent = !isActive && tab.isMyTurn && tab.timeRemaining !== undefined && tab.timeRemaining < 10;
+
+                    return (
+                        <button
+                            key={tab.id}
+                            className={[
+                                'table-tab-bar__tab',
+                                isActive && 'table-tab-bar__tab--active',
+                                !isActive && tab.isMyTurn && 'table-tab-bar__tab--turn',
+                                isUrgent && 'table-tab-bar__tab--urgent',
+                            ].filter(Boolean).join(' ')}
+                            onClick={() => onTabSelect(tab.id)}
+                        >
+                            <span className="table-tab-bar__tab-name">{tab.name}</span>
+
+                            {/* Turn indicator — show timer or pulsing dot */}
+                            {!isActive && tab.isMyTurn && (
+                                <span className="table-tab-bar__turn-dot">
+                                    {tab.timeRemaining !== undefined && tab.timeRemaining < 15
+                                        ? `${tab.timeRemaining}s`
+                                        : ''}
+                                </span>
+                            )}
+
+                            {/* Close button — only on hover for non-sole tabs */}
+                            {tabs.length > 1 && (
+                                <button
+                                    className="table-tab-bar__close"
+                                    onClick={(e) => handleClose(e, tab.id)}
+                                    title="Close table"
+                                >
+                                    ×
+                                </button>
+                            )}
+                        </button>
+                    );
+                })}
+
+                {/* "+" Add Table Buttons — fill remaining slots */}
+                {Array.from({ length: Math.min(emptySlots, 2) }).map((_, i) => (
+                    <button
+                        key={`add-${i}`}
+                        className="table-tab-bar__add"
+                        onClick={onAddTable}
+                        title="Add table"
+                    >
+                        +
+                    </button>
+                ))}
+            </div>
+
+            {/* Jackpot Badge */}
+            {jackpotAmount !== undefined && jackpotAmount > 0 && (
+                <div className="table-tab-bar__jackpot">
+                    <span className="table-tab-bar__jackpot-label">JACKPOT</span>
+                    <span className="table-tab-bar__jackpot-amount">
+                        {jackpotAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                </div>
+            )}
+        </div>
+    );
+}
+
+export default TableTabBar;

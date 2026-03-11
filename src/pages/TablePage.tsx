@@ -245,8 +245,19 @@ if (!_win.__pokerLocks) {
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export default function TablePage() {
-    const { tableId } = useParams<{ tableId: string }>();
+// Props for embedded multi-table mode
+interface TablePageProps {
+    /** When set, overrides the URL :tableId param (used by MultiTablePage) */
+    embeddedTableId?: string;
+    /** Callback to report table info updates to the multi-table container */
+    onTableInfoUpdate?: (info: { name?: string; stakes?: string; isMyTurn?: boolean; timeRemaining?: number; pot?: number }) => void;
+    /** Whether this table is part of a multi-table session (hides own header if tab bar is shown) */
+    isMultiTable?: boolean;
+}
+
+export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiTable = false }: TablePageProps = {}) {
+    const { tableId: routeTableId } = useParams<{ tableId: string }>();
+    const tableId = embeddedTableId || routeTableId;
     const navigate = useNavigate();
     const toast = useToast();
 
@@ -422,6 +433,22 @@ export default function TablePage() {
     const [winnerInfo, setWinnerInfo] = useState<{ playerIds: string[]; handName: string; cardIndices: number[] }>({
         playerIds: [], handName: '', cardIndices: [],
     });
+
+    // ─── Multi-table info reporting ─────────────────────────────────────
+    // When embedded in MultiTablePage, report table name/pot/turn status
+    useEffect(() => {
+        if (!onTableInfoUpdate) return;
+        const isHeroTurn = tableState.currentPlayerSeat === tableState.heroSeat && tableState.isHandInProgress;
+        onTableInfoUpdate({
+            name: tableState.tableName !== 'Loading...' ? `${tableState.gameType} ${tableState.blinds}` : undefined,
+            stakes: tableState.blinds !== '?/?' ? tableState.blinds : undefined,
+            isMyTurn: isHeroTurn,
+            timeRemaining: isHeroTurn ? actionTimeRemaining : undefined,
+            pot: tableState.pot,
+        });
+    }, [tableState.tableName, tableState.gameType, tableState.blinds, tableState.pot,
+        tableState.currentPlayerSeat, tableState.heroSeat, tableState.isHandInProgress,
+        actionTimeRemaining, onTableInfoUpdate]);
 
     // Bad Beat Jackpot state
     const [showBBJ, setShowBBJ] = useState(false);
