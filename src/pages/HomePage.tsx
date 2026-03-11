@@ -9,7 +9,7 @@
  * - Accessibility: ARIA, focus traps, keyboard nav, offline indicator
  */
 
-import { useState, useEffect, useRef, useCallback, lazy, Suspense, Component, useMemo, type RefObject } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense, Component, useMemo } from 'react';
 import type { ReactNode, ErrorInfo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';

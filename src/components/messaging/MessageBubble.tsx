@@ -5,7 +5,7 @@
  * Features: Sender info, reactions, thread indicator, image support, rich interactions
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import styles from './ChatBubble.module.css';
 import { ImageThumbnail, ImageLightbox } from './ImageMessage';
 import EmojiReactions from './EmojiReactions';
@@ -63,7 +63,7 @@ export default function MessageBubble({
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
-    const linkifyText = (text: string): (string | JSX.Element)[] => {
+    const linkifyText = (text: string): (string | ReactNode)[] => {
         const urlRegex = /(https?:\/\/[^\s]+)/g;
         const parts = text.split(urlRegex);
         return parts.map((part, idx) => {

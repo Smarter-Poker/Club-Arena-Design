@@ -74,14 +74,14 @@ export interface BusPayloadMap {
     NOTIFICATION_READ: { notifId: string | null; allRead: boolean };
     WAITLIST_POSITION_CHANGED: { tableId: string; position: number; tableName: string };
     SESSION_SUMMARY_DISMISSED: { tableId: string };
-    // Gameplay events
-    HAND_WON: Record<string, unknown>;
-    HAND_COMPLETED: Record<string, unknown>;
-    FLOP_SEEN: Record<string, unknown>;
-    ALL_IN_WON: Record<string, unknown>;
-    BIG_POT_WON: Record<string, unknown>;
-    PREFLOP_WIN: Record<string, unknown>;
-    FLUSH_WIN: Record<string, unknown>;
+    // Gameplay events — strict payload types (#7)
+    HAND_WON: { handId: string; winners: string[]; pot: number };
+    HAND_COMPLETED: { handId: string; tableId: string };
+    FLOP_SEEN: { handId: string; tableId: string };
+    ALL_IN_WON: { handId: string; playerId: string; pot: number };
+    BIG_POT_WON: { handId: string; pot: number };
+    PREFLOP_WIN: { handId: string; playerId: string };
+    FLUSH_WIN: { handId: string; playerId: string };
     PLAY_MINUTES: { minutes: number };
     // UI customization
     CARD_COLOR_CHANGED: { preset: string };
@@ -138,9 +138,17 @@ export interface MasterBusStatus {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 type EventHandler<T = unknown> = (event: BusEvent<T>) => void;
+type EventLogEntry = BusEvent & { id: number };
+type OnEventCallback = (entry: EventLogEntry) => void;
 
 // Auto-incrementing subscriber ID for unique debounce timer keys
 let _subscriberIdCounter = 0;
+let _eventLogIdCounter = 0;
+
+// Critical events that trigger SW notification + Supabase log
+const CRITICAL_EVENTS: BusEventType[] = [
+    'BALANCE_UPDATED', 'CLUB_JOINED', 'CLUB_LEFT', 'TABLE_SEATED', 'TABLE_LEFT',
+];
 
 class MasterBusCore {
     private subscribers: Map<BusEventType, Set<EventHandler>> = new Map();
@@ -155,6 +163,14 @@ class MasterBusCore {
 
     // #4: Channel health monitor interval
     private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
+
+    // #9 Event log for DevTools dashboard (capped at 200)
+    private eventLog: EventLogEntry[] = [];
+    private onEventCallbacks: Set<OnEventCallback> = new Set();
+    private static MAX_EVENT_LOG = 200;
+
+    // #4b Channel factory registry for auto-recovery
+    private channelFactoryRegistry: Map<string, () => void> = new Map();
 
     /**
      * Initialize the Master Bus
@@ -280,6 +296,15 @@ class MasterBusCore {
             timestamp: new Date().toISOString(),
         };
 
+        // #9: Log to event log for DevTools dashboard
+        const logEntry: EventLogEntry = { ...event as BusEvent, id: ++_eventLogIdCounter };
+        this.eventLog.push(logEntry);
+        if (this.eventLog.length > MasterBusCore.MAX_EVENT_LOG) {
+            this.eventLog = this.eventLog.slice(-MasterBusCore.MAX_EVENT_LOG);
+        }
+        // Notify live DevTools listeners
+        this.onEventCallbacks.forEach(cb => { try { cb(logEntry); } catch { /* */ } });
+
         // #8: Log Sentry breadcrumb for every event
         try {
             if (typeof window !== 'undefined' && (window as any).__SENTRY__) {
@@ -293,6 +318,18 @@ class MasterBusCore {
                 }).catch(() => { /* Sentry not available */ });
             }
         } catch { /* silent */ }
+
+        // #9b: Forward critical events to Service Worker for background notifications
+        if (CRITICAL_EVENTS.includes(type)) {
+            try {
+                if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'BUS_EVENT',
+                        event: { type, payload, timestamp: event.timestamp },
+                    });
+                }
+            } catch { /* SW not available */ }
+        }
 
         const handlers = this.subscribers.get(type);
         if (handlers) {
@@ -394,8 +431,11 @@ class MasterBusCore {
             supabase.removeChannel(channel);
         });
         this.channelRegistry.clear();
+        this.channelFactoryRegistry.clear();
         this.debouncedTimers.forEach(timer => clearTimeout(timer));
         this.debouncedTimers.clear();
+        this.eventLog = [];
+        this.onEventCallbacks.clear();
         // #4: Stop health monitor
         if (this.healthCheckInterval) {
             clearInterval(this.healthCheckInterval);
@@ -505,12 +545,26 @@ class MasterBusCore {
             this.channelRegistry.forEach((channel, key) => {
                 const state = (channel as any).state;
                 if (state === 'closed' || state === 'errored') {
-                    console.warn(`🚌 [HEALTH] Dead channel detected: "${key}" (state: ${state}) — auto-removing`);
+                    console.warn(`🚌 [HEALTH] Dead channel detected: "${key}" (state: ${state})`);
                     deadChannels.push(key);
                 }
             });
 
-            deadChannels.forEach(key => this.removeRegisteredChannel(key));
+            deadChannels.forEach(key => {
+                // #4b: Auto-recovery — try to re-create via factory if registered
+                const factory = this.channelFactoryRegistry.get(key);
+                this.removeRegisteredChannel(key);
+                if (factory) {
+                    console.log(`🚌 [HEALTH] Auto-recovering channel: "${key}"`);
+                    try {
+                        factory();
+                    } catch (e) {
+                        console.error(`🚌 [HEALTH] Recovery failed for "${key}":`, e);
+                    }
+                } else {
+                    console.warn(`🚌 [HEALTH] No factory for "${key}" — removed only`);
+                }
+            });
         }, 30_000); // Every 30 seconds
     }
 
@@ -526,6 +580,8 @@ class MasterBusCore {
         channels: { key: string; state: string }[];
         pendingTimers: number;
         initialized: boolean;
+        eventLogSize: number;
+        channelFactories: number;
     } {
         const subscribers: Record<string, number> = {};
         this.subscribers.forEach((handlers, event) => {
@@ -542,7 +598,43 @@ class MasterBusCore {
             channels,
             pendingTimers: this.debouncedTimers.size,
             initialized: this.initialized,
+            eventLogSize: this.eventLog.length,
+            channelFactories: this.channelFactoryRegistry.size,
         };
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // #9: EVENT LOG — DevTools dashboard live feed
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /** Get the event log (newest last) */
+    getEventLog(): EventLogEntry[] {
+        return [...this.eventLog];
+    }
+
+    /** Clear the event log */
+    clearEventLog(): void {
+        this.eventLog = [];
+    }
+
+    /** Register a live callback for new events (returns unsubscribe fn) */
+    onEvent(callback: OnEventCallback): () => void {
+        this.onEventCallbacks.add(callback);
+        return () => { this.onEventCallbacks.delete(callback); };
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // #4b: CHANNEL FACTORY REGISTRY — For auto-recovery
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /** Register a factory function for a channel key (enables auto-recovery) */
+    registerChannelFactory(key: string, factory: () => void): void {
+        this.channelFactoryRegistry.set(key, factory);
+    }
+
+    /** Remove a channel factory */
+    removeChannelFactory(key: string): void {
+        this.channelFactoryRegistry.delete(key);
     }
 }
 

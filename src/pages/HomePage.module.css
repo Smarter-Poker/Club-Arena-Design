@@ -1162,6 +1162,29 @@
         height: 407px;
     }
 
+    .clubCarousel {
+        gap: 14px;
+        padding: 12px 20px 24px 20px;
+    }
+
+    .carouselCard {
+        width: 180px;
+    }
+
+    .carouselCardFeatured {
+        width: 240px;
+    }
+
+    .carouselCardTitle {
+        font-size: 11px;
+    }
+
+    .carouselCardIcon,
+    .carouselCardLogo {
+        width: 52px;
+        height: 52px;
+    }
+
     .clubCardsRow {
         gap: 12px;
         overflow-x: auto;
@@ -1193,6 +1216,33 @@
     .cardSkeleton {
         width: 200px;
         height: 340px;
+    }
+
+    .clubCarousel {
+        gap: 10px;
+        padding: 8px 12px 20px 12px;
+    }
+
+    .carouselCard {
+        width: 150px;
+    }
+
+    .carouselCardFeatured {
+        width: 200px;
+    }
+
+    .carouselCardTitle {
+        font-size: 10px;
+    }
+
+    .carouselCardIcon,
+    .carouselCardLogo {
+        width: 44px;
+        height: 44px;
+    }
+
+    .carouselCardIcon {
+        font-size: 20px;
     }
 
     .clubCard {
@@ -1246,6 +1296,37 @@
     .cardSkeleton {
         width: 170px;
         height: 289px;
+    }
+
+    .clubCarousel {
+        gap: 8px;
+        padding: 6px 8px 16px 8px;
+    }
+
+    .carouselCard {
+        width: 130px;
+    }
+
+    .carouselCardFeatured {
+        width: 170px;
+    }
+
+    .carouselCardTitle {
+        font-size: 9px;
+    }
+
+    .carouselCardFace {
+        padding: 14px 10px;
+    }
+
+    .carouselCardIcon,
+    .carouselCardLogo {
+        width: 36px;
+        height: 36px;
+    }
+
+    .carouselCardIcon {
+        font-size: 16px;
     }
 
     .clubCard {
