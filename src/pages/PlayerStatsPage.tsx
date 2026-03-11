@@ -354,6 +354,30 @@ export default function PlayerStatsPage() {
                     </div>
                 )}
 
+                {category === 'advanced' && (
+                    <div style={{ opacity: 1, transform: 'translateY(0)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
+                        <AdvancedStatsSummary />
+                    </div>
+                )}
+
+                {category === 'positions' && (
+                    <div style={{ opacity: 1, transform: 'translateY(0)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
+                        <PositionWinRates />
+                    </div>
+                )}
+
+                {category === 'sessions' && (
+                    <div style={{ opacity: 1, transform: 'translateY(0)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
+                        <SessionHistory />
+                    </div>
+                )}
+
+                {category === 'bankroll' && (
+                    <div style={{ opacity: 1, transform: 'translateY(0)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
+                        <BankrollTracker />
+                    </div>
+                )}
+
                 {category === 'charts' && (
                     <div
                         className="charts-section"

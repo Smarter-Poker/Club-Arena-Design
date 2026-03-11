@@ -126,11 +126,11 @@ const SessionHistory: React.FC = () => {
 
   const getTotalProfit = () => sessions.reduce((sum, s) => sum + s.profitLoss, 0);
   const getWinningSessions = () => sessions.filter(s => s.profitLoss > 0).length;
-  const getWinRate = () => sessions.length > 0 ? ((getWinningSessions() / sessions.length) * 100).toFixed(1) : 0;
+  const getWinRate = () => sessions.length > 0 ? ((getWinningSessions() / sessions.length) * 100).toFixed(1) : '0';
   const getAverageHourlyRate = () =>
     sessions.length > 0
       ? (sessions.reduce((sum, s) => sum + (s.hourlyRate || 0), 0) / sessions.length).toFixed(2)
-      : 0;
+      : '0';
 
   return (
     <div className="session-history">
