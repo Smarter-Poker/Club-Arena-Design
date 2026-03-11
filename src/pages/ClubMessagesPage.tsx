@@ -11,6 +11,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
+import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import MessageThread from '../components/messaging/MessageThread';
 import './ClubMessagesPage.css';
@@ -33,6 +34,7 @@ export default function ClubMessagesPage() {
     clubId?: string;
   }>();
   const { user } = useUserStore();
+  const toast = useToast();
 
   const [conversations, setConversations] = useState<ClubConversation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,6 +110,7 @@ export default function ClubMessagesPage() {
       setConversations(mapped);
     } catch (error) {
       console.error('Failed to load club conversations:', error);
+      toast.error('Failed to load club conversations');
     }
     setLoading(false);
   }, [user?.id]);

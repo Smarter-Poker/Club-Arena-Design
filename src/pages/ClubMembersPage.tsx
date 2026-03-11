@@ -7,6 +7,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import { masterBus } from '../core/MasterBus';
+import { useToast } from '../components/common/Toast';
 import { useVirtualScroll } from '../hooks/useVirtualScroll';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import './ClubMembersPage.css';
@@ -394,6 +395,7 @@ export default function ClubMembersPage() {
   const { clubId: routeClubId } = useParams();
   const clubId = routeClubId || searchParams.get('club') || undefined;
   const { user } = useUserStore();
+  const toast = useToast();
 
   const [members, setMembers] = useState<ClubMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -460,6 +462,7 @@ export default function ClubMembersPage() {
       }
     } catch (error) {
       console.error('Failed to load members:', error);
+      toast.error('Failed to load members');
     }
     setLoading(false);
   }, [clubId, user?.id, onlineUserIds]);

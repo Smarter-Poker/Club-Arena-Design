@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useDebounce } from '../hooks/useDebounce';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { masterBus } from '../core/MasterBus';
 import { useToast } from '../components/common/Toast';
 import './SearchPage.css';
 
@@ -141,6 +142,15 @@ export default function SearchPage() {
   useEffect(() => {
     search(debouncedQuery);
   }, [debouncedQuery, search]);
+
+  // ── Bus Listeners: re-search when data changes from other pages ──
+  useEffect(() => {
+    const refresh = () => { if (query.trim()) search(query); };
+    const unsubClub = masterBus.subscribe('CLUB_UPDATED', refresh);
+    const unsubProfile = masterBus.subscribe('PROFILE_UPDATED', refresh);
+    const unsubJoined = masterBus.subscribe('CLUB_JOINED', refresh);
+    return () => { unsubClub(); unsubProfile(); unsubJoined(); };
+  }, [query, search]);
 
   const getIcon = (type: string): string => {
     switch (type) {
