@@ -159,7 +159,7 @@ export const WalletService = {
 
         // 4. Determine who receives the minted chips
         const mintRecipientId = club.union_id
-            ? (await supabase.from('unions').select('owner_id').eq('id', club.union_id).single()).data?.owner_id
+            ? (await supabase.from('unions').select('owner_id').eq('id', club.union_id).maybeSingle()).data?.owner_id
             : club.owner_id;
 
         // 5. Log mint transaction with full audit trail

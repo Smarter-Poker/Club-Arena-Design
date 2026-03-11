@@ -189,6 +189,7 @@ export default function FriendsPage() {
                 .eq('id', friendshipId);
             if (error) throw error;
             loadFriends();
+            toast.success('Friend request declined');
         } catch (err) {
             console.error('[Friends] Failed to decline request:', err);
             toast.error('Failed to decline request');

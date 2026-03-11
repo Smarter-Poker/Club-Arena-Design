@@ -159,6 +159,9 @@ export default function ClubAnnouncementsPage() {
         setShowComposer(false);
         loadAnnouncements();
         masterBus.emit('ANNOUNCEMENT_CHANGED', { clubId, action: 'created' });
+        toast.success('Announcement posted!');
+      } else if (error) {
+        toast.error('Failed to post announcement');
       }
     } catch (error) {
       console.error('Failed to post announcement:', error);
@@ -184,6 +187,9 @@ export default function ClubAnnouncementsPage() {
 
       if (!error) {
         loadAnnouncements();
+        toast.success(currentlyPinned ? 'Announcement unpinned' : 'Announcement pinned');
+      } else {
+        toast.error('Failed to update pin status');
       }
     } catch (err) {
       console.error('Failed to toggle pin:', err);
