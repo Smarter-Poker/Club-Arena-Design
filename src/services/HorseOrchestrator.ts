@@ -507,8 +507,10 @@ const SPIN_CONFIGS = [
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const MAX_TABLES_PER_HORSE = 4;
-const MAX_CASH_TABLES = 2;
-const MAX_TOURNAMENT_TABLES = 2;
+// Soft allocation targets for testing: 2 cash + 2 tournament for max game variety.
+// These are NOT hard limits — a horse CAN play 4 cash or 4 tournaments if needed.
+const TARGET_CASH_TABLES = 2;
+const TARGET_TOURNAMENT_TABLES = 2;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ORCHESTRATOR SINGLETON
@@ -642,6 +644,9 @@ class HorseOrchestrator {
         } catch (err: any) {
             this.logError(`Tournament launch failed: ${err.message}`);
         }
+
+        // Start proactive 4-table allocation loop
+        this.startAllocationLoop();
 
         // Broadcast launch event
         masterBus.emit('BALANCE_UPDATED', { source: 'orchestrator', tablesCreated, horsesSeated });
@@ -1122,6 +1127,7 @@ class HorseOrchestrator {
     async shutdown(): Promise<void> {
         console.log('[Orchestrator] Shutting down...');
         this.isRunning = false;
+        this.stopAllocationLoop();
 
         for (const [tableId, table] of this.tables) {
             table.status = 'stopping';
@@ -1156,26 +1162,13 @@ class HorseOrchestrator {
      * Check if a horse can sit at a table based on multi-table limits
      * MAX_TABLES_PER_HORSE = 4 total (2 cash + 2 tournament max)
      */
-    async canHorseSitAtTable(horseId: string, tableType: 'cash' | 'tournament'): Promise<boolean> {
+    async canHorseSitAtTable(horseId: string, _tableType: 'cash' | 'tournament'): Promise<boolean> {
         try {
             const activeTables = await this.getActiveTablesForHorse(horseId);
-            const cashCount = activeTables.filter(t => t.type === 'cash').length;
-            const tournamentCount = activeTables.filter(t => t.type === 'tournament').length;
 
-            // Total limit check
+            // Only enforce the 4-total limit. Horses can play any mix of cash/tournament.
             if (activeTables.length >= MAX_TABLES_PER_HORSE) {
                 console.warn(`[Orchestrator] Horse ${horseId} already at ${activeTables.length} tables (max: ${MAX_TABLES_PER_HORSE})`);
-                return false;
-            }
-
-            // Type-specific checks
-            if (tableType === 'cash' && cashCount >= MAX_CASH_TABLES) {
-                console.warn(`[Orchestrator] Horse ${horseId} already at ${cashCount} cash tables (max: ${MAX_CASH_TABLES})`);
-                return false;
-            }
-
-            if (tableType === 'tournament' && tournamentCount >= MAX_TOURNAMENT_TABLES) {
-                console.warn(`[Orchestrator] Horse ${horseId} already at ${tournamentCount} tournament tables (max: ${MAX_TOURNAMENT_TABLES})`);
                 return false;
             }
 
@@ -1379,6 +1372,192 @@ class HorseOrchestrator {
             console.log(`[Orchestrator] Cross-club membership complete: ${membershipsCreated} new memberships created`);
         } catch (err: any) {
             this.logError(`ensureHorsesInBothClubs error: ${err.message}`);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PROACTIVE 4-TABLE ALLOCATION — ensures horses always play 2 cash + 2 tourney
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Proactively ensure all active horses are seated at their target of 4 tables:
+     *   - 2 cash games
+     *   - 2 tournaments
+     * Runs on a 60-second interval. For each under-allocated horse, finds
+     * available seats at cash tables and registers for upcoming tournaments.
+     */
+    async ensureHorsesAt4Tables(): Promise<{ horsesAdjusted: number; cashSeats: number; tournamentRegs: number }> {
+        let horsesAdjusted = 0;
+        let cashSeats = 0;
+        let tournamentRegs = 0;
+
+        try {
+            // 1. Get all active horses
+            const { data: horses, error: horsesError } = await supabase
+                .from('profiles')
+                .select('id, display_name')
+                .eq('is_horse', true)
+                .in('horse_status', ['active', 'seated'])
+                .limit(350);
+
+            if (horsesError || !horses?.length) return { horsesAdjusted, cashSeats, tournamentRegs };
+
+            // 2. Get all active cash tables with available seats
+            const { data: cashTables } = await supabase
+                .from('tables')
+                .select('id, max_players, current_players, small_blind, big_blind')
+                .eq('status', 'active')
+                .neq('game_type', 'tournament')
+                .order('current_players', { ascending: true });
+
+            // 3. Get registering tournaments with available spots
+            const { data: regTournaments } = await supabase
+                .from('tournaments')
+                .select('id, name, max_players, current_players, club_id')
+                .in('status', ['REGISTERING', 'LATE_REG'])
+                .order('start_time', { ascending: true })
+                .limit(20);
+
+            // 4. For each horse, check allocation and fill gaps
+            for (const horse of horses) {
+                try {
+                    const activeTables = await this.getActiveTablesForHorse(horse.id);
+                    const cashCount = activeTables.filter(t => t.type === 'cash').length;
+                    const tourneyCount = activeTables.filter(t => t.type === 'tournament').length;
+
+                    // Skip if already at 4 tables total
+                    if (activeTables.length >= MAX_TABLES_PER_HORSE) continue;
+
+                    let adjusted = false;
+
+                    // Fill cash game seats (target: 2 for variety)
+                    if (cashCount < TARGET_CASH_TABLES && cashTables?.length) {
+                        const needed = TARGET_CASH_TABLES - cashCount;
+                        for (let i = 0; i < needed; i++) {
+                            // Find a table with an empty seat where horse isn't already sitting
+                            const currentTableIds = new Set(activeTables.map(t => t.tableId));
+                            const availableTable = cashTables.find(t =>
+                                !currentTableIds.has(t.id) &&
+                                (t.current_players || 0) < t.max_players
+                            );
+                            if (!availableTable) break;
+
+                            // Get next open seat number
+                            const { data: existingSeats } = await supabase
+                                .from('table_seats')
+                                .select('seat_number')
+                                .eq('table_id', availableTable.id)
+                                .is('left_at', null);
+                            const takenSeats = new Set((existingSeats || []).map(s => s.seat_number));
+                            let seatNumber = 1;
+                            while (takenSeats.has(seatNumber) && seatNumber <= availableTable.max_players) seatNumber++;
+                            if (seatNumber > availableTable.max_players) continue;
+
+                            const buyIn = (availableTable.big_blind || 1) * 100;
+                            const { error: seatError } = await supabase
+                                .from('table_seats')
+                                .insert({
+                                    table_id: availableTable.id,
+                                    user_id: horse.id,
+                                    seat_number: seatNumber,
+                                    stack: buyIn,
+                                    is_sitting_out: false,
+                                });
+                            if (!seatError) {
+                                await supabase.from('tables').update({
+                                    current_players: (availableTable.current_players || 0) + 1,
+                                }).eq('id', availableTable.id);
+                                availableTable.current_players = (availableTable.current_players || 0) + 1;
+                                this.updateHorseTableAssignment(horse.id, availableTable.id, true);
+                                cashSeats++;
+                                adjusted = true;
+                            }
+                        }
+                    }
+
+                    // Fill tournament seats (target: 2 for variety)
+                    if (tourneyCount < TARGET_TOURNAMENT_TABLES && regTournaments?.length) {
+                        const needed = TARGET_TOURNAMENT_TABLES - tourneyCount;
+                        for (let i = 0; i < needed; i++) {
+                            // Check which tournaments horse is already registered for
+                            const { data: existingRegs } = await supabase
+                                .from('tournament_players')
+                                .select('tournament_id')
+                                .eq('user_id', horse.id)
+                                .in('status', ['registered', 'playing']);
+                            const registeredIds = new Set((existingRegs || []).map(r => r.tournament_id));
+
+                            const availableTourney = regTournaments.find(t =>
+                                !registeredIds.has(t.id) &&
+                                (t.current_players || 0) < (t.max_players || 999)
+                            );
+                            if (!availableTourney) break;
+
+                            // Register horse for the tournament
+                            const { error: regError } = await supabase
+                                .from('tournament_players')
+                                .insert({
+                                    tournament_id: availableTourney.id,
+                                    user_id: horse.id,
+                                    status: 'registered',
+                                    chips: 0,
+                                    buy_in_amount: 0, // Horses play free
+                                });
+                            if (!regError) {
+                                await supabase.from('tournaments').update({
+                                    current_players: (availableTourney.current_players || 0) + 1,
+                                }).eq('id', availableTourney.id);
+                                availableTourney.current_players = (availableTourney.current_players || 0) + 1;
+                                tournamentRegs++;
+                                adjusted = true;
+                            }
+                        }
+                    }
+
+                    if (adjusted) {
+                        horsesAdjusted++;
+                        // Update horse status to seated if they were just 'active'
+                        await supabase
+                            .from('profiles')
+                            .update({ horse_status: 'seated' })
+                            .eq('id', horse.id);
+                    }
+                } catch (err: any) {
+                    // Continue to next horse on error
+                    console.warn(`[Orchestrator] ensureHorsesAt4Tables error for ${horse.display_name}: ${err.message}`);
+                }
+            }
+
+            if (horsesAdjusted > 0) {
+                console.log(`[Orchestrator] 4-table allocation: adjusted ${horsesAdjusted} horses (+${cashSeats} cash seats, +${tournamentRegs} tourney regs)`);
+            }
+        } catch (err: any) {
+            this.logError(`ensureHorsesAt4Tables error: ${err.message}`);
+        }
+
+        return { horsesAdjusted, cashSeats, tournamentRegs };
+    }
+
+    /**
+     * Start the proactive allocation loop (60-second interval)
+     */
+    private allocationInterval: ReturnType<typeof setInterval> | null = null;
+
+    startAllocationLoop(): void {
+        if (this.allocationInterval) return;
+        console.log('[Orchestrator] Starting proactive 4-table allocation loop (60s interval)');
+        // Run immediately, then every 60 seconds
+        this.ensureHorsesAt4Tables();
+        this.allocationInterval = setInterval(() => {
+            this.ensureHorsesAt4Tables();
+        }, 60_000);
+    }
+
+    stopAllocationLoop(): void {
+        if (this.allocationInterval) {
+            clearInterval(this.allocationInterval);
+            this.allocationInterval = null;
+            console.log('[Orchestrator] Stopped proactive 4-table allocation loop');
         }
     }
 
