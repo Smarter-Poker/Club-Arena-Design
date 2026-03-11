@@ -1,0 +1,44 @@
+/**
+ * Pot Odds Display — Real-time pot odds calculator
+ */
+
+.pot-odds {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-radius: 8px;
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    font-size: 0.625rem;
+    line-height: 1.2;
+    color: rgba(255, 255, 255, 0.8);
+    animation: potOddsFadeIn 0.25s ease;
+    pointer-events: none;
+}
+
+@keyframes potOddsFadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.pot-odds__label {
+    color: rgba(255, 255, 255, 0.45);
+    font-weight: 400;
+    font-size: 0.5625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.pot-odds__ratio {
+    color: #3b82f6;
+    font-weight: 700;
+}
+
+.pot-odds__pct {
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 400;
+}

@@ -1,0 +1,81 @@
+/**
+ * Mini-HUD — Opponent statistics overlay
+ * Shows VPIP/PFR with heat indicator dot
+ */
+
+.mini-hud {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-family: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', monospace;
+    font-size: 0.5625rem;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.85);
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+    animation: hudFadeIn 0.3s ease;
+}
+
+@keyframes hudFadeIn {
+    from { opacity: 0; transform: translateY(2px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.mini-hud--compact {
+    padding: 1px 4px;
+    gap: 3px;
+    font-size: 0.5rem;
+    border-radius: 4px;
+}
+
+.mini-hud__heat {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: background-color 0.5s ease, box-shadow 0.5s ease;
+}
+
+.mini-hud--compact .mini-hud__heat {
+    width: 5px;
+    height: 5px;
+}
+
+.mini-hud__stat {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+}
+
+.mini-hud__value {
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.mini-hud__slash {
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 400;
+}
+
+.mini-hud__hands {
+    font-size: 0.5rem;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 400;
+    margin-left: 2px;
+}
+
+/* Responsive */
+@media (max-width: 380px) {
+    .mini-hud {
+        padding: 1px 4px;
+        gap: 3px;
+        font-size: 0.5rem;
+    }
+}

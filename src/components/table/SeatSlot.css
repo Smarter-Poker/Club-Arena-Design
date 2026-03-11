@@ -600,7 +600,7 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .seat__cards--dealing .seat__card {
-    animation: cardDealIn 0.25s ease-out forwards;
+    animation: cardDealIn calc(0.25s * var(--animation-speed, 1)) ease-out forwards;
     opacity: 0;
 }
 
@@ -632,7 +632,7 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .seat__cards--folding .seat__card {
-    animation: cardFoldOut 0.3s ease-in forwards;
+    animation: cardFoldOut calc(0.3s * var(--animation-speed, 1)) ease-in forwards;
 }
 
 .seat__cards--folding .seat__card:nth-child(2) {
@@ -655,7 +655,7 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .seat__cards--showdown .seat__card {
-    animation: cardShowdownFlip 0.35s ease-out forwards;
+    animation: cardShowdownFlip calc(0.35s * var(--animation-speed, 1)) ease-out forwards;
     perspective: 600px;
 }
 

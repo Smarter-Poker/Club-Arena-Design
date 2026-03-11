@@ -650,6 +650,93 @@ class SoundService {
         }, 180);
     }
 
+    /**
+     * Seat Taken — short chime when a new player sits down
+     */
+    playSeatTaken() {
+        if (!this.enabled || !this.ensureContext()) return;
+        const now = this.ctx!.currentTime;
+        const gain = this.createGain(0.12);
+
+        // Short ascending two-note chime
+        const osc = this.ctx!.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.setValueAtTime(1100, now + 0.08);
+        osc.connect(gain);
+        osc.start(now);
+        osc.stop(now + 0.15);
+        haptic.light();
+    }
+
+    /**
+     * New Hand — subtle "new hand starting" indicator
+     */
+    playNewHand() {
+        if (!this.enabled || !this.ensureContext()) return;
+        const now = this.ctx!.currentTime;
+        const gain = this.createGain(0.08);
+
+        // Soft double-tap
+        for (let i = 0; i < 2; i++) {
+            const osc = this.ctx!.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.value = 600;
+            const env = this.ctx!.createGain();
+            env.gain.setValueAtTime(0.6, now + i * 0.07);
+            env.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.04);
+            osc.connect(env);
+            env.connect(gain);
+            osc.start(now + i * 0.07);
+            osc.stop(now + i * 0.07 + 0.05);
+        }
+    }
+
+    /**
+     * Reconnect — connection restored sound
+     */
+    playReconnect() {
+        if (!this.enabled || !this.ensureContext()) return;
+        const now = this.ctx!.currentTime;
+        const gain = this.createGain(0.15);
+
+        // Rising three-note chime (connection restored)
+        [523, 659, 784].forEach((freq, i) => {
+            const osc = this.ctx!.createOscillator();
+            osc.type = 'sine';
+            const env = this.ctx!.createGain();
+            env.gain.setValueAtTime(0.5, now + i * 0.1);
+            env.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.2);
+            osc.frequency.value = freq;
+            osc.connect(env);
+            env.connect(gain);
+            osc.start(now + i * 0.1);
+            osc.stop(now + i * 0.1 + 0.25);
+        });
+        haptic.medium();
+    }
+
+    /**
+     * Check if sounds should play
+     */
+    private shouldPlay(): boolean {
+        if (this.ctx!.state === 'suspended') {
+            this.ctx!.resume().catch(() => {});
+            return false;
+        }
+        return this.masterVolume > 0 && this.effectsVolume > 0;
+    }
+
+    /**
+     * Create a gain node with automatic volume scaling
+     */
+    private createGain(volume: number): GainNode {
+        const gain = this.ctx!.createGain();
+        gain.gain.value = volume * this.masterVolume * this.effectsVolume;
+        gain.connect(this.out);
+        return gain;
+    }
+
     // ─── Cleanup ─────────────────────────────────────────────────────────
 
     destroy() {

@@ -152,3 +152,15 @@ export { SessionStatsTracker } from './SessionStatsTracker';
 // Quick Action Bar
 export { QuickActionBar } from './QuickActionBar';
 
+// Mini-HUD (Opponent Statistics)
+export { default as MiniHUD } from './MiniHUD';
+export type { MiniHUDProps, MiniHUDStats } from './MiniHUD';
+
+// Pot Odds Calculator
+export { default as PotOddsDisplay } from './PotOddsDisplay';
+export type { PotOddsDisplayProps } from './PotOddsDisplay';
+
+// Equity Display (All-In) - Multi-Player Support
+export { EquityBar, MultiPlayerEquityDisplay } from './EquityDisplay';
+export type { EquityBarProps, MultiPlayerEquityDisplayProps } from './EquityDisplay';
+
