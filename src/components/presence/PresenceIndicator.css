@@ -26,22 +26,23 @@
 
 .presence-dot.status-online {
     background: #22c55e;
-    box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .presence-dot.status-away {
     background: #fbbf24;
-    box-shadow: 0 0 6px rgba(251, 191, 36, 0.5);
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .presence-dot.status-playing {
     background: #3b82f6;
-    box-shadow: 0 0 6px rgba(59, 130, 246, 0.5);
-    animation: pulse 2s infinite;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    animation: pulse 2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) infinite;
 }
 
 .presence-dot.status-offline {
     background: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 @keyframes pulse {

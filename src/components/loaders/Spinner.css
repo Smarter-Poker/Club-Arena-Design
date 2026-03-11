@@ -2,6 +2,7 @@
     border-style: solid;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
+    filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.3));
 }
 
 .spinner.size-small {

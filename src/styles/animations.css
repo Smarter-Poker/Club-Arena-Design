@@ -438,43 +438,43 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 .animate-fade-in {
-    animation: fadeIn 0.3s ease-out forwards;
+    animation: fadeIn 0.3s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) forwards;
 }
 
 .animate-fade-in-up {
-    animation: fadeInUp 0.4s ease-out forwards;
+    animation: fadeInUp 0.4s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) forwards;
 }
 
 .animate-fade-in-down {
-    animation: fadeInDown 0.4s ease-out forwards;
+    animation: fadeInDown 0.4s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) forwards;
 }
 
 .animate-scale-in {
-    animation: scaleIn 0.3s ease-out forwards;
+    animation: scaleIn 0.3s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) forwards;
 }
 
 .animate-pop-in {
-    animation: popIn 0.4s ease-out forwards;
+    animation: popIn 0.4s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) forwards;
 }
 
 .animate-slide-in-bottom {
-    animation: slideInFromBottom 0.4s ease-out forwards;
+    animation: slideInFromBottom 0.4s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) forwards;
 }
 
 .animate-slide-in-left {
-    animation: slideInFromLeft 0.4s ease-out forwards;
+    animation: slideInFromLeft 0.4s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) forwards;
 }
 
 .animate-slide-in-right {
-    animation: slideInFromRight 0.4s ease-out forwards;
+    animation: slideInFromRight 0.4s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) forwards;
 }
 
 .animate-bounce-in {
-    animation: bounceIn 0.5s ease-out forwards;
+    animation: bounceIn 0.5s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) forwards;
 }
 
 .animate-flip-in {
-    animation: flipIn 0.5s ease-out forwards;
+    animation: flipIn 0.5s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) forwards;
 }
 
 /* Stagger delays for lists */
@@ -520,7 +520,7 @@
 
 /* Hover effects */
 .hover-lift {
-    transition: transform 0.2s ease;
+    transition: transform 0.2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .hover-lift:hover {
@@ -528,7 +528,7 @@
 }
 
 .hover-glow {
-    transition: box-shadow 0.2s ease;
+    transition: box-shadow 0.2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .hover-glow:hover {
@@ -536,7 +536,7 @@
 }
 
 .hover-scale {
-    transition: transform 0.2s ease;
+    transition: transform 0.2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .hover-scale:hover {

@@ -16,7 +16,9 @@
     align-items: center;
     justify-content: center;
     z-index: 600;
-    animation: fadeIn 0.2s ease;
+    animation: fadeIn 0.2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    backdrop-filter: blur(4px) saturate(1.1);
+    -webkit-backdrop-filter: blur(4px) saturate(1.1);
 }
 
 @keyframes fadeIn {
@@ -42,9 +44,11 @@
     background: linear-gradient(180deg, #1C2128 0%, #161B22 100%);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 20px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
     overflow: hidden;
-    animation: slideUp 0.3s ease;
+    animation: slideUp 0.3s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
 }
 
 @keyframes slideUp {
@@ -70,6 +74,8 @@
     padding: 16px 20px;
     background: rgba(0, 0, 0, 0.4);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px) saturate(1.2);
+    -webkit-backdrop-filter: blur(10px) saturate(1.2);
 }
 
 .insurance-modal__title-row {
@@ -97,6 +103,9 @@
     background: rgba(255, 184, 0, 0.2);
     border-radius: 8px;
     color: #FFB800;
+    backdrop-filter: blur(8px) saturate(1.2);
+    -webkit-backdrop-filter: blur(8px) saturate(1.2);
+    box-shadow: 0 0 8px rgba(255, 184, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -191,7 +200,8 @@
     height: 100%;
     background: linear-gradient(90deg, #3FB950 0%, #2EA043 100%);
     border-radius: 4px;
-    transition: width 0.3s ease;
+    transition: width 0.3s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: 0 0 8px rgba(63, 185, 80, 0.4);
 }
 
 .insurance-modal__equity-text {
@@ -210,6 +220,8 @@
     padding: 16px 20px;
     background: rgba(0, 0, 0, 0.2);
     border-top: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(8px) saturate(1.2);
+    -webkit-backdrop-filter: blur(8px) saturate(1.2);
 }
 
 .insurance-modal__coverage-label {
@@ -255,17 +267,22 @@
     border-radius: 6px;
     color: #8B949E;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.15s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    backdrop-filter: blur(6px) saturate(1.2);
+    -webkit-backdrop-filter: blur(6px) saturate(1.2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .insurance-modal__preset:hover {
     background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
 }
 
 .insurance-modal__preset--active {
     background: rgba(24, 119, 242, 0.2);
     border-color: #1877F2;
     color: #1877F2;
+    box-shadow: 0 0 10px rgba(24, 119, 242, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -275,6 +292,8 @@
 .insurance-modal__summary {
     padding: 16px 20px;
     background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(8px) saturate(1.2);
+    -webkit-backdrop-filter: blur(8px) saturate(1.2);
 }
 
 .insurance-modal__summary-row {
@@ -330,24 +349,29 @@
     border: none;
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.15s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .insurance-modal__btn--decline {
     background: rgba(255, 255, 255, 0.1);
     color: #8B949E;
+    backdrop-filter: blur(8px) saturate(1.2);
+    -webkit-backdrop-filter: blur(8px) saturate(1.2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 .insurance-modal__btn--decline:hover {
     background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
 }
 
 .insurance-modal__btn--accept {
     background: linear-gradient(135deg, #1877F2 0%, #0D5CB8 100%);
     color: #FFFFFF;
+    box-shadow: 0 0 16px rgba(24, 119, 242, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .insurance-modal__btn--accept:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(24, 119, 242, 0.4);
+    box-shadow: 0 0 20px rgba(24, 119, 242, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }

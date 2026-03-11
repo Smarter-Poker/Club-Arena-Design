@@ -7,6 +7,9 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     overflow: hidden;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 .transaction-history.loading {
@@ -50,11 +53,12 @@
     gap: 12px;
     padding: 12px 16px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-    transition: background 0.15s;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.15s;
 }
 
 .transaction-row:hover {
     background: rgba(255, 255, 255, 0.02);
+    transform: translateY(-1px);
 }
 
 .transaction-row .icon {

@@ -9,12 +9,15 @@
     border: 2px dashed rgba(255, 255, 255, 0.15);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.2s;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .file-upload:hover {
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 215, 0, 0.4);
+    transform: translateY(-2px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 16px rgba(255, 215, 0, 0.2);
 }
 
 .upload-icon {

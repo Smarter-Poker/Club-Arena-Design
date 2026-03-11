@@ -7,6 +7,9 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     overflow: hidden;
+    backdrop-filter: blur(10px) saturate(1.2);
+    -webkit-backdrop-filter: blur(10px) saturate(1.2);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 .payout-structure__header {

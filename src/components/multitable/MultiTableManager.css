@@ -63,12 +63,14 @@
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
     cursor: pointer;
-    transition: all var(--transition-base);
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
     min-width: 120px;
 }
 
 .table-tab:hover {
     border-color: var(--fb-blue);
+    transform: translateY(-1px);
+    box-shadow: 0 0 12px rgba(24, 119, 242, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .table-tab.active {
@@ -77,7 +79,8 @@
 }
 
 .table-tab.my-turn {
-    animation: turnPulse 1s ease-in-out infinite;
+    animation: turnPulse 1s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) infinite;
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.4);
 }
 
 @keyframes turnPulse {

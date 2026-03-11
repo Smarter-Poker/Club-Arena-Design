@@ -66,6 +66,15 @@
     border-radius: var(--radius-lg);
     padding: var(--space-4);
     text-align: center;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 20px rgba(24, 119, 242, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .stat-label {
@@ -98,6 +107,9 @@
     border-radius: var(--radius-lg);
     padding: var(--space-4);
     margin-bottom: var(--space-4);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .chart-section h3 {
@@ -142,6 +154,15 @@
     border-radius: var(--radius-lg);
     padding: var(--space-4);
     margin-bottom: var(--space-3);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.2s;
+}
+
+.leak-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 12px rgba(24, 119, 242, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .leak-icon {

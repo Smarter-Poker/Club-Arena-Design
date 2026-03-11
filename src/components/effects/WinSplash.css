@@ -21,7 +21,8 @@
 
 .splash-content {
     text-align: center;
-    animation: contentPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation: contentPop 0.4s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    filter: drop-shadow(0 0 30px rgba(74, 222, 128, 0.6));
 }
 
 @keyframes contentPop {
@@ -37,7 +38,8 @@
 }
 
 .win-splash.royal-flush .splash-content {
-    animation: royalGlow 0.5s ease-out;
+    animation: royalGlow 0.5s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    filter: drop-shadow(0 0 50px rgba(255, 215, 0, 0.8));
 }
 
 @keyframes royalGlow {
@@ -74,7 +76,7 @@
     color: #ffd700;
     text-transform: uppercase;
     letter-spacing: 4px;
-    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.6), 0 0 40px rgba(255, 215, 0, 0.3);
     margin-bottom: 10px;
 }
 

@@ -9,6 +9,9 @@
     padding: var(--space-2) var(--space-3);
     background: var(--bg-secondary);
     border-radius: var(--radius-lg);
+    backdrop-filter: blur(12px) saturate(1.3);
+    -webkit-backdrop-filter: blur(12px) saturate(1.3);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .timer-display {
@@ -69,7 +72,10 @@
     background: linear-gradient(135deg, rgba(241, 196, 15, 0.1), rgba(243, 156, 18, 0.05));
     border: 1px solid rgba(241, 196, 15, 0.3);
     border-radius: var(--radius-md);
-    animation: slideIn 0.3s ease;
+    animation: slideIn 0.3s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    backdrop-filter: blur(8px) saturate(1.2);
+    -webkit-backdrop-filter: blur(8px) saturate(1.2);
+    box-shadow: 0 0 12px rgba(241, 196, 15, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 @keyframes slideIn {
@@ -120,16 +126,29 @@
     font-size: var(--fs-xs);
     font-weight: var(--fw-bold);
     cursor: pointer;
+    transition: all 0.15s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .snooze-btn {
     background: var(--bg-card);
     color: var(--text-secondary);
+    backdrop-filter: blur(8px) saturate(1.2);
+    -webkit-backdrop-filter: blur(8px) saturate(1.2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.snooze-btn:hover {
+    transform: translateY(-1px);
 }
 
 .take-btn {
     background: var(--accent-green);
     color: white;
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.take-btn:hover {
+    transform: translateY(-1px);
 }
 
 .breaks-count {

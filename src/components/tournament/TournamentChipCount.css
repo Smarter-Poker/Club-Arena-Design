@@ -7,6 +7,9 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     overflow: hidden;
+    backdrop-filter: blur(10px) saturate(1.2);
+    -webkit-backdrop-filter: blur(10px) saturate(1.2);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 .chip-count.loading {
@@ -46,11 +49,12 @@
     gap: 10px;
     padding: 8px 10px;
     border-radius: 8px;
-    transition: background 0.15s;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.15s;
 }
 
 .leader-row:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-1px);
 }
 
 .leader-row.rank-1 {

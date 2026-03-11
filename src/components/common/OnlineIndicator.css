@@ -10,7 +10,7 @@
 
 .indicator-dot {
     border-radius: 50%;
-    animation: pulse 2s ease-in-out infinite;
+    animation: pulse 2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) infinite;
 }
 
 /* Sizes */
@@ -32,24 +32,24 @@
 /* Status Colors */
 .online-indicator.online .indicator-dot {
     background: #22c55e;
-    box-shadow: 0 0 6px #22c55e;
+    box-shadow: 0 0 10px #22c55e, inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .online-indicator.away .indicator-dot {
     background: #fbbf24;
-    box-shadow: 0 0 6px #fbbf24;
+    box-shadow: 0 0 10px #fbbf24, inset 0 1px 0 rgba(255, 255, 255, 0.06);
     animation: none;
 }
 
 .online-indicator.disconnected .indicator-dot {
     background: #f87171;
-    box-shadow: 0 0 6px #f87171;
-    animation: blink 1s ease-in-out infinite;
+    box-shadow: 0 0 10px #f87171, inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    animation: blink 1s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) infinite;
 }
 
 .online-indicator.offline .indicator-dot {
     background: #6b7280;
-    box-shadow: none;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
     animation: none;
 }
 

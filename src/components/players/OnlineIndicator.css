@@ -26,6 +26,7 @@
 .indicator-dot.online,
 .indicator-dot.playing {
     animation: pulse 2s infinite;
+    box-shadow: 0 0 6px currentColor;
 }
 
 @keyframes pulse {
