@@ -853,7 +853,7 @@ export default function UnionDetailPage() {
                       </span>
                     </div>
                     <div className={styles.tableCardDetails}>
-                      <span> {t.clubs?.name || 'Club'}</span>
+                      <span> {union?.name || t.clubs?.name || 'Union'}</span>
                       <span> {t.buy_in_amount?.toLocaleString() || 0}</span>
                       <span>
                         {' '}
