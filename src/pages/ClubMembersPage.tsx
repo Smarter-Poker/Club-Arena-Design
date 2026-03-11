@@ -7,6 +7,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import { masterBus } from '../core/MasterBus';
+import { useVirtualScroll } from '../hooks/useVirtualScroll';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import './ClubMembersPage.css';
 
@@ -172,6 +173,9 @@ export default function ClubMembersPage() {
         return true;
     });
 
+    // Virtual scrolling: only render visible members for large clubs
+    const virtualScroll = useVirtualScroll(filteredMembers, { initialCount: 30, pageSize: 20 });
+
     const getRoleBadge = (role: string): string => {
         switch (role) {
             case 'owner': return '★';
@@ -217,7 +221,7 @@ export default function ClubMembersPage() {
                 ))}
             </div>
 
-            <div className="members-list">
+            <div className="members-list" ref={virtualScroll.containerRef}>
                 {loading ? (
                     <div className="loading-state"><div className="spinner" /></div>
                 ) : filteredMembers.length === 0 ? (
@@ -225,7 +229,8 @@ export default function ClubMembersPage() {
                         <p>No members found</p>
                     </div>
                 ) : (
-                    filteredMembers.map(member => (
+                    <>
+                    {virtualScroll.visibleItems.map(member => (
                         <div
                             key={member.id}
                             className={`member-row ${visibleMembers.has(member.id) ? 'fadeInUp' : 'hidden'}`}
@@ -250,7 +255,16 @@ export default function ClubMembersPage() {
                                 {member.chip_balance.toLocaleString()}
                             </div>
                         </div>
-                    ))
+                    ))}
+                    {virtualScroll.hasMore && (
+                        <div ref={virtualScroll.sentinelRef} style={{ height: 1 }} />
+                    )}
+                    {virtualScroll.hasMore && (
+                        <div style={{ textAlign: 'center', padding: '8px', color: '#6b7a8a', fontSize: '0.7rem' }}>
+                            Showing {virtualScroll.visibleCount} of {virtualScroll.totalCount}
+                        </div>
+                    )}
+                    </>
                 )}
             </div>
 

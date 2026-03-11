@@ -11,6 +11,8 @@ import { Suspense, lazy, useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import { realtimeChannelService } from './services/RealtimeChannelService';
 import { getOfflineQueue, clearOfflineQueue } from './utils/offlineQueue';
+import { replayOfflineQueue } from './utils/offlineQueue';
+import { busEventLogger } from './services/BusEventLogger';
 import GlobalWaitlistListener from './components/common/GlobalWaitlistListener';
 import WaitlistBanner from './components/common/WaitlistBanner';
 
@@ -83,6 +85,7 @@ const BonusPage = lazy(() => import('./pages/BonusPage'));
 const WaitlistPage = lazy(() => import('./pages/WaitlistPage'));
 const ClubRulesPage = lazy(() => import('./pages/ClubRulesPage'));
 const NotificationCenter = lazy(() => import('./pages/NotificationCenter'));
+const BusDevToolsPage = lazy(() => import('./pages/BusDevToolsPage'));
 
 // Shared/Public Pages
 const HandReplayerPage = lazy(() => import('./pages/share/HandReplayerPage'));
@@ -127,16 +130,7 @@ export default function App() {
     const goOnline = () => {
       setIsOffline(false);
       // Replay queued mutations on reconnect
-      try {
-        const queue = getOfflineQueue();
-        if (queue.length > 0) {
-          console.log('[Offline Queue] Replaying', queue.length, 'queued mutations');
-          clearOfflineQueue();
-          // Mutations would be replayed here against Supabase
-        }
-      } catch {
-        /* ignore parse errors */
-      }
+      replayOfflineQueue().catch(() => { /* best effort */ });
     };
     window.addEventListener('offline', goOffline);
     window.addEventListener('online', goOnline);
@@ -201,6 +195,20 @@ export default function App() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
+  }, []);
+
+  // ── Start BusEventLogger & register Service Worker ──
+  useEffect(() => {
+    busEventLogger.start();
+
+    // Register SW for background notifications
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw-bus.js').catch(() => {
+        /* SW not supported or blocked */
+      });
+    }
+
+    return () => { busEventLogger.stop(); };
   }, []);
 
   return (
@@ -810,6 +818,16 @@ export default function App() {
                   element={
                     <AuthGuard>
                       <TableCreationPage />
+                    </AuthGuard>
+                  }
+                />
+
+                {/* DevTools (admin diagnostics) */}
+                <Route
+                  path="dev/bus"
+                  element={
+                    <AuthGuard>
+                      <BusDevToolsPage />
                     </AuthGuard>
                   }
                 />

@@ -74,3 +74,59 @@ export function getOfflineQueueSize(): number {
 export function getMaxQueueSize(): number {
     return MAX_QUEUE_SIZE;
 }
+
+/**
+ * Replay all queued mutations against Supabase.
+ * Uses exponential backoff on failure. Clears queue on success.
+ */
+export async function replayOfflineQueue(): Promise<void> {
+    const queue = getOfflineQueue();
+    if (queue.length === 0) return;
+
+    console.log('[Offline Queue] Replaying', queue.length, 'queued mutations');
+
+    const failed: QueuedMutation[] = [];
+    for (const item of queue) {
+        let attempts = 0;
+        let success = false;
+
+        while (attempts < 3 && !success) {
+            try {
+                // Dynamic import to avoid circular deps
+                const { supabase } = await import('../lib/supabase');
+
+                if (item.mutation === 'INSERT' && item.variables?.table) {
+                    await supabase.from(item.variables.table).insert(item.variables.data || {});
+                } else if (item.mutation === 'UPDATE' && item.variables?.table && item.variables?.id) {
+                    await supabase.from(item.variables.table).update(item.variables.data || {}).eq('id', item.variables.id);
+                } else if (item.mutation === 'DELETE' && item.variables?.table && item.variables?.id) {
+                    await supabase.from(item.variables.table).delete().eq('id', item.variables.id);
+                } else if (item.mutation === 'RPC' && item.variables?.fn) {
+                    await supabase.rpc(item.variables.fn, item.variables.args || {});
+                }
+                success = true;
+            } catch (e) {
+                attempts++;
+                if (attempts < 3) {
+                    // Exponential backoff: 500ms, 1500ms
+                    await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempts - 1)));
+                }
+            }
+        }
+
+        if (!success) {
+            failed.push(item);
+        }
+    }
+
+    // Clear queue, re-add failed items
+    clearOfflineQueue();
+    if (failed.length > 0) {
+        console.warn('[Offline Queue] Failed to replay', failed.length, 'mutations');
+        for (const f of failed) {
+            addToOfflineQueue(f);
+        }
+    } else {
+        console.log('[Offline Queue] All mutations replayed successfully');
+    }
+}

@@ -102,8 +102,8 @@ export default function ClubFinancialsPage() {
 
     // ── Bus Listeners: cross-page financial event reactivity ──
     useEffect(() => {
-        const unsubBalance = masterBus.subscribe('BALANCE_UPDATED', () => { loadFinancials(); });
-        const unsubWallet = masterBus.subscribe('WALLET_REFRESHED', () => { loadFinancials(); });
+        const unsubBalance = masterBus.subscribeDebounced('BALANCE_UPDATED', () => { loadFinancials(); }, 500);
+        const unsubWallet = masterBus.subscribeDebounced('WALLET_REFRESHED', () => { loadFinancials(); }, 500);
         return () => { unsubBalance(); unsubWallet(); };
     }, []);
 

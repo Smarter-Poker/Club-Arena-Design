@@ -109,8 +109,8 @@ export default function PlayerWalletPage() {
     // ── Bus Listeners: cross-page wallet event reactivity ──
     useEffect(() => {
         if (!user?.id) return;
-        const unsubBalance = masterBus.subscribe('BALANCE_UPDATED', () => { loadBalances(user.id); loadDiamonds(user.id); });
-        const unsubWallet = masterBus.subscribe('WALLET_REFRESHED', () => { loadBalances(user.id); loadDiamonds(user.id); });
+        const unsubBalance = masterBus.subscribeDebounced('BALANCE_UPDATED', () => { loadBalances(user.id); loadDiamonds(user.id); }, 500);
+        const unsubWallet = masterBus.subscribeDebounced('WALLET_REFRESHED', () => { loadBalances(user.id); loadDiamonds(user.id); }, 500);
         return () => { unsubBalance(); unsubWallet(); };
     }, [user?.id, loadBalances, loadDiamonds]);
 
