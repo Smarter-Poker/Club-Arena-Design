@@ -275,12 +275,10 @@ export default function ProfilePage() {
 
                 // Notify Master Bus that profile is loaded
                 if (profile) {
-                    import('../core/MasterBus').then(({ masterBus }) => {
-                        masterBus.emit('USER_PROFILE_LOADED', {
-                            userId: authUser.id,
-                            avatarUrl: profile.avatar_url || '',
-                            displayName: profile.display_name
-                        });
+                    masterBus.emit('USER_PROFILE_LOADED', {
+                        userId: authUser.id,
+                        avatarUrl: profile.avatar_url || '',
+                        displayName: profile.display_name
                     });
                 }
             } catch (err) {
