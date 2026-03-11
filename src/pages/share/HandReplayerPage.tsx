@@ -63,6 +63,12 @@ export default function HandReplayerPage() {
         };
     }, [handId]);
 
+    // Set document title for this page
+    useEffect(() => {
+        document.title = 'Hand Replay | Smarter.Poker';
+        // Note: OG meta tags should be set server-side for proper social sharing
+    }, [hand]);
+
     const loadHand = async () => {
         try {
             const record = await handHistoryService.getHand(handId!);
@@ -204,12 +210,6 @@ export default function HandReplayerPage() {
             </div>
         );
     }
-
-    // Set document title for this page
-    useEffect(() => {
-        document.title = 'Hand Replay | Smarter.Poker';
-        // Note: OG meta tags should be set server-side for proper social sharing
-    }, [hand]);
 
     return (
         <>

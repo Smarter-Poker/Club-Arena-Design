@@ -218,7 +218,7 @@ export default function InvitePage() {
       <div className="invite-card" style={inviteStepAnimationStyle}>
         <div className="club-avatar">
           {club.avatar_url ? (
-            <img src={club.avatar_url} alt={club.name} />
+            <img src={club.avatar_url} alt={club.name} loading="lazy" />
           ) : (
             <span>{club.name[0]?.toUpperCase()}</span>
           )}

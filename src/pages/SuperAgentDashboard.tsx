@@ -336,7 +336,7 @@ export default function SuperAgentDashboard() {
                                 >
                                     <div className="player-avatar">
                                         {player.avatarUrl ? (
-                                            <img src={player.avatarUrl} alt="" />
+                                            <img src={player.avatarUrl} alt="" loading="lazy" />
                                         ) : (
                                             <span>{player.displayName[0]?.toUpperCase()}</span>
                                         )}

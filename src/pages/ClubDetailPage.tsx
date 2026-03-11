@@ -342,7 +342,9 @@ export default function ClubDetailPage() {
         const unsubLeft = masterBus.subscribe('CLUB_LEFT', () => { loadClubData(); });
         const unsubSeated = masterBus.subscribe('TABLE_SEATED', () => { loadClubData(); });
         const unsubTableLeft = masterBus.subscribe('TABLE_LEFT', () => { loadClubData(); });
-        return () => { unsubJoined(); unsubLeft(); unsubSeated(); unsubTableLeft(); };
+        const unsubClubUpdated = masterBus.subscribe('CLUB_UPDATED', () => { loadClubData(); });
+        const unsubAnnouncement = masterBus.subscribe('ANNOUNCEMENT_CHANGED', () => { loadClubData(); });
+        return () => { unsubJoined(); unsubLeft(); unsubSeated(); unsubTableLeft(); unsubClubUpdated(); unsubAnnouncement(); };
     }, []);
 
     const loadClubData = async () => {

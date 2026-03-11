@@ -240,7 +240,9 @@ export default function ClubHomePage() {
         const unsubSeated = masterBus.subscribe('TABLE_SEATED', () => { loadClubData(); });
         const unsubTableLeft = masterBus.subscribe('TABLE_LEFT', () => { loadClubData(); });
         const unsubBalance = masterBus.subscribe('BALANCE_UPDATED', () => { loadClubData(); });
-        return () => { unsubJoined(); unsubLeft(); unsubSeated(); unsubTableLeft(); unsubBalance(); };
+        const unsubClubUpdated = masterBus.subscribe('CLUB_UPDATED', () => { loadClubData(); });
+        const unsubAnnouncement = masterBus.subscribe('ANNOUNCEMENT_CHANGED', () => { loadClubData(); });
+        return () => { unsubJoined(); unsubLeft(); unsubSeated(); unsubTableLeft(); unsubBalance(); unsubClubUpdated(); unsubAnnouncement(); };
     }, []);
 
     const loadUserProfile = async () => {
@@ -532,8 +534,25 @@ export default function ClubHomePage() {
 
     if (loading) {
         return (
-            <div className="club-home loading">
-                <div className="loader">Loading Club...</div>
+            <div className="club-home loading" style={{ padding: '1rem' }}>
+                {/* Skeleton header */}
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                    <div style={{ flex: 1 }}>
+                        <div style={{ width: '60%', height: 20, borderRadius: 6, background: 'rgba(255,255,255,0.08)', marginBottom: 8, animation: 'pulse 1.5s ease-in-out infinite' }} />
+                        <div style={{ width: '40%', height: 14, borderRadius: 4, background: 'rgba(255,255,255,0.06)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                    </div>
+                </div>
+                {/* Skeleton stat bar */}
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem' }}>
+                    {[1,2,3].map(i => (
+                        <div key={i} style={{ flex: 1, height: 60, borderRadius: 10, background: 'rgba(255,255,255,0.05)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                    ))}
+                </div>
+                {/* Skeleton table cards */}
+                {[1,2,3].map(i => (
+                    <div key={i} style={{ height: 80, borderRadius: 12, background: 'rgba(255,255,255,0.04)', marginBottom: 12, animation: 'pulse 1.5s ease-in-out infinite' }} />
+                ))}
             </div>
         );
     }
@@ -585,7 +604,7 @@ export default function ClubHomePage() {
                 <div className="club-home__club-card">
                     <div className="club-card__avatar">
                         {club.avatar_url ? (
-                            <img src={club.avatar_url} alt={club.name} />
+                            <img src={club.avatar_url} alt={club.name} loading="lazy" />
                         ) : (
                             <span className="club-card__avatar-placeholder">&#9824;</span>
                         )}

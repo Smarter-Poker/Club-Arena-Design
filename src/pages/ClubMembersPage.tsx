@@ -269,7 +269,7 @@ function PlayerActionModal({
         <div className="player-modal__header">
           <div className="player-modal__avatar">
             {member.avatar_url ? (
-              <img src={member.avatar_url} alt="" />
+              <img src={member.avatar_url} alt="" loading="lazy" />
             ) : (
               <span>{safeUsername[0]?.toUpperCase()}</span>
             )}
@@ -624,7 +624,7 @@ export default function ClubMembersPage() {
               >
                 <div className="member-avatar">
                   {member.avatar_url ? (
-                    <img src={member.avatar_url} alt="" />
+                    <img src={member.avatar_url} alt="" loading="lazy" />
                   ) : (
                     <span>{(member.username || '?')[0]?.toUpperCase()}</span>
                   )}

@@ -205,7 +205,7 @@ export default function PromotionsPage() {
                         >
                             {promo.image_url && (
                                 <div className="promo-image">
-                                    <img src={promo.image_url} alt="" />
+                                    <img src={promo.image_url} alt="" loading="lazy" />
                                 </div>
                             )}
                             <div className="promo-content">

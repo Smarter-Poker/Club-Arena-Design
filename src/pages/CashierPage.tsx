@@ -445,6 +445,14 @@ export default function CashierPage() {
       },
       500
     );
+    const unsubWallet = masterBus.subscribeDebounced(
+      'WALLET_REFRESHED',
+      () => {
+        loadBalances(user.id);
+        loadPendingCashouts();
+      },
+      500
+    );
     const unsubHand = masterBus.subscribeDebounced(
       'HAND_COMPLETED',
       () => {
@@ -455,6 +463,7 @@ export default function CashierPage() {
     );
     return () => {
       unsubBalance();
+      unsubWallet();
       unsubHand();
     };
   }, [user?.id, loadBalances, loadTransactions]);

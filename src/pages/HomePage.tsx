@@ -429,7 +429,7 @@ function CarouselSection({
                                 </span>
                                 <div className={styles.carouselCardCenter}>
                                     {club.logo_url ? (
-                                        <img src={club.logo_url} alt="" className={styles.carouselCardLogo} loading="lazy" />
+                                        <img src={club.logo_url} alt="" className={styles.carouselCardLogo} loading="lazy" loading="lazy" />
                                     ) : (
                                         <div className={`${styles.carouselCardIcon} ${GRADIENT_CLASSES[idx % GRADIENT_CLASSES.length]}`}>♣</div>
                                     )}
@@ -1304,7 +1304,7 @@ function HomePageInner() {
                 ═══════════════════════════════════════════════════════════════════════ */}
                 <div className={styles.actionBarRow}>
                     <div className={styles.actionBarWrapper}>
-                        <img src={ACTION_BAR_HORIZONTAL} alt="Action Bar" className={styles.actionBarImage} />
+                        <img src={ACTION_BAR_HORIZONTAL} alt="Action Bar" className={styles.actionBarImage} loading="lazy" />
                         {/* Clickable zones positioned over the image */}
                         <button
                             className={styles.actionZoneLeft}
@@ -1428,7 +1428,7 @@ function HomePageInner() {
                         >
                             <div className={styles.tilePedestal}></div>
                             <div className={styles.tileImageWrapper}>
-                                <img src={tile.img} alt={tile.alt} className={styles.tileImage} />
+                                <img src={tile.img} alt={tile.alt} className={styles.tileImage} loading="lazy" />
                                 {tileBadges[tile.alt] && tileBadges[tile.alt] > 0 && (
                                     <span className={styles.tileBadge}>{tileBadges[tile.alt]}</span>
                                 )}

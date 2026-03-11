@@ -269,7 +269,7 @@ export default function ClubCarouselPage() {
           <div className="header__user">
             <div className="user-avatar">
               {userProfile?.avatar_url ? (
-                <img src={userProfile.avatar_url} alt="avatar" />
+                <img src={userProfile.avatar_url} alt="avatar" loading="lazy" />
               ) : (
                 <span className="avatar-placeholder">P</span>
               )}
@@ -368,7 +368,7 @@ export default function ClubCarouselPage() {
                         <div className="club-card__id">ID:{club.club_id}</div>
                         <div className="club-card__graphic">
                           {club.avatar_url ? (
-                            <img src={club.avatar_url} alt={club.name} />
+                            <img src={club.avatar_url} alt={club.name} loading="lazy" />
                           ) : (
                             <div className="club-card__placeholder">
                               <span className="chip-icon">♠</span>
@@ -378,7 +378,7 @@ export default function ClubCarouselPage() {
                         <div className="club-card__footer">
                           <div className="club-avatar">
                             {club.avatar_url ? (
-                              <img src={club.avatar_url} alt="" />
+                              <img src={club.avatar_url} alt="" loading="lazy" />
                             ) : (
                               <span>♠</span>
                             )}

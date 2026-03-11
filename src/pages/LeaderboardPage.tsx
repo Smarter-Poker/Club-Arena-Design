@@ -413,7 +413,7 @@ export default function LeaderboardPage() {
                 >
                   <div className="podium-avatar silver">
                     {top3[1].avatar ? (
-                      <img src={top3[1].avatar} alt="" />
+                      <img src={top3[1].avatar} alt="" loading="lazy" />
                     ) : (
                       <span>{(top3[1].username || '?')[0]?.toUpperCase()}</span>
                     )}
@@ -435,7 +435,7 @@ export default function LeaderboardPage() {
                   <div className="podium-crown">👑</div>
                   <div className="podium-avatar gold">
                     {top3[0].avatar ? (
-                      <img src={top3[0].avatar} alt="" />
+                      <img src={top3[0].avatar} alt="" loading="lazy" />
                     ) : (
                       <span>{(top3[0].username || '?')[0]?.toUpperCase()}</span>
                     )}
@@ -456,7 +456,7 @@ export default function LeaderboardPage() {
                 >
                   <div className="podium-avatar bronze">
                     {top3[2].avatar ? (
-                      <img src={top3[2].avatar} alt="" />
+                      <img src={top3[2].avatar} alt="" loading="lazy" />
                     ) : (
                       <span>{(top3[2].username || '?')[0]?.toUpperCase()}</span>
                     )}
@@ -484,7 +484,7 @@ export default function LeaderboardPage() {
                   <span className={`entry-rank top-3`}>{getRankBadge(entry.rank)}</span>
                   <div className="entry-avatar">
                     {entry.avatar ? (
-                      <img src={entry.avatar} alt="" />
+                      <img src={entry.avatar} alt="" loading="lazy" />
                     ) : (
                       <span>{(entry.username || '?')[0]?.toUpperCase()}</span>
                     )}
@@ -517,7 +517,7 @@ export default function LeaderboardPage() {
                 <span className="entry-rank">{getRankLabel(entry.rank)}</span>
                 <div className="entry-avatar">
                   {entry.avatar ? (
-                    <img src={entry.avatar} alt="" />
+                    <img src={entry.avatar} alt="" loading="lazy" />
                   ) : (
                     <span>{(entry.username || '?')[0]?.toUpperCase()}</span>
                   )}
@@ -565,7 +565,7 @@ export default function LeaderboardPage() {
                   <span className="rank-badge">#{index + 1}</span>
                   <div className="entry-avatar">
                     {stat.avatar ? (
-                      <img src={stat.avatar} alt="" />
+                      <img src={stat.avatar} alt="" loading="lazy" />
                     ) : (
                       <span>{(stat.username || '?')[0]?.toUpperCase()}</span>
                     )}

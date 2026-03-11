@@ -332,6 +332,7 @@ class RealtimeChannelService {
 
         channel.subscribe((status) => {
             if (status === 'SUBSCRIBED') {
+                // no-op
             }
         });
 
@@ -420,6 +421,7 @@ class RealtimeChannelService {
 
         channel.subscribe((status) => {
             if (status === 'SUBSCRIBED') {
+                // no-op
             }
         });
 

@@ -280,7 +280,7 @@ export default function ClubDashboard() {
         <div className={styles.clubInfo}>
           <div className={styles.clubAvatar}>
             {club.avatarUrl ? (
-              <img src={club.avatarUrl} alt={club.name} />
+              <img src={club.avatarUrl} alt={club.name} loading="lazy" />
             ) : (
               <span>{club.name.charAt(0)}</span>
             )}
@@ -370,7 +370,7 @@ export default function ClubDashboard() {
                         {player.rank <= 3 ? ['', '', ''][player.rank - 1] : `#${player.rank}`}
                       </span>
                       <div className={styles.playerAvatar}>
-                        {player.avatarUrl ? <img src={player.avatarUrl} alt="" /> : ''}
+                        {player.avatarUrl ? <img src={player.avatarUrl} alt="" loading="lazy" /> : ''}
                       </div>
                       <span className={styles.playerName}>{player.displayName}</span>
                       <span
@@ -415,7 +415,7 @@ export default function ClubDashboard() {
               {topPlayers.map((player) => (
                 <div key={player.userId} className={styles.playerCard}>
                   <div className={styles.playerAvatar}>
-                    {player.avatarUrl ? <img src={player.avatarUrl} alt="" /> : ''}
+                    {player.avatarUrl ? <img src={player.avatarUrl} alt="" loading="lazy" /> : ''}
                   </div>
                   <div className={styles.playerInfo}>
                     <span className={styles.playerName}>{player.displayName}</span>

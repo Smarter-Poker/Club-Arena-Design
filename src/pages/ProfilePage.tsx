@@ -529,7 +529,7 @@ export default function ProfilePage() {
       <section className={styles.profileHeader}>
         <div className={styles.avatarContainer}>
           {user.avatarUrl ? (
-            <img src={user.avatarUrl} alt={user.displayName} className={styles.avatar} />
+            <img src={user.avatarUrl} alt={user.displayName} className={styles.avatar} loading="lazy" />
           ) : (
             <div className={styles.avatarDefault}>{user.displayName.charAt(0).toUpperCase()}</div>
           )}

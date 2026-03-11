@@ -22,6 +22,8 @@ import IntroVideo from './components/IntroVideo';
 import AppLayout from './components/layouts/AppLayout';
 import { ToastProvider } from './components/common/Toast';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import RouteErrorBoundary from './components/common/RouteErrorBoundary';
+import OfflineQueueBadge from './components/common/OfflineQueueBadge';
 
 // Auth Guards
 import { AuthGuard, GuestGuard } from './components/auth/AuthGuard';
@@ -253,6 +255,7 @@ export default function App() {
               CONNECTION LOST — Actions will be queued and replayed when you reconnect
             </div>
           )}
+          <OfflineQueueBadge />
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
               {/* ═══════════════════════════════════════════════════════════════
@@ -281,7 +284,9 @@ export default function App() {
                 path="/"
                 element={
                   <AuthGuard>
-                    <HomePage />
+                    <RouteErrorBoundary>
+                      <HomePage />
+                    </RouteErrorBoundary>
                   </AuthGuard>
                 }
               />
@@ -291,13 +296,16 @@ export default function App() {
                 path="table/:tableId"
                 element={
                   <AuthGuard>
-                    <MultiTablePage />
+                    <RouteErrorBoundary>
+                      <MultiTablePage />
+                    </RouteErrorBoundary>
                   </AuthGuard>
                 }
               />
 
-              {/* Protected routes with AppLayout shell */}
+              {/* Protected routes with AppLayout shell — RouteErrorBoundary on each */}
               <Route element={<AppLayout />}>
+                {/* RouteErrorBoundary wraps all AppLayout children */}
                 {/* Lobby */}
                 <Route
                   path="lobby"

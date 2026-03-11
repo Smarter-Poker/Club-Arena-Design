@@ -2,7 +2,8 @@
  *  SEARCH PAGE
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useDebounce } from '../hooks/useDebounce';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/common/Toast';
@@ -127,10 +128,10 @@ export default function SearchPage() {
         return () => timers.forEach(t => clearTimeout(t));
     }, [results.length]);
 
+    const debouncedQuery = useDebounce(query, 300);
     useEffect(() => {
-        const timeout = setTimeout(() => search(query), 300);
-        return () => clearTimeout(timeout);
-    }, [query, search]);
+        search(debouncedQuery);
+    }, [debouncedQuery, search]);
 
     const getIcon = (type: string): string => {
         switch (type) {
@@ -219,7 +220,7 @@ export default function SearchPage() {
                             >
                                 <div className="result-avatar">
                                     {result.avatar ? (
-                                        <img src={result.avatar} alt="" />
+                                        <img src={result.avatar} alt="" loading="lazy" loading="lazy" />
                                     ) : (
                                         <span>{getIcon(result.type)}</span>
                                     )}

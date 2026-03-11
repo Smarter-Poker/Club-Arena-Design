@@ -63,7 +63,9 @@ export default function PresenceIndicator({
                             setLastSeen(new Date(profile.last_active));
                         }
                     }
-                } catch { }
+                } catch {
+                    // no-op
+                }
             }
         };
 

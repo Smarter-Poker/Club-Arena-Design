@@ -217,7 +217,17 @@ export default function NotificationCenter() {
 
             <div className="notif-list">
                 {loading ? (
-                    <div className="notif-loading"><div className="spinner" /></div>
+                    <div className="notif-loading" style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
+                        {[1,2,3,4,5].map(i => (
+                            <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <div style={{ width: `${60 + i * 5}%`, height: 14, borderRadius: 4, background: 'rgba(255,255,255,0.08)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                                    <div style={{ width: `${40 + i * 3}%`, height: 10, borderRadius: 4, background: 'rgba(255,255,255,0.06)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 ) : filtered.length === 0 ? (
                     <div className="notif-empty">
                         <div className="notif-empty-illustration">

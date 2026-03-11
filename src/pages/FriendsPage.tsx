@@ -329,7 +329,7 @@ export default function FriendsPage() {
                                 >
                                     <div className="friend-avatar">
                                         {friend.avatar_url ? (
-                                            <img src={friend.avatar_url} alt="" />
+                                            <img src={friend.avatar_url} alt="" loading="lazy" />
                                         ) : (
                                             <span>{friend.username[0]?.toUpperCase()}</span>
                                         )}
@@ -374,7 +374,7 @@ export default function FriendsPage() {
                             >
                                 <div className="request-avatar">
                                     {request.avatar_url ? (
-                                        <img src={request.avatar_url} alt="" />
+                                        <img src={request.avatar_url} alt="" loading="lazy" />
                                     ) : (
                                         <span>{request.username[0]?.toUpperCase()}</span>
                                     )}
