@@ -85,8 +85,12 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                 .from('profiles')
                 .select('avatar_url, username, sounds_enabled, vibrations_enabled, show_stack_bb, is_vip, diamonds')
                 .eq('id', user.id)
-                .single()
-                .then(({ data }) => {
+                .maybeSingle()
+                .then(({ data, error }) => {
+                    if (error) {
+                        console.error('[HamburgerMenu] Failed to load profile:', error);
+                        return;
+                    }
                     if (data) {
                         setAvatarUrl(data.avatar_url);
                         setUserName(data.username || 'Player');

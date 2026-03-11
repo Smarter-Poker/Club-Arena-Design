@@ -244,23 +244,27 @@ export default function ClubHomePage() {
     }, []);
 
     const loadUserProfile = async () => {
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (!authUser) return;
+        try {
+            const { data: { user: authUser } } = await supabase.auth.getUser();
+            if (!authUser) return;
 
-        const { data: profileData } = await supabase
-            .from('profiles')
-            .select('id, username, display_name, avatar_url, player_number')
-            .eq('id', authUser.id)
-            .maybeSingle();
+            const { data: profileData } = await supabase
+                .from('profiles')
+                .select('id, username, display_name, avatar_url, player_number')
+                .eq('id', authUser.id)
+                .maybeSingle();
 
-        if (profileData) {
-            setUserProfile(profileData as UserProfileData);
-            // Format player number WITHOUT leading zeros
-            // Use a deterministic hash of user ID as fallback if player_number is not set,
-            // so the same user always sees the same number (not random on each render)
-            const pNum = (profileData as any).player_number ||
-                Math.abs([...profileData.id].reduce((h, c) => (h << 5) - h + c.charCodeAt(0), 0) % 9999999) + 1;
-            setPlayerNumber(pNum.toString());
+            if (profileData) {
+                setUserProfile(profileData as UserProfileData);
+                // Format player number WITHOUT leading zeros
+                // Use a deterministic hash of user ID as fallback if player_number is not set,
+                // so the same user always sees the same number (not random on each render)
+                const pNum = (profileData as any).player_number ||
+                    Math.abs([...profileData.id].reduce((h, c) => (h << 5) - h + c.charCodeAt(0), 0) % 9999999) + 1;
+                setPlayerNumber(pNum.toString());
+            }
+        } catch (err) {
+            console.error('[ClubHomePage] loadUserProfile error:', err);
         }
     };
 

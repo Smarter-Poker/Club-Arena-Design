@@ -72,9 +72,9 @@ class PushNotificationServiceClass {
 
         try {
             // OneSignal Web SDK initialization
-            // @ts-ignore - OneSignal is loaded via CDN
+            // @ts-expect-error - OneSignal CDN types - OneSignal is loaded via CDN
             if (typeof window !== 'undefined' && window.OneSignalDeferred) {
-                // @ts-ignore
+                // @ts-expect-error - OneSignal CDN types
                 window.OneSignalDeferred.push(async function (OneSignal: any) {
                     await OneSignal.init({
                         appId: ONESIGNAL_APP_ID,
@@ -94,9 +94,9 @@ class PushNotificationServiceClass {
      */
     async setExternalUserId(userId: string): Promise<void> {
         try {
-            // @ts-ignore
+            // @ts-expect-error - OneSignal CDN types
             if (typeof window !== 'undefined' && window.OneSignal) {
-                // @ts-ignore
+                // @ts-expect-error - OneSignal CDN types
                 await window.OneSignal.login(userId);
             }
         } catch (error) {
@@ -109,9 +109,9 @@ class PushNotificationServiceClass {
      */
     async requestPermission(): Promise<boolean> {
         try {
-            // @ts-ignore
+            // @ts-expect-error - OneSignal CDN types
             if (typeof window !== 'undefined' && window.OneSignal) {
-                // @ts-ignore
+                // @ts-expect-error - OneSignal CDN types
                 const permission = await window.OneSignal.Notifications.requestPermission();
                 return permission;
             }
@@ -127,9 +127,9 @@ class PushNotificationServiceClass {
      */
     async isEnabled(): Promise<boolean> {
         try {
-            // @ts-ignore
+            // @ts-expect-error - OneSignal CDN types
             if (typeof window !== 'undefined' && window.OneSignal) {
-                // @ts-ignore
+                // @ts-expect-error - OneSignal CDN types
                 return await window.OneSignal.Notifications.permission;
             }
             return false;

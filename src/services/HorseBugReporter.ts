@@ -84,22 +84,21 @@ class HorseBugReporterService {
         this.isCapturing = true;
 
         // Intercept console.error
-        const self = this;
-        console.error = function (...args: any[]) {
-            self.originalConsoleError(...args);
+        console.error = (...args: any[]) => {
+            this.originalConsoleError(...args);
             const msg = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ');
 
             // Auto-categorize known error patterns
             if (msg.includes('RPC') || msg.includes('rpc') || msg.includes('function')) {
-                self.reportFromConsole(msg, 'rpc_error', 'high');
+                this.reportFromConsole(msg, 'rpc_error', 'high');
             } else if (msg.includes('wallet') || msg.includes('Wallet') || msg.includes('balance')) {
-                self.reportFromConsole(msg, 'wallet_sync', 'high');
+                this.reportFromConsole(msg, 'wallet_sync', 'high');
             } else if (msg.includes('HandController') || msg.includes('performAction')) {
-                self.reportFromConsole(msg, 'action_failure', 'medium');
+                this.reportFromConsole(msg, 'action_failure', 'medium');
             } else if (msg.includes('table_seats') || msg.includes('buy-in') || msg.includes('BuyIn')) {
-                self.reportFromConsole(msg, 'gameplay_anomaly', 'medium');
+                this.reportFromConsole(msg, 'gameplay_anomaly', 'medium');
             } else if (msg.includes('tournament') || msg.includes('Tournament')) {
-                self.reportFromConsole(msg, 'tournament_bug', 'medium');
+                this.reportFromConsole(msg, 'tournament_bug', 'medium');
             }
         };
 

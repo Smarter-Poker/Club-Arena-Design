@@ -130,18 +130,26 @@ export default function NotificationCenter() {
     }, [user?.id, loadNotifications]);
 
     const markAsRead = async (notifId: string) => {
-        await supabase.from('notifications').update({ read: true }).eq('id', notifId);
-        setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
-        // #3: Emit NOTIFICATION_READ for instant bell badge sync
-        masterBus.emit('NOTIFICATION_READ', { notifId, allRead: false });
+        try {
+            await supabase.from('notifications').update({ read: true }).eq('id', notifId);
+            setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
+            // #3: Emit NOTIFICATION_READ for instant bell badge sync
+            masterBus.emit('NOTIFICATION_READ', { notifId, allRead: false });
+        } catch (err) {
+            console.error('[NotificationCenter] markAsRead error:', err);
+        }
     };
 
     const markAllRead = async () => {
         if (!user?.id) return;
-        await supabase.from('notifications').update({ read: true }).eq('user_id', user.id).eq('read', false);
-        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-        // #3: Emit NOTIFICATION_READ for instant bell badge sync
-        masterBus.emit('NOTIFICATION_READ', { notifId: null, allRead: true });
+        try {
+            await supabase.from('notifications').update({ read: true }).eq('user_id', user.id).eq('read', false);
+            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            // #3: Emit NOTIFICATION_READ for instant bell badge sync
+            masterBus.emit('NOTIFICATION_READ', { notifId: null, allRead: true });
+        } catch (err) {
+            console.error('[NotificationCenter] markAllRead error:', err);
+        }
     };
 
     const handleClick = (notif: Notification) => {

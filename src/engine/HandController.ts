@@ -316,7 +316,7 @@ export class HandController {
                 break;
 
             case 'bet':
-            case 'raise':
+            case 'raise': {
                 actualAmount = amount!;
                 const raiseSize = actualAmount - player.bet;
                 if (raiseSize > this.state.lastRaise) {
@@ -330,8 +330,9 @@ export class HandController {
                 this.state.currentBet = actualAmount;
                 if (player.stack === 0) player.is_all_in = true;
                 break;
+            }
 
-            case 'all_in':
+            case 'all_in': {
                 actualAmount = player.stack + player.bet;
                 player.totalInvested += player.stack;
                 this.state.pot += player.stack;
@@ -346,6 +347,7 @@ export class HandController {
                     this.state.currentBet = player.bet;
                 }
                 break;
+            }
         }
 
         // Record action
@@ -482,27 +484,30 @@ export class HandController {
 
         // Deal community cards
         switch (this.state.stage) {
-            case 'preflop':
+            case 'preflop': {
                 this.state.stage = 'flop';
                 this.state.sawFlop = true;
                 const flop = this.state.deck.deal(3);
                 this.state.communityCards.push(...flop);
                 this.emit({ type: 'COMMUNITY_CARDS', stage: 'flop', cards: flop });
                 break;
+            }
 
-            case 'flop':
+            case 'flop': {
                 this.state.stage = 'turn';
                 const turn = this.state.deck.deal(1);
                 this.state.communityCards.push(...turn);
                 this.emit({ type: 'COMMUNITY_CARDS', stage: 'turn', cards: turn });
                 break;
+            }
 
-            case 'turn':
+            case 'turn': {
                 this.state.stage = 'river';
                 const river = this.state.deck.deal(1);
                 this.state.communityCards.push(...river);
                 this.emit({ type: 'COMMUNITY_CARDS', stage: 'river', cards: river });
                 break;
+            }
 
             case 'river':
                 this.state.stage = 'showdown';

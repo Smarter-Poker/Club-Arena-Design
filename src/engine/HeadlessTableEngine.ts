@@ -665,7 +665,7 @@ export class HeadlessTableEngine {
         this.broadcastCurrentState();
         break;
 
-      case 'HAND_COMPLETE':
+      case 'HAND_COMPLETE': {
         // Emit HAND_COMPLETED for Daily Challenges if current user participated
         this.emitIfUserAtTable(players, () => {
           masterBus.emit('HAND_COMPLETED', {
@@ -771,7 +771,7 @@ export class HeadlessTableEngine {
         // Reset per-hand tracking
         this.currentHandWinnerIds = [];
         break;
-    }
+      }
   }
 
   private handleTurnChange(event: HandEvent, players: SeatedPlayer[]): void {

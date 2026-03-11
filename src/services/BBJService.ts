@@ -144,7 +144,7 @@ export const BBJService = {
      */
     async ensurePoolExists(clubId: string): Promise<BBJPool | null> {
         // Try to get existing pool
-        let pool = await this.getPool({ clubId });
+        const pool = await this.getPool({ clubId });
         if (pool) {
             return pool;
         }

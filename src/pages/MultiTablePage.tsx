@@ -213,7 +213,7 @@ export default function MultiTablePage() {
 
         const SWIPE_THRESHOLD = 50;
         const VELOCITY_THRESHOLD = 0.3; // px/ms
-        const elapsed = Date.now() - touchStartRef.current.time;
+        const elapsed = Math.max(Date.now() - touchStartRef.current.time, 1);
         const velocity = Math.abs(swipeOffset) / elapsed;
 
         let newIndex = activeIndex;
