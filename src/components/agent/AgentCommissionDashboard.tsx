@@ -49,12 +49,47 @@ export function AgentCommissionDashboard() {
     const [subAgents, setSubAgents] = useState<SubAgent[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'summary' | 'records' | 'subagents'>('summary');
+    const [visibleCards, setVisibleCards] = useState<boolean[]>([]);
+    const [visibleRows, setVisibleRows] = useState<boolean[]>([]);
 
     useEffect(() => {
         if (user?.id) {
             loadData();
         }
     }, [user?.id]);
+
+    useEffect(() => {
+        if (activeTab === 'summary' && summary) {
+            setVisibleCards([]);
+            [0, 1, 2, 3].forEach((i) => {
+                setTimeout(() => {
+                    setVisibleCards(prev => [...prev, true]);
+                }, i * 60);
+            });
+        }
+    }, [activeTab, summary]);
+
+    useEffect(() => {
+        if (activeTab === 'records' && records.length > 0) {
+            setVisibleRows([]);
+            records.forEach((_, i) => {
+                setTimeout(() => {
+                    setVisibleRows(prev => [...prev, true]);
+                }, i * 60);
+            });
+        }
+    }, [activeTab, records]);
+
+    useEffect(() => {
+        if (activeTab === 'subagents' && subAgents.length > 0) {
+            setVisibleCards([]);
+            subAgents.forEach((_, i) => {
+                setTimeout(() => {
+                    setVisibleCards(prev => [...prev, true]);
+                }, i * 60);
+            });
+        }
+    }, [activeTab, subAgents]);
 
     const loadData = async () => {
         if (!user?.id) return;
@@ -176,27 +211,30 @@ export function AgentCommissionDashboard() {
             {/* Summary Tab */}
             {activeTab === 'summary' && summary && (
                 <div className="agent-commission__summary">
-                    <div className="summary-card total">
-                        <span className="label">Total Earned</span>
-                        <span className="value">{summary.totalEarned.toLocaleString()} </span>
-                    </div>
-                    <div className="summary-card">
-                        <span className="label">This Week</span>
-                        <span className="value">{summary.thisWeek.toLocaleString()}</span>
-                    </div>
-                    <div className="summary-card">
-                        <span className="label">This Month</span>
-                        <span className="value">{summary.thisMonth.toLocaleString()}</span>
-                    </div>
-                    <div className="summary-card pending">
-                        <span className="label">Pending Payout</span>
-                        <span className="value">{summary.pendingPayout.toLocaleString()}</span>
-                        {summary.pendingPayout > 0 && (
-                            <button className="payout-btn" onClick={requestPayout}>
-                                Request Payout
-                            </button>
-                        )}
-                    </div>
+                    {[
+                        { className: 'total', label: 'Total Earned', value: summary.totalEarned },
+                        { className: '', label: 'This Week', value: summary.thisWeek },
+                        { className: '', label: 'This Month', value: summary.thisMonth },
+                        { className: 'pending', label: 'Pending Payout', value: summary.pendingPayout }
+                    ].map((card, idx) => (
+                        <div
+                            key={idx}
+                            className={`summary-card ${card.className}`}
+                            style={{
+                                opacity: visibleCards[idx] ? 1 : 0,
+                                transform: visibleCards[idx] ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            }}
+                        >
+                            <span className="label">{card.label}</span>
+                            <span className="value">{card.value.toLocaleString()}</span>
+                            {card.className === 'pending' && summary.pendingPayout > 0 && (
+                                <button className="payout-btn" onClick={requestPayout}>
+                                    Request Payout
+                                </button>
+                            )}
+                        </div>
+                    ))}
                 </div>
             )}
 
@@ -217,8 +255,15 @@ export function AgentCommissionDashboard() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {records.map(record => (
-                                    <tr key={record.id}>
+                                {records.map((record, idx) => (
+                                    <tr
+                                        key={record.id}
+                                        style={{
+                                            opacity: visibleRows[idx] ? 1 : 0,
+                                            transform: visibleRows[idx] ? 'translateY(0)' : 'translateY(8px)',
+                                            transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                        }}
+                                    >
                                         <td>{record.playerName}</td>
                                         <td>{record.rakeAmount.toLocaleString()}</td>
                                         <td>{(record.commissionRate * 100).toFixed(1)}%</td>
@@ -239,8 +284,16 @@ export function AgentCommissionDashboard() {
                         <div className="empty-state">No sub-agents yet</div>
                     ) : (
                         <div className="subagent-grid">
-                            {subAgents.map(agent => (
-                                <div key={agent.id} className="subagent-card">
+                            {subAgents.map((agent, idx) => (
+                                <div
+                                    key={agent.id}
+                                    className="subagent-card"
+                                    style={{
+                                        opacity: visibleCards[idx] ? 1 : 0,
+                                        transform: visibleCards[idx] ? 'translateY(0)' : 'translateY(8px)',
+                                        transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                    }}
+                                >
                                     <span className="avatar">{agent.avatarUrl}</span>
                                     <div className="info">
                                         <span className="name">{agent.username}</span>

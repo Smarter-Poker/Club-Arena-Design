@@ -35,6 +35,8 @@ export function TournamentRegistration({
     const [players, setPlayers] = useState<RegisteredPlayer[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [visibleActive, setVisibleActive] = useState<boolean[]>([]);
+    const [visibleEliminated, setVisibleEliminated] = useState<boolean[]>([]);
 
     useEffect(() => {
         loadPlayers();
@@ -176,6 +178,24 @@ export function TournamentRegistration({
     const activePlayers = filteredPlayers.filter(p => !p.isEliminated);
     const eliminatedPlayers = filteredPlayers.filter(p => p.isEliminated);
 
+    useEffect(() => {
+        setVisibleActive([]);
+        activePlayers.forEach((_, i) => {
+            setTimeout(() => {
+                setVisibleActive(prev => [...prev, true]);
+            }, i * 60);
+        });
+    }, [activePlayers]);
+
+    useEffect(() => {
+        setVisibleEliminated([]);
+        eliminatedPlayers.forEach((_, i) => {
+            setTimeout(() => {
+                setVisibleEliminated(prev => [...prev, true]);
+            }, i * 60);
+        });
+    }, [eliminatedPlayers]);
+
     if (loading) {
         return <div className="tournament-registration loading">Loading...</div>;
     }
@@ -196,7 +216,15 @@ export function TournamentRegistration({
             {activePlayers.length > 0 && (
                 <div className="player-list">
                     {activePlayers.map((player, idx) => (
-                        <div key={player.id} className="player-row">
+                        <div
+                            key={player.id}
+                            className="player-row"
+                            style={{
+                                opacity: visibleActive[idx] ? 1 : 0,
+                                transform: visibleActive[idx] ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            }}
+                        >
                             <span className="rank">#{idx + 1}</span>
                             <span className="avatar">{player.avatarUrl}</span>
                             <span className="username">{player.username}</span>
@@ -226,7 +254,15 @@ export function TournamentRegistration({
                     <h4>Eliminated ({eliminatedPlayers.length})</h4>
                     <div className="player-list eliminated">
                         {eliminatedPlayers.map((player, idx) => (
-                            <div key={player.id} className="player-row eliminated">
+                            <div
+                                key={player.id}
+                                className="player-row eliminated"
+                                style={{
+                                    opacity: visibleEliminated[idx] ? 1 : 0,
+                                    transform: visibleEliminated[idx] ? 'translateY(0)' : 'translateY(8px)',
+                                    transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                }}
+                            >
                                 <span className="avatar">{player.avatarUrl}</span>
                                 <span className="username">{player.username}</span>
                             </div>

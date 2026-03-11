@@ -40,6 +40,8 @@ export const SessionReplay: React.FC<SessionReplayProps> = ({
     const [currentTime, setCurrentTime] = useState(0);
     const [playbackSpeed, setPlaybackSpeed] = useState(1);
     const [loading, setLoading] = useState(true);
+    const [visibleStats, setVisibleStats] = useState<boolean[]>([]);
+    const [visibleActions, setVisibleActions] = useState<boolean[]>([]);
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     useEffect(() => {
@@ -48,6 +50,23 @@ export const SessionReplay: React.FC<SessionReplayProps> = ({
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
     }, [sessionId]);
+
+    useEffect(() => {
+        if (replay) {
+            setVisibleStats([]);
+            [0, 1, 2].forEach((i) => {
+                setTimeout(() => {
+                    setVisibleStats(prev => [...prev, true]);
+                }, i * 60);
+            });
+            setVisibleActions([]);
+            replay.actions.slice(0, 20).forEach((_, i) => {
+                setTimeout(() => {
+                    setVisibleActions(prev => [...prev, true]);
+                }, i * 40);
+            });
+        }
+    }, [replay]);
 
     const loadSession = async () => {
         try {
@@ -155,20 +174,24 @@ export const SessionReplay: React.FC<SessionReplayProps> = ({
 
             {/* Stats */}
             <div className="replay-stats">
-                <div className="stat">
-                    <span className="stat-value">{replay.handsPlayed}</span>
-                    <span className="stat-label">Hands</span>
-                </div>
-                <div className="stat">
-                    <span className={`stat-value ${replay.totalProfit >= 0 ? 'positive' : 'negative'}`}>
-                        {replay.totalProfit >= 0 ? '+' : ''}{replay.totalProfit}
-                    </span>
-                    <span className="stat-label">Profit</span>
-                </div>
-                <div className="stat">
-                    <span className="stat-value">1h 02m</span>
-                    <span className="stat-label">Duration</span>
-                </div>
+                {[
+                    { value: replay.handsPlayed, label: 'Hands' },
+                    { value: `${replay.totalProfit >= 0 ? '+' : ''}${replay.totalProfit}`, label: 'Profit', color: replay.totalProfit >= 0 ? 'positive' : 'negative' },
+                    { value: '1h 02m', label: 'Duration' }
+                ].map((stat, idx) => (
+                    <div
+                        key={idx}
+                        className="stat"
+                        style={{
+                            opacity: visibleStats[idx] ? 1 : 0,
+                            transform: visibleStats[idx] ? 'translateY(0)' : 'translateY(8px)',
+                            transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        }}
+                    >
+                        <span className={`stat-value ${stat.color || ''}`}>{stat.value}</span>
+                        <span className="stat-label">{stat.label}</span>
+                    </div>
+                ))}
             </div>
 
             {/* Playback Area */}
@@ -239,6 +262,11 @@ export const SessionReplay: React.FC<SessionReplayProps> = ({
                             key={i}
                             className={`action-item ${action.timestamp <= currentTime ? 'passed' : ''}`}
                             onClick={() => setCurrentTime(action.timestamp)}
+                            style={{
+                                opacity: visibleActions[i] ? 1 : 0,
+                                transform: visibleActions[i] ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            }}
                         >
                             <span className="action-time">{formatTime(action.timestamp)}</span>
                             <span className="action-desc">

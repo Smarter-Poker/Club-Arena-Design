@@ -10,7 +10,7 @@
  * - Actions (add note, report)
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './PlayerStats.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -97,6 +97,8 @@ export function PlayerStats({
     const [showNoteInput, setShowNoteInput] = useState(false);
     const [noteText, setNoteText] = useState('');
     const [noteColor, setNoteColor] = useState(NOTE_COLORS[0]);
+    const [visibleHud, setVisibleHud] = useState<boolean[]>([]);
+    const [visibleNotes, setVisibleNotes] = useState<boolean[]>([]);
 
     // Handle add note
     const handleAddNote = useCallback(() => {
@@ -106,6 +108,28 @@ export function PlayerStats({
             setShowNoteInput(false);
         }
     }, [playerId, noteText, noteColor, onAddNote]);
+
+    useEffect(() => {
+        if (isOpen && stats) {
+            setVisibleHud([]);
+            [0, 1, 2, 3].forEach((i) => {
+                setTimeout(() => {
+                    setVisibleHud(prev => [...prev, true]);
+                }, i * 50);
+            });
+        }
+    }, [isOpen, stats]);
+
+    useEffect(() => {
+        if (isOpen && notes.length > 0) {
+            setVisibleNotes([]);
+            notes.forEach((_, i) => {
+                setTimeout(() => {
+                    setVisibleNotes(prev => [...prev, true]);
+                }, i * 40);
+            });
+        }
+    }, [isOpen, notes]);
 
     if (!isOpen) return null;
 
@@ -173,22 +197,25 @@ export function PlayerStats({
                     <div className="player-stats__hud">
                         <span className="player-stats__hud-title">Stats ({stats.handsPlayed} hands)</span>
                         <div className="player-stats__hud-grid">
-                            <div className="player-stats__hud-stat">
-                                <span className="player-stats__hud-value">{stats.vpip ?? '-'}%</span>
-                                <span className="player-stats__hud-label">VPIP</span>
-                            </div>
-                            <div className="player-stats__hud-stat">
-                                <span className="player-stats__hud-value">{stats.pfr ?? '-'}%</span>
-                                <span className="player-stats__hud-label">PFR</span>
-                            </div>
-                            <div className="player-stats__hud-stat">
-                                <span className="player-stats__hud-value">{stats.threeBet ?? '-'}%</span>
-                                <span className="player-stats__hud-label">3-Bet</span>
-                            </div>
-                            <div className="player-stats__hud-stat">
-                                <span className="player-stats__hud-value">{stats.aggression?.toFixed(1) ?? '-'}</span>
-                                <span className="player-stats__hud-label">AF</span>
-                            </div>
+                            {[
+                                { value: stats.vpip ?? '-', label: 'VPIP', percent: true },
+                                { value: stats.pfr ?? '-', label: 'PFR', percent: true },
+                                { value: stats.threeBet ?? '-', label: '3-Bet', percent: true },
+                                { value: stats.aggression?.toFixed(1) ?? '-', label: 'AF' }
+                            ].map((stat, idx) => (
+                                <div
+                                    key={idx}
+                                    className="player-stats__hud-stat"
+                                    style={{
+                                        opacity: visibleHud[idx] ? 1 : 0,
+                                        transform: visibleHud[idx] ? 'scale(1)' : 'scale(0.9)',
+                                        transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                    }}
+                                >
+                                    <span className="player-stats__hud-value">{stat.value}{stat.percent ? '%' : ''}</span>
+                                    <span className="player-stats__hud-label">{stat.label}</span>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}
@@ -237,8 +264,17 @@ export function PlayerStats({
 
                         {notes.length > 0 && (
                             <div className="player-stats__notes-list">
-                                {notes.map((note) => (
-                                    <div key={note.id} className="player-stats__note" style={{ borderLeftColor: note.color }}>
+                                {notes.map((note, idx) => (
+                                    <div
+                                        key={note.id}
+                                        className="player-stats__note"
+                                        style={{
+                                            borderLeftColor: note.color,
+                                            opacity: visibleNotes[idx] ? 1 : 0,
+                                            transform: visibleNotes[idx] ? 'translateX(0)' : 'translateX(-8px)',
+                                            transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                        }}
+                                    >
                                         {note.text}
                                     </div>
                                 ))}

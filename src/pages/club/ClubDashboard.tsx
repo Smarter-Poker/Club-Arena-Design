@@ -50,6 +50,7 @@ export default function ClubDashboard() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'players' | 'tables'>(() => getLocalStorage('ca_dashboard_tab', 'overview'));
     const [dateRange, setDateRange] = useState<'today' | 'week' | 'month' | 'all'>(() => getLocalStorage('ca_dashboard_range', 'week'));
+    const [visiblePlayers, setVisiblePlayers] = useState<Set<number>>(new Set());
     useEffect(() => { setLocalStorage('ca_dashboard_tab', activeTab); }, [activeTab]);
     useEffect(() => { setLocalStorage('ca_dashboard_range', dateRange); }, [dateRange]);
     const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
@@ -71,6 +72,14 @@ export default function ClubDashboard() {
             loadDashboardData();
         }
     }, [clubId, dateRange]);
+
+    // Leaderboard player stagger animation
+    useEffect(() => {
+        setVisiblePlayers(new Set());
+        topPlayers.forEach((_, i) => {
+            setTimeout(() => setVisiblePlayers(prev => new Set(prev).add(i)), i * 60);
+        });
+    }, [topPlayers]);
 
     // Real-time subscription for table changes
     useEffect(() => {
@@ -321,8 +330,12 @@ export default function ClubDashboard() {
                                 {topPlayers.length === 0 ? (
                                     <p className={styles.empty}>No player data yet</p>
                                 ) : (
-                                    topPlayers.map(player => (
-                                        <div key={player.userId} className={styles.playerRow}>
+                                    topPlayers.map((player, idx) => (
+                                        <div key={player.userId} className={styles.playerRow} style={{
+                                            opacity: visiblePlayers.has(idx) ? 1 : 0,
+                                            transform: visiblePlayers.has(idx) ? 'translateY(0)' : 'translateY(8px)',
+                                            transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                        }}>
                                             <span className={styles.rank}>
                                                 {player.rank <= 3 ? ['', '', ''][player.rank - 1] : `#${player.rank}`}
                                             </span>

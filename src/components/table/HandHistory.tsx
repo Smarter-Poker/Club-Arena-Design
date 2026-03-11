@@ -10,7 +10,7 @@
  * - Share functionality
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import './HandHistory.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -169,6 +169,7 @@ export function HandHistory({
     currency = '',
 }: HandHistoryProps) {
     const [currentAction, setCurrentAction] = useState(1);
+    const [visiblePlayers, setVisiblePlayers] = useState<boolean[]>([]);
 
     // Calculate total actions dynamically based on hand data
     const totalActions = useMemo(() => {
@@ -198,6 +199,17 @@ export function HandHistory({
     const totalPot = useMemo(() => {
         return hand.mainPot + (hand.sidePots?.reduce((a, b) => a + b, 0) || 0);
     }, [hand.mainPot, hand.sidePots]);
+
+    useEffect(() => {
+        if (isOpen) {
+            setVisiblePlayers([]);
+            sortedPlayers.forEach((_, i) => {
+                setTimeout(() => {
+                    setVisiblePlayers(prev => [...prev, true]);
+                }, i * 50);
+            });
+        }
+    }, [isOpen, sortedPlayers]);
 
     if (!isOpen) return null;
 
@@ -253,12 +265,20 @@ export function HandHistory({
 
                 {/* Player Results */}
                 <div className="hh-players">
-                    {sortedPlayers.map((player) => (
-                        <PlayerResultRow
+                    {sortedPlayers.map((player, idx) => (
+                        <div
                             key={player.playerId}
-                            player={player}
-                            currency={currency}
-                        />
+                            style={{
+                                opacity: visiblePlayers[idx] ? 1 : 0,
+                                transform: visiblePlayers[idx] ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            }}
+                        >
+                            <PlayerResultRow
+                                player={player}
+                                currency={currency}
+                            />
+                        </div>
                     ))}
                 </div>
 

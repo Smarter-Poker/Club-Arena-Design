@@ -5,7 +5,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './CreateClubPage.module.css';
 import { supabase } from '../lib/supabase';
@@ -488,8 +488,16 @@ export default function CreateClubPage() {
     const [error, setError] = useState<string | null>(null);
     const [hasAgreed, setHasAgreed] = useState(false);
     const [showRulesModal, setShowRulesModal] = useState(false);
+    const [stepVisible, setStepVisible] = useState(false);
 
     const totalSteps = 5;
+
+    // Section entrance animation
+    useEffect(() => {
+        setStepVisible(false);
+        const timer = setTimeout(() => setStepVisible(true), 50);
+        return () => clearTimeout(timer);
+    }, [step]);
 
     const updateForm = (updates: Partial<ClubFormData>) => {
         setForm(prev => ({ ...prev, ...updates }));
@@ -671,7 +679,11 @@ export default function CreateClubPage() {
                 </div>
 
                 {/* Step Content */}
-                <div className={styles.stepContainer}>
+                <div className={styles.stepContainer} style={{
+                    opacity: stepVisible ? 1 : 0,
+                    transform: stepVisible ? 'translateY(0)' : 'translateY(12px)',
+                    transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                }}>
                     {renderStep()}
                 </div>
 

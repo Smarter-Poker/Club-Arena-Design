@@ -10,7 +10,7 @@
  * - Preview card
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import './ShareHand.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -300,6 +300,7 @@ export function ShareHand({
 }: ShareHandProps) {
     const [copied, setCopied] = useState(false);
     const [activeTab, setActiveTab] = useState<'link' | 'social' | 'embed'>('link');
+    const [visibleSocial, setVisibleSocial] = useState<boolean[]>([]);
 
     // Generate shareable URL
     const shareUrl = useMemo(() => {
@@ -364,6 +365,17 @@ export function ShareHand({
     const embedCode = useMemo(() => {
         return `<iframe src="${shareUrl}&embed=true" width="400" height="300" frameborder="0" allowfullscreen></iframe>`;
     }, [shareUrl]);
+
+    useEffect(() => {
+        if (activeTab === 'social') {
+            setVisibleSocial([]);
+            [0, 1, 2, 3].forEach((i) => {
+                setTimeout(() => {
+                    setVisibleSocial(prev => [...prev, true]);
+                }, i * 50);
+            });
+        }
+    }, [activeTab]);
 
     if (!isOpen) return null;
 
@@ -463,34 +475,26 @@ export function ShareHand({
 
                     {activeTab === 'social' && (
                         <div className="share-hand__social-tab">
-                            <button
-                                className="share-hand__social-btn share-hand__social-btn--twitter"
-                                onClick={() => handleSocialShare('twitter')}
-                            >
-                                <span className="share-hand__social-icon">𝕏</span>
-                                Twitter / X
-                            </button>
-                            <button
-                                className="share-hand__social-btn share-hand__social-btn--facebook"
-                                onClick={() => handleSocialShare('facebook')}
-                            >
-                                <span className="share-hand__social-icon">f</span>
-                                Facebook
-                            </button>
-                            <button
-                                className="share-hand__social-btn share-hand__social-btn--telegram"
-                                onClick={() => handleSocialShare('telegram')}
-                            >
-                                <span className="share-hand__social-icon">✈</span>
-                                Telegram
-                            </button>
-                            <button
-                                className="share-hand__social-btn share-hand__social-btn--whatsapp"
-                                onClick={() => handleSocialShare('whatsapp')}
-                            >
-                                <span className="share-hand__social-icon"></span>
-                                WhatsApp
-                            </button>
+                            {[
+                                { platform: 'twitter', icon: '𝕏', label: 'Twitter / X', className: 'share-hand__social-btn--twitter' },
+                                { platform: 'facebook', icon: 'f', label: 'Facebook', className: 'share-hand__social-btn--facebook' },
+                                { platform: 'telegram', icon: '✈', label: 'Telegram', className: 'share-hand__social-btn--telegram' },
+                                { platform: 'whatsapp', icon: '', label: 'WhatsApp', className: 'share-hand__social-btn--whatsapp' }
+                            ].map((social, idx) => (
+                                <button
+                                    key={social.platform}
+                                    className={`share-hand__social-btn ${social.className}`}
+                                    onClick={() => handleSocialShare(social.platform as 'twitter' | 'facebook' | 'telegram' | 'whatsapp')}
+                                    style={{
+                                        opacity: visibleSocial[idx] ? 1 : 0,
+                                        transform: visibleSocial[idx] ? 'scale(1)' : 'scale(0.9)',
+                                        transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                    }}
+                                >
+                                    <span className="share-hand__social-icon">{social.icon}</span>
+                                    {social.label}
+                                </button>
+                            ))}
                         </div>
                     )}
 

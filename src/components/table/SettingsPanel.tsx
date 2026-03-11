@@ -10,7 +10,7 @@
  * - Animation speed
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './SettingsPanel.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -70,6 +70,19 @@ export function SettingsPanel({
     settings,
     onSettingsChange,
 }: SettingsPanelProps) {
+    const [visibleSections, setVisibleSections] = useState<boolean[]>([]);
+
+    useEffect(() => {
+        if (isOpen) {
+            setVisibleSections([]);
+            [0, 1, 2].forEach((i) => {
+                setTimeout(() => {
+                    setVisibleSections(prev => [...prev, true]);
+                }, i * 80);
+            });
+        }
+    }, [isOpen]);
+
     // Handle toggle change
     const handleToggle = useCallback(
         (key: keyof TableSettings) => {
@@ -113,7 +126,14 @@ export function SettingsPanel({
                 {/* Settings Sections */}
                 <div className="settings-panel__body">
                     {/* Gameplay Section */}
-                    <div className="settings-section">
+                    <div
+                        className="settings-section"
+                        style={{
+                            opacity: visibleSections[0] ? 1 : 0,
+                            transform: visibleSections[0] ? 'translateY(0)' : 'translateY(8px)',
+                            transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        }}
+                    >
                         <h3 className="settings-section__title">Gameplay</h3>
 
                         <SettingToggle
@@ -153,7 +173,14 @@ export function SettingsPanel({
                     </div>
 
                     {/* Display Section */}
-                    <div className="settings-section">
+                    <div
+                        className="settings-section"
+                        style={{
+                            opacity: visibleSections[1] ? 1 : 0,
+                            transform: visibleSections[1] ? 'translateY(0)' : 'translateY(8px)',
+                            transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        }}
+                    >
                         <h3 className="settings-section__title">Display</h3>
 
                         <SettingToggle
@@ -209,7 +236,14 @@ export function SettingsPanel({
                     </div>
 
                     {/* Sound Section */}
-                    <div className="settings-section">
+                    <div
+                        className="settings-section"
+                        style={{
+                            opacity: visibleSections[2] ? 1 : 0,
+                            transform: visibleSections[2] ? 'translateY(0)' : 'translateY(8px)',
+                            transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        }}
+                    >
                         <h3 className="settings-section__title">Sound</h3>
 
                         <SettingToggle

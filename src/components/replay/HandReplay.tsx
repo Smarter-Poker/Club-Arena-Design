@@ -86,11 +86,19 @@ export default function HandReplay({ handId: propHandId, handData: initialData, 
     const [isLoading, setIsLoading] = useState(!initialData);
     const [currentStep, setCurrentStep] = useState(1);
     const [totalSteps, setTotalSteps] = useState(1);
+    const [controlsVisible, setControlsVisible] = useState(false);
     const totalStepsRef = useRef(1);
     const [isPlaying, setIsPlaying] = useState(false);
     const toast = useToast();
 
     const playbackRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    // Controls entrance animation
+    useEffect(() => {
+        setControlsVisible(false);
+        const timer = setTimeout(() => setControlsVisible(true), 200);
+        return () => clearTimeout(timer);
+    }, [isLoading]);
 
     useEffect(() => {
         // Always load demo data for now (or fetch from API when handId is provided)
@@ -358,11 +366,20 @@ export default function HandReplay({ handId: propHandId, handData: initialData, 
             </div>
 
             {/* Playback Controls */}
-            <div className="playback-controls">
+            <div className="playback-controls" style={{
+                opacity: controlsVisible ? 1 : 0,
+                transform: controlsVisible ? 'translateY(0)' : 'translateY(10px)',
+                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+            }}>
                 <span className="step-display">{currentStep}/{totalSteps}</span>
             </div>
 
-            <div className="playback-slider-row">
+            <div className="playback-slider-row" style={{
+                opacity: controlsVisible ? 1 : 0,
+                transform: controlsVisible ? 'translateY(0)' : 'translateY(10px)',
+                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                transitionDelay: '0.05s',
+            }}>
                 <button className="nav-arrow" onClick={handlePrev} disabled={currentStep <= 1}>◀</button>
                 <input
                     type="range"

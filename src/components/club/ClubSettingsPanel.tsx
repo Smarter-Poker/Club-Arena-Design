@@ -54,10 +54,17 @@ export function ClubSettingsPanel({ clubId, isOpen, onClose, onSave }: ClubSetti
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [visibleSections, setVisibleSections] = useState<boolean[]>([]);
 
     useEffect(() => {
         if (isOpen) {
             loadSettings();
+            setVisibleSections([]);
+            [0, 1, 2, 3, 4].forEach((i) => {
+                setTimeout(() => {
+                    setVisibleSections(prev => [...prev, true]);
+                }, i * 60);
+            });
         }
     }, [isOpen, clubId]);
 
@@ -146,7 +153,13 @@ export function ClubSettingsPanel({ clubId, isOpen, onClose, onSave }: ClubSetti
                     <div className="loading-state">Loading...</div>
                 ) : (
                     <div className="club-settings__content">
-                        <section>
+                        <section
+                            style={{
+                                opacity: visibleSections[0] ? 1 : 0,
+                                transform: visibleSections[0] ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            }}
+                        >
                             <h4>Basic Info</h4>
                             <div className="form-group">
                                 <label>Club Name</label>
@@ -166,7 +179,13 @@ export function ClubSettingsPanel({ clubId, isOpen, onClose, onSave }: ClubSetti
                             </div>
                         </section>
 
-                        <section>
+                        <section
+                            style={{
+                                opacity: visibleSections[1] ? 1 : 0,
+                                transform: visibleSections[1] ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            }}
+                        >
                             <h4>Access</h4>
                             <label className="toggle">
                                 <input
@@ -186,7 +205,13 @@ export function ClubSettingsPanel({ clubId, isOpen, onClose, onSave }: ClubSetti
                             </label>
                         </section>
 
-                        <section>
+                        <section
+                            style={{
+                                opacity: visibleSections[2] ? 1 : 0,
+                                transform: visibleSections[2] ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            }}
+                        >
                             <h4>Rake Settings</h4>
                             <div className="form-row">
                                 <div className="form-group">
@@ -211,7 +236,13 @@ export function ClubSettingsPanel({ clubId, isOpen, onClose, onSave }: ClubSetti
                             </div>
                         </section>
 
-                        <section>
+                        <section
+                            style={{
+                                opacity: visibleSections[3] ? 1 : 0,
+                                transform: visibleSections[3] ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            }}
+                        >
                             <h4>Game Features</h4>
                             <label className="toggle">
                                 <input

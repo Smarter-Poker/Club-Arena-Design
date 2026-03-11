@@ -10,7 +10,7 @@
  * - Direct join buttons
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import './CashTableList.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -156,6 +156,15 @@ export function CashTableList({
 }: CashTableListProps) {
     const [sortField, setSortField] = useState<SortField>('players');
     const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+    const [visibleTables, setVisibleTables] = useState<Set<number>>(new Set());
+
+    // Stagger table entrance
+    useEffect(() => {
+        setVisibleTables(new Set());
+        tables.forEach((_, i) => {
+            setTimeout(() => setVisibleTables(prev => new Set(prev).add(i)), i * 50);
+        });
+    }, [tables.length]);
 
     // Handle sort toggle
     const handleSort = useCallback((field: SortField) => {
@@ -258,15 +267,20 @@ export function CashTableList({
 
             {/* Table Rows */}
             <div className="cash-table-list__body">
-                {sortedTables.map((table) => (
-                    <TableRow
-                        key={table.id}
-                        table={table}
-                        onJoin={() => onJoinTable(table.id)}
-                        onView={() => onViewTable(table.id)}
-                        onWaitList={() => onJoinWaitList(table.id)}
-                        currency={currency}
-                    />
+                {sortedTables.map((table, idx) => (
+                    <div key={table.id} style={{
+                        opacity: visibleTables.has(idx) ? 1 : 0,
+                        transform: visibleTables.has(idx) ? 'translateY(0)' : 'translateY(8px)',
+                        transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    }}>
+                        <TableRow
+                            table={table}
+                            onJoin={() => onJoinTable(table.id)}
+                            onView={() => onViewTable(table.id)}
+                            onWaitList={() => onJoinWaitList(table.id)}
+                            currency={currency}
+                        />
+                    </div>
                 ))}
             </div>
 

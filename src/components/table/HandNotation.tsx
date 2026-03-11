@@ -9,7 +9,7 @@
  * - Download as text file
  */
 
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useEffect, useCallback, useState } from 'react';
 import './HandNotation.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -193,9 +193,14 @@ export function HandNotation({
     currency = '',
 }: HandNotationProps) {
     const [copied, setCopied] = useState(false);
+    const [contentVisible, setContentVisible] = useState(false);
 
     // Generate notation text
     const notation = useMemo(() => generateNotation(hand, currency), [hand, currency]);
+
+    useEffect(() => {
+        setContentVisible(true);
+    }, [hand]);
 
     // Copy to clipboard
     const handleCopy = useCallback(async () => {
@@ -245,7 +250,16 @@ export function HandNotation({
             </div>
 
             {/* Text Content */}
-            <pre className="hand-notation__content">{notation}</pre>
+            <pre
+                className="hand-notation__content"
+                style={{
+                    opacity: contentVisible ? 1 : 0,
+                    transform: contentVisible ? 'translateY(0)' : 'translateY(8px)',
+                    transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                }}
+            >
+                {notation}
+            </pre>
         </div>
     );
 }

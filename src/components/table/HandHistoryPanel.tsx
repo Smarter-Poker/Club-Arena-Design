@@ -7,7 +7,7 @@
  * street-by-street action replay, and export/share functionality.
  */
 
-import { useState, memo, useCallback, useMemo } from 'react';
+import { useState, useEffect, memo, useCallback, useMemo } from 'react';
 import './HandHistoryPanel.css';
 
 export interface HandHistoryAction {
@@ -197,6 +197,7 @@ function HandEntry({ hand, heroId, isExpanded, onToggle }: {
 
 const HandHistoryPanel = memo(function HandHistoryPanel({ isOpen, onClose, hands, heroId }: HandHistoryPanelProps) {
     const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [visibleHands, setVisibleHands] = useState<boolean[]>([]);
 
     const toggleExpand = useCallback((id: string) => {
         setExpandedId(prev => prev === id ? null : id);
@@ -221,6 +222,17 @@ const HandHistoryPanel = memo(function HandHistoryPanel({ isOpen, onClose, hands
         const biggestLoss = Math.min(0, ...hands.map(h => h.heroResult));
         return { totalResult, wins, handsPlayed: hands.length, biggestWin, biggestLoss };
     }, [hands]);
+
+    useEffect(() => {
+        if (isOpen) {
+            setVisibleHands([]);
+            hands.forEach((_, i) => {
+                setTimeout(() => {
+                    setVisibleHands(prev => [...prev, true]);
+                }, i * 50);
+            });
+        }
+    }, [isOpen, hands]);
 
     if (!isOpen) return null;
 
@@ -270,14 +282,22 @@ const HandHistoryPanel = memo(function HandHistoryPanel({ isOpen, onClose, hands
                 {hands.length === 0 ? (
                     <div className="hh-panel__empty">No hands played yet</div>
                 ) : (
-                    hands.map(hand => (
-                        <HandEntry
+                    hands.map((hand, idx) => (
+                        <div
                             key={hand.id}
-                            hand={hand}
-                            heroId={heroId}
-                            isExpanded={expandedId === hand.id}
-                            onToggle={() => toggleExpand(hand.id)}
-                        />
+                            style={{
+                                opacity: visibleHands[idx] ? 1 : 0,
+                                transform: visibleHands[idx] ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            }}
+                        >
+                            <HandEntry
+                                hand={hand}
+                                heroId={heroId}
+                                isExpanded={expandedId === hand.id}
+                                onToggle={() => toggleExpand(hand.id)}
+                            />
+                        </div>
                     ))
                 )}
             </div>

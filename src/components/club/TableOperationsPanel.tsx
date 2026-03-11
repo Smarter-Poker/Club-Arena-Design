@@ -327,6 +327,8 @@ export default function TableOperationsPanel({ clubId }: Props) {
         userId?: string;
         playerName?: string;
     } | null>(null);
+    const [visibleTables, setVisibleTables] = useState<boolean[]>([]);
+    const [visiblePlayers, setVisiblePlayers] = useState<Record<string, boolean[]>>({})
 
     // ─── Load tables ───────────────────────────────────────────────────────────
     const loadTables = useCallback(async () => {
@@ -337,6 +339,32 @@ export default function TableOperationsPanel({ clubId }: Props) {
     }, [clubId]);
 
     useEffect(() => { loadTables(); }, [loadTables]);
+
+    useEffect(() => {
+        setVisibleTables([]);
+        tables.forEach((_, i) => {
+            setTimeout(() => {
+                setVisibleTables(prev => [...prev, true]);
+            }, i * 60);
+        });
+    }, [tables]);
+
+    useEffect(() => {
+        if (expandedTable && seatedPlayers[expandedTable]) {
+            setVisiblePlayers(prev => ({
+                ...prev,
+                [expandedTable]: []
+            }));
+            seatedPlayers[expandedTable].forEach((_, i) => {
+                setTimeout(() => {
+                    setVisiblePlayers(prev => ({
+                        ...prev,
+                        [expandedTable]: [...(prev[expandedTable] || []), true]
+                    }));
+                }, i * 50);
+            });
+        }
+    }, [expandedTable, seatedPlayers]);
 
     // ─── Realtime subscription ─────────────────────────────────────────────────
     useEffect(() => {
@@ -429,7 +457,7 @@ export default function TableOperationsPanel({ clubId }: Props) {
                 <button style={styles.refreshBtn} onClick={loadTables}>Refresh</button>
             </div>
 
-            {tables.map(table => {
+            {tables.map((table, idx) => {
                 const isExpanded = expandedTable === table.id;
                 const players = seatedPlayers[table.id] || [];
                 const stats = tableStats[table.id];
@@ -441,7 +469,9 @@ export default function TableOperationsPanel({ clubId }: Props) {
                         style={{
                             ...styles.tableCard,
                             ...(isExpanded ? styles.tableCardExpanded : {}),
-                            opacity: isLoading ? 0.6 : 1,
+                            opacity: isLoading ? 0.6 : visibleTables[idx] ? 1 : 0,
+                            transform: visibleTables[idx] ? 'translateY(0)' : 'translateY(8px)',
+                            transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                         }}
                     >
                         {/* Table Header — Click to Expand */}
@@ -515,13 +545,22 @@ export default function TableOperationsPanel({ clubId }: Props) {
                                 {players.length === 0 ? (
                                     <div style={styles.noPlayers}>No players seated</div>
                                 ) : (
-                                    players.map(player => {
+                                    players.map((player, pIdx) => {
                                         const profile = player.profiles;
                                         const name = profile?.display_name || profile?.username || 'Unknown';
                                         const isHorse = profile?.is_horse || false;
+                                        const playerVisible = visiblePlayers[expandedTable]?.[pIdx];
 
                                         return (
-                                            <div key={player.user_id} style={styles.playerRow}>
+                                            <div
+                                                key={player.user_id}
+                                                style={{
+                                                    ...styles.playerRow,
+                                                    opacity: playerVisible ? 1 : 0,
+                                                    transform: playerVisible ? 'translateY(0)' : 'translateY(8px)',
+                                                    transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                                }}
+                                            >
                                                 <div style={styles.playerInfo}>
                                                     <div style={styles.playerAvatar}>
                                                         {profile?.avatar_url ? (

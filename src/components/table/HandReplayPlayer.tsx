@@ -185,6 +185,7 @@ export function HandReplayPlayer({
     const [pot, setPot] = useState(0);
     const [activeAction, setActiveAction] = useState<{ seat: number; text: string } | null>(null);
     const [winningSeats, setWinningSeats] = useState<number[]>([]);
+    const [visibleSeats, setVisibleSeats] = useState<Set<number>>(new Set());
 
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -286,6 +287,14 @@ export function HandReplayPlayer({
         }
     }, [autoPlay, state]);
 
+    useEffect(() => {
+        hand.players.forEach((player, i) => {
+            setTimeout(() => {
+                setVisibleSeats(prev => new Set([...prev, player.seat]));
+            }, i * 60);
+        });
+    }, [hand]);
+
     // Controls
     const handlePlayPause = useCallback(() => {
         if (state === 'PLAYING') {
@@ -345,6 +354,9 @@ export function HandReplayPlayer({
                                 className={`replay-player__seat ${isActive ? 'replay-player__seat--active' : ''} ${isWinner ? 'replay-player__seat--winner' : ''}`}
                                 style={{
                                     '--angle': `${angle}deg`,
+                                    opacity: visibleSeats.has(player.seat) ? 1 : 0,
+                                    transform: visibleSeats.has(player.seat) ? 'scale(1)' : 'scale(0.8)',
+                                    transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                                 } as React.CSSProperties}
                             >
                                 <div className="replay-player__player-info">

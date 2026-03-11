@@ -52,8 +52,18 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
     const [hasAgreed, setHasAgreed] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [showLogoGenerator, setShowLogoGenerator] = useState(false);
+    const [visibleFormElements, setVisibleFormElements] = useState<boolean[]>([]);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        setVisibleFormElements([]);
+        [0, 1, 2, 3, 4].forEach((i) => {
+            setTimeout(() => {
+                setVisibleFormElements(prev => [...prev, true]);
+            }, i * 80);
+        });
+    }, [isOpen]);
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -238,6 +248,10 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
                     onChange={(e) => setClubName(e.target.value)}
                     maxLength={30}
                     autoComplete="off"
+                    style={{
+                        opacity: visibleFormElements[0] ? 1 : 0,
+                        transition: 'opacity 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    }}
                 />
 
                 {/* Upload Logo button zone */}
@@ -245,6 +259,11 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
                     className={styles.uploadLogoBtn}
                     onClick={() => { haptic.medium(); fileInputRef.current?.click(); }}
                     aria-label="Upload Logo"
+                    style={{
+                        opacity: visibleFormElements[1] ? 1 : 0,
+                        transform: visibleFormElements[1] ? 'scale(1)' : 'scale(0.9)',
+                        transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    }}
                 >
                     {logoPreview && (
                         <img src={logoPreview} alt="Logo preview" className={styles.logoThumb} />
@@ -256,6 +275,11 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
                     className={styles.createLogoBtn}
                     onClick={() => { haptic.medium(); setShowLogoGenerator(true); }}
                     aria-label="Create Logo"
+                    style={{
+                        opacity: visibleFormElements[2] ? 1 : 0,
+                        transform: visibleFormElements[2] ? 'scale(1)' : 'scale(0.9)',
+                        transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    }}
                 >
                     {logoPreview && (
                         <img src={logoPreview} alt="Logo preview" className={styles.logoThumb} />
@@ -272,7 +296,14 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
                 />
 
                 {/* Terms checkbox - positioned over the checkbox area */}
-                <label className={styles.termsLabel}>
+                <label
+                    className={styles.termsLabel}
+                    style={{
+                        opacity: visibleFormElements[3] ? 1 : 0,
+                        transform: visibleFormElements[3] ? 'scale(1)' : 'scale(0.9)',
+                        transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    }}
+                >
                     <input
                         type="checkbox"
                         checked={hasAgreed}
@@ -288,6 +319,11 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
                     onClick={() => { haptic.success(); handleCreate(); }}
                     disabled={isCreating || !hasAgreed || !clubName.trim() || !logoPreview}
                     aria-label="Create Club"
+                    style={{
+                        opacity: visibleFormElements[4] ? 1 : 0,
+                        transform: visibleFormElements[4] ? 'scale(1)' : 'scale(0.9)',
+                        transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    }}
                 >
                     {isCreating && <span className={styles.spinner}>⟳</span>}
                 </button>

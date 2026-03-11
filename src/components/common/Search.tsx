@@ -186,7 +186,7 @@ export function SearchWithResults<T>({
                                 <div className="search-results-empty">{emptyMessage}</div>
                             ) : (
                                 results.map((item, index) => (
-                                    <div
+                                    <motion.div
                                         key={index}
                                         className={`search-result-item ${index === highlightedIndex ? 'highlighted' : ''}`}
                                         onClick={() => {
@@ -194,9 +194,12 @@ export function SearchWithResults<T>({
                                             setIsOpen(false);
                                         }}
                                         onMouseEnter={() => setHighlightedIndex(index)}
+                                        initial={{ opacity: 0, x: -8 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: index * 0.04, duration: 0.25 }}
                                     >
                                         {renderResult(item, index)}
-                                    </div>
+                                    </motion.div>
                                 ))
                             )}
                         </motion.div>

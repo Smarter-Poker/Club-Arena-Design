@@ -152,7 +152,20 @@ export function CashGameCard({ table, isAdmin, onDelete }: CashCardProps) {
     const isDoubleBoard = settings.doubleBoard || table.name.toLowerCase().includes('double') || table.name.toLowerCase().includes('dbl');
 
     return (
-        <div className="table-card-wrapper" style={{ position: 'relative' }}>
+        <div
+            className="table-card-wrapper"
+            style={{
+                position: 'relative',
+                opacity: 1,
+                animation: 'slideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+            }}
+        >
+            <style>{`
+                @keyframes slideUp {
+                    from { opacity: 0; transform: translateY(12px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+            `}</style>
             <Link to={`/table/${table.id}`} className={`dgc dgc--${variant.css}`}>
                 {/* Ambient glow */}
                 <div className="dgc__glow" />

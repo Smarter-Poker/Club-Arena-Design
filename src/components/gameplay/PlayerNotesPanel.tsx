@@ -62,6 +62,7 @@ export default function PlayerNotesPanel({
     const [saving, setSaving] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [isVIP, setIsVIP] = useState(false);
+    const [visibleNotes, setVisibleNotes] = useState<Set<number>>(new Set());
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -121,6 +122,11 @@ export default function PlayerNotesPanel({
                 lastUpdated: n.updated_at
             }));
             setNotes(mapped);
+            // Stagger entrance
+            setVisibleNotes(new Set());
+            mapped.forEach((_, i) => {
+                setTimeout(() => setVisibleNotes(prev => new Set(prev).add(i)), i * 50);
+            });
         }
         setLoading(false);
     };
@@ -271,11 +277,16 @@ export default function PlayerNotesPanel({
                         {searchQuery ? 'No matching notes' : 'No notes yet'}
                     </div>
                 ) : (
-                    filteredNotes.map(note => (
+                    filteredNotes.map((note, idx) => (
                         <div
                             key={note.id}
                             className={styles.noteCard}
-                            style={{ borderLeftColor: note.color }}
+                            style={{
+                                borderLeftColor: note.color,
+                                opacity: visibleNotes.has(idx) ? 1 : 0,
+                                transform: visibleNotes.has(idx) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            }}
                         >
                             <div className={styles.noteHeader}>
                                 <div className={styles.targetInfo}>

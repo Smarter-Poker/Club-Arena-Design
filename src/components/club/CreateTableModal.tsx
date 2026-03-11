@@ -3,7 +3,7 @@
  * Full-featured cash game creation with ALL settings required before going live
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { tableService } from '../../services/TableService';
 import type { GameVariant, TableSettings } from '../../types/database.types';
 import styles from './CreateTableModal.module.css';
@@ -47,6 +47,13 @@ export default function CreateTableModal({ clubId, onClose, onSuccess }: CreateT
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [useCustomStakes, setUseCustomStakes] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
+
+    useEffect(() => {
+        setModalVisible(false);
+        const timer = setTimeout(() => setModalVisible(true), 30);
+        return () => clearTimeout(timer);
+    }, []);
 
     // ── Buy-in Range ──
     const [minBuyinBB, setMinBuyinBB] = useState('20');
@@ -148,7 +155,11 @@ export default function CreateTableModal({ clubId, onClose, onSuccess }: CreateT
         <div className={styles['modal-overlay']} onClick={(e) => {
             if (e.target === e.currentTarget) onClose();
         }}>
-            <div className={styles['modal-content']}>
+            <div className={styles['modal-content']} style={{
+                opacity: modalVisible ? 1 : 0,
+                transform: modalVisible ? 'translateY(0)' : 'translateY(20px)',
+                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+            }}>
                 <header className={styles['modal-header']}>
                     <h2>Create Cash Game</h2>
                     <button className={styles['close-btn']} onClick={onClose}>✕</button>

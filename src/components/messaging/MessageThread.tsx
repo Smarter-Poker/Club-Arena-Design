@@ -5,7 +5,7 @@
  * Features: Chat bubbles, typing indicator, seen status, reactions, infinite scroll
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
 import ChatBubble from './ChatBubble';
@@ -49,6 +49,7 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
     const [hasMore, setHasMore] = useState(true);
     const [typingUsers, setTypingUsers] = useState<string[]>([]);
     const [seenBy, setSeenBy] = useState<string[]>([]);
+    const [visibleMessages, setVisibleMessages] = useState<Set<number>>(new Set());
     const scrollRef = useRef<HTMLDivElement>(null);
     const heartbeatRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -285,6 +286,11 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
     useEffect(() => {
         if (messages.length > 0) {
             scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+            // Stagger message entrance
+            setVisibleMessages(new Set());
+            messages.forEach((_, i) => {
+                setTimeout(() => setVisibleMessages(prev => new Set(prev).add(i)), i * 30);
+            });
         }
     }, [messages.length]);
 
@@ -328,14 +334,19 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
                         <p>Start the conversation!</p>
                     </div>
                 ) : (
-                    messages.map(message => (
-                        <ChatBubble
-                            key={message.id}
-                            message={message}
-                            isCurrentUser={message.userId === user?.id}
-                            onReact={reactToMessage}
-                            onDelete={deleteMessage}
-                        />
+                    messages.map((message, idx) => (
+                        <div key={message.id} style={{
+                            opacity: visibleMessages.has(idx) ? 1 : 0,
+                            transform: visibleMessages.has(idx) ? 'translateY(0)' : 'translateY(8px)',
+                            transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        }}>
+                            <ChatBubble
+                                message={message}
+                                isCurrentUser={message.userId === user?.id}
+                                onReact={reactToMessage}
+                                onDelete={deleteMessage}
+                            />
+                        </div>
                     ))
                 )}
 

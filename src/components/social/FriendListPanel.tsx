@@ -41,6 +41,7 @@ export default function FriendListPanel({
     const [addFriendInput, setAddFriendInput] = useState('');
     const [addingFriend, setAddingFriend] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [visibleFriends, setVisibleFriends] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         if (user?.id) {
@@ -88,6 +89,11 @@ export default function FriendListPanel({
             });
 
             setFriends(friendList);
+            // Stagger entrance
+            setVisibleFriends(new Set());
+            friendList.forEach((_, i) => {
+                setTimeout(() => setVisibleFriends(prev => new Set(prev).add(i)), i * 50);
+            });
         } catch (err) {
             console.error('Failed to load friends:', err);
         }
@@ -238,8 +244,12 @@ export default function FriendListPanel({
                         {searchQuery ? 'No friends match your search' : 'No friends yet'}
                     </div>
                 ) : (
-                    filteredFriends.map(friend => (
-                        <div key={friend.id} className={styles.friendRow}>
+                    filteredFriends.map((friend, idx) => (
+                        <div key={friend.id} className={styles.friendRow} style={{
+                            opacity: visibleFriends.has(idx) ? 1 : 0,
+                            transform: visibleFriends.has(idx) ? 'translateX(0)' : 'translateX(-8px)',
+                            transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        }}>
                             <div
                                 className={styles.avatar}
                                 onClick={() => onProfileClick?.(friend.friendId)}

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { tournamentService, BLIND_STRUCTURES, PAYOUT_STRUCTURES, SPIN_MULTIPLIERS } from '../../services/TournamentService';
 import styles from './CreateTournamentModal.module.css';
 import { useToast } from '../common/Toast';
@@ -14,6 +14,16 @@ type TournamentFormat = 'mtt' | 'sng' | 'bounty' | 'progressive_bounty' | 'myste
 
 export default function CreateTournamentModal({ clubId, unionId, onClose, onSuccess }: Props) {
     const toast = useToast();
+    const [visibleSections, setVisibleSections] = useState<boolean[]>([]);
+
+    useEffect(() => {
+        setVisibleSections([]);
+        [0, 1, 2, 3, 4, 5].forEach((i) => {
+            setTimeout(() => {
+                setVisibleSections(prev => [...prev, true]);
+            }, i * 90);
+        });
+    }, []);
 
     // ── Core Config ──
     const [name, setName] = useState('');

@@ -79,6 +79,7 @@ export function CashierModal({
 }: CashierModalProps) {
     const [activeTab, setActiveTab] = useState<CashierTab>('add');
     const [amount, setAmount] = useState(0);
+    const [visibleQuick, setVisibleQuick] = useState<boolean[]>([]);
 
     // Calculate limits
     const canAddAmount = useMemo(() => {
@@ -106,7 +107,14 @@ export function CashierModal({
     const handleTabChange = useCallback((tab: CashierTab) => {
         setActiveTab(tab);
         setAmount(0);
-    }, []);
+        setVisibleQuick([]);
+        const max = tab === 'add' ? canAddAmount : canWithdrawAmount;
+        [0, 1, 2, 3].forEach((i) => {
+            setTimeout(() => {
+                setVisibleQuick(prev => [...prev, true]);
+            }, i * 50);
+        });
+    }, [canAddAmount, canWithdrawAmount]);
 
     // Handle confirm
     const handleConfirm = useCallback(async () => {
@@ -202,12 +210,17 @@ export function CashierModal({
 
                 {/* Quick Amounts */}
                 <div className="cashier-modal__quick-amounts">
-                    {quickAmounts.map(({ label, value }) => (
+                    {quickAmounts.map(({ label, value }, idx) => (
                         <button
                             key={label}
                             className={`cashier-modal__quick-btn ${amount === value ? 'cashier-modal__quick-btn--active' : ''}`}
                             onClick={() => setAmount(value)}
                             disabled={value <= 0}
+                            style={{
+                                opacity: visibleQuick[idx] ? 1 : 0,
+                                transform: visibleQuick[idx] ? 'scale(1)' : 'scale(0.85)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            }}
                         >
                             {label}
                         </button>

@@ -10,7 +10,7 @@
  * - Timeline integration
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import './ReplayActions.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -175,6 +175,17 @@ export function ReplayActions({
     currency = '',
     isPlaying = false,
 }: ReplayActionsProps) {
+    const [visibleStreets, setVisibleStreets] = useState<boolean[]>([]);
+
+    useEffect(() => {
+        setVisibleStreets([]);
+        streets.forEach((_, i) => {
+            setTimeout(() => {
+                setVisibleStreets(prev => [...prev, true]);
+            }, i * 70);
+        });
+    }, [streets]);
+
     // Calculate total actions
     const totalActions = useMemo(() => {
         return streets.reduce((sum, s) => sum + s.actions.length, 0);
@@ -213,15 +224,23 @@ export function ReplayActions({
 
             {/* Streets */}
             <div className="replay-actions__body">
-                {streets.map((street) => (
-                    <StreetSection
+                {streets.map((street, idx) => (
+                    <div
                         key={street.street}
-                        street={street}
-                        isCurrentStreet={currentStreet === street.street}
-                        currentActionIndex={currentStreet === street.street ? currentActionIndex : undefined}
-                        onActionClick={(idx) => onActionClick?.(street.street, idx)}
-                        currency={currency}
-                    />
+                        style={{
+                            opacity: visibleStreets[idx] ? 1 : 0,
+                            transform: visibleStreets[idx] ? 'translateY(0)' : 'translateY(8px)',
+                            transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        }}
+                    >
+                        <StreetSection
+                            street={street}
+                            isCurrentStreet={currentStreet === street.street}
+                            currentActionIndex={currentStreet === street.street ? currentActionIndex : undefined}
+                            onActionClick={(idx) => onActionClick?.(street.street, idx)}
+                            currency={currency}
+                        />
+                    </div>
                 ))}
             </div>
 

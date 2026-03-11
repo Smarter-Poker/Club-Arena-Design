@@ -38,6 +38,7 @@ export default function ConversationList({ clubId, onSelectConversation, selecte
     const [searchQuery, setSearchQuery] = useState('');
     const [offset, setOffset] = useState(0);
     const [hasMore, setHasMore] = useState(true);
+    const [visibleConversations, setVisibleConversations] = useState<Set<number>>(new Set());
     const heartbeatRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Club Messages widget state
@@ -150,6 +151,11 @@ export default function ConversationList({ clubId, onSelectConversation, selecte
 
                 if (replace) {
                     setConversations(mapped);
+                    // Stagger entrance
+                    setVisibleConversations(new Set());
+                    mapped.forEach((_, i) => {
+                        setTimeout(() => setVisibleConversations(prev => new Set(prev).add(i)), i * 40);
+                    });
                 } else {
                     setConversations(prev => [...prev, ...mapped]);
                 }
@@ -271,11 +277,16 @@ export default function ConversationList({ clubId, onSelectConversation, selecte
                         <p className={styles.hint}>Start chatting with friends!</p>
                     </div>
                 ) : (
-                    filteredConversations.map(conv => (
+                    filteredConversations.map((conv, idx) => (
                         <div
                             key={conv.id}
                             className={`${styles.item} ${selectedId === conv.id ? styles.selected : ''} ${conv.unreadCount > 0 ? styles.unread : ''}`}
                             onClick={() => handleSelect(conv.id)}
+                            style={{
+                                opacity: visibleConversations.has(idx) ? 1 : 0,
+                                transform: visibleConversations.has(idx) ? 'translateX(0)' : 'translateX(-8px)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            }}
                         >
                             {/* Avatar */}
                             <div className={styles.avatarContainer}>

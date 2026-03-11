@@ -79,6 +79,7 @@ export function TableSettings({
     const [loading, setLoading] = useState(true);
     const [offlineUsedThisSession, setOfflineUsedThisSession] = useState(false);
     const [showTimeBankConfirm, setShowTimeBankConfirm] = useState(false);
+    const [visibleSettings, setVisibleSettings] = useState<boolean[]>([]);
 
     // Check VIP status on mount
     useEffect(() => {
@@ -101,6 +102,12 @@ export function TableSettings({
             // Check session storage for offline protection usage
             const used = sessionStorage.getItem('offline_protection_used');
             setOfflineUsedThisSession(used === 'true');
+            setVisibleSettings([]);
+            SETTINGS.forEach((_, i) => {
+                setTimeout(() => {
+                    setVisibleSettings(prev => [...prev, true]);
+                }, i * 60);
+            });
         }
     }, [isOpen, user?.id]);
 
@@ -166,7 +173,7 @@ export function TableSettings({
                     {loading ? (
                         <div className="table-settings__loading">Loading...</div>
                     ) : (
-                        SETTINGS.map(setting => {
+                        SETTINGS.map((setting, idx) => {
                             const isEnabled = settings[setting.key];
                             const isFreeFeature = setting.isFree || isVIP;
 
@@ -187,6 +194,11 @@ export function TableSettings({
                                     key={setting.key}
                                     className={`table-settings__item ${isEnabled ? 'active' : ''}`}
                                     onClick={() => handleToggle(setting)}
+                                    style={{
+                                        opacity: visibleSettings[idx] ? 1 : 0,
+                                        transform: visibleSettings[idx] ? 'translateY(0)' : 'translateY(8px)',
+                                        transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                    }}
                                 >
                                     <div className="table-settings__item-icon">{setting.icon}</div>
                                     <div className="table-settings__item-info">

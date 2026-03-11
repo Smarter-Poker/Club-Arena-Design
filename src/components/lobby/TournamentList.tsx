@@ -237,6 +237,8 @@ export function TournamentList({
     isLoading = false,
     currency = '',
 }: TournamentListProps) {
+    const [visibleTournaments, setVisibleTournaments] = useState<Set<number>>(new Set());
+
     // Group tournaments by status
     const groupedTournaments = useMemo(() => {
         const running = tournaments.filter((t) => ['running', 'break', 'final_table'].includes(t.status));
@@ -245,6 +247,14 @@ export function TournamentList({
 
         return { running, registering, completed };
     }, [tournaments]);
+
+    // Stagger tournament entrance
+    useEffect(() => {
+        setVisibleTournaments(new Set());
+        tournaments.forEach((_, i) => {
+            setTimeout(() => setVisibleTournaments(prev => new Set(prev).add(i)), i * 50);
+        });
+    }, [tournaments.length]);
 
     if (isLoading) {
         return (
@@ -289,16 +299,21 @@ export function TournamentList({
                         <span className="tournament-list__section-indicator tournament-list__section-indicator--live" />
                         Running ({groupedTournaments.running.length})
                     </div>
-                    {groupedTournaments.running.map((tournament) => (
-                        <TournamentRow
-                            key={tournament.id}
-                            tournament={tournament}
-                            isRegistered={registeredTournamentIds.includes(tournament.id)}
-                            onRegister={() => onRegister(tournament.id)}
-                            onUnregister={() => onUnregister(tournament.id)}
-                            onViewDetails={() => onViewDetails(tournament.id)}
-                            currency={currency}
-                        />
+                    {groupedTournaments.running.map((tournament, idx) => (
+                        <div key={tournament.id} style={{
+                            opacity: visibleTournaments.has(idx) ? 1 : 0,
+                            transform: visibleTournaments.has(idx) ? 'translateY(0)' : 'translateY(8px)',
+                            transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        }}>
+                            <TournamentRow
+                                tournament={tournament}
+                                isRegistered={registeredTournamentIds.includes(tournament.id)}
+                                onRegister={() => onRegister(tournament.id)}
+                                onUnregister={() => onUnregister(tournament.id)}
+                                onViewDetails={() => onViewDetails(tournament.id)}
+                                currency={currency}
+                            />
+                        </div>
                     ))}
                 </div>
             )}
@@ -310,16 +325,21 @@ export function TournamentList({
                         <span className="tournament-list__section-indicator tournament-list__section-indicator--open" />
                         Upcoming ({groupedTournaments.registering.length})
                     </div>
-                    {groupedTournaments.registering.map((tournament) => (
-                        <TournamentRow
-                            key={tournament.id}
-                            tournament={tournament}
-                            isRegistered={registeredTournamentIds.includes(tournament.id)}
-                            onRegister={() => onRegister(tournament.id)}
-                            onUnregister={() => onUnregister(tournament.id)}
-                            onViewDetails={() => onViewDetails(tournament.id)}
-                            currency={currency}
-                        />
+                    {groupedTournaments.registering.map((tournament, idx) => (
+                        <div key={tournament.id} style={{
+                            opacity: visibleTournaments.has(idx + groupedTournaments.running.length) ? 1 : 0,
+                            transform: visibleTournaments.has(idx + groupedTournaments.running.length) ? 'translateY(0)' : 'translateY(8px)',
+                            transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        }}>
+                            <TournamentRow
+                                tournament={tournament}
+                                isRegistered={registeredTournamentIds.includes(tournament.id)}
+                                onRegister={() => onRegister(tournament.id)}
+                                onUnregister={() => onUnregister(tournament.id)}
+                                onViewDetails={() => onViewDetails(tournament.id)}
+                                currency={currency}
+                            />
+                        </div>
                     ))}
                 </div>
             )}

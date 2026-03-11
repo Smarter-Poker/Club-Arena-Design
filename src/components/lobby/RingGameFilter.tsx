@@ -10,7 +10,7 @@
  * - Show/hide empty tables
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import './RingGameFilter.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -91,6 +91,7 @@ export function RingGameFilter({
     });
 
     const [isExpanded, setIsExpanded] = useState(false);
+    const [visibleVariants, setVisibleVariants] = useState<boolean[]>([]);
 
     // Update a single filter
     const updateFilter = useCallback(
@@ -120,6 +121,17 @@ export function RingGameFilter({
         return count;
     }, [filters]);
 
+    useEffect(() => {
+        if (isExpanded) {
+            setVisibleVariants([]);
+            availableVariants.forEach((_, i) => {
+                setTimeout(() => {
+                    setVisibleVariants(prev => [...prev, true]);
+                }, i * 40);
+            });
+        }
+    }, [isExpanded, availableVariants]);
+
     return (
         <div className={`ring-filter ${isCompact ? 'ring-filter--compact' : ''}`}>
             {/* Main Filter Bar */}
@@ -146,11 +158,16 @@ export function RingGameFilter({
 
                 {/* Variant Pills */}
                 <div className="ring-filter__pills">
-                    {availableVariants.map((variant) => (
+                    {availableVariants.map((variant, idx) => (
                         <button
                             key={variant}
                             className={`ring-filter__pill ${filters.variant === variant ? 'ring-filter__pill--active' : ''}`}
                             onClick={() => updateFilter('variant', variant)}
+                            style={{
+                                opacity: visibleVariants[idx] ? 1 : 0,
+                                transform: visibleVariants[idx] ? 'scale(1)' : 'scale(0.9)',
+                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            }}
                         >
                             {VARIANT_LABELS[variant]}
                         </button>

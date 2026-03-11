@@ -5,7 +5,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './CreateUnionPage.module.css';
 import { supabase } from '../lib/supabase';
@@ -56,8 +56,16 @@ export default function CreateUnionPage() {
     const [error, setError] = useState<string | null>(null);
     const [checkingClubs, setCheckingClubs] = useState(true);
     const [ownsClub, setOwnsClub] = useState(false);
+    const [stepVisible, setStepVisible] = useState(false);
 
     const totalSteps = 3;
+
+    // Section entrance animation
+    useEffect(() => {
+        setStepVisible(false);
+        const timer = setTimeout(() => setStepVisible(true), 50);
+        return () => clearTimeout(timer);
+    }, [step]);
 
     // Check if user owns any clubs (required to create union)
     useState(() => {
@@ -197,7 +205,11 @@ export default function CreateUnionPage() {
                 </div>
 
                 {/* Step Content */}
-                <div className={styles.stepContainer}>
+                <div className={styles.stepContainer} style={{
+                    opacity: stepVisible ? 1 : 0,
+                    transform: stepVisible ? 'translateY(0)' : 'translateY(12px)',
+                    transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                }}>
                     {step === 1 && (
                         <div className={styles.stepContent}>
                             <h2> Union Basics</h2>
