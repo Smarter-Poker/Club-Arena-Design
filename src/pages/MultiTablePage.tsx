@@ -64,10 +64,19 @@ export default function MultiTablePage() {
     const [swipeOffset, setSwipeOffset] = useState(0);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [isTileView, setIsTileView] = useState(false);
+    const [tabEntranceComplete, setTabEntranceComplete] = useState(false);
 
     // Swipe tracking refs
     const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+
+    // Tab entrance animation
+    useEffect(() => {
+        if (tables.length > 0) {
+            const timer = setTimeout(() => setTabEntranceComplete(true), 200);
+            return () => clearTimeout(timer);
+        }
+    }, [tables.length]);
 
     // ─── Derived state ───────────────────────────────────────────────────
     const activeTableId = tables[activeIndex]?.id || '';
@@ -299,12 +308,23 @@ export default function MultiTablePage() {
 
             {/* Tile View Grid or Swipe Container */}
             {isTileView && tables.length > 1 ? (
-                <div className="multi-table-grid">
+                <div
+                    className="multi-table-grid"
+                    style={{
+                        opacity: tabEntranceComplete ? 1 : 0,
+                        transform: tabEntranceComplete ? 'translateY(0)' : 'translateY(12px)',
+                        transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    }}
+                >
                     {tables.map((table, idx) => (
                         <div
                             key={table.id}
                             className={`multi-table-grid__cell ${idx === activeIndex ? 'multi-table-grid__cell--active' : ''}`}
                             onClick={() => { setActiveIndex(idx); setIsTileView(false); }}
+                            style={{
+                                boxShadow: idx === activeIndex ? '0 0 20px rgba(0, 212, 255, 0.3)' : 'none',
+                                transition: 'box-shadow 0.3s ease',
+                            }}
                         >
                             <Suspense fallback={<div className="multi-table-loading">Loading...</div>}>
                                 <TablePage
@@ -321,7 +341,11 @@ export default function MultiTablePage() {
                 <div
                     ref={containerRef}
                     className={`multi-table-page__container ${isTransitioning ? 'multi-table-page__container--transitioning' : ''}`}
-                    style={{ transform: containerTransform }}
+                    style={{
+                        transform: containerTransform,
+                        opacity: tabEntranceComplete ? 1 : 0,
+                        transition: tabEntranceComplete && !isTransitioning ? 'opacity 0.4s ease' : 'none',
+                    }}
                     onTouchStart={handleTouchStart}
                     onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}

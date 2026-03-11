@@ -11,6 +11,12 @@ import { MembershipService } from '../services/MembershipService';
 import { useToast } from '../components/common/Toast';
 import './InvitePage.css';
 
+const inviteStepAnimationStyle = {
+    opacity: 0,
+    transform: 'translateY(12px)',
+    animation: 'fadeInUp 0.6s ease-out forwards',
+};
+
 interface ClubInfo {
     id: string;
     name: string;
@@ -196,7 +202,7 @@ export default function InvitePage() {
     return (
         <div className="invite-page">
 
-            <div className="invite-card">
+            <div className="invite-card" style={inviteStepAnimationStyle}>
                 <div className="club-avatar">
                     {club.avatar_url ? (
                         <img src={club.avatar_url} alt={club.name} />
@@ -260,6 +266,8 @@ export default function InvitePage() {
                                     background: copied ? '#22c55e' : '#00d4ff',
                                     border: 'none', color: '#fff', fontWeight: 700,
                                     fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap',
+                                    transition: 'all 0.3s ease',
+                                    transform: copied ? 'scale(1.05)' : 'scale(1)',
                                 }}
                             >
                                 {copied ? 'Copied!' : 'Copy'}

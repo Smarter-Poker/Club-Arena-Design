@@ -7,7 +7,7 @@
  * NO HARDCODED DATA - All data comes from Supabase
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ClubsService } from '../services/ClubsService';
@@ -67,6 +67,7 @@ export default function ClubsPage() {
     const [requiresApproval, setRequiresApproval] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [createError, setCreateError] = useState<string | null>(null);
+    const [visibleClubCards, setVisibleClubCards] = useState(new Set<number>());
 
     // Handle intro completion
     const handleIntroComplete = () => {

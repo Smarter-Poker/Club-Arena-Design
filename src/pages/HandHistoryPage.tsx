@@ -36,7 +36,17 @@ export default function HandHistoryPage() {
     const [shareHand, setShareHand] = useState<ShareableHand | null>(null);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
+    const [visibleHandCards, setVisibleHandCards] = useState(new Set<number>());
     const PAGE_SIZE = 25;
+
+    // Stagger hand cards on render
+    useEffect(() => {
+        setVisibleHandCards(new Set());
+        const timers = hands.map((_, i) =>
+            setTimeout(() => setVisibleHandCards(prev => new Set([...prev, i])), i * 40)
+        );
+        return () => timers.forEach(t => clearTimeout(t));
+    }, [hands.length]);
 
     useEffect(() => {
         if (user?.id) {
@@ -259,13 +269,18 @@ export default function HandHistoryPage() {
                         <p>No hands found. Play some poker!</p>
                     </div>
                 ) : (
-                    hands.map((hand) => {
+                    hands.map((hand, index) => {
                         const result = getPlayerResult(hand);
                         return (
                             <div
                                 key={hand.id}
                                 className="hand-card"
                                 onClick={() => openReplay(hand)}
+                                style={{
+                                    opacity: visibleHandCards.has(index) ? 1 : 0,
+                                    transform: visibleHandCards.has(index) ? 'translateY(0)' : 'translateY(8px)',
+                                    transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                }}
                             >
                                 <div className="hand-header">
                                     <span className="table-name">{hand.table_name}</span>

@@ -56,6 +56,7 @@ export default function TournamentDetails() {
 
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const lateRegTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const [visibleEntries, setVisibleEntries] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         if (tournamentId) {
@@ -236,6 +237,17 @@ export default function TournamentDetails() {
             setIsRegistered(registered);
         }
     }, [user, entries]);
+
+    // Stagger animation for entries
+    useEffect(() => {
+        if (entries.length === 0) return;
+        setVisibleEntries(new Set());
+        entries.forEach((entry, index) => {
+            setTimeout(() => {
+                setVisibleEntries(prev => new Set(prev).add(entry.id));
+            }, index * 60);
+        });
+    }, [entries]);
 
     const loadTournament = async () => {
         if (!tournamentId) return;
@@ -774,7 +786,7 @@ export default function TournamentDetails() {
                             const isPlaying = entry.status === 'playing';
                             const rank = isPlaying ? idx + 1 : entry.position || '—';
                             return (
-                                <div key={entry.id} className={`entry-row ${entry.status === 'eliminated' ? 'eliminated-row' : ''}`} style={entry.status === 'eliminated' ? { opacity: 0.5 } : undefined}>
+                                <div key={entry.id} className={`entry-row ${entry.status === 'eliminated' ? 'eliminated-row' : ''} ${visibleEntries.has(entry.id) ? 'fadeInUp' : 'hidden'}`} style={visibleEntries.has(entry.id) ? (entry.status === 'eliminated' ? { opacity: 0.5 } : undefined) : { opacity: 0, transform: 'translateY(8px)' }}>
                                     <span className="entry-rank" style={isPlaying && idx === 0 ? { color: '#fbbf24', fontWeight: 700 } : undefined}>
                                         {rank}
                                     </span>

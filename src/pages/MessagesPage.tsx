@@ -12,6 +12,12 @@ import MessageThread from '../components/messaging/MessageThread';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import './MessagesPage.css';
 
+const conversationAnimationStyle = (index: number) => ({
+    opacity: 0,
+    transform: 'translateY(6px)',
+    animation: `fadeInUp 0.4s ease-out ${index * 50}ms forwards`,
+});
+
 export default function MessagesPage() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
