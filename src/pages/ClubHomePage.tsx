@@ -260,7 +260,9 @@ export default function ClubHomePage() {
                 }
             }
 
-            // Check if this club is inside a union (for UI indicators, NOT for redirect)
+            // Check if this club is inside a union
+            let unionId: string | null = null;
+            let unionClubIds: string[] = [clubId];
             try {
                 const { data: ucRow, error: ucErr } = await supabase
                     .from('union_clubs')
@@ -270,18 +272,26 @@ export default function ClubHomePage() {
                     .maybeSingle();
                 if (!ucErr && ucRow) {
                     setIsInUnion(true);
-                    // Store union ID for reference but DON'T redirect
-                    // Club dashboard should always be accessible for management
+                    unionId = ucRow.union_id;
+
+                    // Get ALL club IDs in this union for aggregated queries
+                    const { data: allUcRows } = await supabase
+                        .from('union_clubs')
+                        .select('club_id')
+                        .eq('union_id', unionId);
+                    if (allUcRows && allUcRows.length > 0) {
+                        unionClubIds = allUcRows.map(r => r.club_id);
+                    }
                 }
             } catch {
                 // Query error — fail-open for standalone clubs
             }
 
-            // Load tables
+            // Load tables — union clubs get ALL union member tables
             const { data: tableData } = await supabase
                 .from('tables')
                 .select('*')
-                .eq('club_id', clubId)
+                .in('club_id', unionClubIds)
                 .eq('is_deleted', false)
                 .order('created_at', { ascending: false });
 
@@ -289,17 +299,43 @@ export default function ClubHomePage() {
                 setTables(tableData);
             }
 
-            // Load tournaments for this club
-            const { data: tournamentData } = await supabase
+            // Load tournaments — union clubs get ALL union member tournaments + XMTT
+            let allTournaments: TournamentData[] = [];
+
+            // Club/union member tournaments
+            const { data: clubTournamentData } = await supabase
                 .from('tournaments')
                 .select('*')
-                .eq('club_id', clubId)
+                .in('club_id', unionClubIds)
                 .neq('status', 'COMPLETED')
                 .order('start_time', { ascending: true });
 
-            if (tournamentData) {
-                setTournaments(tournamentData);
+            if (clubTournamentData) {
+                allTournaments = [...clubTournamentData];
             }
+
+            // If in union, also fetch XMTT (union-wide) tournaments
+            if (unionId) {
+                const { data: xmttData } = await supabase
+                    .from('tournaments')
+                    .select('*')
+                    .eq('union_id', unionId)
+                    .eq('is_xmtt', true)
+                    .neq('status', 'COMPLETED')
+                    .order('start_time', { ascending: true });
+
+                if (xmttData) {
+                    // Merge and deduplicate by id
+                    const existingIds = new Set(allTournaments.map(t => t.id));
+                    for (const xmtt of xmttData) {
+                        if (!existingIds.has(xmtt.id)) {
+                            allTournaments.push(xmtt);
+                        }
+                    }
+                }
+            }
+
+            setTournaments(allTournaments);
 
             // Load BBJ amount (bbj_pools table may not exist yet — graceful fallback)
             try {

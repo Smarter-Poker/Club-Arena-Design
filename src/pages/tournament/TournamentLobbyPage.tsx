@@ -258,10 +258,34 @@ export default function TournamentLobbyPage() {
                 .order('start_time', { ascending: false })
                 .limit(30);
 
+            // Union-aware filtering: if club is in a union, show ALL union club tournaments
+            let filterClubIds: string[] = clubId ? [clubId] : [];
             if (clubId) {
-                activeQuery = activeQuery.eq('club_id', clubId);
-                pinnedQuery = pinnedQuery.eq('club_id', clubId);
-                completedQuery = completedQuery.eq('club_id', clubId);
+                try {
+                    const { data: ucRow } = await supabase
+                        .from('union_clubs')
+                        .select('union_id')
+                        .eq('club_id', clubId)
+                        .limit(1)
+                        .maybeSingle();
+                    if (ucRow?.union_id) {
+                        const { data: allUcRows } = await supabase
+                            .from('union_clubs')
+                            .select('club_id')
+                            .eq('union_id', ucRow.union_id);
+                        if (allUcRows && allUcRows.length > 0) {
+                            filterClubIds = allUcRows.map(r => r.club_id);
+                        }
+                    }
+                } catch {
+                    // Fail-open: just use the single clubId
+                }
+            }
+
+            if (filterClubIds.length > 0) {
+                activeQuery = activeQuery.in('club_id', filterClubIds);
+                pinnedQuery = pinnedQuery.in('club_id', filterClubIds);
+                completedQuery = completedQuery.in('club_id', filterClubIds);
             }
 
             // Apply status filter
@@ -281,13 +305,19 @@ export default function TournamentLobbyPage() {
                 }
                 data = [...merged, ...completed];
             } else if (statusFilter === 'REGISTERING') {
-                const res = await supabase.from('tournaments').select(fields).eq('status', 'REGISTERING').order('start_time', { ascending: true }).limit(50);
+                let q = supabase.from('tournaments').select(fields).eq('status', 'REGISTERING').order('start_time', { ascending: true }).limit(50);
+                if (filterClubIds.length > 0) q = q.in('club_id', filterClubIds);
+                const res = await q;
                 data = res.data || []; error = res.error;
             } else if (statusFilter === 'RUNNING') {
-                const res = await supabase.from('tournaments').select(fields).eq('status', 'RUNNING').order('start_time', { ascending: true }).limit(50);
+                let q = supabase.from('tournaments').select(fields).eq('status', 'RUNNING').order('start_time', { ascending: true }).limit(50);
+                if (filterClubIds.length > 0) q = q.in('club_id', filterClubIds);
+                const res = await q;
                 data = res.data || []; error = res.error;
             } else if (statusFilter === 'COMPLETED') {
-                const res = await supabase.from('tournaments').select(fields).eq('status', 'COMPLETED').order('start_time', { ascending: false }).limit(50);
+                let q = supabase.from('tournaments').select(fields).eq('status', 'COMPLETED').order('start_time', { ascending: false }).limit(50);
+                if (filterClubIds.length > 0) q = q.in('club_id', filterClubIds);
+                const res = await q;
                 data = res.data || []; error = res.error;
             }
 
