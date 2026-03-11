@@ -22,12 +22,26 @@
     justify-content: space-between;
     gap: var(--space-4);
     padding: 1.5rem;
-    background: linear-gradient(135deg, #1a2535 0%, #0d1520 100%);
+    background: linear-gradient(135deg, rgba(26, 37, 53, 0.95) 0%, rgba(13, 21, 32, 0.98) 100%);
+    backdrop-filter: blur(20px) saturate(1.3);
+    -webkit-backdrop-filter: blur(20px) saturate(1.3);
     border: 2px solid #2a3a4a;
     border-radius: 12px;
     box-shadow:
         0 0 20px rgba(0, 212, 255, 0.1),
+        0 8px 32px rgba(0, 0, 0, 0.4),
         inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    position: relative;
+}
+
+.tournament-header::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(0, 212, 255, 0.3) 50%, transparent 100%);
 }
 
 .tournament-header .header-left {
@@ -50,11 +64,12 @@
     color: #6a7a8a;
     text-decoration: none;
     font-size: 0.85rem;
-    transition: color 0.2s;
+    transition: all 0.2s;
 }
 
 .back-link:hover {
     color: #00d4ff;
+    text-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
 }
 
 .tournament-header .btn-primary {
@@ -68,12 +83,29 @@
     letter-spacing: 1px;
     cursor: pointer;
     box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
-    transition: all 0.2s;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    position: relative;
+    overflow: hidden;
+}
+
+.tournament-header .btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.4s ease;
 }
 
 .tournament-header .btn-primary:hover {
     box-shadow: 0 0 25px rgba(0, 212, 255, 0.6);
     transform: translateY(-2px);
+}
+
+.tournament-header .btn-primary:hover::before {
+    left: 150%;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -92,7 +124,9 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .tournament-list {
-    background: linear-gradient(180deg, #1a2535 0%, #0d1520 100%);
+    background: linear-gradient(180deg, rgba(26, 37, 53, 0.95) 0%, rgba(13, 21, 32, 0.98) 100%);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 2px solid #2a3a4a;
     border-radius: 16px;
     padding: var(--space-5);
@@ -120,10 +154,12 @@
     border-radius: 12px;
     cursor: pointer;
     margin-bottom: var(--space-3);
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.1),
         inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
 }
 
 .tournament-card:hover {
@@ -136,6 +172,7 @@
         0 0 15px rgba(0, 212, 255, 0.2),
         inset 0 1px 0 rgba(255, 255, 255, 0.1),
         inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    transform: translateY(-1px);
 }
 
 .tournament-card.selected {
@@ -148,6 +185,17 @@
         0 0 20px rgba(0, 212, 255, 0.3),
         inset 0 1px 0 rgba(255, 255, 255, 0.1),
         inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+
+.tournament-card.selected::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #00d4ff;
+    box-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
 }
 
 .tourn-header {
@@ -176,12 +224,14 @@
     color: #00ff88;
     background: rgba(0, 255, 136, 0.15);
     border: 1px solid rgba(0, 255, 136, 0.3);
+    box-shadow: 0 0 8px rgba(0, 255, 136, 0.15);
 }
 
 .tourn-status.running {
     color: #ff6b6b;
     background: rgba(255, 107, 107, 0.15);
     border: 1px solid rgba(255, 107, 107, 0.3);
+    box-shadow: 0 0 8px rgba(255, 107, 107, 0.15);
 }
 
 .tourn-info {
@@ -216,7 +266,9 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .tournament-details {
-    background: linear-gradient(180deg, #1a2535 0%, #0d1520 100%);
+    background: linear-gradient(180deg, rgba(26, 37, 53, 0.95) 0%, rgba(13, 21, 32, 0.98) 100%);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 2px solid #2a3a4a;
     border-radius: 16px;
     padding: var(--space-6);
@@ -254,12 +306,14 @@
     background: rgba(0, 255, 136, 0.15);
     color: #00ff88;
     border: 1px solid rgba(0, 255, 136, 0.3);
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.15);
 }
 
 .status-badge.running {
     background: rgba(255, 107, 107, 0.15);
     color: #ff6b6b;
     border: 1px solid rgba(255, 107, 107, 0.3);
+    box-shadow: 0 0 10px rgba(255, 107, 107, 0.15);
 }
 
 /* Stats Grid — Brushed Metal Cards */
@@ -291,6 +345,16 @@
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.1),
         inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    transition: all 0.25s;
+}
+
+.detail-stats .stat:hover {
+    border-color: rgba(0, 212, 255, 0.4);
+    box-shadow:
+        0 0 12px rgba(0, 212, 255, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
 }
 
 .detail-stats .stat.highlight {
@@ -370,6 +434,10 @@
     color: #00d4ff;
 }
 
+.blind-structure tr:hover td {
+    background: rgba(0, 212, 255, 0.04);
+}
+
 .more-row td {
     text-align: center;
     font-style: normal;
@@ -407,6 +475,12 @@
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(0, 0, 0, 0.1) 100%);
     border: 1px solid #2a3a4a;
     border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.payout-item:hover {
+    border-color: rgba(255, 215, 0, 0.3);
+    background: linear-gradient(145deg, rgba(255, 215, 0, 0.05) 0%, rgba(0, 0, 0, 0.1) 100%);
 }
 
 .payout-place {
@@ -444,7 +518,9 @@
     text-transform: uppercase;
     letter-spacing: 1px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    position: relative;
+    overflow: hidden;
 }
 
 .detail-actions .btn-primary {
@@ -515,14 +591,24 @@
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    animation: metalOverlayIn 0.2s ease;
+}
+
+@keyframes metalOverlayIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .modal {
-    background: linear-gradient(180deg, #1a2535 0%, #0d1520 100%);
+    background: linear-gradient(180deg, rgba(26, 37, 53, 0.98) 0%, rgba(13, 21, 32, 0.99) 100%);
+    backdrop-filter: blur(20px) saturate(1.3);
+    -webkit-backdrop-filter: blur(20px) saturate(1.3);
     border: 2px solid #2a3a4a;
     border-radius: 16px;
     padding: 1.5rem;
@@ -530,7 +616,14 @@
     max-width: 500px;
     box-shadow:
         0 0 40px rgba(0, 212, 255, 0.2),
-        0 20px 60px rgba(0, 0, 0, 0.6);
+        0 20px 60px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    animation: metalModalIn 0.3s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+}
+
+@keyframes metalModalIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .modal h2 {
@@ -563,13 +656,14 @@
     border-radius: 8px;
     color: #fff;
     font-size: 1rem;
+    transition: all 0.2s;
 }
 
 .form-group input:focus,
 .form-group select:focus {
     outline: none;
     border-color: #00d4ff;
-    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
 }
 
 .form-row {
@@ -592,6 +686,12 @@
     padding: 0.75rem 1.5rem;
     border-radius: 8px;
     cursor: pointer;
+    transition: all 0.2s;
+}
+
+.modal-actions .btn-ghost:hover {
+    border-color: #5a6a7a;
+    color: #aabbcc;
 }
 
 .modal-actions .btn-primary {
@@ -602,6 +702,11 @@
     border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
+    transition: all 0.2s;
+}
+
+.modal-actions .btn-primary:hover {
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
