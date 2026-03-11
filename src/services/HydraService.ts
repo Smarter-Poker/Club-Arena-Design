@@ -627,7 +627,12 @@ export const HydraService = {
         // If we have horses and enough real players, schedule one to leave
         if (status.needsFewerHorses && status.horsePlayers > 0) {
             const horses = await this.getActiveHorses(tableId);
-            const horseToRemove = horses.find(h => !h.leavingAfterOrbit);
+
+            // Sort by joinedAt descending (most recent first) and remove the most recently joined horse
+            const sortedHorses = [...horses].sort((a, b) =>
+                new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime()
+            );
+            const horseToRemove = sortedHorses.find(h => !h.leavingAfterOrbit);
 
             if (horseToRemove) {
                 await this.scheduleHorseRemoval(tableId, horseToRemove.id, playerId);
@@ -643,9 +648,9 @@ export const HydraService = {
 
         if (status.needsMoreHorses) {
             const delay = randomInRange(
-                this.config.entryDelayRange[0] * 1000,
-                this.config.entryDelayRange[1] * 1000
-            );
+                this.config.entryDelayRange[0],
+                this.config.entryDelayRange[1]
+            ) * 1000; // Convert seconds to milliseconds
 
             setTimeout(() => {
                 this.seedTable(tableId, bigBlind);

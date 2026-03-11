@@ -150,15 +150,27 @@ class HorseBrainAdapterClass {
             }
 
             this.brain = loadedBrain;
-            this.brainAvailable = true;
 
-            // Warm GTO cache on startup
-            await this.brain!.warmGTOCache();
+            try {
+                // Warm GTO cache on startup — CRITICAL
+                await this.brain!.warmGTOCache();
 
-            // Load horse IDs
-            this.horseIds = await this.brain!.loadHorseIds();
+                // Load horse IDs
+                this.horseIds = await this.brain!.loadHorseIds();
 
-            console.log(`[HorseBrainAdapter] HorsePokerBrain loaded — ${this.horseIds.size} horses registered`);
+                this.brainAvailable = true;
+                console.log(
+                    `[HorseBrainAdapter] HorsePokerBrain loaded — ${this.horseIds.size} horses registered`
+                );
+            } catch (initErr) {
+                console.error(
+                    '[HorseBrainAdapter] Brain initialization failed (GTO warmup, horse IDs, etc.):',
+                    initErr
+                );
+                this.brainAvailable = false;
+                this.brain = null;
+                // Fall through to BotLogic fallback
+            }
         } catch (err) {
             console.log('[HorseBrainAdapter] HorsePokerBrain not available — using BotLogic fallback');
             this.brainAvailable = false;

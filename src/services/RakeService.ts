@@ -257,7 +257,13 @@ export const RakeService = {
         let bbjContributed = false;
         if (calculation.bbjDrop > 0) {
             try {
-                const pool = await BBJService.getPool({ unionId, clubId });
+                let pool = await BBJService.getPool({ unionId, clubId });
+
+                // Auto-create pool if missing (backward compatibility)
+                if (!pool && clubId) {
+                    pool = await BBJService.ensurePoolExists(clubId);
+                }
+
                 if (pool) {
                     const result = await BBJService.recordContribution({
                         poolId: pool.id,
@@ -268,8 +274,10 @@ export const RakeService = {
                     });
                     bbjContributed = result !== null;
                     if (!result) {
-                        console.warn(`[RakeService] BBJ contribution returned null for hand ${handId} — pool ${pool.id}`);
+                        console.error(`[RakeService] BBJ contribution failed for hand ${handId} — pool ${pool.id}`);
                     }
+                } else {
+                    console.error(`[RakeService] No BBJ pool found for club ${clubId} and hand ${handId} — BBJ money cannot be contributed`);
                 }
             } catch (e) {
                 console.error(`[RakeService] BBJ contribution failed for hand ${handId}:`, e);

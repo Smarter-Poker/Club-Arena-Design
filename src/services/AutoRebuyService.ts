@@ -162,11 +162,18 @@ class AutoRebuyServiceCore {
   // ─────────────────────────────────────────────────────────────────────────────
 
   /**
+   * Get a consistent lock key for horse operations
+   */
+  private getHorseLockKey(horseId: string, tableId: string): string {
+    return `${horseId}:${tableId}`;
+  }
+
+  /**
    * Rebuy a horse (top up stack via wallet)
    * Prevents concurrent rebuys for same horse:table combination
    */
   async rebuyHorse(horseId: string, tableId: string, amount: number): Promise<boolean> {
-    const rebuyKey = `${horseId}:${tableId}`;
+    const rebuyKey = this.getHorseLockKey(horseId, tableId);
 
     // Skip if rebuy already in progress for this horse:table
     if (this.rebuyInProgress.has(rebuyKey)) {
@@ -257,7 +264,7 @@ class AutoRebuyServiceCore {
    * Prevents concurrent reseating for same horse:table combination
    */
   async reseatHorse(horseId: string, tableId: string): Promise<boolean> {
-    const reseatKey = `reseat:${horseId}:${tableId}`;
+    const reseatKey = this.getHorseLockKey(horseId, tableId);
 
     // Skip if reseat already in progress for this horse:table
     if (this.rebuyInProgress.has(reseatKey)) {
@@ -317,7 +324,7 @@ class AutoRebuyServiceCore {
       console.error('[AutoRebuy] Error in reseatHorse:', err);
       return false;
     } finally {
-      const reseatKey = `reseat:${horseId}:${tableId}`;
+      const reseatKey = this.getHorseLockKey(horseId, tableId);
       this.rebuyInProgress.delete(reseatKey);
     }
   }
@@ -378,12 +385,17 @@ class AutoRebuyServiceCore {
       const currentBalance = walletData?.available_balance || 0;
 
       // If balance is sufficient, no topup needed
-      if (currentBalance >= requiredAmount) {
+      if (currentBalance >= this.minWalletBalance && currentBalance >= requiredAmount) {
         return true;
       }
 
-      // Calculate topup amount
-      const topupAmount = this.minWalletBalance - currentBalance;
+      // Calculate topup amount (ensure it's non-negative)
+      const topupAmount = Math.max(0, this.minWalletBalance - currentBalance);
+
+      // If no topup needed, return success
+      if (topupAmount === 0) {
+        return true;
+      }
 
       // Credit wallet via RPC
       const { data: creditResult, error: creditError } = await supabase.rpc('credit_player_wallet', {

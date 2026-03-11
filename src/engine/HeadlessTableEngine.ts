@@ -51,6 +51,7 @@ interface SeatedPlayer {
     seat_number: number;
     is_horse: boolean;
     horse_profile?: string;
+    agent_id?: string;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -69,6 +70,7 @@ export class HeadlessTableEngine {
     private horseAIHandlers: Map<string, () => void> = new Map();
     private unsubscribeHands: (() => void)[] = [];
     private pendingTimerIds: number[] = []; // Track workerTimeout IDs for cleanup
+    private handInvalidated = false; // Flag to prevent timers from executing after hand timeout
     private persistence: HandPersistence;
     private dealerSeatIndex: number = 0; // Tracks dealer position (rotates each hand)
     private consecutiveErrors: number = 0; // For exponential backoff on dealing errors
@@ -471,9 +473,11 @@ export class HeadlessTableEngine {
 
         // Wait for hand to complete before returning
         let persistenceUnsub: (() => void) | null = null;
+        this.handInvalidated = false; // Mark hand as valid at start
         return new Promise<void>((resolve) => {
             const handCompleteTimeout = setTimeout(() => {
                 console.warn(`[HeadlessTableEngine:${this.tableId}] Hand ${handNumber} timed out after 120s`);
+                this.handInvalidated = true; // Mark hand as invalidated
                 // Clean up pending horse AI timers on timeout
                 for (const timerId of this.pendingTimerIds) {
                     cancelWorkerTimeout(timerId);
@@ -492,6 +496,7 @@ export class HeadlessTableEngine {
                 // Resolve the promise when hand completes
                 if (event.type === 'HAND_COMPLETE') {
                     clearTimeout(handCompleteTimeout);
+                    this.handInvalidated = true; // Mark hand complete, invalidate pending timers
                     this.handController = null;
                     // Clean up pending horse AI timers for this hand
                     for (const timerId of this.pendingTimerIds) {
@@ -678,21 +683,34 @@ export class HeadlessTableEngine {
 
                 // Feed hand result to Horse AI Brain's 32 anti-exploit modules
                 if (HorseBrainAdapter.isBrainAvailable()) {
-                    const stage = this.handController?.getState()?.stage || 'river';
+                    const state = this.handController?.getState();
+                    const stage = state?.stage || 'river';
+
                     HorseBrainAdapter.processHandResult(
                         this.tableId,
                         this.tableInfo?.big_blind || 2,
                         stage,
                         this.currentHandPotSize,
-                        players.map(p => ({
-                            user_id: p.user_id,
-                            chipDelta: 0, // Will be calculated by brain from stack changes
-                            showedCards: true,
-                            folded: false,
-                            invested: 0,
-                        })),
+                        players.map(p => {
+                            // Calculate actual chip delta from initial and final stacks
+                            const enginePlayer = state?.players.find((ep: any) => ep.user_id === p.user_id);
+                            // Use the player's stack before this hand started
+                            const initialStack = p.stack;
+                            const finalStack = enginePlayer?.stack || 0;
+                            const chipDelta = finalStack - initialStack;
+
+                            return {
+                                user_id: p.user_id,
+                                chipDelta,
+                                showedCards: (enginePlayer?.cards && enginePlayer.cards.length > 0) || false,
+                                folded: enginePlayer?.is_folded || false,
+                                invested: enginePlayer?.totalInvested || 0,
+                            };
+                        }),
                         this.currentHandWinnerIds
-                    ).catch(() => {}); // Non-blocking
+                    ).catch(err => {
+                        console.error(`[HeadlessTableEngine:${this.tableId}] Brain result processing failed:`, err.message);
+                    }); // Non-blocking
                 }
                 // Reset per-hand tracking
                 this.currentHandWinnerIds = [];
@@ -799,6 +817,11 @@ export class HeadlessTableEngine {
                         action = 'all_in';
                         amount = undefined;
                     }
+                }
+
+                // Check if hand was invalidated before executing action
+                if (this.handInvalidated || !handControllerRef) {
+                    return; // Don't execute action if hand timed out
                 }
 
                 try {
@@ -1166,6 +1189,7 @@ export class HeadlessTableEngine {
         // Build dealt-in player list for rake attribution
         const dealtInPlayers: DealtInPlayer[] = players.map(p => ({
             userId: p.user_id,
+            agentId: p.agent_id, // Include agent ID for commission tracking
             clubId: this.tableInfo!.club_id,
             isSittingOut: false, // All players in HeadlessTableEngine are active
             hasCards: true,      // All dealt players have cards

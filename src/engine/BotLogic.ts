@@ -273,29 +273,34 @@ export class BotLogic {
         potOdds: number,
         params: StyleParams
     ): BotDecision {
-        const { currentBet, pot, bigBlind, minRaise } = gs;
+        const { currentBet, pot, bigBlind, minRaise, stage, gameVariant, communityCards } = gs;
         const toCall = Math.max(0, currentBet - player.bet);
         const stack = player.stack;
         const facingBet = toCall > 0;
         const sizeMult = params.sizingMultiplier;
 
+        // Recalculate hand strength for this street based on current community cards
+        const currentStrength = this.calculateHandStrength(
+            player.cards, communityCards, stage, gameVariant
+        );
+
         // ── NUTTED HANDS (strength > 0.80) — Sets, straights, flushes+
-        if (strength > 0.80) {
-            return this.playNuttedHand(player, gs, strength, params);
+        if (currentStrength > 0.80) {
+            return this.playNuttedHand(player, gs, currentStrength, params);
         }
 
         // ── STRONG HANDS (0.55-0.80) — Top pair good kicker, overpairs, two pair
-        if (strength > 0.55) {
-            return this.playStrongHand(player, gs, strength, potOdds, params);
+        if (currentStrength > 0.55) {
+            return this.playStrongHand(player, gs, currentStrength, potOdds, params);
         }
 
         // ── MARGINAL HANDS (0.30-0.55) — Middle pair, weak top pair, draws
-        if (strength > 0.30) {
-            return this.playMarginalHand(player, gs, strength, potOdds, params);
+        if (currentStrength > 0.30) {
+            return this.playMarginalHand(player, gs, currentStrength, potOdds, params);
         }
 
         // ── WEAK HANDS (< 0.30) — Missed draws, low pair, nothing
-        return this.playWeakHand(player, gs, strength, potOdds, params);
+        return this.playWeakHand(player, gs, currentStrength, potOdds, params);
     }
 
     // ── Nutted hand play ──
@@ -316,8 +321,15 @@ export class BotLogic {
             if (Math.random() < params.slowplayFreq) {
                 return { action: 'check', thinkTime: 0 };
             }
-            // Value bet — 60-80% pot
-            const betSize = Math.trunc(pot * (0.60 + Math.random() * 0.20) * sizeMult);
+            // Value bet — 60-80% pot with variance
+            const baseBetSize = pot * (0.60 + Math.random() * 0.20) * sizeMult;
+            // Add ±10% variance to bet sizing for naturalness
+            const variance = (Math.random() - 0.5) * 0.20; // ±10%
+            const betSize = Math.trunc(baseBetSize * (1 + variance));
+            // Check if we should go all-in instead of a capped bet
+            if (betSize >= stack * 0.95) {
+                return { action: 'all_in', thinkTime: 0 };
+            }
             return { action: 'bet', amount: Math.min(stack, Math.max(betSize, gs.minRaise)), thinkTime: 0 };
         }
 

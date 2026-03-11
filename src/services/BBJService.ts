@@ -374,16 +374,17 @@ export const BBJService = {
 
     /**
      * Compare kicker arrays (higher is better)
+     * Only compare overlapping kickers, longer array wins
      */
     compareKickers(a: number[], b: number[]): number {
-        for (let i = 0; i < Math.max(a.length, b.length); i++) {
-            const aKicker = a[i] || 0;
-            const bKicker = b[i] || 0;
-            if (aKicker !== bKicker) {
-                return aKicker - bKicker;
+        // Compare only the kickers that exist in both arrays
+        for (let i = 0; i < Math.min(a.length, b.length); i++) {
+            if (a[i] !== b[i]) {
+                return a[i] - b[i];
             }
         }
-        return 0;
+        // If all common kickers match, longer array (more kickers) wins
+        return a.length - b.length;
     },
 
     /**
