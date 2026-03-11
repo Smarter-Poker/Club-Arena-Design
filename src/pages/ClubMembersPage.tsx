@@ -143,67 +143,70 @@ function PlayerActionModal({ member, myRole, clubId, onClose, onRoleChanged }: P
         setSuccess('');
 
         try {
-            // For agent-type roles, also create/update the agents table entry
-            const isAgentRole = ['super_agent', 'agent', 'sub_agent'].includes(newRole);
-            const wasAgentRole = ['super_agent', 'agent', 'sub_agent'].includes(member.role);
+            const currentUser = useUserStore.getState().user;
+            if (!currentUser?.id) throw new Error('Not authenticated');
 
-            // Update role in club_members
-            const { error: updateError } = await supabase
-                .from('club_members')
-                .update({ role: newRole })
-                .eq('club_id', clubId)
-                .eq('user_id', member.user_id);
+            // Try RPC first (atomic with audit logging), fall back to direct updates
+            const { data: rpcResult, error: rpcError } = await supabase
+                .rpc('promote_member', {
+                    p_club_id: clubId,
+                    p_target_user_id: member.user_id,
+                    p_new_role: newRole,
+                    p_promoted_by: currentUser.id,
+                });
 
-            if (updateError) throw updateError;
+            if (rpcError) {
+                // RPC not available yet — fall back to direct table update
+                console.warn('promote_member RPC not available, using direct update:', rpcError.message);
 
-            // If promoting TO an agent role, ensure agents table entry
-            if (isAgentRole) {
-                const { data: existingAgent } = await supabase
-                    .from('agents')
-                    .select('id')
-                    .eq('club_id', clubId)
-                    .eq('user_id', member.user_id)
-                    .maybeSingle();
-
-                if (existingAgent) {
-                    // Update existing agent role
-                    await supabase
-                        .from('agents')
-                        .update({
-                            role: newRole,
-                            status: 'active',
-                        })
-                        .eq('id', existingAgent.id);
-                } else {
-                    // Create new agent entry
-                    const { data: profile } = await supabase
-                        .from('profiles')
-                        .select('player_number')
-                        .eq('id', member.user_id)
-                        .maybeSingle();
-
-                    await supabase
-                        .from('agents')
-                        .insert({
-                            club_id: clubId,
-                            user_id: member.user_id,
-                            role: newRole,
-                            status: 'active',
-                            commission_rate: newRole === 'super_agent' ? 0.50 : 0.30,
-                            player_rakeback_rate: newRole === 'super_agent' ? 0.30 : 0.20,
-                            credit_limit: 0,
-                            parent_agent_id: null,
-                        });
-                }
-            }
-
-            // If demoting FROM an agent role to non-agent, deactivate agent entry
-            if (wasAgentRole && !isAgentRole) {
-                await supabase
-                    .from('agents')
-                    .update({ status: 'suspended' })
+                const { error: updateError } = await supabase
+                    .from('club_members')
+                    .update({ role: newRole })
                     .eq('club_id', clubId)
                     .eq('user_id', member.user_id);
+
+                if (updateError) throw updateError;
+
+                // Handle agents table for agent-type roles
+                const isAgentRole = ['super_agent', 'agent', 'sub_agent'].includes(newRole);
+                const wasAgentRole = ['super_agent', 'agent', 'sub_agent'].includes(member.role);
+
+                if (isAgentRole) {
+                    const { data: existingAgent } = await supabase
+                        .from('agents')
+                        .select('id')
+                        .eq('club_id', clubId)
+                        .eq('user_id', member.user_id)
+                        .maybeSingle();
+
+                    if (existingAgent) {
+                        await supabase
+                            .from('agents')
+                            .update({ role: newRole, status: 'active' })
+                            .eq('id', existingAgent.id);
+                    } else {
+                        await supabase
+                            .from('agents')
+                            .insert({
+                                club_id: clubId,
+                                user_id: member.user_id,
+                                role: newRole,
+                                status: 'active',
+                                commission_rate: newRole === 'super_agent' ? 0.50 : 0.30,
+                                player_rakeback_rate: newRole === 'super_agent' ? 0.30 : 0.20,
+                                credit_limit: 0,
+                                parent_agent_id: null,
+                            });
+                    }
+                } else if (wasAgentRole && !isAgentRole) {
+                    await supabase
+                        .from('agents')
+                        .update({ status: 'suspended' })
+                        .eq('club_id', clubId)
+                        .eq('user_id', member.user_id);
+                }
+            } else if (rpcResult && !rpcResult.success) {
+                throw new Error(rpcResult.error || 'Promotion failed');
             }
 
             setSuccess(`${member.username} is now ${getRoleLabel(newRole)}`);

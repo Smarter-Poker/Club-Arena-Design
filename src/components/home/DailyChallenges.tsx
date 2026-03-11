@@ -64,9 +64,11 @@ export default function DailyChallenges() {
     const [claimed, setClaimed] = useState<Record<string, boolean>>({});
     const [claimingIndex, setClaimingIndex] = useState<number | null>(null);
     const [currentDayKey, setCurrentDayKey] = useState(getDayKey());
+    const [resetCounter, setResetCounter] = useState(0); // forces re-render on midnight reset
     const dayKey = currentDayKey;
     const picked = useRef(pickChallenges()); // stable across re-renders
     const tableSessionStart = useRef<number | null>(null); // for play-time tracking
+    const claimingRef = useRef<Set<number>>(new Set()); // prevents double-click race
 
     // ═══════════════════════════════════════════════════════════════════════════
     // Load progress from Supabase → fallback to localStorage
@@ -233,6 +235,9 @@ export default function DailyChallenges() {
     // Phase 7 #4: Claim challenge reward
     const claimReward = useCallback(async (challengeIndex: number, reward: number) => {
         if (claimed[challengeIndex]) return;
+        // BUG FIX: Ref-based guard prevents double-click race condition
+        if (claimingRef.current.has(challengeIndex)) return;
+        claimingRef.current.add(challengeIndex);
         setClaimingIndex(challengeIndex);
         try {
             const { data: { user } } = await supabase.auth.getUser();
@@ -289,6 +294,9 @@ export default function DailyChallenges() {
                 setProgress({});
                 setClaimed({});
                 picked.current = pickChallenges();
+                claimingRef.current.clear();
+                // BUG FIX: Force re-render so new challenges display
+                setResetCounter(c => c + 1);
             }
         }, 60_000); // Check every 60 seconds
         return () => clearInterval(checkMidnight);
