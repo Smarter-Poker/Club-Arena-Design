@@ -32,6 +32,35 @@ export default function SuperAgentDashboard() {
     const [transferPlayerId, setTransferPlayerId] = useState('');
     const [transferAmount, setTransferAmount] = useState('');
     const [isTransferring, setIsTransferring] = useState(false);
+    const [visibleStatCards, setVisibleStatCards] = useState(new Set<number>());
+    const [visibleAgentRows, setVisibleAgentRows] = useState(new Set<number>());
+    const [visiblePlayerRows, setVisiblePlayerRows] = useState(new Set<number>());
+
+    // Stagger stat cards on mount
+    useEffect(() => {
+        const timers = [0, 1, 2, 3].map((i) =>
+            setTimeout(() => setVisibleStatCards(prev => new Set([...prev, i])), i * 60)
+        );
+        return () => timers.forEach(t => clearTimeout(t));
+    }, []);
+
+    // Stagger agent rows
+    useEffect(() => {
+        setVisibleAgentRows(new Set());
+        const timers = subAgents.map((_, i) =>
+            setTimeout(() => setVisibleAgentRows(prev => new Set([...prev, i])), i * 50)
+        );
+        return () => timers.forEach(t => clearTimeout(t));
+    }, [subAgents.length]);
+
+    // Stagger player rows
+    useEffect(() => {
+        setVisiblePlayerRows(new Set());
+        const timers = players.map((_, i) =>
+            setTimeout(() => setVisiblePlayerRows(prev => new Set([...prev, i])), i * 40)
+        );
+        return () => timers.forEach(t => clearTimeout(t));
+    }, [players.length]);
 
     useEffect(() => {
         if (clubId && user?.id) {
@@ -130,28 +159,56 @@ export default function SuperAgentDashboard() {
 
             {/* Stats Grid */}
             <div className="stats-grid">
-                <div className="stat-card">
+                <div
+                    className="stat-card"
+                    style={{
+                        opacity: visibleStatCards.has(0) ? 1 : 0,
+                        transform: visibleStatCards.has(0) ? 'translateY(0)' : 'translateY(8px)',
+                        transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    }}
+                >
                     <span className="stat-icon">●</span>
                     <div className="stat-info">
                         <span className="stat-value">{agent.totalPlayers}</span>
                         <span className="stat-label">Total Players</span>
                     </div>
                 </div>
-                <div className="stat-card">
+                <div
+                    className="stat-card"
+                    style={{
+                        opacity: visibleStatCards.has(1) ? 1 : 0,
+                        transform: visibleStatCards.has(1) ? 'translateY(0)' : 'translateY(8px)',
+                        transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    }}
+                >
                     <span className="stat-icon">▶</span>
                     <div className="stat-info">
                         <span className="stat-value">{agent.activePlayerCount}</span>
                         <span className="stat-label">Active Now</span>
                     </div>
                 </div>
-                <div className="stat-card">
+                <div
+                    className="stat-card"
+                    style={{
+                        opacity: visibleStatCards.has(2) ? 1 : 0,
+                        transform: visibleStatCards.has(2) ? 'translateY(0)' : 'translateY(8px)',
+                        transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    }}
+                >
                     <span className="stat-icon">■</span>
                     <div className="stat-info">
                         <span className="stat-value">{agent.subAgentCount}</span>
                         <span className="stat-label">Sub-Agents</span>
                     </div>
                 </div>
-                <div className="stat-card highlight">
+                <div
+                    className="stat-card highlight"
+                    style={{
+                        opacity: visibleStatCards.has(3) ? 1 : 0,
+                        transform: visibleStatCards.has(3) ? 'translateY(0)' : 'translateY(8px)',
+                        transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    }}
+                >
                     <span className="stat-icon">◉</span>
                     <div className="stat-info">
                         <span className="stat-value">{agent.weeklyRakeGenerated.toLocaleString()}</span>
@@ -223,8 +280,16 @@ export default function SuperAgentDashboard() {
                             <p className="empty-text">No sub-agents yet</p>
                         ) : (
                             <div className="agent-list">
-                                {subAgents.map(sub => (
-                                    <div key={sub.id} className="agent-row">
+                                {subAgents.map((sub, index) => (
+                                    <div
+                                        key={sub.id}
+                                        className="agent-row"
+                                        style={{
+                                            opacity: visibleAgentRows.has(index) ? 1 : 0,
+                                            transform: visibleAgentRows.has(index) ? 'translateY(0)' : 'translateY(8px)',
+                                            transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                        }}
+                                    >
                                         <div className="agent-info">
                                             <span className="agent-name">{sub.displayName || 'Agent'}</span>
                                             <span className="agent-role">{sub.role}</span>
@@ -244,8 +309,16 @@ export default function SuperAgentDashboard() {
                     <div className="players-section">
                         <h3>Your Players ({players.length})</h3>
                         <div className="player-list">
-                            {players.map(player => (
-                                <div key={player.id} className="player-row">
+                            {players.map((player, index) => (
+                                <div
+                                    key={player.id}
+                                    className="player-row"
+                                    style={{
+                                        opacity: visiblePlayerRows.has(index) ? 1 : 0,
+                                        transform: visiblePlayerRows.has(index) ? 'translateY(0)' : 'translateY(8px)',
+                                        transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                    }}
+                                >
                                     <div className="player-avatar">
                                         {player.avatarUrl ? (
                                             <img src={player.avatarUrl} alt="" />

@@ -10,6 +10,12 @@ import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import './WaitlistPage.css';
 
+const waitlistCardAnimationStyle = (index: number) => ({
+    opacity: 0,
+    transform: 'translateY(8px)',
+    animation: `fadeInUp 0.5s ease-out ${index * 60}ms forwards`,
+});
+
 interface WaitlistEntry {
     id: string;
     table_id: string;
@@ -29,6 +35,7 @@ export default function WaitlistPage() {
     const [entries, setEntries] = useState<WaitlistEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [leavingId, setLeavingId] = useState<string | null>(null);
+    const [positionCounts, setPositionCounts] = useState<Record<string, number>>({});
 
     useEffect(() => {
         if (user?.id) {
@@ -93,6 +100,36 @@ export default function WaitlistPage() {
         setLeavingId(null);
     };
 
+    // Animate position number changes
+    useEffect(() => {
+        const newCounts: Record<string, number> = {};
+        entries.forEach(entry => {
+            const current = positionCounts[entry.id] || entry.position;
+            if (current !== entry.position) {
+                const start = current;
+                const target = entry.position;
+                const duration = 500;
+                const startTime = performance.now();
+
+                const animate = (currentTime: number) => {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const animatedPos = Math.ceil(start + (target - start) * progress);
+                    newCounts[entry.id] = animatedPos;
+                    setPositionCounts(prev => ({ ...prev, [entry.id]: animatedPos }));
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    }
+                };
+
+                requestAnimationFrame(animate);
+            } else {
+                newCounts[entry.id] = entry.position;
+            }
+        });
+    }, [entries, positionCounts]);
+
     const getGameTypeLabel = (type: string): string => {
         switch (type.toLowerCase()) {
             case 'nlh': return "No Limit Hold'em";
@@ -133,8 +170,8 @@ export default function WaitlistPage() {
                     </div>
                 ) : (
                     <div className="waitlist-entries">
-                        {entries.map(entry => (
-                            <div key={entry.id} className={`waitlist-card ${entry.position === 1 ? 'next-up' : ''}`}>
+                        {entries.map((entry, idx) => (
+                            <div key={entry.id} style={waitlistCardAnimationStyle(idx)} className={`waitlist-card ${entry.position === 1 ? 'next-up' : ''}`}>
                                 <div className="waitlist-info">
                                     <h4 className="table-name">{entry.table_name}</h4>
                                     <span className="table-details">
@@ -143,7 +180,7 @@ export default function WaitlistPage() {
                                 </div>
                                 <div className="waitlist-position">
                                     <span className={`position-number ${entry.position === 1 ? 'highlight' : ''}`}>
-                                        #{entry.position}
+                                        #{positionCounts[entry.id] || entry.position}
                                     </span>
                                     <span className="position-label">
                                         {entry.position === 1 ? 'next up!' : 'in line'}

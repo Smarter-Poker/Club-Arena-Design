@@ -597,33 +597,38 @@ export default function TournamentLobbyPage() {
 
                             {/* Tournaments in Group */}
                             {group.tournaments.map(tournament => (
-                                <TournamentLobbyCard
+                                <div
                                     key={tournament.id}
-                                    tournament={{
-                                        id: tournament.id,
-                                        name: tournament.name,
-                                        type: tournament.variant === 'sng' ? 'sng' : tournament.variant === 'spin' ? 'spin' : tournament.isMysteryBounty ? 'mystery' : tournament.isPko ? 'pko' : tournament.isBounty ? 'bounty' : 'mtt',
-                                        buyIn: tournament.buyIn,
-                                        prizePool: tournament.prizePool,
-                                        maxPlayers: tournament.maxPlayers,
-                                        registeredPlayers: tournament.currentPlayers,
-                                        startsAt: tournament.startTime,
-                                        status: tournament.status === 'COMPLETED' ? 'finished' : tournament.status === 'ANNOUNCED' ? 'registering' : tournament.status === 'REGISTERING' ? 'registering' : tournament.status === 'RUNNING' ? 'running' : 'cancelled',
-                                        blindStructure: `${tournament.blindsUp}m`,
-                                        gameType: tournament.gameType,
-                                        startingChips: tournament.startingChips,
-                                        lateRegMins: tournament.lateRegMins,
-                                        isRebuy: tournament.isRebuy,
-                                        guaranteedPrize: tournament.guaranteedPrize,
-                                        isBounty: tournament.isBounty,
-                                        isPko: tournament.isPko,
-                                        isMysteryBounty: tournament.isMysteryBounty,
-                                        bountyAmount: tournament.bountyAmount,
-                                        isMultiDay: tournament.isMultiDay,
-                                        isPinned: tournament.isPinned,
-                                    }}
-                                    onRegister={() => handleRegister(tournament.id)}
-                                />
+                                    className={`${visibleTournaments.has(tournament.id) ? styles.fadeInUp : styles.hidden}`}
+                                    style={visibleTournaments.has(tournament.id) ? undefined : { opacity: 0, transform: 'translateY(8px)' }}
+                                >
+                                    <TournamentLobbyCard
+                                        tournament={{
+                                            id: tournament.id,
+                                            name: tournament.name,
+                                            type: tournament.variant === 'sng' ? 'sng' : tournament.variant === 'spin' ? 'spin' : tournament.isMysteryBounty ? 'mystery' : tournament.isPko ? 'pko' : tournament.isBounty ? 'bounty' : 'mtt',
+                                            buyIn: tournament.buyIn,
+                                            prizePool: tournament.prizePool,
+                                            maxPlayers: tournament.maxPlayers,
+                                            registeredPlayers: tournament.currentPlayers,
+                                            startsAt: tournament.startTime,
+                                            status: tournament.status === 'COMPLETED' ? 'finished' : tournament.status === 'ANNOUNCED' ? 'registering' : tournament.status === 'REGISTERING' ? 'registering' : tournament.status === 'RUNNING' ? 'running' : 'cancelled',
+                                            blindStructure: `${tournament.blindsUp}m`,
+                                            gameType: tournament.gameType,
+                                            startingChips: tournament.startingChips,
+                                            lateRegMins: tournament.lateRegMins,
+                                            isRebuy: tournament.isRebuy,
+                                            guaranteedPrize: tournament.guaranteedPrize,
+                                            isBounty: tournament.isBounty,
+                                            isPko: tournament.isPko,
+                                            isMysteryBounty: tournament.isMysteryBounty,
+                                            bountyAmount: tournament.bountyAmount,
+                                            isMultiDay: tournament.isMultiDay,
+                                            isPinned: tournament.isPinned,
+                                        }}
+                                        onRegister={() => handleRegister(tournament.id)}
+                                    />
+                                </div>
                             ))}
                         </div>
                     ))
