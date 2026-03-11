@@ -1,16 +1,18 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- *  NOTIFICATION BELL — Header Badge with Unread Count (v2.0)
+ *  NOTIFICATION BELL — Header Badge with Unread Count (v2.2 — Hardened)
  * ═══════════════════════════════════════════════════════════════════════════════
  * Displays a bell icon with unread count badge. Tapping navigates to /notifications.
  *
- * v2.0: #4 — Subscribes to NOTIFICATION_READ via masterBus for instant badge sync
+ * v2.2: Synchronous cleanup to prevent React Strict Mode race conditions.
+ *       Single source of truth for mark-read: masterBus NOTIFICATION_READ only.
  */
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
+import { masterBus } from '../../core/MasterBus';
 
 export default function NotificationBell() {
     const navigate = useNavigate();
@@ -31,59 +33,37 @@ export default function NotificationBell() {
         };
         fetchCount();
 
-        // #1: Real-time listener via Channel Registry
-        let channelKey = `notif-bell-${user.id}`;
-        import('../../core/MasterBus').then(({ masterBus }) => {
-            const channel = masterBus.getOrCreateChannel(channelKey);
-            channel
-                .on(
-                    'postgres_changes',
-                    {
-                        event: 'INSERT',
-                        schema: 'public',
-                        table: 'notifications',
-                        filter: `user_id=eq.${user.id}`,
-                    },
-                    () => {
-                        setUnreadCount(prev => prev + 1);
-                    }
-                )
-                .on(
-                    'postgres_changes',
-                    {
-                        event: 'UPDATE',
-                        schema: 'public',
-                        table: 'notifications',
-                        filter: `user_id=eq.${user.id}`,
-                    },
-                    (payload) => {
-                        if ((payload.new as any).read === true) {
-                            setUnreadCount(prev => Math.max(0, prev - 1));
-                        }
-                    }
-                )
-                .subscribe();
-        });
-
-        // #4: Subscribe to NOTIFICATION_READ for instant badge sync
-        let unsubNotifRead: (() => void) | null = null;
-        import('../../core/MasterBus').then(({ masterBus }) => {
-            unsubNotifRead = masterBus.subscribe('NOTIFICATION_READ', (event: any) => {
-                if (event.payload?.allRead) {
-                    // All marked read — reset to 0
-                    setUnreadCount(0);
-                } else {
-                    // Single marked read — decrement
-                    setUnreadCount(prev => Math.max(0, prev - 1));
+        // Real-time: ONLY listen for new INSERTs (new notifications arriving)
+        // Mark-read sync is handled exclusively by masterBus NOTIFICATION_READ
+        const channelKey = `notif-bell-${user.id}`;
+        const channel = masterBus.getOrCreateChannel(channelKey);
+        channel
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'notifications',
+                    filter: `user_id=eq.${user.id}`,
+                },
+                () => {
+                    setUnreadCount(prev => prev + 1);
                 }
-            });
+            )
+            .subscribe();
+
+        // masterBus subscriber for NOTIFICATION_READ (only source of mark-read sync)
+        const unsubNotifRead = masterBus.subscribe('NOTIFICATION_READ', (event: any) => {
+            if (event.payload?.allRead) {
+                setUnreadCount(0);
+            } else {
+                setUnreadCount(prev => Math.max(0, prev - 1));
+            }
         });
 
         return () => {
-            import('../../core/MasterBus').then(({ masterBus }) => {
-                masterBus.removeRegisteredChannel(channelKey);
-            });
-            unsubNotifRead?.();
+            masterBus.removeRegisteredChannel(channelKey);
+            unsubNotifRead();
         };
     }, [user?.id]);
 

@@ -18,6 +18,7 @@ import { VIPStatusCard } from '../components/vip/VIPStatusCard';
 import { VIPProgressRing } from '../components/vip/VIPProgressRing';
 import { profileService } from '../services/ProfileService';
 import { bonusService } from '../services/BonusService';
+import { masterBus } from '../core/MasterBus';
 import styles from './ProfilePage.module.css';
 
 // #5: Lazy-load Recharts (387KB) — only imported when History tab is opened
@@ -280,7 +281,6 @@ export default function ProfilePage() {
                 channelKey = `profile-${authUser.id}`;
 
                 // #1: Use Channel Registry for deduplication
-                const { masterBus } = await import('../core/MasterBus');
                 const channel = masterBus.getOrCreateChannel(channelKey);
 
                 // Subscribe to profile changes
@@ -368,9 +368,7 @@ export default function ProfilePage() {
         // #2: FIX — cleanup is now synchronous and correctly removes the channel
         return () => {
             if (channelKey) {
-                import('../core/MasterBus').then(({ masterBus }) => {
-                    masterBus.removeRegisteredChannel(channelKey);
-                });
+                masterBus.removeRegisteredChannel(channelKey);
             }
         };
     }, []);

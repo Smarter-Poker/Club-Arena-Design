@@ -1,8 +1,13 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * ♠ CLUB ARENA — Home Page (Redesigned Card Grid Layout)
+ * CLUB ARENA — Home Page (World Hub Cinematic Design)
  * ═══════════════════════════════════════════════════════════════════════════════
- * Mobile-first scrollable layout with featured club + club grid + quick links
+ * Dark cinematic aesthetic matching the World Hub lobby. Features:
+ * - Solid dark gradient background with hexagonal grid floor
+ * - Volumetric top-center light beam
+ * - Cinematic vignette overlay
+ * - Holographic card presentation with glass edges and pedestal glows
+ * - Glass-morphism panels for content sections
  */
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -19,11 +24,61 @@
     position: relative;
     overflow-x: hidden;
     overflow-y: auto;
-    background: url('/images/backgrounds/club-arena-bg.jpg') center center / cover no-repeat fixed;
+    background: linear-gradient(180deg, #0a0a12 0%, #050510 50%, #0a1218 100%);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   MAIN CONTENT - Replaces fixed canvas, uses natural flow
+   CINEMATIC BACKGROUND LAYERS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Hexagonal grid floor — perspective-rotated at viewport bottom */
+.gridFloor {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50vh;
+    background:
+        linear-gradient(180deg, transparent 0%, rgba(0, 212, 255, 0.03) 100%),
+        repeating-linear-gradient(
+            0deg, transparent, transparent 40px,
+            rgba(0, 212, 255, 0.05) 40px, rgba(0, 212, 255, 0.05) 41px
+        ),
+        repeating-linear-gradient(
+            90deg, transparent, transparent 40px,
+            rgba(0, 212, 255, 0.05) 40px, rgba(0, 212, 255, 0.05) 41px
+        );
+    transform: perspective(500px) rotateX(60deg) translateY(50%);
+    transform-origin: center bottom;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* Volumetric light beam from top center */
+.volumetricLight {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    width: 60vw;
+    height: 70vh;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse at top center, rgba(0, 212, 255, 0.08) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Cinematic vignette */
+.vignette {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.4) 100%);
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MAIN CONTENT - All scrollable content
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .mainContent {
@@ -33,255 +88,10 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 0 16px 40px 16px;
+    padding: 0 16px 100px 16px;
     box-sizing: border-box;
     z-index: 10;
     position: relative;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   BACKGROUND LAYER - Circuit Pattern + Glowing Orbs
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-.backgroundLayer {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    overflow: hidden;
-    pointer-events: none;
-}
-
-.circuitPattern {
-    position: absolute;
-    inset: 0;
-    background:
-        linear-gradient(90deg, transparent 49.5%, rgba(0, 180, 255, 0.03) 49.5%, rgba(0, 180, 255, 0.03) 50.5%, transparent 50.5%),
-        linear-gradient(0deg, transparent 49.5%, rgba(0, 180, 255, 0.03) 49.5%, rgba(0, 180, 255, 0.03) 50.5%, transparent 50.5%);
-    background-size: 60px 60px;
-}
-
-.glowOrb1 {
-    position: absolute;
-    width: 600px;
-    height: 600px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(0, 150, 255, 0.15) 0%, transparent 70%);
-    top: -200px;
-    left: -200px;
-    filter: blur(40px);
-    animation: pulse 8s ease-in-out infinite;
-}
-
-.glowOrb2 {
-    position: absolute;
-    width: 500px;
-    height: 500px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(0, 180, 255, 0.12) 0%, transparent 70%);
-    bottom: -150px;
-    right: -150px;
-    filter: blur(50px);
-    animation: pulse 10s ease-in-out infinite reverse;
-}
-
-.glowOrb3 {
-    position: absolute;
-    width: 400px;
-    height: 400px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(100, 200, 255, 0.08) 0%, transparent 70%);
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    filter: blur(60px);
-    animation: pulse 6s ease-in-out infinite;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(1.1); }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   SECTION HEADERS (kept for potential future use)
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-.sectionHeader {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    padding: 16px 4px 8px 4px;
-    margin-top: 8px;
-}
-
-.sectionLabel {
-    font-size: 13px;
-    font-weight: 700;
-    color: rgba(0, 220, 255, 0.9);
-    text-transform: uppercase;
-    letter-spacing: 3px;
-}
-
-.sectionCount {
-    font-size: 12px;
-    font-weight: 700;
-    color: #fff;
-    background: rgba(0, 180, 255, 0.25);
-    border: 1px solid rgba(0, 200, 255, 0.4);
-    border-radius: 12px;
-    padding: 2px 10px;
-    min-width: 24px;
-    text-align: center;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   CARD SHOWCASE — World Hub Style (3D Perspective Layout)
-   Center: Featured card (larger, raised)
-   Sides: User's clubs (smaller, angled)
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-.showcaseContainer {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    max-width: 960px;
-    perspective: 1200px;
-    padding: 10px 0 20px 0;
-    gap: 0;
-    min-height: 400px;
-}
-
-.sideColumn {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    flex: 0 0 auto;
-    align-items: center;
-    z-index: 5;
-}
-
-.centerColumn {
-    flex: 0 0 auto;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* ── Side Cards (Left + Right) ── */
-
-.sideCard {
-    position: relative;
-    width: 180px;
-    aspect-ratio: 240 / 340;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.4s ease;
-    overflow: hidden;
-    transform-style: preserve-3d;
-}
-
-.sideCardLeft {
-    transform: perspective(800px) rotateY(12deg) scale(0.88);
-    margin-right: -20px;
-}
-
-.sideCardRight {
-    transform: perspective(800px) rotateY(-12deg) scale(0.88);
-    margin-left: -20px;
-}
-
-.sideCard:hover {
-    transform: perspective(800px) rotateY(0deg) scale(0.95) translateY(-8px);
-    box-shadow: 0 16px 50px rgba(0, 200, 255, 0.35);
-    z-index: 20;
-}
-
-.sideCardFrame {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: fill;
-    border-radius: 10px;
-    z-index: 0;
-}
-
-.sideCardInner {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    right: 8px;
-    bottom: 8px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 8px;
-    z-index: 2;
-    box-sizing: border-box;
-}
-
-.sideCardTitle {
-    font-size: 11px;
-    font-weight: 800;
-    color: #fff;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    text-shadow: 0 0 15px rgba(0, 200, 255, 0.5);
-    margin: 0;
-    text-align: center;
-    line-height: 1.2;
-    word-wrap: break-word;
-}
-
-.sideCardRole {
-    font-size: 8px;
-    font-weight: 600;
-    color: rgba(0, 220, 255, 0.9);
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    margin-top: 2px;
-}
-
-.sideCardCenter {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.sideCardLogo {
-    width: 56px;
-    height: 56px;
-    object-fit: contain;
-    border-radius: 8px;
-    filter: drop-shadow(0 0 10px rgba(0, 200, 255, 0.4));
-}
-
-.sideCardIcon {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(0, 180, 255, 0.15) 0%, transparent 70%);
-    border: 2px solid rgba(0, 200, 255, 0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    color: rgba(0, 200, 255, 0.7);
-    filter: drop-shadow(0 0 10px rgba(0, 200, 255, 0.4));
-}
-
-.sideCardStats {
-    font-size: 9px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.7);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    text-align: center;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -294,7 +104,7 @@
     align-items: center;
     width: 100%;
     z-index: 20;
-    margin: 0 0 4px 0;
+    margin: 8px 0 16px 0;
     padding: 0;
 }
 
@@ -302,6 +112,9 @@
     position: relative;
     width: 100%;
     max-width: 600px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .actionBarImage {
@@ -328,24 +141,45 @@
 .actionZoneRight { right: 0; width: 25%; }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   FEATURED CLUB — Center Card in Showcase
+   FEATURED CARD — Center Holographic Card (Shark Club)
    ═══════════════════════════════════════════════════════════════════════════════ */
+
+.featuredCardContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 8px 0 24px 0;
+    position: relative;
+}
+
+/* Holographic pedestal glow under featured card */
+.featuredPedestal {
+    position: absolute;
+    bottom: -10px;
+    width: 260px;
+    height: 40px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(0, 212, 255, 0.35), rgba(0, 136, 255, 0.15), transparent 70%);
+    filter: blur(10px);
+    animation: pedestalPulse 4s ease-in-out infinite;
+    z-index: 0;
+}
 
 .featuredCard {
     position: relative;
     width: 280px;
     cursor: pointer;
-    transition: all 0.4s ease;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     border-radius: 12px;
     overflow: hidden;
     flex-shrink: 0;
     z-index: 10;
-    filter: drop-shadow(0 8px 30px rgba(0, 150, 255, 0.3));
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 212, 255, 0.15);
 }
 
 .featuredCard:hover {
     transform: scale(1.04) translateY(-6px);
-    filter: drop-shadow(0 20px 60px rgba(0, 200, 255, 0.45));
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5), 0 0 50px rgba(0, 212, 255, 0.25);
 }
 
 .cardSkeleton {
@@ -353,9 +187,9 @@
     height: 475px;
     background: linear-gradient(
         90deg,
-        rgba(0, 30, 60, 0.6) 0%,
-        rgba(0, 50, 80, 0.6) 50%,
-        rgba(0, 30, 60, 0.6) 100%
+        rgba(10, 20, 40, 0.8) 0%,
+        rgba(15, 30, 55, 0.8) 50%,
+        rgba(10, 20, 40, 0.8) 100%
     );
     background-size: 200% 100%;
     animation: skeletonShimmer 2s infinite;
@@ -363,13 +197,172 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(0, 200, 255, 0.5);
+    color: rgba(0, 212, 255, 0.4);
     font-size: 14px;
 }
 
 @keyframes skeletonShimmer {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
+}
+
+@keyframes pedestalPulse {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.05); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   USER CLUBS — Holographic Card Row (World Hub Footer-Card Style)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.clubCardsRow {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 0 0 20px 0;
+    z-index: 10;
+}
+
+.clubCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    width: clamp(130px, 20vw, 170px);
+    transform: translateY(0) scale(1);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+}
+
+.clubCard:hover {
+    transform: translateY(-8px) scale(1.08);
+}
+
+/* Pedestal glow under each club card */
+.clubCardPedestal {
+    position: absolute;
+    bottom: 22px;
+    width: 120px;
+    height: 30px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(0, 212, 255, 0.3), rgba(0, 136, 255, 0.15), transparent 70%);
+    filter: blur(6px);
+    opacity: 0.5;
+    z-index: 0;
+}
+
+/* Glass card face */
+.clubCardFace {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    border-radius: 10px;
+    overflow: hidden;
+    background: linear-gradient(145deg, rgba(8, 20, 40, 0.9), rgba(5, 12, 28, 0.95));
+    border: 1px solid rgba(0, 212, 255, 0.15);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 212, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 10px;
+    z-index: 2;
+}
+
+.clubCardFace::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.06) 0%, transparent 50%, rgba(0, 255, 136, 0.04) 100%);
+    pointer-events: none;
+}
+
+/* Glass bottom edge for 3D depth */
+.clubCardEdge {
+    position: absolute;
+    left: 3px;
+    bottom: -5px;
+    width: calc(100% - 6px);
+    height: 8px;
+    background: linear-gradient(90deg, rgba(50, 150, 200, 0.3), rgba(0, 180, 255, 0.2), rgba(100, 200, 255, 0.2));
+    border-radius: 0 0 6px 6px;
+    z-index: 1;
+}
+
+.clubCardTitle {
+    font-size: 11px;
+    font-weight: 800;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 0 12px rgba(0, 212, 255, 0.4);
+    margin: 0;
+    text-align: center;
+    line-height: 1.2;
+    word-wrap: break-word;
+}
+
+.clubCardRole {
+    font-size: 8px;
+    font-weight: 600;
+    color: rgba(0, 212, 255, 0.85);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-top: 2px;
+}
+
+.clubCardCenter {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.clubCardLogo {
+    width: 52px;
+    height: 52px;
+    object-fit: contain;
+    border-radius: 8px;
+    filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.3));
+}
+
+.clubCardIcon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 212, 255, 0.1) 0%, transparent 70%);
+    border: 2px solid rgba(0, 212, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    color: rgba(0, 212, 255, 0.6);
+    filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.3));
+}
+
+.clubCardStats {
+    font-size: 9px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+}
+
+.clubCardLabel {
+    margin-top: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.75);
+    text-align: center;
+    text-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -383,87 +376,158 @@
     justify-content: center;
     text-align: center;
     padding: 40px 30px;
-    background: rgba(0, 20, 40, 0.6);
-    border: 2px solid rgba(0, 200, 255, 0.3);
-    border-radius: 20px;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: rgba(8, 20, 40, 0.6);
+    border: 1px solid rgba(0, 212, 255, 0.15);
+    border-radius: 16px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     margin: 20px 0;
     width: 100%;
     max-width: 400px;
-    box-shadow: 0 0 20px rgba(0, 200, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .noClubsMessage p {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 16px;
-    margin: 8px 0;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 15px;
+    margin: 6px 0;
     line-height: 1.5;
 }
 
 .noClubsMessage p:first-child {
-    font-size: 18px;
-    color: #fff;
+    font-size: 17px;
+    color: rgba(255, 255, 255, 0.9);
     font-weight: 600;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   BOTTOM ROW - 5 Quick Link Tile Cards
+   DAILY CHALLENGES — Glass-morphism Panel
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.challengesSection {
+    width: 100%;
+    padding: 0;
+    margin-bottom: 20px;
+}
+
+.challengesTitle {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: rgba(0, 212, 255, 0.85);
+    margin: 0 0 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.challengesList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.challengeItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(8, 20, 40, 0.5);
+    border: 1px solid rgba(0, 212, 255, 0.08);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: border-color 0.3s;
+}
+
+.challengeItem:hover {
+    border-color: rgba(0, 212, 255, 0.2);
+}
+
+.challengeItemComplete {
+    composes: challengeItem;
+    background: rgba(0, 255, 136, 0.04);
+    border-color: rgba(0, 255, 136, 0.15);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BOTTOM ROW — 5 Holographic Standing Cards
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .bottomRow {
     display: flex;
     gap: 16px;
     z-index: 10;
-    padding: 20px 4px 30px 4px;
-    margin-top: 16px;
+    padding: 20px 4px 40px 4px;
+    margin-top: 12px;
     overflow-x: auto;
     overflow-y: visible;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0, 200, 255, 0.6) rgba(0, 30, 60, 0.4);
+    scrollbar-width: none;
     width: 100%;
+    justify-content: center;
 }
 
-/* Custom scrollbar styling for webkit browsers */
-.bottomRow::-webkit-scrollbar { height: 8px; }
-.bottomRow::-webkit-scrollbar-track {
-    background: rgba(0, 30, 60, 0.4);
-    border-radius: 4px;
-}
-.bottomRow::-webkit-scrollbar-thumb {
-    background: linear-gradient(90deg, rgba(0, 180, 255, 0.7), rgba(0, 220, 255, 0.9));
-    border-radius: 4px;
-}
-.bottomRow::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(90deg, rgba(0, 200, 255, 0.9), rgba(0, 240, 255, 1));
+.bottomRow::-webkit-scrollbar {
+    display: none;
 }
 
 .tileCard {
-    width: 162px;
-    height: 243px;
-    border-radius: 12px;
-    background: transparent;
-    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: visible;
-    flex-shrink: 0;
+    flex: 0 0 auto;
+    width: clamp(120px, 17vw, 162px);
     scroll-snap-align: start;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
 }
 
 .tileCard:hover {
-    box-shadow: 0 0 25px rgba(0, 200, 255, 0.4);
-    transform: translateY(-5px) scale(1.02);
+    transform: translateY(-8px) scale(1.08);
+}
+
+/* Pedestal glow under tile cards */
+.tilePedestal {
+    position: absolute;
+    bottom: 15px;
+    width: 120px;
+    height: 30px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(0, 212, 255, 0.3), rgba(0, 136, 255, 0.15), transparent 70%);
+    filter: blur(6px);
+    opacity: 0.5;
+    z-index: 0;
+}
+
+.tileImageWrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+    z-index: 2;
 }
 
 .tileImage {
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    border-radius: 8px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+/* Glass bottom edge for 3D depth */
+.tileEdge {
+    position: absolute;
+    left: 3px;
+    bottom: -5px;
+    width: calc(100% - 6px);
+    height: 8px;
+    background: linear-gradient(90deg, rgba(50, 150, 200, 0.3), rgba(0, 180, 255, 0.2), rgba(100, 200, 255, 0.2));
+    border-radius: 0 0 6px 6px;
+    z-index: 1;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -473,7 +537,7 @@
 .loadingOverlay {
     position: fixed;
     inset: 0;
-    background: rgba(3, 10, 20, 0.9);
+    background: rgba(5, 5, 16, 0.92);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -483,8 +547,8 @@
 .spinner {
     width: 50px;
     height: 50px;
-    border: 3px solid rgba(0, 180, 255, 0.2);
-    border-top-color: rgba(0, 220, 255, 0.9);
+    border: 3px solid rgba(0, 212, 255, 0.15);
+    border-top-color: rgba(0, 212, 255, 0.8);
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -500,18 +564,18 @@
 @keyframes fadeInUp {
     from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(30px) scale(0.9);
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
     }
 }
 
 @keyframes scaleIn {
     from {
         opacity: 0;
-        transform: scale(0.95);
+        transform: scale(0.92);
     }
     to {
         opacity: 1;
@@ -519,64 +583,15 @@
     }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   PULL-TO-REFRESH GESTURE HINT
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-.pullRefreshHint {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 12px 16px;
-    background: rgba(0, 150, 255, 0.15);
-    border: 1px solid rgba(0, 200, 255, 0.3);
-    border-radius: 20px;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    z-index: 50;
-    pointer-events: none;
-    animation: pullHintFadeInDown 0.6s ease-out;
-}
-
-@keyframes pullHintFadeInDown {
+@keyframes cardRise {
     from {
         opacity: 0;
-        transform: translateX(-50%) translateY(-20px);
+        transform: translateY(80px) scale(0.7);
     }
     to {
         opacity: 1;
-        transform: translateX(-50%) translateY(0);
+        transform: translateY(0) scale(1);
     }
-}
-
-.pullRefreshIcon {
-    font-size: 16px;
-    color: rgba(0, 200, 255, 0.9);
-    animation: pullArrowBounce 1.5s ease-in-out infinite;
-}
-
-@keyframes pullArrowBounce {
-    0%, 100% {
-        transform: translateY(0);
-        opacity: 0.7;
-    }
-    50% {
-        transform: translateY(4px);
-        opacity: 1;
-    }
-}
-
-.pullRefreshText {
-    font-size: 11px;
-    font-weight: 600;
-    color: rgba(0, 200, 255, 0.8);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -587,13 +602,13 @@
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
-    animation: fadeIn 0.2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    animation: fadeIn 0.2s ease-out;
 }
 
 @keyframes fadeIn {
@@ -602,16 +617,16 @@
 }
 
 .modalContent {
-    background: linear-gradient(135deg, rgba(0, 20, 40, 0.95), rgba(0, 30, 60, 0.95));
-    border: 2px solid rgba(0, 200, 255, 0.4);
-    border-radius: 20px;
+    background: linear-gradient(145deg, rgba(8, 20, 40, 0.95), rgba(5, 15, 35, 0.95));
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    border-radius: 16px;
     padding: 40px;
     min-width: 320px;
     max-width: 400px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 200, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    animation: slideUp 0.3s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 212, 255, 0.1);
+    animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes slideUp {
@@ -620,19 +635,19 @@
 }
 
 .modalTitle {
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 800;
     color: #fff;
     text-transform: uppercase;
     letter-spacing: 2px;
     text-align: center;
     margin-bottom: 20px;
-    text-shadow: 0 0 20px rgba(0, 200, 255, 0.5);
+    text-shadow: 0 0 16px rgba(0, 212, 255, 0.4);
 }
 
 .modalSubtitle {
     font-size: 14px;
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.6);
     text-align: center;
     margin-bottom: 20px;
 }
@@ -647,9 +662,9 @@
     font-size: 18px;
     font-weight: 700;
     color: #fff;
-    background: rgba(0, 30, 60, 0.8);
-    border: 2px solid rgba(0, 200, 255, 0.3);
-    border-radius: 12px;
+    background: rgba(5, 15, 35, 0.8);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    border-radius: 10px;
     text-align: center;
     text-transform: uppercase;
     letter-spacing: 4px;
@@ -658,7 +673,7 @@
 }
 
 .clubCodeInput::placeholder {
-    color: rgba(0, 200, 255, 0.4);
+    color: rgba(0, 212, 255, 0.3);
     letter-spacing: 1px;
     text-transform: none;
     font-weight: 400;
@@ -666,8 +681,8 @@
 
 .clubCodeInput:focus {
     outline: none;
-    border-color: rgba(0, 200, 255, 0.8);
-    box-shadow: 0 0 20px rgba(0, 200, 255, 0.3);
+    border-color: rgba(0, 212, 255, 0.6);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.15);
 }
 
 .modalButtons {
@@ -688,17 +703,17 @@
     cursor: pointer;
     text-transform: uppercase;
     letter-spacing: 2px;
-    transition: all 0.3s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .modalButtonPrimary:hover {
     background: linear-gradient(135deg, #33ddff, #33aaff);
-    box-shadow: 0 12px 30px rgba(0, 200, 255, 0.4);
+    box-shadow: 0 12px 30px rgba(0, 212, 255, 0.3);
     transform: translateY(-2px);
 }
 
 .modalButtonPrimary:disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
     transform: none;
 }
@@ -708,36 +723,30 @@
     padding: 14px 24px;
     font-size: 14px;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.7);
     background: transparent;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 10px;
     cursor: pointer;
     text-transform: uppercase;
     letter-spacing: 2px;
-    transition: all 0.3s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    transition: all 0.3s ease;
 }
 
 .modalButtonSecondary:hover {
-    border-color: rgba(255, 255, 255, 0.6);
+    border-color: rgba(255, 255, 255, 0.5);
     color: #fff;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.06);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* ── Tablet & smaller ── */
 @media (max-width: 700px) {
     .mainContent {
-        padding: 0 8px 30px 8px;
+        padding: 0 8px 80px 8px;
         max-width: 100%;
-    }
-
-    .showcaseContainer {
-        padding: 6px 0 16px 0;
-        min-height: 350px;
     }
 
     .featuredCard {
@@ -749,28 +758,28 @@
         height: 407px;
     }
 
-    .sideCard {
-        width: 150px;
+    .clubCardsRow {
+        gap: 12px;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        padding: 0 12px 20px 12px;
+        scrollbar-width: none;
     }
 
-    .sideCardLeft {
-        margin-right: -15px;
+    .clubCardsRow::-webkit-scrollbar {
+        display: none;
     }
 
-    .sideCardRight {
-        margin-left: -15px;
+    .clubCard {
+        width: clamp(110px, 22vw, 140px);
+        flex: 0 0 auto;
     }
 }
 
-/* ── Mobile ≤480px ── */
 @media (max-width: 480px) {
     .mainContent {
-        padding: 0 6px 20px 6px;
-    }
-
-    .showcaseContainer {
-        min-height: 300px;
-        padding: 4px 0 12px 0;
+        padding: 0 6px 60px 6px;
     }
 
     .featuredCard {
@@ -782,43 +791,32 @@
         height: 340px;
     }
 
-    .sideCard {
-        width: 120px;
+    .clubCard {
+        width: clamp(100px, 26vw, 120px);
     }
 
-    .sideCardLeft {
-        transform: perspective(800px) rotateY(10deg) scale(0.85);
-        margin-right: -12px;
-    }
-
-    .sideCardRight {
-        transform: perspective(800px) rotateY(-10deg) scale(0.85);
-        margin-left: -12px;
-    }
-
-    .sideCardTitle {
+    .clubCardTitle {
         font-size: 9px;
     }
 
-    .sideCardIcon {
+    .clubCardIcon {
         width: 40px;
         height: 40px;
         font-size: 18px;
     }
 
-    .sideCardLogo {
+    .clubCardLogo {
         width: 40px;
         height: 40px;
     }
 
     .bottomRow {
         gap: 10px;
-        padding: 12px 4px 20px;
+        padding: 12px 4px 30px;
     }
 
     .tileCard {
-        width: 120px;
-        height: 180px;
+        width: clamp(100px, 22vw, 130px);
     }
 
     .modalContent {
@@ -836,7 +834,6 @@
     }
 }
 
-/* ── Small phones ≤380px ── */
 @media (max-width: 380px) {
     .featuredCard {
         width: 170px;
@@ -847,15 +844,15 @@
         height: 289px;
     }
 
-    .sideCard {
-        width: 100px;
+    .clubCard {
+        width: 90px;
     }
 
-    .sideCardTitle {
+    .clubCardTitle {
         font-size: 8px;
     }
 
-    .sideCardIcon {
+    .clubCardIcon {
         width: 32px;
         height: 32px;
         font-size: 14px;
@@ -863,6 +860,5 @@
 
     .tileCard {
         width: 100px;
-        height: 150px;
     }
 }

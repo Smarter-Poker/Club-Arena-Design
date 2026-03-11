@@ -15,6 +15,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
+import { masterBus } from '../core/MasterBus';
 import './NotificationCenter.css';
 
 interface Notification {
@@ -80,55 +81,50 @@ export default function NotificationCenter() {
         // #1: Real-time updates via Channel Registry
         if (!user?.id) return;
         const channelKey = `notifications-${user.id}`;
-        let registeredKey = channelKey;
 
-        import('../core/MasterBus').then(({ masterBus }) => {
-            const channel = masterBus.getOrCreateChannel(channelKey);
-            channel
-                .on(
-                    'postgres_changes',
-                    {
-                        event: 'INSERT',
-                        schema: 'public',
-                        table: 'notifications',
-                        filter: `user_id=eq.${user.id}`,
-                    },
-                    (payload) => {
-                        const n = payload.new as any;
-                        setNotifications(prev => [{
-                            id: n.id,
-                            type: n.type || 'system',
-                            title: n.title || 'Notification',
-                            message: n.message || n.body || '',
-                            link: n.link || n.action_url,
-                            read: false,
-                            created_at: n.created_at,
-                            icon: ICON_MAP[n.type] || '📬',
-                        }, ...prev]);
-                    }
-                )
-                .on(
-                    'postgres_changes',
-                    {
-                        event: 'UPDATE',
-                        schema: 'public',
-                        table: 'notifications',
-                        filter: `user_id=eq.${user.id}`,
-                    },
-                    (payload) => {
-                        const updated = payload.new as any;
-                        setNotifications(prev => 
-                            prev.map(n => n.id === updated.id ? { ...n, read: updated.read } : n)
-                        );
-                    }
-                )
-                .subscribe();
-        });
+        const channel = masterBus.getOrCreateChannel(channelKey);
+        channel
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'notifications',
+                    filter: `user_id=eq.${user.id}`,
+                },
+                (payload) => {
+                    const n = payload.new as any;
+                    setNotifications(prev => [{
+                        id: n.id,
+                        type: n.type || 'system',
+                        title: n.title || 'Notification',
+                        message: n.message || n.body || '',
+                        link: n.link || n.action_url,
+                        read: false,
+                        created_at: n.created_at,
+                        icon: ICON_MAP[n.type] || '📬',
+                    }, ...prev]);
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'notifications',
+                    filter: `user_id=eq.${user.id}`,
+                },
+                (payload) => {
+                    const updated = payload.new as any;
+                    setNotifications(prev => 
+                        prev.map(n => n.id === updated.id ? { ...n, read: updated.read } : n)
+                    );
+                }
+            )
+            .subscribe();
 
         return () => {
-            import('../core/MasterBus').then(({ masterBus }) => {
-                masterBus.removeRegisteredChannel(registeredKey);
-            });
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [user?.id, loadNotifications]);
 
@@ -136,9 +132,7 @@ export default function NotificationCenter() {
         await supabase.from('notifications').update({ read: true }).eq('id', notifId);
         setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
         // #3: Emit NOTIFICATION_READ for instant bell badge sync
-        import('../core/MasterBus').then(({ masterBus }) => {
-            masterBus.emit('NOTIFICATION_READ', { notifId, allRead: false });
-        });
+        masterBus.emit('NOTIFICATION_READ', { notifId, allRead: false });
     };
 
     const markAllRead = async () => {
@@ -146,9 +140,7 @@ export default function NotificationCenter() {
         await supabase.from('notifications').update({ read: true }).eq('user_id', user.id).eq('read', false);
         setNotifications(prev => prev.map(n => ({ ...n, read: true })));
         // #3: Emit NOTIFICATION_READ for instant bell badge sync
-        import('../core/MasterBus').then(({ masterBus }) => {
-            masterBus.emit('NOTIFICATION_READ', { notifId: null, allRead: true });
-        });
+        masterBus.emit('NOTIFICATION_READ', { notifId: null, allRead: true });
     };
 
     const handleClick = (notif: Notification) => {

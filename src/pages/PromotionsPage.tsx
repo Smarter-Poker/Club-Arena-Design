@@ -110,6 +110,20 @@ export default function PromotionsPage() {
         }
     };
 
+    const formatPromoType = (type: string): string => {
+        const labels: Record<string, string> = {
+            bonus: 'Bonus',
+            freeroll: 'Freeroll',
+            leaderboard: 'Leaderboard',
+            rakeback: 'Rakeback',
+            special: 'Special',
+            high_hand: 'High Hand',
+            rake_race: 'Rake Race',
+            milestone: 'Milestone',
+        };
+        return labels[type.toLowerCase()] || type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    };
+
     const formatDate = (dateStr: string): string => {
         return new Date(dateStr).toLocaleDateString(undefined, {
             month: 'short',
@@ -176,7 +190,7 @@ export default function PromotionsPage() {
                             <div className="promo-content">
                                 <div className="promo-header">
                                     <span className="promo-icon">{getTypeIcon(promo.type)}</span>
-                                    <span className="promo-type">{promo.type}</span>
+                                    <span className="promo-type">{formatPromoType(promo.type)}</span>
                                 </div>
                                 <h3 className="promo-title">{promo.title}</h3>
                                 <p className="promo-desc">{promo.description}</p>
@@ -201,7 +215,7 @@ export default function PromotionsPage() {
                                     <div className="promo-leaderboard">
                                         <LeaderboardCard
                                             promotionId={promo.id}
-                                            title={`${promo.title} Rankings`}
+                                            title={`${promo.title || 'Leaderboard'} Rankings`}
                                             limit={5}
                                             showCurrentUser={true}
                                         />

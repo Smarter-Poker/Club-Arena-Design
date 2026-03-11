@@ -20,6 +20,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
+import { masterBus } from '../core/MasterBus';
 import { useWalletStore } from '../stores/useWalletStore';
 import { useUserStore } from '../stores/useUserStore';
 import { WalletService } from '../services/WalletService';
@@ -300,10 +301,9 @@ export default function CashierPage() {
 
         // #1: Use Channel Registry for deduplication
         const channelKey = `cashier-realtime-${user.id}`;
-        import('../core/MasterBus').then(({ masterBus }) => {
-            const channel = masterBus.getOrCreateChannel(channelKey);
-            channel
-                .on(
+        const channel = masterBus.getOrCreateChannel(channelKey);
+        channel
+            .on(
                     'postgres_changes',
                     {
                         event: '*',
@@ -333,13 +333,10 @@ export default function CashierPage() {
                     }
                 )
                 .subscribe();
-        });
 
         // Cleanup: remove channel via registry on unmount
         return () => {
-            import('../core/MasterBus').then(({ masterBus }) => {
-                masterBus.removeRegisteredChannel(`cashier-realtime-${user.id}`);
-            });
+            masterBus.removeRegisteredChannel(`cashier-realtime-${user.id}`);
         };
     }, [user?.id, loadBalances, loadTransactions, action]);
 

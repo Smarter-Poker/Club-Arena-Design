@@ -1,13 +1,15 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * ♠ CLUB ARENA — Home Page (Redesigned Card Grid Layout)
+ * CLUB ARENA — Home Page (World Hub Cinematic Design)
  * ═══════════════════════════════════════════════════════════════════════════════
  * Layout Structure:
  * - GlobalHeader (hub-style, hidden in iframe)
+ * - Dark cinematic background (grid floor + volumetric light + vignette)
  * - Action Bar: CREATE A CLUB | FIND A PLAYER | JOIN A CLUB
- * - Featured Club: Shark Club (visible to ALL users)
- * - My Clubs Grid: All clubs the user owns or has joined
- * - Bottom 5 tiles: Player Stats, Leaderboards, Cashier, Diamond Store, Hand History
+ * - Featured Club: Shark Club (holographic center card)
+ * - My Clubs: Holographic card row
+ * - Daily Challenges: Glass-morphism panel
+ * - Bottom tiles: Holographic standing cards
  */
 
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
@@ -28,9 +30,6 @@ const ClubStatsPanel = lazy(() => import('../components/club/ClubStatsPanel'));
 const LAST_VISITED_KEY = 'club_arena_last_visited';
 const LAST_CLUB_KEY = 'club_arena_last_club'; // For Cashier routing
 
-// Custom frame images for cards
-const getFrameImage = (index: number) => `${import.meta.env.BASE_URL}images/frames/frame-${(index % 5) + 1}.jpg`;
-
 // Action button images
 const ACTION_BAR_HORIZONTAL = `${import.meta.env.BASE_URL}images/icons/action-bar-horizontal.png`;
 
@@ -40,6 +39,16 @@ const TILE_LEADERBOARDS = `${import.meta.env.BASE_URL}images/tiles/leaderboards.
 const TILE_CASHIER = `${import.meta.env.BASE_URL}images/tiles/cashier.jpg`;
 const TILE_MARKETPLACE = `${import.meta.env.BASE_URL}images/tiles/marketplace.jpg`;
 const TILE_HAND_HISTORIES = `${import.meta.env.BASE_URL}images/tiles/hand-histories.jpg`;
+
+// Holographic edge glow colors (World Hub palette)
+const HOLO_COLORS = [
+    { main: 'rgba(0, 212, 255, 0.15)', border: 'rgba(0, 212, 255, 0.2)' },
+    { main: 'rgba(0, 255, 136, 0.12)', border: 'rgba(0, 255, 136, 0.18)' },
+    { main: 'rgba(0, 191, 255, 0.12)', border: 'rgba(0, 191, 255, 0.18)' },
+    { main: 'rgba(77, 210, 255, 0.12)', border: 'rgba(77, 210, 255, 0.18)' },
+    { main: 'rgba(0, 255, 159, 0.12)', border: 'rgba(0, 255, 159, 0.18)' },
+    { main: 'rgba(200, 255, 255, 0.1)', border: 'rgba(200, 255, 255, 0.15)' },
+];
 
 export default function HomePage() {
     const navigate = useNavigate();
@@ -301,31 +310,19 @@ export default function HomePage() {
 
     // ═══════════════════════════════════════════════════════════════════════════════
     // USER'S CLUBS — excluding the featured Shark Club (25450) to avoid duplicate
-    // in the showcase row. These appear as side cards flanking the featured card.
     // ═══════════════════════════════════════════════════════════════════════════════
-    const sideClubs = userClubs.filter(
+    const displayClubs = userClubs.filter(
         (club) => club.id !== sharkClubId
     );
 
-    // Split side clubs into left and right groups for the World Hub layout
-    const leftClubs = sideClubs.filter((_: any, i: number) => i % 2 === 0);
-    const rightClubs = sideClubs.filter((_: any, i: number) => i % 2 === 1);
-
     return (
         <div className={styles.container}>
-            {/* Background with circuit pattern */}
-            <div className={styles.backgroundLayer}>
-                <div className={styles.circuitPattern}></div>
-                <div className={styles.glowOrb1}></div>
-                <div className={styles.glowOrb2}></div>
-                <div className={styles.glowOrb3}></div>
-            </div>
-
-            {/* Pull-to-Refresh Gesture Hint */}
-            <div className={styles.pullRefreshHint}>
-                <span className={styles.pullRefreshIcon}>↓</span>
-                <span className={styles.pullRefreshText}>Pull to refresh</span>
-            </div>
+            {/* ═══════════════════════════════════════════════════════════════════════
+                CINEMATIC BACKGROUND LAYERS — World Hub Aesthetic
+            ═══════════════════════════════════════════════════════════════════════ */}
+            <div className={styles.gridFloor}></div>
+            <div className={styles.volumetricLight}></div>
+            <div className={styles.vignette}></div>
 
             {/* GLOBAL HEADER - Hub-style, hide when embedded in iframe */}
             {!isInIframe && <GlobalHeader />}
@@ -336,7 +333,7 @@ export default function HomePage() {
             <div className={styles.mainContent}>
 
                 {/* ═══════════════════════════════════════════════════════════════════════
-                    HORIZONTAL ACTION BAR - Below Header (with clickable zones)
+                    HORIZONTAL ACTION BAR
                 ═══════════════════════════════════════════════════════════════════════ */}
                 <div className={styles.actionBarRow}>
                     <div className={styles.actionBarWrapper}>
@@ -364,117 +361,90 @@ export default function HomePage() {
                 </div>
 
                 {/* ═══════════════════════════════════════════════════════════════════════
-                    CARD SHOWCASE — World Hub Style Layout
-                    Center: Shark Club (Featured, larger, raised)
-                    Sides: User's clubs (smaller, angled perspective)
+                    FEATURED SHARK CLUB — Center Holographic Card
                 ═══════════════════════════════════════════════════════════════════════ */}
-                <div className={styles.showcaseContainer}>
-                    {/* LEFT SIDE CLUBS */}
-                    <div className={styles.sideColumn}>
-                        {leftClubs.map((club: any, idx: number) => (
-                            <div
-                                key={club.id}
-                                className={`${styles.sideCard} ${styles.sideCardLeft}`}
-                                style={{
-                                    animation: `${styles.fadeInUp} 0.6s ease-out ${idx * 100}ms both`,
-                                }}
-                                onClick={() => {
-                                    haptic.medium();
-                                    localStorage.setItem(LAST_VISITED_KEY, club.id);
-                                    localStorage.setItem(LAST_CLUB_KEY, club.id);
-                                    navigate(`/clubs/${club.id}`);
-                                }}
-                            >
-                                <img src={getFrameImage(idx)} alt="" className={styles.sideCardFrame} />
-                                <div className={styles.sideCardInner}>
-                                    <h3 className={styles.sideCardTitle}>
-                                        {club.name?.toUpperCase() || 'MY CLUB'}
-                                    </h3>
-                                    <span className={styles.sideCardRole}>
-                                        {club.is_owner ? 'OWNER' : 'MEMBER'}
-                                    </span>
-                                    <div className={styles.sideCardCenter}>
-                                        {club.logo_url ? (
-                                            <img src={club.logo_url} alt="" className={styles.sideCardLogo} />
-                                        ) : (
-                                            <div className={styles.sideCardIcon}>♣</div>
-                                        )}
-                                    </div>
-                                    <div className={styles.sideCardStats}>
-                                        <span>{club.member_count || 0} Members</span>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* CENTER — FEATURED SHARK CLUB */}
-                    <div className={styles.centerColumn}>
-                        <div
-                            className={styles.featuredCard}
-                            style={{
-                                animation: `${styles.scaleIn} 0.7s ease-out 150ms both`,
-                            }}
-                            onClick={() => {
-                                haptic.success();
-                                if (sharkClubId) {
-                                    localStorage.setItem(LAST_VISITED_KEY, sharkClubId);
-                                    localStorage.setItem(LAST_CLUB_KEY, sharkClubId);
-                                    navigate(`/clubs/${sharkClubId}`);
-                                } else {
-                                    toast.info('Shark Club not found. Join or create a club!');
-                                }
-                            }}
-                        >
-                            <Suspense fallback={<div className={styles.cardSkeleton}>Loading...</div>}>
-                                <ClubStatsPanel
-                                    totalMembers={sharkClubStats.totalMembers}
-                                    clubLevel={sharkClubStats.clubLevel}
-                                    activePlayers={sharkClubStats.activePlayers}
-                                />
-                            </Suspense>
-                        </div>
-                    </div>
-
-                    {/* RIGHT SIDE CLUBS */}
-                    <div className={styles.sideColumn}>
-                        {rightClubs.map((club: any, idx: number) => (
-                            <div
-                                key={club.id}
-                                className={`${styles.sideCard} ${styles.sideCardRight}`}
-                                style={{
-                                    animation: `${styles.fadeInUp} 0.6s ease-out ${(idx + leftClubs.length + 1) * 100}ms both`,
-                                }}
-                                onClick={() => {
-                                    haptic.medium();
-                                    localStorage.setItem(LAST_VISITED_KEY, club.id);
-                                    localStorage.setItem(LAST_CLUB_KEY, club.id);
-                                    navigate(`/clubs/${club.id}`);
-                                }}
-                            >
-                                <img src={getFrameImage(idx + 2)} alt="" className={styles.sideCardFrame} />
-                                <div className={styles.sideCardInner}>
-                                    <h3 className={styles.sideCardTitle}>
-                                        {club.name?.toUpperCase() || 'MY CLUB'}
-                                    </h3>
-                                    <span className={styles.sideCardRole}>
-                                        {club.is_owner ? 'OWNER' : 'MEMBER'}
-                                    </span>
-                                    <div className={styles.sideCardCenter}>
-                                        {club.logo_url ? (
-                                            <img src={club.logo_url} alt="" className={styles.sideCardLogo} />
-                                        ) : (
-                                            <div className={styles.sideCardIcon}>♣</div>
-                                        )}
-                                    </div>
-                                    <div className={styles.sideCardStats}>
-                                        <span>{club.member_count || 0} Members</span>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                <div
+                    className={styles.featuredCardContainer}
+                    style={{ animation: 'scaleIn 0.7s ease-out 100ms both' }}
+                >
+                    <div className={styles.featuredPedestal}></div>
+                    <div
+                        className={styles.featuredCard}
+                        onClick={() => {
+                            haptic.success();
+                            if (sharkClubId) {
+                                localStorage.setItem(LAST_VISITED_KEY, sharkClubId);
+                                localStorage.setItem(LAST_CLUB_KEY, sharkClubId);
+                                navigate(`/clubs/${sharkClubId}`);
+                            } else {
+                                toast.info('Shark Club not found. Join or create a club!');
+                            }
+                        }}
+                    >
+                        <Suspense fallback={<div className={styles.cardSkeleton}>Loading...</div>}>
+                            <ClubStatsPanel
+                                totalMembers={sharkClubStats.totalMembers}
+                                clubLevel={sharkClubStats.clubLevel}
+                                activePlayers={sharkClubStats.activePlayers}
+                            />
+                        </Suspense>
                     </div>
                 </div>
+
+                {/* ═══════════════════════════════════════════════════════════════════════
+                    MY CLUBS — Holographic Card Row
+                ═══════════════════════════════════════════════════════════════════════ */}
+                {displayClubs.length > 0 && (
+                    <div className={styles.clubCardsRow}>
+                        {displayClubs.map((club: any, idx: number) => {
+                            const holo = HOLO_COLORS[idx % HOLO_COLORS.length];
+                            return (
+                                <div
+                                    key={club.id}
+                                    className={styles.clubCard}
+                                    style={{
+                                        animation: `cardRise 0.6s ease-out ${200 + idx * 80}ms both`,
+                                    }}
+                                    onClick={() => {
+                                        haptic.medium();
+                                        localStorage.setItem(LAST_VISITED_KEY, club.id);
+                                        localStorage.setItem(LAST_CLUB_KEY, club.id);
+                                        navigate(`/clubs/${club.id}`);
+                                    }}
+                                >
+                                    <div className={styles.clubCardPedestal}></div>
+                                    <div
+                                        className={styles.clubCardFace}
+                                        style={{
+                                            borderColor: holo.border,
+                                        }}
+                                    >
+                                        <h3 className={styles.clubCardTitle}>
+                                            {club.name?.toUpperCase() || 'MY CLUB'}
+                                        </h3>
+                                        <span className={styles.clubCardRole}>
+                                            {club.is_owner ? 'OWNER' : 'MEMBER'}
+                                        </span>
+                                        <div className={styles.clubCardCenter}>
+                                            {club.logo_url ? (
+                                                <img src={club.logo_url} alt="" className={styles.clubCardLogo} />
+                                            ) : (
+                                                <div className={styles.clubCardIcon}>♣</div>
+                                            )}
+                                        </div>
+                                        <div className={styles.clubCardStats}>
+                                            <span>{club.member_count || 0} Members</span>
+                                        </div>
+                                    </div>
+                                    <div className={styles.clubCardEdge}></div>
+                                    <div className={styles.clubCardLabel}>
+                                        {club.name || 'My Club'}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
 
                 {/* No Clubs Message */}
                 {!isLoading && userClubs.length === 0 && (
@@ -485,27 +455,24 @@ export default function HomePage() {
                 )}
 
                 {/* ═══════════════════════════════════════════════════════════════════════
-                    DAILY CHALLENGES — 3 rotating daily objectives
+                    DAILY CHALLENGES — Glass-morphism Panel
                 ═══════════════════════════════════════════════════════════════════════ */}
-                <div style={{ padding: '0 16px', marginBottom: 16 }}>
-                    <h3 style={{
-                        fontSize: '0.85rem', fontWeight: 800, color: '#e0b340',
-                        margin: '0 0 10px', letterSpacing: '0.5px',
-                    }}>DAILY CHALLENGES</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div className={styles.challengesSection}>
+                    <h3 className={styles.challengesTitle}>DAILY CHALLENGES</h3>
+                    <div className={styles.challengesList}>
                         {(() => {
                             const today = new Date();
                             const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
                             const CHALLENGES = [
-                                { title: 'Win 3 Hands', icon: '🏆', reward: 50, target: 3 },
-                                { title: 'Play 20 Hands', icon: '🃏', reward: 30, target: 20 },
-                                { title: 'Win a Pot > 100 BB', icon: '💰', reward: 75, target: 1 },
-                                { title: 'Play 2 Different Tables', icon: '🎯', reward: 40, target: 2 },
-                                { title: 'Win 5 Hands Pre-Flop', icon: '⚡', reward: 60, target: 5 },
-                                { title: 'Play for 30 Minutes', icon: '⏱️', reward: 45, target: 30 },
-                                { title: 'Win 2 All-In Pots', icon: '🔥', reward: 80, target: 2 },
-                                { title: 'See 10 Flops', icon: '👁️', reward: 25, target: 10 },
-                                { title: 'Win a Hand with a Flush', icon: '♠️', reward: 100, target: 1 },
+                                { title: 'Win 3 Hands', reward: 50, target: 3 },
+                                { title: 'Play 20 Hands', reward: 30, target: 20 },
+                                { title: 'Win a Pot > 100 BB', reward: 75, target: 1 },
+                                { title: 'Play 2 Different Tables', reward: 40, target: 2 },
+                                { title: 'Win 5 Hands Pre-Flop', reward: 60, target: 5 },
+                                { title: 'Play for 30 Minutes', reward: 45, target: 30 },
+                                { title: 'Win 2 All-In Pots', reward: 80, target: 2 },
+                                { title: 'See 10 Flops', reward: 25, target: 10 },
+                                { title: 'Win a Hand with a Flush', reward: 100, target: 1 },
                             ];
                             // Pick 3 unique deterministic challenges for today
                             const picked: typeof CHALLENGES[0][] = [];
@@ -524,26 +491,27 @@ export default function HomePage() {
                             return picked.map((ch, i) => {
                                 const progress = stored[i] || 0;
                                 const pct = Math.min(100, (progress / ch.target) * 100);
+                                const isComplete = pct >= 100;
                                 return (
-                                    <div key={i} style={{
-                                        display: 'flex', alignItems: 'center', gap: 10,
-                                        padding: '10px 12px', borderRadius: 10,
-                                        background: pct >= 100 ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.03)',
-                                        border: `1px solid ${pct >= 100 ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.06)'}`,
-                                    }}>
-                                        <span style={{ fontSize: '1.3rem' }}>{ch.icon}</span>
+                                    <div key={i} className={isComplete ? styles.challengeItemComplete : styles.challengeItem}>
                                         <div style={{ flex: 1 }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#e0e8f0' }}>{ch.title}</span>
-                                                <span style={{ fontSize: '0.65rem', color: '#e0b340', fontWeight: 700 }}>+{ch.reward} 💎</span>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(224, 232, 240, 0.9)' }}>{ch.title}</span>
+                                                <span style={{
+                                                    fontSize: '0.65rem',
+                                                    fontWeight: 700,
+                                                    color: isComplete ? 'rgba(0, 255, 136, 0.9)' : 'rgba(0, 212, 255, 0.8)',
+                                                }}>+{ch.reward} Diamonds</span>
                                             </div>
                                             <div style={{
-                                                height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)',
+                                                height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)',
                                                 overflow: 'hidden',
                                             }}>
                                                 <div style={{
                                                     height: '100%', borderRadius: 2, width: `${pct}%`,
-                                                    background: pct >= 100 ? '#22c55e' : 'linear-gradient(90deg, #e0b340, #f0d060)',
+                                                    background: isComplete
+                                                        ? 'linear-gradient(90deg, #00ff88, #00d4ff)'
+                                                        : 'linear-gradient(90deg, #00d4ff, #0088ff)',
                                                     transition: 'width 0.3s ease',
                                                 }} />
                                             </div>
@@ -556,43 +524,50 @@ export default function HomePage() {
                 </div>
 
                 {/* ═══════════════════════════════════════════════════════════════════════
-                    BOTTOM ROW — 5 Quick Link Tile Cards
+                    BOTTOM ROW — 5 Holographic Standing Cards
                 ═══════════════════════════════════════════════════════════════════════ */}
                 <div className={styles.bottomRow}>
-                    <button className={styles.tileCard} onClick={() => navigate('/profile')}>
-                        <img src={TILE_PLAYER_STATS} alt="Player Stats" className={styles.tileImage} />
-                    </button>
-                    <button className={styles.tileCard} onClick={() => navigate('/leaderboard')}>
-                        <img src={TILE_LEADERBOARDS} alt="Leaderboards" className={styles.tileImage} />
-                    </button>
-                    <button className={styles.tileCard} onClick={() => {
-                        // Route to last club's cashier, or first club if no last club
-                        const lastClub = localStorage.getItem(LAST_CLUB_KEY);
-                        if (lastClub) {
-                            navigate(`/clubs/${lastClub}/cashier`);
-                        } else if (userClubs.length > 0) {
-                            navigate(`/clubs/${userClubs[0].id}/cashier`);
-                        } else {
-                            toast.info('Join a club first to access the cashier');
-                        }
-                    }}>
-                        <img src={TILE_CASHIER} alt="Cashier" className={styles.tileImage} />
-                    </button>
-                    <button className={styles.tileCard} onClick={() => {
-                        // Navigate to Hub Marketplace (parent World Hub)
-                        if (window.parent !== window) {
-                            // In iframe - use postMessage to navigate parent
-                            window.parent.postMessage({ type: 'NAVIGATE', path: '/hub/marketplace' }, window.location.origin);
-                        } else {
-                            // Standalone - redirect to Hub
-                            window.location.href = 'https://smarter.poker/hub/marketplace';
-                        }
-                    }}>
-                        <img src={TILE_MARKETPLACE} alt="Marketplace" className={styles.tileImage} />
-                    </button>
-                    <button className={styles.tileCard} onClick={() => navigate('/hands')}>
-                        <img src={TILE_HAND_HISTORIES} alt="Hand Histories" className={styles.tileImage} />
-                    </button>
+                    {[
+                        { img: TILE_PLAYER_STATS, alt: 'Player Stats', action: () => navigate('/profile') },
+                        { img: TILE_LEADERBOARDS, alt: 'Leaderboards', action: () => navigate('/leaderboard') },
+                        {
+                            img: TILE_CASHIER, alt: 'Cashier', action: () => {
+                                const lastClub = localStorage.getItem(LAST_CLUB_KEY);
+                                if (lastClub) {
+                                    navigate(`/clubs/${lastClub}/cashier`);
+                                } else if (userClubs.length > 0) {
+                                    navigate(`/clubs/${userClubs[0].id}/cashier`);
+                                } else {
+                                    toast.info('Join a club first to access the cashier');
+                                }
+                            }
+                        },
+                        {
+                            img: TILE_MARKETPLACE, alt: 'Marketplace', action: () => {
+                                if (window.parent !== window) {
+                                    window.parent.postMessage({ type: 'NAVIGATE', path: '/hub/marketplace' }, window.location.origin);
+                                } else {
+                                    window.location.href = 'https://smarter.poker/hub/marketplace';
+                                }
+                            }
+                        },
+                        { img: TILE_HAND_HISTORIES, alt: 'Hand Histories', action: () => navigate('/hands') },
+                    ].map((tile, idx) => (
+                        <button
+                            key={tile.alt}
+                            className={styles.tileCard}
+                            onClick={tile.action}
+                            style={{
+                                animation: `cardRise 0.5s ease-out ${400 + idx * 80}ms both`,
+                            }}
+                        >
+                            <div className={styles.tilePedestal}></div>
+                            <div className={styles.tileImageWrapper}>
+                                <img src={tile.img} alt={tile.alt} className={styles.tileImage} />
+                            </div>
+                            <div className={styles.tileEdge}></div>
+                        </button>
+                    ))}
                 </div>
             </div>
 
