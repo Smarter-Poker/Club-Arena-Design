@@ -6,86 +6,80 @@
  */
 
 import {
-    Deck,
-    evaluateHand,
-    evaluateOmahaHand,
-    calculatePots,
-    calculateBettingState,
-    validateAction,
-    calculateRake,
-    determineWinners,
-    cardsToString,
-    type EvaluatedHand,
-    type Pot,
-    type Winner,
-    type RakeConfig,
+  Deck,
+  evaluateHand,
+  evaluateOmahaHand,
+  calculatePots,
+  calculateBettingState,
+  validateAction,
+  calculateRake,
+  determineWinners,
+  cardsToString,
+  type EvaluatedHand,
+  type Pot,
+  type Winner,
+  type RakeConfig,
 } from './PokerEngine';
-import type {
-    Card,
-    HandStage,
-    SeatPlayer,
-    ActionType,
-    GameVariant,
-} from '../types/database.types';
+import type { Card, HandStage, SeatPlayer, ActionType, GameVariant } from '../types/database.types';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface HandConfig {
-    tableId: string;
-    handNumber: number;
-    gameVariant: GameVariant;
-    smallBlind: number;
-    bigBlind: number;
-    ante?: number;
-    rakeConfig: RakeConfig;
-    bombPot?: {
-        anteMultiplier: number; // Each player antes this many BBs
-    };
+  tableId: string;
+  handNumber: number;
+  gameVariant: GameVariant;
+  smallBlind: number;
+  bigBlind: number;
+  ante?: number;
+  rakeConfig: RakeConfig;
+  bombPot?: {
+    anteMultiplier: number; // Each player antes this many BBs
+  };
 }
 
 export interface GameState {
-    stage: HandStage;
-    deck: Deck;
-    communityCards: Card[];
-    pot: number;
-    currentBet: number;
-    lastRaise: number;
-    minRaise: number;
-    dealerSeat: number;
-    currentPlayerSeat: number;
-    players: SeatPlayer[];
-    pots: Pot[];
-    actionHistory: ActionRecord[];
-    sawFlop: boolean;
+  stage: HandStage;
+  deck: Deck;
+  communityCards: Card[];
+  pot: number;
+  currentBet: number;
+  lastRaise: number;
+  minRaise: number;
+  dealerSeat: number;
+  currentPlayerSeat: number;
+  players: SeatPlayer[];
+  pots: Pot[];
+  actionHistory: ActionRecord[];
+  sawFlop: boolean;
 }
 
 export interface ActionRecord {
-    seat: number;
-    userId: string;
-    action: ActionType;
-    amount: number;
-    timestamp: number;
-    stage: HandStage;
+  seat: number;
+  userId: string;
+  action: ActionType;
+  amount: number;
+  timestamp: number;
+  stage: HandStage;
 }
 
 export type HandEvent =
-    | { type: 'HAND_START'; handNumber: number; players: SeatPlayer[] }
-    | { type: 'CARDS_DEALT'; seat: number; cards: Card[] }
-    | { type: 'COMMUNITY_CARDS'; stage: HandStage; cards: Card[] }
-    | { type: 'PLAYER_ACTION'; seat: number; action: ActionType; amount: number }
-    | { type: 'POT_UPDATE'; pot: number; pots: Pot[] }
-    | { type: 'TURN_CHANGE'; seat: number; availableActions: ActionType[] }
-    | { type: 'SHOWDOWN'; results: ShowdownResult[] }
-    | { type: 'WINNERS'; winners: Winner[] }
-    | { type: 'HAND_COMPLETE'; handNumber: number; rake: number };
+  | { type: 'HAND_START'; handNumber: number; players: SeatPlayer[] }
+  | { type: 'CARDS_DEALT'; seat: number; cards: Card[] }
+  | { type: 'COMMUNITY_CARDS'; stage: HandStage; cards: Card[] }
+  | { type: 'PLAYER_ACTION'; seat: number; action: ActionType; amount: number }
+  | { type: 'POT_UPDATE'; pot: number; pots: Pot[] }
+  | { type: 'TURN_CHANGE'; seat: number; availableActions: ActionType[] }
+  | { type: 'SHOWDOWN'; results: ShowdownResult[] }
+  | { type: 'WINNERS'; winners: Winner[] }
+  | { type: 'HAND_COMPLETE'; handNumber: number; rake: number };
 
 export interface ShowdownResult {
-    seat: number;
-    userId: string;
-    cards: Card[];
-    hand: EvaluatedHand;
+  seat: number;
+  userId: string;
+  cards: Card[];
+  hand: EvaluatedHand;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -93,687 +87,700 @@ export interface ShowdownResult {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export class HandController {
-    private config: HandConfig;
-    private state: GameState;
-    private eventHandlers: ((event: HandEvent) => void)[] = [];
+  private config: HandConfig;
+  private state: GameState;
+  private eventHandlers: ((event: HandEvent) => void)[] = [];
 
-    constructor(config: HandConfig, players: SeatPlayer[], dealerSeat: number) {
-        this.config = config;
+  constructor(config: HandConfig, players: SeatPlayer[], dealerSeat: number) {
+    this.config = config;
 
-        const deck = new Deck();
+    const deck = new Deck();
 
-        // Short Deck variant
-        if (config.gameVariant === 'short_deck') {
-            deck.removeCardsBelow('6');
-        }
-
-        this.state = {
-            stage: 'preflop',
-            deck,
-            communityCards: [],
-            pot: 0,
-            currentBet: 0,
-            lastRaise: config.bigBlind,
-            minRaise: config.bigBlind,
-            dealerSeat,
-            currentPlayerSeat: -1,
-            players: this.initializePlayers(players),
-            pots: [],
-            actionHistory: [],
-            sawFlop: false,
-        };
+    // Short Deck variant
+    if (config.gameVariant === 'short_deck') {
+      deck.removeCardsBelow('6');
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // Event System
-    // ─────────────────────────────────────────────────────────────────────────────
+    this.state = {
+      stage: 'preflop',
+      deck,
+      communityCards: [],
+      pot: 0,
+      currentBet: 0,
+      lastRaise: config.bigBlind,
+      minRaise: config.bigBlind,
+      dealerSeat,
+      currentPlayerSeat: -1,
+      players: this.initializePlayers(players),
+      pots: [],
+      actionHistory: [],
+      sawFlop: false,
+    };
+  }
 
-    onEvent(handler: (event: HandEvent) => void): () => void {
-        this.eventHandlers.push(handler);
-        return () => {
-            this.eventHandlers = this.eventHandlers.filter(h => h !== handler);
-        };
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Event System
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  onEvent(handler: (event: HandEvent) => void): () => void {
+    this.eventHandlers.push(handler);
+    return () => {
+      this.eventHandlers = this.eventHandlers.filter((h) => h !== handler);
+    };
+  }
+
+  private emit(event: HandEvent): void {
+    for (const handler of this.eventHandlers) {
+      handler(event);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Initialization
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  private initializePlayers(players: SeatPlayer[]): SeatPlayer[] {
+    return players.map((p) => ({
+      ...p,
+      bet: 0,
+      totalInvested: 0,
+      cards: [],
+      is_folded: false,
+      is_all_in: false,
+    }));
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Start Hand
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  start(): void {
+    this.emit({
+      type: 'HAND_START',
+      handNumber: this.config.handNumber,
+      players: this.state.players,
+    });
+
+    // Post blinds or bomb pot antes
+    if (this.config.bombPot) {
+      this.postBombPotAntes();
+    } else {
+      this.postBlinds();
     }
 
-    private emit(event: HandEvent): void {
-        for (const handler of this.eventHandlers) {
-            handler(event);
-        }
+    // Deal hole cards
+    this.dealHoleCards();
+
+    // Set first player to act
+    this.setNextPlayer();
+
+    this.emitTurnChange();
+  }
+
+  private postBlinds(): void {
+    const { smallBlind, bigBlind } = this.config;
+    const activePlayers = this.getActivePlayers();
+
+    if (activePlayers.length < 2) return;
+
+    // Heads-up: dealer IS the small blind
+    const isHeadsUp = activePlayers.length === 2;
+    const sbSeat = isHeadsUp
+      ? this.state.dealerSeat
+      : this.getNextActiveSeat(this.state.dealerSeat);
+    const bbSeat = this.getNextActiveSeat(sbSeat);
+
+    // Post small blind
+    const sbPlayer = this.state.players.find((p) => p.seat === sbSeat);
+    if (sbPlayer) {
+      const sbAmount = Math.min(smallBlind, sbPlayer.stack);
+      sbPlayer.bet = sbAmount;
+      sbPlayer.totalInvested += sbAmount;
+      sbPlayer.stack -= sbAmount;
+      this.state.pot += sbAmount;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // Initialization
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    private initializePlayers(players: SeatPlayer[]): SeatPlayer[] {
-        return players.map(p => ({
-            ...p,
-            bet: 0,
-            totalInvested: 0,
-            cards: [],
-            is_folded: false,
-            is_all_in: false,
-        }));
+    // Post big blind
+    const bbPlayer = this.state.players.find((p) => p.seat === bbSeat);
+    if (bbPlayer) {
+      const bbAmount = Math.min(bigBlind, bbPlayer.stack);
+      bbPlayer.bet = bbAmount;
+      bbPlayer.totalInvested += bbAmount;
+      bbPlayer.stack -= bbAmount;
+      this.state.pot += bbAmount;
+      this.state.currentBet = bbAmount;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // Start Hand
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    start(): void {
-        this.emit({
-            type: 'HAND_START',
-            handNumber: this.config.handNumber,
-            players: this.state.players
-        });
-
-        // Post blinds or bomb pot antes
-        if (this.config.bombPot) {
-            this.postBombPotAntes();
-        } else {
-            this.postBlinds();
-        }
-
-        // Deal hole cards
-        this.dealHoleCards();
-
-        // Set first player to act
-        this.setNextPlayer();
-
-        this.emitTurnChange();
+    // Post antes if configured
+    if (this.config.ante) {
+      for (const player of this.state.players.filter((p) => !p.is_sitting_out)) {
+        const anteAmount = Math.min(this.config.ante, player.stack);
+        player.totalInvested += anteAmount;
+        player.stack -= anteAmount;
+        this.state.pot += anteAmount;
+      }
     }
 
-    private postBlinds(): void {
-        const { smallBlind, bigBlind } = this.config;
-        const activePlayers = this.getActivePlayers();
+    this.emit({ type: 'POT_UPDATE', pot: this.state.pot, pots: this.state.pots });
+  }
 
-        if (activePlayers.length < 2) return;
+  private postBombPotAntes(): void {
+    const { bigBlind, bombPot } = this.config;
+    if (!bombPot) return;
 
-        // Heads-up: dealer IS the small blind
-        const isHeadsUp = activePlayers.length === 2;
-        const sbSeat = isHeadsUp
-            ? this.state.dealerSeat
-            : this.getNextActiveSeat(this.state.dealerSeat);
-        const bbSeat = this.getNextActiveSeat(sbSeat);
+    const anteAmount = bigBlind * bombPot.anteMultiplier;
 
-        // Post small blind
-        const sbPlayer = this.state.players.find(p => p.seat === sbSeat);
-        if (sbPlayer) {
-            const sbAmount = Math.min(smallBlind, sbPlayer.stack);
-            sbPlayer.bet = sbAmount;
-            sbPlayer.totalInvested += sbAmount;
-            sbPlayer.stack -= sbAmount;
-            this.state.pot += sbAmount;
-        }
-
-        // Post big blind
-        const bbPlayer = this.state.players.find(p => p.seat === bbSeat);
-        if (bbPlayer) {
-            const bbAmount = Math.min(bigBlind, bbPlayer.stack);
-            bbPlayer.bet = bbAmount;
-            bbPlayer.totalInvested += bbAmount;
-            bbPlayer.stack -= bbAmount;
-            this.state.pot += bbAmount;
-            this.state.currentBet = bbAmount;
-        }
-
-        // Post antes if configured
-        if (this.config.ante) {
-            for (const player of this.state.players.filter(p => !p.is_sitting_out)) {
-                const anteAmount = Math.min(this.config.ante, player.stack);
-                player.totalInvested += anteAmount;
-                player.stack -= anteAmount;
-                this.state.pot += anteAmount;
-            }
-        }
-
-        this.emit({ type: 'POT_UPDATE', pot: this.state.pot, pots: this.state.pots });
+    for (const player of this.state.players.filter((p) => !p.is_sitting_out)) {
+      const actualAnte = Math.min(anteAmount, player.stack);
+      player.totalInvested += actualAnte;
+      player.stack -= actualAnte;
+      this.state.pot += actualAnte;
     }
 
-    private postBombPotAntes(): void {
-        const { bigBlind, bombPot } = this.config;
-        if (!bombPot) return;
+    this.state.currentBet = 0;
+    this.emit({ type: 'POT_UPDATE', pot: this.state.pot, pots: this.state.pots });
+  }
 
-        const anteAmount = bigBlind * bombPot.anteMultiplier;
+  private dealHoleCards(): void {
+    const cardsPerPlayer = this.getCardsPerPlayer();
 
-        for (const player of this.state.players.filter(p => !p.is_sitting_out)) {
-            const actualAnte = Math.min(anteAmount, player.stack);
-            player.totalInvested += actualAnte;
-            player.stack -= actualAnte;
-            this.state.pot += actualAnte;
-        }
+    for (const player of this.state.players.filter((p) => !p.is_sitting_out)) {
+      player.cards = this.state.deck.deal(cardsPerPlayer);
+      this.emit({ type: 'CARDS_DEALT', seat: player.seat, cards: player.cards });
+    }
+  }
 
-        this.state.currentBet = 0;
-        this.emit({ type: 'POT_UPDATE', pot: this.state.pot, pots: this.state.pots });
+  private getCardsPerPlayer(): number {
+    switch (this.config.gameVariant) {
+      case 'plo': // Generic PLO = PLO4
+      case 'plo4':
+        return 4;
+      case 'plo5':
+        return 5;
+      case 'plo6':
+        return 6;
+      case 'plo8':
+        return 4; // Omaha Hi/Lo
+      case 'ofc':
+      case 'ofc_pineapple':
+        return 5; // Initial deal for OFC
+      default:
+        return 2; // NLH, FLH, Short Deck
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Player Actions
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  performAction(seat: number, action: ActionType, amount?: number): boolean {
+    const player = this.state.players.find((p) => p.seat === seat);
+    if (!player || seat !== this.state.currentPlayerSeat) {
+      return false;
     }
 
-    private dealHoleCards(): void {
-        const cardsPerPlayer = this.getCardsPerPlayer();
+    // Validate action
+    const bettingState = calculateBettingState(
+      this.state.pot,
+      this.state.currentBet,
+      player.bet,
+      this.config.bigBlind,
+      this.state.lastRaise
+    );
 
-        for (const player of this.state.players.filter(p => !p.is_sitting_out)) {
-            player.cards = this.state.deck.deal(cardsPerPlayer);
-            this.emit({ type: 'CARDS_DEALT', seat: player.seat, cards: player.cards });
-        }
+    const validation = validateAction(action, amount, player.stack, bettingState);
+    if (!validation.valid) {
+      console.warn(`[HC] Action rejected (seat ${seat}): ${validation.error}`);
+      return false;
     }
 
-    private getCardsPerPlayer(): number {
-        switch (this.config.gameVariant) {
-            case 'plo':   // Generic PLO = PLO4
-            case 'plo4': return 4;
-            case 'plo5': return 5;
-            case 'plo6': return 6;
-            case 'plo8': return 4; // Omaha Hi/Lo
-            case 'ofc':
-            case 'ofc_pineapple':
-                return 5; // Initial deal for OFC
-            default: return 2; // NLH, FLH, Short Deck
+    // Execute action
+    let actualAmount = 0;
+
+    switch (action) {
+      case 'fold':
+        player.is_folded = true;
+        break;
+
+      case 'check':
+        break;
+
+      case 'call':
+        actualAmount = Math.min(bettingState.toCall, player.stack);
+        player.bet += actualAmount;
+        player.totalInvested += actualAmount;
+        player.stack -= actualAmount;
+        this.state.pot += actualAmount;
+        if (player.stack === 0) player.is_all_in = true;
+        break;
+
+      case 'bet':
+      case 'raise': {
+        actualAmount = amount!;
+        const raiseSize = actualAmount - player.bet;
+        if (raiseSize > this.state.lastRaise) {
+          this.state.lastRaise = raiseSize;
         }
+        const chipsAdded = actualAmount - player.bet;
+        player.totalInvested += chipsAdded;
+        player.stack -= chipsAdded;
+        this.state.pot += chipsAdded;
+        player.bet = actualAmount;
+        this.state.currentBet = actualAmount;
+        if (player.stack === 0) player.is_all_in = true;
+        break;
+      }
+
+      case 'all_in': {
+        actualAmount = player.stack + player.bet;
+        player.totalInvested += player.stack;
+        this.state.pot += player.stack;
+        player.bet += player.stack;
+        player.stack = 0;
+        player.is_all_in = true;
+        if (player.bet > this.state.currentBet) {
+          const raiseSize = player.bet - this.state.currentBet;
+          if (raiseSize >= this.state.lastRaise) {
+            this.state.lastRaise = raiseSize;
+          }
+          this.state.currentBet = player.bet;
+        }
+        break;
+      }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // Player Actions
-    // ─────────────────────────────────────────────────────────────────────────────
+    // Record action
+    this.state.actionHistory.push({
+      seat,
+      userId: player.user_id,
+      action,
+      amount: actualAmount,
+      timestamp: Date.now(),
+      stage: this.state.stage,
+    });
 
-    performAction(seat: number, action: ActionType, amount?: number): boolean {
-        const player = this.state.players.find(p => p.seat === seat);
-        if (!player || seat !== this.state.currentPlayerSeat) {
-            return false;
-        }
+    this.emit({
+      type: 'PLAYER_ACTION',
+      seat,
+      action,
+      amount: actualAmount,
+    });
 
-        // Validate action
-        const bettingState = calculateBettingState(
-            this.state.pot,
-            this.state.currentBet,
-            player.bet,
-            this.config.bigBlind,
-            this.state.lastRaise
-        );
+    this.emit({
+      type: 'POT_UPDATE',
+      pot: this.state.pot,
+      pots: calculatePots(this.state.players),
+    });
 
-        const validation = validateAction(action, amount, player.stack, bettingState);
-        if (!validation.valid) {
-            console.warn(`[HC] Action rejected (seat ${seat}): ${validation.error}`);
-            return false;
-        }
+    // Advance game
+    this.advanceGame();
 
-        // Execute action
-        let actualAmount = 0;
+    return true;
+  }
 
-        switch (action) {
-            case 'fold':
-                player.is_folded = true;
-                break;
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Game Flow
+  // ─────────────────────────────────────────────────────────────────────────────
 
-            case 'check':
-                break;
+  private advanceGame(): void {
+    const activePlayers = this.getActivePlayers();
 
-            case 'call':
-                actualAmount = Math.min(bettingState.toCall, player.stack);
-                player.bet += actualAmount;
-                player.totalInvested += actualAmount;
-                player.stack -= actualAmount;
-                this.state.pot += actualAmount;
-                if (player.stack === 0) player.is_all_in = true;
-                break;
-
-            case 'bet':
-            case 'raise': {
-                actualAmount = amount!;
-                const raiseSize = actualAmount - player.bet;
-                if (raiseSize > this.state.lastRaise) {
-                    this.state.lastRaise = raiseSize;
-                }
-                const chipsAdded = actualAmount - player.bet;
-                player.totalInvested += chipsAdded;
-                player.stack -= chipsAdded;
-                this.state.pot += chipsAdded;
-                player.bet = actualAmount;
-                this.state.currentBet = actualAmount;
-                if (player.stack === 0) player.is_all_in = true;
-                break;
-            }
-
-            case 'all_in': {
-                actualAmount = player.stack + player.bet;
-                player.totalInvested += player.stack;
-                this.state.pot += player.stack;
-                player.bet += player.stack;
-                player.stack = 0;
-                player.is_all_in = true;
-                if (player.bet > this.state.currentBet) {
-                    const raiseSize = player.bet - this.state.currentBet;
-                    if (raiseSize >= this.state.lastRaise) {
-                        this.state.lastRaise = raiseSize;
-                    }
-                    this.state.currentBet = player.bet;
-                }
-                break;
-            }
-        }
-
-        // Record action
-        this.state.actionHistory.push({
-            seat,
-            userId: player.user_id,
-            action,
-            amount: actualAmount,
-            timestamp: Date.now(),
-            stage: this.state.stage,
-        });
-
-        this.emit({
-            type: 'PLAYER_ACTION',
-            seat,
-            action,
-            amount: actualAmount
-        });
-
-        this.emit({
-            type: 'POT_UPDATE',
-            pot: this.state.pot,
-            pots: calculatePots(this.state.players)
-        });
-
-        // Advance game
-        this.advanceGame();
-
-        return true;
+    // Check if hand is over
+    if (activePlayers.length === 1) {
+      // Everyone else folded
+      this.completeHand();
+      return;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // Game Flow
-    // ─────────────────────────────────────────────────────────────────────────────
+    // Check if betting round is complete
+    if (this.isBettingRoundComplete()) {
+      this.advanceStage();
+    } else {
+      this.setNextPlayer();
+      this.emitTurnChange();
+    }
+  }
 
-    private advanceGame(): void {
-        const activePlayers = this.getActivePlayers();
+  private isBettingRoundComplete(): boolean {
+    const activePlayers = this.getActivePlayers();
+    const playersToAct = activePlayers.filter((p) => !p.is_all_in);
 
-        // Check if hand is over
-        if (activePlayers.length === 1) {
-            // Everyone else folded
-            this.completeHand();
-            return;
-        }
-
-        // Check if betting round is complete
-        if (this.isBettingRoundComplete()) {
-            this.advanceStage();
-        } else {
-            this.setNextPlayer();
-            this.emitTurnChange();
-        }
+    // If everyone is all-in (or folded), betting is complete
+    if (playersToAct.length === 0) return true;
+    // If only one player left who can act and bets are equalized, betting is complete
+    if (playersToAct.length === 1) {
+      // They still need to have acted this round (or their bet equals current bet)
+      const stageActions = this.state.actionHistory.filter((a) => a.stage === this.state.stage);
+      const hasActed = stageActions.some((a) => a.seat === playersToAct[0].seat);
+      // Must have acted AND bet exactly matches currentBet (=== not >= to prevent unequalized bets)
+      if (hasActed && playersToAct[0].bet === this.state.currentBet) return true;
+      if (!hasActed) return false;
     }
 
-    private isBettingRoundComplete(): boolean {
-        const activePlayers = this.getActivePlayers();
-        const playersToAct = activePlayers.filter(p => !p.is_all_in);
+    // Get actions for this betting round
+    const stageActions = this.state.actionHistory.filter((a) => a.stage === this.state.stage);
 
-        // If everyone is all-in (or folded), betting is complete
-        if (playersToAct.length === 0) return true;
-        // If only one player left who can act and bets are equalized, betting is complete
-        if (playersToAct.length === 1) {
-            // They still need to have acted this round (or their bet equals current bet)
-            const stageActions = this.state.actionHistory.filter(a => a.stage === this.state.stage);
-            const hasActed = stageActions.some(a => a.seat === playersToAct[0].seat);
-            // Must have acted AND bet exactly matches currentBet (=== not >= to prevent unequalized bets)
-            if (hasActed && playersToAct[0].bet === this.state.currentBet) return true;
-            if (!hasActed) return false;
+    // Find the last aggressive action (bet/raise/all_in that increased currentBet)
+    let lastAggressorSeat = -1;
+    for (const action of stageActions) {
+      if (
+        action.action === 'bet' ||
+        action.action === 'raise' ||
+        (action.action === 'all_in' && action.amount > 0)
+      ) {
+        // Check if this action actually raised the bet
+        const player = this.state.players.find((p) => p.seat === action.seat);
+        if (player && (player.bet >= this.state.currentBet || player.is_all_in)) {
+          lastAggressorSeat = action.seat;
         }
-
-        // Get actions for this betting round
-        const stageActions = this.state.actionHistory.filter(a => a.stage === this.state.stage);
-
-        // Find the last aggressive action (bet/raise/all_in that increased currentBet)
-        let lastAggressorSeat = -1;
-        for (const action of stageActions) {
-            if (action.action === 'bet' || action.action === 'raise' ||
-                (action.action === 'all_in' && action.amount > 0)) {
-                // Check if this action actually raised the bet
-                const player = this.state.players.find(p => p.seat === action.seat);
-                if (player && (player.bet >= this.state.currentBet || player.is_all_in)) {
-                    lastAggressorSeat = action.seat;
-                }
-            }
-        }
-
-        // Every non-all-in active player must have acted AFTER the last aggressor
-        // (or there was no aggression, in which case everyone just needs to have acted once)
-        for (const player of playersToAct) {
-            const playerActions = stageActions.filter(a => a.seat === player.seat);
-
-            if (playerActions.length === 0) {
-                return false; // This player hasn't acted at all
-            }
-
-            // If there was a raise, check this player acted AFTER it
-            if (lastAggressorSeat !== -1 && lastAggressorSeat !== player.seat) {
-                // Find last aggressor action index (manual findLastIndex for compatibility)
-                let lastAggressorActionIdx = -1;
-                for (let i = stageActions.length - 1; i >= 0; i--) {
-                    const a = stageActions[i];
-                    if (a.seat === lastAggressorSeat &&
-                        (a.action === 'bet' || a.action === 'raise' || a.action === 'all_in')) {
-                        lastAggressorActionIdx = i;
-                        break;
-                    }
-                }
-                let playerLastActionIdx = -1;
-                for (let i = stageActions.length - 1; i >= 0; i--) {
-                    if (stageActions[i].seat === player.seat) {
-                        playerLastActionIdx = i;
-                        break;
-                    }
-                }
-
-                if (playerLastActionIdx < lastAggressorActionIdx) {
-                    return false; // Player needs to react to the raise
-                }
-            }
-        }
-
-        // All bets must be equalized (except all-ins)
-        const targetBet = this.state.currentBet;
-        return playersToAct.every(p => p.bet === targetBet);
+      }
     }
 
-    private advanceStage(): void {
-        // Reset bets for new street
-        for (const player of this.state.players) {
-            player.bet = 0;
+    // Every non-all-in active player must have acted AFTER the last aggressor
+    // (or there was no aggression, in which case everyone just needs to have acted once)
+    for (const player of playersToAct) {
+      const playerActions = stageActions.filter((a) => a.seat === player.seat);
+
+      if (playerActions.length === 0) {
+        return false; // This player hasn't acted at all
+      }
+
+      // If there was a raise, check this player acted AFTER it
+      if (lastAggressorSeat !== -1 && lastAggressorSeat !== player.seat) {
+        // Find last aggressor action index (manual findLastIndex for compatibility)
+        let lastAggressorActionIdx = -1;
+        for (let i = stageActions.length - 1; i >= 0; i--) {
+          const a = stageActions[i];
+          if (
+            a.seat === lastAggressorSeat &&
+            (a.action === 'bet' || a.action === 'raise' || a.action === 'all_in')
+          ) {
+            lastAggressorActionIdx = i;
+            break;
+          }
         }
-        this.state.currentBet = 0;
-        this.state.lastRaise = this.config.bigBlind;
-
-        // Deal community cards
-        switch (this.state.stage) {
-            case 'preflop': {
-                this.state.stage = 'flop';
-                this.state.sawFlop = true;
-                const flop = this.state.deck.deal(3);
-                this.state.communityCards.push(...flop);
-                this.emit({ type: 'COMMUNITY_CARDS', stage: 'flop', cards: flop });
-                break;
-            }
-
-            case 'flop': {
-                this.state.stage = 'turn';
-                const turn = this.state.deck.deal(1);
-                this.state.communityCards.push(...turn);
-                this.emit({ type: 'COMMUNITY_CARDS', stage: 'turn', cards: turn });
-                break;
-            }
-
-            case 'turn': {
-                this.state.stage = 'river';
-                const river = this.state.deck.deal(1);
-                this.state.communityCards.push(...river);
-                this.emit({ type: 'COMMUNITY_CARDS', stage: 'river', cards: river });
-                break;
-            }
-
-            case 'river':
-                this.state.stage = 'showdown';
-                this.completeHand();
-                return;
+        let playerLastActionIdx = -1;
+        for (let i = stageActions.length - 1; i >= 0; i--) {
+          if (stageActions[i].seat === player.seat) {
+            playerLastActionIdx = i;
+            break;
+          }
         }
 
-        // Check if we can continue betting
-        const activePlayers = this.getActivePlayers().filter(p => !p.is_all_in);
-        if (activePlayers.length < 2) {
-            // All but one are all-in, run out community cards
-            this.runOutCommunityCards();
-            return;
+        if (playerLastActionIdx < lastAggressorActionIdx) {
+          return false; // Player needs to react to the raise
         }
-
-        // Set first player to act post-flop
-        this.state.currentPlayerSeat = this.getFirstPostflopPlayer();
-        this.emitTurnChange();
+      }
     }
 
-    private runOutCommunityCards(): void {
-        while (this.state.communityCards.length < 5) {
-            const stage = this.state.communityCards.length < 3 ? 'flop' :
-                this.state.communityCards.length < 4 ? 'turn' : 'river';
-            const count = stage === 'flop' ? 3 - this.state.communityCards.length : 1;
-            const cards = this.state.deck.deal(count);
-            this.state.communityCards.push(...cards);
-            this.emit({ type: 'COMMUNITY_CARDS', stage, cards });
-        }
+    // All bets must be equalized (except all-ins)
+    const targetBet = this.state.currentBet;
+    return playersToAct.every((p) => p.bet === targetBet);
+  }
+
+  private advanceStage(): void {
+    // Reset bets for new street
+    for (const player of this.state.players) {
+      player.bet = 0;
+    }
+    this.state.currentBet = 0;
+    this.state.lastRaise = this.config.bigBlind;
+
+    // Deal community cards
+    switch (this.state.stage) {
+      case 'preflop': {
+        this.state.stage = 'flop';
+        this.state.sawFlop = true;
+        const flop = this.state.deck.deal(3);
+        this.state.communityCards.push(...flop);
+        this.emit({ type: 'COMMUNITY_CARDS', stage: 'flop', cards: flop });
+        break;
+      }
+
+      case 'flop': {
+        this.state.stage = 'turn';
+        const turn = this.state.deck.deal(1);
+        this.state.communityCards.push(...turn);
+        this.emit({ type: 'COMMUNITY_CARDS', stage: 'turn', cards: turn });
+        break;
+      }
+
+      case 'turn': {
+        this.state.stage = 'river';
+        const river = this.state.deck.deal(1);
+        this.state.communityCards.push(...river);
+        this.emit({ type: 'COMMUNITY_CARDS', stage: 'river', cards: river });
+        break;
+      }
+
+      case 'river':
         this.state.stage = 'showdown';
         this.completeHand();
+        return;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // Hand Completion
-    // ─────────────────────────────────────────────────────────────────────────────
+    // Check if we can continue betting
+    const activePlayers = this.getActivePlayers().filter((p) => !p.is_all_in);
+    if (activePlayers.length < 2) {
+      // All but one are all-in, run out community cards
+      this.runOutCommunityCards();
+      return;
+    }
 
-    private completeHand(): void {
-        const pots = calculatePots(this.state.players);
-        this.state.pots = pots;
+    // Set first player to act post-flop
+    this.state.currentPlayerSeat = this.getFirstPostflopPlayer();
+    this.emitTurnChange();
+  }
 
-        const activePlayers = this.getActivePlayers();
+  private runOutCommunityCards(): void {
+    while (this.state.communityCards.length < 5) {
+      const stage =
+        this.state.communityCards.length < 3
+          ? 'flop'
+          : this.state.communityCards.length < 4
+            ? 'turn'
+            : 'river';
+      const count = stage === 'flop' ? 3 - this.state.communityCards.length : 1;
+      const cards = this.state.deck.deal(count);
+      this.state.communityCards.push(...cards);
+      this.emit({ type: 'COMMUNITY_CARDS', stage, cards });
+    }
+    this.state.stage = 'showdown';
+    this.completeHand();
+  }
 
-        // Showdown if multiple players
-        if (activePlayers.length > 1) {
-            const evaluator = this.config.gameVariant.startsWith('plo')
-                ? evaluateOmahaHand
-                : evaluateHand;
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Hand Completion
+  // ─────────────────────────────────────────────────────────────────────────────
 
-            // Filter out players with no cards (shouldn't happen, but defensive)
-            const playersWithCards = activePlayers.filter(p => p.cards && p.cards.length > 0);
+  private completeHand(): void {
+    const pots = calculatePots(this.state.players);
+    this.state.pots = pots;
 
-            const showdownResults: ShowdownResult[] = playersWithCards.map(p => ({
-                seat: p.seat,
-                userId: p.user_id,
-                cards: p.cards,
-                hand: evaluator(p.cards, this.state.communityCards),
-            }));
+    const activePlayers = this.getActivePlayers();
 
-            this.emit({ type: 'SHOWDOWN', results: showdownResults });
+    // Showdown if multiple players
+    if (activePlayers.length > 1) {
+      const evaluator = this.config.gameVariant.startsWith('plo')
+        ? evaluateOmahaHand
+        : evaluateHand;
+
+      // Filter out players with no cards (shouldn't happen, but defensive)
+      const playersWithCards = activePlayers.filter((p) => p.cards && p.cards.length > 0);
+
+      const showdownResults: ShowdownResult[] = playersWithCards.map((p) => ({
+        seat: p.seat,
+        userId: p.user_id,
+        cards: p.cards,
+        hand: evaluator(p.cards, this.state.communityCards),
+      }));
+
+      this.emit({ type: 'SHOWDOWN', results: showdownResults });
+    }
+
+    // Determine winners
+    const winners = determineWinners(
+      this.state.players,
+      this.state.communityCards,
+      pots,
+      this.config.gameVariant
+    );
+
+    // Guard: if no winners (shouldn't happen, but defensive)
+    if (winners.length === 0) {
+      console.error(
+        '[HandController] completeHand: no winners determined — returning pot to players proportionally'
+      );
+      // Return pot to remaining active players proportionally
+      const remainingPlayers = this.state.players.filter((p) => !p.is_folded && !p.is_sitting_out);
+      if (remainingPlayers.length > 0) {
+        const potCents = Math.trunc(this.state.pot * 100);
+        const shareCents = Math.trunc(potCents / remainingPlayers.length);
+        const leftoverCents = potCents - shareCents * remainingPlayers.length;
+        for (let i = 0; i < remainingPlayers.length; i++) {
+          const award = shareCents + (i < leftoverCents ? 1 : 0);
+          remainingPlayers[i].stack += award / 100;
         }
-
-        // Determine winners
-        const winners = determineWinners(
-            this.state.players,
-            this.state.communityCards,
-            pots,
-            this.config.gameVariant
-        );
-
-        // Guard: if no winners (shouldn't happen, but defensive)
-        if (winners.length === 0) {
-            console.error('[HandController] completeHand: no winners determined — returning pot to players proportionally');
-            // Return pot to remaining active players proportionally
-            const remainingPlayers = this.state.players.filter(p => !p.is_folded && !p.is_sitting_out);
-            if (remainingPlayers.length > 0) {
-                const share = Math.trunc((this.state.pot * 100) / remainingPlayers.length) / 100;
-                for (const p of remainingPlayers) {
-                    p.stack += share;
-                }
-            }
-            this.emit({ type: 'WINNERS', winners: [] });
-            this.emit({ type: 'HAND_COMPLETE', handNumber: this.config.handNumber, rake: 0 });
-            return;
-        }
-
-        // Calculate rake
-        const rake = calculateRake(
-            this.state.pot,
-            this.state.sawFlop,
-            this.config.rakeConfig
-        );
-
-        // Distribute winnings (minus rake)
-        const totalWinnings = this.state.pot - rake;
-        const totalWinnerAmount = winners.reduce((sum, w) => sum + w.amount, 0);
-
-        // Integer-cents arithmetic to prevent floating-point distribution errors
-        const totalCents = Math.trunc(totalWinnings * 100);
-        const totalWinnerCents = Math.trunc(totalWinnerAmount * 100) || 1;
-        const adjustedCents = winners.map(w =>
-            Math.trunc(Math.trunc(w.amount * 100) * totalCents / totalWinnerCents)
-        );
-        let remainderCents = totalCents - adjustedCents.reduce((s, a) => s + a, 0);
-        for (let i = 0; i < adjustedCents.length && remainderCents > 0; i++) {
-            adjustedCents[i]++;
-            remainderCents--;
-        }
-        const adjustedAmounts = adjustedCents.map(c => c / 100);
-        const adjustedWinners = winners.map((w, i) => ({
-            ...w,
-            amount: adjustedAmounts[i],
-        }));
-
-        // Add winnings to stacks
-        for (const winner of adjustedWinners) {
-            const player = this.state.players.find(p => p.user_id === winner.userId);
-            if (player) {
-                player.stack += winner.amount;
-            }
-        }
-
-        this.emit({ type: 'WINNERS', winners: adjustedWinners });
-        this.emit({ type: 'HAND_COMPLETE', handNumber: this.config.handNumber, rake });
+      }
+      this.emit({ type: 'WINNERS', winners: [] });
+      this.emit({ type: 'HAND_COMPLETE', handNumber: this.config.handNumber, rake: 0 });
+      return;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // Helper Methods
-    // ─────────────────────────────────────────────────────────────────────────────
+    // Calculate rake
+    const rake = calculateRake(this.state.pot, this.state.sawFlop, this.config.rakeConfig);
 
-    private getActivePlayers(): SeatPlayer[] {
-        return this.state.players.filter(p =>
-            !p.is_folded && !p.is_sitting_out
-        );
+    // Distribute winnings (minus rake)
+    const totalWinnings = this.state.pot - rake;
+    const totalWinnerAmount = winners.reduce((sum, w) => sum + w.amount, 0);
+
+    // Integer-cents arithmetic to prevent floating-point distribution errors
+    const totalCents = Math.trunc(totalWinnings * 100);
+    const totalWinnerCents = Math.trunc(totalWinnerAmount * 100) || 1;
+    const adjustedCents = winners.map((w) =>
+      Math.trunc((Math.trunc(w.amount * 100) * totalCents) / totalWinnerCents)
+    );
+    let remainderCents = totalCents - adjustedCents.reduce((s, a) => s + a, 0);
+    for (let i = 0; i < adjustedCents.length && remainderCents > 0; i++) {
+      adjustedCents[i]++;
+      remainderCents--;
+    }
+    const adjustedAmounts = adjustedCents.map((c) => c / 100);
+    const adjustedWinners = winners.map((w, i) => ({
+      ...w,
+      amount: adjustedAmounts[i],
+    }));
+
+    // Add winnings to stacks
+    for (const winner of adjustedWinners) {
+      const player = this.state.players.find((p) => p.user_id === winner.userId);
+      if (player) {
+        player.stack += winner.amount;
+      }
     }
 
-    private getNextActiveSeat(fromSeat: number): number {
-        const seats = this.state.players
-            .filter(p => !p.is_sitting_out)
-            .map(p => p.seat)
-            .sort((a, b) => a - b);
+    this.emit({ type: 'WINNERS', winners: adjustedWinners });
+    this.emit({ type: 'HAND_COMPLETE', handNumber: this.config.handNumber, rake });
+  }
 
-        // Return fromSeat (not -1) so callers don't infinite-loop on a sentinel
-        if (seats.length === 0) return fromSeat;
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Helper Methods
+  // ─────────────────────────────────────────────────────────────────────────────
 
-        for (const seat of seats) {
-            if (seat > fromSeat) return seat;
-        }
-        return seats[0]; // Wrap around
+  private getActivePlayers(): SeatPlayer[] {
+    return this.state.players.filter((p) => !p.is_folded && !p.is_sitting_out);
+  }
+
+  private getNextActiveSeat(fromSeat: number): number {
+    const seats = this.state.players
+      .filter((p) => !p.is_sitting_out)
+      .map((p) => p.seat)
+      .sort((a, b) => a - b);
+
+    // Return fromSeat (not -1) so callers don't infinite-loop on a sentinel
+    if (seats.length === 0) return fromSeat;
+
+    for (const seat of seats) {
+      if (seat > fromSeat) return seat;
+    }
+    return seats[0]; // Wrap around
+  }
+
+  private getFirstPostflopPlayer(): number {
+    // Postflop: first active (non-folded, non-all-in) player after dealer
+    // This is typically the SB position
+    const activePlayers = this.getActivePlayers().filter((p) => !p.is_all_in);
+    if (activePlayers.length === 0) return -1;
+
+    let seat = this.getNextActiveSeat(this.state.dealerSeat);
+    let iterations = 0;
+    const maxIterations = this.state.players.length;
+
+    while (iterations < maxIterations) {
+      const player = this.state.players.find((p) => p.seat === seat);
+      if (player && !player.is_folded && !player.is_all_in && !player.is_sitting_out) {
+        return seat;
+      }
+      seat = this.getNextActiveSeat(seat);
+      iterations++;
     }
 
-    private getFirstPostflopPlayer(): number {
-        // Postflop: first active (non-folded, non-all-in) player after dealer
-        // This is typically the SB position
-        const activePlayers = this.getActivePlayers().filter(p => !p.is_all_in);
-        if (activePlayers.length === 0) return -1;
+    return activePlayers[0]?.seat ?? -1;
+  }
 
-        let seat = this.getNextActiveSeat(this.state.dealerSeat);
-        let iterations = 0;
-        const maxIterations = this.state.players.length;
-
-        while (iterations < maxIterations) {
-            const player = this.state.players.find(p => p.seat === seat);
-            if (player && !player.is_folded && !player.is_all_in && !player.is_sitting_out) {
-                return seat;
-            }
-            seat = this.getNextActiveSeat(seat);
-            iterations++;
-        }
-
-        return activePlayers[0]?.seat ?? -1;
+  private setNextPlayer(): void {
+    const activePlayers = this.getActivePlayers().filter((p) => !p.is_all_in);
+    if (activePlayers.length === 0) {
+      this.state.currentPlayerSeat = -1;
+      return;
     }
 
-    private setNextPlayer(): void {
-        const activePlayers = this.getActivePlayers().filter(p => !p.is_all_in);
-        if (activePlayers.length === 0) {
-            this.state.currentPlayerSeat = -1;
-            return;
-        }
+    const allActive = this.getActivePlayers();
+    const isHeadsUp = allActive.length === 2;
 
-        const allActive = this.getActivePlayers();
-        const isHeadsUp = allActive.length === 2;
-
-        // First to act preflop: UTG (after BB), or dealer/SB in heads-up
-        if (this.state.stage === 'preflop' && this.state.actionHistory.length === 0) {
-            if (isHeadsUp) {
-                // Heads-up: dealer/SB acts first preflop
-                this.state.currentPlayerSeat = this.state.dealerSeat;
-            } else {
-                // Multi-way: UTG (player after BB) acts first
-                const sbSeat = this.getNextActiveSeat(this.state.dealerSeat);
-                const bbSeat = this.getNextActiveSeat(sbSeat);
-                this.state.currentPlayerSeat = this.getNextActiveSeat(bbSeat);
-            }
-            return;
-        }
-
-        // Otherwise, next active non-folded, non-all-in player
-        let nextSeat = this.getNextActiveSeat(this.state.currentPlayerSeat);
-        let iterations = 0;
-        const maxIterations = this.state.players.length;
-
-        while (iterations < maxIterations) {
-            const player = this.state.players.find(p => p.seat === nextSeat);
-            if (player && !player.is_folded && !player.is_all_in && !player.is_sitting_out) {
-                break;
-            }
-            nextSeat = this.getNextActiveSeat(nextSeat);
-            iterations++;
-            if (nextSeat === this.state.currentPlayerSeat) break; // Full circle
-        }
-
-        this.state.currentPlayerSeat = nextSeat;
+    // First to act preflop: UTG (after BB), or dealer/SB in heads-up
+    if (this.state.stage === 'preflop' && this.state.actionHistory.length === 0) {
+      if (isHeadsUp) {
+        // Heads-up: dealer/SB acts first preflop
+        this.state.currentPlayerSeat = this.state.dealerSeat;
+      } else {
+        // Multi-way: UTG (player after BB) acts first
+        const sbSeat = this.getNextActiveSeat(this.state.dealerSeat);
+        const bbSeat = this.getNextActiveSeat(sbSeat);
+        this.state.currentPlayerSeat = this.getNextActiveSeat(bbSeat);
+      }
+      return;
     }
 
-    private emitTurnChange(): void {
-        const player = this.state.players.find(p => p.seat === this.state.currentPlayerSeat);
-        if (!player) return;
+    // Otherwise, next active non-folded, non-all-in player
+    let nextSeat = this.getNextActiveSeat(this.state.currentPlayerSeat);
+    let iterations = 0;
+    const maxIterations = this.state.players.length;
 
-        const availableActions = this.getAvailableActions(player);
-        this.emit({
-            type: 'TURN_CHANGE',
-            seat: this.state.currentPlayerSeat,
-            availableActions
-        });
+    while (iterations < maxIterations) {
+      const player = this.state.players.find((p) => p.seat === nextSeat);
+      if (player && !player.is_folded && !player.is_all_in && !player.is_sitting_out) {
+        break;
+      }
+      nextSeat = this.getNextActiveSeat(nextSeat);
+      iterations++;
+      if (nextSeat === this.state.currentPlayerSeat) break; // Full circle
     }
 
-    private getAvailableActions(player: SeatPlayer): ActionType[] {
-        const actions: ActionType[] = ['fold'];
-        const toCall = this.state.currentBet - player.bet;
+    this.state.currentPlayerSeat = nextSeat;
+  }
 
-        if (toCall === 0) {
-            actions.push('check');
-            if (player.stack > 0) actions.push('bet');
-        } else {
-            actions.push('call');
-            if (player.stack > toCall) actions.push('raise');
-        }
+  private emitTurnChange(): void {
+    const player = this.state.players.find((p) => p.seat === this.state.currentPlayerSeat);
+    if (!player) return;
 
-        actions.push('all_in');
-        return actions;
+    const availableActions = this.getAvailableActions(player);
+    this.emit({
+      type: 'TURN_CHANGE',
+      seat: this.state.currentPlayerSeat,
+      availableActions,
+    });
+  }
+
+  private getAvailableActions(player: SeatPlayer): ActionType[] {
+    const actions: ActionType[] = ['fold'];
+    const toCall = this.state.currentBet - player.bet;
+
+    if (toCall === 0) {
+      actions.push('check');
+      if (player.stack > 0) actions.push('bet');
+    } else {
+      actions.push('call');
+      if (player.stack > toCall) actions.push('raise');
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // Getters
-    // ─────────────────────────────────────────────────────────────────────────────
+    actions.push('all_in');
+    return actions;
+  }
 
-    getState(): GameState {
-        return {
-            ...this.state,
-            players: this.state.players.map(p => ({ ...p, cards: [...p.cards] })),
-            communityCards: [...this.state.communityCards],
-            pots: this.state.pots.map(p => ({ ...p, eligiblePlayers: [...p.eligiblePlayers] })),
-            actionHistory: [...this.state.actionHistory],
-        };
-    }
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Getters
+  // ─────────────────────────────────────────────────────────────────────────────
 
-    getCurrentPlayer(): SeatPlayer | undefined {
-        return this.state.players.find(p => p.seat === this.state.currentPlayerSeat);
-    }
+  getState(): GameState {
+    return {
+      ...this.state,
+      players: this.state.players.map((p) => ({ ...p, cards: [...p.cards] })),
+      communityCards: [...this.state.communityCards],
+      pots: this.state.pots.map((p) => ({ ...p, eligiblePlayers: [...p.eligiblePlayers] })),
+      actionHistory: [...this.state.actionHistory],
+    };
+  }
 
-    getCommunityCards(): Card[] {
-        return [...this.state.communityCards];
-    }
+  getCurrentPlayer(): SeatPlayer | undefined {
+    return this.state.players.find((p) => p.seat === this.state.currentPlayerSeat);
+  }
 
-    getPot(): number {
-        return this.state.pot;
-    }
+  getCommunityCards(): Card[] {
+    return [...this.state.communityCards];
+  }
+
+  getPot(): number {
+    return this.state.pot;
+  }
 }

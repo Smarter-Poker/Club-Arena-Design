@@ -16,260 +16,302 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import { masterBus } from '../core/MasterBus';
+import { useToast } from '../components/common/Toast';
 import './NotificationCenter.css';
 
 interface Notification {
-    id: string;
-    type: 'club' | 'tournament' | 'settlement' | 'achievement' | 'system' | 'friend' | 'table';
-    title: string;
-    message: string;
-    link?: string;
-    read: boolean;
-    created_at: string;
-    icon?: string;
+  id: string;
+  type: 'club' | 'tournament' | 'settlement' | 'achievement' | 'system' | 'friend' | 'table';
+  title: string;
+  message: string;
+  link?: string;
+  read: boolean;
+  created_at: string;
+  icon?: string;
 }
 
 const ICON_MAP: Record<string, string> = {
-    club: '♠',
-    tournament: '🏆',
-    settlement: '💰',
-    achievement: '🎖️',
-    system: '⚙️',
-    friend: '👤',
-    table: '🎯',
+  club: '♠',
+  tournament: '🏆',
+  settlement: '💰',
+  achievement: '🎖️',
+  system: '⚙️',
+  friend: '👤',
+  table: '🎯',
 };
 
 export default function NotificationCenter() {
-    const navigate = useNavigate();
-    const { user } = useUserStore();
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState<string>('all');
-    const [visibleNotifications, setVisibleNotifications] = useState(new Set<number>());
+  const navigate = useNavigate();
+  const { user } = useUserStore();
+  const toast = useToast();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<string>('all');
+  const [visibleNotifications, setVisibleNotifications] = useState(new Set<number>());
 
-    const loadNotifications = useCallback(async () => {
-        if (!user?.id) return;
-        setLoading(true);
-        try {
-            const { data } = await supabase
-                .from('notifications')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false })
-                .limit(50);
+  const loadNotifications = useCallback(async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+      const { data } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-            if (data) {
-                setNotifications(data.map(n => ({
-                    id: n.id,
-                    type: n.type || 'system',
-                    title: n.title || 'Notification',
-                    message: n.message || n.body || '',
-                    link: n.link || n.action_url,
-                    read: n.read || false,
-                    created_at: n.created_at,
-                    icon: ICON_MAP[n.type] || '📬',
-                })));
-            }
-        } catch (err) {
-            console.error('Failed to load notifications:', err);
-        }
-        setLoading(false);
-    }, [user?.id]);
-
-    useEffect(() => {
-        loadNotifications();
-
-        // #1: Real-time updates via Channel Registry
-        if (!user?.id) return;
-        const channelKey = `notifications-${user.id}`;
-
-        const channel = masterBus.getOrCreateChannel(channelKey);
-        channel
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'notifications',
-                    filter: `user_id=eq.${user.id}`,
-                },
-                (payload) => {
-                    const n = payload.new as any;
-                    setNotifications(prev => [{
-                        id: n.id,
-                        type: n.type || 'system',
-                        title: n.title || 'Notification',
-                        message: n.message || n.body || '',
-                        link: n.link || n.action_url,
-                        read: false,
-                        created_at: n.created_at,
-                        icon: ICON_MAP[n.type] || '📬',
-                    }, ...prev]);
-                }
-            )
-            .on(
-                'postgres_changes',
-                {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'notifications',
-                    filter: `user_id=eq.${user.id}`,
-                },
-                (payload) => {
-                    const updated = payload.new as any;
-                    setNotifications(prev => 
-                        prev.map(n => n.id === updated.id ? { ...n, read: updated.read } : n)
-                    );
-                }
-            )
-            .subscribe();
-
-        return () => {
-            masterBus.removeRegisteredChannel(channelKey);
-        };
-    }, [user?.id, loadNotifications]);
-
-    const markAsRead = async (notifId: string) => {
-        try {
-            await supabase.from('notifications').update({ read: true }).eq('id', notifId);
-            setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, read: true } : n));
-            // #3: Emit NOTIFICATION_READ for instant bell badge sync
-            masterBus.emit('NOTIFICATION_READ', { notifId, allRead: false });
-        } catch (err) {
-            console.error('[NotificationCenter] markAsRead error:', err);
-        }
-    };
-
-    const markAllRead = async () => {
-        if (!user?.id) return;
-        try {
-            await supabase.from('notifications').update({ read: true }).eq('user_id', user.id).eq('read', false);
-            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-            // #3: Emit NOTIFICATION_READ for instant bell badge sync
-            masterBus.emit('NOTIFICATION_READ', { notifId: null, allRead: true });
-        } catch (err) {
-            console.error('[NotificationCenter] markAllRead error:', err);
-        }
-    };
-
-    const handleClick = (notif: Notification) => {
-        if (!notif.read) markAsRead(notif.id);
-        if (notif.link) navigate(notif.link);
-    };
-
-    const formatTime = (dateStr: string) => {
-        const d = new Date(dateStr);
-        const now = new Date();
-        const diff = (now.getTime() - d.getTime()) / 1000;
-        if (diff < 60) return 'Just now';
-        if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-        if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-        return d.toLocaleDateString();
-    };
-
-    const unreadCount = notifications.filter(n => !n.read).length;
-    const filtered = filter === 'all'
-        ? notifications
-        : filter === 'unread'
-            ? notifications.filter(n => !n.read)
-            : notifications.filter(n => n.type === filter);
-
-    // Stagger notification rows
-    useEffect(() => {
-        setVisibleNotifications(new Set());
-        const timers = filtered.map((_, i) =>
-            setTimeout(() => setVisibleNotifications(prev => new Set([...prev, i])), i * 40)
+      if (data) {
+        setNotifications(
+          data.map((n) => ({
+            id: n.id,
+            type: n.type || 'system',
+            title: n.title || 'Notification',
+            message: n.message || n.body || '',
+            link: n.link || n.action_url,
+            read: n.read || false,
+            created_at: n.created_at,
+            icon: ICON_MAP[n.type] || '📬',
+          }))
         );
-        return () => timers.forEach(t => clearTimeout(t));
-    }, [filtered.length]);
+      }
+    } catch (err) {
+      console.error('Failed to load notifications:', err);
+      toast.error('Failed to load notifications');
+    }
+    setLoading(false);
+  }, [user?.id]);
 
-    const FILTERS = [
-        { id: 'all', label: 'All' },
-        { id: 'unread', label: `Unread (${unreadCount})` },
-        { id: 'club', label: 'Club' },
-        { id: 'tournament', label: 'Tournaments' },
-        { id: 'settlement', label: 'Settlement' },
-        { id: 'achievement', label: 'Achievements' },
-    ];
+  useEffect(() => {
+    loadNotifications();
 
-    return (
-        <div className="notification-center">
-            <div className="notif-header">
-                <h1>Notifications</h1>
-                {unreadCount > 0 && (
-                    <button className="mark-all-btn" onClick={markAllRead}>
-                        Mark All Read
-                    </button>
-                )}
-            </div>
+    // #1: Real-time updates via Channel Registry
+    if (!user?.id) return;
+    const channelKey = `notifications-${user.id}`;
 
-            <div className="notif-filters">
-                {FILTERS.map(f => (
-                    <button
-                        key={f.id}
-                        className={`notif-filter ${filter === f.id ? 'active' : ''}`}
-                        onClick={() => setFilter(f.id)}
-                    >
-                        {f.label}
-                    </button>
-                ))}
-            </div>
+    const channel = masterBus.getOrCreateChannel(channelKey);
+    channel
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const n = payload.new as any;
+          setNotifications((prev) => [
+            {
+              id: n.id,
+              type: n.type || 'system',
+              title: n.title || 'Notification',
+              message: n.message || n.body || '',
+              link: n.link || n.action_url,
+              read: false,
+              created_at: n.created_at,
+              icon: ICON_MAP[n.type] || '📬',
+            },
+            ...prev,
+          ]);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const updated = payload.new as any;
+          setNotifications((prev) =>
+            prev.map((n) => (n.id === updated.id ? { ...n, read: updated.read } : n))
+          );
+        }
+      )
+      .subscribe();
 
-            <div className="notif-list">
-                {loading ? (
-                    <div className="notif-loading" style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}>
-                        {[1,2,3,4,5].map(i => (
-                            <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                                <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', animation: 'pulse 1.5s ease-in-out infinite' }} />
-                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                    <div style={{ width: `${60 + i * 5}%`, height: 14, borderRadius: 4, background: 'rgba(255,255,255,0.08)', animation: 'pulse 1.5s ease-in-out infinite' }} />
-                                    <div style={{ width: `${40 + i * 3}%`, height: 10, borderRadius: 4, background: 'rgba(255,255,255,0.06)', animation: 'pulse 1.5s ease-in-out infinite' }} />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : filtered.length === 0 ? (
-                    <div className="notif-empty">
-                        <div className="notif-empty-illustration">
-                            <div className="notif-empty-bell-ring">
-                                <span className="notif-empty-bell">🔔</span>
-                                <span className="notif-empty-sparkle notif-sparkle-1">✦</span>
-                                <span className="notif-empty-sparkle notif-sparkle-2">✦</span>
-                                <span className="notif-empty-sparkle notif-sparkle-3">✧</span>
-                            </div>
-                        </div>
-                        <h3 className="notif-empty-title">
-                            {filter === 'unread' ? "You're all caught up!" : 'No notifications yet'}
-                        </h3>
-                        <p className="notif-empty-subtitle">
-                            {filter === 'unread'
-                                ? "Every notification has been read. Nice work keeping things tidy!"
-                                : "Join a club, sit at a table, or enter a tournament — your activity feed will light up here."}
-                        </p>
-                    </div>
-                ) : (
-                    filtered.map((notif, index) => (
-                        <div
-                            key={notif.id}
-                            className={`notif-item ${!notif.read ? 'unread' : ''}`}
-                            onClick={() => handleClick(notif)}
-                            style={{
-                                opacity: visibleNotifications.has(index) ? 1 : 0,
-                                transform: visibleNotifications.has(index) ? 'translateY(0)' : 'translateY(8px)',
-                                transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                            }}
-                        >
-                            <span className="notif-icon">{notif.icon || ICON_MAP[notif.type]}</span>
-                            <div className="notif-body">
-                                <span className="notif-title">{notif.title}</span>
-                                <span className="notif-message">{notif.message}</span>
-                                <span className="notif-time">{formatTime(notif.created_at)}</span>
-                            </div>
-                            {!notif.read && <span className="notif-dot" />}
-                        </div>
-                    ))
-                )}
-            </div>
-        </div>
+    return () => {
+      masterBus.removeRegisteredChannel(channelKey);
+    };
+  }, [user?.id, loadNotifications]);
+
+  const markAsRead = async (notifId: string) => {
+    try {
+      await supabase.from('notifications').update({ read: true }).eq('id', notifId);
+      setNotifications((prev) => prev.map((n) => (n.id === notifId ? { ...n, read: true } : n)));
+      // #3: Emit NOTIFICATION_READ for instant bell badge sync
+      masterBus.emit('NOTIFICATION_READ', { notifId, allRead: false });
+    } catch (err) {
+      console.error('[NotificationCenter] markAsRead error:', err);
+      toast.error('Failed to mark as read');
+    }
+  };
+
+  const markAllRead = async () => {
+    if (!user?.id) return;
+    try {
+      await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('user_id', user.id)
+        .eq('read', false);
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      // #3: Emit NOTIFICATION_READ for instant bell badge sync
+      masterBus.emit('NOTIFICATION_READ', { notifId: null, allRead: true });
+    } catch (err) {
+      console.error('[NotificationCenter] markAllRead error:', err);
+      toast.error('Failed to mark all as read');
+    }
+  };
+
+  const handleClick = (notif: Notification) => {
+    if (!notif.read) markAsRead(notif.id);
+    if (notif.link) navigate(notif.link);
+  };
+
+  const formatTime = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diff = (now.getTime() - d.getTime()) / 1000;
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return d.toLocaleDateString();
+  };
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+  const filtered =
+    filter === 'all'
+      ? notifications
+      : filter === 'unread'
+        ? notifications.filter((n) => !n.read)
+        : notifications.filter((n) => n.type === filter);
+
+  // Stagger notification rows
+  useEffect(() => {
+    setVisibleNotifications(new Set());
+    const timers = filtered.map((_, i) =>
+      setTimeout(() => setVisibleNotifications((prev) => new Set([...prev, i])), i * 40)
     );
+    return () => timers.forEach((t) => clearTimeout(t));
+  }, [filtered.length]);
+
+  const FILTERS = [
+    { id: 'all', label: 'All' },
+    { id: 'unread', label: `Unread (${unreadCount})` },
+    { id: 'club', label: 'Club' },
+    { id: 'tournament', label: 'Tournaments' },
+    { id: 'settlement', label: 'Settlement' },
+    { id: 'achievement', label: 'Achievements' },
+  ];
+
+  return (
+    <div className="notification-center">
+      <div className="notif-header">
+        <h1>Notifications</h1>
+        {unreadCount > 0 && (
+          <button className="mark-all-btn" onClick={markAllRead}>
+            Mark All Read
+          </button>
+        )}
+      </div>
+
+      <div className="notif-filters">
+        {FILTERS.map((f) => (
+          <button
+            key={f.id}
+            className={`notif-filter ${filter === f.id ? 'active' : ''}`}
+            onClick={() => setFilter(f.id)}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="notif-list">
+        {loading ? (
+          <div
+            className="notif-loading"
+            style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px' }}
+          >
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <div
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.08)',
+                    animation: 'pulse 1.5s ease-in-out infinite',
+                  }}
+                />
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div
+                    style={{
+                      width: `${60 + i * 5}%`,
+                      height: 14,
+                      borderRadius: 4,
+                      background: 'rgba(255,255,255,0.08)',
+                      animation: 'pulse 1.5s ease-in-out infinite',
+                    }}
+                  />
+                  <div
+                    style={{
+                      width: `${40 + i * 3}%`,
+                      height: 10,
+                      borderRadius: 4,
+                      background: 'rgba(255,255,255,0.06)',
+                      animation: 'pulse 1.5s ease-in-out infinite',
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="notif-empty">
+            <div className="notif-empty-illustration">
+              <div className="notif-empty-bell-ring">
+                <span className="notif-empty-bell">🔔</span>
+                <span className="notif-empty-sparkle notif-sparkle-1">✦</span>
+                <span className="notif-empty-sparkle notif-sparkle-2">✦</span>
+                <span className="notif-empty-sparkle notif-sparkle-3">✧</span>
+              </div>
+            </div>
+            <h3 className="notif-empty-title">
+              {filter === 'unread' ? "You're all caught up!" : 'No notifications yet'}
+            </h3>
+            <p className="notif-empty-subtitle">
+              {filter === 'unread'
+                ? 'Every notification has been read. Nice work keeping things tidy!'
+                : 'Join a club, sit at a table, or enter a tournament — your activity feed will light up here.'}
+            </p>
+          </div>
+        ) : (
+          filtered.map((notif, index) => (
+            <div
+              key={notif.id}
+              className={`notif-item ${!notif.read ? 'unread' : ''}`}
+              onClick={() => handleClick(notif)}
+              style={{
+                opacity: visibleNotifications.has(index) ? 1 : 0,
+                transform: visibleNotifications.has(index) ? 'translateY(0)' : 'translateY(8px)',
+                transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+              }}
+            >
+              <span className="notif-icon">{notif.icon || ICON_MAP[notif.type]}</span>
+              <div className="notif-body">
+                <span className="notif-title">{notif.title}</span>
+                <span className="notif-message">{notif.message}</span>
+                <span className="notif-time">{formatTime(notif.created_at)}</span>
+              </div>
+              {!notif.read && <span className="notif-dot" />}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
 }

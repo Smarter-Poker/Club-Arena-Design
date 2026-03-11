@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import styles from './CreateUnionPage.module.css';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
+import { useToast } from '../components/common/Toast';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -50,6 +51,7 @@ const DEFAULT_FORM: UnionFormData = {
 export default function CreateUnionPage() {
   const navigate = useNavigate();
   const { user } = useUserStore();
+  const toast = useToast();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<UnionFormData>(DEFAULT_FORM);
   const [creating, setCreating] = useState(false);
@@ -68,7 +70,7 @@ export default function CreateUnionPage() {
   }, [step]);
 
   // Check if user owns any clubs (required to create union)
-  useState(() => {
+  useEffect(() => {
     const checkClubOwnership = async () => {
       try {
         const { count } = await supabase
@@ -86,7 +88,7 @@ export default function CreateUnionPage() {
     };
 
     checkClubOwnership();
-  });
+  }, [user?.id]);
 
   // Show "create club first" message if user doesn't own a club
   if (!checkingClubs && !ownsClub) {

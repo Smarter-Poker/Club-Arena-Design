@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
+import { useToast } from '../components/common/Toast';
 import IntroVideo from '../components/IntroVideo';
 import './ClubCarouselPage.css';
 
@@ -63,6 +64,7 @@ const getFrameForClub = (clubId: number): string => {
 export default function ClubCarouselPage() {
   const navigate = useNavigate();
   const { user } = useUserStore();
+  const toast = useToast();
 
   const [clubs, setClubs] = useState<UserClub[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -213,6 +215,7 @@ export default function ClubCarouselPage() {
       }
     } catch (error) {
       console.error('Error loading user data:', error);
+      toast.error('Failed to load club data');
     } finally {
       setLoading(false);
     }

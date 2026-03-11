@@ -694,7 +694,8 @@ class TournamentService {
       .eq('id', tournamentId)
       .maybeSingle();
     // Use fresh DB count (not stale registrations.length) for accurate player tracking
-    const freshPlayerCount = (freshTournament?.current_players ?? tournament.current_players ?? 0) + 1;
+    const freshPlayerCount =
+      (freshTournament?.current_players ?? tournament.current_players ?? 0) + 1;
     const entriesPrize = buyIn * freshPlayerCount;
     const freshGuarantee = freshTournament?.guaranteed_prize ?? tournament.guaranteed_prize;
     const newPrizePool = freshGuarantee ? Math.max(entriesPrize, freshGuarantee) : entriesPrize;
@@ -772,6 +773,13 @@ class TournamentService {
           const takenSeats = new Set((existingSeats || []).map((s) => s.seat_number));
           let seatNumber = 1;
           while (takenSeats.has(seatNumber) && seatNumber <= openTable.max_players) seatNumber++;
+          // Guard: no valid seat found (all seats taken despite current_players check)
+          if (seatNumber > openTable.max_players) {
+            console.error(
+              `[TournamentService] Late reg: no valid seat at table ${openTable.id} (race condition)`
+            );
+            throw new Error('Late registration failed: table is full. Please try again.');
+          }
 
           // Seat the player — check for errors
           const { error: seatErr } = await supabase.from('table_seats').insert({
@@ -836,8 +844,18 @@ class TournamentService {
               .eq('tournament_id', tournamentId)
               .eq('user_id', userId);
 
-            if (tpErr)
+            if (tpErr) {
               console.error(`[TournamentService] Late reg player update failed: ${tpErr.message}`);
+              // Attempt to clean up the seat we just inserted
+              await supabase
+                .from('table_seats')
+                .delete()
+                .eq('table_id', openTable.id)
+                .eq('user_id', userId);
+              throw new Error(
+                'Late registration failed: could not update player status. Please try again.'
+              );
+            }
 
             // Increment table player count
             const { error: tableErr } = await supabase
@@ -2134,7 +2152,7 @@ class TournamentService {
         ? [
             {
               minMultiplier: tournament.mystery_bounty_min || 1,
-              maxMultiplier: tournament.mystery_bounty_min || 1,
+              maxMultiplier: tournament.mystery_bounty_max || 1,
               probability: 60,
             },
             { minMultiplier: 2, maxMultiplier: 2, probability: 25 },
