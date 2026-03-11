@@ -492,8 +492,15 @@ export default function HomePage() {
                                 { title: 'See 10 Flops', icon: '👁️', reward: 25, target: 10 },
                                 { title: 'Win a Hand with a Flush', icon: '♠️', reward: 100, target: 1 },
                             ];
-                            // Pick 3 deterministic challenges for today
-                            const picked = [0, 1, 2].map(i => CHALLENGES[((seed * (i + 7)) % CHALLENGES.length)]);
+                            // Pick 3 unique deterministic challenges for today
+                            const picked: typeof CHALLENGES[0][] = [];
+                            const usedIndices = new Set<number>();
+                            for (let i = 0; i < 3; i++) {
+                                let idx = ((seed * (i + 7) * 7919) % CHALLENGES.length);
+                                while (usedIndices.has(idx)) idx = (idx + 1) % CHALLENGES.length;
+                                usedIndices.add(idx);
+                                picked.push(CHALLENGES[idx]);
+                            }
                             const dayKey = `challenges_${seed}`;
                             const stored = JSON.parse(localStorage.getItem(dayKey) || '{}');
 

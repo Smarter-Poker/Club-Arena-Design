@@ -873,13 +873,17 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
         if (!tableId || !userId) return;
         setLeaveNotice(null);
 
+        // Capture hero stack BEFORE leave (seat data may be cleared by leaveTable)
+        const heroPlayer = tableState.players[tableState.heroSeat - 1];
+        const stackAtLeave = heroPlayer?.stack || 0;
+
         try {
             const result = await tableService.leaveTable(tableId, tableState.heroSeat, userId);
             if (result.success) {
                 console.log(`[Leave] Success — ${result.chipsReturned} chips returned to wallet`);
                 // Show session summary instead of navigating immediately
-                const heroPlayer = tableState.players[tableState.heroSeat - 1];
-                sessionPLRef.current = (heroPlayer?.stack || 0) - (result.chipsReturned || 0);
+                // P/L = final stack minus buy-in (chipsReturned represents what went back to wallet)
+                sessionPLRef.current = stackAtLeave - (result.chipsReturned || stackAtLeave);
                 setShowSessionSummary(true);
             } else {
                 console.error('[Leave] Failed to leave table');
