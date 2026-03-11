@@ -1,5 +1,5 @@
 /**
- *  VIP PAGE — VIP Diamond Member + A-la-Carte Purchases with Live Updates
+ *  VIP PAGE — VIP Tier Progression, Benefits, and Rewards Marketplace
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -10,6 +10,11 @@ import { vipService, VIP_GOLD_LIMITS, FEATURE_PRICING, type VIPFeature } from '.
 import { VIPCardsModal } from '../components/vip/VIPCardsModal';
 import { VIPPerksGrid } from '../components/vip/VIPPerksGrid';
 import { DiamondTopUpModal } from '../components/vip/DiamondTopUpModal';
+import { VIPStatsHeader } from '../components/vip/VIPStatsHeader';
+import { TierProgressionCard } from '../components/vip/TierProgressionCard';
+import { VIPBenefitsGrid } from '../components/vip/VIPBenefitsGrid';
+import { RewardsMarketplace, Reward } from '../components/vip/RewardsMarketplace';
+import { VIPActivityHistory, VIPActivity } from '../components/vip/VIPActivityHistory';
 import { useToast } from '../components/common/Toast';
 import './VIPPage.css';
 
@@ -24,6 +29,45 @@ export default function VIPPage() {
     const [showTopUpModal, setShowTopUpModal] = useState(false);
     const [purchasing, setPurchasing] = useState<string | null>(null);
     const [vipEntranceComplete, setVIPEntranceComplete] = useState(false);
+
+    // VIP Points System
+    const [vipPoints, setVipPoints] = useState({
+        current: 12500,
+        lifetime: 45000,
+        monthly: 3200,
+        activeStreak: 15,
+    });
+
+    // Sample activities for demonstration
+    const sampleActivities: VIPActivity[] = [
+        {
+            id: '1',
+            date: new Date(Date.now() - 1000 * 60 * 2),
+            action: 'earned',
+            description: 'Completed tournament',
+            points: 500,
+            balanceAfter: vipPoints.current,
+            icon: '🎟️',
+        },
+        {
+            id: '2',
+            date: new Date(Date.now() - 1000 * 60 * 15),
+            action: 'earned',
+            description: 'Daily bonus',
+            points: 100,
+            balanceAfter: vipPoints.current - 500,
+            icon: '⭐',
+        },
+        {
+            id: '3',
+            date: new Date(Date.now() - 1000 * 60 * 60 * 2),
+            action: 'spent',
+            description: 'Redeemed Gold Frame Badge',
+            points: 1500,
+            balanceAfter: vipPoints.current - 500 - 100 + 1500,
+            icon: '🏆',
+        },
+    ];
 
     // VIP entrance animation
     useEffect(() => {
@@ -117,20 +161,66 @@ export default function VIPPage() {
         );
     }
 
+    const daysSinceReview = Math.floor(Math.random() * 25) + 5; // Random for demo
+
     return (
         <div className="vip-page">
+            {/* VIP Stats Header */}
+            {vipEntranceComplete && (
+                <VIPStatsHeader
+                    currentPoints={vipPoints.current}
+                    monthlyPoints={vipPoints.monthly}
+                    lifetimePoints={vipPoints.lifetime}
+                    activeStreak={vipPoints.activeStreak}
+                    daysSinceReview={daysSinceReview}
+                />
+            )}
 
-            {/* VIP Gold Status */}
-            <section
-                className="vip-section vip-card-section"
-                style={{
-                    opacity: vipEntranceComplete ? 1 : 0,
-                    transform: vipEntranceComplete ? 'translateY(0)' : 'translateY(12px)',
-                    transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                }}
-            >
-                <h3> VIP Diamond</h3>
-                {isVIP ? (
+            {/* Tier Progression Hero Section */}
+            {vipEntranceComplete && (
+                <TierProgressionCard
+                    currentPoints={vipPoints.current}
+                    lifetimePoints={vipPoints.lifetime}
+                    monthlyPoints={vipPoints.monthly}
+                    activeStreak={vipPoints.activeStreak}
+                />
+            )}
+
+            {/* VIP Benefits Grid */}
+            {vipEntranceComplete && (
+                <VIPBenefitsGrid currentPoints={vipPoints.current} />
+            )}
+
+            {/* Rewards Marketplace */}
+            {vipEntranceComplete && (
+                <RewardsMarketplace
+                    currentPoints={vipPoints.current}
+                    onRedeem={(reward: Reward) => {
+                        setVipPoints(prev => ({
+                            ...prev,
+                            current: prev.current - reward.pointsCost,
+                        }));
+                        toast.success(`Redeemed: ${reward.name}`);
+                    }}
+                />
+            )}
+
+            {/* Activity History */}
+            {vipEntranceComplete && (
+                <VIPActivityHistory activities={sampleActivities} />
+            )}
+
+            {/* Legacy VIP Gold Status Section */}
+            {isVIP && (
+                <section
+                    className="vip-section vip-card-section"
+                    style={{
+                        opacity: vipEntranceComplete ? 1 : 0,
+                        transform: vipEntranceComplete ? 'translateY(0)' : 'translateY(12px)',
+                        transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    }}
+                >
+                    <h3> VIP Diamond</h3>
                     <div className="vip-card-active" style={{ borderColor: '#ffd700', textAlign: 'center' }}>
                         {/* VIP Card Image */}
                         <div style={{ marginBottom: 16 }}>
@@ -154,45 +244,8 @@ export default function VIPPage() {
                             View Benefits
                         </button>
                     </div>
-                ) : (
-                    <div className="vip-card-inactive">
-                        <p>Get VIP Diamond with your Smarter.Poker Membership</p>
-                        <ul className="vip-card-features">
-                            <li>🐰 Free Rabbit Hunt</li>
-                            <li> Show Stack in BBs</li>
-                            <li> Offline Protection</li>
-                            <li> {VIP_GOLD_LIMITS.timeBankSeconds}s Free Time Bank</li>
-                        </ul>
-                        <button className="vip-purchase-btn" onClick={() => setShowInfoModal(true)}>
-                            View All Benefits
-                        </button>
-                    </div>
-                )}
 
-                {/* VIP Benefits if active */}
-                {isVIP && (
-                    <div className="vip-benefits-grid">
-                        <div className="vip-benefit">
-                            <span className="benefit-value">∞</span>
-                            <span className="benefit-label">Rabbit Hunt</span>
-                        </div>
-                        <div className="vip-benefit">
-                            <span className="benefit-value">{VIP_GOLD_LIMITS.timeBankSeconds}s</span>
-                            <span className="benefit-label">Time Bank</span>
-                        </div>
-                        <div className="vip-benefit">
-                            <span className="benefit-value">+{VIP_GOLD_LIMITS.themes}</span>
-                            <span className="benefit-label">Themes</span>
-                        </div>
-                        <div className="vip-benefit">
-                            <span className="benefit-value">{(VIP_GOLD_LIMITS.leaderboardBoost * 100).toFixed(0)}%</span>
-                            <span className="benefit-label">Score Boost</span>
-                        </div>
-                    </div>
-                )}
-
-                {/* VIP Perks Grid */}
-                {isVIP && (
+                    {/* VIP Perks Grid */}
                     <VIPPerksGrid
                         currentTier="diamond"
                         perks={[
@@ -206,8 +259,8 @@ export default function VIPPage() {
                             { id: 'emojis', icon: '😀', title: 'Emojis', description: 'Access to all emoji packs', value: 'All Packs' },
                         ]}
                     />
-                )}
-            </section>
+                </section>
+            )}
 
             {/* Diamond Balance */}
             <section className="vip-section">
