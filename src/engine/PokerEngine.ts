@@ -510,7 +510,7 @@ export function validateAction(
             }
             return { valid: true };
 
-        case 'raise':
+        case 'raise': {
             if (currentBet === 0) {
                 return { valid: false, error: 'Cannot raise when there is no bet (use bet)' };
             }
@@ -530,6 +530,7 @@ export function validateAction(
                 return { valid: false, error: 'Insufficient chips' };
             }
             return { valid: true };
+        }
 
         case 'all_in':
             return { valid: true };

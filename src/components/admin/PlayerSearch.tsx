@@ -79,8 +79,8 @@ export const PlayerSearch: React.FC<PlayerSearchProps> = ({
             // Get club memberships for each player
             const playerIds = profiles?.map(p => p.id) || [];
 
-            let clubCounts: Record<string, number> = {};
-            let balances: Record<string, number> = {};
+            const clubCounts: Record<string, number> = {};
+            const balances: Record<string, number> = {};
 
             if (playerIds.length > 0) {
                 // Get club membership counts

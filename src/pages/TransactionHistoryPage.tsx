@@ -92,6 +92,15 @@ export default function TransactionHistoryPage() {
     };
   }, [user?.id]);
 
+  // Bus listener: reload when wallet changes (e.g. cashout, rakeback claim)
+  useEffect(() => {
+    if (!user?.id) return;
+    const unsub = masterBus.subscribeDebounced('WALLET_REFRESHED', () => {
+      loadTransactions(0, true);
+    }, 500);
+    return unsub;
+  }, [user?.id]);
+
   const loadTransactions = async (pageNum: number, reset = false) => {
     if (reset) setLoading(true);
     else setLoadingMore(true);
@@ -168,14 +177,20 @@ export default function TransactionHistoryPage() {
   };
 
   const handleExportCSV = () => {
-    exportToCSV(transactions, 'transactions.csv', [
-      { key: 'created_at', label: 'Date' },
-      { key: 'type', label: 'Type' },
-      { key: 'description', label: 'Description' },
-      { key: 'amount', label: 'Amount' },
-      { key: 'currency', label: 'Currency' },
-      { key: 'club_name', label: 'Club' },
-    ]);
+    try {
+      exportToCSV(transactions, 'transactions.csv', [
+        { key: 'created_at', label: 'Date' },
+        { key: 'type', label: 'Type' },
+        { key: 'description', label: 'Description' },
+        { key: 'amount', label: 'Amount' },
+        { key: 'currency', label: 'Currency' },
+        { key: 'club_name', label: 'Club' },
+      ]);
+      toast.success('Transactions exported!');
+    } catch (err) {
+      console.error('CSV export failed:', err);
+      toast.error('Failed to export transactions.');
+    }
   };
 
   const getIcon = (type: string): string => {

@@ -60,15 +60,14 @@ class IdentityDNACore {
             return this.status!;
         }
 
-
-        // Set up auth state listener FIRST
-        this.setupAuthListener();
-
         // Check for existing session
         let authenticated = false;
         let userId: string | null = null;
         let username: string | null = null;
         let sessionExpiresAt: string | null = null;
+
+        // Set up auth state listener FIRST
+        this.setupAuthListener();
 
         try {
             // Timeout protection — getSession() can hang if navigator.locks contend
@@ -96,6 +95,7 @@ class IdentityDNACore {
                     isAuthenticated: true,
                 });
             } else {
+                // no-op
             }
         } catch (e: any) {
             // AbortError is benign — suppress it

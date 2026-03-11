@@ -44,12 +44,12 @@ export function FriendsList({
     const [visibleOnline, setVisibleOnline] = useState<Set<number>>(new Set());
     const [visibleOffline, setVisibleOffline] = useState<Set<number>>(new Set());
 
-    if (!isOpen) return null;
-
-    const onlineFriends = friends.filter(f => f.status !== 'offline');
-    const offlineFriends = friends.filter(f => f.status === 'offline');
-
     React.useEffect(() => {
+        if (!isOpen) return;
+
+        const onlineFriends = friends.filter(f => f.status !== 'offline');
+        const offlineFriends = friends.filter(f => f.status === 'offline');
+
         setVisibleOnline(new Set());
         onlineFriends.forEach((_, i) => {
             setTimeout(() => setVisibleOnline(prev => new Set(prev).add(i)), i * 60);
@@ -58,7 +58,12 @@ export function FriendsList({
         offlineFriends.forEach((_, i) => {
             setTimeout(() => setVisibleOffline(prev => new Set(prev).add(i)), i * 60);
         });
-    }, [friends]);
+    }, [friends, isOpen]);
+
+    if (!isOpen) return null;
+
+    const onlineFriends = friends.filter(f => f.status !== 'offline');
+    const offlineFriends = friends.filter(f => f.status === 'offline');
 
     const handleAddSubmit = (e: React.FormEvent) => {
         e.preventDefault();

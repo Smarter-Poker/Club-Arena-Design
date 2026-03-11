@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase'
 import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
+import { useToast } from '../components/common/Toast';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import './RakebackPage.css';
 
@@ -26,6 +27,7 @@ type ClaimStatus = 'idle' | 'claiming' | 'success' | 'error';
 export default function RakebackPage() {
     const navigate = useNavigate();
     const { user } = useUserStore();
+    const toast = useToast();
 
     const [periods, setPeriods] = useState<RakebackPeriod[]>([]);
     const [loading, setLoading] = useState(true);
@@ -57,6 +59,7 @@ export default function RakebackPage() {
             }
         } catch (error) {
             console.error('Failed to load rakeback:', error);
+            toast.error('Failed to load rakeback data.');
         }
         setLoading(false);
     };
@@ -191,6 +194,8 @@ export default function RakebackPage() {
                 setClaimMessage(`Claimed ${(data.claimed || pendingAmount).toLocaleString()} chips!`);
                 // Reload data to reflect changed status
                 loadRakebackData();
+                // Notify other pages that wallet balance changed
+                masterBus.emit('WALLET_REFRESHED', { walletType: 'PLAYER', available: 0, total: 0 });
                 setTimeout(() => {
                     setClaimStatus('idle');
                     setClaimMessage('');

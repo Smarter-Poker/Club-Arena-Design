@@ -138,7 +138,7 @@ class HorseBrainAdapterClass {
 
         try {
             // Dynamic import of the brain module
-            // @ts-ignore — HorsePokerBrain.js may be stub or full implementation
+            // @ts-expect-error — HorsePokerBrain.js may be stub or full implementation
             const brainModule = await import('../lib/poker-engine/HorsePokerBrain.js');
             const loadedBrain = brainModule.default || brainModule;
 

@@ -134,6 +134,7 @@ export default function BadBeatJackpotPage() {
       }
     } catch (error) {
       console.error('Failed to load jackpot:', error);
+      toast.error('Failed to load jackpot data.');
     }
     setLoading(false);
   }, [clubId]);
