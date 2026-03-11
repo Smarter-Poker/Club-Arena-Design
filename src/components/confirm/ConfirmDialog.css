@@ -27,6 +27,9 @@
     max-width: 400px;
     width: 90%;
     animation: scaleIn 0.2s;
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 @keyframes scaleIn {
@@ -68,11 +71,12 @@
     color: rgba(255, 255, 255, 0.8);
     font-size: 0.9rem;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .btn-cancel:hover {
     background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
 }
 
 .btn-confirm {
@@ -82,7 +86,7 @@
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .btn-confirm.variant-default {
@@ -92,6 +96,7 @@
 
 .btn-confirm.variant-default:hover {
     filter: brightness(1.1);
+    transform: translateY(-2px);
 }
 
 .btn-confirm.variant-danger {
@@ -101,4 +106,5 @@
 
 .btn-confirm.variant-danger:hover {
     filter: brightness(1.1);
+    transform: translateY(-2px);
 }

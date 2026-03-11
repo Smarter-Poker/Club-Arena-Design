@@ -18,7 +18,9 @@
     padding: 12px;
     z-index: 1000;
     animation: popoverIn 0.2s;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
 }
 
 @keyframes popoverIn {

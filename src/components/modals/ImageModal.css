@@ -8,6 +8,8 @@
     padding: 40px;
     z-index: 1200;
     cursor: zoom-out;
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
 }
 
 .image-close {

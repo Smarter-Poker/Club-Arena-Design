@@ -4,7 +4,7 @@
     justify-content: center;
     border-radius: 50%;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .icon-button:disabled {
@@ -39,6 +39,7 @@
 .icon-button.variant-ghost:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.1);
     color: #fff;
+    transform: translateY(-2px);
 }
 
 .icon-button.variant-outlined {
@@ -50,6 +51,7 @@
 .icon-button.variant-outlined:hover:not(:disabled) {
     border-color: rgba(255, 255, 255, 0.4);
     color: #fff;
+    transform: translateY(-2px);
 }
 
 .icon-button.variant-filled {
@@ -61,4 +63,5 @@
 .icon-button.variant-filled:hover:not(:disabled) {
     background: rgba(255, 215, 0, 0.2);
     color: #ffd700;
+    transform: translateY(-2px);
 }

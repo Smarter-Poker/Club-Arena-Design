@@ -3,6 +3,8 @@
     border-radius: 16px;
     border: 1px solid rgba(255, 215, 0, 0.2);
     overflow: hidden;
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
 }
 
 .challenges-header {
@@ -37,7 +39,7 @@
     background: rgba(0, 0, 0, 0.2);
     border-radius: 12px;
     margin-bottom: 10px;
-    transition: all 0.2s;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .challenge-item:last-child {
@@ -118,7 +120,7 @@
     color: #000;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
     animation: claimPulse 1s infinite;
 }
 
@@ -135,5 +137,5 @@
 }
 
 .claim-btn:hover {
-    transform: scale(1.05);
+    transform: translateY(-2px) scale(1.05);
 }

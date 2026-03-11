@@ -28,7 +28,11 @@
     border: 2px solid transparent;
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+}
+
+.visibility-option:hover {
+    transform: translateY(-2px);
 }
 
 .visibility-option input {
@@ -81,7 +85,7 @@
     background: rgba(255, 255, 255, 0.15);
     border-radius: 12px;
     position: relative;
-    transition: background 0.2s;
+    transition: background 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .toggle-switch::after {
@@ -93,7 +97,7 @@
     border-radius: 50%;
     top: 2px;
     left: 2px;
-    transition: transform 0.2s;
+    transition: transform 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .privacy-toggle input:checked+.toggle-switch {
@@ -117,7 +121,11 @@
     border-radius: 8px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+}
+
+.dm-option:hover {
+    transform: translateY(-2px);
 }
 
 .dm-option input {

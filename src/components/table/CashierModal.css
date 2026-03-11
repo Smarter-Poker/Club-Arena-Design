@@ -39,9 +39,11 @@
     background: linear-gradient(180deg, #1C2128 0%, #161B22 100%);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 16px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
     animation: slideUp 0.25s ease;
     overflow: hidden;
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
 }
 
 @keyframes slideUp {
@@ -88,12 +90,13 @@
     color: #8B949E;
     font-size: 1.25rem;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .cashier-modal__close:hover {
     background: rgba(248, 81, 73, 0.3);
     color: #F85149;
+    transform: translateY(-2px);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -149,11 +152,12 @@
     border-bottom: 2px solid transparent;
     color: #6E7681;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .cashier-modal__tab:hover {
     color: #E4E6EB;
+    transform: translateY(-2px);
 }
 
 .cashier-modal__tab--active {
@@ -177,7 +181,7 @@
     background: rgba(255, 255, 255, 0.08);
     border: 2px solid rgba(255, 255, 255, 0.12);
     border-radius: 12px;
-    transition: all 0.15s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .cashier-modal__input-wrapper:focus-within {
@@ -241,12 +245,13 @@
     border-radius: 8px;
     color: #8B949E;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .cashier-modal__quick-btn:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.12);
     color: #E4E6EB;
+    transform: translateY(-2px);
 }
 
 .cashier-modal__quick-btn--active {
@@ -314,12 +319,12 @@
     border-radius: 12px;
     color: #FFFFFF;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .cashier-modal__confirm-btn:hover:not(:disabled) {
     background: linear-gradient(135deg, #4DC660 0%, #3FB950 100%);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
 }
 
 .cashier-modal__confirm-btn--disabled {

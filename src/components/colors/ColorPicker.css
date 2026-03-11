@@ -16,11 +16,11 @@
     border-radius: 8px;
     border: 2px solid transparent;
     cursor: pointer;
-    transition: transform 0.15s, border-color 0.15s;
+    transition: transform 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)), border-color 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .color-swatch:hover {
-    transform: scale(1.1);
+    transform: scale(1.1) translateY(-2px);
 }
 
 .color-swatch.selected {
@@ -51,6 +51,7 @@
     color: #fff;
     font-family: monospace;
     font-size: 0.9rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .color-custom input[type="text"]:focus {

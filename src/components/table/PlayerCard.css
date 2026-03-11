@@ -12,14 +12,14 @@
     position: relative;
     perspective: 1000px;
     transform-style: preserve-3d;
-    transition: transform 0.2s ease;
+    transition: transform 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .player-card__inner {
     position: relative;
     width: 100%;
     height: 100%;
-    transition: transform 0.4s ease;
+    transition: transform 0.4s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
     transform-style: preserve-3d;
 }
 
@@ -305,7 +305,7 @@
 
 /* Hero cards are larger and more prominent */
 .hole-cards--hero .player-card {
-    transition: transform 0.2s ease;
+    transition: transform 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .hole-cards--hero:hover .player-card {

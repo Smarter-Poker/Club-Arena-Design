@@ -4,6 +4,8 @@
     padding: 20px;
     background: rgba(0, 0, 0, 0.2);
     border-radius: 16px;
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
 }
 
 .profile-skeleton.compact {

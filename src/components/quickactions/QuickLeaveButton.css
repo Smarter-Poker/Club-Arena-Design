@@ -8,11 +8,12 @@
     border-radius: 8px;
     color: #f87171;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .quick-leave-button:hover {
     background: rgba(248, 113, 113, 0.25);
+    transform: translateY(-2px);
 }
 
 .leave-icon {
@@ -40,6 +41,9 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
     padding: 24px;
     min-width: 320px;
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .leave-confirm-modal h3 {
@@ -106,11 +110,12 @@
     color: #fff;
     font-weight: 500;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .cancel-btn:hover {
     background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
 }
 
 .confirm-btn {
@@ -122,9 +127,10 @@
     color: #fff;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .confirm-btn:hover {
     background: #ef4444;
+    transform: translateY(-2px);
 }

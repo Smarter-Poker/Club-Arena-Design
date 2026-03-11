@@ -7,6 +7,9 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
     overflow: hidden;
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .waitlist.loading {
@@ -39,6 +42,11 @@
     font-size: 12px;
     font-weight: 700;
     cursor: pointer;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+}
+
+.join-btn:hover {
+    transform: translateY(-2px);
 }
 
 .leave-btn {

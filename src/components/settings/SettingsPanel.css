@@ -8,6 +8,9 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .settings-header {
@@ -31,11 +34,12 @@
     font-size: 1.5rem;
     cursor: pointer;
     padding: 4px 8px;
-    transition: color 0.2s;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .settings-close:hover {
     color: #fff;
+    transform: translateY(-2px);
 }
 
 .settings-tabs {
@@ -62,12 +66,13 @@
     color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
     white-space: nowrap;
-    transition: all 0.2s;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .settings-tab:hover {
     background: rgba(255, 255, 255, 0.1);
     color: #fff;
+    transform: translateY(-2px);
 }
 
 .settings-tab.active {

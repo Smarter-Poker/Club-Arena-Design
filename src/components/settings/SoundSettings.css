@@ -31,7 +31,7 @@
     background: rgba(255, 255, 255, 0.2);
     border-radius: 13px;
     position: relative;
-    transition: background 0.2s;
+    transition: background 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .toggle-slider::after {
@@ -43,7 +43,7 @@
     border-radius: 50%;
     top: 2px;
     left: 2px;
-    transition: transform 0.2s;
+    transition: transform 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .toggle-label input:checked+.toggle-slider {
@@ -113,7 +113,7 @@
 }
 
 .slider-group input[type="range"]::-webkit-slider-thumb:hover {
-    transform: scale(1.1);
+    transform: translateY(-2px) scale(1.1);
 }
 
 .slider-group input[type="range"]::-moz-range-thumb {
@@ -164,12 +164,13 @@
     color: #ffd700;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
     align-self: center;
 }
 
 .test-sound-btn:hover:not(:disabled) {
     background: rgba(255, 215, 0, 0.25);
+    transform: translateY(-2px);
 }
 
 .test-sound-btn:disabled {

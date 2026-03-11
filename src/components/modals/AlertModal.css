@@ -17,6 +17,9 @@
     text-align: center;
     max-width: 380px;
     animation: alertIn 0.3s;
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 @keyframes alertIn {
@@ -77,9 +80,9 @@
     color: #000;
     font-weight: 600;
     cursor: pointer;
-    transition: transform 0.2s;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .confirm-btn:hover {
-    transform: scale(1.02);
+    transform: translateY(-2px);
 }

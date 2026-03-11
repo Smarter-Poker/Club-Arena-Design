@@ -107,13 +107,13 @@
     border-radius: 20px;
     color: #8B949E;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .ring-filter__pill:hover {
-    background: rgba(255, 255, 255, 0.12);
-    color: #E4E6EB;
+    transform: translateY(-2px);
 }
+
 
 .ring-filter__pill--active {
     background: #1877F2;

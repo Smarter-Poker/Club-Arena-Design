@@ -4,6 +4,8 @@
     border-radius: 16px;
     padding: 20px;
     text-align: center;
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
 }
 
 .streak-main {

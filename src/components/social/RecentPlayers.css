@@ -6,6 +6,8 @@
     background: var(--bg-secondary);
     border-radius: var(--radius-xl);
     padding: var(--space-4);
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
 }
 
 .section-header {
@@ -32,11 +34,12 @@
     background: var(--bg-card);
     border-radius: var(--radius-lg);
     cursor: pointer;
-    transition: all var(--transition-base);
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .player-row:hover {
     background: var(--bg-tertiary);
+    transform: translateY(-2px);
 }
 
 .player-row.skeleton {
@@ -130,7 +133,11 @@
     border-radius: var(--radius-md);
     cursor: pointer;
     font-size: 14px;
-    transition: all var(--transition-base);
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
 }
 
 .action-btn.add:hover {

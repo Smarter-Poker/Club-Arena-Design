@@ -18,7 +18,7 @@
     position: relative;
     background: rgba(255, 255, 255, 0.15);
     border-radius: 50px;
-    transition: background 0.25s;
+    transition: background 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .toggle.size-small .toggle-track {
@@ -42,7 +42,7 @@
     left: 2px;
     background: #fff;
     border-radius: 50%;
-    transition: transform 0.25s;
+    transition: transform 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .toggle.size-small .toggle-thumb {

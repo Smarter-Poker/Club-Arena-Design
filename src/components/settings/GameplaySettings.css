@@ -40,7 +40,7 @@
     background: rgba(255, 255, 255, 0.15);
     border-radius: 12px;
     position: relative;
-    transition: background 0.2s;
+    transition: background 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .toggle-switch::after {
@@ -52,7 +52,7 @@
     border-radius: 50%;
     top: 2px;
     left: 2px;
-    transition: transform 0.2s;
+    transition: transform 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .gameplay-toggle input:checked+.toggle-switch {
@@ -68,6 +68,8 @@
     padding: 16px;
     background: rgba(0, 0, 0, 0.2);
     border-radius: 8px;
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
 }
 
 .topup-config.disabled {
