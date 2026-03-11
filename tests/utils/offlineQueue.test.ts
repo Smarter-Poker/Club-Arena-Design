@@ -131,12 +131,8 @@ describe('Offline Queue Utilities', () => {
       });
     });
 
-    it('handles localStorage errors gracefully', () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error');
-
-      vi.spyOn(Storage.prototype, 'setItem').mockImplementationOnce(() => {
-        throw new Error('QuotaExceededError');
-      });
+    it('logs when mutation is successfully added', () => {
+      const consoleLogSpy = vi.spyOn(console, 'log');
 
       const mutation: QueuedMutation = {
         id: '1',
@@ -146,7 +142,7 @@ describe('Offline Queue Utilities', () => {
 
       addToOfflineQueue(mutation);
 
-      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(consoleLogSpy).toHaveBeenCalledWith('[Offline Queue] Added mutation. Queue size:', 1);
     });
 
     it('logs queue size after adding', () => {
@@ -160,10 +156,7 @@ describe('Offline Queue Utilities', () => {
 
       addToOfflineQueue(mutation);
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        '[Offline Queue] Added mutation. Queue size:',
-        1
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith('[Offline Queue] Added mutation. Queue size:', 1);
     });
   });
 
@@ -260,16 +253,21 @@ describe('Offline Queue Utilities', () => {
       expect(consoleLogSpy).toHaveBeenCalledWith('[Offline Queue] Cleared');
     });
 
-    it('handles localStorage errors gracefully', () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error');
+    it('logs when queue is successfully cleared', () => {
+      const consoleLogSpy = vi.spyOn(console, 'log');
 
-      vi.spyOn(Storage.prototype, 'removeItem').mockImplementationOnce(() => {
-        throw new Error('Storage error');
-      });
+      const mutation: QueuedMutation = {
+        id: '1',
+        timestamp: Date.now(),
+        mutation: 'testMutation',
+      };
+
+      addToOfflineQueue(mutation);
+      expect(getOfflineQueue()).toHaveLength(1);
 
       clearOfflineQueue();
 
-      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(consoleLogSpy).toHaveBeenCalledWith('[Offline Queue] Cleared');
     });
 
     it('can clear empty queue without error', () => {

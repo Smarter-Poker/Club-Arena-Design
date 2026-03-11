@@ -3,7 +3,7 @@ import '@testing-library/jest-dom';
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: vi.fn().mockImplementation(query => ({
+  value: vi.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -15,14 +15,29 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
-// Mock localStorage
+// Mock localStorage with actual storage
+const localStorageData: Record<string, string> = {};
+
 const localStorageMock = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
-  key: vi.fn(),
-  length: 0,
+  getItem: (key: string) => localStorageData[key] ?? null,
+  setItem: (key: string, value: string) => {
+    localStorageData[key] = value;
+  },
+  removeItem: (key: string) => {
+    delete localStorageData[key];
+  },
+  clear: () => {
+    for (const key in localStorageData) {
+      delete localStorageData[key];
+    }
+  },
+  key: (index: number) => {
+    const keys = Object.keys(localStorageData);
+    return keys[index] ?? null;
+  },
+  get length() {
+    return Object.keys(localStorageData).length;
+  },
 };
 
 Object.defineProperty(window, 'localStorage', {
@@ -60,14 +75,16 @@ vi.mock('../src/core/MasterBus', () => ({
   },
 }));
 
-// Mock framer-motion
+// Mock framer-motion with proper React.createElement
 vi.mock('framer-motion', async () => {
+  const React = await vi.importActual('react');
   const actual = await vi.importActual('framer-motion');
+
   return {
     ...actual,
     motion: {
-      div: (props: any) => props.children,
-      button: (props: any) => props.children,
+      div: (props: any) => React.createElement('div', { ...props }),
+      button: (props: any) => React.createElement('button', { ...props }),
     },
     AnimatePresence: (props: any) => props.children,
   };

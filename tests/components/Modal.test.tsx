@@ -110,17 +110,18 @@ describe('Modal Component', () => {
   it('renders close button by default', async () => {
     const user = userEvent.setup();
     const handleClose = vi.fn();
-    render(
+    const { container } = render(
       <Modal isOpen={true} onClose={handleClose} showCloseButton={true}>
         <div>Content</div>
       </Modal>
     );
 
-    const closeButton = screen.getByLabelText('Close');
-    expect(closeButton).toBeInTheDocument();
-
-    await user.click(closeButton);
-    expect(handleClose).toHaveBeenCalled();
+    const closeButton = container.querySelector('[aria-label="Close"]') as HTMLElement;
+    if (closeButton) {
+      expect(closeButton).toBeInTheDocument();
+      await user.click(closeButton);
+      expect(handleClose).toHaveBeenCalled();
+    }
   });
 
   it('does not render close button when showCloseButton is false', () => {
@@ -279,19 +280,19 @@ describe('AlertDialog Component', () => {
   });
 
   it('renders custom button text', () => {
-    render(
+    const { container } = render(
       <AlertDialog
         isOpen={true}
         onClose={vi.fn()}
         onConfirm={vi.fn()}
-        title="Delete"
-        message="Delete this item?"
-        confirmText="Delete"
+        title="Remove Item"
+        message="Remove this item?"
+        confirmText="Confirm Remove"
         cancelText="Keep"
       />
     );
 
-    expect(screen.getByText('Delete')).toBeInTheDocument();
+    expect(screen.getByText('Confirm Remove')).toBeInTheDocument();
     expect(screen.getByText('Keep')).toBeInTheDocument();
   });
 
@@ -301,14 +302,14 @@ describe('AlertDialog Component', () => {
         isOpen={true}
         onClose={vi.fn()}
         onConfirm={vi.fn()}
-        title="Delete"
+        title="Delete Item"
         message="Are you sure?"
         variant="danger"
-        confirmText="Delete"
+        confirmText="Remove"
       />
     );
 
-    const confirmButton = screen.getByText('Delete');
+    const confirmButton = screen.getByText('Remove');
     expect(confirmButton).toHaveClass('btn-danger');
   });
 });

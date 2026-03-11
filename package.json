@@ -73,8 +73,11 @@
     "vitest": "^4.0.18"
   },
   "lint-staged": {
-    "*.{ts,tsx}": [
+    "src/**/*.{ts,tsx}": [
       "npx tsc --noEmit",
+      "eslint --fix"
+    ],
+    "tests/**/*.{ts,tsx}": [
       "eslint --fix"
     ],
     "*.{ts,tsx,css,json,md}": [

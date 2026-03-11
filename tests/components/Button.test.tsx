@@ -24,7 +24,11 @@ describe('Button Component', () => {
 
     expect(screen.queryByText('Click')).toBeInTheDocument();
 
-    rerender(<Button loading={true} onClick={handleClick}>Click</Button>);
+    rerender(
+      <Button loading={true} onClick={handleClick}>
+        Click
+      </Button>
+    );
 
     const button = screen.getByRole('button');
     expect(button).toBeDisabled();
@@ -33,9 +37,13 @@ describe('Button Component', () => {
   it('is disabled when disabled prop set', async () => {
     const user = userEvent.setup();
     const handleClick = vi.fn();
-    render(<Button disabled onClick={handleClick}>Disabled</Button>);
+    render(
+      <Button disabled onClick={handleClick}>
+        Disabled
+      </Button>
+    );
 
-    const button = screen.getByText('Disabled');
+    const button = screen.getByRole('button');
     expect(button).toBeDisabled();
 
     await user.click(button);
@@ -43,7 +51,15 @@ describe('Button Component', () => {
   });
 
   it('applies variant classes correctly', () => {
-    const variants = ['primary', 'secondary', 'ghost', 'danger', 'success', 'warning', 'gold'] as const;
+    const variants = [
+      'primary',
+      'secondary',
+      'ghost',
+      'danger',
+      'success',
+      'warning',
+      'gold',
+    ] as const;
 
     variants.forEach((variant) => {
       const { unmount } = render(<Button variant={variant}>Test</Button>);
@@ -77,7 +93,11 @@ describe('Button Component', () => {
   });
 
   it('renders with icon on right when specified', () => {
-    render(<Button icon="→" iconPosition="right">With Icon</Button>);
+    render(
+      <Button icon="→" iconPosition="right">
+        With Icon
+      </Button>
+    );
     const iconSpan = screen.getByText('→');
     expect(iconSpan).toHaveClass('btn-icon-right');
   });
@@ -156,67 +176,49 @@ describe('ButtonGroup Component', () => {
 
 describe('PokerActionButton Component', () => {
   it('renders fold action', () => {
-    render(
-      <PokerActionButton action="fold" onClick={vi.fn()} />
-    );
+    render(<PokerActionButton action="fold" onClick={vi.fn()} />);
     expect(screen.getByText('Fold')).toBeInTheDocument();
   });
 
   it('renders check action', () => {
-    render(
-      <PokerActionButton action="check" onClick={vi.fn()} />
-    );
+    render(<PokerActionButton action="check" onClick={vi.fn()} />);
     expect(screen.getByText('Check')).toBeInTheDocument();
   });
 
   it('renders call action', () => {
-    render(
-      <PokerActionButton action="call" onClick={vi.fn()} />
-    );
+    render(<PokerActionButton action="call" onClick={vi.fn()} />);
     expect(screen.getByText('Call')).toBeInTheDocument();
   });
 
   it('renders bet action', () => {
-    render(
-      <PokerActionButton action="bet" onClick={vi.fn()} />
-    );
+    render(<PokerActionButton action="bet" onClick={vi.fn()} />);
     expect(screen.getByText('Bet')).toBeInTheDocument();
   });
 
   it('renders raise action', () => {
-    render(
-      <PokerActionButton action="raise" onClick={vi.fn()} />
-    );
+    render(<PokerActionButton action="raise" onClick={vi.fn()} />);
     expect(screen.getByText('Raise')).toBeInTheDocument();
   });
 
   it('renders all-in action', () => {
-    render(
-      <PokerActionButton action="all_in" onClick={vi.fn()} />
-    );
+    render(<PokerActionButton action="all_in" onClick={vi.fn()} />);
     expect(screen.getByText('All-In')).toBeInTheDocument();
   });
 
   it('displays amount when provided', () => {
-    render(
-      <PokerActionButton action="bet" amount={1000} onClick={vi.fn()} />
-    );
+    render(<PokerActionButton action="bet" amount={1000} onClick={vi.fn()} />);
     expect(screen.getByText('1,000')).toBeInTheDocument();
   });
 
   it('displays hotkey when provided', () => {
-    render(
-      <PokerActionButton action="fold" hotkey="F" onClick={vi.fn()} />
-    );
+    render(<PokerActionButton action="fold" hotkey="F" onClick={vi.fn()} />);
     expect(screen.getByText('F')).toBeInTheDocument();
   });
 
   it('handles click events', async () => {
     const user = userEvent.setup();
     const handleClick = vi.fn();
-    render(
-      <PokerActionButton action="bet" onClick={handleClick} />
-    );
+    render(<PokerActionButton action="bet" onClick={handleClick} />);
 
     await user.click(screen.getByText('Bet'));
     expect(handleClick).toHaveBeenCalledOnce();
@@ -225,9 +227,7 @@ describe('PokerActionButton Component', () => {
   it('is disabled when disabled prop set', async () => {
     const user = userEvent.setup();
     const handleClick = vi.fn();
-    render(
-      <PokerActionButton action="bet" disabled onClick={handleClick} />
-    );
+    render(<PokerActionButton action="bet" disabled onClick={handleClick} />);
 
     await user.click(screen.getByText('Bet'));
     expect(handleClick).not.toHaveBeenCalled();
@@ -244,9 +244,7 @@ describe('PokerActionButton Component', () => {
     ];
 
     tests.forEach(({ action, variant }) => {
-      const { unmount } = render(
-        <PokerActionButton action={action} onClick={vi.fn()} />
-      );
+      const { unmount } = render(<PokerActionButton action={action} onClick={vi.fn()} />);
       const button = screen.getByRole('button');
       expect(button).toHaveClass(`btn-${variant}`);
       unmount();
