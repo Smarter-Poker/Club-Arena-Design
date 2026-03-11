@@ -373,15 +373,9 @@ class TournamentService {
    * Create a new tournament
    */
   async createTournament(clubId: string, config: TournamentConfig): Promise<Tournament> {
-    // Union guard: clubs inside a union cannot create standalone MTTs
-    // (they CAN create SNGs/Spins locally, and XMTT flow passes unionId to bypass)
-    if (
-      !config.isXmtt &&
-      (config.type === 'mtt' ||
-        config.type === 'bounty' ||
-        config.type === 'progressive_bounty' ||
-        config.type === 'mystery_bounty')
-    ) {
+    // Union guard: clubs inside a union cannot create ANY standalone tournaments.
+    // All tournaments for union clubs must be created at the union level (XMTT).
+    if (!config.isXmtt) {
       const { data: unionCheck } = await supabase
         .from('union_clubs')
         .select('union_id')

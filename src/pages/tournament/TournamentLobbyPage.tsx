@@ -58,6 +58,23 @@ export default function TournamentLobbyPage() {
   const [typeFilter, setTypeFilter] = useState<TournamentTypeFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleTournaments, setVisibleTournaments] = useState<Set<string>>(new Set());
+  const [isInUnion, setIsInUnion] = useState(false);
+
+  // Check if club is in a union (clubs in unions cannot create tournaments)
+  useEffect(() => {
+    if (!clubId) return;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('union_clubs')
+          .select('union_id')
+          .eq('club_id', clubId)
+          .limit(1)
+          .maybeSingle();
+        if (data) setIsInUnion(true);
+      } catch { /* fail-open */ }
+    })();
+  }, [clubId]);
 
   // Ref to avoid stale closure in subscription callback
   const statusFilterRef = useRef(statusFilter);
@@ -660,7 +677,7 @@ export default function TournamentLobbyPage() {
           <div className={styles.empty}>
             <span className={styles.emptyIcon}></span>
             <p>No tournaments found</p>
-            {clubId && (
+            {clubId && !isInUnion && (
               <Link to={`/clubs/${clubId}/create-tournament`} className={styles.createBtn}>
                 + Create Tournament
               </Link>

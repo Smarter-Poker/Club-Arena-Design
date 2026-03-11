@@ -513,7 +513,7 @@ export default function TournamentPage() {
                     <Link to={`/clubs/${clubId}`} className="back-link">← Back to Club</Link>
                     <h1> Tournaments</h1>
                 </div>
-                {isOwner && (
+                {isOwner && !isInUnion && (
                     <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
                         + Create Tournament
                     </button>

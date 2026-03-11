@@ -12,8 +12,9 @@
  * - OFC (Open Face Chinese Poker)
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import './CreateTablePage.css';
 
 const gameTypeCardAnimationStyle = (index: number) => ({
@@ -96,8 +97,21 @@ export default function CreateTablePage() {
     const navigate = useNavigate();
     const userLevel = 1; // All game types unlocked at level 1
 
-    // Union clubs can still create tables — union just provides cross-club features
-    // Tables belong to clubs, unions coordinate settlements and shared lobbies
+    // Union guard: redirect back if club is in a union
+    useEffect(() => {
+        if (!clubId) return;
+        (async () => {
+            try {
+                const { data } = await supabase
+                    .from('union_clubs')
+                    .select('union_id')
+                    .eq('club_id', clubId)
+                    .limit(1)
+                    .maybeSingle();
+                if (data) navigate(`/clubs/${clubId}`, { replace: true });
+            } catch { /* fail-open */ }
+        })();
+    }, [clubId, navigate]);
 
     const handleSelectGameType = (gameType: GameType) => {
         if (userLevel < gameType.unlockLevel) {
