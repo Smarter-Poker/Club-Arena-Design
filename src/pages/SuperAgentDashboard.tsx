@@ -2,7 +2,7 @@
  * SUPER AGENT DASHBOARD — Agent Network Management with Live Updates
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { AgentService } from '../services/AgentService';

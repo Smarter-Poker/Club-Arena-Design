@@ -56,6 +56,7 @@ export default function TournamentLobbyPage() {
     const [statusFilter, setStatusFilter] = useState<TournamentStatus>('all');
     const [typeFilter, setTypeFilter] = useState<TournamentTypeFilter>('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [visibleTournaments, setVisibleTournaments] = useState<Set<string>>(new Set());
 
     // Ref to avoid stale closure in subscription callback
     const statusFilterRef = useRef(statusFilter);
@@ -67,6 +68,17 @@ export default function TournamentLobbyPage() {
 
     useEffect(() => {
         tournamentsRef.current = tournaments;
+    }, [tournaments]);
+
+    // Stagger animation for tournament cards
+    useEffect(() => {
+        if (tournaments.length === 0) return;
+        setVisibleTournaments(new Set());
+        tournaments.forEach((tourn, index) => {
+            setTimeout(() => {
+                setVisibleTournaments(prev => new Set(prev).add(tourn.id));
+            }, index * 60);
+        });
     }, [tournaments]);
 
     useEffect(() => {

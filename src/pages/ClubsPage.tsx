@@ -75,6 +75,15 @@ export default function ClubsPage() {
         setShowIntro(false);
     };
 
+    // Stagger club cards on render
+    useEffect(() => {
+        setVisibleClubCards(new Set());
+        const timers = myClubs.map((_, i) =>
+            setTimeout(() => setVisibleClubCards(prev => new Set([...prev, i])), i * 60)
+        );
+        return () => timers.forEach(t => clearTimeout(t));
+    }, [myClubs.length]);
+
     // Load user's clubs
     useEffect(() => {
         async function loadMyClubs() {
@@ -273,8 +282,17 @@ export default function ClubsPage() {
                                 </div>
                             ) : myClubs.length > 0 ? (
                                 <div className={styles.clubsGrid}>
-                                    {myClubs.map(membership => (
-                                        <MetalCard key={membership.id} size="md" glow>
+                                    {myClubs.map((membership, index) => (
+                                        <MetalCard
+                                            key={membership.id}
+                                            size="md"
+                                            glow
+                                            style={{
+                                                opacity: visibleClubCards.has(index) ? 1 : 0,
+                                                transform: visibleClubCards.has(index) ? 'translateY(0)' : 'translateY(8px)',
+                                                transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                            }}
+                                        >
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                                 {/* Club Header */}
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

@@ -8,6 +8,12 @@ import FeedbackForm from '../components/support/FeedbackForm';
 import SystemStatus from '../components/support/SystemStatus';
 import './HelpPage.css';
 
+const faqItemAnimationStyle = (index: number) => ({
+    opacity: 0,
+    transform: 'translateY(6px)',
+    animation: `fadeInUp 0.4s ease-out ${index * 50}ms forwards`,
+});
+
 interface FAQItem {
     question: string;
     answer: string;
@@ -76,6 +82,7 @@ export default function HelpPage() {
                 {filteredFAQ.map((item, index) => (
                     <div
                         key={index}
+                        style={faqItemAnimationStyle(index)}
                         className={`faq-item ${expandedIndex === index ? 'expanded' : ''}`}
                     >
                         <button
