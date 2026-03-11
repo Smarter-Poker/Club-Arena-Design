@@ -255,6 +255,17 @@ export default function UnionDetailPage() {
     loadData();
   }, [unionId]);
 
+  // Sync settings form when union data loads or tab switches to settings
+  useEffect(() => {
+    if (activeTab === 'settings' && union?.settings) {
+      setSettingsForm({
+        revenueSharePercent: union.settings.revenueSharePercent,
+        sharedPlayerPool: union.settings.sharedPlayerPool,
+        crossClubTournaments: union.settings.crossClubTournaments,
+      });
+    }
+  }, [activeTab, union]);
+
   // Stagger animation for clubs
   useEffect(() => {
     if (clubs.length === 0) return;
@@ -892,7 +903,7 @@ export default function UnionDetailPage() {
                   <span className={`${styles.financialValue} ${styles.positive}`}>
                     {financialSummary.unionRevenue.toLocaleString()}
                   </span>
-                  <span className={styles.financialLabel}>Union Revenue (10%)</span>
+                  <span className={styles.financialLabel}>Union Revenue ({union?.settings?.revenueSharePercent ?? 10}%)</span>
                 </div>
               </div>
               <div className={styles.financialCard}>
@@ -1045,18 +1056,40 @@ export default function UnionDetailPage() {
           onClose={() => setShowXmttModal(false)}
           onSuccess={() => {
             setShowXmttModal(false);
-            // Reload union tournaments
+            // Reload union tournaments (club-hosted + XMTT, same as initial load)
             if (union?.settings?.crossClubTournaments && clubs.length > 0) {
               const clubIds = clubs.map((c) => c.clubId);
-              supabase
-                .from('tournaments')
-                .select('*, clubs!club_id(name)')
-                .in('club_id', clubIds)
-                .in('status', ['ANNOUNCED', 'REGISTERING', 'RUNNING'])
-                .order('start_time', { ascending: true })
-                .then(({ data }) => {
-                  if (data) setUnionTournaments(data);
+              Promise.all([
+                supabase
+                  .from('tournaments')
+                  .select('*, clubs(name)')
+                  .in('club_id', clubIds)
+                  .order('start_time', { ascending: true }),
+                supabase
+                  .from('tournaments')
+                  .select('*, clubs(name)')
+                  .eq('union_id', unionId)
+                  .eq('is_xmtt', true)
+                  .order('start_time', { ascending: true }),
+              ]).then(([{ data: clubT }, { data: xmttT }]) => {
+                const allT = [...(clubT || []), ...(xmttT || [])];
+                const seen = new Set<string>();
+                const deduped = allT.filter((t) => {
+                  if (seen.has(t.id)) return false;
+                  seen.add(t.id);
+                  return true;
                 });
+                const statusOrder: Record<string, number> = {
+                  REGISTERING: 0, ANNOUNCED: 1, RUNNING: 2, COMPLETED: 3, CANCELLED: 4,
+                };
+                deduped.sort((a: any, b: any) => {
+                  const aO = statusOrder[a.status] ?? 5;
+                  const bO = statusOrder[b.status] ?? 5;
+                  if (aO !== bO) return aO - bO;
+                  return new Date(b.start_time).getTime() - new Date(a.start_time).getTime();
+                });
+                setUnionTournaments(deduped);
+              });
             }
           }}
         />
