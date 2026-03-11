@@ -1,6 +1,6 @@
 # CLUB ARENA — Master Knowledge File
-## LAST UPDATED: Session 60 (March 10, 2026)
-## STATUS: UNIFIED IFRAME ARCHITECTURE DEPLOYED + Premium UI Audit Complete
+## LAST UPDATED: Session 61 (March 10, 2026)
+## STATUS: FULL E2E AUDIT COMPLETE + Union-Aware Tables/Tournaments
 ## RULE: UPDATE THIS FILE EVERY TIME YOU STOP TO UPDATE THE USER
 
 ---
@@ -25,6 +25,8 @@
 - RE-ENTRY = NEW SEAT ASSIGNMENT
 - MOST TOURNAMENTS RUN 8-12 LEVELS BEFORE ENDING REBUY PERIOD
 - ADD-ON PERIOD = LEVEL-BASED (AFTER REBUY PERIOD ENDS)
+- UNION CLUBS SHARE TABLES/TOURNAMENTS — Shark Club + Club JAQK = Midway Union games
+- ONLY STANDALONE CLUBS HAVE THEIR OWN TABLES AND TOURNAMENTS
 
 ---
 
@@ -497,7 +499,50 @@ MTT: Starts at scheduled time when min_players met
 6. **PARENT APP LEADERBOARD**: RESOLVED — World Hub now embeds Club Arena SPA via iframe, so leaderboard at smarter.poker/hub/club-arena/leaderboard loads Club Arena's LeaderboardPage.tsx correctly.
 
 ## GIT LOG (RECENT)
+### Session 61 — Full E2E Page Audit + Union-Aware Fetching (Commit c2304c7)
+
+**FULL PRODUCTION SWEEP ON smarter.poker (iframe):**
+All pages verified live on production:
+- [x] Tournament Lobby: 18 Upcoming, 12 Live Now, 60 Total — cards clean with badges
+- [x] Leaderboard: Rankings tab (podium + list), Tournament Stats tab (full data table)
+- [x] Messages: Search, Club Messages channel, empty state, + button
+- [x] Players: Stat cards (Total Members, Online Now), filter tabs — needs club context
+- [x] Hand Histories: Filter tabs (All Hands, Won, Lost, Big Pots), clean empty state
+- [x] Agent Dashboard: Fixed text overlap bug (was missing flex-direction:column)
+- [x] Union Games: Midway Union card with stats, "Create Your Own Union" CTA
+- [x] Union Dashboard: Same clean layout as Union Games
+- [x] XMTT: Tournament cards rendering correctly
+- [x] Marketplace/Search: Search bar, filter tabs (All, Clubs, Players, Tables)
+- [x] Player Stats: Stat cards + tabs (Overview, Preflop, Postflop, Results, Charts)
+- [x] Club Lobby (via ?club= param): Midway Union overview with live tables, top clubs, financials
+
+**BUGS FOUND & FIXED:**
+1. **Agent Dashboard text overlap** (AgentManagementPage.module.css):
+   - `.error` class had `display:flex` without `flex-direction:column`
+   - "No Club Selected", description text, and "Go to Clubs" button overlapped horizontally
+   - Fix: Added `flex-direction: column; text-align: center; gap: 0.75rem`
+
+2. **Union-aware table/tournament fetching** (ClubHomePage.tsx):
+   - Was fetching tables/tournaments with `eq('club_id', clubId)` — only showed single club games
+   - Now checks `union_clubs` table for union membership
+   - If in union: fetches ALL union member club IDs and uses `in('club_id', unionClubIds)`
+   - Also fetches XMTT tournaments with `eq('union_id', unionId)` and deduplicates
+
+3. **Union-aware tournament lobby** (TournamentLobbyPage.tsx):
+   - Same fix: `eq('club_id', clubId)` → `in('club_id', filterClubIds)` for union clubs
+   - Applied to all query paths: active, pinned, completed, and status-specific filters
+
+**NEW STANDING DIRECTIVE:**
+- Union clubs (Shark Club, Club JAQK) share tables/tournaments at Midway Union level
+- Only standalone clubs have their own tables and tournaments
+
+**Files Modified:**
+- `src/pages/AgentManagementPage.module.css` — flex-direction fix
+- `src/pages/ClubHomePage.tsx` — union-aware table/tournament fetching
+- `src/pages/tournament/TournamentLobbyPage.tsx` — union-aware filtering
+
 ```
+c2304c7 Fix agent dashboard text overlap + union-aware table/tournament fetching
 e067d41 Fix game variant labels: PINEAP → OFC/PNPL/CRAZY for premium display
 cc4e7bb feat: Phase 3 — Multi-table tab system with swipe navigation + comprehensive upgrade plan
 dd587d2 Fix premium UI issues: stat label overlap and table seat clipping
