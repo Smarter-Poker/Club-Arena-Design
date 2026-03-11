@@ -31,7 +31,8 @@
     color: #A5EFF0;
     /* Paler cyan matching original */
     margin-bottom: 2px;
-    text-shadow: 0 0 5px rgba(0, 212, 255, 0.4);
+    text-shadow: 0 0 5px rgba(0, 212, 255, 0.4),
+                 0 0 10px rgba(0, 212, 255, 0.2);
     text-transform: uppercase;
     white-space: nowrap;
     line-height: 1.3;
