@@ -434,9 +434,10 @@ function HomePageInner() {
             setShowReferralPrompt(false);
             setClubCode('');
             setReferralCode('');
+            // Emit bus event + refresh instead of full page reload
+            masterBus.emit('CLUB_JOINED', { clubId: validClubId });
             setValidClubId(null);
-            // Refresh clubs
-            window.location.reload();
+            fetchUserData(true);
         } catch (err: any) {
             toast.error(err.message || 'Failed to join club');
         }
@@ -451,9 +452,10 @@ function HomePageInner() {
             setShowJoinModal(false);
             setShowReferralPrompt(false);
             setClubCode('');
+            // Emit bus event + refresh instead of full page reload
+            masterBus.emit('CLUB_JOINED', { clubId: validClubId });
             setValidClubId(null);
-            // Refresh clubs
-            window.location.reload();
+            fetchUserData(true);
         } catch (err: any) {
             toast.error(err.message || 'Failed to join club');
         }
