@@ -1439,6 +1439,23 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
         };
     }, [tableId, userId, tableState.heroSeat]);
 
+    // ── Bus Listener: live settings sync (theme, sound, deck changes) ──
+    useEffect(() => {
+        const unsub = masterBus.subscribe('SETTINGS_UPDATED', (event) => {
+            const s = (event as any)?.payload?.settings || (event as any)?.settings;
+            if (!s) return;
+            // Apply sound preference if changed
+            if (typeof s.soundEnabled === 'boolean') {
+                localStorage.setItem('club_arena_sounds', String(s.soundEnabled));
+            }
+            // Apply deck/theme preference if changed
+            if (s.deckStyle) {
+                localStorage.setItem('club_arena_deck', s.deckStyle);
+            }
+        });
+        return () => { unsub(); };
+    }, []);
+
     // ═══════════════════════════════════════════════════════════════════════════
     // HORSE LOADING — Load seated horses from DB into React table state
     // ═══════════════════════════════════════════════════════════════════════════

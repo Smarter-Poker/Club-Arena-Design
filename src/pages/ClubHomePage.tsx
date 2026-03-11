@@ -233,16 +233,28 @@ export default function ClubHomePage() {
         };
     }, [clubId]);
 
-    // ── Bus Listeners: cross-page event reactivity ──
+    // ── Bus Listeners: cross-page event reactivity (consolidated + debounced) ──
     useEffect(() => {
-        const unsubJoined = masterBus.subscribe('CLUB_JOINED', () => { loadClubData(); });
-        const unsubLeft = masterBus.subscribe('CLUB_LEFT', () => { loadClubData(); });
-        const unsubSeated = masterBus.subscribe('TABLE_SEATED', () => { loadClubData(); });
-        const unsubTableLeft = masterBus.subscribe('TABLE_LEFT', () => { loadClubData(); });
-        const unsubBalance = masterBus.subscribe('BALANCE_UPDATED', () => { loadClubData(); });
-        const unsubClubUpdated = masterBus.subscribe('CLUB_UPDATED', () => { loadClubData(); });
-        const unsubAnnouncement = masterBus.subscribe('ANNOUNCEMENT_CHANGED', () => { loadClubData(); });
-        return () => { unsubJoined(); unsubLeft(); unsubSeated(); unsubTableLeft(); unsubBalance(); unsubClubUpdated(); unsubAnnouncement(); };
+        // Debounce: if multiple events fire within 300ms, only one reload fires
+        let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+        const debouncedReload = () => {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => { loadClubData(); }, 300);
+        };
+
+        const unsubs = [
+            masterBus.subscribe('CLUB_JOINED', debouncedReload),
+            masterBus.subscribe('CLUB_LEFT', debouncedReload),
+            masterBus.subscribe('TABLE_SEATED', debouncedReload),
+            masterBus.subscribe('TABLE_LEFT', debouncedReload),
+            masterBus.subscribe('BALANCE_UPDATED', debouncedReload),
+            masterBus.subscribe('CLUB_UPDATED', debouncedReload),
+            masterBus.subscribe('ANNOUNCEMENT_CHANGED', debouncedReload),
+        ];
+        return () => {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            unsubs.forEach(u => u());
+        };
     }, []);
 
     const loadUserProfile = async () => {
