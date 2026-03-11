@@ -1856,3 +1856,45 @@
     letter-spacing: 0.5px;
     margin-top: 2px;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   #11: Controls Row — Sound Toggle + Keyboard Shortcuts
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.controlsRow {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin: 12px 0 24px;
+    z-index: 10;
+}
+
+.controlButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: rgba(8, 20, 40, 0.6);
+    border: 1px solid rgba(0, 212, 255, 0.12);
+    border-radius: 10px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    cursor: pointer;
+    font-size: 18px;
+    color: rgba(224, 232, 240, 0.8);
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.controlButton:hover {
+    background: rgba(0, 212, 255, 0.08);
+    border-color: rgba(0, 212, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.controlButton:active {
+    transform: scale(0.96);
+}

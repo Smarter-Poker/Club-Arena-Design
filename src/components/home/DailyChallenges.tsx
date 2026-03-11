@@ -221,42 +221,85 @@ export default function DailyChallenges() {
     }, [loadProgress, incrementByEvent]);
 
     return (
-        <div className={styles.challengesSection}>
-            <h3 className={styles.challengesTitle}>DAILY CHALLENGES</h3>
-            <div className={styles.challengesList}>
+        <div style={{
+            width: '100%',
+            maxWidth: 600,
+            margin: '20px auto 8px',
+            padding: '0 4px',
+            zIndex: 10,
+        }}>
+            <h3 style={{
+                fontSize: '0.85rem',
+                fontWeight: 800,
+                color: 'rgba(0, 212, 255, 0.7)',
+                letterSpacing: '0.15em',
+                margin: '0 0 12px 4px',
+                textTransform: 'uppercase',
+            }}>DAILY CHALLENGES</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {picked.current.map((ch, i) => {
                     const prog = progress[i] || 0;
                     const pct = Math.min(100, (prog / ch.target) * 100);
                     const isComplete = pct >= 100;
                     return (
-                        <div key={i} className={isComplete ? styles.challengeItemComplete : styles.challengeItem}>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(224, 232, 240, 0.9)' }}>
-                                        {ch.title}
-                                    </span>
-                                    <span style={{
-                                        fontSize: '0.65rem',
-                                        fontWeight: 700,
-                                        color: isComplete ? 'rgba(0, 255, 136, 0.9)' : 'rgba(0, 212, 255, 0.8)',
-                                    }}>+{ch.reward} 💎</span>
-                                </div>
-                                {/* Progress counter */}
-                                <div style={{ fontSize: '0.6rem', color: 'rgba(176, 179, 184, 0.7)', marginBottom: 3, textAlign: 'right' }}>
-                                    {Math.min(prog, ch.target)}/{ch.target}
-                                </div>
-                                <div style={{
-                                    height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)',
-                                    overflow: 'hidden',
+                        <div key={i} style={{
+                            background: isComplete
+                                ? 'rgba(0, 255, 136, 0.06)'
+                                : 'rgba(8, 20, 40, 0.6)',
+                            border: isComplete
+                                ? '1px solid rgba(0, 255, 136, 0.2)'
+                                : '1px solid rgba(0, 212, 255, 0.1)',
+                            borderRadius: 10,
+                            padding: '12px 16px',
+                            backdropFilter: 'blur(8px)',
+                            transition: 'border-color 0.3s ease, background 0.3s ease',
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                                <span style={{
+                                    fontSize: '0.85rem',
+                                    fontWeight: 700,
+                                    color: isComplete ? 'rgba(0, 255, 136, 0.95)' : 'rgba(224, 232, 240, 0.9)',
+                                    letterSpacing: '0.02em',
                                 }}>
-                                    <div style={{
-                                        height: '100%', borderRadius: 2, width: `${pct}%`,
-                                        background: isComplete
-                                            ? 'linear-gradient(90deg, #00ff88, #00d4ff)'
-                                            : 'linear-gradient(90deg, #00d4ff, #0088ff)',
-                                        transition: 'width 0.3s ease',
-                                    }} />
-                                </div>
+                                    {isComplete ? '✓ ' : ''}{ch.title}
+                                </span>
+                                <span style={{
+                                    fontSize: '0.8rem',
+                                    fontWeight: 800,
+                                    color: isComplete ? 'rgba(0, 255, 136, 0.9)' : 'rgba(0, 212, 255, 0.85)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 3,
+                                }}>+{ch.reward} 💎</span>
+                            </div>
+                            {/* Progress counter */}
+                            <div style={{
+                                fontSize: '0.7rem',
+                                fontWeight: 600,
+                                color: isComplete ? 'rgba(0, 255, 136, 0.7)' : 'rgba(176, 179, 184, 0.7)',
+                                marginBottom: 5,
+                                textAlign: 'right',
+                            }}>
+                                {Math.min(prog, ch.target)}/{ch.target}
+                            </div>
+                            <div style={{
+                                height: 8,
+                                borderRadius: 4,
+                                background: 'rgba(255,255,255,0.06)',
+                                overflow: 'hidden',
+                            }}>
+                                <div style={{
+                                    height: '100%',
+                                    borderRadius: 4,
+                                    width: `${pct}%`,
+                                    background: isComplete
+                                        ? 'linear-gradient(90deg, #00ff88, #00d4ff)'
+                                        : 'linear-gradient(90deg, #00d4ff, #0088ff)',
+                                    boxShadow: isComplete
+                                        ? '0 0 8px rgba(0, 255, 136, 0.4)'
+                                        : '0 0 6px rgba(0, 212, 255, 0.3)',
+                                    transition: 'width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                                }} />
                             </div>
                         </div>
                     );

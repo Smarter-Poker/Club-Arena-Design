@@ -173,6 +173,7 @@ function CarouselSection({
 }: CarouselSectionProps) {
     const carouselRef = useRef<HTMLDivElement>(null);
     const sharkCardRef = useRef<HTMLDivElement>(null);
+    const hasScrolledRef = useRef(false);
 
     // Split user clubs into left half and right half around the Shark Club
     const leftClubs = useMemo(() => {
@@ -185,8 +186,9 @@ function CarouselSection({
         return displayClubs.slice(half);
     }, [displayClubs]);
 
-    // Auto-scroll to center the Shark Club card on mount
+    // Auto-scroll to center the Shark Club card on initial mount only
     useEffect(() => {
+        if (hasScrolledRef.current) return; // Only scroll once on initial load
         const timeout = setTimeout(() => {
             if (sharkCardRef.current && carouselRef.current) {
                 sharkCardRef.current.scrollIntoView({
@@ -194,6 +196,7 @@ function CarouselSection({
                     inline: 'center',
                     block: 'nearest',
                 });
+                hasScrolledRef.current = true;
             }
         }, 400); // Wait for entrance animations to start
         return () => clearTimeout(timeout);
@@ -1163,6 +1166,9 @@ function HomePageInner() {
                         title={soundsEnabled ? 'Sounds On' : 'Sounds Off'}
                     >
                         {soundsEnabled ? '🔊' : '🔇'}
+                        <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.03em' }}>
+                            {soundsEnabled ? 'Sound On' : 'Sound Off'}
+                        </span>
                     </button>
                     <button
                         className={styles.controlButton}
@@ -1171,6 +1177,7 @@ function HomePageInner() {
                         title="Keyboard Shortcuts (?)"
                     >
                         ⌨️
+                        <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.03em' }}>Shortcuts</span>
                     </button>
                 </div>
             </div>

@@ -594,17 +594,21 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                     ].map((preset) => {
                         const isSelected = (localStorage.getItem('club_arena_card_color') || 'default') === preset.id;
                         return (
-                            <button
+                            <div
                                 key={preset.id}
-                                title={preset.name}
+                                style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    cursor: 'pointer',
+                                }}
                                 onClick={async () => {
                                     localStorage.setItem('club_arena_card_color', preset.id);
-                                    // Emit bus event for real-time HomePage sync
                                     try {
                                         const { masterBus } = await import('../../core/MasterBus');
                                         masterBus.emit('CARD_COLOR_CHANGED', { preset: preset.id });
                                     } catch { /* */ }
-                                    // Persist to Supabase
                                     if (user?.id) {
                                         try {
                                             await supabase
@@ -615,21 +619,33 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                                     }
                                     toast.success(`Card color: ${preset.name}`);
                                 }}
-                                style={{
-                                    width: 36,
-                                    height: 36,
-                                    borderRadius: '50%',
-                                    background: preset.bg,
-                                    border: isSelected
-                                        ? '2px solid rgba(0, 212, 255, 0.8)'
-                                        : '2px solid rgba(255, 255, 255, 0.1)',
-                                    cursor: 'pointer',
-                                    boxShadow: isSelected
-                                        ? '0 0 8px rgba(0, 212, 255, 0.4)'
-                                        : '0 2px 4px rgba(0,0,0,0.3)',
-                                    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-                                }}
-                            />
+                            >
+                                <div
+                                    title={preset.name}
+                                    style={{
+                                        width: 36,
+                                        height: 36,
+                                        borderRadius: '50%',
+                                        background: preset.bg,
+                                        border: isSelected
+                                            ? '2px solid rgba(0, 212, 255, 0.8)'
+                                            : '2px solid rgba(255, 255, 255, 0.1)',
+                                        boxShadow: isSelected
+                                            ? '0 0 8px rgba(0, 212, 255, 0.4)'
+                                            : '0 2px 4px rgba(0,0,0,0.3)',
+                                        transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                                    }}
+                                />
+                                <span style={{
+                                    fontSize: 9,
+                                    fontWeight: isSelected ? 700 : 500,
+                                    color: isSelected ? colors.accent : colors.textSecondary,
+                                    textAlign: 'center',
+                                    lineHeight: 1.1,
+                                    maxWidth: 50,
+                                    transition: 'color 0.2s ease',
+                                }}>{preset.name}</span>
+                            </div>
                         );
                     })}
                 </div>
