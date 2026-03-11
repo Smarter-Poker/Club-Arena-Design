@@ -15,19 +15,27 @@ import './ClubMembersPage.css';
    TYPES
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-type MemberRole = 'owner' | 'super_agent' | 'agent' | 'sub_agent' | 'admin' | 'manager' | 'member' | 'guest';
+type MemberRole =
+  | 'owner'
+  | 'super_agent'
+  | 'agent'
+  | 'sub_agent'
+  | 'admin'
+  | 'manager'
+  | 'member'
+  | 'guest';
 
 interface ClubMember {
-    id: string;
-    user_id: string;
-    username: string;
-    avatar_url?: string;
-    role: MemberRole;
-    chip_balance: number;
-    joined_at: string;
-    is_online: boolean;
-    last_active?: string;
-    parent_agent_id?: string;
+  id: string;
+  user_id: string;
+  username: string;
+  avatar_url?: string;
+  role: MemberRole;
+  chip_balance: number;
+  joined_at: string;
+  is_online: boolean;
+  last_active?: string;
+  parent_agent_id?: string;
 }
 
 type MemberFilter = 'all' | 'online' | 'agents' | 'admins';
@@ -37,83 +45,106 @@ type MemberFilter = 'all' | 'online' | 'agents' | 'admins';
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 const ROLE_RANK: Record<MemberRole, number> = {
-    owner: 100,
-    admin: 80,
-    super_agent: 70,
-    agent: 60,
-    sub_agent: 50,
-    manager: 40,
-    member: 10,
-    guest: 0,
+  owner: 100,
+  admin: 80,
+  super_agent: 70,
+  agent: 60,
+  sub_agent: 50,
+  manager: 40,
+  member: 10,
+  guest: 0,
 };
 
 /** What roles can the current user promote others TO? */
 function getPromotableRoles(myRole: MemberRole, targetRole: MemberRole): MemberRole[] {
-    if (myRole === 'owner') {
-        // Owner can promote to anything below owner
-        if (ROLE_RANK[targetRole] < ROLE_RANK['owner']) {
-            return ['admin', 'super_agent', 'agent', 'manager', 'member'].filter(
-                r => r !== targetRole
-            ) as MemberRole[];
-        }
+  if (myRole === 'owner') {
+    // Owner can promote to anything below owner
+    if (ROLE_RANK[targetRole] < ROLE_RANK['owner']) {
+      return ['admin', 'super_agent', 'agent', 'manager', 'member'].filter(
+        (r) => r !== targetRole
+      ) as MemberRole[];
     }
-    if (myRole === 'admin') {
-        // Admin can promote to super_agent, agent, manager, member
-        if (ROLE_RANK[targetRole] < ROLE_RANK['admin']) {
-            return ['super_agent', 'agent', 'manager', 'member'].filter(
-                r => r !== targetRole
-            ) as MemberRole[];
-        }
+  }
+  if (myRole === 'admin') {
+    // Admin can promote to super_agent, agent, manager, member
+    if (ROLE_RANK[targetRole] < ROLE_RANK['admin']) {
+      return ['super_agent', 'agent', 'manager', 'member'].filter(
+        (r) => r !== targetRole
+      ) as MemberRole[];
     }
-    if (myRole === 'super_agent') {
-        // Super agent can promote players under them to sub_agent or agent
-        if (['member', 'sub_agent', 'agent'].includes(targetRole)) {
-            return ['agent', 'sub_agent', 'member'].filter(
-                r => r !== targetRole
-            ) as MemberRole[];
-        }
+  }
+  if (myRole === 'super_agent') {
+    // Super agent can promote players under them to sub_agent or agent
+    if (['member', 'sub_agent', 'agent'].includes(targetRole)) {
+      return ['agent', 'sub_agent', 'member'].filter((r) => r !== targetRole) as MemberRole[];
     }
-    return [];
+  }
+  return [];
 }
 
 function getRoleLabel(role: MemberRole): string {
-    switch (role) {
-        case 'owner': return 'Owner';
-        case 'admin': return 'Admin';
-        case 'super_agent': return 'Super Agent';
-        case 'agent': return 'Agent';
-        case 'sub_agent': return 'Sub Agent';
-        case 'manager': return 'Manager';
-        case 'member': return 'Member';
-        case 'guest': return 'Guest';
-        default: return role;
-    }
+  switch (role) {
+    case 'owner':
+      return 'Owner';
+    case 'admin':
+      return 'Admin';
+    case 'super_agent':
+      return 'Super Agent';
+    case 'agent':
+      return 'Agent';
+    case 'sub_agent':
+      return 'Sub Agent';
+    case 'manager':
+      return 'Manager';
+    case 'member':
+      return 'Member';
+    case 'guest':
+      return 'Guest';
+    default:
+      return role;
+  }
 }
 
 function getRoleColor(role: MemberRole): string {
-    switch (role) {
-        case 'owner': return '#FFD700';
-        case 'admin': return '#FF6B6B';
-        case 'super_agent': return '#A855F7';
-        case 'agent': return '#00d4ff';
-        case 'sub_agent': return '#38BDF8';
-        case 'manager': return '#F59E0B';
-        case 'member': return '#6a7a8a';
-        case 'guest': return '#4a5a6a';
-        default: return '#6a7a8a';
-    }
+  switch (role) {
+    case 'owner':
+      return '#FFD700';
+    case 'admin':
+      return '#FF6B6B';
+    case 'super_agent':
+      return '#A855F7';
+    case 'agent':
+      return '#00d4ff';
+    case 'sub_agent':
+      return '#38BDF8';
+    case 'manager':
+      return '#F59E0B';
+    case 'member':
+      return '#6a7a8a';
+    case 'guest':
+      return '#4a5a6a';
+    default:
+      return '#6a7a8a';
+  }
 }
 
 function getRoleBadgeIcon(role: MemberRole): string {
-    switch (role) {
-        case 'owner': return '\u2605';     // ★
-        case 'admin': return '\u25B2';     // ▲
-        case 'super_agent': return '\u25C6'; // ◆
-        case 'agent': return '\u25CF';     // ●
-        case 'sub_agent': return '\u25CB'; // ○
-        case 'manager': return '\u25A0';   // ■
-        default: return '';
-    }
+  switch (role) {
+    case 'owner':
+      return '\u2605'; // ★
+    case 'admin':
+      return '\u25B2'; // ▲
+    case 'super_agent':
+      return '\u25C6'; // ◆
+    case 'agent':
+      return '\u25CF'; // ●
+    case 'sub_agent':
+      return '\u25CB'; // ○
+    case 'manager':
+      return '\u25A0'; // ■
+    default:
+      return '';
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -121,227 +152,234 @@ function getRoleBadgeIcon(role: MemberRole): string {
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 interface PlayerActionModalProps {
-    member: ClubMember;
-    myRole: MemberRole;
-    clubId: string;
-    onClose: () => void;
-    onRoleChanged: () => void;
+  member: ClubMember;
+  myRole: MemberRole;
+  clubId: string;
+  onClose: () => void;
+  onRoleChanged: () => void;
 }
 
-function PlayerActionModal({ member, myRole, clubId, onClose, onRoleChanged }: PlayerActionModalProps) {
-    const [promoting, setPromoting] = useState(false);
-    const [confirmRole, setConfirmRole] = useState<MemberRole | null>(null);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
+function PlayerActionModal({
+  member,
+  myRole,
+  clubId,
+  onClose,
+  onRoleChanged,
+}: PlayerActionModalProps) {
+  const safeUsername = member.username || 'Unknown';
+  const [promoting, setPromoting] = useState(false);
+  const [confirmRole, setConfirmRole] = useState<MemberRole | null>(null);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-    const promotableRoles = getPromotableRoles(myRole, member.role);
-    const canManage = promotableRoles.length > 0 && member.role !== 'owner';
+  const promotableRoles = getPromotableRoles(myRole, member.role);
+  const canManage = promotableRoles.length > 0 && member.role !== 'owner';
 
-    const handlePromote = async (newRole: MemberRole) => {
-        setPromoting(true);
-        setError('');
-        setSuccess('');
+  const handlePromote = async (newRole: MemberRole) => {
+    setPromoting(true);
+    setError('');
+    setSuccess('');
 
-        try {
-            const currentUser = useUserStore.getState().user;
-            if (!currentUser?.id) throw new Error('Not authenticated');
+    try {
+      const currentUser = useUserStore.getState().user;
+      if (!currentUser?.id) throw new Error('Not authenticated');
 
-            // Try RPC first (atomic with audit logging), fall back to direct updates
-            const { data: rpcResult, error: rpcError } = await supabase
-                .rpc('promote_member', {
-                    p_club_id: clubId,
-                    p_target_user_id: member.user_id,
-                    p_new_role: newRole,
-                    p_promoted_by: currentUser.id,
-                });
+      // Try RPC first (atomic with audit logging), fall back to direct updates
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('promote_member', {
+        p_club_id: clubId,
+        p_target_user_id: member.user_id,
+        p_new_role: newRole,
+        p_promoted_by: currentUser.id,
+      });
 
-            if (rpcError) {
-                // RPC not available yet — fall back to direct table update
-                console.warn('promote_member RPC not available, using direct update:', rpcError.message);
+      if (rpcError) {
+        // RPC not available yet — fall back to direct table update
+        console.warn('promote_member RPC not available, using direct update:', rpcError.message);
 
-                const { error: updateError } = await supabase
-                    .from('club_members')
-                    .update({ role: newRole })
-                    .eq('club_id', clubId)
-                    .eq('user_id', member.user_id);
+        const { error: updateError } = await supabase
+          .from('club_members')
+          .update({ role: newRole })
+          .eq('club_id', clubId)
+          .eq('user_id', member.user_id);
 
-                if (updateError) throw updateError;
+        if (updateError) throw updateError;
 
-                // Handle agents table for agent-type roles
-                const isAgentRole = ['super_agent', 'agent', 'sub_agent'].includes(newRole);
-                const wasAgentRole = ['super_agent', 'agent', 'sub_agent'].includes(member.role);
+        // Handle agents table for agent-type roles
+        const isAgentRole = ['super_agent', 'agent', 'sub_agent'].includes(newRole);
+        const wasAgentRole = ['super_agent', 'agent', 'sub_agent'].includes(member.role);
 
-                if (isAgentRole) {
-                    const { data: existingAgent } = await supabase
-                        .from('agents')
-                        .select('id')
-                        .eq('club_id', clubId)
-                        .eq('user_id', member.user_id)
-                        .maybeSingle();
+        if (isAgentRole) {
+          const { data: existingAgent } = await supabase
+            .from('agents')
+            .select('id')
+            .eq('club_id', clubId)
+            .eq('user_id', member.user_id)
+            .maybeSingle();
 
-                    if (existingAgent) {
-                        await supabase
-                            .from('agents')
-                            .update({ role: newRole, status: 'active' })
-                            .eq('id', existingAgent.id);
-                    } else {
-                        await supabase
-                            .from('agents')
-                            .insert({
-                                club_id: clubId,
-                                user_id: member.user_id,
-                                role: newRole,
-                                status: 'active',
-                                commission_rate: newRole === 'super_agent' ? 0.50 : 0.30,
-                                player_rakeback_rate: newRole === 'super_agent' ? 0.30 : 0.20,
-                                credit_limit: 0,
-                                parent_agent_id: null,
-                            });
-                    }
-                } else if (wasAgentRole && !isAgentRole) {
-                    await supabase
-                        .from('agents')
-                        .update({ status: 'suspended' })
-                        .eq('club_id', clubId)
-                        .eq('user_id', member.user_id);
-                }
-            } else if (rpcResult && !rpcResult.success) {
-                throw new Error(rpcResult.error || 'Promotion failed');
-            }
-
-            setSuccess(`${member.username} is now ${getRoleLabel(newRole)}`);
-            setConfirmRole(null);
-
-            // Brief delay to show success, then refresh
-            setTimeout(() => {
-                onRoleChanged();
-                onClose();
-            }, 1200);
-        } catch (err: any) {
-            setError(err.message || 'Failed to update role');
-        } finally {
-            setPromoting(false);
+          if (existingAgent) {
+            await supabase
+              .from('agents')
+              .update({ role: newRole, status: 'active' })
+              .eq('id', existingAgent.id);
+          } else {
+            await supabase.from('agents').insert({
+              club_id: clubId,
+              user_id: member.user_id,
+              role: newRole,
+              status: 'active',
+              commission_rate: newRole === 'super_agent' ? 0.5 : 0.3,
+              player_rakeback_rate: newRole === 'super_agent' ? 0.3 : 0.2,
+              credit_limit: 0,
+              parent_agent_id: null,
+            });
+          }
+        } else if (wasAgentRole && !isAgentRole) {
+          await supabase
+            .from('agents')
+            .update({ status: 'suspended' })
+            .eq('club_id', clubId)
+            .eq('user_id', member.user_id);
         }
-    };
+      } else if (rpcResult && !rpcResult.success) {
+        throw new Error(rpcResult.error || 'Promotion failed');
+      }
 
-    return (
-        <div className="player-modal-overlay" onClick={onClose}>
-            <div className="player-modal" onClick={(e) => e.stopPropagation()}>
-                {/* Header */}
-                <div className="player-modal__header">
-                    <div className="player-modal__avatar">
-                        {member.avatar_url ? (
-                            <img src={member.avatar_url} alt="" />
-                        ) : (
-                            <span>{member.username[0]?.toUpperCase()}</span>
-                        )}
-                        {member.is_online && <span className="online-dot" />}
-                    </div>
-                    <div className="player-modal__info">
-                        <h3>{member.username}</h3>
-                        <span
-                            className="player-modal__role-badge"
-                            style={{ color: getRoleColor(member.role) }}
-                        >
-                            {getRoleBadgeIcon(member.role)} {getRoleLabel(member.role)}
-                        </span>
-                    </div>
-                    <button className="player-modal__close" onClick={onClose}>&times;</button>
-                </div>
+      setSuccess(`${member.username} is now ${getRoleLabel(newRole)}`);
+      setConfirmRole(null);
 
-                {/* Stats */}
-                <div className="player-modal__stats">
-                    <div className="player-modal__stat">
-                        <span className="stat-value">{member.chip_balance.toLocaleString()}</span>
-                        <span className="stat-label">Chips</span>
-                    </div>
-                    <div className="player-modal__stat">
-                        <span className="stat-value">{member.is_online ? 'Online' : 'Offline'}</span>
-                        <span className="stat-label">Status</span>
-                    </div>
-                    <div className="player-modal__stat">
-                        <span className="stat-value">
-                            {new Date(member.joined_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                        </span>
-                        <span className="stat-label">Joined</span>
-                    </div>
-                </div>
+      // Brief delay to show success, then refresh
+      setTimeout(() => {
+        onRoleChanged();
+        onClose();
+      }, 1200);
+    } catch (err: any) {
+      setError(err.message || 'Failed to update role');
+    } finally {
+      setPromoting(false);
+    }
+  };
 
-                {/* Role Management */}
-                {canManage && (
-                    <div className="player-modal__roles">
-                        <h4>Change Role</h4>
-
-                        {error && <div className="player-modal__error">{error}</div>}
-                        {success && <div className="player-modal__success">{success}</div>}
-
-                        {confirmRole ? (
-                            <div className="player-modal__confirm">
-                                <p>
-                                    Promote <strong>{member.username}</strong> to{' '}
-                                    <strong style={{ color: getRoleColor(confirmRole) }}>
-                                        {getRoleLabel(confirmRole)}
-                                    </strong>?
-                                </p>
-                                <div className="player-modal__confirm-actions">
-                                    <button
-                                        className="confirm-btn confirm"
-                                        onClick={() => handlePromote(confirmRole)}
-                                        disabled={promoting}
-                                    >
-                                        {promoting ? 'Updating...' : 'Confirm'}
-                                    </button>
-                                    <button
-                                        className="confirm-btn cancel"
-                                        onClick={() => setConfirmRole(null)}
-                                        disabled={promoting}
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="player-modal__role-grid">
-                                {promotableRoles.map((role) => (
-                                    <button
-                                        key={role}
-                                        className="role-option"
-                                        style={{ borderColor: getRoleColor(role) }}
-                                        onClick={() => setConfirmRole(role)}
-                                    >
-                                        <span className="role-option__icon" style={{ color: getRoleColor(role) }}>
-                                            {getRoleBadgeIcon(role)}
-                                        </span>
-                                        <span className="role-option__label">{getRoleLabel(role)}</span>
-                                        <span className="role-option__desc">
-                                            {role === 'admin' && 'Full club management'}
-                                            {role === 'super_agent' && 'Manage agents & players'}
-                                            {role === 'agent' && 'Recruit & manage players'}
-                                            {role === 'sub_agent' && 'Recruit players under agent'}
-                                            {role === 'manager' && 'Limited management'}
-                                            {role === 'member' && 'Regular member'}
-                                        </span>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Not promotable info */}
-                {!canManage && member.role === 'owner' && (
-                    <div className="player-modal__info-section">
-                        <p>Club Owner cannot be modified.</p>
-                    </div>
-                )}
-                {!canManage && member.role !== 'owner' && (
-                    <div className="player-modal__info-section">
-                        <p>You don't have permission to manage this member's role.</p>
-                    </div>
-                )}
-            </div>
+  return (
+    <div className="player-modal-overlay" onClick={onClose}>
+      <div className="player-modal" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="player-modal__header">
+          <div className="player-modal__avatar">
+            {member.avatar_url ? (
+              <img src={member.avatar_url} alt="" />
+            ) : (
+              <span>{safeUsername[0]?.toUpperCase()}</span>
+            )}
+            {member.is_online && <span className="online-dot" />}
+          </div>
+          <div className="player-modal__info">
+            <h3>{member.username}</h3>
+            <span className="player-modal__role-badge" style={{ color: getRoleColor(member.role) }}>
+              {getRoleBadgeIcon(member.role)} {getRoleLabel(member.role)}
+            </span>
+          </div>
+          <button className="player-modal__close" onClick={onClose}>
+            &times;
+          </button>
         </div>
-    );
+
+        {/* Stats */}
+        <div className="player-modal__stats">
+          <div className="player-modal__stat">
+            <span className="stat-value">{member.chip_balance.toLocaleString()}</span>
+            <span className="stat-label">Chips</span>
+          </div>
+          <div className="player-modal__stat">
+            <span className="stat-value">{member.is_online ? 'Online' : 'Offline'}</span>
+            <span className="stat-label">Status</span>
+          </div>
+          <div className="player-modal__stat">
+            <span className="stat-value">
+              {new Date(member.joined_at).toLocaleDateString('en-US', {
+                month: 'short',
+                year: 'numeric',
+              })}
+            </span>
+            <span className="stat-label">Joined</span>
+          </div>
+        </div>
+
+        {/* Role Management */}
+        {canManage && (
+          <div className="player-modal__roles">
+            <h4>Change Role</h4>
+
+            {error && <div className="player-modal__error">{error}</div>}
+            {success && <div className="player-modal__success">{success}</div>}
+
+            {confirmRole ? (
+              <div className="player-modal__confirm">
+                <p>
+                  Promote <strong>{member.username}</strong> to{' '}
+                  <strong style={{ color: getRoleColor(confirmRole) }}>
+                    {getRoleLabel(confirmRole)}
+                  </strong>
+                  ?
+                </p>
+                <div className="player-modal__confirm-actions">
+                  <button
+                    className="confirm-btn confirm"
+                    onClick={() => handlePromote(confirmRole)}
+                    disabled={promoting}
+                  >
+                    {promoting ? 'Updating...' : 'Confirm'}
+                  </button>
+                  <button
+                    className="confirm-btn cancel"
+                    onClick={() => setConfirmRole(null)}
+                    disabled={promoting}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="player-modal__role-grid">
+                {promotableRoles.map((role) => (
+                  <button
+                    key={role}
+                    className="role-option"
+                    style={{ borderColor: getRoleColor(role) }}
+                    onClick={() => setConfirmRole(role)}
+                  >
+                    <span className="role-option__icon" style={{ color: getRoleColor(role) }}>
+                      {getRoleBadgeIcon(role)}
+                    </span>
+                    <span className="role-option__label">{getRoleLabel(role)}</span>
+                    <span className="role-option__desc">
+                      {role === 'admin' && 'Full club management'}
+                      {role === 'super_agent' && 'Manage agents & players'}
+                      {role === 'agent' && 'Recruit & manage players'}
+                      {role === 'sub_agent' && 'Recruit players under agent'}
+                      {role === 'manager' && 'Limited management'}
+                      {role === 'member' && 'Regular member'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Not promotable info */}
+        {!canManage && member.role === 'owner' && (
+          <div className="player-modal__info-section">
+            <p>Club Owner cannot be modified.</p>
+          </div>
+        )}
+        {!canManage && member.role !== 'owner' && (
+          <div className="player-modal__info-section">
+            <p>You don't have permission to manage this member's role.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -349,27 +387,28 @@ function PlayerActionModal({ member, myRole, clubId, onClose, onRoleChanged }: P
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 export default function ClubMembersPage() {
-    const [searchParams] = useSearchParams();
-    const { clubId: routeClubId } = useParams();
-    const clubId = routeClubId || searchParams.get('club') || undefined;
-    const { user } = useUserStore();
+  const [searchParams] = useSearchParams();
+  const { clubId: routeClubId } = useParams();
+  const clubId = routeClubId || searchParams.get('club') || undefined;
+  const { user } = useUserStore();
 
-    const [members, setMembers] = useState<ClubMember[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState<MemberFilter>('all');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
-    const [userRole, setUserRole] = useState<MemberRole>('member');
-    const [visibleMembers, setVisibleMembers] = useState<Set<string>>(new Set());
-    const [selectedMember, setSelectedMember] = useState<ClubMember | null>(null);
+  const [members, setMembers] = useState<ClubMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<MemberFilter>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
+  const [userRole, setUserRole] = useState<MemberRole>('member');
+  const [visibleMembers, setVisibleMembers] = useState<Set<string>>(new Set());
+  const [selectedMember, setSelectedMember] = useState<ClubMember | null>(null);
 
-    const loadMembers = useCallback(async () => {
-        if (!clubId) return;
-        setLoading(true);
-        try {
-            const { data, error } = await supabase
-                .from('club_members')
-                .select(`
+  const loadMembers = useCallback(async () => {
+    if (!clubId) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('club_members')
+        .select(
+          `
                     user_id,
                     role,
                     chip_balance,
@@ -377,252 +416,260 @@ export default function ClubMembersPage() {
                     parent_agent_id,
                     profiles!inner (
                         username,
-                        avatar_url
+                        avatar_url,
+                        is_horse
                     )
-                `)
-                .eq('club_id', clubId)
-                .not('status', 'in', '("banned","suspended")');
+                `
+        )
+        .eq('club_id', clubId)
+        .eq('profiles.is_horse', false)
+        .not('status', 'in', '("banned","suspended")');
 
-            if (!error && data) {
-                setMembers(data.map((m: any) => ({
-                    id: m.user_id,
-                    user_id: m.user_id,
-                    username: m.profiles?.username || 'Unknown',
-                    avatar_url: m.profiles?.avatar_url,
-                    role: m.role || 'member',
-                    chip_balance: m.chip_balance || 0,
-                    joined_at: m.joined_at,
-                    is_online: onlineUserIds.has(m.user_id),
-                    last_active: undefined,
-                    parent_agent_id: m.parent_agent_id,
-                })));
+      if (!error && data) {
+        setMembers(
+          data.map((m: any) => ({
+            id: m.user_id,
+            user_id: m.user_id,
+            username: m.profiles?.username || 'Unknown',
+            avatar_url: m.profiles?.avatar_url,
+            role: m.role || 'member',
+            chip_balance: m.chip_balance || 0,
+            joined_at: m.joined_at,
+            is_online: onlineUserIds.has(m.user_id),
+            last_active: undefined,
+            parent_agent_id: m.parent_agent_id,
+          }))
+        );
 
-                // Fetch current user's role
-                if (user?.id) {
-                    const { data: memberData } = await supabase
-                        .from('club_members')
-                        .select('role')
-                        .eq('club_id', clubId)
-                        .eq('user_id', user.id)
-                        .maybeSingle();
+        // Fetch current user's role
+        if (user?.id) {
+          const { data: memberData } = await supabase
+            .from('club_members')
+            .select('role')
+            .eq('club_id', clubId)
+            .eq('user_id', user.id)
+            .maybeSingle();
 
-                    if (memberData) {
-                        setUserRole(memberData.role || 'member');
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Failed to load members:', error);
+          if (memberData) {
+            setUserRole(memberData.role || 'member');
+          }
         }
-        setLoading(false);
-    }, [clubId, user?.id, onlineUserIds]);
+      }
+    } catch (error) {
+      console.error('Failed to load members:', error);
+    }
+    setLoading(false);
+  }, [clubId, user?.id, onlineUserIds]);
 
-    useEffect(() => {
-        if (clubId) loadMembers();
-    }, [clubId]);
+  useEffect(() => {
+    if (clubId) loadMembers();
+  }, [clubId]);
 
-    // Stagger animation for members
-    useEffect(() => {
-        if (members.length === 0) return;
-        setVisibleMembers(new Set());
-        members.forEach((member, index) => {
-            setTimeout(() => {
-                setVisibleMembers(prev => new Set(prev).add(member.id));
-            }, index * 60);
-        });
-    }, [members]);
-
-    // Real-time club members table updates
-    useEffect(() => {
-        if (!clubId) return;
-
-        const channelKey = `club-members-sync-${clubId}`;
-        const channel = masterBus.getOrCreateChannel(channelKey);
-        channel
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'club_members',
-                    filter: `club_id=eq.${clubId}`,
-                },
-                () => {
-                    loadMembers();
-                }
-            )
-            .subscribe();
-
-        return () => {
-            masterBus.removeRegisteredChannel(channelKey);
-        };
-    }, [clubId]);
-
-    // Real-time presence tracking for club members
-    useEffect(() => {
-        if (!clubId || !user?.id) return;
-
-        const presenceKey = `club-members-${clubId}`;
-        const channel = masterBus.getOrCreateChannel(presenceKey);
-
-        channel
-            .on('presence', { event: 'sync' }, () => {
-                const state = channel.presenceState();
-                const onlineIds = new Set<string>();
-                Object.values(state).forEach(presences => {
-                    (presences as any[]).forEach(p => onlineIds.add(p.user_id));
-                });
-                setOnlineUserIds(onlineIds);
-            })
-            .subscribe(async (status) => {
-                if (status === 'SUBSCRIBED') {
-                    await channel.track({ user_id: user.id, club_id: clubId });
-                }
-            });
-
-        return () => {
-            masterBus.removeRegisteredChannel(presenceKey);
-        };
-    }, [clubId, user?.id]);
-
-    // Update member online status when presence changes
-    const membersWithStatus = members.map(m => ({
-        ...m,
-        is_online: onlineUserIds.has(m.user_id),
-    }));
-
-    const filteredMembers = membersWithStatus.filter(m => {
-        if (filter === 'online' && !m.is_online) return false;
-        if (filter === 'agents' && !['super_agent', 'agent', 'sub_agent'].includes(m.role)) return false;
-        if (filter === 'admins' && !['owner', 'admin'].includes(m.role)) return false;
-        if (searchQuery && !m.username.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-        return true;
+  // Stagger animation for members
+  useEffect(() => {
+    if (members.length === 0) return;
+    setVisibleMembers(new Set());
+    members.forEach((member, index) => {
+      setTimeout(() => {
+        setVisibleMembers((prev) => new Set(prev).add(member.id));
+      }, index * 60);
     });
+  }, [members]);
 
-    // Virtual scrolling: only render visible members for large clubs
-    const virtualScroll = useVirtualScroll(filteredMembers, { initialCount: 30, pageSize: 20 });
+  // Real-time club members table updates
+  useEffect(() => {
+    if (!clubId) return;
 
-    const onlineCount = membersWithStatus.filter(m => m.is_online).length;
-    const agentCount = membersWithStatus.filter(m => ['super_agent', 'agent', 'sub_agent'].includes(m.role)).length;
+    const channelKey = `club-members-sync-${clubId}`;
+    const channel = masterBus.getOrCreateChannel(channelKey);
+    channel
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'club_members',
+          filter: `club_id=eq.${clubId}`,
+        },
+        () => {
+          loadMembers();
+        }
+      )
+      .subscribe();
 
-    return (
-        <div className="club-members-page">
-            <div className="members-summary">
-                <div className="summary-stat">
-                    <span className="stat-value">{members.length}</span>
-                    <span className="stat-label">Total Members</span>
-                </div>
-                <div className="summary-stat online">
-                    <span className="stat-value">{onlineCount}</span>
-                    <span className="stat-label">Online Now</span>
-                </div>
-                {agentCount > 0 && (
-                    <div className="summary-stat agents">
-                        <span className="stat-value">{agentCount}</span>
-                        <span className="stat-label">Agents</span>
-                    </div>
-                )}
-            </div>
+    return () => {
+      masterBus.removeRegisteredChannel(channelKey);
+    };
+  }, [clubId]);
 
-            <div className="members-search">
-                <input
-                    type="text"
-                    placeholder="Search members..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
-            </div>
+  // Real-time presence tracking for club members
+  useEffect(() => {
+    if (!clubId || !user?.id) return;
 
-            <div className="members-filters">
-                {(['all', 'online', 'agents', 'admins'] as MemberFilter[]).map(f => (
-                    <button
-                        key={f}
-                        className={filter === f ? 'active' : ''}
-                        onClick={() => setFilter(f)}
-                    >
-                        {f.charAt(0).toUpperCase() + f.slice(1)}
-                        {f === 'agents' && agentCount > 0 ? ` (${agentCount})` : ''}
-                    </button>
-                ))}
-            </div>
+    const presenceKey = `club-members-${clubId}`;
+    const channel = masterBus.getOrCreateChannel(presenceKey);
 
-            <div className="members-list" ref={virtualScroll.containerRef}>
-                {loading ? (
-                    <div className="loading-state"><div className="spinner" /></div>
-                ) : filteredMembers.length === 0 ? (
-                    <div className="empty-state">
-                        <p>
-                            {filter === 'agents' ? 'No agents yet — promote a member to Agent' :
-                             filter === 'admins' ? 'No admins found' :
-                             filter === 'online' ? 'No members online' :
-                             'No members found'}
-                        </p>
-                    </div>
-                ) : (
-                    <>
-                    {virtualScroll.visibleItems.map(member => (
-                        <div
-                            key={member.id}
-                            className={`member-row ${visibleMembers.has(member.id) ? 'fadeInUp' : 'hidden'}`}
-                            style={visibleMembers.has(member.id) ? undefined : { opacity: 0, transform: 'translateY(8px)' }}
-                            onClick={() => setSelectedMember(member)}
-                        >
-                            <div className="member-avatar">
-                                {member.avatar_url ? (
-                                    <img src={member.avatar_url} alt="" />
-                                ) : (
-                                    <span>{member.username[0]?.toUpperCase()}</span>
-                                )}
-                                {member.is_online && <span className="online-dot" />}
-                            </div>
-                            <div className="member-info">
-                                <span className="member-name">
-                                    <span style={{ color: getRoleColor(member.role) }}>
-                                        {getRoleBadgeIcon(member.role)}
-                                    </span>{' '}
-                                    {member.username}
-                                </span>
-                                <span
-                                    className="member-role"
-                                    style={{ color: getRoleColor(member.role) }}
-                                >
-                                    {getRoleLabel(member.role)}
-                                </span>
-                            </div>
-                            <div className="member-balance">
-                                {member.chip_balance.toLocaleString()}
-                            </div>
-                        </div>
-                    ))}
-                    {virtualScroll.hasMore && (
-                        <div ref={virtualScroll.sentinelRef} style={{ height: 1 }} />
-                    )}
-                    {virtualScroll.hasMore && (
-                        <div style={{ textAlign: 'center', padding: '8px', color: '#6b7a8a', fontSize: '0.7rem' }}>
-                            Showing {virtualScroll.visibleCount} of {virtualScroll.totalCount}
-                        </div>
-                    )}
-                    </>
-                )}
-            </div>
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const onlineIds = new Set<string>();
+        Object.values(state).forEach((presences) => {
+          (presences as any[]).forEach((p) => onlineIds.add(p.user_id));
+        });
+        setOnlineUserIds(onlineIds);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ user_id: user.id, club_id: clubId });
+        }
+      });
 
-            {/* Player Action Modal */}
-            {selectedMember && clubId && (
-                <PlayerActionModal
-                    member={selectedMember}
-                    myRole={userRole}
-                    clubId={clubId}
-                    onClose={() => setSelectedMember(null)}
-                    onRoleChanged={() => loadMembers()}
-                />
-            )}
+    return () => {
+      masterBus.removeRegisteredChannel(presenceKey);
+    };
+  }, [clubId, user?.id]);
 
-            {clubId && (
-                <ClubBottomNav
-                    clubId={clubId}
-                    userRole={userRole as any}
-                />
-            )}
+  // Update member online status when presence changes
+  const membersWithStatus = members.map((m) => ({
+    ...m,
+    is_online: onlineUserIds.has(m.user_id),
+  }));
+
+  const filteredMembers = membersWithStatus.filter((m) => {
+    if (filter === 'online' && !m.is_online) return false;
+    if (filter === 'agents' && !['super_agent', 'agent', 'sub_agent'].includes(m.role))
+      return false;
+    if (filter === 'admins' && !['owner', 'admin'].includes(m.role)) return false;
+    if (searchQuery && !m.username.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return true;
+  });
+
+  // Virtual scrolling: only render visible members for large clubs
+  const virtualScroll = useVirtualScroll(filteredMembers, { initialCount: 30, pageSize: 20 });
+
+  const onlineCount = membersWithStatus.filter((m) => m.is_online).length;
+  const agentCount = membersWithStatus.filter((m) =>
+    ['super_agent', 'agent', 'sub_agent'].includes(m.role)
+  ).length;
+
+  return (
+    <div className="club-members-page">
+      <div className="members-summary">
+        <div className="summary-stat">
+          <span className="stat-value">{members.length}</span>
+          <span className="stat-label">Total Members</span>
         </div>
-    );
+        <div className="summary-stat online">
+          <span className="stat-value">{onlineCount}</span>
+          <span className="stat-label">Online Now</span>
+        </div>
+        {agentCount > 0 && (
+          <div className="summary-stat agents">
+            <span className="stat-value">{agentCount}</span>
+            <span className="stat-label">Agents</span>
+          </div>
+        )}
+      </div>
+
+      <div className="members-search">
+        <input
+          type="text"
+          placeholder="Search members..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
+      <div className="members-filters">
+        {(['all', 'online', 'agents', 'admins'] as MemberFilter[]).map((f) => (
+          <button key={f} className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>
+            {f.charAt(0).toUpperCase() + f.slice(1)}
+            {f === 'agents' && agentCount > 0 ? ` (${agentCount})` : ''}
+          </button>
+        ))}
+      </div>
+
+      <div className="members-list" ref={virtualScroll.containerRef}>
+        {loading ? (
+          <div className="loading-state">
+            <div className="spinner" />
+          </div>
+        ) : filteredMembers.length === 0 ? (
+          <div className="empty-state">
+            <p>
+              {filter === 'agents'
+                ? 'No agents yet — promote a member to Agent'
+                : filter === 'admins'
+                  ? 'No admins found'
+                  : filter === 'online'
+                    ? 'No members online'
+                    : 'No members found'}
+            </p>
+          </div>
+        ) : (
+          <>
+            {virtualScroll.visibleItems.map((member) => (
+              <div
+                key={member.id}
+                className={`member-row ${visibleMembers.has(member.id) ? 'fadeInUp' : 'hidden'}`}
+                style={
+                  visibleMembers.has(member.id)
+                    ? undefined
+                    : { opacity: 0, transform: 'translateY(8px)' }
+                }
+                onClick={() => setSelectedMember(member)}
+              >
+                <div className="member-avatar">
+                  {member.avatar_url ? (
+                    <img src={member.avatar_url} alt="" />
+                  ) : (
+                    <span>{(member.username || '?')[0]?.toUpperCase()}</span>
+                  )}
+                  {member.is_online && <span className="online-dot" />}
+                </div>
+                <div className="member-info">
+                  <span className="member-name">
+                    <span style={{ color: getRoleColor(member.role) }}>
+                      {getRoleBadgeIcon(member.role)}
+                    </span>{' '}
+                    {member.username}
+                  </span>
+                  <span className="member-role" style={{ color: getRoleColor(member.role) }}>
+                    {getRoleLabel(member.role)}
+                  </span>
+                </div>
+                <div className="member-balance">{(member.chip_balance ?? 0).toLocaleString()}</div>
+              </div>
+            ))}
+            {virtualScroll.hasMore && <div ref={virtualScroll.sentinelRef} style={{ height: 1 }} />}
+            {virtualScroll.hasMore && (
+              <div
+                style={{
+                  textAlign: 'center',
+                  padding: '8px',
+                  color: '#6b7a8a',
+                  fontSize: '0.7rem',
+                }}
+              >
+                Showing {virtualScroll.visibleCount} of {virtualScroll.totalCount}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Player Action Modal */}
+      {selectedMember && clubId && (
+        <PlayerActionModal
+          member={selectedMember}
+          myRole={userRole}
+          clubId={clubId}
+          onClose={() => setSelectedMember(null)}
+          onRoleChanged={() => loadMembers()}
+        />
+      )}
+
+      {clubId && <ClubBottomNav clubId={clubId} userRole={userRole as any} />}
+    </div>
+  );
 }
