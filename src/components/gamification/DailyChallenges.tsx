@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
 import { useToast } from '../common/Toast';
+import dailyChallengeService from '../../services/DailyChallengeService';
 import './DailyChallenges.css';
 
 interface Challenge {
@@ -36,90 +37,54 @@ export const DailyChallenges: React.FC = () => {
     const toast = useToast();
     const [challenges, setChallenges] = useState<Challenge[]>([]);
     const [streak, setStreak] = useState<StreakInfo>({
-        currentStreak: 7,
-        longestStreak: 14,
+        currentStreak: 0,
+        longestStreak: 0,
         lastPlayDate: new Date().toISOString(),
-        nextMilestone: 10,
+        nextMilestone: 7,
         milestoneReward: 100,
     });
 
     const [showAnimation, setShowAnimation] = useState(false);
 
     useEffect(() => {
-        loadChallenges();
-    }, []);
+        if (user?.id) {
+            loadChallenges();
+        }
+    }, [user?.id]);
 
-    const loadChallenges = () => {
-        // Mock challenges - would fetch from Supabase
-        const mockChallenges: Challenge[] = [
-            {
-                id: '1',
-                title: 'Table Time',
-                description: 'Play 30 minutes today',
-                icon: '⏱️',
-                chipReward: 50,
-                progress: 22,
-                target: 30,
-                completed: false,
-                claimed: false,
-                type: 'daily',
-            },
-            {
-                id: '2',
-                title: 'Hand Master',
-                description: 'Win 10 hands',
-                icon: '🃏',
-                chipReward: 75,
-                diamondReward: 5,
-                progress: 10,
-                target: 10,
-                completed: true,
-                claimed: false,
-                type: 'daily',
-            },
-            {
-                id: '3',
-                title: 'Big Pot Hunter',
-                description: 'Win a pot over 1000 chips',
-                icon: '💰',
-                chipReward: 100,
-                progress: 0,
-                target: 1,
-                completed: false,
-                claimed: false,
-                type: 'daily',
-            },
-            {
-                id: '4',
-                title: 'Tournament Warrior',
-                description: 'Finish top 3 in a tournament',
-                icon: '🏆',
-                chipReward: 200,
-                diamondReward: 20,
-                progress: 0,
-                target: 1,
-                completed: false,
-                claimed: false,
-                type: 'weekly',
-            },
-            {
-                id: '5',
-                title: 'Social Butterfly',
-                description: 'Share 3 hands',
-                icon: '📤',
-                chipReward: 50,
-                progress: 1,
-                target: 3,
-                completed: false,
-                claimed: false,
-                type: 'weekly',
-            },
-        ];
-        setChallenges(mockChallenges);
+    const loadChallenges = async () => {
+        if (!user?.id) return;
+        try {
+            const [userChallenges, stats] = await Promise.all([
+                dailyChallengeService.getTodaysChallenges(user.id),
+                dailyChallengeService.getStats(user.id)
+            ]);
+
+            const mappedChallenges: Challenge[] = userChallenges.map((uc: any) => ({
+                id: uc.id,
+                title: uc.challenge.name,
+                description: uc.challenge.description,
+                icon: uc.challenge.icon || '🎯',
+                chipReward: uc.challenge.chipReward,
+                progress: uc.progress,
+                target: uc.challenge.requirement,
+                completed: uc.completed,
+                claimed: !!uc.completedAt,
+                type: 'daily'
+            }));
+
+            setChallenges(mappedChallenges);
+            setStreak(prev => ({
+                ...prev,
+                currentStreak: stats.currentStreak
+            }));
+        } catch (error) {
+            console.error('Failed to load daily challenges:', error);
+        }
     };
 
     const claimReward = async (challenge: Challenge) => {
-        if (!challenge.completed || challenge.claimed) return;
+        if (!challenge.completed || challenge.claimed || !user?.id) return;
 
         setShowAnimation(true);
 

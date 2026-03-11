@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
 import './RakeReports.css';
 
 interface RakeData {
@@ -21,6 +22,7 @@ interface RakeReportsProps {
 
 export const RakeReports: React.FC<RakeReportsProps> = ({ clubId }) => {
     const [data, setData] = useState<RakeData | null>(null);
+    const [rawRecords, setRawRecords] = useState<any[]>([]);
     const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'year'>('week');
     const [loading, setLoading] = useState(true);
 
@@ -31,34 +33,94 @@ export const RakeReports: React.FC<RakeReportsProps> = ({ clubId }) => {
     const loadRakeData = async () => {
         setLoading(true);
         try {
-            // Mock data
-            const mock: RakeData = {
-                period: 'This Week',
-                totalRake: 4850,
-                totalHands: 12420,
-                avgRakePerHand: 0.39,
-                topGames: [
-                    { game: 'NLH 1/2', rake: 1850, hands: 4200 },
-                    { game: 'NLH 2/4', rake: 1420, hands: 2800 },
-                    { game: 'PLO 1/2', rake: 980, hands: 2100 },
-                    { game: 'NLH 0.5/1', rake: 600, hands: 3320 },
-                ],
-                dailyBreakdown: [
-                    { date: 'Mon', rake: 680, hands: 1800 },
-                    { date: 'Tue', rake: 720, hands: 1950 },
-                    { date: 'Wed', rake: 650, hands: 1700 },
-                    { date: 'Thu', rake: 800, hands: 2100 },
-                    { date: 'Fri', rake: 950, hands: 2400 },
-                    { date: 'Sat', rake: 620, hands: 1600 },
-                    { date: 'Sun', rake: 430, hands: 870 },
-                ],
+            // Calculate date ranges based on period
+            const now = new Date();
+            let startDate = new Date();
+            
+            if (period === 'today') {
+                startDate.setHours(0, 0, 0, 0);
+            } else if (period === 'week') {
+                startDate.setDate(now.getDate() - 7);
+            } else if (period === 'month') {
+                startDate.setMonth(now.getMonth() - 1);
+            } else if (period === 'year') {
+                startDate.setFullYear(now.getFullYear() - 1);
+            }
+
+            const { data: records, error } = await supabase
+                .from('rake_records')
+                .select('rake_amount, created_at')
+                .eq('club_id', clubId)
+                .gte('created_at', startDate.toISOString());
+
+            if (error) throw error;
+            
+            setRawRecords(records || []);
+
+            let totalRake = 0;
+            const dailyData: Record<string, { rake: number, hands: number }> = {};
+            
+            (records || []).forEach((record: any) => {
+                totalRake += Number(record.rake_amount || 0);
+                
+                // Group by day for the chart
+                const dateKey = new Date(record.created_at).toLocaleDateString();
+                if (!dailyData[dateKey]) {
+                    dailyData[dateKey] = { rake: 0, hands: 0 };
+                }
+                dailyData[dateKey].rake += Number(record.rake_amount || 0);
+                dailyData[dateKey].hands += 1;
+            });
+
+            // Map dailyData to array
+            const dailyBreakdown = Object.keys(dailyData).map(date => ({
+                date,
+                rake: Math.round(dailyData[date].rake * 100) / 100,
+                hands: dailyData[date].hands
+            })).slice(-7); // Keep last 7 days for the chart
+
+            const totalHands = records?.length || 0;
+
+            const liveData: RakeData = {
+                period: `Past ${period}`,
+                totalRake: Math.round(totalRake * 100) / 100,
+                totalHands,
+                avgRakePerHand: totalHands > 0 ? (totalRake / totalHands) : 0,
+                topGames: [], // Need table joins for this, empty for now
+                dailyBreakdown: dailyBreakdown.length > 0 ? dailyBreakdown : [{ date: 'Today', rake: 0, hands: 0 }],
             };
-            setData(mock);
+            setData(liveData);
         } catch (error) {
             console.error('Failed to load rake data:', error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const exportCSV = () => {
+        if (rawRecords.length === 0) {
+            alert('No rake records found for this period.');
+            return;
+        }
+
+        const headers = ['Date', 'Time', 'Rake Amount'];
+        const rows = rawRecords.map(record => {
+            const dateObj = new Date(record.created_at);
+            const date = dateObj.toLocaleDateString();
+            const time = dateObj.toLocaleTimeString();
+            const amount = record.rake_amount || 0;
+            return [date, time, amount].join(',');
+        });
+
+        const csvContent = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `rake_report_${clubId}_${period}_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     if (loading || !data) {
@@ -141,7 +203,7 @@ export const RakeReports: React.FC<RakeReportsProps> = ({ clubId }) => {
             </div>
 
             {/* Export Button */}
-            <button className="export-btn">
+            <button className="export-btn" onClick={exportCSV}>
                 📥 Export Report
             </button>
         </div>

@@ -23,14 +23,22 @@ interface FinancialDashboardProps {
     clubId: string;
 }
 
-// Mock data for charts - in production would come from Supabase
-const generateRevenueData = () => {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return days.map(day => ({
-        day,
-        revenue: Math.floor(Math.random() * 5000) + 1000,
-        rake: Math.floor(Math.random() * 500) + 100,
-    }));
+// Helper to initialize blank 7-day data
+const getEmptyRevenueData = () => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const data = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        data.push({
+            day: days[d.getDay()],
+            fullDate: d.toLocaleDateString(),
+            revenue: 0,
+            rake: 0,
+        });
+    }
+    return data;
 };
 
 const commissionDistribution = [
@@ -45,7 +53,7 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
     const [diamondBalance, setDiamondBalance] = useState(0);
     const [mintAmount, setMintAmount] = useState(1000);
     const [loading, setLoading] = useState(false);
-    const [revenueData, setRevenueData] = useState(generateRevenueData());
+    const [revenueData, setRevenueData] = useState(getEmptyRevenueData());
 
     // Commission State
     const [agentId, setAgentId] = useState('');
@@ -53,8 +61,13 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
 
     useEffect(() => {
         fetchDiamondBalance();
-        // Refresh revenue data periodically
-        const interval = setInterval(() => setRevenueData(generateRevenueData()), 30000);
+        fetchRevenueData();
+
+        // Refresh periodically
+        const interval = setInterval(() => {
+            fetchDiamondBalance();
+            fetchRevenueData();
+        }, 30000);
 
         const channel = supabase
             .channel(`club_wallet:${clubId}`)
@@ -88,6 +101,39 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
             .single();
 
         if (data) setDiamondBalance(data.balance);
+    };
+
+    const fetchRevenueData = async () => {
+        try {
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - 6);
+            startDate.setHours(0, 0, 0, 0);
+
+            const { data: records, error } = await supabase
+                .from('rake_records')
+                .select('rake_amount, created_at')
+                .eq('club_id', clubId)
+                .gte('created_at', startDate.toISOString());
+
+            if (error) throw error;
+
+            const newData = getEmptyRevenueData();
+            
+            (records || []).forEach((record: any) => {
+                const dateKey = new Date(record.created_at).toLocaleDateString();
+                const daySlot = newData.find(d => d.fullDate === dateKey);
+                
+                if (daySlot) {
+                    daySlot.rake += Number(record.rake_amount || 0);
+                    // In this context, club revenue is derived from rake
+                    daySlot.revenue += Number(record.rake_amount || 0);
+                }
+            });
+
+            setRevenueData(newData);
+        } catch (error) {
+            console.error('Failed to load revenue data:', error);
+        }
     };
 
     const handleMint = async () => {

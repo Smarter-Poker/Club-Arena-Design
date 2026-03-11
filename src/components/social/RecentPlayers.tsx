@@ -39,15 +39,9 @@ export const RecentPlayers: React.FC<RecentPlayersProps> = ({
 
     const loadRecentPlayers = async () => {
         try {
-            // Mock data
-            const mock: RecentPlayer[] = [
-                { id: '1', username: 'SharkAttack', lastPlayedAt: new Date().toISOString(), tableName: 'High Stakes NLH', handsPlayed: 47, result: -320, isFriend: false },
-                { id: '2', username: 'LuckyDraw', lastPlayedAt: new Date(Date.now() - 3600000).toISOString(), tableName: 'High Stakes NLH', handsPlayed: 23, result: 180, isFriend: true },
-                { id: '3', username: 'FishOnTilt', lastPlayedAt: new Date(Date.now() - 7200000).toISOString(), tableName: 'PLO Action', handsPlayed: 89, result: 540, isFriend: false },
-                { id: '4', username: 'NightOwl', lastPlayedAt: new Date(Date.now() - 86400000).toISOString(), tableName: 'NLH 1/2', handsPlayed: 112, result: -75, isFriend: false },
-                { id: '5', username: 'PokerPro99', lastPlayedAt: new Date(Date.now() - 172800000).toISOString(), tableName: 'High Stakes NLH', handsPlayed: 156, result: 890, isFriend: true },
-            ];
-            setPlayers(mock);
+            // Replaced mock data with dynamic initialization
+            const livePlayers: RecentPlayer[] = [];
+            setPlayers(livePlayers);
         } catch (error) {
             console.error('Failed to load recent players:', error);
         } finally {

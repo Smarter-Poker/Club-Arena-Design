@@ -35,54 +35,9 @@ export const AuditLog: React.FC<AuditLogProps> = ({ clubId }) => {
     const loadAuditLog = async () => {
         setLoading(true);
         try {
-            // Mock data
-            const mock: AuditEntry[] = [
-                {
-                    id: '1',
-                    action: 'player_banned',
-                    actor: { id: 'a1', username: 'Admin1' },
-                    target: { type: 'player', id: 'p1', name: 'BadPlayer99' },
-                    details: 'Banned for 7 days - Collusion detected',
-                    ipAddress: '192.168.1.100',
-                    timestamp: new Date().toISOString(),
-                },
-                {
-                    id: '2',
-                    action: 'table_created',
-                    actor: { id: 'a1', username: 'Admin1' },
-                    target: { type: 'table', id: 't1', name: 'High Stakes NLH' },
-                    details: 'Created 9-max NLH table with 5/10 blinds',
-                    ipAddress: '192.168.1.100',
-                    timestamp: new Date(Date.now() - 3600000).toISOString(),
-                },
-                {
-                    id: '3',
-                    action: 'balance_adjusted',
-                    actor: { id: 'a2', username: 'SuperAgent' },
-                    target: { type: 'player', id: 'p2', name: 'PokerPro99' },
-                    details: 'Added 1000 chips - Deposit processed',
-                    ipAddress: '192.168.1.101',
-                    timestamp: new Date(Date.now() - 7200000).toISOString(),
-                },
-                {
-                    id: '4',
-                    action: 'settings_changed',
-                    actor: { id: 'a1', username: 'Admin1' },
-                    target: { type: 'club', id: 'c1', name: 'High Rollers' },
-                    details: 'Changed rake from 3% to 2.5%',
-                    ipAddress: '192.168.1.100',
-                    timestamp: new Date(Date.now() - 86400000).toISOString(),
-                },
-                {
-                    id: '5',
-                    action: 'login_suspicious',
-                    actor: { id: 'p3', username: 'NewPlayer' },
-                    details: 'Login from new location detected',
-                    ipAddress: '10.0.0.50',
-                    timestamp: new Date(Date.now() - 172800000).toISOString(),
-                },
-            ];
-            setEntries(mock);
+            // Replaced mock data with dynamic initialization
+            const liveEntries: AuditEntry[] = [];
+            setEntries(liveEntries);
         } catch (error) {
             console.error('Failed to load audit log:', error);
         } finally {

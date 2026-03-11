@@ -51,18 +51,8 @@ export const SessionReplay: React.FC<SessionReplayProps> = ({
 
     const loadSession = async () => {
         try {
-            // Mock data for demo
-            const mockReplay: ReplayData = {
-                sessionId,
-                tableName: 'High Rollers NLH',
-                stakes: '10/20',
-                startTime: new Date(Date.now() - 3600000).toISOString(),
-                endTime: new Date().toISOString(),
-                handsPlayed: 47,
-                totalProfit: 1250,
-                actions: generateMockActions(),
-            };
-            setReplay(mockReplay);
+            // Replaced seeded test data with null (session not found locally)
+            setReplay(null);
         } catch (error) {
             console.error('Failed to load session:', error);
         } finally {

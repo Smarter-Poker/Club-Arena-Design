@@ -3,7 +3,7 @@
  * Register and view upcoming tournaments
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { tournamentService, BLIND_STRUCTURES, PAYOUT_STRUCTURES } from '../services/TournamentService';
 import type { Tournament } from '../types/database.types';
@@ -18,6 +18,8 @@ import { tableService } from '../services/TableService';
 import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 
+type TournFilter = 'all' | 'freeroll' | 'micro' | 'highroller';
+
 // Default fallback for unauthed (shouldn't happen in real app)
 const GUEST_USER = { id: 'guest', username: 'Guest' };
 
@@ -30,6 +32,7 @@ export default function TournamentPage() {
 
     const [tournaments, setTournaments] = useState<Tournament[]>([]);
     const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
+    const [filter, setFilter] = useState<TournFilter>('all');
     const [isLoading, setIsLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [isRegistered, setIsRegistered] = useState(false);
@@ -434,6 +437,15 @@ export default function TournamentPage() {
         setIsProcessingRebuy(false);
     };
 
+    const filteredTournaments = useMemo(() => {
+        return tournaments.filter(t => {
+            if (filter === 'freeroll') return t.buy_in_amount === 0;
+            if (filter === 'micro') return t.buy_in_amount > 0 && t.buy_in_amount <= 1000;
+            if (filter === 'highroller') return t.buy_in_amount >= 10000;
+            return true;
+        });
+    }, [tournaments, filter]);
+
     if (isLoading) {
         return (
             <div className="tournament-page">
@@ -460,13 +472,25 @@ export default function TournamentPage() {
             <div className="tournament-content">
                 {/* Tournament List */}
                 <div className="tournament-list">
-                    <h2>Upcoming</h2>
-                    {tournaments.length === 0 ? (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h2 style={{ margin: 0 }}>Upcoming</h2>
+                        <select 
+                            value={filter} 
+                            onChange={(e) => setFilter(e.target.value as TournFilter)}
+                            style={{ padding: '4px 8px', borderRadius: '4px', background: 'rgba(0,0,0,0.5)', color: '#fff', border: '1px solid #444', outline: 'none', cursor: 'pointer' }}
+                        >
+                            <option value="all">All Stakes</option>
+                            <option value="freeroll">Freerolls</option>
+                            <option value="micro">Micro (≤ 1K)</option>
+                            <option value="highroller">High Roller (10K+)</option>
+                        </select>
+                    </div>
+                    {filteredTournaments.length === 0 ? (
                         <div className="empty-state">
-                            <p>No tournaments scheduled</p>
+                            <p>No tournaments match your filters</p>
                         </div>
                     ) : (
-                        tournaments.map(tourn => (
+                        filteredTournaments.map(tourn => (
                             <div
                                 key={tourn.id}
                                 className={`tournament-card ${selectedTournament?.id === tourn.id ? 'selected' : ''}`}

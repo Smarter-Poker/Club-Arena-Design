@@ -49,58 +49,9 @@ export const AntiCollusionMonitor: React.FC<AntiCollusionMonitorProps> = ({
     }, [tableId, clubId]);
 
     const loadReports = async () => {
-        // Mock data for demo
-        const mockReports: CollusionReport[] = [
-            {
-                tableId: 'table-1',
-                tableName: 'High Stakes NLH',
-                analysisDate: new Date().toISOString(),
-                handsAnalyzed: 1250,
-                riskScore: 72,
-                suspiciousPatterns: [
-                    {
-                        id: '1',
-                        type: 'soft_play',
-                        severity: 'high',
-                        players: ['PlayerA', 'PlayerB'],
-                        description: 'Players rarely bet against each other despite 47 shared pots',
-                        timestamp: new Date().toISOString(),
-                        confidence: 89,
-                        handsAnalyzed: 47,
-                    },
-                    {
-                        id: '2',
-                        type: 'chip_dumping',
-                        severity: 'medium',
-                        players: ['PlayerC', 'PlayerD'],
-                        description: 'Unusual all-in patterns with weak hands when heads-up',
-                        timestamp: new Date().toISOString(),
-                        confidence: 67,
-                        handsAnalyzed: 12,
-                    },
-                ],
-            },
-            {
-                tableId: 'table-2',
-                tableName: 'PLO Action',
-                analysisDate: new Date().toISOString(),
-                handsAnalyzed: 890,
-                riskScore: 35,
-                suspiciousPatterns: [
-                    {
-                        id: '3',
-                        type: 'same_ip',
-                        severity: 'medium',
-                        players: ['UserX', 'UserY'],
-                        description: 'Multiple accounts detected from same IP address',
-                        timestamp: new Date().toISOString(),
-                        confidence: 95,
-                        handsAnalyzed: 890,
-                    },
-                ],
-            },
-        ];
-        setReports(mockReports);
+        // Replaced seeded test data with dynamic initialization
+        const liveReports: CollusionReport[] = [];
+        setReports(liveReports);
         setLoading(false);
     };
 

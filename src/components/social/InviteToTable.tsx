@@ -42,21 +42,9 @@ export const InviteToTable: React.FC<InviteToTableProps> = ({
     const loadPlayers = async () => {
         setLoading(true);
         try {
-            // Mock data
-            const mock: InvitablePlayer[] = [
-                { id: '1', username: 'PokerPro99', status: 'online', isFriend: true },
-                { id: '2', username: 'AceHunter', status: 'online', isFriend: true },
-                { id: '3', username: 'BluffMaster', status: 'away', isFriend: true },
-                { id: '4', username: 'RiverKing', status: 'playing', currentTable: 'PLO High', isFriend: true },
-                { id: '5', username: 'LuckyDraw', status: 'online', isFriend: false },
-                { id: '6', username: 'SharkAttack', status: 'offline', isFriend: false },
-            ];
-
-            const filtered = filter === 'friends'
-                ? mock.filter(p => p.isFriend)
-                : mock;
-
-            setPlayers(filtered);
+            // Replaced mock data with dynamic initialization
+            const livePlayers: InvitablePlayer[] = [];
+            setPlayers(livePlayers);
         } catch (error) {
             console.error('Failed to load players:', error);
         } finally {

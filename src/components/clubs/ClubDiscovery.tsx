@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { ClubsService } from '../../services/ClubsService';
 import './ClubDiscovery.css';
 
 interface Club {
@@ -43,58 +44,29 @@ export const ClubDiscovery: React.FC<ClubDiscoveryProps> = ({
     const loadClubs = async () => {
         setLoading(true);
         try {
-            // Mock clubs for demo
-            const mockClubs: Club[] = [
-                {
-                    id: '1',
-                    name: 'High Rollers Union',
-                    description: 'Elite poker club for serious players',
-                    memberCount: 523,
-                    activeTableCount: 12,
-                    minStakes: '5/10',
-                    maxStakes: '100/200',
-                    tags: ['NLH', 'PLO', 'High Stakes'],
-                    isPrivate: false,
-                    rating: 4.8,
-                },
-                {
-                    id: '2',
-                    name: 'Grinders Paradise',
-                    description: 'Low rake, 24/7 action, friendly community',
-                    memberCount: 1247,
-                    activeTableCount: 28,
-                    minStakes: '0.25/0.50',
-                    maxStakes: '2/4',
-                    tags: ['Micro', 'Low Stakes', 'Beginner Friendly'],
-                    isPrivate: false,
-                    rating: 4.5,
-                },
-                {
-                    id: '3',
-                    name: 'PLO Masters',
-                    description: 'Dedicated PLO club with regular tournaments',
-                    memberCount: 312,
-                    activeTableCount: 8,
-                    minStakes: '1/2',
-                    maxStakes: '25/50',
-                    tags: ['PLO', 'PLO5', 'Tournaments'],
-                    isPrivate: false,
-                    rating: 4.6,
-                },
-                {
-                    id: '4',
-                    name: 'Night Owls',
-                    description: 'Best late night action, 24/7 support',
-                    memberCount: 789,
-                    activeTableCount: 15,
-                    minStakes: '0.50/1',
-                    maxStakes: '10/20',
-                    tags: ['24/7', 'Mixed Games', 'Fast Tables'],
-                    isPrivate: true,
-                    rating: 4.3,
-                },
-            ];
-            setClubs(mockClubs);
+            let fetchedClubs: any[] = [];
+            if (search) {
+                fetchedClubs = await ClubsService.search(search);
+            } else {
+                fetchedClubs = await ClubsService.search(''); // empty search for popular
+            }
+            
+            // Map backend data to local Club interface
+            const mappedClubs: Club[] = fetchedClubs.map(c => ({
+                id: c.id,
+                name: c.name,
+                logo: c.logo_url || c.avatar_url,
+                description: c.description || 'Welcome to our club!',
+                memberCount: c.member_count || 0,
+                activeTableCount: c.table_count || 0,
+                minStakes: '1/2', // Default fallback
+                maxStakes: '5/10', // Default fallback
+                tags: ['Texas Holdem'],
+                isPrivate: c.requires_approval || !c.is_public,
+                rating: 5.0, // Default rating
+            }));
+            
+            setClubs(mappedClubs);
         } catch (error) {
             console.error('Failed to load clubs:', error);
         } finally {

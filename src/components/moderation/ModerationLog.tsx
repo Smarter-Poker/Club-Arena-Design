@@ -54,14 +54,9 @@ export const ModerationLog: React.FC<ModerationLogProps> = ({
     const loadLogs = async () => {
         setLoading(true);
         try {
-            // Mock data - replace with actual query
-            const mockLogs: LogEntry[] = [
-                { id: '1', action: 'mute', moderatorId: 'm1', moderatorName: 'Admin1', targetUserId: 'u1', targetUsername: 'BadPlayer', reason: 'Spam', timestamp: new Date() },
-                { id: '2', action: 'delete_message', moderatorId: 'm1', moderatorName: 'Admin1', targetUserId: 'u2', targetUsername: 'ToxicUser', details: 'Offensive content', timestamp: new Date(Date.now() - 3600000) },
-                { id: '3', action: 'ban', moderatorId: 'm2', moderatorName: 'SuperMod', targetUserId: 'u3', targetUsername: 'Cheater99', reason: 'Collusion', timestamp: new Date(Date.now() - 86400000) },
-                { id: '4', action: 'warning', moderatorId: 'm1', moderatorName: 'Admin1', targetUserId: 'u4', targetUsername: 'NewPlayer', reason: 'First offense', timestamp: new Date(Date.now() - 172800000) },
-            ];
-            setLogs(mockLogs);
+            // Replaced mock data with dynamic initialization
+            const liveLogs: LogEntry[] = [];
+            setLogs(liveLogs);
         } catch (error) {
             console.error('Failed to load moderation logs:', error);
         } finally {

@@ -69,13 +69,8 @@ export const AvatarGenerator: React.FC<{
             console.error('Avatar generation failed:', error);
             toast.error('Failed to generate avatar. Please try again.');
 
-            // Mock fallback for demo
-            setGeneratedImages([
-                '/avatars/generated-1.png',
-                '/avatars/generated-2.png',
-                '/avatars/generated-3.png',
-                '/avatars/generated-4.png',
-            ]);
+            // Replaced mocked fallback with empty array
+            setGeneratedImages([]);
         } finally {
             setIsGenerating(false);
         }

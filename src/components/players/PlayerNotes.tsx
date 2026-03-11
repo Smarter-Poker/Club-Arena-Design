@@ -73,30 +73,8 @@ export const PlayerNotes: React.FC<PlayerNotesProps> = ({
 
             if (error) throw error;
 
-            // Mock data for demo
-            const mockNotes: PlayerNote[] = [
-                {
-                    id: '1',
-                    playerId: 'player-1',
-                    playerName: 'FishyMcFish',
-                    noteColor: 'green',
-                    note: 'Calls any pair, never folds draws. 3-bet bluff frequently.',
-                    tags: ['Loose', 'Passive', 'Calling Station'],
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                },
-                {
-                    id: '2',
-                    playerId: 'player-2',
-                    playerName: 'SharkMaster',
-                    noteColor: 'red',
-                    note: 'Very strong player. Balanced range, uses bet sizing tells.',
-                    tags: ['Good Player', 'Aggressive'],
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                },
-            ];
-            setNotes(data?.length ? data : mockNotes);
+            // Replaced fallback mock data
+            setNotes(data || []);
         } catch (error) {
             console.error('Failed to load notes:', error);
         } finally {

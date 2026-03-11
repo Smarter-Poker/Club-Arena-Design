@@ -441,6 +441,39 @@ export default function CashierPage() {
                 : transactions.filter(t => t.category === txFilter);
 
     // ─────────────────────────────────────────────────────────────────────────────
+    // CSV EXPORT LOGIC
+    // ─────────────────────────────────────────────────────────────────────────────
+    const exportCSV = () => {
+        if (filteredTransactions.length === 0) {
+            setMessage({ type: 'error', text: 'No transactions to export' });
+            return;
+        }
+        
+        const headers = ['Date', 'Time', 'Type', 'Category', 'Amount', 'Wallet', 'Description'];
+        const rows = filteredTransactions.map(tx => {
+            const date = new Date(tx.created_at).toLocaleDateString();
+            const time = new Date(tx.created_at).toLocaleTimeString();
+            const typeText = tx.type === 'credit' ? 'Credit' : 'Debit';
+            const categoryText = CATEGORY_LABELS[tx.category] || (tx.category || tx.type || '').replace(/_/g, ' ').toUpperCase();
+            
+            // Escape quotes and commas in description
+            const desc = `"${(tx.description || '').replace(/"/g, '""')}"`;
+            
+            return [date, time, typeText, categoryText, tx.amount, tx.wallet_type, desc].join(',');
+        });
+        
+        const csvContent = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `audit_trail_${txFilter}_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────────
     // RENDER
     // ─────────────────────────────────────────────────────────────────────────────
 
@@ -646,6 +679,24 @@ export default function CashierPage() {
                                      CATEGORY_LABELS[f] || f}
                                 </button>
                             ))}
+                            <button
+                                onClick={exportCSV}
+                                style={{
+                                    marginLeft: 'auto',
+                                    padding: '4px 12px',
+                                    borderRadius: '12px',
+                                    border: '1px solid #31A24C',
+                                    background: 'rgba(49, 162, 76, 0.15)',
+                                    color: '#31A24C',
+                                    fontSize: '0.65rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '1px',
+                                }}
+                            >
+                                📥 Export CSV
+                            </button>
                         </div>
 
                         {loadingTx ? (
