@@ -203,6 +203,7 @@ export default function LeaderboardPage() {
       }
     } catch (error) {
       console.error('Failed to load clubs:', error);
+      toast.error('Failed to load clubs');
     }
     setClubsLoading(false);
   };

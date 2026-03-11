@@ -100,6 +100,7 @@ export default function NotificationsPage() {
       }
     } catch (error) {
       console.error('Failed to load notifications:', error);
+      toast.error('Failed to load notifications');
     }
     setLoading(false);
   };
@@ -111,6 +112,7 @@ export default function NotificationsPage() {
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
     } catch (err) {
       console.error('[Notifications] markAsRead error:', err);
+      toast.error('Failed to mark as read');
     }
   };
 
@@ -136,6 +138,7 @@ export default function NotificationsPage() {
       setNotifications((prev) => prev.filter((n) => n.id !== id));
     } catch (err) {
       console.error('[Notifications] delete error:', err);
+      toast.error('Failed to delete notification');
     }
   };
 
