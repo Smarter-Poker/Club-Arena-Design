@@ -139,6 +139,14 @@ export default function UnionDetailPage() {
         const clubsData = await unionService.getUnionClubs(unionId);
         const tablesData = await tableService.getUnionTables(unionId);
 
+        // Compute real memberCount from clubs (DB column may be stale)
+        const computedMemberCount = (clubsData || []).reduce(
+          (sum, c) => sum + (c.memberCount || 0),
+          0
+        );
+        if (unionData) {
+          unionData.memberCount = computedMemberCount;
+        }
         setUnion(unionData);
         setClubs(clubsData);
         // Sort tables: active (with players) first, then by player count desc
@@ -390,69 +398,6 @@ export default function UnionDetailPage() {
     };
   }, [unionId, union?.settings?.crossClubTournaments, clubs]);
 
-  // ── Bus Listeners: debounced financial data refresh on hand completions ──
-  useEffect(() => {
-    if (!unionId) return;
-    const unsubHand = masterBus.subscribeDebounced(
-      'HAND_COMPLETED',
-      () => {
-        // Reload settlement data when hands are played (rake accumulates)
-        unionService
-          .getSettlementReport(unionId)
-          .then((report) => {
-            const overdueAmount =
-              Math.trunc(
-                report.clubBreakdowns
-                  .filter((c) => c.wireDirection === 'PAY_TO_UNION')
-                  .reduce((sum, c) => sum + Math.abs(c.unionTaxPaid), 0) * 100
-              ) / 100;
-            setFinancialSummary({
-              totalRakeThisPeriod: report.totalRakeCollected,
-              unionRevenue: report.netUnionRevenue,
-              pendingSettlements: report.clubBreakdowns.filter(
-                (c) => c.wireDirection === 'PAY_TO_UNION'
-              ).length,
-              overdueAmount,
-            });
-          })
-          .catch(() => {
-            /* non-critical */
-          });
-      },
-      2000
-    );
-    const unsubBalance = masterBus.subscribeDebounced(
-      'BALANCE_UPDATED',
-      () => {
-        unionService
-          .getSettlementReport(unionId)
-          .then((report) => {
-            setFinancialSummary({
-              totalRakeThisPeriod: report.totalRakeCollected,
-              unionRevenue: report.netUnionRevenue,
-              pendingSettlements: report.clubBreakdowns.filter(
-                (c) => c.wireDirection === 'PAY_TO_UNION'
-              ).length,
-              overdueAmount:
-                Math.trunc(
-                  report.clubBreakdowns
-                    .filter((c) => c.wireDirection === 'PAY_TO_UNION')
-                    .reduce((sum, c) => sum + Math.abs(c.unionTaxPaid), 0) * 100
-                ) / 100,
-            });
-          })
-          .catch(() => {
-            /* non-critical */
-          });
-      },
-      2000
-    );
-    return () => {
-      unsubHand();
-      unsubBalance();
-    };
-  }, [unionId]);
-
   const handleApplyClick = async () => {
     if (!user) return;
 
@@ -569,7 +514,7 @@ export default function UnionDetailPage() {
           <span className={styles.statLabel}>Member Clubs</span>
         </div>
         <div className={styles.statCard}>
-          <span className={styles.statValue}>{(union.memberCount || 0).toLocaleString()}</span>
+          <span className={styles.statValue}>{union.memberCount.toLocaleString()}</span>
           <span className={styles.statLabel}>Total Players</span>
         </div>
         <div className={styles.statCard}>
