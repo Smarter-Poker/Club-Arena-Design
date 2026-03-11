@@ -65,7 +65,7 @@ export default function ClubLobby() {
       return;
     }
     loadClubData();
-  }, [clubId]);
+  }, [clubId, currentUser?.id]);
 
   // ── Realtime subscription: live table and tournament updates ──
   useEffect(() => {

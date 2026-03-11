@@ -637,6 +637,12 @@ export class HeadlessTableEngine {
       case 'SHOWDOWN':
         // Capture showdown results for BBJ trigger checking
         this.currentHandShowdownResults = event.results || [];
+        // Check for Bad Beat Jackpot trigger (non-blocking)
+        if (!this.isTournamentTable()) {
+          this.checkAndExecuteBBJTrigger(players).catch((err) =>
+            console.error(`[HeadlessTableEngine:${this.tableId}] BBJ trigger check error:`, err)
+          );
+        }
         // Broadcast showdown
         this.broadcastCurrentState();
         break;

@@ -92,13 +92,27 @@ export default function TransactionHistoryPage() {
     };
   }, [user?.id]);
 
-  // Bus listener: reload when wallet changes (e.g. cashout, rakeback claim)
+  // Bus listeners: reload when wallet/balance changes (e.g. cashout, rakeback claim, chip send)
   useEffect(() => {
     if (!user?.id) return;
-    const unsub = masterBus.subscribeDebounced('WALLET_REFRESHED', () => {
-      loadTransactions(0, true);
-    }, 500);
-    return unsub;
+    const unsubWallet = masterBus.subscribeDebounced(
+      'WALLET_REFRESHED',
+      () => {
+        loadTransactions(0, true);
+      },
+      500
+    );
+    const unsubBalance = masterBus.subscribeDebounced(
+      'BALANCE_UPDATED',
+      () => {
+        loadTransactions(0, true);
+      },
+      500
+    );
+    return () => {
+      unsubWallet();
+      unsubBalance();
+    };
   }, [user?.id]);
 
   const loadTransactions = async (pageNum: number, reset = false) => {

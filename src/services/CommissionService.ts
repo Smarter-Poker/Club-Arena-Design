@@ -19,6 +19,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { retryAsync } from '../utils/retryAsync';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -27,46 +28,46 @@ import { supabase } from '../lib/supabase';
 export type CommissionTargetRole = 'AGENT' | 'SUB_AGENT' | 'PLAYER';
 
 export interface CommissionRate {
-    id: string;
-    clubId: string;
-    agentId: string;
-    targetRole: CommissionTargetRole;
-    rate: number; // 0.00 - 1.00
-    effectiveDate: string;
-    createdBy: string;
+  id: string;
+  clubId: string;
+  agentId: string;
+  targetRole: CommissionTargetRole;
+  rate: number; // 0.00 - 1.00
+  effectiveDate: string;
+  createdBy: string;
 }
 
 export interface CommissionSpread {
-    agentId: string;
-    grossCommissionRate: number; // Rate I receive from upline
-    payoutToDownlines: number; // Sum of what I pay downlines
-    netMargin: number; // What I keep
-    downlineBreakdown: Array<{
-        entityId: string;
-        entityType: 'agent' | 'player';
-        name: string;
-        rate: number;
-        rakeGenerated: number;
-        commissionPaid: number;
-    }>;
+  agentId: string;
+  grossCommissionRate: number; // Rate I receive from upline
+  payoutToDownlines: number; // Sum of what I pay downlines
+  netMargin: number; // What I keep
+  downlineBreakdown: Array<{
+    entityId: string;
+    entityType: 'agent' | 'player';
+    name: string;
+    rate: number;
+    rakeGenerated: number;
+    commissionPaid: number;
+  }>;
 }
 
 export interface RakeAttribution {
-    handId: string;
-    playerId: string;
-    rakeAmount: number;
-    agentId?: string;
-    timestamp: string;
+  handId: string;
+  playerId: string;
+  rakeAmount: number;
+  agentId?: string;
+  timestamp: string;
 }
 
 export interface CommissionPayout {
-    agentId: string;
-    periodId: string;
-    grossRake: number;
-    commissionEarned: number;
-    paidToDownlines: number;
-    netPayout: number;
-    status: 'pending' | 'approved' | 'paid';
+  agentId: string;
+  periodId: string;
+  grossRake: number;
+  commissionEarned: number;
+  paidToDownlines: number;
+  netPayout: number;
+  status: 'pending' | 'approved' | 'paid';
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -74,9 +75,9 @@ export interface CommissionPayout {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const RATE_CAPS: Record<CommissionTargetRole, number> = {
-    AGENT: 0.70,
-    SUB_AGENT: 0.60,
-    PLAYER: 0.50,
+  AGENT: 0.7,
+  SUB_AGENT: 0.6,
+  PLAYER: 0.5,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -84,235 +85,242 @@ const RATE_CAPS: Record<CommissionTargetRole, number> = {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const CommissionService = {
-    // ─────────────────────────────────────────────────────────────────────────────
-    // RATE MANAGEMENT
-    // ─────────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────────
+  // RATE MANAGEMENT
+  // ─────────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Set commission rate with cap validation
-     */
-    async setRate(
-        clubId: string,
-        agentId: string,
-        targetRole: CommissionTargetRole,
-        rate: number,
-        setBy: string
-    ): Promise<CommissionRate> {
-        // Validate cap
-        const cap = RATE_CAPS[targetRole];
-        if (rate > cap) {
-            throw new Error(`${targetRole} rate capped at ${cap * 100}%. Requested: ${rate * 100}%`);
-        }
-        if (rate < 0) {
-            throw new Error('Rate cannot be negative');
-        }
+  /**
+   * Set commission rate with cap validation
+   */
+  async setRate(
+    clubId: string,
+    agentId: string,
+    targetRole: CommissionTargetRole,
+    rate: number,
+    setBy: string
+  ): Promise<CommissionRate> {
+    // Validate cap
+    const cap = RATE_CAPS[targetRole];
+    if (rate > cap) {
+      throw new Error(`${targetRole} rate capped at ${cap * 100}%. Requested: ${rate * 100}%`);
+    }
+    if (rate < 0) {
+      throw new Error('Rate cannot be negative');
+    }
 
-        const { data, error } = await supabase
-            .from('commission_structures')
-            .upsert({
-                club_id: clubId,
-                agent_id: agentId,
-                target_role: targetRole,
-                rate,
-                effective_date: new Date().toISOString(),
-                created_by: setBy,
-            }, { onConflict: 'club_id,agent_id,target_role' })
-            .select()
-            .maybeSingle();
+    const { data, error } = await supabase
+      .from('commission_structures')
+      .upsert(
+        {
+          club_id: clubId,
+          agent_id: agentId,
+          target_role: targetRole,
+          rate,
+          effective_date: new Date().toISOString(),
+          created_by: setBy,
+        },
+        { onConflict: 'club_id,agent_id,target_role' }
+      )
+      .select()
+      .maybeSingle();
 
-        if (error) throw error;
-        if (!data) throw new Error('Commission rate upsert returned no data');
-        return {
-            id: data.id,
-            clubId: data.club_id,
-            agentId: data.agent_id,
-            targetRole: data.target_role,
-            rate: data.rate,
-            effectiveDate: data.effective_date,
-            createdBy: data.created_by,
-        };
-    },
+    if (error) throw error;
+    if (!data) throw new Error('Commission rate upsert returned no data');
+    return {
+      id: data.id,
+      clubId: data.club_id,
+      agentId: data.agent_id,
+      targetRole: data.target_role,
+      rate: data.rate,
+      effectiveDate: data.effective_date,
+      createdBy: data.created_by,
+    };
+  },
 
-    /**
-     * Get all rates for an agent
-     */
-    async getRates(agentId: string): Promise<CommissionRate[]> {
-        const { data, error } = await supabase
-            .from('commission_structures')
-            .select('*')
-            .eq('agent_id', agentId);
+  /**
+   * Get all rates for an agent
+   */
+  async getRates(agentId: string): Promise<CommissionRate[]> {
+    const { data, error } = await supabase
+      .from('commission_structures')
+      .select('*')
+      .eq('agent_id', agentId);
 
-        if (error) throw error;
-        return (data || []).map(r => ({
-            id: r.id,
-            clubId: r.club_id,
-            agentId: r.agent_id,
-            targetRole: r.target_role,
-            rate: r.rate,
-            effectiveDate: r.effective_date,
-            createdBy: r.created_by,
-        }));
-    },
+    if (error) throw error;
+    return (data || []).map((r) => ({
+      id: r.id,
+      clubId: r.club_id,
+      agentId: r.agent_id,
+      targetRole: r.target_role,
+      rate: r.rate,
+      effectiveDate: r.effective_date,
+      createdBy: r.created_by,
+    }));
+  },
 
-    /**
-     * Get rate for a specific target
-     */
-    async getRate(agentId: string, targetRole: CommissionTargetRole): Promise<number> {
-        const rates = await this.getRates(agentId);
-        const rate = rates.find(r => r.targetRole === targetRole);
-        return rate?.rate ?? 0;
-    },
+  /**
+   * Get rate for a specific target
+   */
+  async getRate(agentId: string, targetRole: CommissionTargetRole): Promise<number> {
+    const rates = await this.getRates(agentId);
+    const rate = rates.find((r) => r.targetRole === targetRole);
+    return rate?.rate ?? 0;
+  },
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // SPREAD CALCULATIONS
-    // ─────────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────────
+  // SPREAD CALCULATIONS
+  // ─────────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Calculate commission spread for an agent
-     * Shows gross, payouts, and net margin
-     */
-    async calculateSpread(agentId: string, periodId?: string): Promise<CommissionSpread> {
-        const { data, error } = await supabase.rpc('calculate_agent_spread', {
-            p_agent_id: agentId,
-            p_period_id: periodId || null,
-        });
+  /**
+   * Calculate commission spread for an agent
+   * Shows gross, payouts, and net margin
+   */
+  async calculateSpread(agentId: string, periodId?: string): Promise<CommissionSpread> {
+    const { data, error } = await supabase.rpc('calculate_agent_spread', {
+      p_agent_id: agentId,
+      p_period_id: periodId || null,
+    });
 
-        if (error) throw error;
-        return data;
-    },
+    if (error) throw error;
+    return data;
+  },
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // RAKE ATTRIBUTION
-    // ─────────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────────
+  // RAKE ATTRIBUTION
+  // ─────────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Attribute rake to players after hand completion
-     * Called by RakeService after pot drops
-     */
-    async attributeRake(handId: string, attributions: RakeAttribution[]): Promise<void> {
-        const records = attributions.map(a => ({
-            hand_id: handId,
-            player_id: a.playerId,
-            rake_amount: a.rakeAmount,
-            agent_id: a.agentId || null,
-            created_at: new Date().toISOString(),
-        }));
+  /**
+   * Attribute rake to players after hand completion
+   * Called by RakeService after pot drops
+   */
+  async attributeRake(handId: string, attributions: RakeAttribution[]): Promise<void> {
+    const records = attributions.map((a) => ({
+      hand_id: handId,
+      player_id: a.playerId,
+      rake_amount: a.rakeAmount,
+      agent_id: a.agentId || null,
+      created_at: new Date().toISOString(),
+    }));
 
-        const { error } = await supabase
-            .from('rake_attributions')
-            .insert(records);
+    const { error } = await supabase.from('rake_attributions').insert(records);
 
-        if (error) throw error;
-    },
+    if (error) throw error;
+  },
 
-    /**
-     * Get player's total rake contribution
-     */
-    async getPlayerRakeTotal(playerId: string, periodId?: string): Promise<number> {
-        const { data, error } = await supabase.rpc('get_player_rake_total', {
-            p_player_id: playerId,
-            p_period_id: periodId || null,
-        });
+  /**
+   * Get player's total rake contribution
+   */
+  async getPlayerRakeTotal(playerId: string, periodId?: string): Promise<number> {
+    const { data, error } = await supabase.rpc('get_player_rake_total', {
+      p_player_id: playerId,
+      p_period_id: periodId || null,
+    });
 
-        if (error) throw error;
-        return data;
-    },
+    if (error) throw error;
+    return data;
+  },
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // CASCADING COMMISSION CALCULATION
-    // ─────────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CASCADING COMMISSION CALCULATION
+  // ─────────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Calculate cascading commissions for a hand
-     * Walks up the agent tree, calculating each level's share
-     */
-    async calculateCascadingCommission(
-        rakeAmount: number,
-        playerId: string
-    ): Promise<Array<{ agentId: string; amount: number; level: number }>> {
-        const { data, error } = await supabase.rpc('calculate_cascading_commission', {
-            p_rake_amount: rakeAmount,
-            p_player_id: playerId,
-        });
+  /**
+   * Calculate cascading commissions for a hand
+   * Walks up the agent tree, calculating each level's share
+   */
+  async calculateCascadingCommission(
+    rakeAmount: number,
+    playerId: string
+  ): Promise<Array<{ agentId: string; amount: number; level: number }>> {
+    const { data, error } = await retryAsync(async () => {
+      const result = await supabase.rpc('calculate_cascading_commission', {
+        p_rake_amount: rakeAmount,
+        p_player_id: playerId,
+      });
+      return result;
+    }, 2);
 
-        if (error) throw error;
-        return data;
-    },
+    if (error) throw error;
+    return data;
+  },
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // SETTLEMENT INTEGRATION
-    // ─────────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────────
+  // SETTLEMENT INTEGRATION
+  // ─────────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Generate commission payouts for a settlement period
-     */
-    async generatePeriodPayouts(periodId: string): Promise<CommissionPayout[]> {
-        const { data, error } = await supabase.rpc('generate_period_commissions', {
-            p_period_id: periodId,
-        });
+  /**
+   * Generate commission payouts for a settlement period
+   */
+  async generatePeriodPayouts(periodId: string): Promise<CommissionPayout[]> {
+    const { data, error } = await retryAsync(async () => {
+      const result = await supabase.rpc('generate_period_commissions', {
+        p_period_id: periodId,
+      });
+      return result;
+    }, 2);
 
-        if (error) throw error;
-        return data;
-    },
+    if (error) throw error;
+    return data;
+  },
 
-    /**
-     * Approve commission payout
-     */
-    async approvePayout(payoutId: string, approvedBy: string): Promise<boolean> {
-        const { error } = await supabase
-            .from('commission_payouts')
-            .update({
-                status: 'approved',
-                approved_by: approvedBy,
-                approved_at: new Date().toISOString(),
-            })
-            .eq('id', payoutId);
+  /**
+   * Approve commission payout
+   */
+  async approvePayout(payoutId: string, approvedBy: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('commission_payouts')
+      .update({
+        status: 'approved',
+        approved_by: approvedBy,
+        approved_at: new Date().toISOString(),
+      })
+      .eq('id', payoutId);
 
-        if (error) throw error;
-        return true;
-    },
+    if (error) throw error;
+    return true;
+  },
 
-    /**
-     * Execute commission payout (credit to wallet)
-     */
-    async executePayout(payoutId: string): Promise<boolean> {
-        const { error } = await supabase.rpc('execute_commission_payout', {
-            p_payout_id: payoutId,
-        });
+  /**
+   * Execute commission payout (credit to wallet)
+   */
+  async executePayout(payoutId: string): Promise<boolean> {
+    const { error } = await retryAsync(async () => {
+      const result = await supabase.rpc('execute_commission_payout', {
+        p_payout_id: payoutId,
+      });
+      return result;
+    }, 2);
 
-        if (error) throw error;
-        return true;
-    },
+    if (error) throw error;
+    return true;
+  },
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // REPORTING
-    // ─────────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────────
+  // REPORTING
+  // ─────────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Get agent's commission history
-     */
-    async getCommissionHistory(
-        agentId: string,
-        limit: number = 10
-    ): Promise<CommissionPayout[]> {
-        const { data, error } = await supabase
-            .from('commission_payouts')
-            .select('*')
-            .eq('agent_id', agentId)
-            .order('created_at', { ascending: false })
-            .limit(limit);
+  /**
+   * Get agent's commission history
+   */
+  async getCommissionHistory(agentId: string, limit: number = 10): Promise<CommissionPayout[]> {
+    const { data, error } = await supabase
+      .from('commission_payouts')
+      .select('*')
+      .eq('agent_id', agentId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
 
-        if (error) throw error;
-        return (data || []).map(p => ({
-            agentId: p.agent_id,
-            periodId: p.period_id,
-            grossRake: p.gross_rake,
-            commissionEarned: p.commission_earned,
-            paidToDownlines: p.paid_to_downlines,
-            netPayout: p.net_payout,
-            status: p.status,
-        }));
-    },
+    if (error) throw error;
+    return (data || []).map((p) => ({
+      agentId: p.agent_id,
+      periodId: p.period_id,
+      grossRake: p.gross_rake,
+      commissionEarned: p.commission_earned,
+      paidToDownlines: p.paid_to_downlines,
+      netPayout: p.net_payout,
+      status: p.status,
+    }));
+  },
 };
 
 export default CommissionService;

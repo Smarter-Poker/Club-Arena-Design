@@ -72,7 +72,7 @@ export type HandEvent =
   | { type: 'TURN_CHANGE'; seat: number; availableActions: ActionType[] }
   | { type: 'SHOWDOWN'; results: ShowdownResult[] }
   | { type: 'WINNERS'; winners: Winner[] }
-  | { type: 'HAND_COMPLETE'; handNumber: number; rake: number };
+  | { type: 'HAND_COMPLETE'; handNumber: number; rake: number; pot: number };
 
 export interface ShowdownResult {
   seat: number;
@@ -320,7 +320,12 @@ export class HandController {
         if (raiseSize > this.state.lastRaise) {
           this.state.lastRaise = raiseSize;
         }
-        const chipsAdded = actualAmount - player.bet;
+        let chipsAdded = actualAmount - player.bet;
+        // ENG-01 FIX: Clamp to stack to prevent negative stack
+        if (chipsAdded > player.stack) {
+          chipsAdded = player.stack;
+          actualAmount = player.bet + chipsAdded;
+        }
         player.totalInvested += chipsAdded;
         player.stack -= chipsAdded;
         this.state.pot += chipsAdded;
@@ -602,7 +607,12 @@ export class HandController {
         }
       }
       this.emit({ type: 'WINNERS', winners: [] });
-      this.emit({ type: 'HAND_COMPLETE', handNumber: this.config.handNumber, rake: 0 });
+      this.emit({
+        type: 'HAND_COMPLETE',
+        handNumber: this.config.handNumber,
+        rake: 0,
+        pot: this.state.pot,
+      });
       return;
     }
 
@@ -639,7 +649,12 @@ export class HandController {
     }
 
     this.emit({ type: 'WINNERS', winners: adjustedWinners });
-    this.emit({ type: 'HAND_COMPLETE', handNumber: this.config.handNumber, rake });
+    this.emit({
+      type: 'HAND_COMPLETE',
+      handNumber: this.config.handNumber,
+      rake,
+      pot: this.state.pot,
+    });
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

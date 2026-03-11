@@ -19,6 +19,7 @@ import ReplayActions from '../components/table/ReplayActions';
 import HandReplayPlayer from '../components/table/HandReplayPlayer';
 import HandHistoryModal from '../components/club/HandHistoryModal';
 import { ShareHand, type ShareableHand } from '../components/table/ShareHand';
+import PageSkeleton from '../components/common/PageSkeleton';
 import './HandHistoryPage.css';
 
 type HistoryFilter = 'all' | 'won' | 'lost' | 'big-pots';
@@ -87,9 +88,13 @@ export default function HandHistoryPage() {
   // Debounced at 1s to coalesce with postgres_changes subscription above
   // (both fire for the same hand — bus fires immediately, postgres 100-2000ms later)
   useEffect(() => {
-    const unsub = masterBus.subscribeDebounced('HAND_COMPLETED', () => {
-      loadHands(true);
-    }, 1000);
+    const unsub = masterBus.subscribeDebounced(
+      'HAND_COMPLETED',
+      () => {
+        loadHands(true);
+      },
+      1000
+    );
     return () => {
       unsub();
     };
@@ -291,10 +296,7 @@ export default function HandHistoryPage() {
       {/* Hands List */}
       <div className="hands-list">
         {loading ? (
-          <div className="loading-state">
-            <div className="spinner" />
-            <p>Loading hands...</p>
-          </div>
+          <PageSkeleton variant="list" />
         ) : hands.length === 0 ? (
           <div className="empty-state">
             <span className="empty-icon">♠</span>

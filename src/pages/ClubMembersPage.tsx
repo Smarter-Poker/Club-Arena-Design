@@ -9,6 +9,7 @@ import { useUserStore } from '../stores/useUserStore';
 import { masterBus } from '../core/MasterBus';
 import { useToast } from '../components/common/Toast';
 import { useVirtualScroll } from '../hooks/useVirtualScroll';
+import PageSkeleton from '../components/common/PageSkeleton';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import './ClubMembersPage.css';
 
@@ -597,9 +598,7 @@ export default function ClubMembersPage() {
 
       <div className="members-list" ref={virtualScroll.containerRef}>
         {loading ? (
-          <div className="loading-state">
-            <div className="spinner" />
-          </div>
+          <PageSkeleton variant="list" />
         ) : filteredMembers.length === 0 ? (
           <div className="empty-state">
             <p>

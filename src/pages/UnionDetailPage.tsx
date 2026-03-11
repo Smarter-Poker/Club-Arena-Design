@@ -17,6 +17,7 @@ import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import type { PokerTable, Club, Tournament } from '../types/database.types';
 import { useUnionStore } from '../stores/useUnionStore';
+import PageSkeleton from '../components/common/PageSkeleton';
 import styles from './UnionDetailPage.module.css';
 import { useToast } from '../components/common/Toast';
 import ConfirmModal from '../components/common/ConfirmModal';
@@ -458,8 +459,7 @@ export default function UnionDetailPage() {
   if (loading) {
     return (
       <div className={styles.loading}>
-        <div className={styles.spinner} />
-        <p>Loading union...</p>
+        <PageSkeleton variant="dashboard" />
       </div>
     );
   }

@@ -9,6 +9,8 @@ import { masterBus } from '../core/MasterBus';
 import { ClubsService } from '../services/ClubsService';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
+import { sanitizeInput } from '../utils/sanitizeInput';
+import PageSkeleton from '../components/common/PageSkeleton';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import AuditLog from '../components/admin/AuditLog';
 import { StatsExport } from '../components/admin/StatsExport';
@@ -156,8 +158,8 @@ export default function ClubSettingsPage() {
       const { error } = await supabase
         .from('clubs')
         .update({
-          name: settings.name,
-          description: settings.description,
+          name: sanitizeInput(settings.name),
+          description: sanitizeInput(settings.description),
           is_public: settings.is_public,
           requires_approval: settings.requires_approval,
           default_rake_percent: settings.default_rake_percent,
@@ -209,9 +211,7 @@ export default function ClubSettingsPage() {
   if (loading) {
     return (
       <div className="club-settings-page">
-        <div className="loading-state">
-          <div className="spinner" />
-        </div>
+        <PageSkeleton variant="settings" />
       </div>
     );
   }

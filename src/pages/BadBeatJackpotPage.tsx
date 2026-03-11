@@ -213,7 +213,7 @@ export default function BadBeatJackpotPage() {
       <div className="jackpot-info">
         <div className="info-card">
           <span className="info-label">Qualifying Hand</span>
-          <span className="info-value">Quad 8s or better beaten</span>
+          <span className="info-value">Quad 2s or better beaten</span>
         </div>
         <div className="info-card">
           <span className="info-label">Hands Dealt</span>

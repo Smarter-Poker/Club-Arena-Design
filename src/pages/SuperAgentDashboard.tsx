@@ -13,6 +13,7 @@ import type { CommissionSpread } from '../services/CommissionService';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import CreditRequestWidget from '../components/agent/CreditRequestWidget';
+import PageSkeleton from '../components/common/PageSkeleton';
 import './SuperAgentDashboard.css';
 
 type DashboardTab = 'overview' | 'agents' | 'players' | 'commissions' | 'transfers';
@@ -163,9 +164,7 @@ export default function SuperAgentDashboard() {
   if (loading) {
     return (
       <div className="super-agent-dashboard">
-        <div className="loading-state">
-          <div className="spinner" />
-        </div>
+        <PageSkeleton variant="dashboard" />
       </div>
     );
   }

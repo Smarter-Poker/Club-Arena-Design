@@ -12,324 +12,371 @@ import { useToast } from '../components/common/Toast';
 import { ClubFinancialDashboard } from '../components/dashboard/ClubFinancialDashboard';
 import FinancialChart from '../components/charts/FinancialChart';
 import RakeReports from '../components/admin/RakeReports';
+import PageSkeleton from '../components/common/PageSkeleton';
 import './ClubFinancialsPage.css';
 
 interface FinancialSummary {
-    period: string;
-    rake_collected: number;
-    rakeback_paid: number;
-    agent_commissions: number;
-    union_fees: number;
-    net_revenue: number;
-    total_hands: number;
-    total_pots: number;
+  period: string;
+  rake_collected: number;
+  rakeback_paid: number;
+  agent_commissions: number;
+  union_fees: number;
+  net_revenue: number;
+  total_hands: number;
+  total_pots: number;
 }
 
 interface RecentTransaction {
-    id: string;
-    type: 'rake' | 'payout' | 'settlement' | 'deposit' | 'withdrawal';
-    amount: number;
-    description: string;
-    created_at: string;
+  id: string;
+  type: 'rake' | 'payout' | 'settlement' | 'deposit' | 'withdrawal';
+  amount: number;
+  description: string;
+  created_at: string;
 }
 
 export default function ClubFinancialsPage() {
-    const navigate = useNavigate();
-    const { clubId } = useParams();
-    const { user } = useUserStore();
+  const navigate = useNavigate();
+  const { clubId } = useParams();
+  const { user } = useUserStore();
 
-    const [summary, setSummary] = useState<FinancialSummary | null>(null);
-    const [transactions, setTransactions] = useState<RecentTransaction[]>([]);
-    const [chartData, setChartData] = useState<{ name: string; rake: number; rakeback: number }[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [period, setPeriod] = useState<'week' | 'month' | 'all'>('week');
-    const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
-    const toast = useToast();
-    const [visibleTransactions, setVisibleTransactions] = useState<Set<string>>(new Set());
+  const [summary, setSummary] = useState<FinancialSummary | null>(null);
+  const [transactions, setTransactions] = useState<RecentTransaction[]>([]);
+  const [chartData, setChartData] = useState<{ name: string; rake: number; rakeback: number }[]>(
+    []
+  );
+  const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState<'week' | 'month' | 'all'>('week');
+  const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
+  const toast = useToast();
+  const [visibleTransactions, setVisibleTransactions] = useState<Set<string>>(new Set());
 
-    useEffect(() => {
-        if (clubId) loadFinancials();
-    }, [clubId, period]);
+  useEffect(() => {
+    if (clubId) loadFinancials();
+  }, [clubId, period]);
 
-    // Stagger animation for transactions
-    useEffect(() => {
-        if (transactions.length === 0) return;
-        setVisibleTransactions(new Set());
-        transactions.forEach((tx, index) => {
-            setTimeout(() => {
-                setVisibleTransactions(prev => new Set(prev).add(tx.id));
-            }, index * 60);
-        });
-    }, [transactions]);
+  // Stagger animation for transactions
+  useEffect(() => {
+    if (transactions.length === 0) return;
+    setVisibleTransactions(new Set());
+    transactions.forEach((tx, index) => {
+      setTimeout(() => {
+        setVisibleTransactions((prev) => new Set(prev).add(tx.id));
+      }, index * 60);
+    });
+  }, [transactions]);
 
-    // ── Realtime subscription: live financial data updates ──
-    useEffect(() => {
-        if (!clubId) return;
+  // ── Realtime subscription: live financial data updates ──
+  useEffect(() => {
+    if (!clubId) return;
 
-        const channelKey = `club-financials-${clubId}`;
-        const channel = masterBus.getOrCreateChannel(channelKey);
-        channel
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'wallet_transactions',
-                    filter: `club_id=eq.${clubId}`,
-                },
-                () => {
-                    loadFinancials();
-                }
-            )
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'rake_history',
-                    filter: `club_id=eq.${clubId}`,
-                },
-                () => {
-                    loadFinancials();
-                }
-            )
-            .subscribe();
-
-        return () => {
-            masterBus.removeRegisteredChannel(channelKey);
-        };
-    }, [clubId]);
-
-    // ── Bus Listeners: cross-page financial event reactivity ──
-    useEffect(() => {
-        const unsubBalance = masterBus.subscribeDebounced('BALANCE_UPDATED', () => { loadFinancials(); }, 500);
-        const unsubWallet = masterBus.subscribeDebounced('WALLET_REFRESHED', () => { loadFinancials(); }, 500);
-        return () => { unsubBalance(); unsubWallet(); };
-    }, []);
-
-    const loadFinancials = async () => {
-        setLoading(true);
-        try {
-            // Calculate date range based on period
-            const now = new Date();
-            let startDate: Date;
-
-            if (period === 'week') {
-                startDate = new Date(now);
-                startDate.setDate(now.getDate() - 7);
-            } else if (period === 'month') {
-                startDate = new Date(now);
-                startDate.setMonth(now.getMonth() - 1);
-            } else {
-                startDate = new Date(0); // All time - epoch
-            }
-
-            // Load rake data from rake_history (the REAL table populated by the server)
-            const { data: rakeData } = await supabase
-                .from('rake_history')
-                .select('rake_amount, pot_amount, collected_at')
-                .eq('club_id', clubId)
-                .gte('collected_at', startDate.toISOString())
-                .order('collected_at', { ascending: true });
-
-            // Aggregate totals from actual rake_history rows
-            const totalRake = (rakeData || []).reduce((sum: number, r: any) => sum + (r.rake_amount || 0), 0);
-            const totalPots = (rakeData || []).reduce((sum: number, r: any) => sum + (r.pot_amount || 0), 0);
-            const totalHands = (rakeData || []).length;
-
-            // Estimate rakeback (~10% of rake) and agent commissions (~5% of rake)
-            // These are estimates until actual rakeback/commission tracking is built
-            const estimatedRakeback = totalRake * 0.10;
-            const estimatedCommissions = totalRake * 0.05;
-            const netRevenue = totalRake - estimatedRakeback - estimatedCommissions;
-
-            setSummary({
-                period,
-                rake_collected: totalRake,
-                rakeback_paid: estimatedRakeback,
-                agent_commissions: estimatedCommissions,
-                union_fees: 0,
-                net_revenue: netRevenue,
-                total_hands: totalHands,
-                total_pots: totalPots,
-            });
-
-            // Build daily chart data from rake_history
-            const dailyMap = new Map<string, { rake: number; rakeback: number }>();
-            for (const row of rakeData || []) {
-                const dayKey = new Date(row.collected_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-                const existing = dailyMap.get(dayKey) || { rake: 0, rakeback: 0 };
-                existing.rake += row.rake_amount || 0;
-                existing.rakeback += (row.rake_amount || 0) * 0.10;
-                dailyMap.set(dayKey, existing);
-            }
-            setChartData(Array.from(dailyMap.entries()).map(([name, vals]) => ({
-                name,
-                rake: vals.rake,
-                rakeback: vals.rakeback,
-            })));
-
-            // Load recent rake history as transactions (no club_transactions table needed)
-            const { data: recentRake } = await supabase
-                .from('rake_history')
-                .select('id, rake_amount, pot_amount, hand_number, collected_at')
-                .eq('club_id', clubId)
-                .gte('collected_at', startDate.toISOString())
-                .order('collected_at', { ascending: false })
-                .limit(20);
-
-            if (recentRake) {
-                setTransactions(recentRake.map((r: any) => ({
-                    id: r.id,
-                    type: 'rake' as const,
-                    amount: r.rake_amount || 0,
-                    description: `Hand #${r.hand_number} — ${(r.rake_amount || 0).toLocaleString()} chips from ${(r.pot_amount || 0).toLocaleString()} pot`,
-                    created_at: r.collected_at,
-                })));
-            }
-        } catch (error) {
-            console.error('Failed to load financials:', error);
-            toast.error('Failed to load financial data');
+    const channelKey = `club-financials-${clubId}`;
+    const channel = masterBus.getOrCreateChannel(channelKey);
+    channel
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'wallet_transactions',
+          filter: `club_id=eq.${clubId}`,
+        },
+        () => {
+          loadFinancials();
         }
-        setLoading(false);
-    };
-
-    const formatDate = (dateStr: string): string => {
-        return new Date(dateStr).toLocaleDateString(undefined, {
-            month: 'short',
-            day: 'numeric',
-        });
-    };
-
-    const getTypeIcon = (type: string): string => {
-        switch (type) {
-            case 'rake': return '%';
-            case 'payout': return '↓';
-            case 'settlement': return '☐';
-            case 'deposit': return '↑';
-            case 'withdrawal': return '↓';
-            default: return '●';
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'rake_history',
+          filter: `club_id=eq.${clubId}`,
+        },
+        () => {
+          loadFinancials();
         }
+      )
+      .subscribe();
+
+    return () => {
+      masterBus.removeRegisteredChannel(channelKey);
     };
+  }, [clubId]);
 
-    if (loading) {
-        return (
-            <div className="financials-page">
-                <div className="loading-state"><div className="spinner" /></div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="financials-page">
-
-            {/* Period Selector */}
-            <div className="period-selector">
-                {(['week', 'month', 'all'] as const).map(p => (
-                    <button
-                        key={p}
-                        className={period === p ? 'active' : ''}
-                        onClick={() => setPeriod(p)}
-                    >
-                        {p === 'week' ? 'This Week' : p === 'month' ? 'This Month' : 'All Time'}
-                    </button>
-                ))}
-            </div>
-
-            {/* Revenue Chart */}
-            <section className="chart-section" style={{
-                backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                borderRadius: '12px',
-                padding: '16px',
-                marginBottom: '16px',
-            }}>
-                <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#888' }}>Revenue Trend</h3>
-                <FinancialChart data={chartData} height={180} showRakeback={true} />
-            </section>
-
-            {/* Summary Cards */}
-            {summary && (
-                <div className="summary-cards">
-                    {/* Hands & Pots Overview */}
-                    <div className="summary-row">
-                        <div className="summary-card">
-                            <span className="card-value">{summary.total_hands.toLocaleString()}</span>
-                            <span className="card-label">Hands Played</span>
-                        </div>
-                        <div className="summary-card">
-                            <span className="card-value">{summary.total_pots.toLocaleString()}</span>
-                            <span className="card-label">Total Pot Volume</span>
-                        </div>
-                    </div>
-                    <div className="summary-card revenue">
-                        <span className="card-value">{summary.rake_collected.toLocaleString()}</span>
-                        <span className="card-label">Rake Collected</span>
-                    </div>
-                    <div className="summary-row">
-                        <div className="summary-card">
-                            <span className="card-value expense">-{summary.rakeback_paid.toLocaleString()}</span>
-                            <span className="card-label">Rakeback</span>
-                        </div>
-                        <div className="summary-card">
-                            <span className="card-value expense">-{summary.agent_commissions.toLocaleString()}</span>
-                            <span className="card-label">Agent Fees</span>
-                        </div>
-                    </div>
-                    <div className="summary-card net">
-                        <span className={`card-value ${summary.net_revenue >= 0 ? 'positive' : 'negative'}`}>
-                            {summary.net_revenue >= 0 ? '+' : ''}{summary.net_revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
-                        <span className="card-label">Net Revenue</span>
-                    </div>
-                </div>
-            )}
-
-            {/* Club Financial Dashboard - Chip Minting & Commission */}
-            {clubId && (
-                <section className="financial-dashboard-section">
-                    <ClubFinancialDashboard clubId={clubId} />
-                </section>
-            )}
-
-            {/* Rake Analytics Reports */}
-            {clubId && (
-                <section className="rake-reports-section">
-                    <RakeReports clubId={clubId} />
-                </section>
-            )}
-
-            {/* Recent Transactions */}
-            <section className="transactions-section">
-                <h3>Recent Transactions</h3>
-                {transactions.length === 0 ? (
-                    <div className="empty-state">
-                        <p>No transactions yet</p>
-                    </div>
-                ) : (
-                    <div className="transactions-list">
-                        {transactions.map(tx => (
-                            <div key={tx.id} className={`transaction-row ${visibleTransactions.has(tx.id) ? 'fadeInUp' : 'hidden'}`} style={visibleTransactions.has(tx.id) ? undefined : { opacity: 0, transform: 'translateY(8px)' }}>
-                                <span className="tx-icon">{getTypeIcon(tx.type)}</span>
-                                <div className="tx-info">
-                                    <span className="tx-desc">{tx.description}</span>
-                                    <span className="tx-date">{formatDate(tx.created_at)}</span>
-                                </div>
-                                <span className={`tx-amount ${tx.amount >= 0 ? 'positive' : 'negative'}`}>
-                                    {tx.amount >= 0 ? '+' : ''}{Math.abs(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </section>
-
-            {clubId && (
-                <ClubBottomNav
-                    clubId={clubId}
-                    userRole={userRole}
-                />
-            )}
-
-        </div>
+  // ── Bus Listeners: cross-page financial event reactivity ──
+  useEffect(() => {
+    const unsubBalance = masterBus.subscribeDebounced(
+      'BALANCE_UPDATED',
+      () => {
+        loadFinancials();
+      },
+      500
     );
+    const unsubWallet = masterBus.subscribeDebounced(
+      'WALLET_REFRESHED',
+      () => {
+        loadFinancials();
+      },
+      500
+    );
+    return () => {
+      unsubBalance();
+      unsubWallet();
+    };
+  }, []);
+
+  const loadFinancials = async () => {
+    setLoading(true);
+    try {
+      // Calculate date range based on period
+      const now = new Date();
+      let startDate: Date;
+
+      if (period === 'week') {
+        startDate = new Date(now);
+        startDate.setDate(now.getDate() - 7);
+      } else if (period === 'month') {
+        startDate = new Date(now);
+        startDate.setMonth(now.getMonth() - 1);
+      } else {
+        startDate = new Date(0); // All time - epoch
+      }
+
+      // Load rake data from rake_history (the REAL table populated by the server)
+      const { data: rakeData } = await supabase
+        .from('rake_history')
+        .select('rake_amount, pot_amount, collected_at')
+        .eq('club_id', clubId)
+        .gte('collected_at', startDate.toISOString())
+        .order('collected_at', { ascending: true });
+
+      // Aggregate totals from actual rake_history rows
+      const totalRake = (rakeData || []).reduce(
+        (sum: number, r: any) => sum + (r.rake_amount || 0),
+        0
+      );
+      const totalPots = (rakeData || []).reduce(
+        (sum: number, r: any) => sum + (r.pot_amount || 0),
+        0
+      );
+      const totalHands = (rakeData || []).length;
+
+      // Estimate rakeback (~10% of rake) and agent commissions (~5% of rake)
+      // These are estimates until actual rakeback/commission tracking is built
+      const estimatedRakeback = totalRake * 0.1;
+      const estimatedCommissions = totalRake * 0.05;
+      const netRevenue = totalRake - estimatedRakeback - estimatedCommissions;
+
+      setSummary({
+        period,
+        rake_collected: totalRake,
+        rakeback_paid: estimatedRakeback,
+        agent_commissions: estimatedCommissions,
+        union_fees: 0,
+        net_revenue: netRevenue,
+        total_hands: totalHands,
+        total_pots: totalPots,
+      });
+
+      // Build daily chart data from rake_history
+      const dailyMap = new Map<string, { rake: number; rakeback: number }>();
+      for (const row of rakeData || []) {
+        const dayKey = new Date(row.collected_at).toLocaleDateString(undefined, {
+          month: 'short',
+          day: 'numeric',
+        });
+        const existing = dailyMap.get(dayKey) || { rake: 0, rakeback: 0 };
+        existing.rake += row.rake_amount || 0;
+        existing.rakeback += (row.rake_amount || 0) * 0.1;
+        dailyMap.set(dayKey, existing);
+      }
+      setChartData(
+        Array.from(dailyMap.entries()).map(([name, vals]) => ({
+          name,
+          rake: vals.rake,
+          rakeback: vals.rakeback,
+        }))
+      );
+
+      // Load recent rake history as transactions (no club_transactions table needed)
+      const { data: recentRake } = await supabase
+        .from('rake_history')
+        .select('id, rake_amount, pot_amount, hand_number, collected_at')
+        .eq('club_id', clubId)
+        .gte('collected_at', startDate.toISOString())
+        .order('collected_at', { ascending: false })
+        .limit(20);
+
+      if (recentRake) {
+        setTransactions(
+          recentRake.map((r: any) => ({
+            id: r.id,
+            type: 'rake' as const,
+            amount: r.rake_amount || 0,
+            description: `Hand #${r.hand_number} — ${(r.rake_amount || 0).toLocaleString()} chips from ${(r.pot_amount || 0).toLocaleString()} pot`,
+            created_at: r.collected_at,
+          }))
+        );
+      }
+    } catch (error) {
+      console.error('Failed to load financials:', error);
+      toast.error('Failed to load financial data');
+    }
+    setLoading(false);
+  };
+
+  const formatDate = (dateStr: string): string => {
+    return new Date(dateStr).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const getTypeIcon = (type: string): string => {
+    switch (type) {
+      case 'rake':
+        return '%';
+      case 'payout':
+        return '↓';
+      case 'settlement':
+        return '☐';
+      case 'deposit':
+        return '↑';
+      case 'withdrawal':
+        return '↓';
+      default:
+        return '●';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="financials-page">
+        <PageSkeleton variant="financial" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="financials-page">
+      {/* Period Selector */}
+      <div className="period-selector">
+        {(['week', 'month', 'all'] as const).map((p) => (
+          <button key={p} className={period === p ? 'active' : ''} onClick={() => setPeriod(p)}>
+            {p === 'week' ? 'This Week' : p === 'month' ? 'This Month' : 'All Time'}
+          </button>
+        ))}
+      </div>
+
+      {/* Revenue Chart */}
+      <section
+        className="chart-section"
+        style={{
+          backgroundColor: 'rgba(0, 0, 0, 0.3)',
+          borderRadius: '12px',
+          padding: '16px',
+          marginBottom: '16px',
+        }}
+      >
+        <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#888' }}>Revenue Trend</h3>
+        <FinancialChart data={chartData} height={180} showRakeback={true} />
+      </section>
+
+      {/* Summary Cards */}
+      {summary && (
+        <div className="summary-cards">
+          {/* Hands & Pots Overview */}
+          <div className="summary-row">
+            <div className="summary-card">
+              <span className="card-value">{summary.total_hands.toLocaleString()}</span>
+              <span className="card-label">Hands Played</span>
+            </div>
+            <div className="summary-card">
+              <span className="card-value">{summary.total_pots.toLocaleString()}</span>
+              <span className="card-label">Total Pot Volume</span>
+            </div>
+          </div>
+          <div className="summary-card revenue">
+            <span className="card-value">{summary.rake_collected.toLocaleString()}</span>
+            <span className="card-label">Rake Collected</span>
+          </div>
+          <div className="summary-row">
+            <div className="summary-card">
+              <span className="card-value expense">-{summary.rakeback_paid.toLocaleString()}</span>
+              <span className="card-label">Rakeback</span>
+            </div>
+            <div className="summary-card">
+              <span className="card-value expense">
+                -{summary.agent_commissions.toLocaleString()}
+              </span>
+              <span className="card-label">Agent Fees</span>
+            </div>
+          </div>
+          <div className="summary-card net">
+            <span className={`card-value ${summary.net_revenue >= 0 ? 'positive' : 'negative'}`}>
+              {summary.net_revenue >= 0 ? '+' : ''}
+              {summary.net_revenue.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
+            <span className="card-label">Net Revenue</span>
+          </div>
+        </div>
+      )}
+
+      {/* Club Financial Dashboard - Chip Minting & Commission */}
+      {clubId && (
+        <section className="financial-dashboard-section">
+          <ClubFinancialDashboard clubId={clubId} />
+        </section>
+      )}
+
+      {/* Rake Analytics Reports */}
+      {clubId && (
+        <section className="rake-reports-section">
+          <RakeReports clubId={clubId} />
+        </section>
+      )}
+
+      {/* Recent Transactions */}
+      <section className="transactions-section">
+        <h3>Recent Transactions</h3>
+        {transactions.length === 0 ? (
+          <div className="empty-state">
+            <p>No transactions yet</p>
+          </div>
+        ) : (
+          <div className="transactions-list">
+            {transactions.map((tx) => (
+              <div
+                key={tx.id}
+                className={`transaction-row ${visibleTransactions.has(tx.id) ? 'fadeInUp' : 'hidden'}`}
+                style={
+                  visibleTransactions.has(tx.id)
+                    ? undefined
+                    : { opacity: 0, transform: 'translateY(8px)' }
+                }
+              >
+                <span className="tx-icon">{getTypeIcon(tx.type)}</span>
+                <div className="tx-info">
+                  <span className="tx-desc">{tx.description}</span>
+                  <span className="tx-date">{formatDate(tx.created_at)}</span>
+                </div>
+                <span className={`tx-amount ${tx.amount >= 0 ? 'positive' : 'negative'}`}>
+                  {tx.amount >= 0 ? '+' : ''}
+                  {Math.abs(tx.amount).toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {clubId && <ClubBottomNav clubId={clubId} userRole={userRole} />}
+    </div>
+  );
 }

@@ -35,12 +35,13 @@ export default function VIPPage() {
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [vipEntranceComplete, setVIPEntranceComplete] = useState(false);
 
-  // VIP Points System
+  // VIP Points System — TODO: Replace with real data from Supabase once vip_points table is available
+  // These are placeholder values shown while the back-end VIP points tracking is not yet built
   const [vipPoints, setVipPoints] = useState({
-    current: 12500,
-    lifetime: 45000,
-    monthly: 3200,
-    activeStreak: 15,
+    current: 0,
+    lifetime: 0,
+    monthly: 0,
+    activeStreak: 0,
   });
 
   // Sample activities for demonstration
@@ -168,7 +169,7 @@ export default function VIPPage() {
     );
   }
 
-  const daysSinceReview = Math.floor(Math.random() * 25) + 5; // Random for demo
+  const daysSinceReview = 0; // TODO: Load from real VIP review data
 
   return (
     <div className="vip-page">

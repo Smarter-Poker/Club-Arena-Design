@@ -29,6 +29,7 @@ import PositionWinRates from '../components/stats/PositionWinRates';
 import SessionHistory from '../components/stats/SessionHistory';
 import BankrollTracker from '../components/stats/BankrollTracker';
 import AdvancedStatsSummary from '../components/stats/AdvancedStatsSummary';
+import PageSkeleton from '../components/common/PageSkeleton';
 import './PlayerStatsPage.css';
 
 interface DetailedStats {
@@ -320,9 +321,7 @@ export default function PlayerStatsPage() {
   if (loading) {
     return (
       <div className="stats-page">
-        <div className="loading-state">
-          <div className="spinner" />
-        </div>
+        <PageSkeleton variant="stats" />
       </div>
     );
   }
