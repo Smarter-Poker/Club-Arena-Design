@@ -369,7 +369,7 @@ function CarouselSection({
             >
                 {/* Pinned badge */}
                 {pinnedClubIds.includes(club.id) && (
-                    <span className={styles.pinnedBadge} title="Pinned">⭐</span>
+                    <span className={styles.pinnedBadge} title="Pinned">*</span>
                 )}
                 <div className={styles.carouselCardPedestal}></div>
                 <div className={styles.clubCardFlipInner} style={{ height: '100%' }}>
@@ -479,7 +479,7 @@ function CarouselSection({
                     aria-label="Join a Club"
                     tabIndex={0}
                 >
-                    <div className={styles.ctaCardIcon}>🎯</div>
+                    <div className={styles.ctaCardIcon}>+</div>
                     <span className={styles.ctaCardLabel}>Join a Club</span>
                     <span className={styles.ctaCardSub}>Enter a club code to join an existing club</span>
                 </div>
@@ -525,7 +525,7 @@ function CarouselSection({
                     aria-label="Create a Club"
                     tabIndex={0}
                 >
-                    <div className={styles.ctaCardIcon}>✦</div>
+                    <div className={styles.ctaCardIcon}>+</div>
                     <span className={styles.ctaCardLabel}>Create Club</span>
                     <span className={styles.ctaCardSub}>Start your own poker club and invite players</span>
                 </div>

@@ -69,7 +69,7 @@ CREATE INDEX IF NOT EXISTS idx_horse_sessions_table ON horse_sessions(table_id);
 CREATE INDEX IF NOT EXISTS idx_horse_sessions_active ON horse_sessions(left_at) WHERE left_at IS NULL;
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- SEED HORSE FLEET (300 Horses, #101 - #400)
+-- SEED HORSE FLEET (100 Horses, #101 - #200)
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 -- First names pool
@@ -113,8 +113,8 @@ DECLARE
     v_avatar_seed TEXT;
     v_horse_id UUID;
 BEGIN
-    -- Generate 300 horses (#101 - #400)
-    WHILE v_player_num <= 400 LOOP
+    -- Generate 100 horses (#101 - #200)
+    WHILE v_player_num <= 200 LOOP
         -- Random first name
         SELECT name INTO v_first FROM horse_first_names ORDER BY random() LIMIT 1;
         -- Random last name
@@ -171,7 +171,7 @@ BEGIN
         v_player_num := v_player_num + 1;
     END LOOP;
     
-    RAISE NOTICE 'Created/Updated 300 Hydra horses (#101 - #400)';
+    RAISE NOTICE 'Created/Updated 100 Hydra horses (#101 - #200)';
 END $$;
 
 -- Clean up temp tables

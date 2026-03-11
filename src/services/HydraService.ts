@@ -3,12 +3,12 @@
  * 🐴 HYDRA SERVICE — Horse Liquidity Fleet Management
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
- * Manages the Hydra horse fleet (300 Horses #101-#400) to ensure 24/7 table liquidity.
+ * Manages the Hydra horse fleet (100 Horses #101-#200) to ensure 24/7 table liquidity.
  * 
  * LAWS:
  * - "3 Horses to Start": Tables seed with 3 horse players
  * - "Organic Recede": When real player joins, 1 horse leaves after orbit
- * - "Fleet Size": 300 unique sovereign horse IDs (#101-#400)
+ * - "Fleet Size": 100 unique sovereign horse IDs (#101-#200)
  * - "Entry Variance": Random 10-90s delays for natural appearance
  * - "Invisible Fleet": Horses are indistinguishable from human players
  * 
@@ -93,7 +93,7 @@ export interface HandContext {
 const DEFAULT_CONFIG: HydraConfig = {
     maxHorsesPerTable: 3,
     minHorsesPerTable: 0,
-    fleetSize: 300,
+    fleetSize: 100,
     entryDelayRange: [10, 90],
     organicRecedeEnabled: true,
     seatWarmupDelay: 2000,
@@ -123,7 +123,7 @@ const PROFILE_STACK_RANGES: Record<HorseProfile, [number, number]> = {
     reg: [80, 150],
     nit: [100, 100],
     lag: [100, 200],
-    maniac: [150, 300],
+    maniac: [50, 100],
 };
 
 // Preflop hand ranges (simplified)

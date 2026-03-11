@@ -46,6 +46,9 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
     const [userName, setUserName] = useState<string>('');
     const [isVIP, setIsVIP] = useState(false);
     const [diamondBalance, setDiamondBalance] = useState(0);
+    const [selectedCardColor, setSelectedCardColor] = useState(() =>
+        localStorage.getItem('club_arena_card_color') || 'default'
+    );
 
     // Close on ESC key
     useEffect(() => {
@@ -592,7 +595,7 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                         { id: 'obsidian', name: 'Obsidian',       bg: 'linear-gradient(145deg, rgba(15, 15, 15, 0.9), rgba(8, 8, 8, 0.95))' },
                         { id: 'neon',     name: 'Neon Cyber',     bg: 'linear-gradient(145deg, rgba(5, 15, 25, 0.9), rgba(3, 8, 18, 0.95))' },
                     ].map((preset) => {
-                        const isSelected = (localStorage.getItem('club_arena_card_color') || 'default') === preset.id;
+                        const isSelected = selectedCardColor === preset.id;
                         return (
                             <div
                                 key={preset.id}
@@ -604,6 +607,7 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                                     cursor: 'pointer',
                                 }}
                                 onClick={async () => {
+                                    setSelectedCardColor(preset.id);
                                     localStorage.setItem('club_arena_card_color', preset.id);
                                     try {
                                         const { masterBus } = await import('../../core/MasterBus');

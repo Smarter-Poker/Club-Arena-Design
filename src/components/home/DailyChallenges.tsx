@@ -61,7 +61,9 @@ function pickChallenges(): Challenge[] {
 
 export default function DailyChallenges() {
     const [progress, setProgress] = useState<Record<string, number>>({});
-    const dayKey = getDayKey();
+    const [claimed, setClaimed] = useState<Record<string, boolean>>({});
+    const [currentDayKey, setCurrentDayKey] = useState(getDayKey());
+    const dayKey = currentDayKey;
     const picked = useRef(pickChallenges()); // stable across re-renders
     const tableSessionStart = useRef<number | null>(null); // for play-time tracking
 
@@ -74,25 +76,32 @@ export default function DailyChallenges() {
             if (user) {
                 const { data } = await supabase
                     .from('daily_challenge_progress')
-                    .select('challenge_index, progress')
+                    .select('challenge_index, progress, completed')
                     .eq('user_id', user.id)
                     .eq('day_key', dayKey);
 
                 if (data && data.length > 0) {
                     const map: Record<string, number> = {};
-                    data.forEach((row: any) => { map[row.challenge_index] = row.progress; });
+                    const claimedMap: Record<string, boolean> = {};
+                    data.forEach((row: any) => {
+                        map[row.challenge_index] = row.progress;
+                        if (row.completed) claimedMap[row.challenge_index] = true;
+                    });
                     setProgress(map);
+                    setClaimed(claimedMap);
                     return;
                 }
             }
         } catch {
-            // Supabase unavailable — fallback to localStorage
+            // Supabase unavailable -- fallback to localStorage
         }
 
         // Fallback: localStorage
         try {
             const stored = JSON.parse(localStorage.getItem(dayKey) || '{}');
             setProgress(stored);
+            const storedClaimed = JSON.parse(localStorage.getItem(`${dayKey}_claimed`) || '{}');
+            setClaimed(storedClaimed);
         } catch {
             localStorage.removeItem(dayKey);
         }
@@ -220,6 +229,62 @@ export default function DailyChallenges() {
         };
     }, [loadProgress, incrementByEvent]);
 
+    // Phase 7 #4: Claim challenge reward
+    const claimReward = useCallback(async (challengeIndex: number, reward: number) => {
+        if (claimed[challengeIndex]) return;
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                // Increment diamond balance
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('diamond_balance')
+                    .eq('id', user.id)
+                    .maybeSingle();
+                const currentBalance = profile?.diamond_balance || 0;
+                await supabase
+                    .from('profiles')
+                    .update({ diamond_balance: currentBalance + reward })
+                    .eq('id', user.id);
+
+                // Mark claimed in daily_challenge_progress
+                await supabase
+                    .from('daily_challenge_progress')
+                    .upsert({
+                        user_id: user.id,
+                        day_key: dayKey,
+                        challenge_index: challengeIndex,
+                        progress: progress[challengeIndex] || 0,
+                        completed: true,
+                    }, { onConflict: 'user_id,day_key,challenge_index' });
+
+                // Emit bus event for diamond balance update
+                masterBus.emit('NOTIFICATION_READ', { notifId: null, allRead: false });
+            }
+        } catch {
+            // silent
+        }
+        setClaimed(prev => {
+            const next = { ...prev, [challengeIndex]: true };
+            try { localStorage.setItem(`${dayKey}_claimed`, JSON.stringify(next)); } catch { /* */ }
+            return next;
+        });
+    }, [claimed, dayKey, progress]);
+
+    // Phase 7 #5: Midnight auto-reset
+    useEffect(() => {
+        const checkMidnight = setInterval(() => {
+            const newKey = getDayKey();
+            if (newKey !== currentDayKey) {
+                setCurrentDayKey(newKey);
+                setProgress({});
+                setClaimed({});
+                picked.current = pickChallenges();
+            }
+        }, 60_000); // Check every 60 seconds
+        return () => clearInterval(checkMidnight);
+    }, [currentDayKey]);
+
     return (
         <div style={{
             width: '100%',
@@ -263,14 +328,39 @@ export default function DailyChallenges() {
                                 }}>
                                     {isComplete ? '[DONE] ' : ''}{ch.title}
                                 </span>
-                                <span style={{
-                                    fontSize: '0.8rem',
-                                    fontWeight: 800,
-                                    color: isComplete ? 'rgba(0, 255, 136, 0.9)' : 'rgba(0, 212, 255, 0.85)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 3,
-                                }}>+{ch.reward} DIA</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    {isComplete && !claimed[i] && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                claimReward(i, ch.reward);
+                                            }}
+                                            style={{
+                                                padding: '4px 12px',
+                                                fontSize: '0.7rem',
+                                                fontWeight: 800,
+                                                letterSpacing: '0.08em',
+                                                textTransform: 'uppercase',
+                                                color: '#000',
+                                                background: 'linear-gradient(90deg, #00ff88, #00d4ff)',
+                                                border: 'none',
+                                                borderRadius: 6,
+                                                cursor: 'pointer',
+                                                boxShadow: '0 0 10px rgba(0, 255, 136, 0.3)',
+                                                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                                            }}
+                                        >CLAIM</button>
+                                    )}
+                                    <span style={{
+                                        fontSize: '0.8rem',
+                                        fontWeight: 800,
+                                        color: claimed[i] ? 'rgba(120, 130, 140, 0.5)' : isComplete ? 'rgba(0, 255, 136, 0.9)' : 'rgba(0, 212, 255, 0.85)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 3,
+                                        textDecoration: claimed[i] ? 'line-through' : 'none',
+                                    }}>{claimed[i] ? 'CLAIMED' : `+${ch.reward} DIA`}</span>
+                                </div>
                             </div>
                             {/* Progress counter */}
                             <div style={{
