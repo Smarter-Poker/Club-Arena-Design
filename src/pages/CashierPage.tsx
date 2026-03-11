@@ -348,9 +348,19 @@ export default function CashierPage() {
     // HANDLE ACTIONS
     // ─────────────────────────────────────────────────────────────────────────────
 
-    // Helper to notify the parent World Hub of a balance change
+    // Helper to notify the parent World Hub and the local Master Bus of a balance change
     const notifyWalletChange = (targetUserId: string, chipAmount: number) => {
         try {
+            // 1. Notify local React app via MasterBus for instant sync
+            import('../core/MasterBus').then(({ masterBus }) => {
+                masterBus.emit('WALLET_REFRESHED', {
+                    walletType: 'PLAYER',
+                    available: balances.PLAYER.available,
+                    total: balances.PLAYER.total
+                });
+            });
+
+            // 2. Notify parent World Hub iframe
             if (window.parent && window.parent !== window) {
                 window.parent.postMessage({
                     type: 'USE_TRAINING_BUS_EMIT',
@@ -363,7 +373,7 @@ export default function CashierPage() {
                 }, '*');
             }
         } catch (e) {
-            console.error('Failed to notify parent of wallet change:', e);
+            console.error('Failed to notify of wallet change:', e);
         }
     };
 

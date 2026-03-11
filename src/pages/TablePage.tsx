@@ -881,6 +881,12 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
             const result = await tableService.leaveTable(tableId, tableState.heroSeat, userId);
             if (result.success) {
                 console.log(`[Leave] Success — ${result.chipsReturned} chips returned to wallet`);
+                
+                // Notify system
+                import('../core/MasterBus').then(({ masterBus }) => {
+                    masterBus.emit('TABLE_LEFT', { tableId, seat: tableState.heroSeat });
+                });
+
                 // Show session summary instead of navigating immediately
                 // P/L = final stack minus buy-in (chipsReturned represents what went back to wallet)
                 sessionPLRef.current = stackAtLeave - (result.chipsReturned || stackAtLeave);

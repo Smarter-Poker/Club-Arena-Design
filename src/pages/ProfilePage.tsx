@@ -247,6 +247,16 @@ export default function ProfilePage() {
                 } catch {
                     setTransactions([]);
                 }
+
+                // Notify Master Bus that profile is loaded
+                if (profile) {
+                    import('../core/MasterBus').then(({ masterBus }) => {
+                        masterBus.emit('USER_PROFILE_LOADED', {
+                            id: authUser.id,
+                            avatarUrl: profile.avatar_url || ''
+                        });
+                    });
+                }
             } catch (err) {
                 console.error('[PROFILE] Load failed:', err);
             } finally {

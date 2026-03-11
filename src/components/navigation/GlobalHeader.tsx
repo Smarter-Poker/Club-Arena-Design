@@ -79,6 +79,28 @@ export default function GlobalHeader({
         };
 
         loadUserData();
+
+        // ─── MASTER BUS LISTENERS ───
+        import('../../core/MasterBus').then(({ masterBus }) => {
+            const unsubWallet = masterBus.subscribe('WALLET_REFRESHED', async () => {
+                const { data } = await supabase.auth.getUser();
+                if (data.user?.id) loadBalances(data.user.id);
+            });
+            const unsubProfile = masterBus.subscribe('USER_PROFILE_LOADED', (event: any) => {
+                if (mounted && event.payload?.avatarUrl) {
+                    setAvatarUrl(event.payload.avatarUrl);
+                }
+            });
+
+            // Override global cleanup
+            const originalCleanup = () => { mounted = false; };
+            return () => {
+                originalCleanup();
+                unsubWallet();
+                unsubProfile();
+            };
+        });
+
         return () => { mounted = false; };
     }, [loadBalances, loadDiamonds]);
 

@@ -120,6 +120,11 @@ export const useTableStore = create<TableState>((set, get) => ({
             seats: newSeats,
         });
 
+        // Notify Master Bus
+        import('../core/MasterBus').then(({ masterBus }) => {
+            masterBus.emit('TABLE_SEATED', { tableId, seat });
+        });
+
         // Update table player count
         await tableService.updatePlayerCount(
             tableId,
