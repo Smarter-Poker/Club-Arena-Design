@@ -125,6 +125,11 @@ export default function UnionDetailPage() {
                 const clubsData = await unionService.getUnionClubs(unionId);
                 const tablesData = await tableService.getUnionTables(unionId);
 
+                // Compute real memberCount from clubs (DB column may be stale)
+                const computedMemberCount = (clubsData || []).reduce((sum, c) => sum + (c.memberCount || 0), 0);
+                if (unionData) {
+                    unionData.memberCount = computedMemberCount;
+                }
                 setUnion(unionData);
                 setClubs(clubsData);
                 // Sort tables: active (with players) first, then by player count desc
