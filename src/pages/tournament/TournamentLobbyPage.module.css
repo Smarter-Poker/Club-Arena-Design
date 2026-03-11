@@ -19,6 +19,8 @@
     padding: 1.5rem;
     background: rgba(26, 26, 46, 0.6);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .stat {
@@ -52,6 +54,9 @@
     border-radius: 10px;
     color: #fff;
     font-size: 0.95rem;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: all 0.2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .searchInput::placeholder {
@@ -62,6 +67,7 @@
     outline: none;
     border-color: rgba(139, 92, 246, 0.5);
     background: rgba(139, 92, 246, 0.1);
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.2);
 }
 
 /* Filters */
@@ -86,7 +92,9 @@
     cursor: pointer;
     font-size: 0.85rem;
     white-space: nowrap;
-    transition: all 0.2s;
+    transition: all 0.2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
 }
 
 .typeBtn {
@@ -97,6 +105,7 @@
 .filterBtn:hover {
     background: rgba(255, 255, 255, 0.1);
     color: #fff;
+    transform: translateY(-1px);
 }
 
 .filterBtn.active {

@@ -24,6 +24,8 @@
     gap: 2px;
     flex-wrap: nowrap;
     box-sizing: border-box;
+    backdrop-filter: blur(8px) saturate(1.1);
+    -webkit-backdrop-filter: blur(8px) saturate(1.1);
 }
 
 /* ─── LEFT Section ─── */
@@ -144,7 +146,7 @@
     height: 26px;
     border-radius: 50%;
     border: 2px solid rgb(0, 224, 255);
-    box-shadow: 0 0 8px rgba(0, 224, 255, 0.6), 0 0 16px rgba(0, 224, 255, 0.3);
+    box-shadow: 0 0 8px rgba(0, 224, 255, 0.6), 0 0 16px rgba(0, 224, 255, 0.3), 0 0 24px rgba(0, 224, 255, 0.15);
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -176,9 +178,10 @@
     font-weight: 700;
     min-width: 14px;
     text-align: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 0 8px rgba(228, 30, 63, 0.4);
     border: 1.5px solid #000;
     line-height: 1.2;
+    text-shadow: 0 0 4px rgba(228, 30, 63, 0.3);
 }
 
 /* ─── Mobile Responsive ─── */

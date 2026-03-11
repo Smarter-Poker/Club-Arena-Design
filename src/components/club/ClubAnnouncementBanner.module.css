@@ -11,6 +11,14 @@
     padding: 12px 20px;
     border-radius: 10px;
     margin-bottom: 16px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+    transition: all 0.2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+}
+
+.banner:hover {
+    transform: translateY(-1px);
 }
 
 .banner.info {
@@ -32,6 +40,7 @@
     background: rgba(239, 68, 68, 0.15);
     border: 1px solid rgba(239, 68, 68, 0.3);
     animation: pulse 2s infinite;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
 }
 
 @keyframes pulse {

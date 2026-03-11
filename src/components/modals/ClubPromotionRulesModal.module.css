@@ -25,6 +25,9 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    backdrop-filter: blur(10px) saturate(1.2);
+    -webkit-backdrop-filter: blur(10px) saturate(1.2);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 8px 32px rgba(59, 130, 246, 0.15);
 }
 
 .header {
@@ -59,6 +62,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+}
+
+.closeButton:hover {
+    transform: translateY(-50%) scale(1.05);
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
 }
 
 .content {
@@ -71,6 +81,8 @@
     background: rgba(30, 58, 138, 0.3);
     margin: 0.5rem;
     border-radius: 0.5rem;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .content::-webkit-scrollbar {
@@ -165,6 +177,10 @@
     }
 }
 
+.scrollIndicator span {
+    animation: bounce 1.5s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) infinite;
+}
+
 .footer {
     padding: 1rem 1.5rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -200,12 +216,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
 }
 
 .checkbox input:checked+.checkmark {
     background: #60a5fa;
     border-color: #60a5fa;
+    box-shadow: 0 0 12px rgba(96, 165, 250, 0.4);
 }
 
 .checkbox input:checked+.checkmark::after {
@@ -225,16 +242,17 @@
     font-size: 1rem;
     font-weight: 600;
     cursor: not-allowed;
-    transition: all 0.2s ease;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
 }
 
 .confirmButton:not(:disabled) {
     background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
     color: #fff;
     cursor: pointer;
+    box-shadow: 0 0 20px rgba(96, 165, 250, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .confirmButton:not(:disabled):hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(96, 165, 250, 0.4);
+    box-shadow: 0 8px 24px rgba(96, 165, 250, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }

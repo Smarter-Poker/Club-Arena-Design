@@ -16,7 +16,8 @@
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -86,10 +87,15 @@
     box-sizing: border-box;
     overflow: hidden;
     text-overflow: ellipsis;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
 }
 
 .clubNameInput::placeholder {
     color: rgba(100, 180, 255, 0.4);
+}
+
+.clubNameInput:focus {
+    box-shadow: 0 0 12px rgba(100, 180, 255, 0.3);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -109,10 +115,12 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
 }
 
 .uploadLogoBtn:hover {
     background: rgba(0, 100, 180, 0.1);
+    transform: translateY(-2px);
 }
 
 .logoThumb {
@@ -120,6 +128,7 @@
     height: 80%;
     object-fit: contain;
     border-radius: 8px;
+    box-shadow: 0 0 16px rgba(100, 200, 255, 0.2);
 }
 
 .createLogoBtn {
@@ -135,10 +144,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
 }
 
 .createLogoBtn:hover {
     background: rgba(0, 100, 180, 0.1);
+    transform: translateY(-2px);
 }
 
 .plusIcon {
@@ -148,6 +159,12 @@
     text-shadow: 0 0 15px rgba(100, 200, 255, 0.8);
     pointer-events: none;
     line-height: 1;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
+}
+
+.createLogoBtn:hover .plusIcon {
+    text-shadow: 0 0 24px rgba(100, 200, 255, 1);
+    transform: scale(1.1);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -221,10 +238,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
 }
 
 .createButton:hover:not(:disabled) {
     background: rgba(0, 180, 255, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 0 20px rgba(0, 180, 255, 0.3);
 }
 
 .createButton:disabled {
@@ -235,7 +255,8 @@
 .spinner {
     font-size: 24px;
     color: #00d4ff;
-    animation: spin 1s linear infinite;
+    animation: spin 1s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) infinite;
+    text-shadow: 0 0 12px rgba(0, 212, 255, 0.5);
 }
 
 @keyframes spin {
@@ -324,10 +345,15 @@
     padding: 24px 32px;
     box-sizing: border-box;
     z-index: 10;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
 }
 
 .descriptionTextarea::placeholder {
     color: rgba(100, 180, 255, 0.4);
+}
+
+.descriptionTextarea:focus {
+    box-shadow: 0 0 12px rgba(100, 180, 255, 0.3);
 }
 
 .descriptionTextarea:disabled {
@@ -349,31 +375,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
 }
 
 .submitButton:hover:not(:disabled) {
     background: rgba(0, 180, 255, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 0 20px rgba(0, 180, 255, 0.3);
 }
 
 .submitButton:disabled {
     cursor: not-allowed;
     opacity: 0.5;
-}
-
-.spinner {
-    font-size: 24px;
-    color: #00d4ff;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
 }
 
 /* Error message */

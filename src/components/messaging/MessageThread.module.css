@@ -19,7 +19,9 @@
     padding: 0.875rem 1rem;
     background: rgba(26, 26, 46, 0.9);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px) saturate(1.2);
+    -webkit-backdrop-filter: blur(10px) saturate(1.2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .backBtn {
@@ -34,6 +36,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.backBtn:hover {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.15);
 }
 
 .headerUser {
@@ -58,6 +67,7 @@
     font-weight: 600;
     color: #fff;
     font-size: 1rem;
+    text-shadow: 0 0 12px rgba(255, 255, 255, 0.1);
 }
 
 .headerStatus {
@@ -99,6 +109,9 @@
     background: rgba(255, 255, 255, 0.1);
     padding: 0.5rem 0.75rem;
     border-radius: 18px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 12px rgba(139, 92, 246, 0.2);
 }
 
 .typingDots span {
@@ -106,7 +119,8 @@
     height: 6px;
     background: #8b5cf6;
     border-radius: 50%;
-    animation: bounce 1.4s infinite ease-in-out;
+    animation: bounce 1.4s infinite var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: 0 0 6px rgba(139, 92, 246, 0.5);
 }
 
 .typingDots span:nth-child(1) {

@@ -110,7 +110,7 @@
     height: 100%;
     background: var(--accent);
     border-radius: 2px;
-    transition: width 0.3s ease;
+    transition: width 0.3s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .progressStep {
@@ -166,6 +166,9 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
     padding: 2rem;
     margin-bottom: 1.5rem;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .stepContent h2 {
@@ -376,6 +379,9 @@
     border-radius: 1rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
     padding: 1.5rem;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .previewHeader {
@@ -507,10 +513,20 @@
     color: #fff;
 }
 
+.backBtn:hover {
+    transform: translateY(-1px);
+}
+
 .nextBtn:hover,
 .createBtn:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+    box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
+}
+
+.backBtn,
+.nextBtn,
+.createBtn {
+    transition: all 0.2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .createBtn:disabled {

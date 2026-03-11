@@ -12,6 +12,9 @@
     border-radius: 16px;
     overflow: hidden;
     max-height: 400px;
+    backdrop-filter: blur(10px) saturate(1.2);
+    -webkit-backdrop-filter: blur(10px) saturate(1.2);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 .header {
@@ -20,12 +23,14 @@
     justify-content: space-between;
     padding: 16px 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .header h3 {
     margin: 0;
     font-size: 16px;
     color: white;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
 }
 
 .onlineCount {
@@ -34,6 +39,9 @@
     background: rgba(16, 185, 129, 0.15);
     padding: 4px 10px;
     border-radius: 12px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
 }
 
 /* Search Bar */
@@ -52,6 +60,14 @@
     border-radius: 8px;
     color: white;
     font-size: 14px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
+}
+
+.searchBar input:focus {
+    outline: none;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 8px rgba(251, 191, 36, 0.2);
 }
 
 .searchBar input::placeholder {
@@ -68,6 +84,13 @@
     font-size: 20px;
     font-weight: 700;
     cursor: pointer;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.3);
+}
+
+.addBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(251, 191, 36, 0.4);
 }
 
 /* Add Friend Row */
@@ -85,6 +108,14 @@
     border-radius: 8px;
     color: white;
     font-size: 14px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
+}
+
+.addFriendRow input:focus {
+    outline: none;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 8px rgba(59, 130, 246, 0.3);
 }
 
 .addFriendRow button {
@@ -95,6 +126,13 @@
     color: white;
     font-weight: 600;
     cursor: pointer;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.addFriendRow button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .addFriendRow button:disabled {
@@ -131,11 +169,12 @@
     align-items: center;
     gap: 12px;
     padding: 10px 16px;
-    transition: background 0.2s ease;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
 }
 
 .friendRow:hover {
     background: rgba(255, 255, 255, 0.03);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* Avatar */
@@ -151,6 +190,7 @@
     overflow: hidden;
     cursor: pointer;
     flex-shrink: 0;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.05);
 }
 
 .avatar img {
@@ -210,9 +250,12 @@
     border-radius: 6px;
     font-size: 14px;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 .iconBtn:hover {
     background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.04);
 }

@@ -17,18 +17,24 @@
     border: 2px solid #2a3a4a;
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
     overflow: hidden;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     box-shadow:
         inset 0 2px 8px rgba(0, 0, 0, 0.4),
-        0 2px 10px rgba(0, 0, 0, 0.3);
+        0 2px 10px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .iconBox:hover:not(:disabled) {
     border-color: var(--metal-glow-cyan);
+    transform: translateY(-2px);
     box-shadow:
         inset 0 2px 8px rgba(0, 0, 0, 0.4),
-        0 0 20px rgba(0, 212, 255, 0.2);
+        0 4px 16px rgba(0, 212, 255, 0.25),
+        0 0 20px rgba(0, 212, 255, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .iconBox:hover:not(:disabled) .glowEffect {
@@ -67,7 +73,7 @@
 /* Icon Container */
 .iconContainer {
     color: var(--metal-text);
-    transition: all 0.2s ease;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
 }
 
 .plusIcon {
@@ -104,6 +110,6 @@
     height: 3px;
     background: linear-gradient(90deg, transparent, var(--metal-glow-cyan), transparent);
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
     box-shadow: 0 0 15px var(--metal-glow-cyan);
 }

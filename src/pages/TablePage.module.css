@@ -37,10 +37,13 @@
     background: linear-gradient(145deg, #0D5C2F 0%, #084d24 100%);
     border-radius: 50%;
     border: 16px solid #2C1810;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     box-shadow:
         0 0 0 4px #5D4E37,
         0 20px 60px rgba(0, 0, 0, 0.5),
-        inset 0 0 100px rgba(0, 0, 0, 0.3);
+        inset 0 0 100px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -55,6 +58,8 @@
     padding: var(--space-4) var(--space-8);
     background: rgba(0, 0, 0, 0.3);
     border-radius: var(--radius-xl);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
 }
 
 .potLabel {

@@ -13,7 +13,9 @@
     bottom: 0;
     background: rgba(0, 0, 0, 0.7);
     z-index: 999;
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn 0.3s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 @keyframes fadeIn {
@@ -39,10 +41,12 @@
     /* Above GlobalHeader (1000) */
     display: flex;
     flex-direction: column;
-    animation: slideIn 0.3s ease;
+    animation: slideIn 0.3s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
     overflow-y: auto;
     padding-top: 56px;
     /* Space for GlobalHeader */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 @keyframes slideIn {
@@ -73,13 +77,14 @@
     color: #ecf0f1;
     font-size: 16px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
     width: 100%;
     text-align: left;
 }
 
 .menuItem:hover {
     background: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .itemLeft {
@@ -120,6 +125,7 @@
     border-radius: 4px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    box-shadow: 0 0 8px rgba(46, 204, 113, 0.4);
 }
 
 /* Toggle Switch */
@@ -130,7 +136,7 @@
     border-radius: 14px;
     border: none;
     cursor: pointer;
-    transition: background 0.3s;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
     display: flex;
     align-items: center;
     padding: 0 4px;
@@ -138,10 +144,12 @@
 
 .toggleOff {
     background: #7f8c8d;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .toggleOn {
     background: #27ae60;
+    box-shadow: 0 0 12px rgba(39, 174, 96, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .toggleSlider {
@@ -150,7 +158,7 @@
     height: 20px;
     border-radius: 50%;
     background: white;
-    transition: transform 0.3s;
+    transition: transform var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
     left: 4px;
 }
 

@@ -375,9 +375,11 @@
     border: 2px solid rgba(0, 200, 255, 0.3);
     border-radius: 20px;
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     margin: 20px 0;
     width: 100%;
     max-width: 400px;
+    box-shadow: 0 0 20px rgba(0, 200, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .noClubsMessage p {
@@ -488,11 +490,12 @@
     inset: 0;
     background: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
-    animation: fadeIn 0.2s ease;
+    animation: fadeIn 0.2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 @keyframes fadeIn {
@@ -507,8 +510,10 @@
     padding: 40px;
     min-width: 320px;
     max-width: 400px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 200, 255, 0.2);
-    animation: slideUp 0.3s ease;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 200, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    animation: slideUp 0.3s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 @keyframes slideUp {
@@ -585,12 +590,12 @@
     cursor: pointer;
     text-transform: uppercase;
     letter-spacing: 2px;
-    transition: all 0.3s ease;
+    transition: all 0.3s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .modalButtonPrimary:hover {
     background: linear-gradient(135deg, #33ddff, #33aaff);
-    box-shadow: 0 8px 30px rgba(0, 200, 255, 0.4);
+    box-shadow: 0 12px 30px rgba(0, 200, 255, 0.4);
     transform: translateY(-2px);
 }
 
@@ -612,7 +617,7 @@
     cursor: pointer;
     text-transform: uppercase;
     letter-spacing: 2px;
-    transition: all 0.3s ease;
+    transition: all 0.3s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .modalButtonSecondary:hover {

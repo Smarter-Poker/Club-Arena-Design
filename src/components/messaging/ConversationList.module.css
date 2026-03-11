@@ -22,10 +22,12 @@
     width: 100%;
     padding: 0.75rem 1rem;
     background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
     color: #fff;
     font-size: 0.9rem;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
 }
 
 .searchInput::placeholder {
@@ -53,11 +55,12 @@
     padding: 0.875rem;
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .item:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateX(2px);
 }
 
 .item.selected {
@@ -207,13 +210,13 @@
     color: #fff;
     font-size: 1.5rem;
     cursor: pointer;
-    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
-    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4), 0 0 20px rgba(139, 92, 246, 0.3);
+    transition: transform 0.2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)), box-shadow 0.2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .fab:hover {
-    transform: scale(1.1);
-    box-shadow: 0 12px 32px rgba(139, 92, 246, 0.5);
+    transform: scale(1.1) translateY(-2px);
+    box-shadow: 0 12px 32px rgba(139, 92, 246, 0.5), 0 0 24px rgba(139, 92, 246, 0.4);
 }
 
 /* 🏠 Club Messages Widget */
@@ -227,13 +230,16 @@
     border: 1px solid rgba(102, 126, 234, 0.3);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 .clubWidget:hover {
     background: linear-gradient(135deg, rgba(102, 126, 234, 0.25) 0%, rgba(118, 75, 162, 0.25) 100%);
     border-color: rgba(102, 126, 234, 0.5);
-    transform: translateX(4px);
+    transform: translateX(4px) translateY(-1px);
+    box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
 }
 
 .clubWidgetIcon {

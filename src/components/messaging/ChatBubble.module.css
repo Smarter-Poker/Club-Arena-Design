@@ -48,11 +48,14 @@
     border-radius: 18px;
     cursor: pointer;
     user-select: none;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
 }
 
 .sent .bubble {
     background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
     border-bottom-right-radius: 4px;
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
 }
 
 .received .bubble {
@@ -154,6 +157,8 @@
     margin-bottom: 0.5rem;
     z-index: 101;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .reactionBtn {
@@ -190,6 +195,8 @@
     z-index: 101;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     min-width: 120px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .menuItem {

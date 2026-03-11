@@ -20,7 +20,9 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     white-space: nowrap;
-    transition: all 0.2s ease;
+    transition: all var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) 0.3s;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .icon {
@@ -45,7 +47,9 @@
     border: 1px solid #dc2626;
     box-shadow:
         0 0 8px rgba(220, 38, 38, 0.6),
-        0 0 16px rgba(220, 38, 38, 0.3);
+        0 0 16px rgba(220, 38, 38, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    text-shadow: 0 0 12px rgba(220, 38, 38, 0.4);
 }
 
 /* SUCCESS - Green glow */
@@ -55,7 +59,9 @@
     border: 1px solid #10b981;
     box-shadow:
         0 0 8px rgba(16, 185, 129, 0.5),
-        0 0 16px rgba(16, 185, 129, 0.2);
+        0 0 16px rgba(16, 185, 129, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    text-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
 }
 
 /* WARNING - Orange/amber glow */
@@ -65,7 +71,9 @@
     border: 1px solid #f59e0b;
     box-shadow:
         0 0 8px rgba(245, 158, 11, 0.5),
-        0 0 16px rgba(245, 158, 11, 0.2);
+        0 0 16px rgba(245, 158, 11, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    text-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
 }
 
 /* DANGER - Red glow (non-pulsing) */
@@ -75,7 +83,9 @@
     border: 1px solid #ef4444;
     box-shadow:
         0 0 8px rgba(239, 68, 68, 0.5),
-        0 0 16px rgba(239, 68, 68, 0.2);
+        0 0 16px rgba(239, 68, 68, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    text-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
 }
 
 /* INFO - Cyan glow (Metal UI accent) */
@@ -85,7 +95,9 @@
     border: 1px solid #22d3ee;
     box-shadow:
         0 0 8px rgba(34, 211, 238, 0.5),
-        0 0 16px rgba(34, 211, 238, 0.2);
+        0 0 16px rgba(34, 211, 238, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    text-shadow: 0 0 12px rgba(34, 211, 238, 0.3);
 }
 
 /* PREMIUM - Gold gradient */
@@ -95,7 +107,9 @@
     border: 1px solid #fbbf24;
     box-shadow:
         0 0 8px rgba(251, 191, 36, 0.5),
-        0 0 16px rgba(251, 191, 36, 0.2);
+        0 0 16px rgba(251, 191, 36, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    text-shadow: 0 0 12px rgba(251, 191, 36, 0.3);
 }
 
 /* MUTED - Subtle gray */
@@ -103,6 +117,7 @@
     background: linear-gradient(135deg, #475569 0%, #334155 100%);
     color: #94a3b8;
     border: 1px solid #475569;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -129,7 +144,7 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 .pulse {
-    animation: badgePulse 2s ease-in-out infinite;
+    animation: badgePulse 2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) infinite;
 }
 
 @keyframes badgePulse {

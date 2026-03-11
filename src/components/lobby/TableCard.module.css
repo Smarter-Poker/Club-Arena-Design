@@ -10,9 +10,11 @@
     background: var(--gradient-card);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-xl);
-    transition: border-color var(--duration-normal) var(--ease-out-expo),
-                transform var(--duration-normal) var(--ease-out-expo),
-                box-shadow var(--duration-normal) var(--ease-out-expo);
+    transition: border-color var(--duration-normal) var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)),
+                transform var(--duration-normal) var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)),
+                box-shadow var(--duration-normal) var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
 }
 
 .card:hover {

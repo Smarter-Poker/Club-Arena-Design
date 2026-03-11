@@ -26,6 +26,8 @@
             rgba(100, 100, 100, 0.03) 100%);
     border: 2px solid #2a3a4a;
     border-radius: 12px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.08),
         inset 0 -1px 0 rgba(0, 0, 0, 0.15);
@@ -63,7 +65,7 @@
 
 .saveButton:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 0 25px rgba(0, 212, 255, 0.6);
+    box-shadow: 0 8px 25px rgba(0, 212, 255, 0.6);
 }
 
 .saveButton:disabled {
@@ -110,6 +112,8 @@
     border: 2px solid #2a3a4a;
     border-radius: 14px;
     padding: 1.5rem;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.08),
         inset 0 -1px 0 rgba(0, 0, 0, 0.15);
@@ -205,7 +209,7 @@
     border: 2px solid #3a4a5a;
     border-radius: 14px;
     position: relative;
-    transition: all 0.3s ease;
+    transition: all 0.3s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .toggleSlider::after {
@@ -358,13 +362,16 @@
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 .actionButton:hover {
     border-color: #00d4ff;
     color: #00d4ff;
-    box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+    transform: translateY(-1px);
 }
 
 .actionButtonSecondary {

@@ -47,8 +47,8 @@
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 15px rgba(65, 105, 225, 0.3);
+    transition: all 0.2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: 0 4px 15px rgba(65, 105, 225, 0.3), 0 0 20px rgba(65, 105, 225, 0.25);
 }
 
 .actionButton:hover {

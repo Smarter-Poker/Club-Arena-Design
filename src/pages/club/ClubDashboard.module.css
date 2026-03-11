@@ -50,6 +50,8 @@
     border-bottom: 1px solid rgba(139, 92, 246, 0.2);
     flex-wrap: wrap;
     gap: 1rem;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .clubInfo {

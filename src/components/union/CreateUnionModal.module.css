@@ -21,8 +21,10 @@
     max-width: 500px;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: var(--shadow-xl);
-    animation: slideUp var(--duration-normal) var(--ease-out);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: var(--shadow-xl), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    animation: slideUp var(--duration-normal) var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .modal-header {
@@ -34,6 +36,8 @@
     position: sticky;
     top: 0;
     background: var(--surface-card);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     z-index: 10;
 }
 
@@ -83,6 +87,8 @@
     position: sticky;
     bottom: 0;
     background: var(--surface-card);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 @keyframes slideUp {

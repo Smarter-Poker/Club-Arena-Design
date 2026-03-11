@@ -6,13 +6,16 @@
 
 .viewer {
     background: linear-gradient(180deg, #1a1a2e 0%, #16162a 100%);
-    border: 1px solid rgba(251, 191, 36, 0.2);
+    border: 1px solid rgba(251, 191, 36, 0.15);
     border-radius: 16px;
     padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 16px;
     max-width: 500px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 .header {
@@ -56,6 +59,8 @@
     flex-direction: column;
     align-items: center;
     gap: 12px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 .communityCards {
@@ -123,6 +128,8 @@
     background: rgba(255, 255, 255, 0.05);
     border-radius: 8px;
     animation: actionPop 0.3s ease;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
 }
 
 @keyframes actionPop {
@@ -247,6 +254,7 @@
     color: #10b981;
     font-weight: 600;
     animation: winnerPop 0.5s ease;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.25);
 }
 
 @keyframes winnerPop {
