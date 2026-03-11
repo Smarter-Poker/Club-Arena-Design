@@ -42,6 +42,7 @@ export default function TournamentPage() {
     const [canAddOnNow, setCanAddOnNow] = useState(false);
     const [isProcessingRebuy, setIsProcessingRebuy] = useState(false);
     const selectedTournamentRef = useRef<Tournament | null>(null);
+    const [visibleTournaments, setVisibleTournaments] = useState<Set<string>>(new Set());
 
     // Keep ref in sync with state
     useEffect(() => { selectedTournamentRef.current = selectedTournament; }, [selectedTournament]);
@@ -109,6 +110,17 @@ export default function TournamentPage() {
         }
         loadTournaments();
     }, [clubId, tournamentId]);
+
+    // Stagger animation for tournament cards
+    useEffect(() => {
+        if (tournaments.length === 0) return;
+        setVisibleTournaments(new Set());
+        tournaments.forEach((tourn, index) => {
+            setTimeout(() => {
+                setVisibleTournaments(prev => new Set(prev).add(tourn.id));
+            }, index * 60);
+        });
+    }, [tournaments]);
 
     // ── Realtime subscription: live tournament updates ──
     useEffect(() => {
@@ -517,7 +529,8 @@ export default function TournamentPage() {
                         filteredTournaments.map(tourn => (
                             <div
                                 key={tourn.id}
-                                className={`tournament-card ${selectedTournament?.id === tourn.id ? 'selected' : ''}`}
+                                className={`tournament-card ${selectedTournament?.id === tourn.id ? 'selected' : ''} ${visibleTournaments.has(tourn.id) ? 'fadeInUp' : 'hidden'}`}
+                                style={visibleTournaments.has(tourn.id) ? undefined : { opacity: 0, transform: 'translateY(8px)' }}
                                 onClick={() => {
                                     setSelectedTournament(tourn);
                                     // On mobile, navigate to full detail page

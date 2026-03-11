@@ -171,6 +171,22 @@ export default function FriendsPage() {
         loadFriends();
     };
 
+    // Stagger friend rows on render
+    useEffect(() => {
+        const timers = filteredFriends.map((_, i) =>
+            setTimeout(() => setVisibleFriendRows(prev => new Set([...prev, i])), i * 50)
+        );
+        return () => timers.forEach(t => clearTimeout(t));
+    }, [filteredFriends.length]);
+
+    // Stagger pending rows
+    useEffect(() => {
+        const timers = pendingRequests.map((_, i) =>
+            setTimeout(() => setVisiblePendingRows(prev => new Set([...prev, i])), i * 50)
+        );
+        return () => timers.forEach(t => clearTimeout(t));
+    }, [pendingRequests.length]);
+
     // Update friend online status when presence changes
     const friendsWithStatus = friends.map(f => ({
         ...f,
@@ -232,6 +248,12 @@ export default function FriendsPage() {
                             placeholder="Search friends..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
+                            onFocus={() => setSearchFocused(true)}
+                            onBlur={() => setSearchFocused(false)}
+                            style={{
+                                boxShadow: searchFocused ? '0 0 16px rgba(0, 212, 255, 0.4)' : 'none',
+                                transition: 'box-shadow 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            }}
                         />
                     </div>
 
@@ -245,11 +267,16 @@ export default function FriendsPage() {
                                 <button className="btn btn-primary" onClick={() => navigate('/search?tab=players')}>Find Friends</button>
                             </div>
                         ) : (
-                            filteredFriends.map(friend => (
+                            filteredFriends.map((friend, index) => (
                                 <div
                                     key={friend.id}
                                     className="friend-row"
                                     onClick={() => navigate(`/profile/${friend.user_id}`)}
+                                    style={{
+                                        opacity: visibleFriendRows.has(index) ? 1 : 0,
+                                        transform: visibleFriendRows.has(index) ? 'translateY(0)' : 'translateY(8px)',
+                                        transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                    }}
                                 >
                                     <div className="friend-avatar">
                                         {friend.avatar_url ? (
@@ -286,8 +313,16 @@ export default function FriendsPage() {
                             <p>No pending requests</p>
                         </div>
                     ) : (
-                        pendingRequests.map(request => (
-                            <div key={request.id} className="request-row">
+                        pendingRequests.map((request, index) => (
+                            <div
+                                key={request.id}
+                                className="request-row"
+                                style={{
+                                    opacity: visiblePendingRows.has(index) ? 1 : 0,
+                                    transform: visiblePendingRows.has(index) ? 'translateY(0)' : 'translateY(8px)',
+                                    transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                }}
+                            >
                                 <div className="request-avatar">
                                     {request.avatar_url ? (
                                         <img src={request.avatar_url} alt="" />

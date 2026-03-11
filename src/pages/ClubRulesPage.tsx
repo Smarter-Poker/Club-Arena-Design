@@ -13,6 +13,12 @@ import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import './ClubRulesPage.css';
 
+const rulesLineAnimationStyle = (index: number) => ({
+    opacity: 0,
+    transform: 'translateY(4px)',
+    animation: `fadeInUp 0.4s ease-out ${index * 40}ms forwards`,
+});
+
 export default function ClubRulesPage() {
     const { clubId } = useParams<{ clubId: string }>();
     const { user } = useUserStore();
@@ -127,7 +133,7 @@ export default function ClubRulesPage() {
                         {rules ? (
                             <div className="rules-text">
                                 {rules.split('\n').map((line, i) => (
-                                    <p key={i}>{line || '\u00A0'}</p>
+                                    <p key={i} style={rulesLineAnimationStyle(i)}>{line || '\u00A0'}</p>
                                 ))}
                             </div>
                         ) : (
