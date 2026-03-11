@@ -8,365 +8,413 @@ import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { clubService } from '../../services/ClubService';
 import { tableService } from '../../services/TableService';
 import { tournamentService } from '../../services/TournamentService';
-import { supabase } from '../../lib/supabase'
+import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
+import { useUserStore } from '../../stores/useUserStore';
 import type { Club, PokerTable, Tournament } from '../../types/database.types';
 import ClubBottomNav from '../../components/club/ClubBottomNav';
 import './ClubLobby.css';
 
 // Animation utilities
 const cardAnimationStyle = (index: number) => ({
-    opacity: 0,
-    transform: 'translateY(8px)',
-    animation: `fadeInUp 0.5s ease-out ${index * 60}ms forwards`,
+  opacity: 0,
+  transform: 'translateY(8px)',
+  animation: `fadeInUp 0.5s ease-out ${index * 60}ms forwards`,
 });
 
-type GameFilter = 'ALL' | 'Hold\'em' | 'Omaha' | 'Mixed' | 'MTT' | 'Spin-It' | 'SN';
+type GameFilter = 'ALL' | "Hold'em" | 'Omaha' | 'Mixed' | 'MTT' | 'Spin-It' | 'SN';
 
 export default function ClubLobby() {
-    const [searchParams] = useSearchParams();
-    const navigate = useNavigate();
-    const { clubId: routeClubId } = useParams<{ clubId?: string }>();
-    const clubId = routeClubId || searchParams.get('club') || undefined;
-    const [club, setClub] = useState<Club | null>(null);
-    const [tables, setTables] = useState<PokerTable[]>([]);
-    const [tournaments, setTournaments] = useState<Tournament[]>([]);
-    const [activeFilter, setActiveFilter] = useState<GameFilter>('ALL');
-    const [isLoading, setIsLoading] = useState(true);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { clubId: routeClubId } = useParams<{ clubId?: string }>();
+  const clubId = routeClubId || searchParams.get('club') || undefined;
+  const [club, setClub] = useState<Club | null>(null);
+  const [tables, setTables] = useState<PokerTable[]>([]);
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [activeFilter, setActiveFilter] = useState<GameFilter>('ALL');
+  const [isLoading, setIsLoading] = useState(true);
+  const [chipBalance, setChipBalance] = useState(0);
+  const [diamondBalance, setDiamondBalance] = useState(0);
+  const currentUser = useUserStore((s) => s.user);
 
-    // UNION-FIRST: Check if this club is in a union and redirect
-    useEffect(() => {
-        if (!clubId) return;
-        const checkUnion = async () => {
-            try {
-                const { data: ucRow } = await supabase
-                    .from('union_clubs')
-                    .select('union_id')
-                    .eq('club_id', clubId)
-                    .limit(1)
-                    .maybeSingle();
-                if (ucRow) {
-                    navigate(`/unions/${ucRow.union_id}`, { replace: true });
-                }
-            } catch {
-                // Fail-open for standalone clubs
-            }
-        };
-        checkUnion();
-    }, [clubId, navigate]);
-
-    useEffect(() => {
-        if (!clubId) {
-            setIsLoading(false);
-            return;
+  // UNION-FIRST: Check if this club is in a union and redirect
+  useEffect(() => {
+    if (!clubId) return;
+    const checkUnion = async () => {
+      try {
+        const { data: ucRow } = await supabase
+          .from('union_clubs')
+          .select('union_id')
+          .eq('club_id', clubId)
+          .limit(1)
+          .maybeSingle();
+        if (ucRow) {
+          navigate(`/unions/${ucRow.union_id}`, { replace: true });
         }
-        loadClubData();
-    }, [clubId]);
-
-    // ── Realtime subscription: live table and tournament updates ──
-    useEffect(() => {
-        if (!clubId) return;
-
-        const channelKey = `club-lobby-${clubId}`;
-
-
-        const channel = masterBus.getOrCreateChannel(channelKey);
-            channel
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'tables',
-                    filter: `club_id=eq.${clubId}`,
-                },
-                (payload) => {
-                    if (payload.eventType === 'UPDATE' && payload.new) {
-                        setTables(prev =>
-                            prev.map(t => t.id === payload.new.id ? { ...t, ...payload.new } : t)
-                        );
-                    } else if (payload.eventType === 'INSERT' && payload.new) {
-                        setTables(prev => [payload.new as any, ...prev]);
-                    } else if (payload.eventType === 'DELETE' && payload.old) {
-                        setTables(prev => prev.filter(t => t.id !== (payload.old as any).id));
-                    }
-                }
-            )
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'tournaments',
-                    filter: `club_id=eq.${clubId}`,
-                },
-                (payload) => {
-                    if (payload.eventType === 'UPDATE' && payload.new) {
-                        setTournaments(prev =>
-                            prev.map(t => t.id === payload.new.id ? { ...t, ...payload.new } : t)
-                        );
-                    } else if (payload.eventType === 'INSERT' && payload.new) {
-                        setTournaments(prev => [payload.new as any, ...prev]);
-                    } else if (payload.eventType === 'DELETE' && payload.old) {
-                        setTournaments(prev => prev.filter(t => t.id !== (payload.old as any).id));
-                    }
-                }
-            )
-            .subscribe();
-
-        return () => {
-            masterBus.removeRegisteredChannel(channelKey);
-        };
-    }, [clubId]);
-
-    const loadClubData = async () => {
-        if (!clubId) return;
-        setIsLoading(true);
-        try {
-            const [clubData, tableData, tournamentData] = await Promise.all([
-                clubService.getClub(clubId),
-                tableService.getClubTables(clubId),
-                tournamentService.getTournaments(clubId),
-            ]);
-            setClub(clubData);
-            setTables(tableData);
-            setTournaments(tournamentData);
-        } catch {
-            // Error loading club data - user will see empty state
-        }
-        setIsLoading(false);
+      } catch {
+        // Fail-open for standalone clubs
+      }
     };
+    checkUnion();
+  }, [clubId, navigate]);
 
-    const filters: GameFilter[] = ['ALL', 'Hold\'em', 'Omaha', 'Mixed', 'MTT', 'Spin-It', 'SN'];
-
-    const filteredTournaments = tournaments.filter(t => {
-        if (activeFilter === 'ALL') return true;
-        if (activeFilter === 'MTT') return t.type === 'mtt';
-        if (activeFilter === 'SN') return t.type === 'sng';
-        return true;
-    });
-
-    if (isLoading) {
-        return (
-            <div className="club-lobby loading">
-                <div className="loader">Loading Club...</div>
-            </div>
-        );
+  useEffect(() => {
+    if (!clubId) {
+      setIsLoading(false);
+      return;
     }
+    loadClubData();
+  }, [clubId]);
 
-    if (!club) {
-        return (
-            <div className="club-lobby error">
-                <h2>Club not found</h2>
-                <Link to="/clubs" className="btn btn-primary">Back to Clubs</Link>
-            </div>
-        );
+  // ── Realtime subscription: live table and tournament updates ──
+  useEffect(() => {
+    if (!clubId) return;
+
+    const channelKey = `club-lobby-${clubId}`;
+
+    const channel = masterBus.getOrCreateChannel(channelKey);
+    channel
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tables',
+          filter: `club_id=eq.${clubId}`,
+        },
+        (payload) => {
+          if (payload.eventType === 'UPDATE' && payload.new) {
+            setTables((prev) =>
+              prev.map((t) => (t.id === payload.new.id ? { ...t, ...payload.new } : t))
+            );
+          } else if (payload.eventType === 'INSERT' && payload.new) {
+            setTables((prev) => [payload.new as any, ...prev]);
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            setTables((prev) => prev.filter((t) => t.id !== (payload.old as any).id));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tournaments',
+          filter: `club_id=eq.${clubId}`,
+        },
+        (payload) => {
+          if (payload.eventType === 'UPDATE' && payload.new) {
+            setTournaments((prev) =>
+              prev.map((t) => (t.id === payload.new.id ? { ...t, ...payload.new } : t))
+            );
+          } else if (payload.eventType === 'INSERT' && payload.new) {
+            setTournaments((prev) => [payload.new as any, ...prev]);
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            setTournaments((prev) => prev.filter((t) => t.id !== (payload.old as any).id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      masterBus.removeRegisteredChannel(channelKey);
+    };
+  }, [clubId]);
+
+  const loadClubData = async () => {
+    if (!clubId) return;
+    setIsLoading(true);
+    try {
+      const [clubData, tableData, tournamentData] = await Promise.all([
+        clubService.getClub(clubId),
+        tableService.getClubTables(clubId),
+        tournamentService.getTournaments(clubId),
+      ]);
+      setClub(clubData);
+      setTables(tableData);
+      setTournaments(tournamentData);
+
+      // Load wallet balances for current user
+      if (currentUser?.id) {
+        const { data: walletData } = await supabase
+          .from('wallets')
+          .select('wallet_type, balance')
+          .eq('user_id', currentUser.id)
+          .eq('wallet_type', 'PLAYER')
+          .maybeSingle();
+        if (walletData) setChipBalance(walletData.balance || 0);
+
+        const { data: diamondData } = await supabase
+          .from('diamond_wallets')
+          .select('balance')
+          .eq('user_id', currentUser.id)
+          .maybeSingle();
+        if (diamondData) setDiamondBalance(diamondData.balance || 0);
+      }
+    } catch {
+      // Error loading club data - user will see empty state
     }
+    setIsLoading(false);
+  };
 
+  const filters: GameFilter[] = ['ALL', "Hold'em", 'Omaha', 'Mixed', 'MTT', 'Spin-It', 'SN'];
+
+  const filteredTournaments = tournaments.filter((t) => {
+    if (activeFilter === 'ALL') return true;
+    if (activeFilter === 'MTT') return t.type === 'mtt';
+    if (activeFilter === 'SN') return t.type === 'sng';
+    return true;
+  });
+
+  if (isLoading) {
     return (
-        <div className="club-lobby">
-            {/* Header */}
-            <header className="lobby-header">
-                <div className="header-left">
-                    <Link to="/clubs" className="back-btn">‹‹</Link>
-                    <div className="header-icons">
-                        <button className="icon-btn">Menu</button>
-                        <button className="icon-btn">Search</button>
-                    </div>
-                </div>
-                <div className="header-center">
-                    <span className="vip-badge"> VIP</span>
-                </div>
-                <div className="header-right">
-                    <div className="jackpot-display">
-                        <span className="jackpot-label">BAD BEAT</span>
-                        <span className="jackpot-label">JACKPOT</span>
-                        <span className="jackpot-amount">
-                            {((club as any)?.bad_beat_jackpot || 0).toLocaleString()}
-                        </span>
-                    </div>
-                </div>
-            </header>
-
-            {/* Club Card */}
-            <div className="club-card">
-                <div className="club-avatar">
-                    <span className="club-logo">♠</span>
-                </div>
-                <div className="club-info">
-                    <h2 className="club-name">{club.name}</h2>
-                    <div className="club-meta">
-                        <span className="club-id">ID: {club.club_id}</span>
-                        <span className="member-count"> {(club as any).member_count || 0}</span>
-                    </div>
-                </div>
-                <div className="club-balances">
-                    <div className="balance-row">
-                        <span className="chip-icon gold"></span>
-                        <span className="balance-amount">8,992.92</span>
-                        <button className="add-btn">+</button>
-                    </div>
-                    <div className="balance-row">
-                        <span className="chip-icon diamond"></span>
-                        <span className="balance-amount">0.00</span>
-                    </div>
-                </div>
-            </div>
-
-            {/* Contact Banner */}
-            <div className="contact-banner">
-                <span>Questions or concerns? Contact @Johnnyd44 on telegram</span>
-                <div className="union-badge">
-                    <span> UNION</span>
-                </div>
-            </div>
-
-            {/* Game Type Filters */}
-            <div className="filter-tabs">
-                {filters.map((filter) => (
-                    <button
-                        key={filter}
-                        className={`filter-tab ${activeFilter === filter ? 'active' : ''}`}
-                        onClick={() => setActiveFilter(filter)}
-                    >
-                        {filter}
-                    </button>
-                ))}
-                <button className="filter-more">▼</button>
-            </div>
-
-            {/* Tournament Grid */}
-            <div className="tournament-grid">
-                {filteredTournaments.length > 0 ? (
-                    filteredTournaments.map((tournament, idx) => (
-                        <div key={tournament.id} style={cardAnimationStyle(idx)}>
-                            <TournamentCard tournament={tournament} clubId={clubId!} />
-                        </div>
-                    ))
-                ) : tables.length > 0 ? (
-                    tables.map((table, idx) => (
-                        <div key={table.id} style={cardAnimationStyle(idx)}>
-                            <TableCard table={table} clubId={clubId!} />
-                        </div>
-                    ))
-                ) : (
-                    <div className="empty-state">
-                        <span className="empty-icon">♠</span>
-                        <p>No games available</p>
-                        <p className="empty-hint">Check back later for new tables!</p>
-                    </div>
-                )}
-            </div>
-
-            {/* Bottom Navigation */}
-            {clubId && <ClubBottomNav clubId={clubId} />}
-        </div>
+      <div className="club-lobby loading">
+        <div className="loader">Loading Club...</div>
+      </div>
     );
+  }
+
+  if (!club) {
+    return (
+      <div className="club-lobby error">
+        <h2>Club not found</h2>
+        <Link to="/clubs" className="btn btn-primary">
+          Back to Clubs
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="club-lobby">
+      {/* Header */}
+      <header className="lobby-header">
+        <div className="header-left">
+          <Link to="/clubs" className="back-btn">
+            ‹‹
+          </Link>
+          <div className="header-icons">
+            <button className="icon-btn">Menu</button>
+            <button className="icon-btn">Search</button>
+          </div>
+        </div>
+        <div className="header-center">
+          <span className="vip-badge"> VIP</span>
+        </div>
+        <div className="header-right">
+          <div className="jackpot-display">
+            <span className="jackpot-label">BAD BEAT</span>
+            <span className="jackpot-label">JACKPOT</span>
+            <span className="jackpot-amount">
+              {((club as any)?.bad_beat_jackpot || 0).toLocaleString()}
+            </span>
+          </div>
+        </div>
+      </header>
+
+      {/* Club Card */}
+      <div className="club-card">
+        <div className="club-avatar">
+          <span className="club-logo">♠</span>
+        </div>
+        <div className="club-info">
+          <h2 className="club-name">{club.name}</h2>
+          <div className="club-meta">
+            <span className="club-id">ID: {club.club_id}</span>
+            <span className="member-count"> {(club as any).member_count || 0}</span>
+          </div>
+        </div>
+        <div className="club-balances">
+          <div className="balance-row">
+            <span className="chip-icon gold"></span>
+            <span className="balance-amount">
+              {chipBalance.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
+            <button className="add-btn">+</button>
+          </div>
+          <div className="balance-row">
+            <span className="chip-icon diamond"></span>
+            <span className="balance-amount">
+              {diamondBalance.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Contact Banner */}
+      <div className="contact-banner">
+        <span>Questions or concerns? Contact @Johnnyd44 on telegram</span>
+        <div className="union-badge">
+          <span> UNION</span>
+        </div>
+      </div>
+
+      {/* Game Type Filters */}
+      <div className="filter-tabs">
+        {filters.map((filter) => (
+          <button
+            key={filter}
+            className={`filter-tab ${activeFilter === filter ? 'active' : ''}`}
+            onClick={() => setActiveFilter(filter)}
+          >
+            {filter}
+          </button>
+        ))}
+        <button className="filter-more">▼</button>
+      </div>
+
+      {/* Tournament Grid */}
+      <div className="tournament-grid">
+        {filteredTournaments.length > 0 ? (
+          filteredTournaments.map((tournament, idx) => (
+            <div key={tournament.id} style={cardAnimationStyle(idx)}>
+              <TournamentCard tournament={tournament} clubId={clubId!} />
+            </div>
+          ))
+        ) : tables.length > 0 ? (
+          tables.map((table, idx) => (
+            <div key={table.id} style={cardAnimationStyle(idx)}>
+              <TableCard table={table} clubId={clubId!} />
+            </div>
+          ))
+        ) : (
+          <div className="empty-state">
+            <span className="empty-icon">♠</span>
+            <p>No games available</p>
+            <p className="empty-hint">Check back later for new tables!</p>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Navigation */}
+      {clubId && <ClubBottomNav clubId={clubId} />}
+    </div>
+  );
 }
 
 // Tournament Card Component
 function TournamentCard({ tournament, clubId }: { tournament: Tournament; clubId: string }) {
-    const getTypeLabel = (type: string | undefined) => {
-        if (!type) return 'MTT';
-        switch (type) {
-            case 'mtt': return 'XMTT';
-            case 'sng': return 'SNG';
-            default: return (type || 'MTT').toUpperCase();
-        }
-    };
+  const getTypeLabel = (type: string | undefined) => {
+    if (!type) return 'MTT';
+    switch (type) {
+      case 'mtt':
+        return 'XMTT';
+      case 'sng':
+        return 'SNG';
+      default:
+        return (type || 'MTT').toUpperCase();
+    }
+  };
 
-    const formatDate = (date: string | null) => {
-        if (!date) return 'TBD';
-        return new Date(date).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
-    };
+  const formatDate = (date: string | null) => {
+    if (!date) return 'TBD';
+    return new Date(date).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
 
-    return (
-        <Link to={`/clubs/${clubId}/tournament/${tournament.id}`} className="tournament-card">
-            <div className="card-header">
-                <div className="trophy-icon">T</div>
-                <div className="seats-badge">9 Max</div>
-            </div>
-            <div className="card-body">
-                <div className="buyin-row">
-                    <span className="buyin-label">Buy-in</span>
-                    <span className="buyin-amount">{tournament.buy_in_amount}</span>
-                </div>
-                <div className="timer-row">
-                    <span className="timer-icon">◷</span>
-                    <span className="timer-value">10min</span>
-                </div>
-            </div>
-            <div className="card-footer">
-                <span className={`type-badge ${tournament.game_type || tournament.type || 'mtt'}`}>{getTypeLabel(tournament.game_type || tournament.type || 'mtt')}</span>
-                <span className="variant-badge">NLH</span>
-            </div>
-            <div className="card-name">
-                <span className="prize-icon">●</span>
-                <span className="tournament-name">{tournament.name}</span>
-            </div>
-            <div className="card-date">{formatDate(tournament.start_time ?? null)}</div>
-        </Link>
-    );
+  return (
+    <Link to={`/clubs/${clubId}/tournament/${tournament.id}`} className="tournament-card">
+      <div className="card-header">
+        <div className="trophy-icon">T</div>
+        <div className="seats-badge">9 Max</div>
+      </div>
+      <div className="card-body">
+        <div className="buyin-row">
+          <span className="buyin-label">Buy-in</span>
+          <span className="buyin-amount">{tournament.buy_in_amount}</span>
+        </div>
+        <div className="timer-row">
+          <span className="timer-icon">◷</span>
+          <span className="timer-value">10min</span>
+        </div>
+      </div>
+      <div className="card-footer">
+        <span className={`type-badge ${tournament.game_type || tournament.type || 'mtt'}`}>
+          {getTypeLabel(tournament.game_type || tournament.type || 'mtt')}
+        </span>
+        <span className="variant-badge">NLH</span>
+      </div>
+      <div className="card-name">
+        <span className="prize-icon">●</span>
+        <span className="tournament-name">{tournament.name}</span>
+      </div>
+      <div className="card-date">{formatDate(tournament.start_time ?? null)}</div>
+    </Link>
+  );
 }
 
 // Table Card Component
 function TableCard({ table, clubId }: { table: PokerTable; clubId: string }) {
-    const [displayCount, setDisplayCount] = useState(0);
+  const [displayCount, setDisplayCount] = useState(0);
 
-    useEffect(() => {
-        const target = table.current_players || 0;
-        if (displayCount === target) return;
+  useEffect(() => {
+    const target = table.current_players || 0;
+    if (displayCount === target) return;
 
-        const start = displayCount;
-        const duration = 400;
-        const startTime = performance.now();
+    const start = displayCount;
+    const duration = 400;
+    const startTime = performance.now();
 
-        const animate = (currentTime: number) => {
-            const elapsed = currentTime - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            const current = Math.floor(start + (target - start) * progress);
-            setDisplayCount(current);
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const current = Math.floor(start + (target - start) * progress);
+      setDisplayCount(current);
 
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            }
-        };
-
+      if (progress < 1) {
         requestAnimationFrame(animate);
-    }, [table.current_players, displayCount]);
+      }
+    };
 
-    return (
-        <Link to={`/table/${table.id}`} className="table-card">
-            <div className="card-header">
-                <div className="table-icon">♠</div>
-                <div className="seats-badge">{table.max_players} Max</div>
-            </div>
-            <div className="card-body">
-                <h3 className="table-name">{table.name}</h3>
-                <div className="stakes">{table.stakes}</div>
-                <div className="players-count">
-                    {displayCount}/{table.max_players} players
-                </div>
-            </div>
-            <div className="card-footer">
-                <span className="variant-badge">{(table.game_variant || 'NLH').toUpperCase()}</span>
-                <span className={`status-badge ${table.status}`}>{table.status}</span>
-            </div>
-        </Link>
-    );
+    requestAnimationFrame(animate);
+  }, [table.current_players, displayCount]);
+
+  return (
+    <Link to={`/table/${table.id}`} className="table-card">
+      <div className="card-header">
+        <div className="table-icon">♠</div>
+        <div className="seats-badge">{table.max_players} Max</div>
+      </div>
+      <div className="card-body">
+        <h3 className="table-name">{table.name}</h3>
+        <div className="stakes">{table.stakes}</div>
+        <div className="players-count">
+          {displayCount}/{table.max_players} players
+        </div>
+      </div>
+      <div className="card-footer">
+        <span className="variant-badge">{(table.game_variant || 'NLH').toUpperCase()}</span>
+        <span className={`status-badge ${table.status}`}>{table.status}</span>
+      </div>
+    </Link>
+  );
 }
 
 // Nav Item Component
-function NavItem({ icon, label, active = false }: { icon: string; label: string; active?: boolean }) {
-    return (
-        <button className={`nav-item ${active ? 'active' : ''}`}>
-            <span className="nav-icon">{icon}</span>
-            <span className="nav-label">{label}</span>
-        </button>
-    );
+function NavItem({
+  icon,
+  label,
+  active = false,
+}: {
+  icon: string;
+  label: string;
+  active?: boolean;
+}) {
+  return (
+    <button className={`nav-item ${active ? 'active' : ''}`}>
+      <span className="nav-icon">{icon}</span>
+      <span className="nav-label">{label}</span>
+    </button>
+  );
 }

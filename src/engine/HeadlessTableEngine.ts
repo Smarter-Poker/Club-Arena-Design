@@ -27,6 +27,8 @@ import { BBJService, type GameVariant as BBJGameVariant } from '../services/BBJS
 import { workerTimeout, cancelWorkerTimeout } from '../hooks/useTabKeepAlive';
 import type { SeatPlayer, GameVariant } from '../types/database.types';
 import { WalletService } from '../services/WalletService';
+import { masterBus } from '../core/MasterBus';
+import { useUserStore } from '../stores/useUserStore';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -621,6 +623,13 @@ export class HeadlessTableEngine {
         // Track if we reached the flop for No Flop No Drop
         if (event.stage === 'flop') {
           this.currentHandWentToFlop = true;
+          // Emit FLOP_SEEN for Daily Challenges if current user is at this table
+          this.emitIfUserAtTable(players, () => {
+            masterBus.emit('FLOP_SEEN', {
+              handId: `${this.tableId}-${this.handCount}`,
+              tableId: this.tableId,
+            });
+          });
         }
         // Broadcast new community cards
         this.broadcastCurrentState();
@@ -650,11 +659,20 @@ export class HeadlessTableEngine {
             }
           }
         }
+        // Emit Daily Challenge events if current user won this hand
+        this.emitWinnerEvents(event, players);
         // Broadcast winners
         this.broadcastCurrentState();
         break;
 
       case 'HAND_COMPLETE':
+        // Emit HAND_COMPLETED for Daily Challenges if current user participated
+        this.emitIfUserAtTable(players, () => {
+          masterBus.emit('HAND_COMPLETED', {
+            handId: `${this.tableId}-${this.handCount}`,
+            tableId: this.tableId,
+          });
+        });
         // Stack sync + post-hand tasks run as fire-and-forget async block
         // The dealHand() promise resolves when this event fires, so sync completes
         // before next hand via the stackSyncPromise mechanism
@@ -1454,6 +1472,70 @@ export class HeadlessTableEngine {
     // Use RakeService for single source of truth on rake tiers
     const tier = RakeService.getTier(sb, bb);
     return { percent: 10, cap: tier.maxAmount, noFlop: true };
+  }
+
+  // ═════════════════════════════════════════════════════════════════════════════
+  // DAILY CHALLENGE EVENT EMITTING
+  // ═════════════════════════════════════════════════════════════════════════════
+
+  /** Check if current logged-in user is at this table; if so, run the callback */
+  private emitIfUserAtTable(players: SeatedPlayer[], fn: () => void): void {
+    const userId = useUserStore.getState()?.user?.id;
+    if (!userId) return;
+    if (players.some((p) => p.user_id === userId && !p.is_horse)) {
+      fn();
+    }
+  }
+
+  /** Emit winner-specific events for Daily Challenges */
+  private emitWinnerEvents(event: HandEvent, players: SeatedPlayer[]): void {
+    const userId = useUserStore.getState()?.user?.id;
+    if (!userId) return;
+    if (!players.some((p) => p.user_id === userId && !p.is_horse)) return;
+
+    const winners: Array<{ userId?: string; user_id?: string; pot?: number; hand?: any }> =
+      (event as any).winners || [];
+    const userWon = winners.some((w) => (w.userId || w.user_id) === userId);
+    if (!userWon) return;
+
+    const handId = `${this.tableId}-${this.handCount}`;
+    const totalPot = this.currentHandPotSize || 0;
+    const bb = this.tableInfo?.big_blind || 2;
+
+    // HAND_WON
+    masterBus.emit('HAND_WON', {
+      handId,
+      winners: winners.map((w) => w.userId || w.user_id || ''),
+      pot: totalPot,
+    });
+
+    // BIG_POT_WON — pot > 100 big blinds
+    if (totalPot > bb * 100) {
+      masterBus.emit('BIG_POT_WON', { handId, pot: totalPot });
+    }
+
+    // PREFLOP_WIN — won without seeing a flop
+    if (!this.currentHandWentToFlop) {
+      masterBus.emit('PREFLOP_WIN', { handId, playerId: userId });
+    }
+
+    // ALL_IN_WON — check if user was all-in
+    const state = this.handController?.getState();
+    const userEngine = state?.players?.find((p: any) => p.user_id === userId);
+    if (userEngine?.is_all_in) {
+      masterBus.emit('ALL_IN_WON', { handId, playerId: userId, pot: totalPot });
+    }
+
+    // FLUSH_WIN — check showdown results for flush
+    if (this.currentHandShowdownResults.length > 0) {
+      const userResult = this.currentHandShowdownResults.find(
+        (r: any) => (r.userId || r.user_id) === userId
+      );
+      const handName = (userResult?.handName || userResult?.hand_name || '').toLowerCase();
+      if (handName.includes('flush') && !handName.includes('straight')) {
+        masterBus.emit('FLUSH_WIN', { handId, playerId: userId });
+      }
+    }
   }
 }
 
