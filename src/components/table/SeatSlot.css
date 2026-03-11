@@ -807,12 +807,48 @@
 .seat--winner .seat__info {
     border-color: rgba(255, 215, 0, 0.6);
     box-shadow: 0 0 16px rgba(255, 215, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.seat--winner .seat__info::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(
+        from 0deg,
+        transparent 0deg,
+        rgba(255, 215, 0, 0.06) 30deg,
+        transparent 60deg,
+        rgba(255, 215, 0, 0.04) 120deg,
+        transparent 150deg,
+        rgba(255, 215, 0, 0.06) 210deg,
+        transparent 240deg,
+        rgba(255, 215, 0, 0.04) 300deg,
+        transparent 330deg
+    );
+    animation: winnerInfoSpin 8s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes winnerInfoSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 .seat--winner .seat__stack {
     color: #FFD700;
     text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
     font-weight: var(--weight-extrabold);
+    animation: winnerStackPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes winnerStackPulse {
+    0%, 100% { text-shadow: 0 0 8px rgba(255, 215, 0, 0.5); }
+    50% { text-shadow: 0 0 16px rgba(255, 215, 0, 0.7), 0 0 32px rgba(255, 215, 0, 0.3); }
 }
 
 /* ─── WINNING HAND NAME — "Straight", "Full House" etc. ────────── */
@@ -832,12 +868,32 @@
     letter-spacing: 0.03em;
     white-space: nowrap;
     z-index: 25;
-    animation: handNameAppear 0.4s ease-out;
+    animation: handNameAppear 0.5s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
     font-style: italic;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.15);
+}
+
+.seat__hand-name::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+    animation: handNameSheen 2s ease-in-out 0.5s infinite;
+    pointer-events: none;
+}
+
+@keyframes handNameSheen {
+    0%, 100% { left: -100%; }
+    50% { left: 150%; }
 }
 
 @keyframes handNameAppear {
-    0% { opacity: 0; transform: translateY(6px) scale(0.9); }
+    0% { opacity: 0; transform: translateY(6px) scale(0.8); }
+    70% { transform: translateY(-2px) scale(1.05); }
     100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
