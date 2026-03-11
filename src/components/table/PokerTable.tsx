@@ -226,17 +226,17 @@ function getSeatPositions(maxPlayers: 6 | 9): { x: number; y: number }[] {
         ];
     }
 
-    // 9-max positions
+    // 9-max positions — shifted inward to prevent label clipping at edges
     return [
         { x: 50, y: 92 },   // Seat 1 (hero - bottom center)
         { x: 20, y: 85 },   // Seat 2
-        { x: 5, y: 60 },    // Seat 3
-        { x: 5, y: 35 },    // Seat 4
+        { x: 10, y: 60 },   // Seat 3
+        { x: 10, y: 35 },   // Seat 4
         { x: 25, y: 8 },    // Seat 5
         { x: 50, y: 3 },    // Seat 6
         { x: 75, y: 8 },    // Seat 7
-        { x: 95, y: 35 },   // Seat 8
-        { x: 95, y: 60 },   // Seat 9
+        { x: 90, y: 35 },   // Seat 8
+        { x: 90, y: 60 },   // Seat 9
     ];
 }
 

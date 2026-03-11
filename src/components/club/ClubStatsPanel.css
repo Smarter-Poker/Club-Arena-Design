@@ -26,13 +26,15 @@
 .stat-label {
     font-family: 'Inter', 'Roboto', sans-serif;
     font-weight: 600;
-    font-size: 14px;
+    font-size: 11px;
     letter-spacing: 0.5px;
     color: #A5EFF0;
     /* Paler cyan matching original */
     margin-bottom: 2px;
     text-shadow: 0 0 5px rgba(0, 212, 255, 0.4);
     text-transform: uppercase;
+    white-space: nowrap;
+    line-height: 1.3;
 }
 
 .stats-group {

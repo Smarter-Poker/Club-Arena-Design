@@ -196,13 +196,13 @@ const SEAT_POSITIONS_6MAX = [
 const SEAT_POSITIONS_9MAX = [
     { x: 50, y: 95 },  // Seat 1 (Hero — bottom center)
     { x: 17, y: 87 },  // Seat 2 (bottom left)
-    { x: 5, y: 64 },   // Seat 3 (left middle)
-    { x: 5, y: 38 },   // Seat 4 (left upper)
+    { x: 10, y: 64 },  // Seat 3 (left middle) — shifted inward to prevent label clipping
+    { x: 10, y: 38 },  // Seat 4 (left upper) — shifted inward to prevent label clipping
     { x: 22, y: 12 },  // Seat 5 (top left)
     { x: 50, y: 5 },   // Seat 6 (top center)
     { x: 78, y: 12 },  // Seat 7 (top right)
-    { x: 95, y: 38 },  // Seat 8 (right upper)
-    { x: 95, y: 64 },  // Seat 9 (right middle)
+    { x: 90, y: 38 },  // Seat 8 (right upper) — shifted inward to prevent label clipping
+    { x: 90, y: 64 },  // Seat 9 (right middle) — shifted inward to prevent label clipping
 ];
 
 // HORSE AVATARS — Assign custom avatars to horse players using DiceBear API
