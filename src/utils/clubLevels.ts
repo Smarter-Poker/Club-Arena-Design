@@ -23,9 +23,9 @@ export interface ClubLevelInfo {
     level: number;
     tier: ClubTier;
     tierLabel: string;
-    xp: number;
-    xpForCurrentLevel: number;
-    xpForNextLevel: number;
+    points: number;
+    pointsForCurrentLevel: number;
+    pointsForNextLevel: number;
     progressPercent: number;
     color: string;
     gradient: string;
@@ -43,17 +43,17 @@ export interface ClubLevelInput {
     clubAgeDays?: number;
 }
 
-// XP thresholds per level — exponential curve
-// Level 1 = 0 XP, Level 2 = 100 XP, scaling up
-function xpForLevel(level: number): number {
+// Points thresholds per level — exponential curve
+// Level 1 = 0 pts, Level 2 = 100 pts, scaling up
+function pointsForLevel(level: number): number {
     if (level <= 1) return 0;
     // Quadratic-ish curve: each level costs more
     return Math.floor(50 * Math.pow(level, 1.8));
 }
 
-function levelFromXp(xp: number): number {
+function levelFromPoints(pts: number): number {
     let level = 1;
-    while (xpForLevel(level + 1) <= xp && level < 100) {
+    while (pointsForLevel(level + 1) <= pts && level < 100) {
         level++;
     }
     return level;
@@ -96,67 +96,67 @@ const TIER_GRADIENTS: Record<ClubTier, string> = {
 };
 
 /**
- * Calculate total club XP from input metrics.
- * Each factor contributes weighted XP:
- *   Members:      10 XP each (uncapped)
- *   Active tables: 50 XP each
- *   Tournaments:  30 XP each
- *   Hands played: 0.01 XP each (volume reward)
- *   Rake:         0.1 XP per unit generated
+ * Calculate total club points from input metrics.
+ * Each factor contributes weighted points:
+ *   Members:      10 pts each (uncapped)
+ *   Active tables: 50 pts each
+ *   Tournaments:  30 pts each
+ *   Hands played: 0.01 pts each (volume reward)
+ *   Rake:         0.1 pts per unit generated
  *   Union bonus:  +15% multiplier
- *   Age bonus:    +1 XP per day (loyalty reward, max 365)
+ *   Age bonus:    +1 pt per day (loyalty reward, max 365)
  */
-export function calculateClubXp(input: ClubLevelInput): number {
-    let xp = 0;
+export function calculateClubPoints(input: ClubLevelInput): number {
+    let pts = 0;
 
     // Members — strongest signal
-    xp += (input.memberCount || 0) * 10;
+    pts += (input.memberCount || 0) * 10;
 
     // Active tables — engagement
-    xp += (input.activeTables || 0) * 50;
+    pts += (input.activeTables || 0) * 50;
 
     // Tournaments hosted — breadth
-    xp += (input.tournamentsHosted || 0) * 30;
+    pts += (input.tournamentsHosted || 0) * 30;
 
     // Hands played — historical volume
-    xp += Math.floor((input.totalHandsPlayed || 0) * 0.01);
+    pts += Math.floor((input.totalHandsPlayed || 0) * 0.01);
 
     // Rake generated — economic health
-    xp += Math.floor((input.totalRakeGenerated || 0) * 0.1);
+    pts += Math.floor((input.totalRakeGenerated || 0) * 0.1);
 
     // Club age bonus (capped at 365 days)
     const ageDays = Math.min(input.clubAgeDays || 0, 365);
-    xp += ageDays;
+    pts += ageDays;
 
     // Union membership bonus — 15% boost
     if (input.isInUnion) {
-        xp = Math.floor(xp * 1.15);
+        pts = Math.floor(pts * 1.15);
     }
 
-    return xp;
+    return pts;
 }
 
 /**
  * Get complete club level info from raw metrics.
  */
 export function getClubLevel(input: ClubLevelInput): ClubLevelInfo {
-    const xp = calculateClubXp(input);
-    const level = levelFromXp(xp);
+    const pts = calculateClubPoints(input);
+    const level = levelFromPoints(pts);
     const tier = getTier(level);
 
-    const currentLevelXp = xpForLevel(level);
-    const nextLevelXp = level < 100 ? xpForLevel(level + 1) : xpForLevel(100);
-    const xpIntoLevel = xp - currentLevelXp;
-    const xpNeeded = nextLevelXp - currentLevelXp;
-    const progressPercent = xpNeeded > 0 ? Math.min(Math.floor((xpIntoLevel / xpNeeded) * 100), 100) : 100;
+    const currentLevelPts = pointsForLevel(level);
+    const nextLevelPts = level < 100 ? pointsForLevel(level + 1) : pointsForLevel(100);
+    const ptsIntoLevel = pts - currentLevelPts;
+    const ptsNeeded = nextLevelPts - currentLevelPts;
+    const progressPercent = ptsNeeded > 0 ? Math.min(Math.floor((ptsIntoLevel / ptsNeeded) * 100), 100) : 100;
 
     return {
         level,
         tier,
         tierLabel: TIER_LABELS[tier],
-        xp,
-        xpForCurrentLevel: currentLevelXp,
-        xpForNextLevel: nextLevelXp,
+        points: pts,
+        pointsForCurrentLevel: currentLevelPts,
+        pointsForNextLevel: nextLevelPts,
         progressPercent,
         color: TIER_COLORS[tier],
         gradient: TIER_GRADIENTS[tier],

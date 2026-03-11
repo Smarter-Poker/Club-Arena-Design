@@ -70,7 +70,6 @@ export default function SmarterHeader({ showBackButton = true, backTo, title }: 
                     <button className="add-button">+</button>
                 </div>
 
-                {/* XP system removed */}
             </div>
 
             <div className="header-right">

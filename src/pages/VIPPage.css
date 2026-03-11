@@ -35,18 +35,18 @@
     letter-spacing: 2px;
 }
 
-.xp-info {
+.vip-info {
     margin-bottom: 1rem;
 }
 
-.xp-value {
+.vip-value {
     display: block;
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--text-primary);
 }
 
-.xp-next {
+.vip-next {
     font-size: 0.875rem;
     color: var(--text-secondary);
 }
@@ -149,7 +149,7 @@
     color: var(--text-primary);
 }
 
-.tier-info .tier-xp {
+.tier-info .tier-points {
     font-size: 0.75rem;
     color: var(--text-secondary);
 }

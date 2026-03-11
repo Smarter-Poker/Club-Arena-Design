@@ -9,8 +9,8 @@
     padding-bottom: 100px;
 }
 
-/* XP Header */
-.xp-header {
+/* Progress Header */
+.progress-header {
     display: flex;
     align-items: center;
     gap: var(--space-3);
@@ -34,7 +34,7 @@
     color: #1a1a1a;
 }
 
-.xp-bar-container {
+.progress-bar-container {
     flex: 1;
     height: 24px;
     background: var(--bg-card);
@@ -43,14 +43,14 @@
     overflow: hidden;
 }
 
-.xp-bar {
+.progress-bar-fill {
     height: 100%;
     background: linear-gradient(90deg, var(--fb-blue), #3498db);
     border-radius: var(--radius-full);
     transition: width 0.5s ease;
 }
 
-.xp-text {
+.progress-text {
     position: absolute;
     inset: 0;
     display: flex;
@@ -266,8 +266,8 @@
     font-weight: var(--fw-bold);
 }
 
-/* XP Animation */
-.xp-animation {
+/* Points Animation */
+.points-animation {
     position: fixed;
     top: 50%;
     left: 50%;
@@ -276,12 +276,12 @@
     font-weight: var(--fw-bold);
     color: var(--accent-gold);
     text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-    animation: xpPop 2s ease-out forwards;
+    animation: pointsPop 2s ease-out forwards;
     pointer-events: none;
     z-index: 1000;
 }
 
-@keyframes xpPop {
+@keyframes pointsPop {
     0% {
         transform: translate(-50%, -50%) scale(0);
         opacity: 0;

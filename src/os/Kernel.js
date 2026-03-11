@@ -6,7 +6,7 @@ export class ArenaKernel {
     boot() {
         console.log("🔴 RED [ARENA_SHELL]: Booting Smarter.Poker OS...");
         this.bus.subscribe('GAME_START', (data) => {
-            console.log("🔴 RED [ARENA_SHELL]: Initializing XP Tracking for Session " + data.sessionId);
+            console.log("🔴 RED [ARENA_SHELL]: Initializing Session Tracking for " + data.sessionId);
         });
     }
 }

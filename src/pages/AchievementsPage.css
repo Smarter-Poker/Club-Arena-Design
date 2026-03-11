@@ -264,7 +264,7 @@
     border: 1px solid rgba(106, 122, 138, 0.4);
 }
 
-.xp-reward {
+.points-reward {
     font-size: 0.75rem;
     color: #10b981;
     font-weight: 600;
@@ -394,7 +394,7 @@
     color: #000;
 }
 
-.unlock-xp {
+.unlock-reward {
     font-size: 0.875rem;
     font-weight: 600;
     color: rgba(0, 0, 0, 0.8);

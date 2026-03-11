@@ -462,7 +462,7 @@ export default function ProfilePage() {
                 const nextTierName = nextTierData?.tier;
 
                 return (
-                    <section className={styles.xpSection}>
+                    <section className={styles.contentSection}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                             <VIPProgressRing
                                 current={diamonds}
@@ -485,7 +485,7 @@ export default function ProfilePage() {
             })()}
 
             {/* Daily Bonus */}
-            <section className={styles.xpSection}>
+            <section className={styles.contentSection}>
                 <button
                     className={styles.bonusButton}
                     onClick={() => setShowBonusWheel(true)}
@@ -496,7 +496,7 @@ export default function ProfilePage() {
 
             {/* Achievement Showcase — always visible */}
             {achievements.filter(a => a.unlockedAt).length > 0 && (
-                <section className={styles.xpSection}>
+                <section className={styles.contentSection}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <h3 style={{ margin: 0, fontSize: '0.875rem', color: '#8a9aaa', fontWeight: 600 }}>Top Achievements</h3>
                         <button

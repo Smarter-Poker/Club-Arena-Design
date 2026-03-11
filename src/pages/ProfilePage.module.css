@@ -111,34 +111,34 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   XP SECTION
+   CONTENT SECTION
    ───────────────────────────────────────────────────────────────────────────── */
 
-.xpSection {
+.contentSection {
     margin-bottom: 2rem;
 }
 
-.xpContainer {
+.levelContainer {
     padding: 1.5rem 2rem;
     background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
     border-radius: 1rem;
     border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
-.xpHeader {
+.levelHeader {
     display: flex;
     align-items: center;
     gap: 1rem;
     margin-bottom: 0.75rem;
 }
 
-.xpLevel {
+.levelValue {
     font-size: 1.25rem;
     font-weight: 700;
     color: #10b981;
 }
 
-.xpTier {
+.tierBadge {
     padding: 0.25rem 0.75rem;
     background: rgba(16, 185, 129, 0.2);
     border-radius: 1rem;
@@ -149,20 +149,20 @@
     letter-spacing: 0.1em;
 }
 
-.xpCount {
+.pointsCount {
     margin-left: auto;
     font-size: 0.875rem;
     color: var(--text-muted);
 }
 
-.xpBar {
+.progressBar {
     height: 8px;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 4px;
     overflow: hidden;
 }
 
-.xpFill {
+.progressFill {
     height: 100%;
     background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
     border-radius: 4px;
@@ -504,8 +504,8 @@
     .avatar, .avatarDefault { width: 72px; height: 72px; font-size: 1.75rem; }
     .displayName { font-size: 1.25rem; }
     .playerNumber { font-size: 0.75rem; }
-    .xpContainer { padding: 1rem; }
-    .xpLevel { font-size: 1rem; }
+    .levelContainer { padding: 1rem; }
+    .levelValue { font-size: 1rem; }
     .tab { padding: 0.75rem 0.5rem; font-size: 0.75rem; flex: 1 1 calc(33% - 0.25rem); }
     .tabNav { gap: 0.25rem; }
     .statsGrid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
