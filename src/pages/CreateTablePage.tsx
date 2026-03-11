@@ -16,6 +16,12 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './CreateTablePage.css';
 
+const gameTypeCardAnimationStyle = (index: number) => ({
+    opacity: 0,
+    transform: 'translateY(10px)',
+    animation: `fadeInUp 0.5s ease-out ${index * 70}ms forwards`,
+});
+
 interface GameType {
     id: string;
     name: string;
@@ -121,7 +127,7 @@ export default function CreateTablePage() {
                         className={`game-type-card ${userLevel < gameType.unlockLevel ? 'locked' : ''}`}
                         style={{
                             background: gameType.gradient,
-                            animationDelay: `${index * 0.05}s`
+                            ...gameTypeCardAnimationStyle(index)
                         }}
                         onClick={() => handleSelectGameType(gameType)}
                         disabled={userLevel < gameType.unlockLevel}

@@ -24,6 +24,7 @@ export default function NotificationsPage() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(true);
     const [newNotifId, setNewNotifId] = useState<string | null>(null);
+    const [visibleNotifications, setVisibleNotifications] = useState(new Set<number>());
 
     useEffect(() => {
         if (user?.id) {
@@ -134,6 +135,15 @@ export default function NotificationsPage() {
 
     const unreadCount = notifications.filter(n => !n.read).length;
 
+    // Stagger notification rows
+    useEffect(() => {
+        setVisibleNotifications(new Set());
+        const timers = notifications.map((_, i) =>
+            setTimeout(() => setVisibleNotifications(prev => new Set([...prev, i])), i * 40)
+        );
+        return () => timers.forEach(t => clearTimeout(t));
+    }, [notifications.length]);
+
     return (
         <div className="notifications-page">
 
@@ -160,13 +170,18 @@ export default function NotificationsPage() {
                         <p>No notifications yet</p>
                     </div>
                 ) : (
-                    notifications.map((notif) => (
+                    notifications.map((notif, index) => (
                         <div
                             key={notif.id}
                             className={`notification-item ${notif.read ? 'read' : 'unread'} ${newNotifId === notif.id ? 'new-highlight' : ''}`}
                             onClick={() => {
                                 markAsRead(notif.id);
                                 if (notif.action_url) navigate(notif.action_url);
+                            }}
+                            style={{
+                                opacity: visibleNotifications.has(index) ? 1 : 0,
+                                transform: visibleNotifications.has(index) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                             }}
                         >
                             <span className="notif-icon">{getIcon(notif.type)}</span>

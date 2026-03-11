@@ -200,6 +200,17 @@ export default function TournamentResultsPage() {
         loadHandHistory();
     }, [selectedTournament?.id]);
 
+    // Stagger animation for results
+    useEffect(() => {
+        if (results.length === 0) return;
+        setVisibleResults(new Set());
+        results.forEach((result, index) => {
+            setTimeout(() => {
+                setVisibleResults(prev => new Set(prev).add(result.user_id));
+            }, index * 60);
+        });
+    }, [results]);
+
     // Subscribe to tournament results/standings updates
     useEffect(() => {
         const channel = supabase
@@ -432,7 +443,8 @@ export default function TournamentResultsPage() {
                                                     return (
                                                         <div
                                                             key={r.user_id}
-                                                            style={{
+                                                            className={`${visibleResults.has(r.user_id) ? 'fadeInUp' : 'hidden'}`}
+                                                            style={visibleResults.has(r.user_id) ? {
                                                                 display: 'flex',
                                                                 justifyContent: 'space-between',
                                                                 alignItems: 'center',
@@ -440,6 +452,16 @@ export default function TournamentResultsPage() {
                                                                 borderRadius: '6px',
                                                                 background: isMe ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
                                                                 border: isMe ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid transparent',
+                                                            } : {
+                                                                display: 'flex',
+                                                                justifyContent: 'space-between',
+                                                                alignItems: 'center',
+                                                                padding: '6px 8px',
+                                                                borderRadius: '6px',
+                                                                background: isMe ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
+                                                                border: isMe ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid transparent',
+                                                                opacity: 0,
+                                                                transform: 'translateY(8px)',
                                                             }}
                                                         >
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

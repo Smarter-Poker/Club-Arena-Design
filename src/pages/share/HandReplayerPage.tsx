@@ -9,6 +9,12 @@ import { useParams } from 'react-router-dom';
 import { handHistoryService } from '../../services/HandHistoryService';
 import './HandReplayerPage.css';
 
+const playerSeatAnimationStyle = (index: number) => ({
+    opacity: 0,
+    transform: 'translateY(10px)',
+    animation: `fadeInUp 0.5s ease-out ${index * 70}ms forwards`,
+});
+
 interface HandAction {
     player: string;
     action: 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'all_in';
@@ -211,6 +217,7 @@ export default function HandReplayerPage() {
                     {hand.players.map((player, idx) => (
                         <div
                             key={player.seat}
+                            style={playerSeatAnimationStyle(idx)}
                             className={`player-seat seat-${player.seat} ${player.is_winner ? 'winner' : ''}`}
                         >
                             <div className="player-avatar">

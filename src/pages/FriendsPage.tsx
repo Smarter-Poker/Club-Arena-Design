@@ -6,6 +6,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
+import { masterBus } from '../core/MasterBus';
 import { useToast } from '../components/common/Toast';
 import FriendsList from '../components/social/FriendsList';
 import RecentPlayers from '../components/social/RecentPlayers';
@@ -46,7 +47,8 @@ export default function FriendsPage() {
     useEffect(() => {
         if (!user?.id || friends.length === 0) return;
 
-        const channel = supabase.channel('online-friends');
+        const presenceKey = `online-friends-${user.id}`;
+        const channel = masterBus.getOrCreateChannel(presenceKey);
 
         // Track online status
         channel
@@ -65,7 +67,7 @@ export default function FriendsPage() {
             });
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(presenceKey);
         };
     }, [user?.id, friends.length]);
 
@@ -73,8 +75,9 @@ export default function FriendsPage() {
     useEffect(() => {
         if (!user?.id) return;
 
-        const channel = supabase
-            .channel('friend-requests')
+        const channelKey = `friend-requests-${user.id}`;
+        const channel = masterBus.getOrCreateChannel(channelKey);
+        channel
             .on(
                 'postgres_changes',
                 {
@@ -92,7 +95,7 @@ export default function FriendsPage() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [user?.id]);
 
@@ -171,6 +174,16 @@ export default function FriendsPage() {
         loadFriends();
     };
 
+    // Update friend online status when presence changes
+    const friendsWithStatus = friends.map(f => ({
+        ...f,
+        is_online: onlineUserIds.has(f.user_id),
+    }));
+
+    const filteredFriends = friendsWithStatus.filter(f =>
+        f.username.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     // Stagger friend rows on render
     useEffect(() => {
         const timers = filteredFriends.map((_, i) =>
@@ -186,16 +199,6 @@ export default function FriendsPage() {
         );
         return () => timers.forEach(t => clearTimeout(t));
     }, [pendingRequests.length]);
-
-    // Update friend online status when presence changes
-    const friendsWithStatus = friends.map(f => ({
-        ...f,
-        is_online: onlineUserIds.has(f.user_id),
-    }));
-
-    const filteredFriends = friendsWithStatus.filter(f =>
-        f.username.toLowerCase().includes(searchQuery.toLowerCase())
-    );
 
     const onlineCount = friendsWithStatus.filter(f => f.is_online).length;
 

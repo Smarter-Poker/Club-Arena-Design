@@ -10,6 +10,12 @@ import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import './ReportReviewPage.css';
 
+const reportCardAnimationStyle = (index: number) => ({
+    opacity: 0,
+    transform: 'translateY(8px)',
+    animation: `fadeInUp 0.5s ease-out ${index * 60}ms forwards`,
+});
+
 interface PlayerReport {
     id: string;
     reporter_id: string;
@@ -169,9 +175,10 @@ export default function ReportReviewPage() {
                 </div>
             ) : (
                 <div className="reports-list">
-                    {reports.map(report => (
+                    {reports.map((report, idx) => (
                         <div
                             key={report.id}
+                            style={reportCardAnimationStyle(idx)}
                             className={`report-card ${selectedReport?.id === report.id ? 'selected' : ''}`}
                             onClick={() => {
                                 setSelectedReport(report);

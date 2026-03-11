@@ -16,6 +16,18 @@ import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import './LeaderboardPage.css';
 
+const podiumAnimationStyle = {
+    opacity: 0,
+    transform: 'translateY(16px)',
+    animation: 'fadeInUp 0.7s ease-out forwards',
+};
+
+const rankingRowAnimationStyle = (index: number) => ({
+    opacity: 0,
+    transform: 'translateY(8px)',
+    animation: `fadeInUp 0.5s ease-out ${index * 60}ms forwards`,
+});
+
 type LeaderboardScope = 'my-clubs' | 'global';
 type LeaderboardTab = 'rankings' | 'tournaments';
 
@@ -377,7 +389,7 @@ export default function LeaderboardPage() {
                     <>
                         {/* ── TOP 3 PODIUM ── */}
                         {top3.length >= 3 && (
-                            <div className="podium-section">
+                            <div className="podium-section" style={podiumAnimationStyle}>
                                 {/* 2nd Place */}
                                 <div
                                     className="podium-place podium-2nd"
@@ -448,9 +460,9 @@ export default function LeaderboardPage() {
                         {top3.length < 3 && top3.map((entry, index) => (
                             <div
                                 key={entry.userId}
-                                className={`leaderboard-entry animate-fade-in-up stagger-${index + 1} ${entry.userId === user?.id ? 'current-user' : ''}`}
+                                className={`leaderboard-entry ${entry.userId === user?.id ? 'current-user' : ''}`}
                                 onClick={() => navigate(`/profile/${entry.userId}`)}
-                                style={{ cursor: 'pointer' }}
+                                style={{ ...rankingRowAnimationStyle(index), cursor: 'pointer' }}
                             >
                                 <span className={`entry-rank top-3`}>
                                     {getRankBadge(entry.rank)}
@@ -483,9 +495,9 @@ export default function LeaderboardPage() {
                         {rest.map((entry, index) => (
                             <div
                                 key={entry.userId}
-                                className={`leaderboard-entry animate-fade-in-up stagger-${Math.min(index + 1, 10)} ${entry.userId === user?.id ? 'current-user' : ''}`}
+                                className={`leaderboard-entry ${entry.userId === user?.id ? 'current-user' : ''}`}
                                 onClick={() => navigate(`/profile/${entry.userId}`)}
-                                style={{ cursor: 'pointer' }}
+                                style={{ ...rankingRowAnimationStyle(index), cursor: 'pointer' }}
                             >
                                 <span className="entry-rank">
                                     {getRankLabel(entry.rank)}

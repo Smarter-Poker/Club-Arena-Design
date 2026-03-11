@@ -8,6 +8,12 @@ import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import './TableCreationPage.css';
 
+const sectionAnimationStyle = (index: number) => ({
+    opacity: 0,
+    transform: 'translateY(8px)',
+    animation: `fadeInUp 0.5s ease-out ${index * 80}ms forwards`,
+});
+
 type GameType = 'nlh' | 'plo' | 'plo5' | 'ofc';
 
 interface TableSettings {
@@ -118,7 +124,7 @@ export default function TableCreationPage() {
                 {error && <div className="error-message">{error}</div>}
 
                 {/* Table Name */}
-                <section className="creation-section">
+                <section className="creation-section" style={sectionAnimationStyle(0)}>
                     <h3>Table Name</h3>
                     <input
                         type="text"
@@ -130,7 +136,7 @@ export default function TableCreationPage() {
                 </section>
 
                 {/* Game Type */}
-                <section className="creation-section">
+                <section className="creation-section" style={sectionAnimationStyle(1)}>
                     <h3>Game Type</h3>
                     <div className="game-types">
                         {gameTypes.map(game => (
@@ -147,7 +153,7 @@ export default function TableCreationPage() {
                 </section>
 
                 {/* Stakes */}
-                <section className="creation-section">
+                <section className="creation-section" style={sectionAnimationStyle(2)}>
                     <h3>Stakes</h3>
                     <div className="stakes-presets">
                         {stakesPresets.map(stake => (
@@ -189,7 +195,7 @@ export default function TableCreationPage() {
                 </section>
 
                 {/* Table Size */}
-                <section className="creation-section">
+                <section className="creation-section" style={sectionAnimationStyle(3)}>
                     <h3>Table Size</h3>
                     <div className="size-options">
                         {[2, 6, 8, 9].map(size => (
@@ -205,7 +211,7 @@ export default function TableCreationPage() {
                 </section>
 
                 {/* Buy-in Range */}
-                <section className="creation-section">
+                <section className="creation-section" style={sectionAnimationStyle(4)}>
                     <h3>Buy-in Range (BB)</h3>
                     <div className="buyin-range">
                         <div className="buyin-input">
@@ -232,7 +238,7 @@ export default function TableCreationPage() {
                 </section>
 
                 {/* Options */}
-                <section className="creation-section">
+                <section className="creation-section" style={sectionAnimationStyle(5)}>
                     <h3>Options</h3>
                     <div className="options-list">
                         <div className="option-row">

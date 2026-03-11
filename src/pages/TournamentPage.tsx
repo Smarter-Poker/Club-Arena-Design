@@ -530,7 +530,7 @@ export default function TournamentPage() {
                             <div
                                 key={tourn.id}
                                 className={`tournament-card ${selectedTournament?.id === tourn.id ? 'selected' : ''} ${visibleTournaments.has(tourn.id) ? 'fadeInUp' : 'hidden'}`}
-                                style={visibleTournaments.has(tourn.id) ? undefined : { opacity: 0, transform: 'translateY(8px)' }}
+                                style={visibleTournaments.has(tourn.id) ? { cursor: 'pointer' } : { opacity: 0, transform: 'translateY(8px)', cursor: 'pointer' }}
                                 onClick={() => {
                                     setSelectedTournament(tourn);
                                     // On mobile, navigate to full detail page
@@ -538,7 +538,6 @@ export default function TournamentPage() {
                                         navigate(`/tournaments/${tourn.id}`);
                                     }
                                 }}
-                                style={{ cursor: 'pointer' }}
                             >
                                 <div className="tourn-header">
                                     <span className="tourn-name">{tourn.name}</span>

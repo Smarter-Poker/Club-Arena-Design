@@ -15,6 +15,12 @@ import FAQPanel from '../components/support/FAQPanel';
 import TermsGate from '../components/auth/TermsGate';
 import styles from './SettingsPage.module.css';
 
+const settingsSectionAnimationStyle = (index: number) => ({
+    opacity: 0,
+    transform: 'translateY(8px)',
+    animation: `fadeInUp 0.5s ease-out ${index * 70}ms forwards`,
+});
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -537,7 +543,7 @@ export default function SettingsPage() {
 
             <div className={styles.content}>
                 {/* Audio Settings */}
-                <section ref={audioRef} className={styles.section}>
+                <section ref={audioRef} className={styles.section} style={settingsSectionAnimationStyle(0)}>
                     <h2>Audio</h2>
 
                     <div className={styles.settingRow}>
@@ -585,7 +591,7 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Display Settings */}
-                <section ref={appearanceRef} className={styles.section}>
+                <section ref={appearanceRef} className={styles.section} style={settingsSectionAnimationStyle(1)}>
                     <h2>Display</h2>
 
                     <div className={styles.settingRow}>
@@ -668,7 +674,7 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Gameplay Settings */}
-                <section ref={gameplayRef} className={styles.section}>
+                <section ref={gameplayRef} className={styles.section} style={settingsSectionAnimationStyle(2)}>
                     <h2>Gameplay</h2>
 
                     <div className={styles.settingRow}>
@@ -728,7 +734,7 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Chat */}
-                <section className={styles.section}>
+                <section className={styles.section} style={settingsSectionAnimationStyle(3)}>
                     <h2>Chat</h2>
 
                     <div className={styles.settingRow}>
@@ -755,7 +761,7 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Notifications */}
-                <section ref={notificationsRef} className={styles.section}>
+                <section ref={notificationsRef} className={styles.section} style={settingsSectionAnimationStyle(4)}>
                     <h2>Notifications</h2>
 
                     <div className={styles.settingRow}>
@@ -834,7 +840,7 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Privacy */}
-                <section ref={privacyRef} className={styles.section}>
+                <section ref={privacyRef} className={styles.section} style={settingsSectionAnimationStyle(5)}>
                     <h2>Privacy</h2>
 
                     <div className={styles.settingRow}>
@@ -871,7 +877,7 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Account */}
-                <section ref={securityRef} className={styles.section}>
+                <section ref={securityRef} className={styles.section} style={settingsSectionAnimationStyle(6)}>
                     <h2>Account</h2>
 
                     <div className={styles.settingRow}>

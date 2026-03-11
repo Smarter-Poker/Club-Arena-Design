@@ -27,6 +27,7 @@ export default function RakebackPage() {
     const [loading, setLoading] = useState(true);
     const [totalEarned, setTotalEarned] = useState(0);
     const [currentRate, setCurrentRate] = useState(0);
+    const [visiblePeriodRows, setVisiblePeriodRows] = useState(new Set<number>());
 
     // Refs to avoid stale closures
     const loadRakebackDataRef = useRef<() => void>(() => {});
@@ -98,6 +99,15 @@ export default function RakebackPage() {
             supabase.removeChannel(walletChannel);
         };
     }, [user?.id]);
+
+    // Stagger period rows
+    useEffect(() => {
+        setVisiblePeriodRows(new Set());
+        const timers = periods.map((_, i) =>
+            setTimeout(() => setVisiblePeriodRows(prev => new Set([...prev, i])), i * 40)
+        );
+        return () => timers.forEach(t => clearTimeout(t));
+    }, [periods.length]);
 
     // Initial load
     useEffect(() => {
@@ -184,8 +194,16 @@ export default function RakebackPage() {
                     </div>
                 ) : (
                     <div className="periods-list">
-                        {periods.map(period => (
-                            <div key={period.id} className="period-row">
+                        {periods.map((period, index) => (
+                            <div
+                                key={period.id}
+                                className="period-row"
+                                style={{
+                                    opacity: visiblePeriodRows.has(index) ? 1 : 0,
+                                    transform: visiblePeriodRows.has(index) ? 'translateY(0)' : 'translateY(6px)',
+                                    transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                }}
+                            >
                                 <div className="period-dates">
                                     <span>{formatDate(period.period_start)} - {formatDate(period.period_end)}</span>
                                 </div>

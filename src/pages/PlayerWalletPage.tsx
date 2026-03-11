@@ -170,10 +170,11 @@ export default function PlayerWalletPage() {
         <div className="wallet-page">
 
             {/* Total Balance Card - Metal Frame */}
-            <MetalFrame variant="card" size="lg" style={{
+            <div style={{
                 opacity: activeTab === 'overview' ? 1 : 0.9,
                 transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
             }}>
+            <MetalFrame variant="card" size="lg">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                     <div>
                         <span style={{ fontSize: '0.85rem', color: '#8899aa', textTransform: 'uppercase', letterSpacing: '1px' }}>Total Balance</span>
@@ -199,6 +200,7 @@ export default function PlayerWalletPage() {
                     </MetalButton>
                 </div>
             </MetalFrame>
+            </div>
 
             {/* Tabs - Metal Style */}
             <div className="wallet-tabs" style={{
@@ -239,15 +241,17 @@ export default function PlayerWalletPage() {
                 {activeTab === 'overview' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         {(Object.keys(walletInfo) as WalletType[]).map((type, index) => (
-                            <MetalCard
+                            <div
                                 key={type}
-                                size="md"
-                                glow
                                 style={{
                                     opacity: visibleWalletCards.has(index) ? 1 : 0,
                                     transform: visibleWalletCards.has(index) ? 'translateY(0)' : 'translateY(8px)',
                                     transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                                 }}
+                            >
+                            <MetalCard
+                                size="md"
+                                glow
                             >
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                                     <div style={{
@@ -287,6 +291,7 @@ export default function PlayerWalletPage() {
                                     </div>
                                 </div>
                             </MetalCard>
+                            </div>
                         ))}
                     </div>
                 )}

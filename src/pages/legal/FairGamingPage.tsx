@@ -5,7 +5,14 @@
  */
 
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import styles from './LegalPage.module.css';
+
+const sectionAnimationStyle = (index: number) => ({
+    opacity: 0,
+    transform: 'translateY(8px)',
+    animation: `fadeInUp 0.5s ease-out ${index * 70}ms forwards`,
+});
 
 export default function FairGamingPage() {
     const navigate = useNavigate();
@@ -20,7 +27,7 @@ export default function FairGamingPage() {
             </div>
 
             <div className={styles.content}>
-                <section>
+                <section style={sectionAnimationStyle(0)}>
                     <h2>Our Commitment to Fair Play</h2>
                     <p>
                         Club Arena is committed to providing a fair, secure, and enjoyable poker experience for all players.
@@ -28,7 +35,7 @@ export default function FairGamingPage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(1)}>
                     <h2>Random Number Generation (RNG)</h2>
                     <p>
                         All card shuffling and dealing in Club Arena uses a certified Random Number Generator (RNG):
@@ -41,7 +48,7 @@ export default function FairGamingPage() {
                     </ul>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(2)}>
                     <h2>Game Integrity</h2>
                     <p>
                         We maintain game integrity through multiple safeguards:
@@ -54,7 +61,7 @@ export default function FairGamingPage() {
                     </ul>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(3)}>
                     <h2>Prohibited Activities</h2>
                     <p>
                         The following activities are strictly prohibited and will result in immediate account termination:
@@ -70,7 +77,7 @@ export default function FairGamingPage() {
                     </ul>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(4)}>
                     <h2>Detection and Monitoring</h2>
                     <p>
                         Our security team actively monitors for unfair play:
@@ -84,7 +91,7 @@ export default function FairGamingPage() {
                     </ul>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(5)}>
                     <h2>Player Reporting</h2>
                     <p>
                         If you suspect unfair play, you can report it:
@@ -100,7 +107,7 @@ export default function FairGamingPage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(6)}>
                     <h2>Consequences of Cheating</h2>
                     <p>
                         Players found violating fair play rules face:
@@ -116,7 +123,7 @@ export default function FairGamingPage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(7)}>
                     <h2>Hand History Access</h2>
                     <p>
                         All players have access to their hand histories:
@@ -129,7 +136,7 @@ export default function FairGamingPage() {
                     </ul>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(8)}>
                     <h2>Dispute Resolution</h2>
                     <p>
                         If you believe a game outcome was unfair:
@@ -142,7 +149,7 @@ export default function FairGamingPage() {
                     </ul>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(9)}>
                     <h2>Continuous Improvement</h2>
                     <p>
                         We continuously improve our fair play systems:

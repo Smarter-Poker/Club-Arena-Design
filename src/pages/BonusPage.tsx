@@ -2,7 +2,7 @@
  *  BONUS PAGE — Daily Bonuses & Rewards
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
@@ -34,6 +34,8 @@ export default function BonusPage() {
     const [specialBonuses, setSpecialBonuses] = useState<SpecialBonus[]>([]);
     const [loading, setLoading] = useState(true);
     const [claiming, setClaiming] = useState(false);
+    const [visibleDayCards, setVisibleDayCards] = useState(new Set<number>());
+    const [visibleBonusCards, setVisibleBonusCards] = useState(new Set<number>());
     const toast = useToast();
 
     useEffect(() => {
@@ -149,6 +151,24 @@ export default function BonusPage() {
         }
     };
 
+    // Stagger day cards
+    useEffect(() => {
+        setVisibleDayCards(new Set());
+        const timers = dailyBonuses.map((_, i) =>
+            setTimeout(() => setVisibleDayCards(prev => new Set([...prev, i])), i * 40)
+        );
+        return () => timers.forEach(t => clearTimeout(t));
+    }, [dailyBonuses.length]);
+
+    // Stagger special bonus cards
+    useEffect(() => {
+        setVisibleBonusCards(new Set());
+        const timers = specialBonuses.map((_, i) =>
+            setTimeout(() => setVisibleBonusCards(prev => new Set([...prev, i])), i * 50)
+        );
+        return () => timers.forEach(t => clearTimeout(t));
+    }, [specialBonuses.length]);
+
     const getTimeRemaining = (expiresAt: string): string => {
         const diff = new Date(expiresAt).getTime() - Date.now();
         const hours = Math.floor(diff / 3600000);
@@ -174,10 +194,15 @@ export default function BonusPage() {
                 <h3>Daily Login Bonus</h3>
                 <p className="section-desc">Login daily to earn rewards!</p>
                 <div className="daily-calendar">
-                    {dailyBonuses.map(bonus => (
+                    {dailyBonuses.map((bonus, index) => (
                         <div
                             key={bonus.day}
                             className={`day-card ${bonus.claimed ? 'claimed' : ''} ${bonus.day === currentDay ? 'current' : ''}`}
+                            style={{
+                                opacity: visibleDayCards.has(index) ? 1 : 0,
+                                transform: visibleDayCards.has(index) ? 'scale(1)' : 'scale(0.9)',
+                                transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            }}
                         >
                             <span className="day-num">Day {bonus.day}</span>
                             <span className="day-reward">{bonus.reward}</span>
@@ -199,8 +224,16 @@ export default function BonusPage() {
                 <section className="bonus-section">
                     <h3>Special Bonuses</h3>
                     <div className="special-list">
-                        {specialBonuses.map(bonus => (
-                            <div key={bonus.id} className={`special-card ${bonus.claimed ? 'claimed' : ''}`}>
+                        {specialBonuses.map((bonus, index) => (
+                            <div
+                                key={bonus.id}
+                                className={`special-card ${bonus.claimed ? 'claimed' : ''}`}
+                                style={{
+                                    opacity: visibleBonusCards.has(index) ? 1 : 0,
+                                    transform: visibleBonusCards.has(index) ? 'translateY(0)' : 'translateY(10px)',
+                                    transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                }}
+                            >
                                 <div className="special-info">
                                     <h4>{bonus.title}</h4>
                                     <p>{bonus.description}</p>

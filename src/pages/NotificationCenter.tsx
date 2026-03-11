@@ -11,7 +11,7 @@
  * - System messages
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
@@ -45,6 +45,7 @@ export default function NotificationCenter() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<string>('all');
+    const [visibleNotifications, setVisibleNotifications] = useState(new Set<number>());
 
     const loadNotifications = useCallback(async () => {
         if (!user?.id) return;
@@ -165,6 +166,15 @@ export default function NotificationCenter() {
             ? notifications.filter(n => !n.read)
             : notifications.filter(n => n.type === filter);
 
+    // Stagger notification rows
+    useEffect(() => {
+        setVisibleNotifications(new Set());
+        const timers = filtered.map((_, i) =>
+            setTimeout(() => setVisibleNotifications(prev => new Set([...prev, i])), i * 40)
+        );
+        return () => timers.forEach(t => clearTimeout(t));
+    }, [filtered.length]);
+
     const FILTERS = [
         { id: 'all', label: 'All' },
         { id: 'unread', label: `Unread (${unreadCount})` },
@@ -220,11 +230,16 @@ export default function NotificationCenter() {
                         </p>
                     </div>
                 ) : (
-                    filtered.map(notif => (
+                    filtered.map((notif, index) => (
                         <div
                             key={notif.id}
                             className={`notif-item ${!notif.read ? 'unread' : ''}`}
                             onClick={() => handleClick(notif)}
+                            style={{
+                                opacity: visibleNotifications.has(index) ? 1 : 0,
+                                transform: visibleNotifications.has(index) ? 'translateY(0)' : 'translateY(8px)',
+                                transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            }}
                         >
                             <span className="notif-icon">{notif.icon || ICON_MAP[notif.type]}</span>
                             <div className="notif-body">

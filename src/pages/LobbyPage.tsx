@@ -12,6 +12,7 @@ import GameTypeTabs from '../components/lobby/GameTypeTabs';
 import QuickActions from '../components/lobby/QuickActions';
 import { tableService } from '../services/TableService';
 import { supabase } from '../lib/supabase';
+import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import type { PokerTable } from '../types/database.types';
 
@@ -100,9 +101,10 @@ export default function LobbyPage() {
 
         fetchTables();
 
-        // Subscribe to real-time table changes
-        const channel = supabase
-            .channel('lobby-tables')
+        // Subscribe to real-time table changes via Channel Registry
+        const tableChannelKey = 'lobby-tables';
+        const channel = masterBus.getOrCreateChannel(tableChannelKey);
+        channel
             .on(
                 'postgres_changes',
                 {
@@ -139,8 +141,9 @@ export default function LobbyPage() {
             )
             .subscribe();
 
-        // Get online player count
-        const presenceChannel = supabase.channel('online-users');
+        // Get online player count via Channel Registry
+        const presenceKey = 'online-users';
+        const presenceChannel = masterBus.getOrCreateChannel(presenceKey);
         presenceChannel
             .on('presence', { event: 'sync' }, () => {
                 const presenceState = presenceChannel.presenceState();
@@ -155,8 +158,8 @@ export default function LobbyPage() {
         // Cleanup — untrack presence + remove channels + clear debounce
         return () => {
             presenceChannel.untrack().catch(() => {});
-            supabase.removeChannel(channel);
-            supabase.removeChannel(presenceChannel);
+            masterBus.removeRegisteredChannel(tableChannelKey);
+            masterBus.removeRegisteredChannel(presenceKey);
             if (debounceRef.current) clearTimeout(debounceRef.current);
         };
     }, []);

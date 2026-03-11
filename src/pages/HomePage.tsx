@@ -39,7 +39,7 @@ const TILE_CASHIER = `${import.meta.env.BASE_URL}images/tiles/cashier.jpg`;
 const TILE_MARKETPLACE = `${import.meta.env.BASE_URL}images/tiles/marketplace.jpg`;
 const TILE_HAND_HISTORIES = `${import.meta.env.BASE_URL}images/tiles/hand-histories.jpg`;
 
-// Holographic edge glow colors (World Hub palette)
+// Holographic edge glow colors (World Hub palette) — used for nth-child CSS
 const HOLO_COLORS = [
     { main: 'rgba(0, 212, 255, 0.15)', border: 'rgba(0, 212, 255, 0.2)' },
     { main: 'rgba(0, 255, 136, 0.12)', border: 'rgba(0, 255, 136, 0.18)' },
@@ -48,6 +48,15 @@ const HOLO_COLORS = [
     { main: 'rgba(0, 255, 159, 0.12)', border: 'rgba(0, 255, 159, 0.18)' },
     { main: 'rgba(200, 255, 255, 0.1)', border: 'rgba(200, 255, 255, 0.15)' },
 ];
+
+// Enhancement #9: Unique gradient CSS classes for logo-less club cards
+const GRADIENT_CLASSES = [
+    styles.clubCardGradient1,
+    styles.clubCardGradient2,
+    styles.clubCardGradient3,
+    styles.clubCardGradient4,
+    styles.clubCardGradient5,
+] as const;
 
 export default function HomePage() {
     const navigate = useNavigate();
@@ -313,6 +322,10 @@ export default function HomePage() {
             <div className={styles.gridFloor}></div>
             <div className={styles.volumetricLight}></div>
             <div className={styles.vignette}></div>
+            {/* Enhancement #6: Circuit brain background overlay */}
+            <div className={styles.circuitOverlay}></div>
+            {/* Enhancement #1: Neuron lights — traveling cyan pulses */}
+            <div className={styles.neuronLights}></div>
 
             {/* GLOBAL HEADER - Hub-style, hide when embedded in iframe */}
             {!isInIframe && <GlobalHeader />}
@@ -386,7 +399,6 @@ export default function HomePage() {
                 {displayClubs.length > 0 && (
                     <div className={styles.clubCardsRow}>
                         {displayClubs.map((club: any, idx: number) => {
-                            const holo = HOLO_COLORS[idx % HOLO_COLORS.length];
                             return (
                                 <div
                                     key={club.id}
@@ -399,23 +411,19 @@ export default function HomePage() {
                                     }}
                                 >
                                     <div className={styles.clubCardPedestal}></div>
-                                    <div
-                                        className={styles.clubCardFace}
-                                        style={{
-                                            borderColor: holo.border,
-                                        }}
-                                    >
+                                    <div className={styles.clubCardFace}>
                                         <h3 className={styles.clubCardTitle}>
                                             {club.name?.toUpperCase() || 'MY CLUB'}
                                         </h3>
                                         <span className={styles.clubCardRole}>
                                             {club.is_owner ? 'OWNER' : 'MEMBER'}
                                         </span>
+                                        {/* Enhancement #9: Unique gradient or logo */}
                                         <div className={styles.clubCardCenter}>
                                             {club.logo_url ? (
                                                 <img src={club.logo_url} alt="" className={styles.clubCardLogo} />
                                             ) : (
-                                                <div className={styles.clubCardIcon}>♣</div>
+                                                <div className={`${styles.clubCardIcon} ${GRADIENT_CLASSES[idx % GRADIENT_CLASSES.length]}`}>♣</div>
                                             )}
                                         </div>
                                         <div className={styles.clubCardStats}>
@@ -429,6 +437,15 @@ export default function HomePage() {
                                 </div>
                             );
                         })}
+                    </div>
+                )}
+
+                {/* Enhancement #5: Skeleton loading while clubs data is loading */}
+                {isLoading && (
+                    <div className={styles.clubCardsSkeleton}>
+                        <div className={styles.clubCardSkeletonItem}></div>
+                        <div className={styles.clubCardSkeletonItem}></div>
+                        <div className={styles.clubCardSkeletonItem}></div>
                     </div>
                 )}
 
@@ -514,10 +531,11 @@ export default function HomePage() {
                 ═══════════════════════════════════════════════════════════════════════ */}
                 <div className={styles.bottomRow}>
                     {[
-                        { img: TILE_PLAYER_STATS, alt: 'Player Stats', action: () => navigate('/profile') },
-                        { img: TILE_LEADERBOARDS, alt: 'Leaderboards', action: () => navigate('/leaderboard') },
+                        { img: TILE_PLAYER_STATS, alt: 'Player Stats', action: () => { haptic.light(); navigate('/profile'); } },
+                        { img: TILE_LEADERBOARDS, alt: 'Leaderboards', action: () => { haptic.light(); navigate('/leaderboard'); } },
                         {
                             img: TILE_CASHIER, alt: 'Cashier', action: () => {
+                                haptic.light();
                                 const lastClub = localStorage.getItem(LAST_CLUB_KEY);
                                 if (lastClub) {
                                     navigate(`/clubs/${lastClub}/cashier`);
@@ -530,14 +548,30 @@ export default function HomePage() {
                         },
                         {
                             img: TILE_MARKETPLACE, alt: 'Marketplace', action: () => {
+                                haptic.light();
+                                // Enhancement #7: Marketplace deep-link timeout fallback
                                 if (window.parent !== window) {
-                                    window.parent.postMessage({ type: 'NAVIGATE', path: '/hub/marketplace' }, window.location.origin);
+                                    window.parent.postMessage({ type: 'NAVIGATE', path: '/hub/marketplace' }, '*');
+                                    // Fallback if parent doesn't handle the message within 1s
+                                    const fallbackTimer = setTimeout(() => {
+                                        window.location.href = 'https://smarter.poker/hub/marketplace';
+                                    }, 1000);
+                                    // Listen for acknowledgment from parent
+                                    const handleAck = (event: MessageEvent) => {
+                                        if (event.data?.type === 'NAVIGATE_ACK') {
+                                            clearTimeout(fallbackTimer);
+                                            window.removeEventListener('message', handleAck);
+                                        }
+                                    };
+                                    window.addEventListener('message', handleAck);
+                                    // Cleanup listener after timeout period
+                                    setTimeout(() => window.removeEventListener('message', handleAck), 1200);
                                 } else {
                                     window.location.href = 'https://smarter.poker/hub/marketplace';
                                 }
                             }
                         },
-                        { img: TILE_HAND_HISTORIES, alt: 'Hand Histories', action: () => navigate('/hands') },
+                        { img: TILE_HAND_HISTORIES, alt: 'Hand Histories', action: () => { haptic.light(); navigate('/hands'); } },
                     ].map((tile, idx) => (
                         <button
                             key={tile.alt}

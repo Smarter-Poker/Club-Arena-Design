@@ -2,7 +2,7 @@
  *  TRANSACTION HISTORY PAGE — With Pagination & Export
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
@@ -35,6 +35,16 @@ export default function TransactionHistoryPage() {
     const [filter, setFilter] = useState<TransactionFilter>('all');
     const [hasMore, setHasMore] = useState(true);
     const [page, setPage] = useState(0);
+    const [visibleTransactions, setVisibleTransactions] = useState(new Set<number>());
+
+    // Stagger transaction rows
+    useEffect(() => {
+        setVisibleTransactions(new Set());
+        const timers = transactions.map((_, i) =>
+            setTimeout(() => setVisibleTransactions(prev => new Set([...prev, i])), i * 35)
+        );
+        return () => timers.forEach(t => clearTimeout(t));
+    }, [transactions.length]);
 
     useEffect(() => {
         if (user?.id) {
@@ -215,8 +225,16 @@ export default function TransactionHistoryPage() {
                     </div>
                 ) : (
                     <>
-                        {transactions.map(tx => (
-                            <div key={tx.id} className="transaction-row">
+                        {transactions.map((tx, index) => (
+                            <div
+                                key={tx.id}
+                                className="transaction-row"
+                                style={{
+                                    opacity: visibleTransactions.has(index) ? 1 : 0,
+                                    transform: visibleTransactions.has(index) ? 'translateY(0)' : 'translateY(6px)',
+                                    transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                }}
+                            >
                                 <span className="tx-icon">{getIcon(tx.type)}</span>
                                 <div className="tx-info">
                                     <span className="tx-desc">{tx.description || tx.type.replace('_', ' ')}</span>

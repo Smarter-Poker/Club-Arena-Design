@@ -1,14 +1,14 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- *  NOTIFICATION BELL — Header Badge with Unread Count (v2.2 — Hardened)
+ *  NOTIFICATION BELL — Header Badge with Unread Count (v3.0 — Phase 28)
  * ═══════════════════════════════════════════════════════════════════════════════
  * Displays a bell icon with unread count badge. Tapping navigates to /notifications.
  *
- * v2.2: Synchronous cleanup to prevent React Strict Mode race conditions.
- *       Single source of truth for mark-read: masterBus NOTIFICATION_READ only.
+ * v3.0: Added window focus refetch — when user returns from another tab or device,
+ *       the badge count refreshes to catch notifications marked read elsewhere.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
@@ -19,22 +19,24 @@ export default function NotificationBell() {
     const { user } = useUserStore();
     const [unreadCount, setUnreadCount] = useState(0);
 
+    // Memoized fetch function for reuse on mount AND window focus
+    const fetchCount = useCallback(async () => {
+        if (!user?.id) return;
+        const { count } = await supabase
+            .from('notifications')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('read', false);
+        setUnreadCount(count || 0);
+    }, [user?.id]);
+
     useEffect(() => {
         if (!user?.id) return;
 
-        // Fetch initial unread count
-        const fetchCount = async () => {
-            const { count } = await supabase
-                .from('notifications')
-                .select('*', { count: 'exact', head: true })
-                .eq('user_id', user.id)
-                .eq('read', false);
-            setUnreadCount(count || 0);
-        };
+        // Initial fetch
         fetchCount();
 
         // Real-time: ONLY listen for new INSERTs (new notifications arriving)
-        // Mark-read sync is handled exclusively by masterBus NOTIFICATION_READ
         const channelKey = `notif-bell-${user.id}`;
         const channel = masterBus.getOrCreateChannel(channelKey);
         channel
@@ -52,8 +54,8 @@ export default function NotificationBell() {
             )
             .subscribe();
 
-        // masterBus subscriber for NOTIFICATION_READ (only source of mark-read sync)
-        const unsubNotifRead = masterBus.subscribe('NOTIFICATION_READ', (event: any) => {
+        // masterBus subscriber for NOTIFICATION_READ (sole source of mark-read sync)
+        const unsubNotifRead = masterBus.subscribe('NOTIFICATION_READ', (event) => {
             if (event.payload?.allRead) {
                 setUnreadCount(0);
             } else {
@@ -61,11 +63,20 @@ export default function NotificationBell() {
             }
         });
 
+        // #6: Refetch on window focus — catches reads on other tabs/devices
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                fetchCount();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
         return () => {
             masterBus.removeRegisteredChannel(channelKey);
             unsubNotifRead();
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [user?.id]);
+    }, [user?.id, fetchCount]);
 
     return (
         <button

@@ -31,6 +31,7 @@ interface SettlementPeriod {
 }
 
 interface ClubWire {
+    id: string;
     clubId: string;
     clubName: string;
     netPlayerPL: number;
@@ -43,6 +44,7 @@ interface ClubWire {
 }
 
 interface AgentPayout {
+    id: string;
     agentId: string;
     agentName: string;
     rakeGenerated: number;
@@ -72,10 +74,11 @@ export default function SettlementPage() {
     const [clubWires, setClubWires] = useState<ClubWire[]>([]);
     const [agentPayouts, setAgentPayouts] = useState<AgentPayout[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [visibleWires, setVisibleWires] = useState<Set<string>>(new Set());
+    const [visiblePayouts, setVisiblePayouts] = useState<Set<string>>(new Set());
 
     // Load data from SettlementService
-    useEffect(() => {
-        async function loadSettlementData() {
+    const loadSettlementData = useCallback(async () => {
             setIsLoading(true);
             try {
                 // Get current period
@@ -122,6 +125,7 @@ export default function SettlementPage() {
 
                         // Map club settlements to wires
                         const wires: ClubWire[] = settlements.clubSettlements.map(c => ({
+                            id: c.clubId,
                             clubId: c.clubId,
                             clubName: c.clubName,
                             netPlayerPL: -(c.totalRakeCollected),
@@ -136,6 +140,7 @@ export default function SettlementPage() {
 
                         // Map agent settlements to payouts
                         const payouts: AgentPayout[] = settlements.agentSettlements.map(a => ({
+                            id: a.agentId,
                             agentId: a.agentId,
                             agentName: a.agentName,
                             rakeGenerated: a.totalRakeGenerated,
@@ -157,11 +162,35 @@ export default function SettlementPage() {
             } finally {
                 setIsLoading(false);
             }
-        }
+    }, []);
 
+    useEffect(() => {
         loadSettlementData();
+    }, [loadSettlementData]);
 
-        // Real-time settlement period updates
+    // Stagger animations for wires and payouts
+    useEffect(() => {
+        if (clubWires.length === 0) return;
+        setVisibleWires(new Set());
+        clubWires.forEach((wire, index) => {
+            setTimeout(() => {
+                setVisibleWires(prev => new Set(prev).add(wire.id));
+            }, index * 60);
+        });
+    }, [clubWires]);
+
+    useEffect(() => {
+        if (agentPayouts.length === 0) return;
+        setVisiblePayouts(new Set());
+        agentPayouts.forEach((payout, index) => {
+            setTimeout(() => {
+                setVisiblePayouts(prev => new Set(prev).add(payout.id));
+            }, index * 60);
+        });
+    }, [agentPayouts]);
+
+    // Real-time settlement period updates
+    useEffect(() => {
         const channel = supabase
             .channel('settlement-live')
             .on(
@@ -172,7 +201,22 @@ export default function SettlementPage() {
                     table: 'settlement_periods',
                 },
                 () => {
-                    loadSettlementData();
+                    // Reload — inline since loadSettlementData is scoped to another useEffect
+                    SettlementService.getCurrentPeriod().then(cp => {
+                        const mapped: SettlementPeriod = {
+                            id: cp.id,
+                            periodNumber: cp.periodNumber,
+                            year: cp.year,
+                            startAt: cp.startAt,
+                            endAt: cp.endAt,
+                            status: cp.status as 'open' | 'processing' | 'settled',
+                            totalRake: cp.totalRakeCollected,
+                            totalBBJ: cp.totalBBJContributions,
+                            totalHands: cp.totalHandsDealt,
+                            totalPlayers: 0,
+                        };
+                        setSelectedPeriod(mapped);
+                    }).catch(() => {});
                 }
             )
             .on(
@@ -465,7 +509,7 @@ export default function SettlementPage() {
                             </thead>
                             <tbody>
                                 {clubWires.map(wire => (
-                                    <tr key={wire.clubId}>
+                                    <tr key={wire.clubId} className={`${visibleWires.has(wire.id) ? 'fadeInUp' : 'hidden'}`} style={visibleWires.has(wire.id) ? undefined : { opacity: 0, transform: 'translateY(8px)' }}>
                                         <td className={styles.clubCell}>{wire.clubName}</td>
                                         <td className={wire.netPlayerPL >= 0 ? styles.positive : styles.negative}>
                                             {formatMoney(wire.netPlayerPL)}
@@ -515,7 +559,7 @@ export default function SettlementPage() {
                             </thead>
                             <tbody>
                                 {agentPayouts.map(payout => (
-                                    <tr key={payout.agentId}>
+                                    <tr key={payout.agentId} className={`${visiblePayouts.has(payout.id) ? 'fadeInUp' : 'hidden'}`} style={visiblePayouts.has(payout.id) ? undefined : { opacity: 0, transform: 'translateY(8px)' }}>
                                         <td className={styles.agentCell}>{payout.agentName}</td>
                                         <td>{formatMoney(payout.rakeGenerated)}</td>
                                         <td>{(payout.commissionRate * 100).toFixed(0)}%</td>

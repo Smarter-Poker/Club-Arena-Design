@@ -2,7 +2,7 @@
  *  PROMOTIONS PAGE — Club Promotions & Bonuses with Live Updates
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import DailyBonusWheel from '../components/bonus/DailyBonusWheel';
@@ -38,6 +38,7 @@ export default function PromotionsPage() {
     const [filter, setFilter] = useState<'all' | 'active' | 'upcoming'>('active');
     const [showBonusWheel, setShowBonusWheel] = useState(false);
     const [showReferral, setShowReferral] = useState(false);
+    const [visiblePromoCards, setVisiblePromoCards] = useState(new Set<number>());
 
     useEffect(() => {
         loadPromotions();
@@ -99,6 +100,15 @@ export default function PromotionsPage() {
         }
         return true;
     });
+
+    // Stagger promo cards
+    useEffect(() => {
+        setVisiblePromoCards(new Set());
+        const timers = filteredPromos.map((_, i) =>
+            setTimeout(() => setVisiblePromoCards(prev => new Set([...prev, i])), i * 50)
+        );
+        return () => timers.forEach(t => clearTimeout(t));
+    }, [filteredPromos.length]);
 
     const getTypeIcon = (type: string): string => {
         switch (type) {
@@ -180,8 +190,16 @@ export default function PromotionsPage() {
                         <p>No {filter} promotions</p>
                     </div>
                 ) : (
-                    filteredPromos.map(promo => (
-                        <div key={promo.id} className="promo-card">
+                    filteredPromos.map((promo, index) => (
+                        <div
+                            key={promo.id}
+                            className="promo-card"
+                            style={{
+                                opacity: visiblePromoCards.has(index) ? 1 : 0,
+                                transform: visiblePromoCards.has(index) ? 'translateY(0)' : 'translateY(10px)',
+                                transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            }}
+                        >
                             {promo.image_url && (
                                 <div className="promo-image">
                                     <img src={promo.image_url} alt="" />

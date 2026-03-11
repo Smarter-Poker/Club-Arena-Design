@@ -35,6 +35,7 @@ export default function ClubMessagesPage() {
     const [selectedConversation, setSelectedConversation] = useState<string | null>(conversationId || null);
     const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
     const [clubId, setClubId] = useState<string | undefined>(urlClubId);
+    const [visibleConversations, setVisibleConversations] = useState<Set<string>>(new Set());
 
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
@@ -123,6 +124,17 @@ export default function ClubMessagesPage() {
         };
     }, [loadClubConversations]);
 
+    // Stagger animation for conversations
+    useEffect(() => {
+        if (conversations.length === 0) return;
+        setVisibleConversations(new Set());
+        conversations.forEach((conv, index) => {
+            setTimeout(() => {
+                setVisibleConversations(prev => new Set(prev).add(conv.id));
+            }, index * 60);
+        });
+    }, [conversations]);
+
     // Format relative time
     const formatTime = (dateStr: string): string => {
         if (!dateStr) return '';
@@ -196,7 +208,8 @@ export default function ClubMessagesPage() {
                     conversations.map(conv => (
                         <div
                             key={conv.id}
-                            className={`club-conversation-item ${selectedConversation === conv.id ? 'selected' : ''} ${conv.unreadCount > 0 ? 'unread' : ''}`}
+                            className={`club-conversation-item ${selectedConversation === conv.id ? 'selected' : ''} ${conv.unreadCount > 0 ? 'unread' : ''} ${visibleConversations.has(conv.id) ? 'fadeInUp' : 'hidden'}`}
+                            style={visibleConversations.has(conv.id) ? undefined : { opacity: 0, transform: 'translateY(8px)' }}
                             onClick={() => handleSelect(conv.id)}
                         >
                             {/* Club Logo */}

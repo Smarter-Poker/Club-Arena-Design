@@ -255,8 +255,9 @@ export default function ProfilePage() {
                 if (profile) {
                     import('../core/MasterBus').then(({ masterBus }) => {
                         masterBus.emit('USER_PROFILE_LOADED', {
-                            id: authUser.id,
-                            avatarUrl: profile.avatar_url || ''
+                            userId: authUser.id,
+                            avatarUrl: profile.avatar_url || '',
+                            displayName: profile.display_name
                         });
                     });
                 }

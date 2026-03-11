@@ -91,7 +91,7 @@ export default function GlobalHeader({
                 if (data.user?.id && mounted) loadBalances(data.user.id);
             }, 300);
 
-            unsubProfile = masterBus.subscribe('USER_PROFILE_LOADED', (event: any) => {
+            unsubProfile = masterBus.subscribe('USER_PROFILE_LOADED', (event) => {
                 if (mounted && event.payload?.avatarUrl) {
                     setAvatarUrl(event.payload.avatarUrl);
                 }

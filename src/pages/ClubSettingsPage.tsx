@@ -59,10 +59,23 @@ export default function ClubSettingsPage() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [confirmText, setConfirmText] = useState('');
     const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
+    const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         if (clubId) loadClubSettings();
     }, [clubId]);
+
+    // Section entrance animation
+    useEffect(() => {
+        if (!loading) {
+            const sections = ['basic', 'gameplay', 'advanced', 'danger'];
+            sections.forEach((section, index) => {
+                setTimeout(() => {
+                    setVisibleSections(prev => new Set(prev).add(section));
+                }, index * 80);
+            });
+        }
+    }, [loading]);
 
     // ── Realtime: live club settings changes ──
     useEffect(() => {

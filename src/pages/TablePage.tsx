@@ -21,6 +21,7 @@ import type { SidePot } from '../components/table/PotDisplay';
 import type { BoardStage } from '../components/table/CommunityCards';
 import { useTableWebSocket } from '../services/TableWebSocket';
 import { supabase, subscribeToHandState } from '../lib/supabase';
+import { masterBus } from '../core/MasterBus';
 import { avatarService } from '../services/AvatarService';
 import PlayerNotesPanel from '../components/gameplay/PlayerNotesPanel';
 import HandReplay from '../components/replay/HandReplay';
@@ -3548,9 +3549,7 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                         setShowSessionSummary(false);
 
                         // Notify system
-                        import('../core/MasterBus').then(({ masterBus }) => {
-                            masterBus.emit('SESSION_SUMMARY_DISMISSED', { tableId });
-                        });
+                        masterBus.emit('SESSION_SUMMARY_DISMISSED', { tableId: tableId ?? '' });
 
                         navigate('/');
                     }}

@@ -283,16 +283,18 @@ export default function ClubsPage() {
                             ) : myClubs.length > 0 ? (
                                 <div className={styles.clubsGrid}>
                                     {myClubs.map((membership, index) => (
-                                        <MetalCard
+                                        <div
                                             key={membership.id}
-                                            size="md"
-                                            glow
                                             style={{
                                                 opacity: visibleClubCards.has(index) ? 1 : 0,
                                                 transform: visibleClubCards.has(index) ? 'translateY(0)' : 'translateY(8px)',
                                                 transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                                             }}
                                         >
+                                            <MetalCard
+                                                size="md"
+                                                glow
+                                            >
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                                 {/* Club Header */}
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -364,6 +366,7 @@ export default function ClubsPage() {
                                                 </MetalButton>
                                             </div>
                                         </MetalCard>
+                                        </div>
                                     ))}
                                 </div>
                             ) : (

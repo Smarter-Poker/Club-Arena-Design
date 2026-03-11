@@ -7,6 +7,12 @@
 import { useNavigate } from 'react-router-dom';
 import styles from './LegalPage.module.css';
 
+const sectionAnimationStyle = (index: number) => ({
+    opacity: 0,
+    transform: 'translateY(8px)',
+    animation: `fadeInUp 0.5s ease-out ${index * 70}ms forwards`,
+});
+
 export default function PromotionsPage() {
     const navigate = useNavigate();
 
@@ -20,7 +26,7 @@ export default function PromotionsPage() {
             </div>
 
             <div className={styles.content}>
-                <section>
+                <section style={sectionAnimationStyle(0)}>
                     <h2>1. General Promotion Guidelines</h2>
                     <p>
                         All promotions, bonuses, and special offers in Club Arena are subject to these rules.
@@ -28,7 +34,7 @@ export default function PromotionsPage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(1)}>
                     <h2>2. Eligibility</h2>
                     <p>
                         Promotions are available to all registered Club Arena users unless otherwise specified.
@@ -41,7 +47,7 @@ export default function PromotionsPage() {
                     </ul>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(2)}>
                     <h2>3. Daily Bonuses</h2>
                     <p>
                         Daily bonuses are awarded for consecutive daily logins:
@@ -60,7 +66,7 @@ export default function PromotionsPage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(3)}>
                     <h2>4. Tournament Promotions</h2>
                     <p>
                         Tournament promotions may include:
@@ -76,7 +82,7 @@ export default function PromotionsPage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(4)}>
                     <h2>5. Rakeback and Loyalty Rewards</h2>
                     <p>
                         Rakeback is calculated based on the rake contributed in cash games and tournament fees:
@@ -93,7 +99,7 @@ export default function PromotionsPage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(5)}>
                     <h2>6. Referral Bonuses</h2>
                     <p>
                         Refer friends to Club Arena and earn rewards:
@@ -108,7 +114,7 @@ export default function PromotionsPage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(6)}>
                     <h2>7. Club-Specific Promotions</h2>
                     <p>
                         Individual clubs may run their own promotions with custom rules:
@@ -120,7 +126,7 @@ export default function PromotionsPage() {
                     </ul>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(7)}>
                     <h2>8. Promotion Abuse</h2>
                     <p>
                         The following activities are considered promotion abuse and are strictly prohibited:
@@ -136,7 +142,7 @@ export default function PromotionsPage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(8)}>
                     <h2>9. Modification and Cancellation</h2>
                     <p>
                         Club Arena reserves the right to modify, suspend, or cancel any promotion at any time without prior notice.
@@ -144,7 +150,7 @@ export default function PromotionsPage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(9)}>
                     <h2>10. Disputes</h2>
                     <p>
                         All decisions regarding promotions are final and at the sole discretion of Club Arena.

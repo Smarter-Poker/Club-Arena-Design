@@ -2,7 +2,7 @@
  *  BAD BEAT JACKPOT PAGE — Live Jackpot Updates
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/common/Toast';
@@ -41,6 +41,7 @@ export default function BadBeatJackpotPage() {
     const [history, setHistory] = useState<JackpotHistory[]>([]);
     const [loading, setLoading] = useState(true);
     const [justUpdated, setJustUpdated] = useState(false);
+    const [visibleHistoryRows, setVisibleHistoryRows] = useState(new Set<number>());
     const prevAmountRef = useRef<number>(0);
 
     useEffect(() => {
@@ -123,6 +124,15 @@ export default function BadBeatJackpotPage() {
         setLoading(false);
     }, [clubId]);
 
+    // Stagger history rows
+    useEffect(() => {
+        setVisibleHistoryRows(new Set());
+        const timers = history.map((_, i) =>
+            setTimeout(() => setVisibleHistoryRows(prev => new Set([...prev, i])), i * 50)
+        );
+        return () => timers.forEach(t => clearTimeout(t));
+    }, [history.length]);
+
     const formatDate = (dateStr: string): string => {
         return new Date(dateStr).toLocaleDateString(undefined, {
             year: 'numeric',
@@ -195,8 +205,16 @@ export default function BadBeatJackpotPage() {
                     </div>
                 ) : (
                     <div className="history-list">
-                        {history.map(hit => (
-                            <div key={hit.id} className="history-row">
+                        {history.map((hit, index) => (
+                            <div
+                                key={hit.id}
+                                className="history-row"
+                                style={{
+                                    opacity: visibleHistoryRows.has(index) ? 1 : 0,
+                                    transform: visibleHistoryRows.has(index) ? 'translateY(0)' : 'translateY(8px)',
+                                    transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                }}
+                            >
                                 <div className="hit-info">
                                     <span className="hit-date">{formatDate(hit.hit_at)}</span>
                                     <span className="hit-hands">

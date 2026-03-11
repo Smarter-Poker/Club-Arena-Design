@@ -1,9 +1,11 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- *  PROFIT CHART — Lazy-loaded Recharts component (#5 Performance)
+ *  PROFIT CHART — Lazy-loaded Recharts component (#5 Performance, v1.1)
  * ═══════════════════════════════════════════════════════════════════════════════
  * Extracted from ProfilePage to enable React.lazy() code-splitting.
  * The 387KB Recharts bundle is only downloaded when the user opens the History tab.
+ *
+ * v1.1: Added premium empty state when no transactions exist.
  */
 
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -19,6 +21,53 @@ interface ProfitChartProps {
 }
 
 export default function ProfitChart({ transactions }: ProfitChartProps) {
+    // #12: Empty state
+    if (!transactions || transactions.length === 0) {
+        return (
+            <div style={{
+                width: '100%',
+                height: 200,
+                marginBottom: 16,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(0, 20, 40, 0.4)',
+                borderRadius: 12,
+                border: '1px solid rgba(255, 255, 255, 0.05)',
+            }}>
+                <div style={{
+                    fontSize: '2rem',
+                    opacity: 0.3,
+                    marginBottom: 8,
+                    animation: 'profitChartPulse 3s ease-in-out infinite',
+                }}>
+                    📊
+                </div>
+                <div style={{
+                    fontSize: '0.75rem',
+                    color: '#5a6a7a',
+                    fontWeight: 600,
+                }}>
+                    No transaction history yet
+                </div>
+                <div style={{
+                    fontSize: '0.65rem',
+                    color: '#3a4a5a',
+                    marginTop: 4,
+                }}>
+                    Start playing to see your P/L chart
+                </div>
+                <style>{`
+                    @keyframes profitChartPulse {
+                        0%, 100% { opacity: 0.3; transform: scale(1); }
+                        50% { opacity: 0.5; transform: scale(1.05); }
+                    }
+                `}</style>
+            </div>
+        );
+    }
+
     const data = (() => {
         let cumulative = 0;
         const grouped: Record<string, number> = {};

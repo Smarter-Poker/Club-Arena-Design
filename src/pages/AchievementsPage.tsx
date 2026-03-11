@@ -5,7 +5,7 @@
  * Display unlocked achievements, progress, and badges
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
@@ -66,6 +66,7 @@ export default function AchievementsPage() {
     const [loading, setLoading] = useState(true);
 
     const [newUnlock, setNewUnlock] = useState<Achievement | null>(null);
+    const [visibleBadges, setVisibleBadges] = useState(new Set<number>());
     const unlockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const loadAchievementsRef = useRef<(() => Promise<void>) | null>(null);
 
@@ -160,6 +161,15 @@ export default function AchievementsPage() {
 
     const unlockedCount = achievements.filter(a => a.unlocked).length;
 
+    // Stagger badge cards
+    useEffect(() => {
+        setVisibleBadges(new Set());
+        const timers = filteredAchievements.map((_, i) =>
+            setTimeout(() => setVisibleBadges(prev => new Set([...prev, i])), i * 45)
+        );
+        return () => timers.forEach(t => clearTimeout(t));
+    }, [filteredAchievements.length]);
+
     const getRarityColor = (rarity: string): string => {
         switch (rarity) {
             case 'legendary': return '#ff9800';
@@ -203,17 +213,25 @@ export default function AchievementsPage() {
                 {loading ? (
                     <div className="loading-state"><div className="spinner" /></div>
                 ) : (
-                    filteredAchievements.map(achievement => (
-                        <AchievementBadge
+                    filteredAchievements.map((achievement, index) => (
+                        <div
                             key={achievement.id}
-                            icon={achievement.icon}
-                            name={achievement.name}
-                            description={achievement.description}
-                            progress={achievement.progress}
-                            unlocked={achievement.unlocked}
-                            rarity={achievement.rarity}
-                            unlockedAt={achievement.unlockedAt}
-                        />
+                            style={{
+                                opacity: visibleBadges.has(index) ? 1 : 0,
+                                transform: visibleBadges.has(index) ? 'scale(1)' : 'scale(0.85)',
+                                transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            }}
+                        >
+                            <AchievementBadge
+                                icon={achievement.icon}
+                                name={achievement.name}
+                                description={achievement.description}
+                                progress={achievement.progress}
+                                unlocked={achievement.unlocked}
+                                rarity={achievement.rarity}
+                                unlockedAt={achievement.unlockedAt}
+                            />
+                        </div>
                     ))
                 )}
             </AchievementGrid>

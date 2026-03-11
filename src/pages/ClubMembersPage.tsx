@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
+import { masterBus } from '../core/MasterBus';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import './ClubMembersPage.css';
 
@@ -36,17 +37,30 @@ export default function ClubMembersPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
     const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
+    const [visibleMembers, setVisibleMembers] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         if (clubId) loadMembers();
     }, [clubId]);
 
+    // Stagger animation for members
+    useEffect(() => {
+        if (members.length === 0) return;
+        setVisibleMembers(new Set());
+        members.forEach((member, index) => {
+            setTimeout(() => {
+                setVisibleMembers(prev => new Set(prev).add(member.id));
+            }, index * 60);
+        });
+    }, [members]);
+
     // Real-time club members table updates
     useEffect(() => {
         if (!clubId) return;
 
-        const channel = supabase
-            .channel(`club-members-sync-${clubId}`)
+        const channelKey = `club-members-sync-${clubId}`;
+        const channel = masterBus.getOrCreateChannel(channelKey);
+        channel
             .on(
                 'postgres_changes',
                 {
@@ -62,7 +76,7 @@ export default function ClubMembersPage() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [clubId]);
 
@@ -70,7 +84,8 @@ export default function ClubMembersPage() {
     useEffect(() => {
         if (!clubId || !user?.id) return;
 
-        const channel = supabase.channel(`club-members-${clubId}`);
+        const presenceKey = `club-members-${clubId}`;
+        const channel = masterBus.getOrCreateChannel(presenceKey);
 
         channel
             .on('presence', { event: 'sync' }, () => {
@@ -88,7 +103,7 @@ export default function ClubMembersPage() {
             });
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(presenceKey);
         };
     }, [clubId, user?.id]);
 
@@ -213,7 +228,8 @@ export default function ClubMembersPage() {
                     filteredMembers.map(member => (
                         <div
                             key={member.id}
-                            className="member-row"
+                            className={`member-row ${visibleMembers.has(member.id) ? 'fadeInUp' : 'hidden'}`}
+                            style={visibleMembers.has(member.id) ? undefined : { opacity: 0, transform: 'translateY(8px)' }}
                             onClick={() => navigate(`/profile/${member.user_id}`)}
                         >
                             <div className="member-avatar">

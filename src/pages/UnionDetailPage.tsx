@@ -68,6 +68,7 @@ export default function UnionDetailPage() {
     const [ownedClubs, setOwnedClubs] = useState<Club[]>([]);
     const [showClubSelector, setShowClubSelector] = useState(false);
     const [applying, setApplying] = useState(false);
+    const [visibleClubs, setVisibleClubs] = useState<Set<string>>(new Set());
     const [confirmJoin, setConfirmJoin] = useState<{ show: boolean; club: Club | null }>({ show: false, club: null });
     const [removingClubId, setRemovingClubId] = useState<string | null>(null);
     const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
@@ -194,6 +195,17 @@ export default function UnionDetailPage() {
 
         loadData();
     }, [unionId]);
+
+    // Stagger animation for clubs
+    useEffect(() => {
+        if (clubs.length === 0) return;
+        setVisibleClubs(new Set());
+        clubs.forEach((club, index) => {
+            setTimeout(() => {
+                setVisibleClubs(prev => new Set(prev).add(club.clubId));
+            }, index * 60);
+        });
+    }, [clubs]);
 
     // ── Realtime: live union data updates ──
     useEffect(() => {
@@ -540,7 +552,7 @@ export default function UnionDetailPage() {
                 {activeTab === 'clubs' && (
                     <div className={styles.clubsGrid}>
                         {clubs.map(club => (
-                            <div key={club.clubId} className={styles.clubCard}>
+                            <div key={club.clubId} className={`${styles.clubCard} ${visibleClubs.has(club.clubId) ? styles.fadeInUp : styles.hidden}`} style={visibleClubs.has(club.clubId) ? undefined : { opacity: 0, transform: 'translateY(8px)' }}>
                                 <div className={styles.clubCardAvatar}></div>
                                 <div className={styles.clubCardInfo}>
                                     <h4>{club.clubName}</h4>

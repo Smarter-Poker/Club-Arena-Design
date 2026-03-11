@@ -7,6 +7,12 @@
 import { useNavigate } from 'react-router-dom';
 import styles from './LegalPage.module.css';
 
+const sectionAnimationStyle = (index: number) => ({
+    opacity: 0,
+    transform: 'translateY(8px)',
+    animation: `fadeInUp 0.5s ease-out ${index * 70}ms forwards`,
+});
+
 export default function PrivacyPolicyPage() {
     const navigate = useNavigate();
 
@@ -20,7 +26,7 @@ export default function PrivacyPolicyPage() {
             </div>
 
             <div className={styles.content}>
-                <section>
+                <section style={sectionAnimationStyle(0)}>
                     <h2>Introduction</h2>
                     <p>
                         Club Arena ("we", "our", or "us") is committed to protecting your privacy.
@@ -29,7 +35,7 @@ export default function PrivacyPolicyPage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(1)}>
                     <h2>Information We Collect</h2>
                     <h3>Personal Information</h3>
                     <p>We collect information that you provide directly to us:</p>
@@ -59,7 +65,7 @@ export default function PrivacyPolicyPage() {
                     </ul>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(2)}>
                     <h2>How We Use Your Information</h2>
                     <p>We use the collected information for:</p>
                     <ul>
@@ -73,7 +79,7 @@ export default function PrivacyPolicyPage() {
                     </ul>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(3)}>
                     <h2>Information Sharing and Disclosure</h2>
                     <p>We do not sell your personal information. We may share information in these circumstances:</p>
                     <ul>
@@ -85,7 +91,7 @@ export default function PrivacyPolicyPage() {
                     </ul>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(4)}>
                     <h2>Data Security</h2>
                     <p>We implement security measures to protect your information:</p>
                     <ul>
@@ -101,7 +107,7 @@ export default function PrivacyPolicyPage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(5)}>
                     <h2>Your Privacy Rights</h2>
                     <p>You have the right to:</p>
                     <ul>
@@ -117,7 +123,7 @@ export default function PrivacyPolicyPage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(6)}>
                     <h2>Cookies and Tracking</h2>
                     <p>We use cookies and similar technologies to:</p>
                     <ul>
@@ -131,7 +137,7 @@ export default function PrivacyPolicyPage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(7)}>
                     <h2>Children's Privacy</h2>
                     <p>
                         Club Arena is not intended for users under 18 years of age.
@@ -141,7 +147,7 @@ export default function PrivacyPolicyPage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(8)}>
                     <h2>Data Retention</h2>
                     <p>
                         We retain your information for as long as your account is active or as needed to provide services.
@@ -154,7 +160,7 @@ export default function PrivacyPolicyPage() {
                     </ul>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(9)}>
                     <h2>International Data Transfers</h2>
                     <p>
                         Your information may be transferred to and processed in countries other than your own.
@@ -162,7 +168,7 @@ export default function PrivacyPolicyPage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(10)}>
                     <h2>Changes to This Policy</h2>
                     <p>
                         We may update this Privacy Policy from time to time.
@@ -171,7 +177,7 @@ export default function PrivacyPolicyPage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(11)}>
                     <h2>Contact Us</h2>
                     <p>
                         If you have questions or concerns about this Privacy Policy, please contact us:

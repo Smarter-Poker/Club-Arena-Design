@@ -2,7 +2,7 @@
  *  VIP PAGE — VIP Diamond Member + A-la-Carte Purchases with Live Updates
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import { vipService, VIP_GOLD_LIMITS, FEATURE_PRICING, type VIPFeature } from '../services/VIPService';
@@ -22,6 +22,15 @@ export default function VIPPage() {
     const [showInfoModal, setShowInfoModal] = useState(false);
     const [showTopUpModal, setShowTopUpModal] = useState(false);
     const [purchasing, setPurchasing] = useState<string | null>(null);
+    const [vipEntranceComplete, setVIPEntranceComplete] = useState(false);
+
+    // VIP entrance animation
+    useEffect(() => {
+        if (!loading) {
+            const timer = setTimeout(() => setVIPEntranceComplete(true), 200);
+            return () => clearTimeout(timer);
+        }
+    }, [loading]);
 
     useEffect(() => {
         loadVIPStatus();
@@ -109,7 +118,14 @@ export default function VIPPage() {
         <div className="vip-page">
 
             {/* VIP Gold Status */}
-            <section className="vip-section vip-card-section">
+            <section
+                className="vip-section vip-card-section"
+                style={{
+                    opacity: vipEntranceComplete ? 1 : 0,
+                    transform: vipEntranceComplete ? 'translateY(0)' : 'translateY(12px)',
+                    transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                }}
+            >
                 <h3> VIP Diamond</h3>
                 {isVIP ? (
                     <div className="vip-card-active" style={{ borderColor: '#ffd700', textAlign: 'center' }}>

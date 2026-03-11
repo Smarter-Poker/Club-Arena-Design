@@ -44,10 +44,22 @@ export default function ClubFinancialsPage() {
     const [period, setPeriod] = useState<'week' | 'month' | 'all'>('week');
     const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
     const toast = useToast();
+    const [visibleTransactions, setVisibleTransactions] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         if (clubId) loadFinancials();
     }, [clubId, period]);
+
+    // Stagger animation for transactions
+    useEffect(() => {
+        if (transactions.length === 0) return;
+        setVisibleTransactions(new Set());
+        transactions.forEach((tx, index) => {
+            setTimeout(() => {
+                setVisibleTransactions(prev => new Set(prev).add(tx.id));
+            }, index * 60);
+        });
+    }, [transactions]);
 
     // ── Realtime subscription: live financial data updates ──
     useEffect(() => {
@@ -289,7 +301,7 @@ export default function ClubFinancialsPage() {
                 ) : (
                     <div className="transactions-list">
                         {transactions.map(tx => (
-                            <div key={tx.id} className="transaction-row">
+                            <div key={tx.id} className={`transaction-row ${visibleTransactions.has(tx.id) ? 'fadeInUp' : 'hidden'}`} style={visibleTransactions.has(tx.id) ? undefined : { opacity: 0, transform: 'translateY(8px)' }}>
                                 <span className="tx-icon">{getTypeIcon(tx.type)}</span>
                                 <div className="tx-info">
                                     <span className="tx-desc">{tx.description}</span>

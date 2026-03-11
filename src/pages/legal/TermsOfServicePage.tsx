@@ -7,6 +7,12 @@
 import { useNavigate } from 'react-router-dom';
 import styles from './LegalPage.module.css';
 
+const sectionAnimationStyle = (index: number) => ({
+    opacity: 0,
+    transform: 'translateY(8px)',
+    animation: `fadeInUp 0.5s ease-out ${index * 70}ms forwards`,
+});
+
 export default function TermsOfServicePage() {
     const navigate = useNavigate();
 
@@ -20,7 +26,7 @@ export default function TermsOfServicePage() {
             </div>
 
             <div className={styles.content}>
-                <section>
+                <section style={sectionAnimationStyle(0)}>
                     <h2>1. Acceptance of Terms</h2>
                     <p>
                         By accessing and using Club Arena, you accept and agree to be bound by the terms and provision of this agreement.
@@ -28,7 +34,7 @@ export default function TermsOfServicePage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(1)}>
                     <h2>2. Use License</h2>
                     <p>
                         Permission is granted to temporarily access Club Arena for personal, non-commercial use only.
@@ -43,7 +49,7 @@ export default function TermsOfServicePage() {
                     </ul>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(2)}>
                     <h2>3. Account Responsibilities</h2>
                     <p>
                         You are responsible for maintaining the confidentiality of your account and password.
@@ -51,7 +57,7 @@ export default function TermsOfServicePage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(3)}>
                     <h2>4. Play Money Only</h2>
                     <p>
                         Club Arena uses play money chips only. All chips, diamonds, and virtual currency have no real-world monetary value
@@ -59,7 +65,7 @@ export default function TermsOfServicePage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(4)}>
                     <h2>5. Fair Play</h2>
                     <p>
                         Users must play fairly and not use any unauthorized automated tools or collusion with other players.
@@ -67,7 +73,7 @@ export default function TermsOfServicePage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(5)}>
                     <h2>6. Content and Conduct</h2>
                     <p>
                         Users must not post, transmit, or otherwise make available any content that is:
@@ -80,7 +86,7 @@ export default function TermsOfServicePage() {
                     </ul>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(6)}>
                     <h2>7. Termination</h2>
                     <p>
                         We may terminate or suspend your account and bar access to the service immediately, without prior notice or liability,
@@ -88,7 +94,7 @@ export default function TermsOfServicePage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(7)}>
                     <h2>8. Limitation of Liability</h2>
                     <p>
                         In no event shall Club Arena, nor its directors, employees, partners, agents, suppliers, or affiliates,
@@ -97,7 +103,7 @@ export default function TermsOfServicePage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(8)}>
                     <h2>9. Changes to Terms</h2>
                     <p>
                         We reserve the right, at our sole discretion, to modify or replace these Terms at any time.
@@ -105,7 +111,7 @@ export default function TermsOfServicePage() {
                     </p>
                 </section>
 
-                <section>
+                <section style={sectionAnimationStyle(9)}>
                     <h2>10. Contact Us</h2>
                     <p>
                         If you have any questions about these Terms, please contact us at support@smarter.poker

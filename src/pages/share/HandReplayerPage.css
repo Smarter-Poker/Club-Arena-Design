@@ -400,3 +400,18 @@
     .replayer-controls { flex-wrap: wrap; }
     .replayer-controls button { flex: 1; min-width: calc(50% - 0.25rem); }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

@@ -68,6 +68,7 @@ export default function ClubCarouselPage() {
     const [loading, setLoading] = useState(true);
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [wallet, setWallet] = useState<UserWallet>({ gold: 0, diamonds: 0 });
+    const [visibleCards, setVisibleCards] = useState<Set<string>>(new Set());
 
     // Intro video state - only show once per session
     const [showIntro, setShowIntro] = useState(() => {
@@ -94,6 +95,17 @@ export default function ClubCarouselPage() {
             .subscribe();
         return () => { supabase.removeChannel(channel); };
     }, []);
+
+    // Stagger animation for club cards
+    useEffect(() => {
+        if (clubs.length === 0) return;
+        setVisibleCards(new Set());
+        clubs.forEach((club, index) => {
+            setTimeout(() => {
+                setVisibleCards(prev => new Set(prev).add(club.id));
+            }, index * 60);
+        });
+    }, [clubs]);
 
     const loadUserData = async () => {
         setLoading(true);
@@ -298,10 +310,10 @@ export default function ClubCarouselPage() {
                                     return (
                                         <div
                                             key={club.id}
-                                            className={`club-card ${isActive ? 'active' : ''}`}
+                                            className={`club-card ${isActive ? 'active' : ''} ${visibleCards.has(club.id) ? 'fadeInUp' : 'hidden'}`}
                                             style={{
                                                 transform: `translateX(${offset * 120}%) scale(${isActive ? 1 : 0.8})`,
-                                                opacity: Math.abs(offset) > 1 ? 0 : (isActive ? 1 : 0.6),
+                                                opacity: visibleCards.has(club.id) ? (Math.abs(offset) > 1 ? 0 : (isActive ? 1 : 0.6)) : 0,
                                                 zIndex: isActive ? 10 : 5 - Math.abs(offset),
                                             }}
                                             onClick={() => isActive && handleClubClick(club)}

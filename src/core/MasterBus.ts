@@ -47,6 +47,25 @@ export type BusEventType =
     | 'WAITLIST_POSITION_CHANGED'
     | 'SESSION_SUMMARY_DISMISSED';
 
+// #13: Type-safe payload map — compile-time enforcement of correct payloads
+export interface BusPayloadMap {
+    AUTH_STATE_CHANGED: AuthStatePayload;
+    USER_PROFILE_LOADED: { avatarUrl?: string; displayName?: string; userId?: string };
+    CLUB_JOINED: ClubEventPayload;
+    CLUB_LEFT: ClubEventPayload;
+    TABLE_SEATED: TableEventPayload;
+    TABLE_LEFT: TableEventPayload;
+    BALANCE_UPDATED: { source: string; [key: string]: unknown };
+    WALLET_REFRESHED: BalancePayload;
+    REALTIME_CONNECTED: { channelName: string };
+    REALTIME_DISCONNECTED: { channelName: string; reason?: string };
+    SYSTEM_ERROR: { message: string; code?: string };
+    HORSE_BUG_REPORT: Record<string, unknown>;
+    NOTIFICATION_READ: { notifId: string | null; allRead: boolean };
+    WAITLIST_POSITION_CHANGED: { tableId: string; position: number; tableName: string };
+    SESSION_SUMMARY_DISMISSED: { tableId: string };
+}
+
 export interface BusEvent<T = unknown> {
     type: BusEventType;
     payload: T;
@@ -99,6 +118,9 @@ export interface MasterBusStatus {
 
 type EventHandler<T = unknown> = (event: BusEvent<T>) => void;
 
+// Auto-incrementing subscriber ID for unique debounce timer keys
+let _subscriberIdCounter = 0;
+
 class MasterBusCore {
     private subscribers: Map<BusEventType, Set<EventHandler>> = new Map();
     private status: MasterBusStatus | null = null;
@@ -109,6 +131,9 @@ class MasterBusCore {
     // ═══════════════════════════════════════════════════════════════════════════
     private channelRegistry: Map<string, RealtimeChannel> = new Map();
     private debouncedTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+
+    // #4: Channel health monitor interval
+    private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
 
     /**
      * Initialize the Master Bus
@@ -195,15 +220,19 @@ class MasterBusCore {
         // Set up internal event handlers for cross-store sync
         this.setupInternalHandlers();
 
-        // DETERMINISTIC PROOF
+        // #4: Start channel health monitoring (every 30s)
+        this.startChannelHealthMonitor();
 
         return this.status;
     }
 
     /**
-     * Subscribe to an event type
+     * Subscribe to an event type — type-safe version
      */
-    subscribe<T = unknown>(eventType: BusEventType, handler: EventHandler<T>): () => void {
+    subscribe<K extends BusEventType>(
+        eventType: K,
+        handler: (event: BusEvent<K extends keyof BusPayloadMap ? BusPayloadMap[K] : unknown>) => void
+    ): () => void {
         if (!this.subscribers.has(eventType)) {
             this.subscribers.set(eventType, new Set());
         }
@@ -217,11 +246,14 @@ class MasterBusCore {
     }
 
     /**
-     * Emit an event to all subscribers
+     * Emit an event to all subscribers — type-safe version
      * Also logs a Sentry breadcrumb for observability (#8)
      */
-    emit<T = unknown>(type: BusEventType, payload: T): void {
-        const event: BusEvent<T> = {
+    emit<K extends BusEventType>(
+        type: K,
+        payload: K extends keyof BusPayloadMap ? BusPayloadMap[K] : unknown
+    ): void {
+        const event: BusEvent<typeof payload> = {
             type,
             payload,
             timestamp: new Date().toISOString(),
@@ -245,7 +277,7 @@ class MasterBusCore {
         if (handlers) {
             handlers.forEach(handler => {
                 try {
-                    handler(event);
+                    handler(event as BusEvent);
                 } catch (e) {
                     console.error(`🚌 [BUS ERROR] Handler failed for ${type}:`, e);
                 }
@@ -258,7 +290,7 @@ class MasterBusCore {
      */
     private setupInternalHandlers(): void {
         // When auth state changes, sync user data across stores
-        this.subscribe<AuthStatePayload>('AUTH_STATE_CHANGED', (event) => {
+        this.subscribe('AUTH_STATE_CHANGED', (event) => {
             const { userId, isAuthenticated } = event.payload;
 
             if (isAuthenticated && userId) {
@@ -274,7 +306,7 @@ class MasterBusCore {
         });
 
         // When joining a club, subscribe to realtime channel
-        this.subscribe<ClubEventPayload>('CLUB_JOINED', (event) => {
+        this.subscribe('CLUB_JOINED', (event) => {
             const { clubId } = event.payload;
             const user = useUserStore.getState().user;
 
@@ -298,7 +330,7 @@ class MasterBusCore {
         });
 
         // When leaving a club, unsubscribe from realtime
-        this.subscribe<ClubEventPayload>('CLUB_LEFT', (event) => {
+        this.subscribe('CLUB_LEFT', (event) => {
             realtimeChannelService.unsubscribeFromClub(event.payload.clubId);
         });
     }
@@ -337,12 +369,17 @@ class MasterBusCore {
     reset(): void {
         this.subscribers.clear();
         // Clean up all registered Supabase channels
-        this.channelRegistry.forEach((channel, key) => {
+        this.channelRegistry.forEach((channel) => {
             supabase.removeChannel(channel);
         });
         this.channelRegistry.clear();
         this.debouncedTimers.forEach(timer => clearTimeout(timer));
         this.debouncedTimers.clear();
+        // #4: Stop health monitor
+        if (this.healthCheckInterval) {
+            clearInterval(this.healthCheckInterval);
+            this.healthCheckInterval = null;
+        }
         this.status = null;
         this.initialized = false;
     }
@@ -395,17 +432,19 @@ class MasterBusCore {
 
     /**
      * Subscribe with debounce — collapses rapid-fire events into one call.
-     * @param eventType - The event to listen for
-     * @param handler - The handler to call
-     * @param debounceMs - Collapse window in milliseconds (default 300ms)
+     * #2 FIX: Uses unique per-subscriber timer keys (no cross-subscriber collision).
+     * #1 FIX: Clears pending timer on unsubscribe (no stale handler fire).
      */
-    subscribeDebounced<T = unknown>(
-        eventType: BusEventType,
-        handler: EventHandler<T>,
+    subscribeDebounced<K extends BusEventType>(
+        eventType: K,
+        handler: (event: BusEvent<K extends keyof BusPayloadMap ? BusPayloadMap[K] : unknown>) => void,
         debounceMs: number = 300
     ): () => void {
+        // #2: Unique timer key per subscriber instance
+        const subscriberId = ++_subscriberIdCounter;
+        const timerKey = `${eventType}_debounce_${subscriberId}`;
+
         const debouncedHandler: EventHandler = (event) => {
-            const timerKey = `${eventType}_debounce`;
             const existing = this.debouncedTimers.get(timerKey);
             if (existing) clearTimeout(existing);
 
@@ -415,7 +454,74 @@ class MasterBusCore {
             }, debounceMs));
         };
 
-        return this.subscribe(eventType, debouncedHandler as EventHandler);
+        const unsubFromBus = this.subscribe(eventType, debouncedHandler as any);
+
+        // #1: Return enhanced unsubscribe that also clears any pending timer
+        return () => {
+            unsubFromBus();
+            const pendingTimer = this.debouncedTimers.get(timerKey);
+            if (pendingTimer) {
+                clearTimeout(pendingTimer);
+                this.debouncedTimers.delete(timerKey);
+            }
+        };
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // #4: CHANNEL HEALTH MONITOR — Auto-detect dead channels
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Periodically checks channel health. Removes channels in CLOSED or
+     * CHANNEL_ERROR state from the registry to prevent stale references.
+     */
+    private startChannelHealthMonitor(): void {
+        if (this.healthCheckInterval) return; // Already running
+
+        this.healthCheckInterval = setInterval(() => {
+            const deadChannels: string[] = [];
+
+            this.channelRegistry.forEach((channel, key) => {
+                const state = (channel as any).state;
+                if (state === 'closed' || state === 'errored') {
+                    console.warn(`🚌 [HEALTH] Dead channel detected: "${key}" (state: ${state}) — auto-removing`);
+                    deadChannels.push(key);
+                }
+            });
+
+            deadChannels.forEach(key => this.removeRegisteredChannel(key));
+        }, 30_000); // Every 30 seconds
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // #9: DIAGNOSTICS — Dev-mode debugging dashboard data
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Returns a diagnostics snapshot for dev debugging.
+     */
+    getDiagnostics(): {
+        subscribers: Record<string, number>;
+        channels: { key: string; state: string }[];
+        pendingTimers: number;
+        initialized: boolean;
+    } {
+        const subscribers: Record<string, number> = {};
+        this.subscribers.forEach((handlers, event) => {
+            subscribers[event] = handlers.size;
+        });
+
+        const channels = Array.from(this.channelRegistry.entries()).map(([key, ch]) => ({
+            key,
+            state: (ch as any).state || 'unknown',
+        }));
+
+        return {
+            subscribers,
+            channels,
+            pendingTimers: this.debouncedTimers.size,
+            initialized: this.initialized,
+        };
     }
 }
 

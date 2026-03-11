@@ -173,7 +173,7 @@ class HorseBugReporterService {
         }
 
         // Broadcast via MasterBus so dashboard can update
-        masterBus.emit('HORSE_BUG_REPORT', report);
+        masterBus.emit('HORSE_BUG_REPORT', { ...report } as Record<string, unknown>);
 
         // Persist critical/high/medium to Supabase (fire and forget)
         if (report.severity === 'critical' || report.severity === 'high' || report.severity === 'medium') {
