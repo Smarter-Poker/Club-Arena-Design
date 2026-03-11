@@ -258,8 +258,14 @@ export default function LobbyPage() {
                     </div>
                 ) : filteredTables.length > 0 ? (
                     <div className={styles.tablesGrid}>
-                        {filteredTables.map(table => (
-                            <div key={table.id} style={{ position: 'relative' }}>
+                        {filteredTables.map((table, index) => (
+                            <div
+                                key={table.id}
+                                style={{
+                                    position: 'relative',
+                                    animation: `tableSlideIn 0.5s ease-out ${index * 50}ms both`,
+                                }}
+                            >
                                 <button
                                     onClick={(e) => { e.stopPropagation(); toggleFavorite(table.id); }}
                                     style={{
@@ -272,16 +278,52 @@ export default function LobbyPage() {
                                 >
                                     ⭐
                                 </button>
+                                {/* Live pulse indicator for active tables */}
+                                {table.current_players > 0 && (
+                                    <div
+                                        style={{
+                                            position: 'absolute', top: 12, right: 44, zIndex: 10,
+                                            width: 8, height: 8, borderRadius: '50%',
+                                            background: '#ef4444', boxShadow: '0 0 8px #ef4444',
+                                            animation: 'livePulse 2s infinite',
+                                        }}
+                                        title={`${table.current_players} players live`}
+                                    />
+                                )}
                                 <TableCard table={table} />
                             </div>
                         ))}
                     </div>
                 ) : (
-                    <div className={styles.emptyState}>
-                        <span className={styles.emptyIcon}></span>
+                    <div className={`${styles.emptyState} ${styles.emptyStatePremium}`}>
+                        <span className={styles.emptyIcon}>♠</span>
                         <h3>No tables found</h3>
                         <p>Try adjusting your filters or create a new table.</p>
-                        <button className="btn btn-primary" onClick={() => navigate('/clubs')}>Create Table</button>
+                        <button
+                            className="btn btn-primary"
+                            onClick={() => navigate('/clubs')}
+                            style={{
+                                marginTop: 16,
+                                padding: '10px 20px',
+                                borderRadius: 8,
+                                background: 'linear-gradient(135deg, #0099ff, #00d4ff)',
+                                border: 'none',
+                                color: '#000',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                                (e.target as HTMLElement).style.transform = 'translateY(-2px)';
+                                (e.target as HTMLElement).style.boxShadow = '0 8px 20px rgba(0, 180, 255, 0.4)';
+                            }}
+                            onMouseLeave={(e) => {
+                                (e.target as HTMLElement).style.transform = 'translateY(0)';
+                                (e.target as HTMLElement).style.boxShadow = 'none';
+                            }}
+                        >
+                            Create Table
+                        </button>
                     </div>
                 )}
             </section>

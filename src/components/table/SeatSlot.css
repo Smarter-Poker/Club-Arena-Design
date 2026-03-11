@@ -1159,3 +1159,58 @@
     .seat__empty-label { font-size: 0.5rem; }
     .seat__hand-name { font-size: 0.5625rem; padding: 1px 6px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PREMIUM RUNTIME ANIMATION CLASSES (Phase 2)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Winner pop — scale bounce triggered by TSX */
+.seat--winner-pop {
+    animation: seatWinnerPop 0.6s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+}
+
+@keyframes seatWinnerPop {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.15); }
+    60% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+
+/* All-in shake */
+.seat--allin-shake {
+    animation: seatAllinShake 0.4s ease-out;
+}
+
+@keyframes seatAllinShake {
+    0%, 100% { transform: translateX(0); }
+    15% { transform: translateX(-3px); }
+    30% { transform: translateX(3px); }
+    45% { transform: translateX(-2px); }
+    60% { transform: translateX(2px); }
+    75% { transform: translateX(-1px); }
+}
+
+/* Stack change glow pulse */
+.seat--stack-glow {
+    animation: seatStackGlow 0.6s ease-out;
+}
+
+@keyframes seatStackGlow {
+    0% { filter: brightness(1); }
+    30% { filter: brightness(1.3) drop-shadow(0 0 8px rgba(255, 215, 0, 0.5)); }
+    100% { filter: brightness(1); }
+}
+
+/* Winner persistent glow */
+.seat--winner-glow .seat__info {
+    box-shadow:
+        0 0 12px rgba(255, 215, 0, 0.4),
+        0 0 24px rgba(255, 215, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 215, 0, 0.6);
+}
+
+.seat--winner-glow .seat__avatar {
+    border-color: rgba(255, 215, 0, 0.7);
+    box-shadow: 0 0 16px rgba(255, 215, 0, 0.4);
+}

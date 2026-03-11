@@ -22,6 +22,7 @@ export interface ChipStackProps {
     showLabel?: boolean;
     animated?: boolean;
     className?: string;
+    prevAmount?: number; // For detecting amount changes
 }
 
 // Calculate optimal chip breakdown
@@ -66,19 +67,25 @@ export default function ChipStack({
     showLabel = true,
     animated = true,
     className = '',
+    prevAmount,
 }: ChipStackProps) {
     if (amount <= 0) return null;
 
     const chips = calculateChips(amount);
     const { chipSize, spacing } = SIZES[size];
 
+    // Detect amount change for bounce animation
+    const hasAmountChanged = prevAmount !== undefined && amount !== prevAmount;
+    const bounceClass = hasAmountChanged ? 'chip-stack-container--bounce' : '';
+
     return (
-        <div className={`chip-stack-container ${className}`}>
+        <div className={`chip-stack-container ${bounceClass} ${className}`}>
             {/* Chip Stacks */}
             <div className="chip-stacks">
                 {chips.map((stack, stackIndex) => {
                     const color = getChipColor(stack.value);
                     const stackHeight = Math.min(stack.count, 5);
+                    const shadowDepth = Math.min(stackHeight * 3, 16);
 
                     return (
                         <div
@@ -86,6 +93,7 @@ export default function ChipStack({
                             className={`chip-stack ${animated ? 'animated' : ''}`}
                             style={{
                                 animationDelay: `${stackIndex * 50}ms`,
+                                filter: `drop-shadow(0 ${shadowDepth}px ${shadowDepth * 1.5}px rgba(0, 0, 0, ${0.3 + (stackHeight * 0.1)}))`,
                             }}
                         >
                             {Array.from({ length: stackHeight }).map((_, chipIndex) => (

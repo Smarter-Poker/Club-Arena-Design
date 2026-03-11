@@ -195,6 +195,47 @@ export const SeatSlot = memo(function SeatSlot(props: SeatSlotProps) {
         prevStackRef.current = player.stack;
     }, [player?.stack]);
 
+    // Winner pop animation — brief scale bounce when isWinner transitions to true
+    const [winnerPop, setWinnerPop] = useState(false);
+    useEffect(() => {
+        if (isWinner && !winnerPop) {
+            setWinnerPop(true);
+            const timer = setTimeout(() => setWinnerPop(false), 600);
+            return () => clearTimeout(timer);
+        }
+    }, [isWinner, winnerPop]);
+
+    // All-in shake animation — brief shake when lastAction changes to 'all_in'
+    const [allinShake, setAllinShake] = useState(false);
+    const prevActionRef = React.useRef<LastAction>(null);
+    useEffect(() => {
+        if (lastAction === 'all_in' && prevActionRef.current !== 'all_in') {
+            setAllinShake(true);
+            const timer = setTimeout(() => setAllinShake(false), 400);
+            prevActionRef.current = lastAction;
+            return () => clearTimeout(timer);
+        }
+        prevActionRef.current = lastAction;
+    }, [lastAction]);
+
+    // Stack glow pulse — when stack changes by >20%
+    const [stackGlow, setStackGlow] = useState(false);
+    const prevStackForGlowRef = React.useRef<number>(player?.stack ?? 0);
+    useEffect(() => {
+        if (!player) return;
+        const prev = prevStackForGlowRef.current;
+        if (prev > 0) {
+            const percentChange = Math.abs(player.stack - prev) / prev;
+            if (percentChange > 0.2) {
+                setStackGlow(true);
+                const timer = setTimeout(() => setStackGlow(false), 600);
+                prevStackForGlowRef.current = player.stack;
+                return () => clearTimeout(timer);
+            }
+        }
+        prevStackForGlowRef.current = player.stack;
+    }, [player?.stack]);
+
     const containerClasses = useMemo(() => {
         const cls = ['seat'];
         if (!player) {
@@ -203,8 +244,14 @@ export const SeatSlot = memo(function SeatSlot(props: SeatSlotProps) {
             cls.push(`seat--${player.status}`);
             if (player.isHero) cls.push('seat--hero');
             if (isActive) cls.push('seat--active');
-            if (isWinner) cls.push('seat--winner');
+            if (isWinner) {
+                cls.push('seat--winner');
+                cls.push('seat--winner-glow');
+                if (winnerPop) cls.push('seat--winner-pop');
+            }
             if (lastAction === 'fold') cls.push('seat--folded');
+            if (allinShake) cls.push('seat--allin-shake');
+            if (stackGlow) cls.push('seat--stack-glow');
             // Timer urgency classes for color transitions
             if (isActive && timerProgress !== undefined) {
                 if (timerProgress <= 20) cls.push('seat--timer-critical');
@@ -212,7 +259,7 @@ export const SeatSlot = memo(function SeatSlot(props: SeatSlotProps) {
             }
         }
         return cls.join(' ');
-    }, [player, isActive, lastAction, isWinner, timerProgress]);
+    }, [player, isActive, lastAction, isWinner, timerProgress, winnerPop, allinShake, stackGlow]);
 
     // ─── EMPTY SEAT ────────────────────────────────────────────────────────
     if (!player) {

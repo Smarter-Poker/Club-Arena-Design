@@ -10,7 +10,7 @@
  * - Uses CardImage component for custom deck rendering
  */
 
-import React, { useMemo, useEffect, useRef, memo } from 'react';
+import React, { useMemo, useEffect, useRef, useState, memo } from 'react';
 import { CardImage, CardBack } from './CardImage';
 import type { Card } from './CardImage';
 import { haptic } from '../../services/SoundService';
@@ -115,8 +115,20 @@ function CommunityCardsComponent({
 }: CommunityCardsProps) {
     const visibleCount = useMemo(() => getVisibleCardCount(stage), [stage]);
     const prevStageRef = useRef(stage);
+    const prevCardCountRef = useRef(cards.length);
+    const [showdownMode, setShowdownMode] = useState(false);
+    const [highlightPop, setHighlightPop] = useState(false);
+    const prevHighlightRef = useRef<number[]>([]);
 
-    // Haptic feedback when new community cards are dealt
+    // Haptic feedback when new community cards are dealt (triggered when cards array length increases)
+    useEffect(() => {
+        if (cards.length > prevCardCountRef.current) {
+            haptic.medium();
+            prevCardCountRef.current = cards.length;
+        }
+    }, [cards.length]);
+
+    // Haptic feedback on stage transitions
     useEffect(() => {
         if (stage !== prevStageRef.current) {
             if (stage === 'flop') {
@@ -127,10 +139,24 @@ function CommunityCardsComponent({
                 haptic.medium();
             } else if (stage === 'showdown') {
                 haptic.strong();
+                setShowdownMode(true);
             }
             prevStageRef.current = stage;
         }
     }, [stage]);
+
+    // Highlight pop animation — when highlightedIndices changes
+    useEffect(() => {
+        const highlightStr = JSON.stringify(highlightedIndices);
+        const prevStr = JSON.stringify(prevHighlightRef.current);
+        if (highlightStr !== prevStr && highlightedIndices.length > 0) {
+            setHighlightPop(true);
+            const timer = setTimeout(() => setHighlightPop(false), 400);
+            prevHighlightRef.current = highlightedIndices;
+            return () => clearTimeout(timer);
+        }
+        prevHighlightRef.current = highlightedIndices;
+    }, [highlightedIndices]);
 
     // Create array of 5 slots
     const slots = useMemo(() => {
@@ -147,9 +173,9 @@ function CommunityCardsComponent({
     }, [cards, visibleCount, highlightedIndices]);
 
     return (
-        <div className="community-cards">
+        <div className={`community-cards ${showdownMode ? 'community-cards--showdown' : ''}`}>
             {/* Card Container — no stage label clutter */}
-            <div className="community-cards__container">
+            <div className={`community-cards__container ${highlightPop ? 'community-cards__container--highlight-pop' : ''}`}>
                 {slots.map((slot, i) => (
                     slot.type === 'card' ? (
                         <CardFace

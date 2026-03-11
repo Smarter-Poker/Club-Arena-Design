@@ -514,12 +514,197 @@ a:hover {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
+   PREMIUM ANIMATION KEYFRAMES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@keyframes shimmerSweep {
+    0% {
+        background-position: -1000px 0;
+    }
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+@keyframes pulseGlow {
+    0%, 100% {
+        opacity: 1;
+        box-shadow: 0 0 20px rgba(24, 119, 242, 0.3);
+    }
+    50% {
+        opacity: 0.8;
+        box-shadow: 0 0 30px rgba(24, 119, 242, 0.5);
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes winnerShine {
+    0% {
+        background-position: -1000px 0;
+    }
+    50% {
+        background-position: 500px 0;
+    }
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+@keyframes chipBounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-12px);
+    }
+}
+
+@keyframes countUp {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PREMIUM UTILITY CLASSES
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Glass Morphism Surfaces */
+.glass-surface {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-highlight);
+}
+
+.glass-surface--light {
+    background: var(--glass-bg-light);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.glass-surface--dark {
+    background: rgba(10, 11, 14, 0.9);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Glow Effects */
+.glow-blue {
+    box-shadow: var(--glow-blue);
+}
+
+.glow-gold {
+    box-shadow: var(--glow-gold);
+}
+
+.glow-green {
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+}
+
+.glow-red {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+.glow-cyan {
+    box-shadow: var(--glow-cyan);
+}
+
+/* Animation Classes */
+.animate-shimmer {
+    animation: shimmerSweep var(--duration-slow) ease-in-out infinite;
+    background-size: 200% 100%;
+}
+
+.animate-pulse-glow {
+    animation: pulseGlow var(--duration-normal) ease-in-out infinite;
+}
+
+.animate-slide-up {
+    animation: slideInUp var(--duration-normal) var(--ease-spring) forwards;
+}
+
+.animate-fade-scale {
+    animation: fadeInScale var(--duration-normal) var(--ease-spring) forwards;
+}
+
+/* Interaction Classes */
+.spring-hover {
+    transition: transform var(--duration-fast) var(--ease-spring);
+}
+
+.spring-hover:hover {
+    transform: translateY(-2px);
+}
+
+.press-scale {
+    transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.press-scale:active {
+    transform: scale(0.96);
+}
+
+/* Text Glow Effects */
+.text-glow-gold {
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.text-glow-blue {
+    text-shadow: 0 0 10px rgba(24, 119, 242, 0.5);
+}
+
+.text-glow-cyan {
+    text-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
    SCROLLBAR
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -527,12 +712,14 @@ a:hover {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--royal-blue-dim);
+    background: var(--royal-blue);
     border-radius: var(--radius-full);
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--royal-blue);
+    background: var(--royal-blue-light);
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5), 0 0 12px var(--royal-blue-glow);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -542,4 +729,23 @@ a:hover {
 ::selection {
     background: var(--royal-blue);
     color: var(--pure-white);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FOCUS VISIBLE STYLES (Premium Accessibility)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--near-black), 0 0 0 5px var(--royal-blue),
+                inset 0 0 0 1px var(--royal-blue);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--near-black), 0 0 0 5px var(--royal-blue);
 }

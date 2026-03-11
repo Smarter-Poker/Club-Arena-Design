@@ -86,12 +86,12 @@ export function PlayerCard({
         }
     }, [isDealing, dealDelay, hasDealt]);
 
-    // Handle flip animation
+    // Handle flip animation with anticipation delay
     useEffect(() => {
         if (isFlipping && !isFlipped) {
             const timer = setTimeout(() => {
                 setIsFlipped(true);
-            }, 150);
+            }, 100 + 150); // 100ms anticipation delay + 150ms flip duration
             return () => clearTimeout(timer);
         }
         if (isVisible && !isFlipping) {
@@ -109,8 +109,8 @@ export function PlayerCard({
     // Build class names
     const classNames = useMemo(() => {
         const classes = ['player-card'];
-        if (isHero) classes.push('player-card--hero');
-        if (isWinner) classes.push('player-card--winner');
+        if (isHero) classes.push('player-card--hero', 'player-card--hero-tilt');
+        if (isWinner) classes.push('player-card--winner', 'player-card--winner-shine');
         if (isDealing && !hasDealt) classes.push('player-card--dealing');
         if (hasDealt && isDealing) classes.push('player-card--dealt');
         if (isFlipping) classes.push('player-card--flipping');

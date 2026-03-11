@@ -321,6 +321,12 @@ export default function HomePage() {
                 <div className={styles.glowOrb3}></div>
             </div>
 
+            {/* Pull-to-Refresh Gesture Hint */}
+            <div className={styles.pullRefreshHint}>
+                <span className={styles.pullRefreshIcon}>↓</span>
+                <span className={styles.pullRefreshText}>Pull to refresh</span>
+            </div>
+
             {/* GLOBAL HEADER - Hub-style, hide when embedded in iframe */}
             {!isInIframe && <GlobalHeader />}
 
@@ -369,6 +375,9 @@ export default function HomePage() {
                             <div
                                 key={club.id}
                                 className={`${styles.sideCard} ${styles.sideCardLeft}`}
+                                style={{
+                                    animation: `${styles.fadeInUp} 0.6s ease-out ${idx * 100}ms both`,
+                                }}
                                 onClick={() => {
                                     haptic.medium();
                                     localStorage.setItem(LAST_VISITED_KEY, club.id);
@@ -403,6 +412,9 @@ export default function HomePage() {
                     <div className={styles.centerColumn}>
                         <div
                             className={styles.featuredCard}
+                            style={{
+                                animation: `${styles.scaleIn} 0.7s ease-out 150ms both`,
+                            }}
                             onClick={() => {
                                 haptic.success();
                                 if (sharkClubId) {
@@ -430,6 +442,9 @@ export default function HomePage() {
                             <div
                                 key={club.id}
                                 className={`${styles.sideCard} ${styles.sideCardRight}`}
+                                style={{
+                                    animation: `${styles.fadeInUp} 0.6s ease-out ${(idx + leftClubs.length + 1) * 100}ms both`,
+                                }}
                                 onClick={() => {
                                     haptic.medium();
                                     localStorage.setItem(LAST_VISITED_KEY, club.id);

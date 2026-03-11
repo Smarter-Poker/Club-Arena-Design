@@ -80,28 +80,29 @@ export default function GlobalHeader({
 
         loadUserData();
 
-        // ─── MASTER BUS LISTENERS ───
+        // ─── MASTER BUS LISTENERS (#4: Debounced balance refresh) ───
+        let unsubWallet: (() => void) | null = null;
+        let unsubProfile: (() => void) | null = null;
+
         import('../../core/MasterBus').then(({ masterBus }) => {
-            const unsubWallet = masterBus.subscribe('WALLET_REFRESHED', async () => {
+            // #4: Debounced — collapses rapid-fire wallet refreshes into one call
+            unsubWallet = masterBus.subscribeDebounced('WALLET_REFRESHED', async () => {
                 const { data } = await supabase.auth.getUser();
-                if (data.user?.id) loadBalances(data.user.id);
-            });
-            const unsubProfile = masterBus.subscribe('USER_PROFILE_LOADED', (event: any) => {
+                if (data.user?.id && mounted) loadBalances(data.user.id);
+            }, 300);
+
+            unsubProfile = masterBus.subscribe('USER_PROFILE_LOADED', (event: any) => {
                 if (mounted && event.payload?.avatarUrl) {
                     setAvatarUrl(event.payload.avatarUrl);
                 }
             });
-
-            // Override global cleanup
-            const originalCleanup = () => { mounted = false; };
-            return () => {
-                originalCleanup();
-                unsubWallet();
-                unsubProfile();
-            };
         });
 
-        return () => { mounted = false; };
+        return () => {
+            mounted = false;
+            unsubWallet?.();
+            unsubProfile?.();
+        };
     }, [loadBalances, loadDiamonds]);
 
     const handleHubClick = () => {

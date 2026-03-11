@@ -153,8 +153,10 @@ function PotDisplayComponent({
 }: PotDisplayProps) {
     const [displayPot, setDisplayPot] = useState(mainPot);
     const [isAnimating, setIsAnimating] = useState(false);
+    const [isPotBump, setIsPotBump] = useState(false);
+    const prevPotRef = React.useRef(mainPot);
 
-    // Animate pot changes — only re-trigger when mainPot changes (not displayPot)
+    // Animated number counting — when mainPot changes, count up from old value to new value over 400ms
     useEffect(() => {
         setIsAnimating(true);
 
@@ -163,26 +165,36 @@ function PotDisplayComponent({
         const diff = mainPot - startValue;
         if (diff === 0) { setIsAnimating(false); return; }
 
-        const steps = 20;
-        const increment = diff / steps;
-        let current = startValue;
-        let step = 0;
+        const startTime = Date.now();
+        const duration = 400;
 
-        const timer = setInterval(() => {
-            step++;
-            current += increment;
-
-            if (step >= steps) {
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            if (elapsed >= duration) {
                 setDisplayPot(mainPot);
                 setIsAnimating(false);
-                clearInterval(timer);
             } else {
-                setDisplayPot(Math.trunc(current * 100) / 100);
+                const progress = elapsed / duration;
+                const currentValue = startValue + diff * progress;
+                setDisplayPot(Math.trunc(currentValue * 100) / 100);
+                requestAnimationFrame(animate);
             }
-        }, 25);
+        };
 
-        return () => clearInterval(timer);
+        const frameId = requestAnimationFrame(animate);
+        return () => cancelAnimationFrame(frameId);
         // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mainPot]);
+
+    // Pot bump animation — when pot increases by >2x previous
+    useEffect(() => {
+        if (mainPot > prevPotRef.current * 2 && prevPotRef.current > 0) {
+            setIsPotBump(true);
+            const timer = setTimeout(() => setIsPotBump(false), 500);
+            prevPotRef.current = mainPot;
+            return () => clearTimeout(timer);
+        }
+        prevPotRef.current = mainPot;
     }, [mainPot]);
 
     // Calculate chip visualization
@@ -198,7 +210,7 @@ function PotDisplayComponent({
     }
 
     return (
-        <div className="pot-display">
+        <div className={`pot-display ${isPotBump ? 'pot-display--bump' : ''}`}>
             {/* Chip Stacks Visualization */}
             {showChipAnimation && mainPot > 0 && (
                 <div className="pot-display__chips">
@@ -215,7 +227,7 @@ function PotDisplayComponent({
 
             {/* Main Pot Amount — click to toggle chips/BB display */}
             <div
-                className={`pot-display__main ${isAnimating ? 'pot-display__main--animating' : ''} ${onToggleDisplayMode ? 'pot-display__main--clickable' : ''}`}
+                className={`pot-display__main ${isAnimating ? 'pot-display__main--animating' : ''} ${onToggleDisplayMode ? 'pot-display__main--clickable' : ''} ${isPotBump ? 'pot-display__main--pulse' : ''}`}
                 onClick={onToggleDisplayMode}
                 title={onToggleDisplayMode ? 'Click to toggle Chips/BB display' : undefined}
             >

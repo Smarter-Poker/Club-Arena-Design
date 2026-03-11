@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🚌 MASTER BUS — Centralized State & Event Management Layer
+ * 🚌 MASTER BUS — Centralized State & Event Management Layer (v2.0)
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * The Master Bus is the central nervous system of Club Arena, orchestrating:
@@ -8,6 +8,9 @@
  * - Cross-store state synchronization
  * - Realtime channel bridge for live updates
  * - Service layer coordination
+ * - Supabase channel deduplication registry
+ * - Sentry breadcrumb logging for observability
+ * - Debounced subscription helpers for performance
  * 
  * NO DEMO DATA - All operations are real.
  */
@@ -20,6 +23,8 @@ import { useWalletStore } from '../stores/useWalletStore';
 import { useSettingsStore } from '../stores/useSettingsStore';
 import { useUserStore } from '../stores/useUserStore';
 import { realtimeChannelService } from '../services/RealtimeChannelService';
+import { supabase } from '../lib/supabase';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // EVENT TYPES
@@ -37,7 +42,10 @@ export type BusEventType =
     | 'REALTIME_CONNECTED'
     | 'REALTIME_DISCONNECTED'
     | 'SYSTEM_ERROR'
-    | 'HORSE_BUG_REPORT';
+    | 'HORSE_BUG_REPORT'
+    | 'NOTIFICATION_READ'
+    | 'WAITLIST_POSITION_CHANGED'
+    | 'SESSION_SUMMARY_DISMISSED';
 
 export interface BusEvent<T = unknown> {
     type: BusEventType;
@@ -95,6 +103,12 @@ class MasterBusCore {
     private subscribers: Map<BusEventType, Set<EventHandler>> = new Map();
     private status: MasterBusStatus | null = null;
     private initialized: boolean = false;
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SUPABASE CHANNEL REGISTRY — Prevents duplicate subscriptions
+    // ═══════════════════════════════════════════════════════════════════════════
+    private channelRegistry: Map<string, RealtimeChannel> = new Map();
+    private debouncedTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
 
     /**
      * Initialize the Master Bus
@@ -204,6 +218,7 @@ class MasterBusCore {
 
     /**
      * Emit an event to all subscribers
+     * Also logs a Sentry breadcrumb for observability (#8)
      */
     emit<T = unknown>(type: BusEventType, payload: T): void {
         const event: BusEvent<T> = {
@@ -212,6 +227,19 @@ class MasterBusCore {
             timestamp: new Date().toISOString(),
         };
 
+        // #8: Log Sentry breadcrumb for every event
+        try {
+            if (typeof window !== 'undefined' && (window as any).__SENTRY__) {
+                import('@sentry/react').then(Sentry => {
+                    Sentry.addBreadcrumb({
+                        category: 'masterBus',
+                        message: type,
+                        level: 'info',
+                        data: typeof payload === 'object' ? (payload as Record<string, unknown>) : { value: payload },
+                    });
+                }).catch(() => { /* Sentry not available */ });
+            }
+        } catch { /* silent */ }
 
         const handlers = this.subscribers.get(type);
         if (handlers) {
@@ -308,8 +336,86 @@ class MasterBusCore {
      */
     reset(): void {
         this.subscribers.clear();
+        // Clean up all registered Supabase channels
+        this.channelRegistry.forEach((channel, key) => {
+            supabase.removeChannel(channel);
+        });
+        this.channelRegistry.clear();
+        this.debouncedTimers.forEach(timer => clearTimeout(timer));
+        this.debouncedTimers.clear();
         this.status = null;
         this.initialized = false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // #1: CHANNEL REGISTRY — Deduplicated Supabase channel management
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Get or create a Supabase channel — guarantees exactly one channel per key.
+     * If a channel with the same key already exists, returns it.
+     */
+    getOrCreateChannel(key: string): RealtimeChannel {
+        const existing = this.channelRegistry.get(key);
+        if (existing) return existing;
+
+        const channel = supabase.channel(key);
+        this.channelRegistry.set(key, channel);
+        return channel;
+    }
+
+    /**
+     * Remove a registered channel by key
+     */
+    removeRegisteredChannel(key: string): void {
+        const channel = this.channelRegistry.get(key);
+        if (channel) {
+            supabase.removeChannel(channel);
+            this.channelRegistry.delete(key);
+        }
+    }
+
+    /**
+     * Check if a channel is already registered
+     */
+    hasChannel(key: string): boolean {
+        return this.channelRegistry.has(key);
+    }
+
+    /**
+     * Get count of registered channels (for diagnostics)
+     */
+    getChannelCount(): number {
+        return this.channelRegistry.size;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // #4: DEBOUNCED SUBSCRIPTION — Prevents rapid-fire event storms
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Subscribe with debounce — collapses rapid-fire events into one call.
+     * @param eventType - The event to listen for
+     * @param handler - The handler to call
+     * @param debounceMs - Collapse window in milliseconds (default 300ms)
+     */
+    subscribeDebounced<T = unknown>(
+        eventType: BusEventType,
+        handler: EventHandler<T>,
+        debounceMs: number = 300
+    ): () => void {
+        const debouncedHandler: EventHandler = (event) => {
+            const timerKey = `${eventType}_debounce`;
+            const existing = this.debouncedTimers.get(timerKey);
+            if (existing) clearTimeout(existing);
+
+            this.debouncedTimers.set(timerKey, setTimeout(() => {
+                (handler as EventHandler)(event);
+                this.debouncedTimers.delete(timerKey);
+            }, debounceMs));
+        };
+
+        return this.subscribe(eventType, debouncedHandler as EventHandler);
     }
 }
 

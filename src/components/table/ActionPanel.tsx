@@ -46,6 +46,9 @@ export default function ActionPanel({
 }: ActionPanelProps) {
     const [isRaiseMode, setIsRaiseMode] = useState(false);
     const [raiseAmount, setRaiseAmount] = useState(minRaise);
+    const [turnPulse, setTurnPulse] = useState(false);
+    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
+    const prevTurnRef = useRef(isMyTurn);
 
     // Reset raise amount when minRaise changes (new street/hand)
     useEffect(() => {
@@ -56,6 +59,28 @@ export default function ActionPanel({
     useEffect(() => {
         if (!isMyTurn) setIsRaiseMode(false);
     }, [isMyTurn]);
+
+    // Attention pulse when isMyTurn becomes true
+    useEffect(() => {
+        if (isMyTurn && !prevTurnRef.current) {
+            setTurnPulse(true);
+            const timer = setTimeout(() => setTurnPulse(false), 600);
+            prevTurnRef.current = isMyTurn;
+            return () => clearTimeout(timer);
+        }
+        prevTurnRef.current = isMyTurn;
+    }, [isMyTurn]);
+
+    // Track window width for desktop keyboard shortcut hints
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const isDesktop = windowWidth >= 768;
 
     // Smart presets — adapt to street context
     const presets = [
@@ -159,7 +184,7 @@ export default function ActionPanel({
                     </button>
                 </div>
 
-                {/* Slider */}
+                {/* Slider with tick marks at 25%, 50%, 75%, 100% */}
                 <div className="raise-slider-wrap">
                     <input
                         type="range"
@@ -171,6 +196,13 @@ export default function ActionPanel({
                         onChange={handleSliderChange}
                         style={{ '--slider-progress': `${sliderProgress}%` } as React.CSSProperties}
                     />
+                    {/* Tick marks */}
+                    <div className="raise-slider-ticks">
+                        <div className="raise-slider-tick" style={{ left: '25%' }} />
+                        <div className="raise-slider-tick" style={{ left: '50%' }} />
+                        <div className="raise-slider-tick" style={{ left: '75%' }} />
+                        <div className="raise-slider-tick" style={{ left: '100%' }} />
+                    </div>
                 </div>
 
                 {/* Preset Row */}
@@ -205,15 +237,17 @@ export default function ActionPanel({
 
     // ─── STANDARD 3-BUTTON MODE ──────────────────────────────────
     return (
-        <div className={`action-panel ${isMyTurn ? 'action-panel--active' : ''}`}>
+        <div className={`action-panel ${isMyTurn ? 'action-panel--active' : ''} ${turnPulse ? 'action-panel--turn-pulse' : ''}`}>
             <div className="action-row">
                 {/* FOLD — Always Red, Left */}
                 <button
                     className="action-btn action-btn--fold"
                     onClick={() => { haptic.medium(); onAction('fold'); }}
                     disabled={!canFold}
+                    title={isDesktop ? 'F' : undefined}
                 >
                     <span className="action-btn__label">Fold</span>
+                    {isDesktop && <span className="action-btn__shortcut">F</span>}
                 </button>
 
                 {/* CHECK or CALL — Green, Center */}
@@ -221,16 +255,20 @@ export default function ActionPanel({
                     <button
                         className="action-btn action-btn--check"
                         onClick={() => { haptic.medium(); onAction('check'); }}
+                        title={isDesktop ? 'C' : undefined}
                     >
                         <span className="action-btn__label">Check</span>
+                        {isDesktop && <span className="action-btn__shortcut">C</span>}
                     </button>
                 ) : canCall ? (
                     <button
                         className="action-btn action-btn--call"
                         onClick={() => { haptic.medium(); onAction('call'); }}
+                        title={isDesktop ? 'C' : undefined}
                     >
                         <span className="action-btn__label">Call</span>
                         <span className="action-btn__amount">{formatChips(callAmount)}</span>
+                        {isDesktop && <span className="action-btn__shortcut">C</span>}
                     </button>
                 ) : (
                     <button className="action-btn action-btn--check" disabled>
@@ -243,20 +281,24 @@ export default function ActionPanel({
                     <button
                         className="action-btn action-btn--allin"
                         onClick={handleAllIn}
+                        title={isDesktop ? 'R' : undefined}
                     >
                         <span className="action-btn__label">All In</span>
                         <span className="action-btn__amount">{formatChips(maxRaise)}</span>
+                        {isDesktop && <span className="action-btn__shortcut">R</span>}
                     </button>
                 ) : (
                     <button
                         className="action-btn action-btn--raise"
                         onClick={handleRaiseClick}
                         disabled={!canRaise}
+                        title={isDesktop ? 'R' : undefined}
                     >
                         <span className="action-btn__label">Raise</span>
                         {minRaise > 0 && bigBlind > 0 && (
                             <span className="action-btn__amount">{(minRaise / bigBlind).toFixed(0)} BB</span>
                         )}
+                        {isDesktop && <span className="action-btn__shortcut">R</span>}
                     </button>
                 )}
             </div>

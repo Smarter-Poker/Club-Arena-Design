@@ -10,7 +10,7 @@
  * - Time bank integration
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import './TimerBar.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -57,18 +57,32 @@ export function TimerBar({
     showCountdown = true,
     onExpire,
 }: TimerBarProps) {
+    const [timeBankFlash, setTimeBankFlash] = useState(false);
+    const prevTimeRef = React.useRef(timeRemaining);
+
     // Calculate progress (0-100)
     const progress = useMemo(() => {
         return Math.max(0, Math.min(100, (timeRemaining / maxTime) * 100));
     }, [timeRemaining, maxTime]);
 
-    // Determine color state
+    // Determine color state — transitions green → yellow → red
     const colorState = useMemo(() => {
         const ratio = timeRemaining / maxTime;
-        if (ratio <= CRITICAL_THRESHOLD) return 'critical';
-        if (ratio <= WARNING_THRESHOLD) return 'warning';
-        return 'normal';
+        if (ratio <= CRITICAL_THRESHOLD) return 'critical'; // red
+        if (ratio <= WARNING_THRESHOLD) return 'warning';   // yellow
+        return 'normal';                                      // green
     }, [timeRemaining, maxTime]);
+
+    // Time bank flash activation — when timer hits 0 and there's a timebank
+    useEffect(() => {
+        if (timeRemaining <= 0 && timeBank > 0 && prevTimeRef.current > 0) {
+            setTimeBankFlash(true);
+            const timer = setTimeout(() => setTimeBankFlash(false), 500);
+            prevTimeRef.current = timeRemaining;
+            return () => clearTimeout(timer);
+        }
+        prevTimeRef.current = timeRemaining;
+    }, [timeRemaining, timeBank]);
 
     // Build class names
     const containerClasses = useMemo(() => {
@@ -79,9 +93,10 @@ export function TimerBar({
             `timer-bar--${colorState}`,
         ];
         if (isUsingTimeBank) classes.push('timer-bar--time-bank');
-        if (progress <= 10) classes.push('timer-bar--pulsing');
+        if (progress <= 10) classes.push('timer-bar--pulsing');        // Rapid pulse when <10%
+        if (timeBankFlash) classes.push('timer-bar--timebank-flash');  // Flash when activating time bank
         return classes.join(' ');
-    }, [orientation, size, colorState, isUsingTimeBank, progress]);
+    }, [orientation, size, colorState, isUsingTimeBank, progress, timeBankFlash]);
 
     // Format time display
     const formattedTime = useMemo(() => {
@@ -107,6 +122,15 @@ export function TimerBar({
         const circumference = 2 * Math.PI * radius;
         const strokeOffset = circumference - (progress / 100) * circumference;
 
+        // Color transitions: green (>50%) → yellow (25-50%) → red (<25%)
+        const ratio = timeRemaining / maxTime;
+        let progressColor = '#3FB950'; // green (default)
+        if (ratio < 0.25) {
+            progressColor = '#F85149'; // red
+        } else if (ratio < 0.5) {
+            progressColor = '#FFB800'; // yellow
+        }
+
         return (
             <div className={containerClasses}>
                 <svg
@@ -120,7 +144,7 @@ export function TimerBar({
                         cy={radius + 4}
                         r={radius}
                     />
-                    {/* Progress circle */}
+                    {/* Progress circle — with color transitions */}
                     <circle
                         className="timer-bar__circle-progress"
                         cx={radius + 4}
@@ -129,8 +153,7 @@ export function TimerBar({
                         strokeDasharray={circumference}
                         strokeDashoffset={strokeOffset}
                         style={{
-                            '--progress-color': colorState === 'critical' ? '#F85149' :
-                                colorState === 'warning' ? '#FFB800' : '#3FB950',
+                            '--progress-color': progressColor,
                         } as React.CSSProperties}
                     />
                 </svg>
@@ -142,17 +165,25 @@ export function TimerBar({
     }
 
     // Horizontal timer (default)
+    // Color transitions: green (>50%) → yellow (25-50%) → red (<25%)
+    const ratio = timeRemaining / maxTime;
+    let progressColor = '#3FB950'; // green (default)
+    if (ratio < 0.25) {
+        progressColor = '#F85149'; // red
+    } else if (ratio < 0.5) {
+        progressColor = '#FFB800'; // yellow
+    }
+
     return (
         <div className={containerClasses}>
             {/* Track */}
             <div className="timer-bar__track">
-                {/* Progress fill */}
+                {/* Progress fill — with color transitions */}
                 <div
                     className="timer-bar__fill"
                     style={{
                         width: `${progress}%`,
-                        '--progress-color': colorState === 'critical' ? '#F85149' :
-                            colorState === 'warning' ? '#FFB800' : '#3FB950',
+                        '--progress-color': progressColor,
                     } as React.CSSProperties}
                 />
             </div>
@@ -162,7 +193,7 @@ export function TimerBar({
                 <div className="timer-bar__info">
                     <span className="timer-bar__time">{formattedTime}</span>
                     {timeBank > 0 && (
-                        <span className={`timer-bar__time-bank ${isUsingTimeBank ? 'timer-bar__time-bank--active' : ''}`}>
+                        <span className={`timer-bar__time-bank ${isUsingTimeBank ? 'timer-bar__time-bank--active' : ''} ${timeBankFlash ? 'timer-bar__time-bank--flash' : ''}`}>
                             +{timeBank}s
                         </span>
                     )}

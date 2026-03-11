@@ -20,10 +20,18 @@
     line-height: 1;
     color: rgba(255, 255, 255, 0.85);
     white-space: nowrap;
-    pointer-events: none;
+    pointer-events: auto;
     user-select: none;
     animation: hudSlideIn 0.35s var(--ease-spring);
     margin-top: 2px;
+    cursor: help;
+    transition: all 0.2s ease;
+}
+
+.mini-hud:hover {
+    background: rgba(0, 0, 0, 0.88);
+    border-color: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(12px);
 }
 
 @keyframes hudSlideIn {
@@ -162,6 +170,28 @@
     color: rgba(255, 255, 255, 0.35);
     font-weight: 400;
     margin-left: 1px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   GLASS MORPHISM ENHANCEMENT
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.mini-hud--glass {
+    background: rgba(10, 10, 20, 0.7);
+    backdrop-filter: blur(12px) brightness(1.05);
+    -webkit-backdrop-filter: blur(12px) brightness(1.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.mini-hud--glass:hover {
+    background: rgba(10, 10, 20, 0.75);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow:
+        0 6px 16px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 /* Responsive */

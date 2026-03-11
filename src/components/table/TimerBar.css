@@ -296,3 +296,32 @@
         font-size: 0.875rem;
     }
 }
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PREMIUM RUNTIME ANIMATION CLASSES (Phase 2)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Timer color states */
+.timer-bar--green .timer-bar__fill { background: linear-gradient(90deg, #22c55e, #16a34a); }
+.timer-bar--yellow .timer-bar__fill { background: linear-gradient(90deg, #eab308, #ca8a04); }
+.timer-bar--red .timer-bar__fill { background: linear-gradient(90deg, #ef4444, #dc2626); }
+
+/* Rapid pulse at <10% */
+.timer-bar--critical {
+    animation: timerCriticalPulse 0.4s ease-in-out infinite;
+}
+
+@keyframes timerCriticalPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* Time bank flash */
+.timer-bar--timebank-flash {
+    animation: timebankFlash 0.5s ease-out;
+}
+
+@keyframes timebankFlash {
+    0% { filter: brightness(1); }
+    30% { filter: brightness(2); }
+    100% { filter: brightness(1); }
+}

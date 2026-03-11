@@ -100,26 +100,39 @@ const MiniHUD = memo(function MiniHUD({ stats, isVisible, compact = false }: Min
     const vpipWidth = Math.min(100, (computed.vpip / 60) * 100);
     const pfrWidth = Math.min(100, (computed.pfr / 40) * 100);
 
+    // Color-code VPIP/PFR values: <20% = tight (blue), 20-40% = normal (green), >40% = loose (orange), >60% = whale (red)
+    const getVpipColor = (vpip: number) => {
+        if (vpip < 20) return '#3b82f6'; // Blue - tight
+        if (vpip < 40) return '#22c55e'; // Green - normal
+        if (vpip < 60) return '#f59e0b'; // Orange - loose
+        return '#ef4444'; // Red - whale
+    };
+
+    const vpipColor = getVpipColor(computed.vpip);
+
     return (
-        <div className={`mini-hud ${compact ? 'mini-hud--compact' : ''} mini-hud--heat-${computed.heat}`}>
+        <div
+            className={`mini-hud ${compact ? 'mini-hud--compact' : ''} mini-hud--heat-${computed.heat} mini-hud--glass`}
+            title={`${computed.type} - VPIP: Voluntarily Put In Pot (hands you play) | PFR: Pre-Flop Raise (aggressive plays)`}
+        >
             {/* Player Type Label */}
             <span className="mini-hud__type" style={{ color: typeColor }}>
                 {computed.type}
             </span>
 
-            {/* VPIP / PFR with micro progress bars */}
-            <div className="mini-hud__stats">
-                <div className="mini-hud__stat-row">
+            {/* VPIP / PFR with micro progress bars & color-coding */}
+            <div className="mini-hud__stats" title="Player statistics">
+                <div className="mini-hud__stat-row" title="Voluntarily Put In Pot - how often player enters pot">
                     <span className="mini-hud__label">V</span>
                     <div className="mini-hud__bar">
                         <div
                             className="mini-hud__bar-fill mini-hud__bar-fill--vpip"
-                            style={{ width: `${vpipWidth}%`, backgroundColor: heatColor }}
+                            style={{ width: `${vpipWidth}%`, backgroundColor: vpipColor }}
                         />
                     </div>
-                    <span className="mini-hud__value">{computed.vpip}</span>
+                    <span className="mini-hud__value" style={{ color: vpipColor }}>{computed.vpip}</span>
                 </div>
-                <div className="mini-hud__stat-row">
+                <div className="mini-hud__stat-row" title="Pre-Flop Raise - how often player raises pre-flop">
                     <span className="mini-hud__label">P</span>
                     <div className="mini-hud__bar">
                         <div

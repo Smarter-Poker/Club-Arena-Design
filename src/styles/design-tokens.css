@@ -179,6 +179,25 @@
 
     /* ─── Ambient Glow (theme-aware) ─── */
     --ambient-glow: rgba(255, 215, 0, 0.04);
+
+    /* ─── Premium Animation Easing ─── */
+    --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* ─── Glass Morphism Tokens ─── */
+    --glass-bg: rgba(17, 19, 24, 0.85);
+    --glass-bg-light: rgba(30, 33, 40, 0.75);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+    /* ─── Premium Shadows ─── */
+    --shadow-premium: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-float: 0 16px 48px rgba(0, 0, 0, 0.5);
+
+    /* ─── Premium Glow Effects ─── */
+    --glow-cyan: 0 0 20px rgba(34, 211, 238, 0.3);
+    --glow-gold: 0 0 20px rgba(255, 215, 0, 0.3);
+    --glow-blue: 0 0 20px rgba(24, 119, 242, 0.3);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
