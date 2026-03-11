@@ -2,10 +2,28 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  *  CLUB ARENA — Premium Table Page Styles
  * ═══════════════════════════════════════════════════════════════════════════════
- * 
+ *
  * PokerBros-style table with Facebook color scheme
  * Reference: docs/UI_DESIGN_REFERENCE.md
  */
+
+@import '../styles/design-tokens.css';
+
+/* Z-Index Hierarchy */
+:root {
+    --z-table: 1;
+    --z-seats: 10;
+    --z-pot: 20;
+    --z-control-strip: 50;
+    --z-header: 100;
+    --z-action-panel: 100;
+    --z-overlay: 200;
+    --z-side-menu: 300;
+    --z-modal-backdrop: 400;
+    --z-modal: 500;
+    --z-toast: 600;
+    --z-confetti: 700;
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    PAGE LAYOUT
@@ -286,7 +304,7 @@
     display: flex;
     flex-direction: column;
     background: transparent;
-    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
 }
 
 /* ─── SPECTATOR MODE ─── */
@@ -389,7 +407,7 @@
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.6);
-    z-index: 200;
+    z-index: var(--z-modal-backdrop);
     animation: fadeIn 0.2s ease;
 }
 
@@ -411,7 +429,7 @@
     width: 280px;
     background: #161B22;
     border-right: 1px solid rgba(255, 255, 255, 0.1);
-    z-index: 201;
+    z-index: var(--z-modal);
     display: flex;
     flex-direction: column;
     overflow-y: auto;
@@ -753,4 +771,19 @@
     50% { transform: translate(-1px, 1px); }
     60% { transform: translate(1px, -1px); }
     100% { transform: translate(0, 0); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ACCESSIBILITY — Respect reduced motion preference
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+    .table-page *,
+    .table-page *::before,
+    .table-page *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }

@@ -63,6 +63,8 @@
     opacity: 0.35;
     cursor: not-allowed;
     box-shadow: none !important;
+    filter: grayscale(0.6);
+    pointer-events: none;
 }
 
 .action-btn:active:not(:disabled) {
@@ -72,7 +74,7 @@
 .action-btn__label {
     font-size: 0.9375rem;
     font-weight: 700;
-    text-transform: uppercase;
+    text-transform: none;
     letter-spacing: 0.8px;
     color: white;
     line-height: 1.1;
@@ -89,34 +91,34 @@
 /* ─── FOLD (Red) ──────────────────────────────────────────── */
 .action-btn--fold {
     background: linear-gradient(180deg, #EF4444 0%, #DC2626 100%);
-    box-shadow: 0 3px 0 #991B1B, 0 4px 12px rgba(239, 68, 68, 0.3);
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .action-btn--fold:hover:not(:disabled) {
     filter: brightness(1.1);
-    box-shadow: 0 3px 0 #991B1B, 0 4px 16px rgba(239, 68, 68, 0.4);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 /* ─── CHECK (Green) ───────────────────────────────────────── */
 .action-btn--check {
     background: linear-gradient(180deg, #22C55E 0%, #16A34A 100%);
-    box-shadow: 0 3px 0 #15803D, 0 4px 12px rgba(34, 197, 94, 0.3);
+    box-shadow: 0 4px 14px rgba(34, 197, 94, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .action-btn--check:hover:not(:disabled) {
     filter: brightness(1.1);
-    box-shadow: 0 3px 0 #15803D, 0 4px 16px rgba(34, 197, 94, 0.4);
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 /* ─── CALL (Green) ────────────────────────────────────────── */
 .action-btn--call {
     background: linear-gradient(180deg, #22C55E 0%, #16A34A 100%);
-    box-shadow: 0 3px 0 #15803D, 0 4px 12px rgba(34, 197, 94, 0.3);
+    box-shadow: 0 4px 14px rgba(34, 197, 94, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .action-btn--call:hover:not(:disabled) {
     filter: brightness(1.1);
-    box-shadow: 0 3px 0 #15803D, 0 4px 16px rgba(34, 197, 94, 0.4);
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 /* ─── RAISE (Amber) ───────────────────────────────────────── */
@@ -265,6 +267,23 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
+.raise-slider::-moz-range-track {
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.12);
+    border: none;
+}
+
+.raise-slider::-moz-range-progress {
+    height: 6px;
+    border-radius: 3px;
+    background: #F59E0B;
+}
+
+.raise-slider::-moz-range-thumb:hover {
+    transform: scale(1.15);
+}
+
 /* Preset Buttons Row */
 .raise-presets {
     display: flex;
@@ -289,12 +308,13 @@
 }
 
 .raise-preset:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.14);
     border-color: rgba(255, 255, 255, 0.2);
 }
 
 .raise-preset:active:not(:disabled) {
     transform: scale(0.96);
+    background: rgba(255, 255, 255, 0.18);
 }
 
 .raise-preset:disabled {

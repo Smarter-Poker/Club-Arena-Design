@@ -10,7 +10,7 @@
  * - Uses CardImage component for custom deck rendering
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import { CardImage, CardBack } from './CardImage';
 import type { Card } from './CardImage';
 import './CommunityCards.css';
@@ -94,7 +94,7 @@ function PlaceholderCard({ index }: PlaceholderCardProps) {
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function CommunityCards({
+function CommunityCardsComponent({
     cards,
     stage,
     highlightedIndices = [],
@@ -155,5 +155,15 @@ export function CommunityCards({
         </div>
     );
 }
+
+export const CommunityCards = memo(CommunityCardsComponent, (prev, next) => {
+    // Return true if props are equal (skip re-render)
+    if (prev.stage !== next.stage) return false;
+    if (prev.isDealing !== next.isDealing) return false;
+    if (prev.winningHandName !== next.winningHandName) return false;
+    if (JSON.stringify(prev.cards) !== JSON.stringify(next.cards)) return false;
+    if (JSON.stringify(prev.highlightedIndices) !== JSON.stringify(next.highlightedIndices)) return false;
+    return true;
+});
 
 export default CommunityCards;

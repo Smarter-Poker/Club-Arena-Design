@@ -9,7 +9,7 @@
  * - Chip stack animations on pot updates
  */
 
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState, memo } from 'react';
 import './PotDisplay.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -141,7 +141,7 @@ function SidePotBadge({ pot, index, displayMode = 'chips', bigBlind = 0 }: SideP
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function PotDisplay({
+function PotDisplayComponent({
     mainPot,
     sidePots = [],
     previousPot = 0,
@@ -259,5 +259,18 @@ export function PotDisplay({
         </div>
     );
 }
+
+export const PotDisplay = memo(PotDisplayComponent, (prev, next) => {
+    // Return true if props are equal (skip re-render)
+    if (prev.mainPot !== next.mainPot) return false;
+    if (prev.previousPot !== next.previousPot) return false;
+    if (prev.showChipAnimation !== next.showChipAnimation) return false;
+    if (prev.currency !== next.currency) return false;
+    if (prev.bigBlind !== next.bigBlind) return false;
+    if (prev.displayMode !== next.displayMode) return false;
+    if (JSON.stringify(prev.sidePots) !== JSON.stringify(next.sidePots)) return false;
+    if (prev.onToggleDisplayMode !== next.onToggleDisplayMode) return false;
+    return true;
+});
 
 export default PotDisplay;

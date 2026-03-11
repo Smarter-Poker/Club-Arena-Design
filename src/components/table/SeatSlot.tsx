@@ -17,7 +17,7 @@
  * that DISAPPEARS as the clock counts down (CSS conic-gradient mask).
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import './SeatSlot.css';
 import { CardImage, CardBack } from './CardImage';
 
@@ -162,23 +162,9 @@ function PositionChip({ position }: { position: PositionBadge }) {
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function SeatSlot({
-    seatNumber,
-    player,
-    position,
-    isActive,
-    lastAction,
-    lastBetAmount,
-    timerProgress,
-    bigBlind = 2,
-    isTournament = false,
-    bountyValue,
-    isWinner = false,
-    winningHandName,
-    onSit,
-    onAction,
-    onAvatarClick,
-}: SeatSlotProps) {
+// Memoize — only re-render when seat-relevant props change
+export const SeatSlot = memo(function SeatSlot(props: SeatSlotProps) {
+    const { seatNumber, player, position, isActive, lastAction, lastBetAmount, timerProgress, bigBlind = 2, isTournament = false, bountyValue, isWinner = false, winningHandName, onSit, onAction, onAvatarClick } = props;
 
     const containerClasses = useMemo(() => {
         const cls = ['seat'];
@@ -257,6 +243,7 @@ export function SeatSlot({
                             src={avatarUrl}
                             alt={player.name}
                             className="seat__avatar-img"
+                            loading="lazy"
                             onError={(e) => {
                                 (e.target as HTMLImageElement).style.display = 'none';
                                 const fb = (e.target as HTMLImageElement).parentElement?.querySelector('.seat__avatar-fallback');
@@ -334,29 +321,39 @@ export function SeatSlot({
             )}
         </div>
     );
-}
+}, (prev, next) => {
+    // Return true if props are equal (skip re-render)
+    if (prev.seatNumber !== next.seatNumber) return false;
+    if (prev.timerProgress !== next.timerProgress) return false;
+    if (prev.isActive !== next.isActive) return false;
+    if (prev.position !== next.position) return false;
+    if (prev.isTournament !== next.isTournament) return false;
+    if (prev.bigBlind !== next.bigBlind) return false;
+    if (prev.bountyValue !== next.bountyValue) return false;
+    if (prev.isWinner !== next.isWinner) return false;
+    if (prev.winningHandName !== next.winningHandName) return false;
+    if (prev.lastAction !== next.lastAction) return false;
+    if (prev.lastBetAmount !== next.lastBetAmount) return false;
 
-// Memoize — only re-render when seat-relevant props change
-export default React.memo(SeatSlot, (prev, next) => {
-    return (
-        prev.seatNumber === next.seatNumber &&
-        prev.isActive === next.isActive &&
-        prev.lastAction === next.lastAction &&
-        prev.lastBetAmount === next.lastBetAmount &&
-        prev.timerProgress === next.timerProgress &&
-        prev.position === next.position &&
-        prev.isTournament === next.isTournament &&
-        prev.bigBlind === next.bigBlind &&
-        prev.bountyValue === next.bountyValue &&
-        prev.isWinner === next.isWinner &&
-        prev.winningHandName === next.winningHandName &&
-        prev.player?.id === next.player?.id &&
-        prev.player?.stack === next.player?.stack &&
-        prev.player?.status === next.player?.status &&
-        prev.player?.showCards === next.player?.showCards &&
-        prev.player?.isHero === next.player?.isHero &&
-        prev.player?.holeCards?.length === next.player?.holeCards?.length &&
-        prev.player?.holeCards?.[0]?.rank === next.player?.holeCards?.[0]?.rank &&
-        prev.player?.holeCards?.[1]?.rank === next.player?.holeCards?.[1]?.rank
-    );
+    const pp = prev.player;
+    const np = next.player;
+
+    // Both null
+    if (!pp && !np) return true;
+    // Only one is null
+    if (!pp || !np) return false;
+
+    // Compare player properties
+    if (pp.id !== np.id) return false;
+    if (pp.name !== np.name) return false;
+    if (pp.stack !== np.stack) return false;
+    if (pp.status !== np.status) return false;
+    if (pp.isHero !== np.isHero) return false;
+    if (pp.showCards !== np.showCards) return false;
+    if (pp.avatar !== np.avatar) return false;
+    if (JSON.stringify(pp.holeCards) !== JSON.stringify(np.holeCards)) return false;
+
+    return true;
 });
+
+export default SeatSlot;

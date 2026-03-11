@@ -5,7 +5,6 @@
  */
 
 // Core Table Components
-export { default as PokerTable } from './PokerTable';
 export { default as ActionPanel } from './ActionPanel';
 export { default as BuyInModal } from './BuyInModal';
 export type { BuyInModalProps } from './BuyInModal';
