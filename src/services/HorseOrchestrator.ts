@@ -1360,12 +1360,13 @@ class HorseOrchestrator {
                 console.log(`[Orchestrator] Added ${missing.length} horses to club ${clubId}`);
             }
 
-            // Update member counts on both clubs
+            // Update member counts on both clubs (exclude horses from visible count)
             for (const clubId of clubIds) {
                 const { count } = await supabase
                     .from('club_members')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('club_id', clubId);
+                    .select('user_id, profiles!inner(id)', { count: 'exact', head: true })
+                    .eq('club_id', clubId)
+                    .eq('profiles.is_horse', false);
 
                 if (count !== null) {
                     await supabase

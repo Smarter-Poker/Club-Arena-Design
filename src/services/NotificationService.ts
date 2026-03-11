@@ -7,6 +7,7 @@
 
 import { supabase } from '../lib/supabase';
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { masterBus } from '../core/MasterBus';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -64,6 +65,7 @@ class NotificationServiceClass {
                         const notification = this.mapNotification(payload.new);
                         callbacks.onNew(notification);
                         this.showBrowserNotification(notification);
+                        masterBus.emit('NOTIFICATION_RECEIVED', { notification: notification as unknown as Record<string, unknown> });
                     }
                 }
             )
@@ -171,6 +173,7 @@ class NotificationServiceClass {
             return false;
         }
 
+        masterBus.emit('NOTIFICATION_COUNT_CHANGED', {} as Record<string, unknown>);
         return true;
     }
 
@@ -189,6 +192,7 @@ class NotificationServiceClass {
             return false;
         }
 
+        masterBus.emit('NOTIFICATION_COUNT_CHANGED', {} as Record<string, unknown>);
         return true;
     }
 

@@ -58,7 +58,16 @@ export type BusEventType =
     // Phase 5: Card color customization
     | 'CARD_COLOR_CHANGED'
     // Phase 8: Diamond economy bus event
-    | 'DIAMOND_BALANCE_CHANGED';
+    | 'DIAMOND_BALANCE_CHANGED'
+    // Social & Messaging events
+    | 'MESSAGE_SENT'
+    | 'MESSAGE_RECEIVED'
+    | 'PROFILE_UPDATED'
+    | 'NOTIFICATION_RECEIVED'
+    | 'NOTIFICATION_COUNT_CHANGED'
+    // Friend events
+    | 'FRIEND_REQUEST_SENT'
+    | 'FRIEND_REQUEST_ACCEPTED';
 
 // #13: Type-safe payload map — compile-time enforcement of correct payloads
 export interface BusPayloadMap {
@@ -90,6 +99,14 @@ export interface BusPayloadMap {
     CARD_COLOR_CHANGED: { preset: string };
     // Phase 8: Diamond economy
     DIAMOND_BALANCE_CHANGED: { newBalance: number; delta: number; source: string };
+    // Social & Messaging
+    MESSAGE_SENT: { message: Record<string, unknown>; conversationId: string };
+    MESSAGE_RECEIVED: { message: Record<string, unknown> };
+    PROFILE_UPDATED: { userId: string; updates: Record<string, unknown> };
+    NOTIFICATION_RECEIVED: { notification: Record<string, unknown> };
+    NOTIFICATION_COUNT_CHANGED: Record<string, unknown>;
+    FRIEND_REQUEST_SENT: { toUserId: string };
+    FRIEND_REQUEST_ACCEPTED: { friendshipId: string };
 }
 
 export interface BusEvent<T = unknown> {

@@ -572,6 +572,22 @@ export class HandController {
             this.config.gameVariant
         );
 
+        // Guard: if no winners (shouldn't happen, but defensive)
+        if (winners.length === 0) {
+            console.error('[HandController] completeHand: no winners determined — returning pot to players proportionally');
+            // Return pot to remaining active players proportionally
+            const remainingPlayers = this.state.players.filter(p => !p.is_folded && !p.is_sitting_out);
+            if (remainingPlayers.length > 0) {
+                const share = Math.trunc((this.state.pot * 100) / remainingPlayers.length) / 100;
+                for (const p of remainingPlayers) {
+                    p.stack += share;
+                }
+            }
+            this.emit({ type: 'WINNERS', winners: [] });
+            this.emit({ type: 'HAND_COMPLETE', handNumber: this.config.handNumber, rake: 0 });
+            return;
+        }
+
         // Calculate rake
         const rake = calculateRake(
             this.state.pot,
@@ -628,7 +644,8 @@ export class HandController {
             .map(p => p.seat)
             .sort((a, b) => a - b);
 
-        if (seats.length === 0) return -1;
+        // Return fromSeat (not -1) so callers don't infinite-loop on a sentinel
+        if (seats.length === 0) return fromSeat;
 
         for (const seat of seats) {
             if (seat > fromSeat) return seat;

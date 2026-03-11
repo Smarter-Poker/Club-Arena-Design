@@ -2,7 +2,7 @@
  *  WAITLIST PAGE — Table Waitlist with Real-Time Updates
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { waitlistService, type WaitlistEntry as ServiceEntry } from '../services/WaitlistService';
 import { supabase } from '../lib/supabase'
@@ -37,6 +37,7 @@ export default function WaitlistPage() {
     const [loading, setLoading] = useState(true);
     const [leavingId, setLeavingId] = useState<string | null>(null);
     const [positionCounts, setPositionCounts] = useState<Record<string, number>>({});
+    const positionCountsRef = useRef<Record<string, number>>({});
 
     useEffect(() => {
         if (user?.id) {
@@ -112,9 +113,8 @@ export default function WaitlistPage() {
 
     // Animate position number changes
     useEffect(() => {
-        const newCounts: Record<string, number> = {};
         entries.forEach(entry => {
-            const current = positionCounts[entry.id] || entry.position;
+            const current = positionCountsRef.current[entry.id] ?? entry.position;
             if (current !== entry.position) {
                 const start = current;
                 const target = entry.position;
@@ -125,7 +125,7 @@ export default function WaitlistPage() {
                     const elapsed = currentTime - startTime;
                     const progress = Math.min(elapsed / duration, 1);
                     const animatedPos = Math.ceil(start + (target - start) * progress);
-                    newCounts[entry.id] = animatedPos;
+                    positionCountsRef.current[entry.id] = animatedPos;
                     setPositionCounts(prev => ({ ...prev, [entry.id]: animatedPos }));
 
                     if (progress < 1) {
@@ -135,10 +135,11 @@ export default function WaitlistPage() {
 
                 requestAnimationFrame(animate);
             } else {
-                newCounts[entry.id] = entry.position;
+                positionCountsRef.current[entry.id] = entry.position;
+                setPositionCounts(prev => ({ ...prev, [entry.id]: entry.position }));
             }
         });
-    }, [entries, positionCounts]);
+    }, [entries]);
 
     const getGameTypeLabel = (type: string): string => {
         switch (type.toLowerCase()) {

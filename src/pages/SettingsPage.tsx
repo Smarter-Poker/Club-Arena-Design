@@ -14,6 +14,7 @@ import { useSettingsStore } from '../stores/useSettingsStore';
 import FAQPanel from '../components/support/FAQPanel';
 import TermsGate from '../components/auth/TermsGate';
 import styles from './SettingsPage.module.css';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 const settingsSectionAnimationStyle = (index: number) => ({
     opacity: 0,
@@ -346,26 +347,52 @@ export default function SettingsPage() {
         setActionLoading(false);
     };
 
-    const handleDeleteAccount = async () => {
-        const confirmed = window.confirm(
-            'Are you sure you want to delete your account? This action is PERMANENT and cannot be undone.'
-        );
-        if (!confirmed) return;
+    // ── Confirm modal state ──
+    const [confirmAction, setConfirmAction] = useState<{
+        type: 'delete-account' | 'disable-2fa' | 'reset-settings';
+        title: string;
+        message: string;
+        variant: 'default' | 'danger';
+    } | null>(null);
 
-        const doubleConfirm = window.confirm(
-            'This will permanently delete all your data, chips, and history. Type DELETE to confirm.'
-        );
-        if (!doubleConfirm) return;
+    const handleConfirmAction = async () => {
+        if (!confirmAction) return;
+        const actionType = confirmAction.type;
+        setConfirmAction(null);
 
-        setActionLoading(true);
-        try {
-            // Sign out (actual deletion requires admin API or RPC)
-            await supabase.auth.signOut();
-            window.location.href = '/';
-        } catch (err) {
-            console.error('Account deletion failed:', err);
+        if (actionType === 'delete-account') {
+            setActionLoading(true);
+            try {
+                await supabase.auth.signOut();
+                window.location.href = '/';
+            } catch (err) {
+                console.error('Account deletion failed:', err);
+            }
+            setActionLoading(false);
+        } else if (actionType === 'disable-2fa') {
+            setActionLoading(true);
+            try {
+                const { error } = await supabase.auth.mfa.unenroll({ factorId });
+                if (error) throw error;
+                setTwoFactorEnabled(false);
+                setFactorId('');
+            } catch (err) {
+                console.error('Failed to disable 2FA:', err);
+            }
+            setActionLoading(false);
+        } else if (actionType === 'reset-settings') {
+            setSettings(DEFAULT_SETTINGS);
+            setHasChanges(true);
         }
-        setActionLoading(false);
+    };
+
+    const handleDeleteAccount = () => {
+        setConfirmAction({
+            type: 'delete-account',
+            title: 'Delete Account',
+            message: 'This will permanently delete all your data, chips, and history. This action is PERMANENT and cannot be undone.',
+            variant: 'danger',
+        });
     };
 
     // 2FA Handlers
@@ -427,18 +454,13 @@ export default function SettingsPage() {
         setActionLoading(false);
     };
 
-    const handleDisable2FA = async () => {
-        if (!confirm('Are you sure you want to disable two-factor authentication?')) return;
-        setActionLoading(true);
-        try {
-            const { error } = await supabase.auth.mfa.unenroll({ factorId });
-            if (error) throw error;
-            setTwoFactorEnabled(false);
-            setFactorId('');
-        } catch (err) {
-            console.error('Failed to disable 2FA:', err);
-        }
-        setActionLoading(false);
+    const handleDisable2FA = () => {
+        setConfirmAction({
+            type: 'disable-2fa',
+            title: 'Disable Two-Factor Authentication',
+            message: 'Are you sure you want to disable two-factor authentication? This will make your account less secure.',
+            variant: 'danger',
+        });
     };
 
     // Check 2FA status on mount
@@ -518,10 +540,12 @@ export default function SettingsPage() {
     };
 
     const resetSettings = () => {
-        if (confirm('Reset all settings to defaults?')) {
-            setSettings(DEFAULT_SETTINGS);
-            setHasChanges(true);
-        }
+        setConfirmAction({
+            type: 'reset-settings',
+            title: 'Reset Settings',
+            message: 'Reset all settings to their default values? You will still need to save for changes to take effect.',
+            variant: 'default',
+        });
     };
 
     return (
@@ -1047,6 +1071,18 @@ export default function SettingsPage() {
                     </div>
                 </div>
             )}
+
+            {/* Confirm Modal */}
+            <ConfirmModal
+                isOpen={!!confirmAction}
+                title={confirmAction?.title || 'Confirm'}
+                message={confirmAction?.message || ''}
+                variant={confirmAction?.variant || 'default'}
+                confirmText={confirmAction?.type === 'delete-account' ? 'Delete My Account' : 'Confirm'}
+                onConfirm={handleConfirmAction}
+                onCancel={() => setConfirmAction(null)}
+                loading={actionLoading}
+            />
         </div >
     );
 }

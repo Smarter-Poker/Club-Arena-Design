@@ -70,9 +70,10 @@ export default function HandHistoryPage() {
                     event: 'INSERT',
                     schema: 'public',
                     table: 'hand_history',
+                    filter: `player_ids=cs.{${user.id}}`,
                 },
                 () => {
-                    // New hand added, refresh the hand list
+                    // New hand added for this user, refresh the hand list
                     loadHands(true);
                 }
             )
@@ -203,18 +204,23 @@ export default function HandHistoryPage() {
         };
 
         // Send to World Hub personal assistant via postMessage
-        if (window.parent !== window) {
-            // In iframe - send to parent
-            window.parent.postMessage({
-                type: 'ANALYZE_HAND',
-                payload: handSummary
-            }, window.location.origin);
-            toast.success('Hand sent to Jarvis for analysis!');
-        } else {
-            // Standalone - open Jarvis in new tab with hand data
-            const encodedData = encodeURIComponent(JSON.stringify(handSummary));
-            window.open(`https://smarter.poker/hub/jarvis?hand=${encodedData}`, '_blank');
-            toast.info('Opening Jarvis analysis...');
+        try {
+            if (window.parent !== window) {
+                // In iframe - send to parent
+                window.parent.postMessage({
+                    type: 'ANALYZE_HAND',
+                    payload: handSummary
+                }, window.location.origin);
+                toast.success('Hand sent to Jarvis for analysis!');
+            } else {
+                // Standalone - open Jarvis in new tab with hand data
+                const encodedData = encodeURIComponent(JSON.stringify(handSummary));
+                window.open(`https://smarter.poker/hub/jarvis?hand=${encodedData}`, '_blank');
+                toast.info('Opening Jarvis analysis...');
+            }
+        } catch (err) {
+            console.error('Failed to send hand to Jarvis:', err);
+            toast.error('Failed to analyze hand');
         }
     };
 

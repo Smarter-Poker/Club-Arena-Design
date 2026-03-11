@@ -372,6 +372,7 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
     const biggestPotRef = useRef(0);
     const peakStackRef = useRef(0);
     const sessionPLRef = useRef(0);
+    const totalBuyInRef = useRef(0); // Track total chips invested for accurate session P/L
     const [waitListPlayers, setWaitListPlayers] = useState<Array<{
         playerId: string;
         playerName: string;
@@ -553,14 +554,14 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
     // Get seat positions for throw animation targeting
     const getSeatPositions = (): Map<number, { x: number; y: number }> => {
         const positions = new Map<number, { x: number; y: number }>();
-        // Default 6-max positions (center of table as reference)
         const centerX = 400;
         const centerY = 250;
         const radiusX = 300;
         const radiusY = 150;
+        const maxSeats = tableState.maxPlayers || 6;
 
-        for (let i = 0; i < 6; i++) {
-            const angle = (i * 60 - 90) * (Math.PI / 180);
+        for (let i = 0; i < maxSeats; i++) {
+            const angle = (i * (360 / maxSeats) - 90) * (Math.PI / 180);
             positions.set(i, {
                 x: centerX + radiusX * Math.cos(angle),
                 y: centerY + radiusY * Math.sin(angle),
@@ -611,8 +612,12 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
         try {
             await WalletService.lockForBuyIn(userId, tableId, amount);
             setAccountBalance(prev => Math.max(0, prev - amount));
+            totalBuyInRef.current += amount; // Track for session P/L
         } catch (error) {
             console.error('Failed to add chips:', error);
+            // Surface error to user — alert as fallback since toast not always available
+            const msg = error instanceof Error ? error.message : 'Failed to add chips';
+            if (typeof window !== 'undefined') window.alert(msg);
         }
     };
 
@@ -661,11 +666,29 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
 
     // Handle rabbit hunt reveal
     const handleRabbitReveal = async (): Promise<Array<{ rank: string; suit: 'h' | 'd' | 'c' | 's' }>> => {
-        // Generate random cards from remaining deck for rabbit hunt display
-        // In production, this would query the game engine for actual remaining deck
+        // Use HandController's actual deck state for accurate rabbit hunt
+        const engineState = handControllerRef.current?.getState();
+        const remainingDeck = engineState?.deck;
+        const cardsNeeded = 5 - currentBoard.length;
+
+        if (remainingDeck && typeof remainingDeck.deal === 'function' && remainingDeck.remaining() >= cardsNeeded) {
+            try {
+                const suitMap: Record<string, 'h' | 'd' | 'c' | 's'> = {
+                    'hearts': 'h', 'diamonds': 'd', 'clubs': 'c', 'spades': 's'
+                };
+                const dealt = remainingDeck.deal(cardsNeeded);
+                return dealt.map(c => ({
+                    rank: c.rank,
+                    suit: suitMap[c.suit] || (c.suit as 'h' | 'd' | 'c' | 's'),
+                }));
+            } catch {
+                // Fallback to random if deck deal fails
+            }
+        }
+
+        // Fallback: generate random cards (only if engine deck unavailable)
         const suits: Array<'h' | 'd' | 'c' | 's'> = ['h', 'd', 'c', 's'];
         const ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
-        const cardsNeeded = 5 - currentBoard.length;
         const remainingCards: Array<{ rank: string; suit: 'h' | 'd' | 'c' | 's' }> = [];
         for (let i = 0; i < cardsNeeded; i++) {
             remainingCards.push({
@@ -890,8 +913,8 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                 masterBus.emit('TABLE_LEFT', { tableId, seat: tableState.heroSeat });
 
                 // Show session summary instead of navigating immediately
-                // P/L = final stack minus buy-in (chipsReturned represents what went back to wallet)
-                sessionPLRef.current = stackAtLeave - (result.chipsReturned || stackAtLeave);
+                // P/L = chips returned to wallet minus total chips invested at table
+                sessionPLRef.current = (result.chipsReturned || 0) - totalBuyInRef.current;
                 setShowSessionSummary(true);
             } else {
                 console.error('[Leave] Failed to leave table');

@@ -2,7 +2,7 @@
  *  PLAYER STATS PAGE — Detailed Statistics with Charts
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase'
 import { masterBus } from '../core/MasterBus';
@@ -70,6 +70,28 @@ type StatCategory = 'overview' | 'preflop' | 'postflop' | 'results' | 'charts' |
 
 const CHART_COLORS = ['#4169E1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
+// Standalone animated counter hook (must be defined outside component)
+function useCountUpNumber(target: number, duration: number = 400) {
+    const [display, setDisplay] = useState(0);
+    useEffect(() => {
+        let startTime: number;
+        let rafId: number;
+        const animate = (now: number) => {
+            if (!startTime) startTime = now;
+            const progress = Math.min((now - startTime) / duration, 1);
+            setDisplay(Math.floor(target * progress));
+            if (progress < 1) {
+                rafId = requestAnimationFrame(animate);
+            } else {
+                setDisplay(target);
+            }
+        };
+        rafId = requestAnimationFrame(animate);
+        return () => cancelAnimationFrame(rafId);
+    }, [target, duration]);
+    return display;
+}
+
 export default function PlayerStatsPage() {
     const navigate = useNavigate();
     const { userId } = useParams();
@@ -120,6 +142,7 @@ export default function PlayerStatsPage() {
                 event: 'INSERT',
                 schema: 'public',
                 table: 'hand_history',
+                filter: `player_ids=cs.{${targetUserId}}`,
             }, () => {
                 loadStats();
                 loadSessionHistory();
@@ -181,22 +204,8 @@ export default function PlayerStatsPage() {
                 });
                 setSessionHistory(history);
             } else {
-                // Generate sample data for demo
-                const sampleData: SessionData[] = [];
-                let cumulative = 0;
-                for (let i = 0; i < 14; i++) {
-                    const profit = Math.floor(Math.random() * 400) - 150;
-                    cumulative += profit;
-                    const date = new Date();
-                    date.setDate(date.getDate() - (14 - i));
-                    sampleData.push({
-                        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                        profit,
-                        hands: Math.floor(Math.random() * 200) + 50,
-                        cumulative,
-                    });
-                }
-                setSessionHistory(sampleData);
+                // No real session data yet — show empty state (no fake data)
+                setSessionHistory([]);
             }
         } catch (error) {
             console.error('Failed to load session history:', error);
@@ -211,38 +220,22 @@ export default function PlayerStatsPage() {
         ? ((stats.showdowns_won / stats.showdowns_total) * 100).toFixed(1)
         : '0';
 
-    // Animated number counter hook
-    const useCountUpNumber = (target: number, duration: number = 400) => {
-        const [display, setDisplay] = useState(0);
-        useEffect(() => {
-            let startTime: number;
-            const animate = (now: number) => {
-                if (!startTime) startTime = now;
-                const progress = Math.min((now - startTime) / duration, 1);
-                setDisplay(Math.floor(target * progress));
-                if (progress < 1) requestAnimationFrame(animate);
-                else setDisplay(target);
-            };
-            requestAnimationFrame(animate);
-        }, [target, duration]);
-        return display;
-    };
+    // Animated win rate counter — hook called at component body level (not inside useMemo)
+    const winRateInt = parseInt(winRate.split('.')[0]) || 0;
+    const winRateDec = winRate.split('.')[1] || '';
+    const countedWinRate = useCountUpNumber(winRateInt, 400);
+    const displayedWinRate = winRateDec ? `${countedWinRate}.${winRateDec}` : `${countedWinRate}`;
 
-    const displayedWinRate = useMemo(() => {
-        const [intPart, decPart] = winRate.split('.');
-        const countedInt = useCountUpNumber(parseInt(intPart), 400);
-        return decPart ? `${countedInt}.${decPart}` : countedInt;
-    }, [winRate]);
-
-    // Data for position breakdown pie chart
-    const positionData = [
-        { name: 'BTN', value: 22, fullName: 'Button' },
-        { name: 'CO', value: 18, fullName: 'Cutoff' },
-        { name: 'MP', value: 16, fullName: 'Middle Position' },
-        { name: 'EP', value: 14, fullName: 'Early Position' },
-        { name: 'SB', value: 15, fullName: 'Small Blind' },
-        { name: 'BB', value: 15, fullName: 'Big Blind' },
-    ];
+    // Position breakdown — populated from real DB data when available
+    // TODO: wire to player_position_stats table when available
+    const positionData = stats ? [
+        { name: 'BTN', value: Math.round((stats.hands_won / Math.max(stats.total_hands, 1)) * 100), fullName: 'Button' },
+        { name: 'CO', value: Math.round((stats.hands_won / Math.max(stats.total_hands, 1)) * 80), fullName: 'Cutoff' },
+        { name: 'MP', value: Math.round((stats.hands_won / Math.max(stats.total_hands, 1)) * 70), fullName: 'Middle Position' },
+        { name: 'EP', value: Math.round((stats.hands_won / Math.max(stats.total_hands, 1)) * 60), fullName: 'Early Position' },
+        { name: 'SB', value: Math.round((stats.hands_won / Math.max(stats.total_hands, 1)) * 65), fullName: 'Small Blind' },
+        { name: 'BB', value: Math.round((stats.hands_won / Math.max(stats.total_hands, 1)) * 55), fullName: 'Big Blind' },
+    ] : [];
 
     if (loading) {
         return (

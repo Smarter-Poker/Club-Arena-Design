@@ -22,6 +22,8 @@ import haptic from '../services/HapticService';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import { CashGameCard, TournamentCard, SNGCard, SpinCard } from '../components/lobby/DynamicGameCard';
 import { getClubLevel, ClubLevelInfo } from '../utils/clubLevels';
+import { useToast } from '../components/common/Toast';
+import ConfirmModal from '../components/common/ConfirmModal';
 import './ClubHomePage.css';
 
 // Types
@@ -122,6 +124,10 @@ export default function ClubHomePage() {
     const [deletingTableId, setDeletingTableId] = useState<string | null>(null);
     const [isInUnion, setIsInUnion] = useState(false);
     const [clubLevel, setClubLevel] = useState<ClubLevelInfo | null>(null);
+    const toast = useToast();
+
+    // Confirm modal state for table deletion
+    const [deleteTableConfirm, setDeleteTableConfirm] = useState<{ show: boolean; tableId: string | null; tableName: string | null }>({ show: false, tableId: null, tableName: null });
 
     // User profile data
     const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
@@ -292,9 +298,18 @@ export default function ClubHomePage() {
                     .single();
 
                 if (memberData) {
+                    // Load diamond balance from diamond_wallets table
+                    let diamondBal = 0;
+                    const { data: diamondData } = await supabase
+                        .from('diamond_wallets')
+                        .select('balance')
+                        .eq('user_id', authUser.id)
+                        .maybeSingle();
+                    if (diamondData) diamondBal = diamondData.balance || 0;
+
                     setWallet({
                         gold: memberData.chip_balance || 0,
-                        diamonds: 0 // Note: Real diamond balance comes from useWalletStore
+                        diamonds: diamondBal,
                     });
                     setUserRole(memberData.role || 'member');
                 }
@@ -713,20 +728,9 @@ export default function ClubHomePage() {
                         <CashGameCard
                             table={table}
                             isAdmin={isOwner || userRole === 'admin'}
-                            onDelete={async (id) => {
-                            if (!confirm(`Delete table "${table.name}"?`)) return;
-                            setDeletingTableId(id);
-                            try {
-                                const { error } = await supabase.from('tables').update({ status: 'deleted', is_active: false }).eq('id', id);
-                                if (error) throw error;
-                                setTables(prev => prev.filter(t => t.id !== id));
-                            } catch (err) {
-                                console.error('Failed to delete table:', err);
-                                alert('Failed to delete table');
-                            } finally {
-                                setDeletingTableId(null);
-                            }
-                        }}
+                            onDelete={(id) => {
+                                setDeleteTableConfirm({ show: true, tableId: id, tableName: table.name });
+                            }}
                         />
                     </div>
                 ))}
@@ -775,6 +779,34 @@ export default function ClubHomePage() {
                     clubName={club?.name}
                 />
             )}
+
+            {/* Confirm Modal for Table Deletion */}
+            <ConfirmModal
+                isOpen={deleteTableConfirm.show}
+                title="Delete Table"
+                message={`Delete table "${deleteTableConfirm.tableName || ''}"? This cannot be undone.`}
+                variant="danger"
+                confirmText="Delete"
+                onConfirm={async () => {
+                    if (deleteTableConfirm.tableId) {
+                        const id = deleteTableConfirm.tableId;
+                        setDeleteTableConfirm({ show: false, tableId: null, tableName: null });
+                        setDeletingTableId(id);
+                        try {
+                            const { error } = await supabase.from('tables').update({ status: 'deleted', is_active: false }).eq('id', id);
+                            if (error) throw error;
+                            setTables(prev => prev.filter(t => t.id !== id));
+                            toast.success('Table deleted');
+                        } catch (err) {
+                            console.error('Failed to delete table:', err);
+                            toast.error('Failed to delete table');
+                        } finally {
+                            setDeletingTableId(null);
+                        }
+                    }
+                }}
+                onCancel={() => setDeleteTableConfirm({ show: false, tableId: null, tableName: null })}
+            />
         </div>
     );
 }

@@ -43,12 +43,12 @@ export default function ClubStatsCards({ clubId }: ClubStatsCardsProps) {
     const loadStats = async () => {
         setLoading(true);
         try {
-            // Get member count (all non-banned members)
-            // club_members has no 'id' column — use user_id for count
+            // Get member count (all non-banned members, exclude horses)
             const { count: memberCount } = await supabase
                 .from('club_members')
-                .select('user_id', { count: 'exact', head: true })
+                .select('user_id, profiles!inner(id)', { count: 'exact', head: true })
                 .eq('club_id', clubId)
+                .eq('profiles.is_horse', false)
                 .not('status', 'in', '("banned","suspended")');
 
             // Get active tables — tables use status 'running' or 'waiting', not 'active'

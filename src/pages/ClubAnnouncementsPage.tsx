@@ -9,6 +9,7 @@ import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import { useToast } from '../components/common/Toast';
+import ConfirmModal from '../components/common/ConfirmModal';
 import './ClubAnnouncementsPage.css';
 
 const announcementAnimationStyle = (index: number) => ({
@@ -182,8 +183,17 @@ export default function ClubAnnouncementsPage() {
         }
     };
 
+    // Confirm modal state for deleting announcements
+    const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+
     const handleDelete = async (id: string) => {
-        if (!confirm('Delete this announcement?')) return;
+        setDeleteTarget(id);
+    };
+
+    const executeDelete = async () => {
+        if (!deleteTarget) return;
+        const id = deleteTarget;
+        setDeleteTarget(null);
         try {
             const { error } = await supabase
                 .from('club_announcements')
@@ -192,9 +202,13 @@ export default function ClubAnnouncementsPage() {
 
             if (!error) {
                 setAnnouncements(prev => prev.filter(a => a.id !== id));
+                toast.success('Announcement deleted');
+            } else {
+                toast.error('Failed to delete announcement');
             }
         } catch (err) {
             console.error('Failed to delete announcement:', err);
+            toast.error('Failed to delete announcement');
         }
     };
 
@@ -285,6 +299,17 @@ export default function ClubAnnouncementsPage() {
                     userRole={userRole}
                 />
             )}
+
+            {/* Confirm Modal */}
+            <ConfirmModal
+                isOpen={!!deleteTarget}
+                title="Delete Announcement"
+                message="Are you sure you want to delete this announcement? This cannot be undone."
+                variant="danger"
+                confirmText="Delete"
+                onConfirm={executeDelete}
+                onCancel={() => setDeleteTarget(null)}
+            />
 
         </div>
     );

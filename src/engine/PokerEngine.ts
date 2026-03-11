@@ -554,6 +554,7 @@ export function calculateRake(
     sawFlop: boolean,
     config: RakeConfig
 ): number {
+    if (pot <= 0 || config.percent <= 0) return 0;
     if (config.noFlop && !sawFlop) {
         return 0;
     }
@@ -658,6 +659,7 @@ function distributePot(
     amount: number,
     type: 'High' | 'Low'
 ) {
+    if (roundWinners.length === 0 || amount <= 0) return;
     const totalCents = Math.trunc(amount * 100);
     const shareCents = Math.trunc(totalCents / roundWinners.length);
     const remainderCents = totalCents % roundWinners.length;

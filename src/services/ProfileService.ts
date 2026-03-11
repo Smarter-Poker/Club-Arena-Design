@@ -6,6 +6,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { masterBus } from '../core/MasterBus';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -69,30 +70,40 @@ class ProfileServiceClass {
      * Get user profile
      */
     async getProfile(userId: string): Promise<UserProfile | null> {
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single();
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .maybeSingle();
 
-        if (error || !data) return null;
+            if (error || !data) return null;
 
-        return this.mapProfile(data);
+            return this.mapProfile(data);
+        } catch (err) {
+            console.error('[Profile] getProfile error:', err);
+            return null;
+        }
     }
 
     /**
      * Get profile by username
      */
     async getProfileByUsername(username: string): Promise<UserProfile | null> {
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('username', username)
-            .single();
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('username', username)
+                .maybeSingle();
 
-        if (error || !data) return null;
+            if (error || !data) return null;
 
-        return this.mapProfile(data);
+            return this.mapProfile(data);
+        } catch (err) {
+            console.error('[Profile] getProfileByUsername error:', err);
+            return null;
+        }
     }
 
     /**
@@ -113,6 +124,9 @@ class ProfileServiceClass {
             .update(dbUpdates)
             .eq('id', userId);
 
+        if (!error) {
+            masterBus.emit('PROFILE_UPDATED', { userId, updates: updates as unknown as Record<string, unknown> });
+        }
         return !error;
     }
 
@@ -249,14 +263,19 @@ class ProfileServiceClass {
      * Check if user has accepted Club Arena TOS
      */
     async hasTOSAccepted(userId: string): Promise<boolean> {
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('club_arena_tos_accepted_at')
-            .eq('id', userId)
-            .single();
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('club_arena_tos_accepted_at')
+                .eq('id', userId)
+                .maybeSingle();
 
-        if (error || !data) return false;
-        return !!data.club_arena_tos_accepted_at;
+            if (error || !data) return false;
+            return !!data.club_arena_tos_accepted_at;
+        } catch (err) {
+            console.error('[Profile] hasTOSAccepted error:', err);
+            return false;
+        }
     }
 
     /**

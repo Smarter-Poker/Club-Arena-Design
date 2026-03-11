@@ -162,17 +162,17 @@ export default function PlayerWalletPage() {
 
     const walletInfo: Record<WalletType, { icon: string; label: string; description: string }> = {
         BUSINESS: {
-            icon: '',
+            icon: '◈',
             label: 'Business',
             description: 'Commissions & Settlements',
         },
         PLAYER: {
-            icon: '',
+            icon: '♠',
             label: 'Player',
             description: 'Table Buy-ins & Gameplay',
         },
         PROMO: {
-            icon: '',
+            icon: '★',
             label: 'Promo',
             description: 'Bonuses & Rewards',
         },

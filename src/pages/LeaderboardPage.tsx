@@ -404,7 +404,7 @@ export default function LeaderboardPage() {
                                         {top3[1].avatar ? (
                                             <img src={top3[1].avatar} alt="" />
                                         ) : (
-                                            <span>{top3[1].username[0]?.toUpperCase()}</span>
+                                            <span>{(top3[1].username || '?')[0]?.toUpperCase()}</span>
                                         )}
                                     </div>
                                     {top3[1].isVIP && <span className="vip-badge">VIP</span>}
@@ -426,7 +426,7 @@ export default function LeaderboardPage() {
                                         {top3[0].avatar ? (
                                             <img src={top3[0].avatar} alt="" />
                                         ) : (
-                                            <span>{top3[0].username[0]?.toUpperCase()}</span>
+                                            <span>{(top3[0].username || '?')[0]?.toUpperCase()}</span>
                                         )}
                                     </div>
                                     {top3[0].isVIP && <span className="vip-badge">VIP</span>}
@@ -447,7 +447,7 @@ export default function LeaderboardPage() {
                                         {top3[2].avatar ? (
                                             <img src={top3[2].avatar} alt="" />
                                         ) : (
-                                            <span>{top3[2].username[0]?.toUpperCase()}</span>
+                                            <span>{(top3[2].username || '?')[0]?.toUpperCase()}</span>
                                         )}
                                     </div>
                                     {top3[2].isVIP && <span className="vip-badge">VIP</span>}
@@ -476,7 +476,7 @@ export default function LeaderboardPage() {
                                     {entry.avatar ? (
                                         <img src={entry.avatar} alt="" />
                                     ) : (
-                                        <span>{entry.username[0]?.toUpperCase()}</span>
+                                        <span>{(entry.username || '?')[0]?.toUpperCase()}</span>
                                     )}
                                 </div>
                                 <div className="entry-info">
@@ -511,7 +511,7 @@ export default function LeaderboardPage() {
                                     {entry.avatar ? (
                                         <img src={entry.avatar} alt="" />
                                     ) : (
-                                        <span>{entry.username[0]?.toUpperCase()}</span>
+                                        <span>{(entry.username || '?')[0]?.toUpperCase()}</span>
                                     )}
                                 </div>
                                 <div className="entry-info">
@@ -559,7 +559,7 @@ export default function LeaderboardPage() {
                                         {stat.avatar ? (
                                             <img src={stat.avatar} alt="" />
                                         ) : (
-                                            <span>{stat.username[0]?.toUpperCase()}</span>
+                                            <span>{(stat.username || '?')[0]?.toUpperCase()}</span>
                                         )}
                                     </div>
                                     <span className="player-name">{stat.username}</span>

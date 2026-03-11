@@ -309,4 +309,244 @@ describe('Rake Calculation', () => {
         const rake = calculateRake(100, false, config);
         expect(rake).toBe(5);
     });
+
+    it('should return 0 for zero or negative pot', () => {
+        const config = { percent: 5, cap: 10, noFlop: false };
+        expect(calculateRake(0, true, config)).toBe(0);
+        expect(calculateRake(-50, true, config)).toBe(0);
+    });
+
+    it('should return 0 for zero percent', () => {
+        const config = { percent: 0, cap: 10, noFlop: false };
+        expect(calculateRake(100, true, config)).toBe(0);
+    });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// OMAHA HAND EVALUATION TESTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('Omaha Hand Evaluation', () => {
+    // Need evaluateOmahaHand — import if available
+    let evaluateOmahaHand: typeof import('../src/engine/PokerEngine').evaluateOmahaHand;
+    let evaluateOmahaLowHand: typeof import('../src/engine/PokerEngine').evaluateOmahaLowHand;
+
+    beforeEach(async () => {
+        const engine = await import('../src/engine/PokerEngine');
+        evaluateOmahaHand = engine.evaluateOmahaHand;
+        evaluateOmahaLowHand = engine.evaluateOmahaLowHand;
+    });
+
+    it('should evaluate PLO4 hand using exactly 2 hole cards', () => {
+        // Player has 4 hole cards: A♠ K♠ Q♠ J♠
+        // Board: T♠ 9♠ 8♦ 2♣ 3♥
+        // Best hand should use 2 hole cards + 3 board cards
+        const hole: Card[] = [
+            { rank: 'A', suit: 'spades' },
+            { rank: 'K', suit: 'spades' },
+            { rank: 'Q', suit: 'spades' },
+            { rank: 'J', suit: 'spades' },
+        ];
+        const community: Card[] = [
+            { rank: 'T', suit: 'spades' },
+            { rank: '9', suit: 'spades' },
+            { rank: '8', suit: 'diamonds' },
+            { rank: '2', suit: 'clubs' },
+            { rank: '3', suit: 'hearts' },
+        ];
+        const result = evaluateOmahaHand(hole, community);
+        // Should find flush (using 2 spades from hole + 3 spades from board is impossible
+        // since only T♠ and 9♠ are spade on board — needs exactly 3 board spades)
+        // Actually A♠K♠ + T♠9♠8♦ → A♠K♠T♠9♠8♦ is only 2 board spades, need 3
+        // Best hand is likely a straight: A K Q J T
+        expect(result.ranking).toBeGreaterThan(0);
+        expect(result.name).toBeTruthy();
+    });
+
+    it('should handle PLO4 with fewer than 4 hole cards gracefully', () => {
+        // Fallback behavior — should not crash
+        const hole: Card[] = [
+            { rank: 'A', suit: 'spades' },
+            { rank: 'K', suit: 'hearts' },
+        ];
+        const community: Card[] = [
+            { rank: 'Q', suit: 'diamonds' },
+            { rank: 'J', suit: 'clubs' },
+            { rank: 'T', suit: 'spades' },
+            { rank: '5', suit: 'hearts' },
+            { rank: '2', suit: 'diamonds' },
+        ];
+        const result = evaluateOmahaHand(hole, community);
+        expect(result).toBeTruthy();
+        expect(result.ranking).toBeGreaterThanOrEqual(0);
+    });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// OMAHA HI/LO TESTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('Omaha Hi/Lo', () => {
+    let evaluateOmahaLowHand: typeof import('../src/engine/PokerEngine').evaluateOmahaLowHand;
+
+    beforeEach(async () => {
+        const engine = await import('../src/engine/PokerEngine');
+        evaluateOmahaLowHand = engine.evaluateOmahaLowHand;
+    });
+
+    it('should qualify a low hand with 8-or-better', () => {
+        const hole: Card[] = [
+            { rank: 'A', suit: 'spades' },
+            { rank: '2', suit: 'hearts' },
+            { rank: 'K', suit: 'diamonds' },
+            { rank: 'Q', suit: 'clubs' },
+        ];
+        const community: Card[] = [
+            { rank: '3', suit: 'diamonds' },
+            { rank: '5', suit: 'clubs' },
+            { rank: '7', suit: 'spades' },
+            { rank: 'J', suit: 'hearts' },
+            { rank: 'T', suit: 'diamonds' },
+        ];
+        const result = evaluateOmahaLowHand(hole, community);
+        // A-2 from hole + 3-5-7 from board = A2357 low
+        expect(result).not.toBeNull();
+    });
+
+    it('should return null when no low qualifier exists', () => {
+        const hole: Card[] = [
+            { rank: 'A', suit: 'spades' },
+            { rank: 'K', suit: 'hearts' },
+            { rank: 'Q', suit: 'diamonds' },
+            { rank: 'J', suit: 'clubs' },
+        ];
+        const community: Card[] = [
+            { rank: 'T', suit: 'diamonds' },
+            { rank: '9', suit: 'clubs' },
+            { rank: 'K', suit: 'spades' },
+            { rank: 'Q', suit: 'hearts' },
+            { rank: 'J', suit: 'diamonds' },
+        ];
+        const result = evaluateOmahaLowHand(hole, community);
+        // No cards 8 or below on board (except none) — should be null
+        expect(result).toBeNull();
+    });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// POT CALCULATION TESTS (SIDE POTS)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('Pot Calculation', () => {
+    it('should create main pot with equal investments', () => {
+        const players = [
+            { seat: 1, user_id: 'a', username: 'A', stack: 0, bet: 100, totalInvested: 100, cards: [], is_folded: false, is_all_in: false, is_sitting_out: false },
+            { seat: 2, user_id: 'b', username: 'B', stack: 0, bet: 100, totalInvested: 100, cards: [], is_folded: false, is_all_in: false, is_sitting_out: false },
+        ];
+        const pots = calculatePots(players as any);
+        expect(pots.length).toBe(1);
+        expect(pots[0].amount).toBe(200);
+        expect(pots[0].eligiblePlayers).toContain('a');
+        expect(pots[0].eligiblePlayers).toContain('b');
+    });
+
+    it('should create side pot when player is all-in for less', () => {
+        const players = [
+            { seat: 1, user_id: 'a', username: 'A', stack: 0, bet: 50, totalInvested: 50, cards: [], is_folded: false, is_all_in: true, is_sitting_out: false },
+            { seat: 2, user_id: 'b', username: 'B', stack: 50, bet: 100, totalInvested: 100, cards: [], is_folded: false, is_all_in: false, is_sitting_out: false },
+            { seat: 3, user_id: 'c', username: 'C', stack: 50, bet: 100, totalInvested: 100, cards: [], is_folded: false, is_all_in: false, is_sitting_out: false },
+        ];
+        const pots = calculatePots(players as any);
+        expect(pots.length).toBe(2);
+        // Main pot: 3 players × 50 = 150
+        expect(pots[0].amount).toBe(150);
+        expect(pots[0].eligiblePlayers.length).toBe(3);
+        // Side pot: 2 players × 50 = 100
+        expect(pots[1].amount).toBe(100);
+        expect(pots[1].eligiblePlayers.length).toBe(2);
+        expect(pots[1].eligiblePlayers).not.toContain('a');
+    });
+
+    it('should handle folded player contributions going to pot', () => {
+        const players = [
+            { seat: 1, user_id: 'a', username: 'A', stack: 0, bet: 50, totalInvested: 50, cards: [], is_folded: true, is_all_in: false, is_sitting_out: false },
+            { seat: 2, user_id: 'b', username: 'B', stack: 50, bet: 100, totalInvested: 100, cards: [], is_folded: false, is_all_in: false, is_sitting_out: false },
+        ];
+        const pots = calculatePots(players as any);
+        // Main pot should include folded player's contribution
+        const totalAmount = pots.reduce((sum, p) => sum + p.amount, 0);
+        expect(totalAmount).toBe(150);
+        // Folded player NOT eligible to win
+        for (const pot of pots) {
+            expect(pot.eligiblePlayers).not.toContain('a');
+        }
+    });
+
+    it('should return empty array when no players have invested', () => {
+        const players = [
+            { seat: 1, user_id: 'a', username: 'A', stack: 100, bet: 0, totalInvested: 0, cards: [], is_folded: false, is_all_in: false, is_sitting_out: false },
+        ];
+        const pots = calculatePots(players as any);
+        expect(pots.length).toBe(0);
+    });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EDGE CASE TESTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('Edge Cases', () => {
+    it('should recognize wheel straight (A-2-3-4-5)', () => {
+        const hole: Card[] = [
+            { rank: 'A', suit: 'spades' },
+            { rank: '2', suit: 'hearts' },
+        ];
+        const community: Card[] = [
+            { rank: '3', suit: 'diamonds' },
+            { rank: '4', suit: 'clubs' },
+            { rank: '5', suit: 'spades' },
+            { rank: 'K', suit: 'hearts' },
+            { rank: 'Q', suit: 'diamonds' },
+        ];
+        const result = evaluateHand(hole, community);
+        expect(result.ranking).toBe(HAND_RANKINGS.STRAIGHT);
+    });
+
+    it('should handle single active player as winner', () => {
+        const community: Card[] = [
+            { rank: 'T', suit: 'spades' },
+            { rank: '9', suit: 'hearts' },
+            { rank: '8', suit: 'diamonds' },
+            { rank: '7', suit: 'clubs' },
+            { rank: '2', suit: 'spades' },
+        ];
+        const players = [
+            { seat: 1, user_id: 'winner', username: 'W', stack: 0, bet: 100, totalInvested: 100, cards: [{ rank: 'A', suit: 'hearts' }, { rank: 'K', suit: 'hearts' }], is_folded: false, is_all_in: false, is_sitting_out: false },
+            { seat: 2, user_id: 'folder', username: 'F', stack: 100, bet: 50, totalInvested: 50, cards: [], is_folded: true, is_all_in: false, is_sitting_out: false },
+        ];
+        const pots = calculatePots(players as any);
+        const winners = determineWinners(players as any, community, pots, 'nlh');
+        expect(winners.length).toBe(1);
+        expect(winners[0].userId).toBe('winner');
+    });
+
+    it('should split pot evenly between tied hands', () => {
+        const community: Card[] = [
+            { rank: 'A', suit: 'spades' },
+            { rank: 'K', suit: 'hearts' },
+            { rank: 'Q', suit: 'diamonds' },
+            { rank: 'J', suit: 'clubs' },
+            { rank: 'T', suit: 'spades' },
+        ];
+        // Both players play the board (same straight)
+        const players = [
+            { seat: 1, user_id: 'p1', username: 'P1', stack: 0, bet: 100, totalInvested: 100, cards: [{ rank: '2', suit: 'hearts' }, { rank: '3', suit: 'hearts' }], is_folded: false, is_all_in: false, is_sitting_out: false },
+            { seat: 2, user_id: 'p2', username: 'P2', stack: 0, bet: 100, totalInvested: 100, cards: [{ rank: '4', suit: 'hearts' }, { rank: '5', suit: 'hearts' }], is_folded: false, is_all_in: false, is_sitting_out: false },
+        ];
+        const pots = calculatePots(players as any);
+        const winners = determineWinners(players as any, community, pots, 'nlh');
+        expect(winners.length).toBe(2);
+        expect(winners[0].amount).toBe(winners[1].amount);
+    });
+});
+

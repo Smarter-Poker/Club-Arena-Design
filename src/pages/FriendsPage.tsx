@@ -158,20 +158,58 @@ export default function FriendsPage() {
     };
 
     const acceptRequest = async (friendshipId: string) => {
-        await supabase
-            .from('friendships')
-            .update({ status: 'accepted' })
-            .eq('id', friendshipId);
-        loadFriends();
-        toast.success('Friend request accepted!');
+        try {
+            const { error } = await supabase
+                .from('friendships')
+                .update({ status: 'accepted' })
+                .eq('id', friendshipId);
+            if (error) throw error;
+            masterBus.emit('FRIEND_REQUEST_ACCEPTED', { friendshipId });
+            loadFriends();
+            toast.success('Friend request accepted!');
+        } catch (err) {
+            console.error('[Friends] Failed to accept request:', err);
+            toast.error('Failed to accept request');
+        }
     };
 
     const declineRequest = async (friendshipId: string) => {
-        await supabase
-            .from('friendships')
-            .delete()
-            .eq('id', friendshipId);
-        loadFriends();
+        try {
+            const { error } = await supabase
+                .from('friendships')
+                .delete()
+                .eq('id', friendshipId);
+            if (error) throw error;
+            loadFriends();
+        } catch (err) {
+            console.error('[Friends] Failed to decline request:', err);
+            toast.error('Failed to decline request');
+        }
+    };
+
+    const sendFriendRequest = async (playerId: string) => {
+        if (!user?.id) return;
+        try {
+            const { error } = await supabase
+                .from('friendships')
+                .insert({
+                    user_id: user.id,
+                    friend_id: playerId,
+                    status: 'pending'
+                });
+            if (error) {
+                if (error.code === '23505') {
+                    toast.info('Friend request already sent');
+                    return;
+                }
+                throw error;
+            }
+            masterBus.emit('FRIEND_REQUEST_SENT', { toUserId: playerId });
+            toast.success('Friend request sent!');
+        } catch (err) {
+            console.error('[Friends] Failed to send request:', err);
+            toast.error('Failed to send friend request');
+        }
     };
 
     // Update friend online status when presence changes
@@ -350,10 +388,11 @@ export default function FriendsPage() {
             {activeTab === 'recent' && (
                 <RecentPlayers
                     onAddFriend={(playerId) => {
-                        toast.info('Friend request sent!');
+                        sendFriendRequest(playerId);
                     }}
                     onInviteToTable={(playerId) => {
-                        toast.info('Invite sent!');
+                        navigate(`/messages/new?userId=${playerId}`);
+                        toast.info('Opening chat to invite...');
                     }}
                 />
             )}

@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase'
 import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
+import { PremiumSFX } from '../services/PremiumSFX';
 import './NotificationsPage.css';
 
 interface Notification {
@@ -52,12 +53,10 @@ export default function NotificationsPage() {
                         setNewNotifId(newNotif.id);
                         setTimeout(() => setNewNotifId(null), 3000);
 
-                        // Play notification sound (if enabled)
+                        // Play notification sound via PremiumSFX
                         try {
-                            const audio = new Audio('/sounds/notification.mp3');
-                            audio.volume = 0.3;
-                            audio.play().catch(() => { });
-                        } catch (e) { }
+                            PremiumSFX.notification();
+                        } catch (e) { /* silent */ }
                     }
                 )
                 .subscribe();
@@ -88,28 +87,40 @@ export default function NotificationsPage() {
     };
 
     const markAsRead = async (id: string) => {
-        await supabase
-            .from('notifications')
-            .update({ read: true })
-            .eq('id', id);
+        try {
+            await supabase
+                .from('notifications')
+                .update({ read: true })
+                .eq('id', id);
 
-        setNotifications(prev =>
-            prev.map(n => n.id === id ? { ...n, read: true } : n)
-        );
+            setNotifications(prev =>
+                prev.map(n => n.id === id ? { ...n, read: true } : n)
+            );
+        } catch (err) {
+            console.error('[Notifications] markAsRead error:', err);
+        }
     };
 
     const markAllRead = async () => {
-        await supabase
-            .from('notifications')
-            .update({ read: true })
-            .eq('user_id', user?.id);
+        try {
+            await supabase
+                .from('notifications')
+                .update({ read: true })
+                .eq('user_id', user?.id);
 
-        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+        } catch (err) {
+            console.error('[Notifications] markAllRead error:', err);
+        }
     };
 
     const deleteNotification = async (id: string) => {
-        await supabase.from('notifications').delete().eq('id', id);
-        setNotifications(prev => prev.filter(n => n.id !== id));
+        try {
+            await supabase.from('notifications').delete().eq('id', id);
+            setNotifications(prev => prev.filter(n => n.id !== id));
+        } catch (err) {
+            console.error('[Notifications] delete error:', err);
+        }
     };
 
     const getIcon = (type: string): string => {

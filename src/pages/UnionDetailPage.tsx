@@ -71,6 +71,7 @@ export default function UnionDetailPage() {
     const [applying, setApplying] = useState(false);
     const [visibleClubs, setVisibleClubs] = useState<Set<string>>(new Set());
     const [confirmJoin, setConfirmJoin] = useState<{ show: boolean; club: Club | null }>({ show: false, club: null });
+    const [removeConfirm, setRemoveConfirm] = useState<{ show: boolean; clubId: string | null; clubName: string | null }>({ show: false, clubId: null, clubName: null });
     const [removingClubId, setRemovingClubId] = useState<string | null>(null);
     const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
     const [showXmttModal, setShowXmttModal] = useState(false);
@@ -566,15 +567,9 @@ export default function UnionDetailPage() {
                                 {union?.ownerId === user?.id && (
                                     <button
                                         className={styles.removeClubBtn}
-                                        onClick={async () => {
+                                        onClick={() => {
                                             if (!unionId || removingClubId) return;
-                                            if (!confirm(`Remove ${club.clubName} from this union?`)) return;
-                                            setRemovingClubId(club.clubId);
-                                            const success = await unionService.removeClub(unionId, club.clubId);
-                                            if (success) {
-                                                setClubs(prev => prev.filter(c => c.clubId !== club.clubId));
-                                            }
-                                            setRemovingClubId(null);
+                                            setRemoveConfirm({ show: true, clubId: club.clubId, clubName: club.clubName });
                                         }}
                                         disabled={removingClubId === club.clubId}
                                     >
@@ -882,6 +877,30 @@ export default function UnionDetailPage() {
                 }}
                 onCancel={() => setConfirmJoin({ show: false, club: null })}
                 loading={applying}
+            />
+
+            {/* Remove Club Confirm Modal */}
+            <ConfirmModal
+                isOpen={removeConfirm.show}
+                title="Remove Club"
+                message={`Remove ${removeConfirm.clubName || 'this club'} from the union? This action cannot be undone.`}
+                variant="danger"
+                confirmText="Remove"
+                onConfirm={async () => {
+                    if (removeConfirm.clubId && unionId) {
+                        setRemovingClubId(removeConfirm.clubId);
+                        const success = await unionService.removeClub(unionId, removeConfirm.clubId);
+                        if (success) {
+                            setClubs(prev => prev.filter(c => c.clubId !== removeConfirm.clubId));
+                            toast.success('Club removed from union');
+                        } else {
+                            toast.error('Failed to remove club');
+                        }
+                        setRemovingClubId(null);
+                    }
+                    setRemoveConfirm({ show: false, clubId: null, clubName: null });
+                }}
+                onCancel={() => setRemoveConfirm({ show: false, clubId: null, clubName: null })}
             />
         </div>
     );

@@ -244,7 +244,7 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
                 .select('id, reaction')
                 .eq('message_id', messageId)
                 .eq('user_id', user.id)
-                .single();
+                .maybeSingle();
 
             if (existing) {
                 if (existing.reaction === emoji) {

@@ -158,6 +158,7 @@ export default function ClubDashboard() {
           event: 'INSERT',
           schema: 'public',
           table: 'hand_history',
+          filter: `club_id=eq.${clubId}`,
         },
         () => {
           loadDashboardData();
@@ -181,11 +182,12 @@ export default function ClubDashboard() {
         .single();
 
       if (clubData) {
-        // Get member count — club_members has no 'id' column
+        // Get member count — exclude horses
         const { count: memberCount } = await supabase
           .from('club_members')
-          .select('user_id', { count: 'exact', head: true })
-          .eq('club_id', clubId);
+          .select('user_id, profiles!inner(id)', { count: 'exact', head: true })
+          .eq('club_id', clubId)
+          .eq('profiles.is_horse', false);
 
         // Get table count
         const { count: tableCount } = await supabase

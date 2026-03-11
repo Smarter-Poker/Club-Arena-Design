@@ -177,14 +177,39 @@ export default function CashierPage() {
   // Animated balance
   const animatedPlayerBalance = useCountAnimation(balances.PLAYER.available, 900);
 
+  // Pending cashout state (U-02 FIX: show escrow status)
+  const [pendingCashouts, setPendingCashouts] = useState<{ id: string; amount: number; status: string; created_at: string }[]>([]);
+  const [loadingContext, setLoadingContext] = useState(true); // U-01 FIX: loading skeleton
+
   // ─────────────────────────────────────────────────────────────────────────────
   // LOAD ROLE, UNION STATUS, AND RECIPIENTS
   // ─────────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!clubId || !user?.id) return;
-    loadUserContext();
+    setLoadingContext(true);
+    loadUserContext().finally(() => setLoadingContext(false));
   }, [clubId, user?.id]);
+
+  // Load pending cashouts
+  useEffect(() => {
+    if (!clubId || !user?.id) return;
+    loadPendingCashouts();
+  }, [clubId, user?.id, action]);
+
+  const loadPendingCashouts = async () => {
+    if (!clubId || !user?.id) return;
+    try {
+      const { data } = await supabase
+        .from('cashout_requests')
+        .select('id, amount, status, created_at')
+        .eq('club_id', clubId)
+        .eq('player_id', user.id)
+        .in('status', ['pending', 'processing'])
+        .order('created_at', { ascending: false });
+      setPendingCashouts(data || []);
+    } catch { /* silent */ }
+  };
 
   const loadUserContext = async () => {
     if (!clubId || !user?.id) return;
@@ -549,19 +574,64 @@ export default function CashierPage() {
         }
       } else if (action === 'cashout') {
         // ─── CASH OUT ───
-        if (!tableId) {
-          setMessage({ type: 'error', text: 'No table selected for cash-out.' });
-          setIsProcessing(false);
-          return;
-        }
-        const { unlockFromTable } = useWalletStore.getState();
-        const success = await unlockFromTable(user.id, value, tableId);
-        if (success) {
-          setMessage({ type: 'success', text: `Cashed out ${value.toLocaleString()} chips` });
-          notifyWalletChange(user.id, value);
-          navigate(`/table/${tableId}`);
+        // BUG-02 FIX: Two distinct flows:
+        // 1) If at a table (tableId present) → unlock chips from table
+        // 2) If no table → request-cashout API (escrow → agent approval)
+
+        if (tableId) {
+          // Table-context cashout: unlock chips from table session
+          const { unlockFromTable } = useWalletStore.getState();
+          const success = await unlockFromTable(user.id, value, tableId);
+          if (success) {
+            setMessage({ type: 'success', text: `Cashed out ${value.toLocaleString()} chips from table` });
+            notifyWalletChange(user.id, value);
+            navigate(`/table/${tableId}`);
+          } else {
+            setMessage({ type: 'error', text: 'Cash-out failed. Please try again.' });
+          }
         } else {
-          setMessage({ type: 'error', text: 'Cash-out failed. Please try again.' });
+          // Standard cashout: request-cashout API (escrow → agent approval)
+          // U-03 FIX: Confirmation for high-value cashouts
+          if (value >= 10000 && !window.confirm(`Confirm cashout of ${value.toLocaleString()} chips? Your chips will be held in escrow until your agent approves.`)) {
+            setIsProcessing(false);
+            return;
+          }
+
+          if (balances.PLAYER.available < value) {
+            setMessage({ type: 'error', text: `Insufficient balance. Available: ${balances.PLAYER.available.toLocaleString()}` });
+            setIsProcessing(false);
+            return;
+          }
+
+          const token = (await supabase.auth.getSession())?.data?.session?.access_token;
+          if (!token) {
+            setMessage({ type: 'error', text: 'Authentication error. Please refresh.' });
+            setIsProcessing(false);
+            return;
+          }
+
+          const cashoutRes = await fetch('/api/club-arena/request-cashout', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'X-Idempotency-Key': crypto.randomUUID(),
+            },
+            body: JSON.stringify({ clubId, amount: value }),
+          });
+          const cashoutData = await cashoutRes.json();
+
+          if (cashoutData.success) {
+            setMessage({
+              type: 'success',
+              text: `Cashout request submitted! ${value.toLocaleString()} chips are now held in escrow. Your agent will review shortly.`,
+            });
+            loadBalances(user.id);
+            loadPendingCashouts();
+            notifyWalletChange(user.id, value);
+          } else {
+            setMessage({ type: 'error', text: cashoutData.error || 'Cashout request failed.' });
+          }
         }
       }
       setAmount('');
@@ -778,6 +848,35 @@ export default function CashierPage() {
           size="md"
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* U-02 FIX: Show pending cashouts when on cashout tab */}
+            {action === 'cashout' && pendingCashouts.length > 0 && (
+              <div style={{
+                padding: '12px',
+                background: 'rgba(255, 149, 0, 0.1)',
+                border: '1px solid rgba(255, 149, 0, 0.3)',
+                borderRadius: '8px',
+              }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#ff9500', textTransform: 'uppercase', marginBottom: '8px' }}>
+                  ⏳ Pending Cashouts
+                </div>
+                {pendingCashouts.map(pc => (
+                  <div key={pc.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '0.85rem', color: '#ccc' }}>
+                    <span>{pc.amount.toLocaleString()} chips</span>
+                    <span style={{ color: '#ff9500', fontSize: '0.75rem' }}>
+                      {pc.status === 'pending' ? 'Awaiting Agent' : 'Processing'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Cashout context info */}
+            {action === 'cashout' && !tableId && (
+              <div className="cashier-message info">
+                Your chips will be held in escrow until your assigned agent approves the cashout.
+              </div>
+            )}
+
             <MetalInput
               label={action === 'mint' ? 'CHIPS TO MINT:' : 'AMOUNT:'}
               type="number"
@@ -805,6 +904,11 @@ export default function CashierPage() {
                   {val.toLocaleString()}
                 </MetalButton>
               ))}
+              {action === 'cashout' && (
+                <MetalButton variant="ghost" size="sm" onClick={() => setAmount(String(balances.PLAYER.available))}>
+                  Max
+                </MetalButton>
+              )}
             </div>
 
             {message && <div className={`cashier-message ${message.type}`}>{message.text}</div>}
@@ -820,7 +924,7 @@ export default function CashierPage() {
                 {action === 'buyin'
                   ? 'CONFIRM BUY-IN'
                   : action === 'cashout'
-                    ? 'CONFIRM CASH-OUT'
+                    ? (tableId ? 'CONFIRM CASH-OUT' : 'REQUEST CASHOUT')
                     : 'CONFIRM MINT'}
               </MetalButton>
             </div>

@@ -262,6 +262,16 @@ export const PremiumSFX = {
         playSweep(NOTE.C5, NOTE.C6, 0.18, 0.06, 'sine');
         playNoise(0.15, 0.04, 3000);
     },
+
+    /**
+     * Notification — Gentle ascending two-note chime (E5 → A5)
+     * Used when receiving in-app notifications
+     */
+    notification: () => {
+        if (!isEnabled()) return;
+        playTone(NOTE.E5, 0.15, 0.08, 'sine');
+        playTone(NOTE.A5, 0.12, 0.07, 'sine', 0.10);
+    },
 };
 
 export default PremiumSFX;

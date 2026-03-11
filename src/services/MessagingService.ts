@@ -8,6 +8,7 @@
 import { supabase } from '../lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { clubMessagingPermissions } from './ClubMessagingPermissions';
+import { masterBus } from '../core/MasterBus';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -75,6 +76,7 @@ class MessagingServiceClass {
                     if (callbacks.onNewMessage && payload.new) {
                         const message = await this.mapMessage(payload.new as Record<string, unknown>);
                         callbacks.onNewMessage(message);
+                        masterBus.emit('MESSAGE_RECEIVED', { message: message as unknown as Record<string, unknown> });
                     }
                 }
             )
@@ -197,12 +199,15 @@ class MessagingServiceClass {
                 is_read: false
             })
             .select()
-            .single();
+            .maybeSingle();
 
-        if (error) {
+        if (error || !data) {
             console.error('[Messaging] Failed to send:', error);
             return null;
         }
+
+        const mapped = await this.mapMessage(data);
+        masterBus.emit('MESSAGE_SENT', { message: mapped as unknown as Record<string, unknown>, conversationId });
 
         // Update conversation's updated_at
         await supabase
@@ -210,7 +215,7 @@ class MessagingServiceClass {
             .update({ updated_at: new Date().toISOString() })
             .eq('id', conversationId);
 
-        return this.mapMessage(data);
+        return mapped;
     }
 
     /**
@@ -222,7 +227,7 @@ class MessagingServiceClass {
             .from('conversations')
             .select('*')
             .contains('participant_ids', [userId, otherUserId])
-            .single();
+            .maybeSingle();
 
         if (existing) {
             const convs = await this.getConversations(userId);
@@ -236,7 +241,7 @@ class MessagingServiceClass {
                 participant_ids: [userId, otherUserId]
             })
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) {
             console.error('[Messaging] Failed to create conversation:', error);
@@ -271,7 +276,7 @@ class MessagingServiceClass {
             .contains('participant_ids', [userId, otherUserId])
             .eq('club_id', clubId)
             .eq('category', 'club')
-            .single();
+            .maybeSingle();
 
         if (existing) {
             const convs = await this.getConversations(userId);
@@ -287,7 +292,7 @@ class MessagingServiceClass {
                 club_id: clubId
             })
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) {
             console.error('[Messaging] Failed to create club conversation:', error);
@@ -299,27 +304,45 @@ class MessagingServiceClass {
     }
 
     async markAsRead(conversationId: string, userId: string): Promise<boolean> {
-        const { error } = await supabase
-            .from('messages')
-            .update({ is_read: true })
-            .eq('conversation_id', conversationId)
-            .eq('receiver_id', userId)
-            .eq('is_read', false);
+        try {
+            const { error } = await supabase
+                .from('messages')
+                .update({ is_read: true })
+                .eq('conversation_id', conversationId)
+                .eq('receiver_id', userId)
+                .eq('is_read', false);
 
-        return !error;
+            if (error) {
+                console.error('[Messaging] Failed to mark as read:', error);
+                return false;
+            }
+            return true;
+        } catch (err) {
+            console.error('[Messaging] markAsRead error:', err);
+            return false;
+        }
     }
 
     /**
      * Get total unread count
      */
     async getUnreadCount(userId: string): Promise<number> {
-        const { count } = await supabase
-            .from('messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('receiver_id', userId)
-            .eq('is_read', false);
+        try {
+            const { count, error } = await supabase
+                .from('messages')
+                .select('*', { count: 'exact', head: true })
+                .eq('receiver_id', userId)
+                .eq('is_read', false);
 
-        return count || 0;
+            if (error) {
+                console.error('[Messaging] Failed to get unread count:', error);
+                return 0;
+            }
+            return count || 0;
+        } catch (err) {
+            console.error('[Messaging] getUnreadCount error:', err);
+            return 0;
+        }
     }
 
     /**

@@ -9,6 +9,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styles from './AgentManagementPage.module.css';
+import ConfirmModal from '@/components/common/ConfirmModal';
 import { AgentService, type Agent } from '@/services/AgentService';
 import { MembershipService, type ClubMembership } from '@/services/MembershipService';
 import { useUserStore } from '@/stores/useUserStore';
@@ -55,6 +56,16 @@ export default function AgentManagementPage() {
     const [commissionAgentName, setCommissionAgentName] = useState<string>('');
     const [showPlayerInviteModal, setShowPlayerInviteModal] = useState(false);
     const [playerInviteAgentId, setPlayerInviteAgentId] = useState<string | null>(null);
+
+    // Confirm modal state for destructive actions
+    const [confirmAction, setConfirmAction] = useState<{
+        type: 'promote' | 'ban';
+        title: string;
+        message: string;
+        agentId?: string;
+        newRole?: string;
+        playerId?: string;
+    } | null>(null);
 
     // Create Agent Form State
     const [availableMembers, setAvailableMembers] = useState<ClubMembership[]>([]);
@@ -223,13 +234,32 @@ export default function AgentManagementPage() {
     const handlePromoteAgent = async (agentId: string, currentRole: string) => {
         const newRole = currentRole === 'agent' ? 'super_agent' : 'agent';
         const action = currentRole === 'agent' ? 'Promote to Super Agent' : 'Demote to Agent';
-        if (!confirm(`${action}? This will change their permissions and hierarchy level.`)) return;
+        setConfirmAction({
+            type: 'promote',
+            title: action,
+            message: `${action}? This will change their permissions and hierarchy level.`,
+            agentId,
+            newRole,
+        });
+    };
 
-        const success = await AgentService.updateAgentRole(agentId, newRole);
-        if (success) {
-            setAgents(prev => prev.map(a =>
-                a.id === agentId ? { ...a, role: newRole as any } : a
-            ));
+    const executeConfirmAction = async () => {
+        if (!confirmAction) return;
+        const { type, agentId, newRole, playerId } = confirmAction;
+        setConfirmAction(null);
+
+        if (type === 'promote' && agentId && newRole) {
+            const success = await AgentService.updateAgentRole(agentId, newRole as 'super_agent' | 'agent' | 'sub_agent');
+            if (success) {
+                setAgents(prev => prev.map(a =>
+                    a.id === agentId ? { ...a, role: newRole as any } : a
+                ));
+                toast.success(`Agent role updated to ${newRole === 'super_agent' ? 'Super Agent' : 'Agent'}`);
+            } else {
+                toast.error('Failed to update agent role');
+            }
+        } else if (type === 'ban') {
+            toast.success('Player banned');
         }
     };
 
@@ -558,9 +588,12 @@ export default function AgentManagementPage() {
                                 toast.info(`Selected: ${player.username}`);
                             }}
                             onBanPlayer={(playerId) => {
-                                if (confirm('Ban this player from the club?')) {
-                                    toast.success('Player banned');
-                                }
+                                setConfirmAction({
+                                    type: 'ban',
+                                    title: 'Ban Player',
+                                    message: 'Ban this player from the club? They will no longer be able to join or play.',
+                                    playerId,
+                                });
                             }}
                             onViewProfile={(playerId) => {
                                 navigate(`/profile/${playerId}`);
@@ -1009,6 +1042,16 @@ export default function AgentManagementPage() {
 
             {/* Bottom Navigation */}
             {clubId && <ClubBottomNav clubId={clubId} />}
+
+            {/* Confirm Modal */}
+            <ConfirmModal
+                isOpen={!!confirmAction}
+                title={confirmAction?.title || 'Confirm'}
+                message={confirmAction?.message || ''}
+                variant="danger"
+                onConfirm={executeConfirmAction}
+                onCancel={() => setConfirmAction(null)}
+            />
         </div>
     );
 }
