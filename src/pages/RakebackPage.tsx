@@ -12,6 +12,7 @@ import './RakebackPage.css';
 
 interface RakebackPeriod {
     id: string;
+    club_id: string;
     period_start: string;
     period_end: string;
     rake_generated: number;
@@ -163,6 +164,14 @@ export default function RakebackPage() {
             }
 
             // Claims via the rakeback API
+            // Backend claims ALL pending periods for this club
+            const targetClubId = periods.find(p => p.status === 'pending')?.club_id;
+            if (!targetClubId) {
+                setClaimStatus('error');
+                setClaimMessage('No pending rakeback found.');
+                return;
+            }
+
             const res = await fetch('/api/club-arena/rakeback', {
                 method: 'POST',
                 headers: {
@@ -172,7 +181,7 @@ export default function RakebackPage() {
                 },
                 body: JSON.stringify({
                     action: 'claim',
-                    periodId: periodId || pendingPeriodIds[0],
+                    clubId: targetClubId,
                 }),
             });
             const data = await res.json();

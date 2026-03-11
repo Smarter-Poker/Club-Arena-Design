@@ -14,24 +14,20 @@ import './BadBeatJackpotPage.css';
 interface JackpotInfo {
   id: string;
   club_id: string;
-  current_amount: number;
-  qualifying_hand: string;
-  contribution_rate: number;
+  pool_amount: number;
+  hands_contributed: number;
   last_hit_at?: string;
   last_hit_amount?: number;
-  winner_share: number;
-  loser_share: number;
-  table_share: number;
 }
 
 interface JackpotHistory {
   id: string;
-  hit_at: string;
-  amount: number;
-  winning_hand: string;
-  losing_hand: string;
-  winner_name: string;
-  loser_name: string;
+  awarded_at: string;
+  total_payout: number;
+  winner_hand: string;
+  loser_hand: string;
+  winner_display_name?: string;
+  loser_display_name?: string;
 }
 
 export default function BadBeatJackpotPage() {
@@ -62,17 +58,17 @@ export default function BadBeatJackpotPage() {
           {
             event: '*',
             schema: 'public',
-            table: 'bad_beat_jackpots',
+            table: 'bbj_pools',
             filter: `club_id=eq.${clubId}`,
           },
           (payload) => {
             // Jackpot updated!
             const newData = payload.new as JackpotInfo;
-            if (newData.current_amount > prevAmountRef.current) {
+            if (newData.pool_amount > prevAmountRef.current) {
               setJustUpdated(true);
               setTimeout(() => setJustUpdated(false), 2000);
             }
-            prevAmountRef.current = newData.current_amount;
+            prevAmountRef.current = newData.pool_amount;
             setJackpot(newData);
           }
         )
@@ -81,7 +77,7 @@ export default function BadBeatJackpotPage() {
           {
             event: 'INSERT',
             schema: 'public',
-            table: 'bad_beat_history',
+            table: 'bbj_winners',
             filter: `club_id=eq.${clubId}`,
           },
           (payload) => {
@@ -101,24 +97,24 @@ export default function BadBeatJackpotPage() {
   const loadJackpotData = useCallback(async () => {
     setLoading(true);
     try {
-      // Load jackpot info
+      // Load jackpot info from bbj_pools
       const { data: jackpotData } = await supabase
-        .from('bad_beat_jackpots')
+        .from('bbj_pools')
         .select('*')
         .eq('club_id', clubId)
         .maybeSingle();
 
       if (jackpotData) {
         setJackpot(jackpotData);
-        prevAmountRef.current = jackpotData.current_amount;
+        prevAmountRef.current = jackpotData.pool_amount;
       }
 
-      // Load history
+      // Load history from bbj_winners
       const { data: historyData } = await supabase
-        .from('bad_beat_history')
+        .from('bbj_winners')
         .select('*')
         .eq('club_id', clubId)
-        .order('hit_at', { ascending: false })
+        .order('awarded_at', { ascending: false })
         .limit(10);
 
       if (historyData) {
@@ -176,19 +172,19 @@ export default function BadBeatJackpotPage() {
       <div className="jackpot-display">
         <div className="jackpot-glow" />
         <span className="jackpot-label">Current Jackpot</span>
-        <span className="jackpot-amount">{(jackpot?.current_amount || 0).toLocaleString()}</span>
+        <span className="jackpot-amount">{(jackpot?.pool_amount || 0).toLocaleString()}</span>
       </div>
 
       {/* Info Cards */}
       <div className="jackpot-info">
         <div className="info-card">
           <span className="info-label">Qualifying Hand</span>
-          <span className="info-value">{jackpot?.qualifying_hand || 'Quad 8s or better'}</span>
+          <span className="info-value">Quad 8s or better beaten</span>
         </div>
         <div className="info-card">
-          <span className="info-label">Contribution</span>
+          <span className="info-label">Hands Dealt</span>
           <span className="info-value">
-            {((jackpot?.contribution_rate || 0.01) * 100).toFixed(1)}% of rake
+            {(jackpot?.hands_contributed || 0).toLocaleString()}
           </span>
         </div>
         {playerContribution > 0 && (
@@ -215,31 +211,25 @@ export default function BadBeatJackpotPage() {
             <span className="payout-label">Loser (Bad Beat)</span>
             <div
               className="bar-fill"
-              style={{ width: `${(jackpot?.loser_share || 0.5) * 100}%` }}
+              style={{ width: '50%' }}
             />
-            <span className="payout-percent">
-              {((jackpot?.loser_share || 0.5) * 100).toFixed(0)}%
-            </span>
+            <span className="payout-percent">50%</span>
           </div>
           <div className="payout-bar">
             <span className="payout-label">Winner</span>
             <div
               className="bar-fill"
-              style={{ width: `${(jackpot?.winner_share || 0.25) * 100}%` }}
+              style={{ width: '25%' }}
             />
-            <span className="payout-percent">
-              {((jackpot?.winner_share || 0.25) * 100).toFixed(0)}%
-            </span>
+            <span className="payout-percent">25%</span>
           </div>
           <div className="payout-bar">
             <span className="payout-label">Table Share</span>
             <div
               className="bar-fill"
-              style={{ width: `${(jackpot?.table_share || 0.25) * 100}%` }}
+              style={{ width: '25%' }}
             />
-            <span className="payout-percent">
-              {((jackpot?.table_share || 0.25) * 100).toFixed(0)}%
-            </span>
+            <span className="payout-percent">25%</span>
           </div>
         </div>
       </div>
@@ -264,12 +254,12 @@ export default function BadBeatJackpotPage() {
                 }}
               >
                 <div className="hit-info">
-                  <span className="hit-date">{formatDate(hit.hit_at)}</span>
+                  <span className="hit-date">{formatDate(hit.awarded_at)}</span>
                   <span className="hit-hands">
-                    {hit.losing_hand} beat by {hit.winning_hand}
+                    {hit.loser_hand} beat by {hit.winner_hand}
                   </span>
                 </div>
-                <div className="hit-amount">{hit.amount.toLocaleString()}</div>
+                <div className="hit-amount">{hit.total_payout.toLocaleString()}</div>
               </div>
             ))}
           </div>
