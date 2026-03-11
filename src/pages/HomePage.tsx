@@ -19,6 +19,7 @@ import { ClubsService } from '../services/ClubsService';
 import { useToast } from '../components/common/Toast';
 import GlobalHeader from '../components/navigation/GlobalHeader';
 import haptic from '../services/HapticService';
+import { masterBus } from '../core/MasterBus';
 import styles from './HomePage.module.css';
 
 // Lazy-load heavy components to reduce initial bundle
@@ -39,15 +40,6 @@ const TILE_CASHIER = `${import.meta.env.BASE_URL}images/tiles/cashier.jpg`;
 const TILE_MARKETPLACE = `${import.meta.env.BASE_URL}images/tiles/marketplace.jpg`;
 const TILE_HAND_HISTORIES = `${import.meta.env.BASE_URL}images/tiles/hand-histories.jpg`;
 
-// Holographic edge glow colors (World Hub palette) — used for nth-child CSS
-const HOLO_COLORS = [
-    { main: 'rgba(0, 212, 255, 0.15)', border: 'rgba(0, 212, 255, 0.2)' },
-    { main: 'rgba(0, 255, 136, 0.12)', border: 'rgba(0, 255, 136, 0.18)' },
-    { main: 'rgba(0, 191, 255, 0.12)', border: 'rgba(0, 191, 255, 0.18)' },
-    { main: 'rgba(77, 210, 255, 0.12)', border: 'rgba(77, 210, 255, 0.18)' },
-    { main: 'rgba(0, 255, 159, 0.12)', border: 'rgba(0, 255, 159, 0.18)' },
-    { main: 'rgba(200, 255, 255, 0.1)', border: 'rgba(200, 255, 255, 0.15)' },
-];
 
 // Enhancement #9: Unique gradient CSS classes for logo-less club cards
 const GRADIENT_CLASSES = [
@@ -103,8 +95,6 @@ export default function HomePage() {
 
     // Fetch user stats and clubs from Supabase
     useEffect(() => {
-        let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
-
         async function fetchUserData() {
             setIsLoading(true);
             try {
@@ -119,6 +109,8 @@ export default function HomePage() {
                         active_tables: m.club?.active_tables || 0,
                     })) || [];
                     setUserClubs(clubs);
+                } else {
+                    setUserClubs([]);
                 }
             } catch (err) {
                 console.error('Error fetching user data:', err);
@@ -129,13 +121,14 @@ export default function HomePage() {
         }
         fetchUserData();
 
-        // Real-time subscription: user's club membership changes
+        // Real-time subscription via MasterBus channel registry (deduplicated)
         const setupRealtimeSubscription = async () => {
             const { data: { user: authUser } } = await supabase.auth.getUser();
             if (!authUser?.id) return;
 
-            realtimeChannel = supabase
-                .channel(`user-clubs-${authUser.id}`)
+            const channelKey = `home-clubs-${authUser.id}`;
+            const channel = masterBus.getOrCreateChannel(channelKey);
+            channel
                 .on(
                     'postgres_changes',
                     {
@@ -145,7 +138,6 @@ export default function HomePage() {
                         filter: `user_id=eq.${authUser.id}`,
                     },
                     () => {
-                        // Refresh user's clubs when membership changes
                         fetchUserData();
                     }
                 )
@@ -154,10 +146,39 @@ export default function HomePage() {
 
         setupRealtimeSubscription();
 
-        return () => {
-            if (realtimeChannel) {
-                supabase.removeChannel(realtimeChannel);
+        // ═══════════════════════════════════════════════════════════════════════
+        // MASTER BUS LISTENERS — cross-page state sync
+        // ═══════════════════════════════════════════════════════════════════════
+
+        // When user joins/leaves a club on ANY page, refresh our list instantly
+        const unsubJoined = masterBus.subscribeDebounced('CLUB_JOINED', () => {
+            fetchUserData();
+        }, 500);
+
+        const unsubLeft = masterBus.subscribeDebounced('CLUB_LEFT', () => {
+            fetchUserData();
+        }, 500);
+
+        // Re-fetch everything when auth state changes (login/logout)
+        const unsubAuth = masterBus.subscribe('AUTH_STATE_CHANGED', (event) => {
+            if (event.payload.isAuthenticated) {
+                fetchUserData();
+            } else {
+                setUserClubs([]);
             }
+        });
+
+        return () => {
+            // Clean up MasterBus channel
+            supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+                if (authUser?.id) {
+                    masterBus.removeRegisteredChannel(`home-clubs-${authUser.id}`);
+                }
+            });
+            // Unsubscribe bus listeners
+            unsubJoined();
+            unsubLeft();
+            unsubAuth();
         };
     }, []);
 
@@ -203,9 +224,10 @@ export default function HomePage() {
         }
         fetchSharkClubStats();
 
-        // Real-time clubs table updates for Shark Club stats
-        const channel = supabase
-            .channel('clubs-live-stats')
+        // Real-time clubs table updates via MasterBus channel registry
+        const sharkChannelKey = 'clubs-live-stats';
+        const channel = masterBus.getOrCreateChannel(sharkChannelKey);
+        channel
             .on(
                 'postgres_changes',
                 {
@@ -215,14 +237,13 @@ export default function HomePage() {
                     filter: 'club_id=eq.25450',
                 },
                 () => {
-                    // Refresh Shark Club stats when club data changes
                     fetchSharkClubStats();
                 }
             )
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(sharkChannelKey);
         };
     }, []);
 

@@ -9,7 +9,7 @@
  * - Remembers last buy-in preference
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import './QuickSeat.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -67,6 +67,11 @@ export function QuickSeat({
     const [selectedAmount, setSelectedAmount] = useState(defaultBuyIn || bigBlind * 100);
     const [isProcessing, setIsProcessing] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setTimeout(() => setMounted(true), 50);
+    }, []);
 
     // Quick buy-in options (in BB)
     const quickOptions = [
@@ -100,7 +105,7 @@ export function QuickSeat({
     }, [bigBlind, maxBuyIn]);
 
     return (
-        <div className="quick-seat">
+        <div className="quick-seat" style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
             {/* Table Info */}
             <div className="quick-seat__info">
                 <span className="quick-seat__blinds">{blinds}</span>

@@ -28,6 +28,13 @@ export function ConversationList({ onSelectConversation }: ConversationListProps
     const toast = useToast();
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [loading, setLoading] = useState(true);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        conversations.forEach((_, i) => {
+            setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+        });
+    }, [conversations.length]);
 
     useEffect(() => {
         if (user?.id) {
@@ -84,11 +91,12 @@ export function ConversationList({ onSelectConversation }: ConversationListProps
                 <div className="empty-state">No conversations yet</div>
             ) : (
                 <div className="conversations">
-                    {conversations.map(conv => (
+                    {conversations.map((conv, i) => (
                         <div
                             key={conv.partnerId}
                             className={`conversation-item ${conv.unreadCount > 0 ? 'unread' : ''}`}
                             onClick={() => onSelectConversation(conv.partnerId, conv.partnerName, conv.partnerAvatar)}
+                            style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
                         >
                             <span className="avatar">{conv.partnerAvatar}</span>
                             <div className="info">

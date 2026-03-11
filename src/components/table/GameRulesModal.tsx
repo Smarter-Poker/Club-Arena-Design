@@ -10,7 +10,7 @@
  * - Special Rules (Bomb pots, 7-2 game, etc.)
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './GameRulesModal.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -60,11 +60,21 @@ export function GameRulesModal({
     currency = '',
     customRules = [],
 }: GameRulesModalProps) {
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setTimeout(() => setMounted(true), 50);
+        } else {
+            setMounted(false);
+        }
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     return (
         <div className="rules-overlay" onClick={onClose}>
-            <div className="rules-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="rules-modal" onClick={(e) => e.stopPropagation()} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 {/* Header */}
                 <div className="rules-modal__header">
                     <div className="rules-modal__title-row">

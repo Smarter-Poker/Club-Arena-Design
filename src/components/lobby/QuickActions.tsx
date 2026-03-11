@@ -4,12 +4,21 @@
  */
 
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { useUserStore } from '../../stores/useUserStore';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../common/Toast';
 import styles from './QuickActions.module.css';
 
 export default function QuickActions() {
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        const items = 3;
+        for (let i = 0; i < items; i++) {
+            setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+        }
+    }, []);
     const navigate = useNavigate();
     const { user } = useUserStore();
     const toast = useToast();
@@ -111,15 +120,15 @@ export default function QuickActions() {
 
     return (
         <div className={styles.actions}>
-            <button className={styles.actionButton} onClick={() => navigate('/clubs')}>
+            <button className={styles.actionButton} onClick={() => navigate('/clubs')} style={{ opacity: visibleItems.has(0) ? 1 : 0, transform: visibleItems.has(0) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 <span className={styles.actionIcon}></span>
                 <span className={styles.actionLabel}>My Clubs</span>
             </button>
-            <button className={styles.actionButton} onClick={handleCreateTable}>
+            <button className={styles.actionButton} onClick={handleCreateTable} style={{ opacity: visibleItems.has(1) ? 1 : 0, transform: visibleItems.has(1) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 <span className={styles.actionIcon}>➕</span>
                 <span className={styles.actionLabel}>Create Table</span>
             </button>
-            <button className={`${styles.actionButton} ${styles.primary}`} onClick={handleQuickSeat}>
+            <button className={`${styles.actionButton} ${styles.primary}`} onClick={handleQuickSeat} style={{ opacity: visibleItems.has(2) ? 1 : 0, transform: visibleItems.has(2) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 <span className={styles.actionIcon}></span>
                 <span className={styles.actionLabel}>Quick Seat</span>
             </button>

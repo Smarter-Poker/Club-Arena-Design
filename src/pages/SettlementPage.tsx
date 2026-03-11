@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { masterBus } from '../core/MasterBus';
 import { SettlementService } from '../services/SettlementService';
 import styles from './SettlementPage.module.css';
 import { useToast } from '../components/common/Toast';
@@ -191,8 +192,9 @@ export default function SettlementPage() {
 
     // Real-time settlement period updates
     useEffect(() => {
-        const channel = supabase
-            .channel('settlement-live')
+        const channelKey = `settlement-live-${unionId || 'global'}`;
+        const channel = masterBus.getOrCreateChannel(channelKey);
+        channel
             .on(
                 'postgres_changes',
                 {
@@ -270,7 +272,7 @@ export default function SettlementPage() {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            masterBus.removeRegisteredChannel(channelKey);
         };
     }, [unionId]);
 

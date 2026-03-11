@@ -5,7 +5,7 @@
  * Features: Sent/received styling, reactions, timestamp, long-press actions
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './ChatBubble.module.css';
 
 interface Message {
@@ -33,6 +33,11 @@ const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '😡'];
 export default function ChatBubble({ message, isCurrentUser, showAvatar = true, onReact, onDelete }: ChatBubbleProps) {
     const [showReactions, setShowReactions] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setTimeout(() => setMounted(true), 50);
+    }, []);
 
     const formatTime = (dateStr: string): string => {
         const date = new Date(dateStr);
@@ -61,7 +66,7 @@ export default function ChatBubble({ message, isCurrentUser, showAvatar = true, 
     };
 
     return (
-        <div className={`${styles.container} ${isCurrentUser ? styles.sent : styles.received}`}>
+        <div className={`${styles.container} ${isCurrentUser ? styles.sent : styles.received}`} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
             {/* Avatar (for received messages) */}
             {!isCurrentUser && showAvatar && (
                 <img

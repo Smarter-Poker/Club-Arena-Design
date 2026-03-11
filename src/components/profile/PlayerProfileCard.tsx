@@ -42,6 +42,13 @@ export function PlayerProfileCard({
 }: PlayerProfileCardProps) {
     const [profile, setProfile] = useState<PlayerProfile | null>(null);
     const [loading, setLoading] = useState(true);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        if (!loading && profile) {
+            setTimeout(() => setMounted(true), 50);
+        }
+    }, [loading, profile]);
 
     useEffect(() => {
         loadProfile();
@@ -92,7 +99,7 @@ export function PlayerProfileCard({
     }
 
     return (
-        <div className={`player-card ${compact ? 'compact' : ''}`}>
+        <div className={`player-card ${compact ? 'compact' : ''}`} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
             <div className="player-card__header">
                 <div className={`status-indicator ${profile.status}`} />
                 <span className="avatar">{profile.avatarUrl}</span>

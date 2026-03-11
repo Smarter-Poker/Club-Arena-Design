@@ -10,7 +10,7 @@
  * - Copy/Share functionality
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './HandHistoryModal.css';
 
 export interface HistoricalHand {
@@ -44,6 +44,17 @@ export function HandHistoryModal({
     onShare,
 }: HandHistoryModalProps) {
     const [selectedHandId, setSelectedHandId] = useState<string | null>(null);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        if (isOpen) {
+            hands.forEach((_, i) => {
+                setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+            });
+        } else {
+            setVisibleItems(new Set());
+        }
+    }, [isOpen, hands.length]);
 
     if (!isOpen) return null;
 
@@ -64,11 +75,12 @@ export function HandHistoryModal({
                 <div className="history-layout">
                     {/* Sidebar: List of Hands */}
                     <div className="history-sidebar">
-                        {hands.map((hand) => (
+                        {hands.map((hand, i) => (
                             <div
                                 key={hand.id}
                                 className={`history-item ${selectedHand?.id === hand.id ? 'active' : ''}`}
                                 onClick={() => setSelectedHandId(hand.id)}
+                                style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
                             >
                                 <div className="history-item__top">
                                     <span className="history-item__id">#{hand.handNumber}</span>

@@ -26,6 +26,18 @@ export const AgentHierarchyTree: React.FC<AgentHierarchyTreeProps> = ({
     const [hierarchy, setHierarchy] = useState<AgentNode | null>(null);
     const [loading, setLoading] = useState(true);
     const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+    const [visibleNodes, setVisibleNodes] = useState<Set<string>>(new Set());
+
+    useEffect(() => {
+        if (!loading && hierarchy) {
+            const collectNodeIds = (node: AgentNode, ids: Set<string>, depth: number = 0) => {
+                setTimeout(() => ids.add(node.id) && setVisibleNodes(prev => new Set(prev).add(node.id)), depth * 60);
+                node.children?.forEach(child => collectNodeIds(child, ids, depth + 1));
+            };
+            const ids = new Set<string>();
+            collectNodeIds(hierarchy, ids);
+        }
+    }, [loading, hierarchy]);
 
     useEffect(() => {
         loadHierarchy();
@@ -65,7 +77,7 @@ export const AgentHierarchyTree: React.FC<AgentHierarchyTreeProps> = ({
         const hasChildren = node.children && node.children.length > 0;
 
         return (
-            <div key={node.id} className="hierarchy-node" style={{ '--depth': depth } as React.CSSProperties}>
+            <div key={node.id} className="hierarchy-node" style={{ '--depth': depth, opacity: visibleNodes.has(node.id) ? 1 : 0, transform: visibleNodes.has(node.id) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' } as React.CSSProperties}>
                 <div
                     className={`node-content tier-${node.tier}`}
                     onClick={() => onSelectAgent?.(node)}

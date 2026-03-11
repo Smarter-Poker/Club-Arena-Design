@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
 import { useToast } from '../common/Toast';
@@ -42,6 +42,17 @@ export function ChipPurchaseModal({
     const { user } = useUserStore();
     const toast = useToast();
     const [purchasing, setPurchasing] = useState<string | null>(null);
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        if (isOpen) {
+            CHIP_PACKAGES.forEach((_, i) => {
+                setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+            });
+        } else {
+            setVisibleItems(new Set());
+        }
+    }, [isOpen]);
 
     const handlePurchase = async (pkg: ChipPackage) => {
         if (!user?.id) return;
@@ -81,10 +92,11 @@ export function ChipPurchaseModal({
                 </div>
 
                 <div className="chip-purchase__packages">
-                    {CHIP_PACKAGES.map(pkg => (
+                    {CHIP_PACKAGES.map((pkg, i) => (
                         <div
                             key={pkg.id}
                             className={`package ${pkg.popular ? 'popular' : ''}`}
+                            style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
                         >
                             {pkg.popular && <span className="popular-badge">BEST VALUE</span>}
                             {pkg.bonus && <span className="bonus-badge">+{pkg.bonus}% Bonus</span>}

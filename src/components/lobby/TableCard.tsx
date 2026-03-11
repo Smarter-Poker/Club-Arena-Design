@@ -53,6 +53,11 @@ export default function TableCard({ table }: TableCardProps) {
     const { user } = useUserStore();
     const toast = useToast();
     const [isJoiningWaitlist, setIsJoiningWaitlist] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setTimeout(() => setMounted(true), 50);
+    }, []);
 
     // Map PokerTable fields to display values
     const players = table.current_players || 0;
@@ -118,7 +123,7 @@ export default function TableCard({ table }: TableCardProps) {
     };
 
     return (
-        <div className={styles.card}>
+        <div className={styles.card} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
             {/* Header with game type */}
             <div className={styles.header}>
                 <div className={styles.gameType}>

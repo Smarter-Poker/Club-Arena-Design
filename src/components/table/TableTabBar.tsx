@@ -13,7 +13,7 @@
  * - Jackpot badge inline
  */
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import './TableTabBar.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -54,6 +54,13 @@ export function TableTabBar({
 }: TableTabBarProps) {
     const canAddMore = tabs.length < maxTables;
     const emptySlots = maxTables - tabs.length;
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        tabs.forEach((_, i) => {
+            setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+        });
+    }, [tabs.length]);
 
     const handleClose = useCallback((e: React.MouseEvent, tabId: string) => {
         e.stopPropagation();
@@ -66,7 +73,7 @@ export function TableTabBar({
         <div className="table-tab-bar">
             {/* Table Tabs */}
             <div className="table-tab-bar__tabs">
-                {tabs.map((tab) => {
+                {tabs.map((tab, i) => {
                     const isActive = tab.id === activeTabId;
                     const isUrgent = !isActive && tab.isMyTurn && tab.timeRemaining !== undefined && tab.timeRemaining < 10;
 
@@ -80,6 +87,7 @@ export function TableTabBar({
                                 isUrgent && 'table-tab-bar__tab--urgent',
                             ].filter(Boolean).join(' ')}
                             onClick={() => onTabSelect(tab.id)}
+                            style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
                         >
                             <span className="table-tab-bar__tab-name">{tab.name}</span>
 

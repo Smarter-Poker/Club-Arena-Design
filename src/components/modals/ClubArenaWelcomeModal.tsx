@@ -18,10 +18,14 @@ interface ClubArenaWelcomeModalProps {
 
 export default function ClubArenaWelcomeModal({ isOpen, onAccept }: ClubArenaWelcomeModalProps) {
     const [hasAgreed, setHasAgreed] = useState(false);
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
             setHasAgreed(false);
+            setTimeout(() => setMounted(true), 50);
+        } else {
+            setMounted(false);
         }
     }, [isOpen]);
 
@@ -29,7 +33,7 @@ export default function ClubArenaWelcomeModal({ isOpen, onAccept }: ClubArenaWel
 
     return (
         <div className={styles.overlay}>
-            <div className={styles.modal}>
+            <div className={styles.modal} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 <header className={styles.header}>
                     <h2>Welcome to Club Arena</h2>
                 </header>

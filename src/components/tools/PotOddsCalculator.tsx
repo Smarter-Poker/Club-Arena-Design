@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import './PotOddsCalculator.css';
 
 interface PotOddsCalculatorProps {
@@ -23,6 +23,15 @@ export function PotOddsCalculator({
     const [pot, setPot] = useState(initialPot);
     const [bet, setBet] = useState(initialBet);
     const [outs, setOuts] = useState(0);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setTimeout(() => setMounted(true), 50);
+        } else {
+            setMounted(false);
+        }
+    }, [isOpen]);
 
     const calculations = useMemo(() => {
         const totalPot = pot + bet;
@@ -53,7 +62,7 @@ export function PotOddsCalculator({
 
     return (
         <div className="pot-odds-overlay" onClick={onClose}>
-            <div className="pot-odds" onClick={e => e.stopPropagation()}>
+            <div className="pot-odds" onClick={e => e.stopPropagation()} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 <div className="pot-odds__header">
                     <h3> Pot Odds Calculator</h3>
                     <button className="close-btn" onClick={onClose}>×</button>

@@ -10,7 +10,7 @@
  * - Replay link
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './JackpotHistory.css';
 
 export interface JackpotHit {
@@ -39,6 +39,18 @@ export function JackpotHistory({
     currency = '',
     onReplay,
 }: JackpotHistoryProps) {
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        if (isOpen) {
+            hits.forEach((_, i) => {
+                setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+            });
+        } else {
+            setVisibleItems(new Set());
+        }
+    }, [isOpen, hits.length]);
+
     if (!isOpen) return null;
 
     return (
@@ -68,8 +80,8 @@ export function JackpotHistory({
                         </thead>
                         <tbody>
                             {hits.length > 0 ? (
-                                hits.map((hit) => (
-                                    <tr key={hit.id}>
+                                hits.map((hit, i) => (
+                                    <tr key={hit.id} style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                                         <td className="col-date">{hit.date}</td>
                                         <td className="col-player">
                                             <span className="player-highlight">{hit.loserName}</span>

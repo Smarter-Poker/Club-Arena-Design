@@ -22,6 +22,15 @@ export const InstallPrompt: React.FC = () => {
     const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
     const [showPrompt, setShowPrompt] = useState(false);
     const [isIOS, setIsIOS] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        if (showPrompt) {
+            setTimeout(() => setMounted(true), 50);
+        } else {
+            setMounted(false);
+        }
+    }, [showPrompt]);
 
     useEffect(() => {
         try {
@@ -113,7 +122,7 @@ export const InstallPrompt: React.FC = () => {
 
     return (
         <div className="install-prompt-overlay">
-            <div className="install-prompt">
+            <div className="install-prompt" style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 <button className="prompt-close" onClick={handleDismiss}>✕</button>
 
                 <div className="prompt-icon">♠️</div>

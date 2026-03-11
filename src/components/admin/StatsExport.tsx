@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
 import { useToast } from '../common/Toast';
@@ -24,6 +24,15 @@ export function StatsExport({ clubId, isOpen, onClose }: StatsExportProps) {
     const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
     const [includeHands, setIncludeHands] = useState(false);
     const [exporting, setExporting] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setTimeout(() => setMounted(true), 50);
+        } else {
+            setMounted(false);
+        }
+    }, [isOpen]);
 
     const exportStats = async () => {
         if (!user?.id) return;
@@ -98,7 +107,7 @@ export function StatsExport({ clubId, isOpen, onClose }: StatsExportProps) {
 
     return (
         <div className="stats-export-overlay" onClick={onClose}>
-            <div className="stats-export" onClick={e => e.stopPropagation()}>
+            <div className="stats-export" onClick={e => e.stopPropagation()} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 <div className="stats-export__header">
                     <h3> Export Stats</h3>
                     <button className="close-btn" onClick={onClose}>×</button>
