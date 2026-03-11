@@ -10,7 +10,7 @@ import type { Tournament } from '../types/database.types';
 import CreateTournamentModal from '../components/club/CreateTournamentModal';
 import './TournamentPage.css';
 import { supabase } from '../lib/supabase'
-import { masterBus } from '../core/MasterBus';;
+import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import EliminationOverlay from '../components/tournament/EliminationOverlay';
 import HandReplayViewer from '../components/gameplay/HandReplayViewer';

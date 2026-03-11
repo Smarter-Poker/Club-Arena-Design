@@ -15,7 +15,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase'
-import { masterBus } from '../core/MasterBus';;
+import { masterBus } from '../core/MasterBus';
 import { useToast } from '../components/common/Toast';
 import './TableConfigPage.css';
 

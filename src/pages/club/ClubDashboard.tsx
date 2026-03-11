@@ -14,7 +14,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase'
-import { masterBus } from '../../core/MasterBus';;
+import { masterBus } from '../../core/MasterBus';
 import { useUserStore } from '../../stores/useUserStore';
 import { getLocalStorage, setLocalStorage } from '../../lib/storage';
 import ClubStatsCards from '../../components/club/ClubStatsCards';

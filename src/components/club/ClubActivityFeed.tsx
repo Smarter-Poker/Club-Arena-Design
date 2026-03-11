@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase'
-import { masterBus } from '../../core/MasterBus';;
+import { masterBus } from '../../core/MasterBus';
 import styles from './ClubActivityFeed.module.css';
 
 export type ActivityType = 'member_join' | 'member_leave' | 'table_start' | 'table_end' |

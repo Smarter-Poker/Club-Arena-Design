@@ -8,7 +8,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase'
-import { masterBus } from '../../core/MasterBus';;
+import { masterBus } from '../../core/MasterBus';
 import { useUserStore } from '../../stores/useUserStore';
 import styles from './ConversationList.module.css';
 

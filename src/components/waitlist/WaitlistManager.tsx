@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase'
-import { masterBus } from '../../core/MasterBus';;
+import { masterBus } from '../../core/MasterBus';
 import { useToast } from '../common/Toast';
 import './WaitlistManager.css';
 

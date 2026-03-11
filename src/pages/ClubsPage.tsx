@@ -85,21 +85,22 @@ export default function ClubsPage() {
         return () => timers.forEach(t => clearTimeout(t));
     }, [myClubs.length]);
 
+    const loadMyClubs = async () => {
+        setIsLoading(true);
+        try {
+            const memberships = await ClubsService.getUserMemberships();
+            setMyClubs(memberships);
+        } catch (err) {
+            console.error('[CLUBS] Failed to load memberships:', err);
+            toast.error('Failed to load your clubs');
+            setMyClubs([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     // Load user's clubs
     useEffect(() => {
-        async function loadMyClubs() {
-            setIsLoading(true);
-            try {
-                const memberships = await ClubsService.getUserMemberships();
-                setMyClubs(memberships);
-            } catch (err) {
-                console.error('[CLUBS] Failed to load memberships:', err);
-                toast.error('Failed to load your clubs');
-                setMyClubs([]);
-            } finally {
-                setIsLoading(false);
-            }
-        }
         loadMyClubs();
 
         // Realtime: refresh clubs when membership data changes
@@ -110,6 +111,13 @@ export default function ClubsPage() {
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'clubs' }, () => loadMyClubs())
             .subscribe();
         return () => { masterBus.removeRegisteredChannel(channelKey); };
+    }, []);
+
+    // ── Bus Listeners: cross-page event reactivity ──
+    useEffect(() => {
+        const unsubJoined = masterBus.subscribe('CLUB_JOINED', () => { loadMyClubs(); });
+        const unsubLeft = masterBus.subscribe('CLUB_LEFT', () => { loadMyClubs(); });
+        return () => { unsubJoined(); unsubLeft(); };
     }, []);
 
     // Join club by ID

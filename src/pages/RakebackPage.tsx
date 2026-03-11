@@ -5,7 +5,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase'
-import { masterBus } from '../core/MasterBus';;
+import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import './RakebackPage.css';

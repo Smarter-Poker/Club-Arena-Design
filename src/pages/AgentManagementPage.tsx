@@ -13,7 +13,7 @@ import { AgentService, type Agent } from '@/services/AgentService';
 import { MembershipService, type ClubMembership } from '@/services/MembershipService';
 import { useUserStore } from '@/stores/useUserStore';
 import { supabase } from '@/lib/supabase'
-import { masterBus } from '../core/MasterBus';;
+import { masterBus } from '../core/MasterBus';
 import ChipTransferModal from '@/components/agent/ChipTransferModal';
 import AgentTree from '@/components/agent/AgentTree';
 import CommissionHistoryModal from '@/components/agent/CommissionHistoryModal';

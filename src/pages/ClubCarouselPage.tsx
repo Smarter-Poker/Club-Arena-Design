@@ -98,6 +98,13 @@ export default function ClubCarouselPage() {
         return () => { masterBus.removeRegisteredChannel(channelKey); };
     }, []);
 
+    // ── Bus Listeners: cross-page event reactivity ──
+    useEffect(() => {
+        const unsubJoined = masterBus.subscribe('CLUB_JOINED', () => { loadUserData(); });
+        const unsubLeft = masterBus.subscribe('CLUB_LEFT', () => { loadUserData(); });
+        return () => { unsubJoined(); unsubLeft(); };
+    }, []);
+
     // Stagger animation for club cards
     useEffect(() => {
         if (clubs.length === 0) return;

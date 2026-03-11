@@ -77,6 +77,8 @@ interface UserProfileData {
 }
 
 type GameFilter = 'ALL' | 'Hold\'em' | 'Omaha' | 'Mixed' | 'MTT' | 'Spin-It' | 'SN';
+type CashSubFilter = 'all' | 'live' | 'empty' | 'full';
+type TournamentSubFilter = 'all' | 'running' | 'registering' | 'late_reg' | 'starting_soon';
 
 // Premium number animation hook
 function useCountAnimation(target: number, duration: number = 1000) {
@@ -111,6 +113,8 @@ export default function ClubHomePage() {
     const [wallet, setWallet] = useState<WalletBalances>({ gold: 0, diamonds: 0 });
     const [jackpotAmount, setJackpotAmount] = useState(0);
     const [activeFilter, setActiveFilter] = useState<GameFilter>('ALL');
+    const [cashSubFilter, setCashSubFilter] = useState<CashSubFilter>('all');
+    const [tournamentSubFilter, setTournamentSubFilter] = useState<TournamentSubFilter>('all');
     const [isOwner, setIsOwner] = useState(false);
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
@@ -220,6 +224,16 @@ export default function ClubHomePage() {
             masterBus.removeRegisteredChannel(memberChannelKey);
         };
     }, [clubId]);
+
+    // ── Bus Listeners: cross-page event reactivity ──
+    useEffect(() => {
+        const unsubJoined = masterBus.subscribe('CLUB_JOINED', () => { loadClubData(); });
+        const unsubLeft = masterBus.subscribe('CLUB_LEFT', () => { loadClubData(); });
+        const unsubSeated = masterBus.subscribe('TABLE_SEATED', () => { loadClubData(); });
+        const unsubTableLeft = masterBus.subscribe('TABLE_LEFT', () => { loadClubData(); });
+        const unsubBalance = masterBus.subscribe('BALANCE_UPDATED', () => { loadClubData(); });
+        return () => { unsubJoined(); unsubLeft(); unsubSeated(); unsubTableLeft(); unsubBalance(); };
+    }, []);
 
     const loadUserProfile = async () => {
         const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -387,14 +401,22 @@ export default function ClubHomePage() {
     const showTournaments = activeFilter === 'MTT' || activeFilter === 'SN' || activeFilter === 'Spin-It';
     const filteredTables = tables.filter(table => {
         if (showTournaments) return false; // Hide tables when viewing tournaments
-        if (activeFilter === 'ALL') return true;
-        if (activeFilter === 'Hold\'em') return table.game_variant?.toLowerCase().includes('nlh') || table.game_variant?.toLowerCase().includes('holdem');
-        if (activeFilter === 'Omaha') return table.game_variant?.toLowerCase().includes('plo') || table.game_variant?.toLowerCase().includes('omaha');
-        if (activeFilter === 'Mixed') {
+
+        // Game type filter
+        let passesGameFilter = true;
+        if (activeFilter === 'Hold\'em') passesGameFilter = table.game_variant?.toLowerCase().includes('nlh') || table.game_variant?.toLowerCase().includes('holdem');
+        else if (activeFilter === 'Omaha') passesGameFilter = table.game_variant?.toLowerCase().includes('plo') || table.game_variant?.toLowerCase().includes('omaha');
+        else if (activeFilter === 'Mixed') {
             const v = table.game_variant?.toLowerCase() || '';
-            return v.includes('pineapple') || v.includes('short_deck') || v.includes('ofc') || v.includes('mixed') || v.includes('double');
+            passesGameFilter = v.includes('pineapple') || v.includes('short_deck') || v.includes('ofc') || v.includes('mixed') || v.includes('double');
         }
-        return true;
+        if (!passesGameFilter) return false;
+
+        // Cash game sub-filter
+        if (cashSubFilter === 'live') return table.current_players > 0;
+        if (cashSubFilter === 'empty') return table.current_players === 0;
+        if (cashSubFilter === 'full') return table.current_players >= table.max_players;
+        return true; // 'all'
     });
 
     // Filter tournaments for MTT/SN/Spin-It tabs
@@ -403,11 +425,26 @@ export default function ClubHomePage() {
         const isSNG = !isSpin && (t.name.toLowerCase().includes('sng') || t.max_players <= 10);
         const isMTT = !isSpin && !isSNG;
 
-        if (activeFilter === 'MTT') return isMTT;
-        if (activeFilter === 'SN') return isSNG;
-        if (activeFilter === 'Spin-It') return isSpin;
-        if (activeFilter === 'ALL') return true;
-        return false;
+        // Game type filter
+        let passesGameFilter = false;
+        if (activeFilter === 'MTT') passesGameFilter = isMTT;
+        else if (activeFilter === 'SN') passesGameFilter = isSNG;
+        else if (activeFilter === 'Spin-It') passesGameFilter = isSpin;
+        else if (activeFilter === 'ALL') passesGameFilter = true;
+        if (!passesGameFilter) return false;
+
+        // Tournament sub-filter
+        if (tournamentSubFilter === 'all') return true;
+        const status = (t.status || '').toUpperCase();
+        const startTime = new Date(t.start_time).getTime();
+        const now = Date.now();
+        const minutesUntilStart = (startTime - now) / 60000;
+
+        if (tournamentSubFilter === 'running') return status === 'RUNNING' || status === 'IN_PROGRESS';
+        if (tournamentSubFilter === 'registering') return status === 'REGISTERING' || status === 'OPEN' || status === 'PENDING';
+        if (tournamentSubFilter === 'late_reg') return status === 'LATE_REG' || status === 'LATE_REGISTRATION';
+        if (tournamentSubFilter === 'starting_soon') return (status === 'REGISTERING' || status === 'OPEN' || status === 'PENDING') && minutesUntilStart > 0 && minutesUntilStart <= 60;
+        return true;
     });
 
     const formatNumber = (num: number) => {
@@ -529,12 +566,60 @@ export default function ClubHomePage() {
                     <button
                         key={filter}
                         className={`filter-tab ${activeFilter === filter ? 'active' : ''}`}
-                        onClick={() => { haptic.selection(); setActiveFilter(filter); }}
+                        onClick={() => {
+                            haptic.selection();
+                            setActiveFilter(filter);
+                            // Reset sub-filters when switching game type
+                            setCashSubFilter('all');
+                            setTournamentSubFilter('all');
+                        }}
                     >
                         {filter}
                     </button>
                 ))}
                 <button className="filter-more" onClick={() => haptic.light()}>▼</button>
+            </div>
+
+            {/* SUB-FILTERS: Cash Game status or Tournament status */}
+            <div className="club-home__sub-filters">
+                {!showTournaments ? (
+                    // Cash game sub-filters
+                    <>
+                        {([
+                            { key: 'all', label: 'All Tables' },
+                            { key: 'live', label: 'Live Games' },
+                            { key: 'empty', label: 'Empty' },
+                            { key: 'full', label: 'Full' },
+                        ] as { key: CashSubFilter; label: string }[]).map(sf => (
+                            <button
+                                key={sf.key}
+                                className={`sub-filter-tab ${cashSubFilter === sf.key ? 'active' : ''}`}
+                                onClick={() => { haptic.selection(); setCashSubFilter(sf.key); }}
+                            >
+                                {sf.label}
+                            </button>
+                        ))}
+                    </>
+                ) : (
+                    // Tournament sub-filters
+                    <>
+                        {([
+                            { key: 'all', label: 'All' },
+                            { key: 'running', label: 'Running' },
+                            { key: 'registering', label: 'Registering' },
+                            { key: 'late_reg', label: 'Late Reg' },
+                            { key: 'starting_soon', label: 'Starting Soon' },
+                        ] as { key: TournamentSubFilter; label: string }[]).map(sf => (
+                            <button
+                                key={sf.key}
+                                className={`sub-filter-tab ${tournamentSubFilter === sf.key ? 'active' : ''}`}
+                                onClick={() => { haptic.selection(); setTournamentSubFilter(sf.key); }}
+                            >
+                                {sf.label}
+                            </button>
+                        ))}
+                    </>
+                )}
             </div>
 
             {/* ═══════════════════════════════════════════════════════════════════

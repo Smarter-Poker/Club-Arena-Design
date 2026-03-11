@@ -9,7 +9,7 @@ import { clubService } from '../../services/ClubService';
 import { tableService } from '../../services/TableService';
 import { tournamentService } from '../../services/TournamentService';
 import { supabase } from '../../lib/supabase'
-import { masterBus } from '../../core/MasterBus';;
+import { masterBus } from '../../core/MasterBus';
 import type { Club, PokerTable, Tournament } from '../../types/database.types';
 import ClubBottomNav from '../../components/club/ClubBottomNav';
 import './ClubLobby.css';

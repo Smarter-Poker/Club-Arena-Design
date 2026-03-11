@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { WalletService } from '../../services/WalletService';
 import { CommissionService } from '../../services/CommissionService';
 import { supabase } from '../../lib/supabase'
-import { masterBus } from '../../core/MasterBus';;
+import { masterBus } from '../../core/MasterBus';
 import { useUserStore } from '../../stores/useUserStore';
 import { useToast } from '../common/Toast';
 import {

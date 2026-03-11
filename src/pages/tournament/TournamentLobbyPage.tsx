@@ -8,7 +8,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase'
-import { masterBus } from '../../core/MasterBus';;
+import { masterBus } from '../../core/MasterBus';
 import { useUserStore } from '../../stores/useUserStore';
 import { tournamentService } from '../../services/TournamentService';
 import TournamentLobbyCard from '../../components/tournament/TournamentLobbyCard';

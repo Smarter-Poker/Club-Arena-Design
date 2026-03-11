@@ -5,7 +5,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase'
-import { masterBus } from '../core/MasterBus';;
+import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import { bonusService } from '../services/BonusService';
 import { useToast } from '../components/common/Toast';

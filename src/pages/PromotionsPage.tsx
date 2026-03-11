@@ -5,7 +5,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase'
-import { masterBus } from '../core/MasterBus';;
+import { masterBus } from '../core/MasterBus';
 import DailyBonusWheel from '../components/bonus/DailyBonusWheel';
 import LeaderboardCard from '../components/leaderboard/LeaderboardCard';
 import ReferralModal from '../components/social/ReferralModal';

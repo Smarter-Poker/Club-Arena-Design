@@ -100,6 +100,13 @@ export default function ClubFinancialsPage() {
         };
     }, [clubId]);
 
+    // ── Bus Listeners: cross-page financial event reactivity ──
+    useEffect(() => {
+        const unsubBalance = masterBus.subscribe('BALANCE_UPDATED', () => { loadFinancials(); });
+        const unsubWallet = masterBus.subscribe('WALLET_REFRESHED', () => { loadFinancials(); });
+        return () => { unsubBalance(); unsubWallet(); };
+    }, []);
+
     const loadFinancials = async () => {
         setLoading(true);
         try {

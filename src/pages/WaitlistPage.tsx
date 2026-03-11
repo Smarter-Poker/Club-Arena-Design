@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { waitlistService, type WaitlistEntry as ServiceEntry } from '../services/WaitlistService';
 import { supabase } from '../lib/supabase'
-import { masterBus } from '../core/MasterBus';;
+import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import './WaitlistPage.css';
@@ -67,6 +67,13 @@ export default function WaitlistPage() {
             };
         }
     }, [user?.id]);
+
+    // ── Bus Listeners: cross-page waitlist event reactivity ──
+    useEffect(() => {
+        const unsubPos = masterBus.subscribe('WAITLIST_POSITION_CHANGED', () => { loadWaitlist(); });
+        const unsubSeated = masterBus.subscribe('TABLE_SEATED', () => { loadWaitlist(); });
+        return () => { unsubPos(); unsubSeated(); };
+    }, []);
 
     const loadWaitlist = async () => {
         if (!user?.id) return;

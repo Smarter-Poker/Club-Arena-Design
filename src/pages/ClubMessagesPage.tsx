@@ -126,6 +126,12 @@ export default function ClubMessagesPage() {
         };
     }, [loadClubConversations]);
 
+    // ── Bus Listeners: cross-page message event reactivity ──
+    useEffect(() => {
+        const unsubNotif = masterBus.subscribe('NOTIFICATION_READ', () => { loadClubConversations(); });
+        return () => { unsubNotif(); };
+    }, [loadClubConversations]);
+
     // Stagger animation for conversations
     useEffect(() => {
         if (conversations.length === 0) return;

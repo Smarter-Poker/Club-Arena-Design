@@ -8,7 +8,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase'
-import { masterBus } from '../core/MasterBus';;
+import { masterBus } from '../core/MasterBus';
 import { useWalletStore } from '../stores/useWalletStore';
 import { useUserStore } from '../stores/useUserStore';
 import { TransactionHistory } from '../components/wallet/TransactionHistory';
@@ -104,6 +104,14 @@ export default function PlayerWalletPage() {
         return () => {
             masterBus.removeRegisteredChannel(channelKey);
         };
+    }, [user?.id, loadBalances, loadDiamonds]);
+
+    // ── Bus Listeners: cross-page wallet event reactivity ──
+    useEffect(() => {
+        if (!user?.id) return;
+        const unsubBalance = masterBus.subscribe('BALANCE_UPDATED', () => { loadBalances(user.id); loadDiamonds(user.id); });
+        const unsubWallet = masterBus.subscribe('WALLET_REFRESHED', () => { loadBalances(user.id); loadDiamonds(user.id); });
+        return () => { unsubBalance(); unsubWallet(); };
     }, [user?.id, loadBalances, loadDiamonds]);
 
     const totalBalance = balances.BUSINESS.total + balances.PLAYER.total + balances.PROMO.total;

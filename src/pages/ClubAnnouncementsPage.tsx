@@ -77,6 +77,12 @@ export default function ClubAnnouncementsPage() {
         }
     }, [clubId]);
 
+    // ── Bus Listeners: cross-page event reactivity ──
+    useEffect(() => {
+        const unsubJoined = masterBus.subscribe('CLUB_JOINED', () => { loadAnnouncements(); });
+        return () => { unsubJoined(); };
+    }, []);
+
     const loadAnnouncements = async () => {
         setLoading(true);
         try {

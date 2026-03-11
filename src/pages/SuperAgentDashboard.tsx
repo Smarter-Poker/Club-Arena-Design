@@ -5,7 +5,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase'
-import { masterBus } from '../core/MasterBus';;
+import { masterBus } from '../core/MasterBus';
 import { AgentService } from '../services/AgentService';
 import type { Agent, AgentPlayer } from '../services/AgentService';
 import { CommissionService } from '../services/CommissionService';

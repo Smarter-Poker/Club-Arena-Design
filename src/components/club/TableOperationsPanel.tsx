@@ -14,7 +14,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase'
-import { masterBus } from '../../core/MasterBus';;
+import { masterBus } from '../../core/MasterBus';
 import { tableService } from '../../services/TableService';
 
 interface TableInfo {

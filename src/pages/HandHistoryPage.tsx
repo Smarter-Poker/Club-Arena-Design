@@ -13,7 +13,7 @@ import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import { exportToCSV } from '../lib/export';
 import { supabase } from '../lib/supabase'
-import { masterBus } from '../core/MasterBus';;
+import { masterBus } from '../core/MasterBus';
 import HandReplay from '../components/replay/HandReplay';
 import ReplayActions from '../components/table/ReplayActions';
 import HandReplayPlayer from '../components/table/HandReplayPlayer';

@@ -9,7 +9,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase'
-import { masterBus } from '../core/MasterBus';;
+import { masterBus } from '../core/MasterBus';
 import { LeaderboardService } from '../services/LeaderboardService';
 import type { LeaderboardEntry, LeaderboardMetric, LeaderboardPeriod, TournamentStats } from '../services/LeaderboardService';
 import { getUserMemberships } from '../services/ClubsService';

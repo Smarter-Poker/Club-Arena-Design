@@ -14,7 +14,7 @@ import { clubService } from '../services/ClubService';
 import { useUserStore } from '../stores/useUserStore';
 import { presenceService } from '../services/PresenceService';
 import { supabase } from '../lib/supabase'
-import { masterBus } from '../core/MasterBus';;
+import { masterBus } from '../core/MasterBus';
 import type { PokerTable, Club, Tournament } from '../types/database.types';
 import { useUnionStore } from '../stores/useUnionStore';
 import styles from './UnionDetailPage.module.css';

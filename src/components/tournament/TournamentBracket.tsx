@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase'
-import { masterBus } from '../../core/MasterBus';;
+import { masterBus } from '../../core/MasterBus';
 import styles from './TournamentBracket.module.css';
 
 interface BracketPlayer {

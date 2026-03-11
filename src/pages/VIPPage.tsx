@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase'
-import { masterBus } from '../core/MasterBus';;
+import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import { vipService, VIP_GOLD_LIMITS, FEATURE_PRICING, type VIPFeature } from '../services/VIPService';
 import { VIPCardsModal } from '../components/vip/VIPCardsModal';
