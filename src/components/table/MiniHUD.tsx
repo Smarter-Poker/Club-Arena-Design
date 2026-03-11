@@ -1,10 +1,13 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- *  CLUB ARENA — Smart Mini-HUD
+ *  CLUB ARENA — Smart Mini-HUD (Pro Upgrade)
  * ═══════════════════════════════════════════════════════════════════════════════
  *
- * ClubGG-style opponent statistics overlay showing VPIP, PFR, and heat index.
- * Renders as a small badge below each opponent's seat info box.
+ * ClubGG/PokerBros-style opponent statistics overlay with:
+ * - VPIP/PFR progress bars with color coding
+ * - Player type label (Nit, TAG, LAG, Whale, etc.)
+ * - Heat indicator with animated glow
+ * - Compact and full display modes
  */
 
 import { memo, useMemo } from 'react';
@@ -28,6 +31,36 @@ export interface MiniHUDProps {
     compact?: boolean;       // Ultra-compact mode for small screens
 }
 
+/** Player archetype based on VPIP + PFR */
+type PlayerType = 'Nit' | 'TAG' | 'LAG' | 'Whale' | 'Rock' | 'Maniac' | 'Fish' | 'Reg';
+
+function classifyPlayer(vpip: number, pfr: number): PlayerType {
+    const aggFactor = vpip > 0 ? pfr / vpip : 0;
+
+    if (vpip < 15 && pfr < 10) return 'Nit';
+    if (vpip < 15) return 'Rock';
+    if (vpip < 24 && pfr >= 16 && aggFactor > 0.6) return 'TAG';
+    if (vpip < 28 && pfr >= 12) return 'Reg';
+    if (vpip >= 40 && pfr >= 25) return 'Maniac';
+    if (vpip >= 35 && pfr >= 20) return 'LAG';
+    if (vpip >= 40 && pfr < 15) return 'Whale';
+    if (vpip >= 30 && pfr < 15) return 'Fish';
+    return 'Reg';
+}
+
+function getTypeColor(type: PlayerType): string {
+    switch (type) {
+        case 'Nit':    return '#60a5fa'; // Blue - very tight
+        case 'Rock':   return '#93c5fd'; // Light blue
+        case 'TAG':    return '#22c55e'; // Green - solid
+        case 'Reg':    return '#86efac'; // Light green
+        case 'LAG':    return '#f59e0b'; // Amber - aggressive
+        case 'Maniac': return '#ef4444'; // Red - very aggressive
+        case 'Fish':   return '#fb923c'; // Orange - loose passive
+        case 'Whale':  return '#f87171'; // Light red - loose passive
+    }
+}
+
 /** Heat index: 0-3 (ice, cool, warm, hot) based on VPIP */
 function getHeatLevel(vpip: number): 0 | 1 | 2 | 3 {
     if (vpip < 18) return 0;   // Tight/ice
@@ -45,15 +78,6 @@ function getHeatColor(level: 0 | 1 | 2 | 3): string {
     }
 }
 
-function getHeatLabel(level: 0 | 1 | 2 | 3): string {
-    switch (level) {
-        case 0: return 'Tight';
-        case 1: return 'Normal';
-        case 2: return 'Loose';
-        case 3: return 'Whale';
-    }
-}
-
 const MiniHUD = memo(function MiniHUD({ stats, isVisible, compact = false }: MiniHUDProps) {
     const computed = useMemo(() => {
         if (!stats || stats.handsPlayed < 5) return null;
@@ -61,30 +85,57 @@ const MiniHUD = memo(function MiniHUD({ stats, isVisible, compact = false }: Min
         const vpip = Math.round((stats.vpipCount / stats.handsPlayed) * 100);
         const pfr = Math.round((stats.pfrCount / stats.handsPlayed) * 100);
         const heat = getHeatLevel(vpip);
+        const type = classifyPlayer(vpip, pfr);
+        const winRate = stats.handsPlayed > 0 ? Math.round((stats.wonCount / stats.handsPlayed) * 100) : 0;
 
-        return { vpip, pfr, heat, hands: stats.handsPlayed };
+        return { vpip, pfr, heat, hands: stats.handsPlayed, type, winRate };
     }, [stats]);
 
     if (!isVisible || !computed) return null;
 
     const heatColor = getHeatColor(computed.heat);
-    const heatLabel = getHeatLabel(computed.heat);
+    const typeColor = getTypeColor(computed.type);
+
+    // VPIP bar width (clamped 0-100, scaled so 50% VPIP fills the bar)
+    const vpipWidth = Math.min(100, (computed.vpip / 60) * 100);
+    const pfrWidth = Math.min(100, (computed.pfr / 40) * 100);
 
     return (
-        <div className={`mini-hud ${compact ? 'mini-hud--compact' : ''}`}>
-            {/* Heat indicator dot */}
+        <div className={`mini-hud ${compact ? 'mini-hud--compact' : ''} mini-hud--heat-${computed.heat}`}>
+            {/* Player Type Label */}
+            <span className="mini-hud__type" style={{ color: typeColor }}>
+                {computed.type}
+            </span>
+
+            {/* VPIP / PFR with micro progress bars */}
+            <div className="mini-hud__stats">
+                <div className="mini-hud__stat-row">
+                    <span className="mini-hud__label">V</span>
+                    <div className="mini-hud__bar">
+                        <div
+                            className="mini-hud__bar-fill mini-hud__bar-fill--vpip"
+                            style={{ width: `${vpipWidth}%`, backgroundColor: heatColor }}
+                        />
+                    </div>
+                    <span className="mini-hud__value">{computed.vpip}</span>
+                </div>
+                <div className="mini-hud__stat-row">
+                    <span className="mini-hud__label">P</span>
+                    <div className="mini-hud__bar">
+                        <div
+                            className="mini-hud__bar-fill mini-hud__bar-fill--pfr"
+                            style={{ width: `${pfrWidth}%` }}
+                        />
+                    </div>
+                    <span className="mini-hud__value">{computed.pfr}</span>
+                </div>
+            </div>
+
+            {/* Heat dot */}
             <span
                 className="mini-hud__heat"
                 style={{ backgroundColor: heatColor, boxShadow: `0 0 6px ${heatColor}` }}
-                title={`${heatLabel} (${computed.hands} hands)`}
             />
-
-            {/* VPIP / PFR */}
-            <span className="mini-hud__stat">
-                <span className="mini-hud__value">{computed.vpip}</span>
-                <span className="mini-hud__slash">/</span>
-                <span className="mini-hud__value">{computed.pfr}</span>
-            </span>
 
             {!compact && (
                 <span className="mini-hud__hands" title="Hands observed">
@@ -100,7 +151,8 @@ const MiniHUD = memo(function MiniHUD({ stats, isVisible, compact = false }: Min
     if (!prev.stats || !next.stats) return false;
     return prev.stats.handsPlayed === next.stats.handsPlayed
         && prev.stats.vpipCount === next.stats.vpipCount
-        && prev.stats.pfrCount === next.stats.pfrCount;
+        && prev.stats.pfrCount === next.stats.pfrCount
+        && prev.stats.wonCount === next.stats.wonCount;
 });
 
 export default MiniHUD;

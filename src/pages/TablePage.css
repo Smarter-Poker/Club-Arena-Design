@@ -49,6 +49,56 @@
     overscroll-behavior: none;
 }
 
+/* ─── Hero Turn Indicator — subtle border glow when it's your turn ─── */
+.table-page--hero-turn {
+    animation: heroTurnPulse 2s ease-in-out infinite;
+}
+
+@keyframes heroTurnPulse {
+    0%, 100% {
+        box-shadow: inset 0 0 0 0 transparent;
+    }
+    50% {
+        box-shadow: inset 0 0 80px rgba(255, 215, 0, 0.04);
+    }
+}
+
+/* ─── All-In Dramatic Mode — darken non-essential UI ─── */
+.table-page--allin-mode {
+    /* Handled via component state */
+}
+
+.table-page--allin-mode .table-header {
+    opacity: 0.6;
+    transition: opacity 0.5s ease;
+}
+
+/* ─── Winner Celebration — golden flash on table ─── */
+.table-page--winner-flash .table-surface {
+    animation: winnerTableFlash 1.5s ease-out;
+}
+
+@keyframes winnerTableFlash {
+    0% {
+        box-shadow:
+            inset 0 0 120px rgba(255, 215, 0, 0.15),
+            inset 0 4px 12px rgba(255, 255, 255, 0.08),
+            inset 0 -4px 12px rgba(0, 0, 0, 0.4);
+    }
+    50% {
+        box-shadow:
+            inset 0 0 200px rgba(255, 215, 0, 0.08),
+            inset 0 4px 12px rgba(255, 255, 255, 0.08),
+            inset 0 -4px 12px rgba(0, 0, 0, 0.4);
+    }
+    100% {
+        box-shadow:
+            inset 0 4px 12px rgba(255, 255, 255, 0.08),
+            inset 0 -4px 12px rgba(0, 0, 0, 0.4),
+            inset 0 0 80px rgba(0, 0, 0, 0.12);
+    }
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════════
    HEADER BAR — PokerBros compact style
    ═══════════════════════════════════════════════════════════════════════════════ */

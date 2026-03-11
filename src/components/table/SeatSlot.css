@@ -249,14 +249,37 @@
     transition: color 0.4s ease, transform 0.2s ease;
 }
 
-/* Stack color by health (set via CSS class or inline) */
+/* Stack depth color coding — BB-based thresholds */
+.seat__stack--normal {
+    color: var(--stack-normal, #22c55e);
+}
+
+.seat__stack--warning {
+    color: var(--stack-warning, #f59e0b);
+}
+
+.seat__stack--danger {
+    color: var(--stack-danger, #f97316);
+}
+
+.seat__stack--critical {
+    color: var(--stack-critical, #ef4444);
+    animation: stackCriticalPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes stackCriticalPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Stack change flash — override depth colors momentarily */
 .seat__stack--up {
-    color: #22c55e;
+    color: #22c55e !important;
     animation: stackBounceUp 0.4s ease-out;
 }
 
 .seat__stack--down {
-    color: #ef4444;
+    color: #ef4444 !important;
     animation: stackBounceDown 0.3s ease-out;
 }
 
@@ -519,14 +542,52 @@
     border-radius: 6px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
     margin-left: -10px; /* overlap — second card laps over first */
+    animation: heroCardPeek 0.6s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)) backwards;
+    transform-style: preserve-3d;
 }
 
 .seat__cards--hero .seat__card:first-child {
     margin-left: 0;
+    animation-delay: 0.1s;
+}
+
+.seat__cards--hero .seat__card:nth-child(2) {
+    animation-delay: 0.25s;
 }
 
 .seat__cards--hero .seat__card--face {
     border: 1.5px solid rgba(255, 215, 0, 0.3);
+    box-shadow:
+        0 4px 16px rgba(0, 0, 0, 0.6),
+        0 0 8px rgba(255, 215, 0, 0.08);
+    transition: transform 0.25s var(--ease-spring, ease), box-shadow 0.25s ease;
+}
+
+/* Hero card hover — subtle 3D tilt peek */
+.seat__cards--hero .seat__card--face:hover {
+    transform: translateY(-6px) scale(1.05);
+    box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.7),
+        0 0 16px rgba(255, 215, 0, 0.12);
+    z-index: 25;
+}
+
+@keyframes heroCardPeek {
+    0% {
+        opacity: 0;
+        transform: translateY(30px) rotateY(90deg) scale(0.7);
+    }
+    40% {
+        opacity: 0.8;
+        transform: translateY(-5px) rotateY(-10deg) scale(1.05);
+    }
+    70% {
+        transform: translateY(2px) rotateY(3deg) scale(1.01);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) rotateY(0deg) scale(1);
+    }
 }
 
 /* ─── WINNER CARD GLOW — Golden highlight like PokerBros showdown ─── */

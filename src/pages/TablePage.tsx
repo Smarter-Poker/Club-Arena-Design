@@ -2637,7 +2637,7 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
     }, [actionTimeRemaining, tableState.currentPlayerSeat, tableState.heroSeat, tableState.isHandInProgress, isSoundEnabled]);
 
     return (
-        <div className={`table-page ${isAllInMode ? 'table-page--allin-mode' : ''}`}>
+        <div className={`table-page${isAllInMode ? ' table-page--allin-mode' : ''}${tableState.currentPlayerSeat === tableState.heroSeat && tableState.isHandInProgress ? ' table-page--hero-turn' : ''}${winnerInfo.playerIds.length > 0 ? ' table-page--winner-flash' : ''}`}>
             {/* ═══════════════════════════════════════════════════════════════════════
           HEADER BAR — Compact PokerBros-style with game info
           ═══════════════════════════════════════════════════════════════════════ */}

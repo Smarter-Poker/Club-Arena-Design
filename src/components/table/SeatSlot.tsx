@@ -87,6 +87,17 @@ function formatStackAsBB(stack: number, bigBlind: number): string {
     return `${bb.toFixed(1)} BB`;
 }
 
+/** Returns CSS class for stack depth color coding */
+function getStackDepthClass(stack: number, bigBlind: number): string {
+    if (bigBlind <= 0) return '';
+    const bb = stack / bigBlind;
+    if (bb < 10) return 'seat__stack--critical';
+    if (bb < 20) return 'seat__stack--danger';
+    if (bb < 50) return 'seat__stack--warning';
+    if (bb < 100) return 'seat__stack--normal';
+    return ''; // healthy — default white
+}
+
 function getActionLabel(action: LastAction, amount?: number): string {
     switch (action) {
         case 'fold': return 'Fold';
@@ -295,7 +306,7 @@ export const SeatSlot = memo(function SeatSlot(props: SeatSlotProps) {
             <div className="seat__info" style={timerStyle}>
                 {/* Neon border overlay (rendered via CSS ::before when --active) */}
                 <span className="seat__name">{player.name}</span>
-                <span className={`seat__stack${stackDelta > 0 ? ' seat__stack--up' : stackDelta < 0 ? ' seat__stack--down' : ''}`}>
+                <span className={`seat__stack${stackDelta > 0 ? ' seat__stack--up' : stackDelta < 0 ? ' seat__stack--down' : ''} ${!isTournament ? getStackDepthClass(player.stack, bigBlind) : ''}`}>
                     {isTournament ? formatStack(player.stack) : formatStackAsBB(player.stack, bigBlind)}
                 </span>
 

@@ -110,11 +110,79 @@
 }
 
 .community-cards__card:hover {
-    transform: translateY(-4px);
+    transform: translateY(-6px) scale(1.04);
     box-shadow:
-        0 8px 20px rgba(0, 0, 0, 0.35),
+        0 10px 24px rgba(0, 0, 0, 0.4),
         0 2px 5px rgba(0, 0, 0, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    z-index: 5;
+}
+
+/* Turn card (4th) — dramatic reveal with brightness flash */
+.community-cards__card--turn {
+    animation: cardTurnReveal calc(0.55s * var(--animation-speed, 1)) var(--ease-spring, ease) forwards !important;
+}
+
+/* River card (5th) — even more dramatic with longer spring */
+.community-cards__card--river {
+    animation: cardRiverReveal calc(0.65s * var(--animation-speed, 1)) var(--ease-spring, ease) forwards !important;
+}
+
+@keyframes cardTurnReveal {
+    0% {
+        opacity: 0;
+        transform: rotateY(180deg) translateY(-50px) scale(0.6);
+        filter: brightness(0.2);
+    }
+    35% {
+        opacity: 0.7;
+        transform: rotateY(70deg) translateY(-15px) scale(0.9);
+        filter: brightness(0.6);
+    }
+    60% {
+        opacity: 1;
+        transform: rotateY(-8deg) translateY(4px) scale(1.06);
+        filter: brightness(1.2);
+    }
+    80% {
+        transform: rotateY(3deg) translateY(-1px) scale(1.02);
+        filter: brightness(1.05);
+    }
+    100% {
+        opacity: 1;
+        transform: rotateY(0deg) translateY(0) scale(1);
+        filter: brightness(1);
+    }
+}
+
+@keyframes cardRiverReveal {
+    0% {
+        opacity: 0;
+        transform: rotateY(180deg) translateY(-60px) scale(0.5);
+        filter: brightness(0.1);
+    }
+    30% {
+        opacity: 0.5;
+        transform: rotateY(90deg) translateY(-20px) scale(0.85);
+        filter: brightness(0.5);
+    }
+    55% {
+        opacity: 1;
+        transform: rotateY(-12deg) translateY(5px) scale(1.08);
+        filter: brightness(1.3);
+    }
+    75% {
+        transform: rotateY(5deg) translateY(-2px) scale(1.03);
+        filter: brightness(1.1);
+    }
+    90% {
+        transform: rotateY(-1deg) translateY(1px) scale(1.01);
+    }
+    100% {
+        opacity: 1;
+        transform: rotateY(0deg) translateY(0) scale(1);
+        filter: brightness(1);
+    }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
