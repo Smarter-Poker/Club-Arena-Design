@@ -791,3 +791,132 @@
         scroll-behavior: auto !important;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LANDSCAPE MODE — Horizontal layout for phone landscape
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@media (orientation: landscape) and (max-height: 500px) {
+    .table-page {
+        flex-direction: row;
+    }
+
+    .table-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        padding: 4px 10px;
+        padding-left: calc(10px + env(safe-area-inset-left, 0));
+        min-height: 36px;
+    }
+
+    .table-area {
+        flex: 1;
+        padding-top: 36px;
+    }
+
+    .action-panel-wrapper {
+        width: 40%;
+        max-width: 280px;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding-right: env(safe-area-inset-right, 0);
+        padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+
+    .table-scaler {
+        max-width: none;
+        max-height: 100%;
+    }
+
+    /* Smaller community cards in landscape */
+    .community-cards__card {
+        width: 48px;
+        height: 70px;
+    }
+
+    /* Compact seat info */
+    .seat__info {
+        padding: 3px 6px;
+    }
+
+    .seat__name {
+        font-size: 0.5625rem;
+    }
+
+    .seat__stack {
+        font-size: 0.5625rem;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TABLET LAYOUT — Larger table with more room
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@media (min-width: 768px) and (orientation: portrait) {
+    .table-scaler {
+        max-width: 600px;
+    }
+
+    .seat__avatar-img,
+    .seat__avatar-fallback {
+        width: 64px;
+        height: 64px;
+    }
+
+    .seat__info {
+        padding: 6px 12px;
+    }
+
+    .seat__name {
+        font-size: 0.8125rem;
+    }
+
+    .seat__stack {
+        font-size: 0.8125rem;
+    }
+
+    .action-btn {
+        height: 56px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .table-scaler {
+        max-width: 720px;
+    }
+
+    .seat__avatar-img,
+    .seat__avatar-fallback {
+        width: 72px;
+        height: 72px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FULLSCREEN MODE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.table-page--fullscreen {
+    /* Already fixed + inset:0, just ensure no safe areas interfere */
+}
+
+.table-page--fullscreen .table-header {
+    padding-top: 6px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   REDUCED MOTION — Accessibility
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+    .table-page *,
+    .table-page *::before,
+    .table-page *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

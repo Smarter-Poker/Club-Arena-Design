@@ -164,3 +164,7 @@ export type { PotOddsDisplayProps } from './PotOddsDisplay';
 export { EquityBar, MultiPlayerEquityDisplay } from './EquityDisplay';
 export type { EquityBarProps, MultiPlayerEquityDisplayProps } from './EquityDisplay';
 
+// Hand History Panel
+export { default as HandHistoryPanel } from './HandHistoryPanel';
+export type { HandHistoryPanelProps, HandRecord, HandHistoryStreet, HandHistoryAction } from './HandHistoryPanel';
+

@@ -63,6 +63,7 @@ export default function MultiTablePage() {
     const [activeIndex, setActiveIndex] = useState(0);
     const [swipeOffset, setSwipeOffset] = useState(0);
     const [isTransitioning, setIsTransitioning] = useState(false);
+    const [isTileView, setIsTileView] = useState(false);
 
     // Swipe tracking refs
     const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
@@ -141,6 +142,32 @@ export default function MultiTablePage() {
             }
         }
     }, [tables, activeIndex]);
+
+    // ─── Keyboard shortcuts for table switching ───────────────────────────
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Number keys 1-4 to switch tables
+            if (e.key >= '1' && e.key <= '4') {
+                const idx = parseInt(e.key) - 1;
+                if (idx < tables.length) {
+                    setActiveIndex(idx);
+                }
+                return;
+            }
+            // Tab / Shift+Tab to cycle
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                setActiveIndex(prev => {
+                    if (e.shiftKey) {
+                        return prev <= 0 ? tables.length - 1 : prev - 1;
+                    }
+                    return prev >= tables.length - 1 ? 0 : prev + 1;
+                });
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [tables.length]);
 
     // ─── Swipe Gesture Handling ──────────────────────────────────────────
     const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -239,44 +266,87 @@ export default function MultiTablePage() {
         <div className="multi-table-page">
             {/* Tab Bar */}
             {tables.length > 1 && (
-                <TableTabBar
-                    tabs={tabInfos}
-                    activeTabId={activeTableId}
-                    onTabSelect={handleTabSelect}
-                    onTabClose={handleTabClose}
-                    onAddTable={handleAddTable}
-                />
+                <div className="multi-table-page__tab-bar-wrapper">
+                    <TableTabBar
+                        tabs={tabInfos}
+                        activeTabId={activeTableId}
+                        onTabSelect={handleTabSelect}
+                        onTabClose={handleTabClose}
+                        onAddTable={handleAddTable}
+                    />
+                    {tables.length > 1 && (
+                        <button
+                            className="tile-toggle-btn"
+                            onClick={() => setIsTileView(prev => !prev)}
+                            title={isTileView ? 'Single view' : 'Tile view'}
+                        >
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                {isTileView ? (
+                                    <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+                                ) : (
+                                    <>
+                                        <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+                                        <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+                                        <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+                                        <rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+                                    </>
+                                )}
+                            </svg>
+                        </button>
+                    )}
+                </div>
             )}
 
-            {/* Swipe Container */}
-            <div
-                ref={containerRef}
-                className={`multi-table-page__container ${isTransitioning ? 'multi-table-page__container--transitioning' : ''}`}
-                style={{ transform: containerTransform }}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-            >
-                {tables.map((table, idx) => (
-                    <div
-                        key={table.id}
-                        className={`multi-table-page__table-slot ${idx === activeIndex ? 'multi-table-page__table-slot--active' : ''}`}
-                    >
-                        <Suspense fallback={
-                            <div className="multi-table-page__loading">
-                                <div className="multi-table-page__spinner" />
-                            </div>
-                        }>
-                            <TablePage
-                                key={table.id}
-                                embeddedTableId={table.id}
-                                onTableInfoUpdate={(info: Partial<TableInstance>) => updateTableInfo(table.id, info)}
-                                isMultiTable={tables.length > 1}
-                            />
-                        </Suspense>
-                    </div>
-                ))}
-            </div>
+            {/* Tile View Grid or Swipe Container */}
+            {isTileView && tables.length > 1 ? (
+                <div className="multi-table-grid">
+                    {tables.map((table, idx) => (
+                        <div
+                            key={table.id}
+                            className={`multi-table-grid__cell ${idx === activeIndex ? 'multi-table-grid__cell--active' : ''}`}
+                            onClick={() => { setActiveIndex(idx); setIsTileView(false); }}
+                        >
+                            <Suspense fallback={<div className="multi-table-loading">Loading...</div>}>
+                                <TablePage
+                                    key={table.id}
+                                    embeddedTableId={table.id}
+                                    onTableInfoUpdate={(info: Partial<TableInstance>) => updateTableInfo(table.id, info)}
+                                    isMultiTable={true}
+                                />
+                            </Suspense>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div
+                    ref={containerRef}
+                    className={`multi-table-page__container ${isTransitioning ? 'multi-table-page__container--transitioning' : ''}`}
+                    style={{ transform: containerTransform }}
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                >
+                    {tables.map((table, idx) => (
+                        <div
+                            key={table.id}
+                            className={`multi-table-page__table-slot ${idx === activeIndex ? 'multi-table-page__table-slot--active' : ''}`}
+                        >
+                            <Suspense fallback={
+                                <div className="multi-table-page__loading">
+                                    <div className="multi-table-page__spinner" />
+                                </div>
+                            }>
+                                <TablePage
+                                    key={table.id}
+                                    embeddedTableId={table.id}
+                                    onTableInfoUpdate={(info: Partial<TableInstance>) => updateTableInfo(table.id, info)}
+                                    isMultiTable={tables.length > 1}
+                                />
+                            </Suspense>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
