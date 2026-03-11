@@ -9,6 +9,7 @@ import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import { useToast } from '../components/common/Toast';
+import { sanitizeInput } from '../utils/sanitizeInput';
 import ConfirmModal from '../components/common/ConfirmModal';
 import './ClubAnnouncementsPage.css';
 
@@ -148,8 +149,8 @@ export default function ClubAnnouncementsPage() {
       const { error } = await supabase.from('club_announcements').insert({
         club_id: clubId,
         author_id: user.id,
-        title: newTitle.trim(),
-        content: newContent.trim(),
+        title: sanitizeInput(newTitle.trim()),
+        content: sanitizeInput(newContent.trim()),
         is_pinned: false,
       });
 

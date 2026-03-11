@@ -13,6 +13,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { retryAsync } from '../utils/retryAsync';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -149,10 +150,13 @@ export const WalletService = {
         // 3. Calculate diamond cost
         const diamondCost = Math.ceil((chipAmount / 100) * 38);
 
-        const { data, error } = await supabase.rpc('mint_club_chips', {
-            p_club_id: clubId,
-            p_chips: chipAmount,
-            p_diamonds: diamondCost,
+        const { data, error } = await retryAsync(async () => {
+            const res = await supabase.rpc('mint_club_chips', {
+                p_club_id: clubId,
+                p_chips: chipAmount,
+                p_diamonds: diamondCost,
+            });
+            return res;
         });
 
         if (error) throw error;
@@ -198,12 +202,15 @@ export const WalletService = {
         if (request.amount <= 0) throw new Error('Transfer amount must be positive');
         if (request.fromWallet === request.toWallet) throw new Error('Cannot transfer to same wallet');
 
-        const { error } = await supabase.rpc('wallet_internal_transfer', {
-            p_user_id: userId,
-            p_from_wallet: request.fromWallet,
-            p_to_wallet: request.toWallet,
-            p_amount: request.amount,
-            p_note: request.note || null,
+        const { error } = await retryAsync(async () => {
+            const res = await supabase.rpc('wallet_internal_transfer', {
+                p_user_id: userId,
+                p_from_wallet: request.fromWallet,
+                p_to_wallet: request.toWallet,
+                p_amount: request.amount,
+                p_note: request.note || null,
+            });
+            return res;
         });
 
         if (error) throw error;
@@ -240,12 +247,15 @@ export const WalletService = {
     ): Promise<boolean> {
         if (amount <= 0) throw new Error('Transfer amount must be positive');
 
-        const { error } = await supabase.rpc('wallet_user_transfer', {
-            p_from_user_id: fromUserId,
-            p_to_user_id: toUserId,
-            p_amount: amount,
-            p_from_wallet: fromWallet,
-            p_to_wallet: toWallet,
+        const { error } = await retryAsync(async () => {
+            const res = await supabase.rpc('wallet_user_transfer', {
+                p_from_user_id: fromUserId,
+                p_to_user_id: toUserId,
+                p_amount: amount,
+                p_from_wallet: fromWallet,
+                p_to_wallet: toWallet,
+            });
+            return res;
         });
 
         if (error) throw error;
@@ -322,9 +332,12 @@ export const WalletService = {
         }
 
         // 2. Atomically deduct from Player Wallet using SECURITY DEFINER RPC
-        const { data: deductResult, error: deductError } = await supabase.rpc('deduct_player_wallet', {
-            p_user_id: userId,
-            p_amount: amount,
+        const { data: deductResult, error: deductError } = await retryAsync(async () => {
+            const res = await supabase.rpc('deduct_player_wallet', {
+                p_user_id: userId,
+                p_amount: amount,
+            });
+            return res;
         });
 
         if (deductError) {
@@ -349,9 +362,12 @@ export const WalletService = {
      */
     async unlockFromTable(userId: string, tableId: string, amount: number): Promise<boolean> {
         // Credit to Player Wallet using SECURITY DEFINER RPC
-        const { error: creditError } = await supabase.rpc('credit_player_wallet', {
-            p_user_id: userId,
-            p_amount: amount,
+        const { error: creditError } = await retryAsync(async () => {
+            const res = await supabase.rpc('credit_player_wallet', {
+                p_user_id: userId,
+                p_amount: amount,
+            });
+            return res;
         });
 
         if (creditError) {

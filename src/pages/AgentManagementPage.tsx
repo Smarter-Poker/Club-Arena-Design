@@ -118,6 +118,7 @@ export default function AgentManagementPage() {
             })
             .catch(err => {
                 console.error('Failed to load eligible members:', err);
+                toast.error('Failed to load eligible members');
                 setAvailableMembers([]);
             })
             .finally(() => setIsLoadingMembers(false));
