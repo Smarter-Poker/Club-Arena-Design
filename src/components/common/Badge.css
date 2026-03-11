@@ -81,8 +81,15 @@
 
 .badge-vip {
     background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    background-size: 200% 100%;
     color: #1a1a2e;
     box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+    animation: badgeVipShimmer 3s ease-in-out infinite;
+}
+
+@keyframes badgeVipShimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
 }
 
 /* VIP Level Variants */

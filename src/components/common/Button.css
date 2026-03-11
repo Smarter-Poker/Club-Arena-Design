@@ -67,10 +67,31 @@
     background: linear-gradient(135deg, #4169E1 0%, #6B8EFF 100%);
     color: white;
     box-shadow: 0 4px 15px rgba(65, 105, 225, 0.3);
+    position: relative;
+}
+
+.btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+    transition: left 0.4s ease;
+}
+
+.btn-primary:hover:not(.btn-disabled)::before {
+    left: 150%;
 }
 
 .btn-primary:hover:not(.btn-disabled) {
-    box-shadow: 0 6px 20px rgba(65, 105, 225, 0.4);
+    box-shadow: 0 6px 20px rgba(65, 105, 225, 0.5);
+    transform: translateY(-1px);
+}
+
+.btn-primary:active:not(.btn-disabled) {
+    transform: translateY(0) scale(0.98);
 }
 
 .btn-secondary {
@@ -115,6 +136,26 @@
     background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
     color: #1a1a2e;
     box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+}
+
+.btn-gold:hover:not(.btn-disabled) {
+    box-shadow: 0 6px 24px rgba(255, 215, 0, 0.5);
+    transform: translateY(-1px);
+}
+
+.btn-danger:hover:not(.btn-disabled) {
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+    transform: translateY(-1px);
+}
+
+.btn-success:hover:not(.btn-disabled) {
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.5);
+    transform: translateY(-1px);
+}
+
+.btn-warning:hover:not(.btn-disabled) {
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+    transform: translateY(-1px);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════

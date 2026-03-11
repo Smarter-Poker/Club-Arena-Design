@@ -50,7 +50,7 @@
 
 .input-focused {
     border-color: #4169E1 !important;
-    box-shadow: 0 0 0 3px rgba(65, 105, 225, 0.2);
+    box-shadow: 0 0 0 3px rgba(65, 105, 225, 0.2), 0 0 12px rgba(65, 105, 225, 0.1);
 }
 
 .input-error {
@@ -301,6 +301,7 @@
 
 .toggle-on {
     background: #4169E1;
+    box-shadow: 0 0 12px rgba(65, 105, 225, 0.3);
 }
 
 .toggle-thumb {
@@ -309,8 +310,8 @@
     left: 2px;
     background: white;
     border-radius: 50%;
-    transition: transform 0.2s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .toggle-small .toggle-thumb {

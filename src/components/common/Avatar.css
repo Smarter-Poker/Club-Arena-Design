@@ -208,10 +208,22 @@
 
 .player-avatar.active .avatar {
     box-shadow: 0 0 0 3px #4169E1, 0 0 20px rgba(65, 105, 225, 0.5);
+    animation: activeAvatarPulse 2s ease-in-out infinite;
+}
+
+@keyframes activeAvatarPulse {
+    0%, 100% { box-shadow: 0 0 0 3px #4169E1, 0 0 20px rgba(65, 105, 225, 0.5); }
+    50% { box-shadow: 0 0 0 3px #4169E1, 0 0 28px rgba(65, 105, 225, 0.7); }
 }
 
 .player-avatar.winner .avatar {
     box-shadow: 0 0 0 3px #FFD700, 0 0 20px rgba(255, 215, 0, 0.5);
+    animation: winnerAvatarGlow 2s ease-in-out infinite;
+}
+
+@keyframes winnerAvatarGlow {
+    0%, 100% { box-shadow: 0 0 0 3px #FFD700, 0 0 20px rgba(255, 215, 0, 0.5); }
+    50% { box-shadow: 0 0 0 3px #FFD700, 0 0 32px rgba(255, 215, 0, 0.7); }
 }
 
 .player-stack {
