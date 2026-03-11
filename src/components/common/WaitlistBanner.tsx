@@ -1,12 +1,15 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- *  WAITLIST BANNER — Floating Queue Position Indicator (#5)
+ *  WAITLIST BANNER — Floating Queue Position Indicator (#5, v1.1 Hardened)
  * ═══════════════════════════════════════════════════════════════════════════════
  * Subscribes to WAITLIST_POSITION_CHANGED via masterBus and displays a floating
  * animated banner at the bottom showing "You are #3 in line for High Rollers Table"
+ *
+ * v1.1: Synchronous masterBus import for deterministic cleanup
  */
 
 import { useState, useEffect } from 'react';
+import { masterBus } from '../../core/MasterBus';
 
 interface WaitlistInfo {
     tableId: string;
@@ -18,20 +21,16 @@ export default function WaitlistBanner() {
     const [waitlistInfo, setWaitlistInfo] = useState<WaitlistInfo | null>(null);
 
     useEffect(() => {
-        let unsubscribe: (() => void) | null = null;
-
-        import('../../core/MasterBus').then(({ masterBus }) => {
-            unsubscribe = masterBus.subscribe('WAITLIST_POSITION_CHANGED', (event: any) => {
-                const { tableId, position, tableName } = event.payload || {};
-                if (position && position > 0) {
-                    setWaitlistInfo({ tableId, position, tableName });
-                } else {
-                    setWaitlistInfo(null);
-                }
-            });
+        const unsubscribe = masterBus.subscribe('WAITLIST_POSITION_CHANGED', (event: any) => {
+            const { tableId, position, tableName } = event.payload || {};
+            if (position && position > 0) {
+                setWaitlistInfo({ tableId, position, tableName });
+            } else {
+                setWaitlistInfo(null);
+            }
         });
 
-        return () => { unsubscribe?.(); };
+        return () => { unsubscribe(); };
     }, []);
 
     if (!waitlistInfo) return null;

@@ -5,7 +5,7 @@
  * Displays Business, Player, and Promo wallet balances with transfer options
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useWalletStore } from '../stores/useWalletStore';
@@ -39,6 +39,15 @@ export default function PlayerWalletPage() {
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [showDepositModal, setShowDepositModal] = useState(false);
     const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+    const [visibleWalletCards, setVisibleWalletCards] = useState(new Set<number>());
+
+    // Stagger wallet cards on mount
+    useEffect(() => {
+        const timers = [0, 1, 2].map((i) =>
+            setTimeout(() => setVisibleWalletCards(prev => new Set([...prev, i])), i * 70)
+        );
+        return () => timers.forEach(t => clearTimeout(t));
+    }, []);
 
     useEffect(() => {
         if (user?.id) {
@@ -95,6 +104,25 @@ export default function PlayerWalletPage() {
 
     const totalBalance = balances.BUSINESS.total + balances.PLAYER.total + balances.PROMO.total;
 
+    // Animated balance counter
+    const useCountUpNumber = (target: number, duration: number = 600) => {
+        const [display, setDisplay] = useState(0);
+        useEffect(() => {
+            let startTime: number;
+            const animate = (now: number) => {
+                if (!startTime) startTime = now;
+                const progress = Math.min((now - startTime) / duration, 1);
+                setDisplay(Math.floor(target * progress));
+                if (progress < 1) requestAnimationFrame(animate);
+                else setDisplay(target);
+            };
+            requestAnimationFrame(animate);
+        }, [target, duration]);
+        return display;
+    };
+
+    const displayedBalance = useCountUpNumber(totalBalance, 600);
+
     const handleTransfer = async () => {
         const amount = parseFloat(transferAmount);
         if (isNaN(amount) || amount <= 0) {
@@ -142,11 +170,14 @@ export default function PlayerWalletPage() {
         <div className="wallet-page">
 
             {/* Total Balance Card - Metal Frame */}
-            <MetalFrame variant="card" size="lg">
+            <MetalFrame variant="card" size="lg" style={{
+                opacity: activeTab === 'overview' ? 1 : 0.9,
+                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+            }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                     <div>
                         <span style={{ fontSize: '0.85rem', color: '#8899aa', textTransform: 'uppercase', letterSpacing: '1px' }}>Total Balance</span>
-                        <div style={{ fontSize: '2rem', fontWeight: 700, color: '#00d4ff', fontFamily: 'monospace' }}>{totalBalance.toLocaleString()}</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 700, color: '#00d4ff', fontFamily: 'monospace' }}>{displayedBalance.toLocaleString()}</div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ fontSize: '1.5rem' }}>◆</span>
@@ -207,8 +238,17 @@ export default function PlayerWalletPage() {
             <div className="wallet-content" style={{ marginTop: '16px' }}>
                 {activeTab === 'overview' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {(Object.keys(walletInfo) as WalletType[]).map((type) => (
-                            <MetalCard key={type} size="md" glow>
+                        {(Object.keys(walletInfo) as WalletType[]).map((type, index) => (
+                            <MetalCard
+                                key={type}
+                                size="md"
+                                glow
+                                style={{
+                                    opacity: visibleWalletCards.has(index) ? 1 : 0,
+                                    transform: visibleWalletCards.has(index) ? 'translateY(0)' : 'translateY(8px)',
+                                    transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                }}
+                            >
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                                     <div style={{
                                         width: '50px',

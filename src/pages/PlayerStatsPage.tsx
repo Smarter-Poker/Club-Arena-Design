@@ -2,7 +2,7 @@
  *  PLAYER STATS PAGE — Detailed Statistics with Charts
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
@@ -75,7 +75,27 @@ export default function PlayerStatsPage() {
     const [sessionHistory, setSessionHistory] = useState<SessionData[]>([]);
     const [loading, setLoading] = useState(true);
     const [category, setCategory] = useState<StatCategory>('overview');
+    const [visibleSummaryCards, setVisibleSummaryCards] = useState(new Set<number>());
+    const [visibleSessionRows, setVisibleSessionRows] = useState(new Set<number>());
     const toast = useToast();
+
+    // Stagger summary cards on mount
+    useEffect(() => {
+        const timers = [0, 1, 2].map((i) =>
+            setTimeout(() => setVisibleSummaryCards(prev => new Set([...prev, i])), i * 60)
+        );
+        return () => timers.forEach(t => clearTimeout(t));
+    }, []);
+
+    // Stagger session rows
+    useEffect(() => {
+        if (sessionHistory.length > 0) {
+            const timers = sessionHistory.map((_, i) =>
+                setTimeout(() => setVisibleSessionRows(prev => new Set([...prev, i])), i * 50)
+            );
+            return () => timers.forEach(t => clearTimeout(t));
+        }
+    }, [sessionHistory.length]);
 
     useEffect(() => {
         if (targetUserId) {
@@ -184,6 +204,29 @@ export default function PlayerStatsPage() {
         ? ((stats.showdowns_won / stats.showdowns_total) * 100).toFixed(1)
         : '0';
 
+    // Animated number counter hook
+    const useCountUpNumber = (target: number, duration: number = 400) => {
+        const [display, setDisplay] = useState(0);
+        useEffect(() => {
+            let startTime: number;
+            const animate = (now: number) => {
+                if (!startTime) startTime = now;
+                const progress = Math.min((now - startTime) / duration, 1);
+                setDisplay(Math.floor(target * progress));
+                if (progress < 1) requestAnimationFrame(animate);
+                else setDisplay(target);
+            };
+            requestAnimationFrame(animate);
+        }, [target, duration]);
+        return display;
+    };
+
+    const displayedWinRate = useMemo(() => {
+        const [intPart, decPart] = winRate.split('.');
+        const countedInt = useCountUpNumber(parseInt(intPart), 400);
+        return decPart ? `${countedInt}.${decPart}` : countedInt;
+    }, [winRate]);
+
     // Data for position breakdown pie chart
     const positionData = [
         { name: 'BTN', value: 22, fullName: 'Button' },
@@ -207,15 +250,36 @@ export default function PlayerStatsPage() {
 
             {/* Summary Cards */}
             <div className="stats-summary">
-                <div className="stat-card">
+                <div
+                    className="stat-card"
+                    style={{
+                        opacity: visibleSummaryCards.has(0) ? 1 : 0,
+                        transform: visibleSummaryCards.has(0) ? 'translateY(0)' : 'translateY(8px)',
+                        transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    }}
+                >
                     <span className="stat-value">{stats?.total_hands.toLocaleString()}</span>
                     <span className="stat-label">Hands Played</span>
                 </div>
-                <div className="stat-card">
-                    <span className="stat-value">{winRate}%</span>
+                <div
+                    className="stat-card"
+                    style={{
+                        opacity: visibleSummaryCards.has(1) ? 1 : 0,
+                        transform: visibleSummaryCards.has(1) ? 'translateY(0)' : 'translateY(8px)',
+                        transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    }}
+                >
+                    <span className="stat-value">{displayedWinRate}%</span>
                     <span className="stat-label">Win Rate</span>
                 </div>
-                <div className="stat-card profit">
+                <div
+                    className="stat-card profit"
+                    style={{
+                        opacity: visibleSummaryCards.has(2) ? 1 : 0,
+                        transform: visibleSummaryCards.has(2) ? 'translateY(0)' : 'translateY(8px)',
+                        transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    }}
+                >
                     <span className={`stat-value ${(stats?.total_profit || 0) >= 0 ? 'positive' : 'negative'}`}>
                         {stats?.total_profit.toLocaleString()}
                     </span>
@@ -279,7 +343,14 @@ export default function PlayerStatsPage() {
                 )}
 
                 {category === 'charts' && (
-                    <div className="charts-section">
+                    <div
+                        className="charts-section"
+                        style={{
+                            opacity: category === 'charts' ? 1 : 0,
+                            transform: category === 'charts' ? 'translateY(0)' : 'translateY(12px)',
+                            transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        }}
+                    >
                         {/* Profit Over Time Chart */}
                         <div className="chart-card">
                             <h3> Profit Over Time</h3>

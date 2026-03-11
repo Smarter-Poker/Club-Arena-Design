@@ -2,7 +2,7 @@
  * 👫 FRIENDS PAGE — Friends List & Management with Real-Time Status
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
@@ -34,6 +34,9 @@ export default function FriendsPage() {
     const [activeTab, setActiveTab] = useState<FriendsTab>('friends');
     const [searchQuery, setSearchQuery] = useState('');
     const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
+    const [visibleFriendRows, setVisibleFriendRows] = useState(new Set<number>());
+    const [visiblePendingRows, setVisiblePendingRows] = useState(new Set<number>());
+    const [searchFocused, setSearchFocused] = useState(false);
 
     useEffect(() => {
         if (user?.id) loadFriends();

@@ -13,6 +13,13 @@ import type { Club, PokerTable, Tournament } from '../../types/database.types';
 import ClubBottomNav from '../../components/club/ClubBottomNav';
 import './ClubLobby.css';
 
+// Animation utilities
+const cardAnimationStyle = (index: number) => ({
+    opacity: 0,
+    transform: 'translateY(8px)',
+    animation: `fadeInUp 0.5s ease-out ${index * 60}ms forwards`,
+});
+
 type GameFilter = 'ALL' | 'Hold\'em' | 'Omaha' | 'Mixed' | 'MTT' | 'Spin-It' | 'SN';
 
 export default function ClubLobby() {
@@ -169,7 +176,10 @@ export default function ClubLobby() {
                 <div className="header-right">
                     <div className="jackpot-display">
                         <span className="jackpot-label">BAD BEAT</span>
-                        <span className="jackpot-amount">000,139,356</span>
+                        <span className="jackpot-label">JACKPOT</span>
+                        <span className="jackpot-amount">
+                            {((club as any)?.bad_beat_jackpot || 0).toLocaleString()}
+                        </span>
                     </div>
                 </div>
             </header>
@@ -224,12 +234,16 @@ export default function ClubLobby() {
             {/* Tournament Grid */}
             <div className="tournament-grid">
                 {filteredTournaments.length > 0 ? (
-                    filteredTournaments.map((tournament) => (
-                        <TournamentCard key={tournament.id} tournament={tournament} clubId={clubId!} />
+                    filteredTournaments.map((tournament, idx) => (
+                        <div key={tournament.id} style={cardAnimationStyle(idx)}>
+                            <TournamentCard tournament={tournament} clubId={clubId!} />
+                        </div>
                     ))
                 ) : tables.length > 0 ? (
-                    tables.map((table) => (
-                        <TableCard key={table.id} table={table} clubId={clubId!} />
+                    tables.map((table, idx) => (
+                        <div key={table.id} style={cardAnimationStyle(idx)}>
+                            <TableCard table={table} clubId={clubId!} />
+                        </div>
                     ))
                 ) : (
                     <div className="empty-state">
@@ -298,6 +312,30 @@ function TournamentCard({ tournament, clubId }: { tournament: Tournament; clubId
 
 // Table Card Component
 function TableCard({ table, clubId }: { table: PokerTable; clubId: string }) {
+    const [displayCount, setDisplayCount] = useState(0);
+
+    useEffect(() => {
+        const target = table.current_players || 0;
+        if (displayCount === target) return;
+
+        const start = displayCount;
+        const duration = 400;
+        const startTime = performance.now();
+
+        const animate = (currentTime: number) => {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const current = Math.floor(start + (target - start) * progress);
+            setDisplayCount(current);
+
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            }
+        };
+
+        requestAnimationFrame(animate);
+    }, [table.current_players, displayCount]);
+
     return (
         <Link to={`/table/${table.id}`} className="table-card">
             <div className="card-header">
@@ -308,7 +346,7 @@ function TableCard({ table, clubId }: { table: PokerTable; clubId: string }) {
                 <h3 className="table-name">{table.name}</h3>
                 <div className="stakes">{table.stakes}</div>
                 <div className="players-count">
-                    {table.current_players}/{table.max_players} players
+                    {displayCount}/{table.max_players} players
                 </div>
             </div>
             <div className="card-footer">

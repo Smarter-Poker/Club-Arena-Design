@@ -10,6 +10,12 @@ import ClubBottomNav from '../components/club/ClubBottomNav';
 import { useToast } from '../components/common/Toast';
 import './ClubAnnouncementsPage.css';
 
+const announcementAnimationStyle = (index: number) => ({
+    opacity: 0,
+    transform: 'translateY(8px)',
+    animation: `fadeInUp 0.5s ease-out ${index * 60}ms forwards`,
+});
+
 interface Announcement {
     id: string;
     title: string;
@@ -236,8 +242,8 @@ export default function ClubAnnouncementsPage() {
                         <p>No announcements yet</p>
                     </div>
                 ) : (
-                    announcements.map(announcement => (
-                        <div key={announcement.id} className={`announcement-card ${announcement.is_pinned ? 'pinned' : ''}`}>
+                    announcements.map((announcement, idx) => (
+                        <div key={announcement.id} style={announcementAnimationStyle(idx)} className={`announcement-card ${announcement.is_pinned ? 'pinned' : ''}`}>
                             {announcement.is_pinned && <span className="pin-badge">Pinned</span>}
                             <h3 className="announcement-title">{announcement.title}</h3>
                             <p className="announcement-content">{announcement.content}</p>

@@ -15,7 +15,6 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { useUserStore } from '../stores/useUserStore';
 import { ClubsService } from '../services/ClubsService';
 import { useToast } from '../components/common/Toast';
 import GlobalHeader from '../components/navigation/GlobalHeader';
@@ -52,7 +51,6 @@ const HOLO_COLORS = [
 
 export default function HomePage() {
     const navigate = useNavigate();
-    const { user } = useUserStore();
     const toast = useToast();
 
     // Detect if running inside iframe (World Hub embedding)
@@ -70,7 +68,6 @@ export default function HomePage() {
     }, []);
 
     // Real data states
-    const [diamonds, setDiamonds] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [userClubs, setUserClubs] = useState<any[]>([]);
 
@@ -109,9 +106,8 @@ export default function HomePage() {
                         .eq('id', authUser.id)
                         .maybeSingle();
 
-                    if (profileData) {
-                        setDiamonds(profileData.diamonds || 0);
-                    }
+                    // Diamond count available for future features
+                    void profileData;
 
                     // Fetch user's clubs (unlimited)
                     const memberships = await ClubsService.getUserMemberships();

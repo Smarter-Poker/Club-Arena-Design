@@ -38,7 +38,7 @@ export function Badge({
 /**
  * VIP level badge
  */
-export function VIPBadge({ level }: { level: 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' }) {
+export function VIPBadge({ level }: { level: 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | string }) {
     const icons: Record<string, string> = {
         bronze: '',
         silver: '',
@@ -47,9 +47,17 @@ export function VIPBadge({ level }: { level: 'bronze' | 'silver' | 'gold' | 'pla
         diamond: '💠',
     };
 
+    // Don't render badge for invalid/empty/none levels
+    const validLevels = ['bronze', 'silver', 'gold', 'platinum', 'diamond'];
+    if (!level || !validLevels.includes(level.toLowerCase())) {
+        return null;
+    }
+
+    const normalizedLevel = level.toLowerCase();
+
     return (
-        <Badge variant="vip" className={`vip-${level}`}>
-            {icons[level]} {level.toUpperCase()}
+        <Badge variant="vip" className={`vip-${normalizedLevel}`}>
+            {icons[normalizedLevel]} {normalizedLevel.toUpperCase()}
         </Badge>
     );
 }

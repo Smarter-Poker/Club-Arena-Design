@@ -68,6 +68,9 @@ export default function AgentManagementPage() {
         creditLimit: 0,           // MANDATORY - must be set
     });
 
+    // Animation state
+    const [visibleAgents, setVisibleAgents] = useState<Set<string>>(new Set());
+
     // Load agents from Supabase
     useEffect(() => {
         if (!clubId) return;
@@ -80,6 +83,17 @@ export default function AgentManagementPage() {
             .catch(err => setError(err.message))
             .finally(() => setIsLoading(false));
     }, [clubId]);
+
+    // Stagger animation for agents list
+    useEffect(() => {
+        if (agents.length === 0) return;
+        setVisibleAgents(new Set());
+        agents.forEach((agent, index) => {
+            setTimeout(() => {
+                setVisibleAgents(prev => new Set(prev).add(agent.id));
+            }, index * 60);
+        });
+    }, [agents]);
 
     // Load available members when modal opens
     useEffect(() => {
@@ -387,7 +401,8 @@ export default function AgentManagementPage() {
                         {agents.map(agent => (
                             <div
                                 key={agent.id}
-                                className={`${styles.agentCard} ${agent.status !== 'active' ? styles.inactive : ''}`}
+                                className={`${styles.agentCard} ${agent.status !== 'active' ? styles.inactive : ''} ${visibleAgents.has(agent.id) ? styles.fadeInUp : styles.hidden}`}
+                                style={visibleAgents.has(agent.id) ? undefined : { opacity: 0, transform: 'translateY(8px)' }}
                             >
                                 <div className={styles.agentHeader}>
                                     <div className={styles.agentAvatar}>

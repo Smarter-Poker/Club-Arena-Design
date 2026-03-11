@@ -426,27 +426,42 @@ export default function ProfilePage() {
             </section>
 
             {/* VIP Status Section (for VIP users) */}
-            {isVIP && (
-                <section className={styles.xpSection}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                        <VIPProgressRing
-                            current={diamonds}
-                            total={5000}
-                            tier="gold"
-                            nextTier="platinum"
-                            size={72}
-                            strokeWidth={6}
-                        />
-                        <VIPStatusCard
-                            tier="gold"
-                            currentPoints={diamonds}
-                            nextTierPoints={5000}
-                            benefits={['6% Leaderboard Boost', 'Unlimited Throwables', 'Auto Time Bank', 'Premium Themes']}
-                            memberSince={user?.memberSince ? new Date(user.memberSince) : undefined}
-                        />
-                    </div>
-                </section>
-            )}
+            {isVIP && (() => {
+                const VIP_TIERS = [
+                    { tier: 'bronze' as const, threshold: 0 },
+                    { tier: 'silver' as const, threshold: 1000 },
+                    { tier: 'gold' as const, threshold: 5000 },
+                    { tier: 'platinum' as const, threshold: 50000 },
+                    { tier: 'diamond' as const, threshold: 500000 },
+                ];
+                const currentTierIndex = VIP_TIERS.reduce((acc, t, i) => diamonds >= t.threshold ? i : acc, 0);
+                const currentTier = VIP_TIERS[currentTierIndex];
+                const nextTierData = VIP_TIERS[currentTierIndex + 1];
+                const nextTierPoints = nextTierData?.threshold;
+                const nextTierName = nextTierData?.tier;
+
+                return (
+                    <section className={styles.xpSection}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                            <VIPProgressRing
+                                current={diamonds}
+                                total={nextTierPoints || diamonds}
+                                tier={currentTier.tier}
+                                nextTier={nextTierName || currentTier.tier}
+                                size={72}
+                                strokeWidth={6}
+                            />
+                            <VIPStatusCard
+                                tier={currentTier.tier}
+                                currentPoints={diamonds}
+                                nextTierPoints={nextTierPoints}
+                                benefits={['6% Leaderboard Boost', 'Unlimited Throwables', 'Auto Time Bank', 'Premium Themes']}
+                                memberSince={user?.memberSince ? new Date(user.memberSince) : undefined}
+                            />
+                        </div>
+                    </section>
+                );
+            })()}
 
             {/* Daily Bonus */}
             <section className={styles.xpSection}>
