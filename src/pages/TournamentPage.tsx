@@ -163,6 +163,26 @@ export default function TournamentPage() {
         })();
     }, [selectedTournament?.id, currentUser.id]);
 
+    // Helper to notify the parent World Hub of a balance change
+    const notifyWalletChange = (amount: number, isDeduction: boolean) => {
+        try {
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'USE_TRAINING_BUS_EMIT',
+                    event: 'chips_distributed',
+                    payload: {
+                        userId: currentUser.id,
+                        amount: amount,
+                        isDeduction: isDeduction,
+                        timestamp: Date.now()
+                    }
+                }, '*');
+            }
+        } catch (e) {
+            console.error('Failed to notify parent of wallet change:', e);
+        }
+    };
+
     // Register for tournament
     const handleRegister = async () => {
         if (!selectedTournament) return;
@@ -190,6 +210,8 @@ export default function TournamentPage() {
                 current_players: prev.current_players + 1,
                 prize_pool: prev.prize_pool + prizeContribution,
             } : null);
+
+            notifyWalletChange(selectedTournament.buy_in_amount, true);
 
             toast.success(`Registered! ${selectedTournament.buy_in_amount} chips deducted.`);
         } catch (error) {
@@ -264,6 +286,8 @@ export default function TournamentPage() {
                 current_players: prev.current_players - 1,
                 prize_pool: prev.prize_pool - prizeContribution,
             } : null);
+
+            notifyWalletChange(selectedTournament.buy_in_amount, false);
 
             toast.success(`Unregistered! ${selectedTournament.buy_in_amount} chips refunded.`);
         } catch (error) {

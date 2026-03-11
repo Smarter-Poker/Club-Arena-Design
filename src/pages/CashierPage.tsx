@@ -323,6 +323,25 @@ export default function CashierPage() {
     // HANDLE ACTIONS
     // ─────────────────────────────────────────────────────────────────────────────
 
+    // Helper to notify the parent World Hub of a balance change
+    const notifyWalletChange = (targetUserId: string, chipAmount: number) => {
+        try {
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'USE_TRAINING_BUS_EMIT',
+                    event: 'chips_distributed',
+                    payload: {
+                        userId: targetUserId,
+                        amount: chipAmount,
+                        timestamp: Date.now()
+                    }
+                }, '*');
+            }
+        } catch (e) {
+            console.error('Failed to notify parent of wallet change:', e);
+        }
+    };
+
     const selectedRecipientData = useMemo(() => {
         return recipients.find(r => r.id === selectedRecipient);
     }, [recipients, selectedRecipient]);
@@ -378,12 +397,15 @@ export default function CashierPage() {
                 loadBalances(user.id);
                 loadRecipients(); // Refresh balances
                 setSelectedRecipient('');
+                notifyWalletChange(user.id, value);
+                notifyWalletChange(selectedRecipient, value);
 
             } else if (action === 'mint') {
                 // ─── MINT CHIPS ───
                 await mintChips('default', value);
                 setMessage({ type: 'success', text: `Minted ${value.toLocaleString()} chips` });
                 loadBalances(user.id);
+                notifyWalletChange(user.id, value);
 
             } else if (action === 'buyin') {
                 // ─── TABLE BUY-IN ───
@@ -401,6 +423,7 @@ export default function CashierPage() {
                 const success = await lockForBuyIn(user.id, value, tableId);
                 if (success) {
                     setMessage({ type: 'success', text: `Bought in for ${value.toLocaleString()} chips` });
+                    notifyWalletChange(user.id, value);
                     navigate(`/table/${tableId}`);
                 } else {
                     setMessage({ type: 'error', text: 'Buy-in failed. Please try again.' });
@@ -417,6 +440,7 @@ export default function CashierPage() {
                 const success = await unlockFromTable(user.id, value, tableId);
                 if (success) {
                     setMessage({ type: 'success', text: `Cashed out ${value.toLocaleString()} chips` });
+                    notifyWalletChange(user.id, value);
                     navigate(`/table/${tableId}`);
                 } else {
                     setMessage({ type: 'error', text: 'Cash-out failed. Please try again.' });
