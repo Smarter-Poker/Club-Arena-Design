@@ -78,6 +78,7 @@ const ClubFinancialsPage = lazy(() => import('./pages/ClubFinancialsPage'));
 const BonusPage = lazy(() => import('./pages/BonusPage'));
 const WaitlistPage = lazy(() => import('./pages/WaitlistPage'));
 const ClubRulesPage = lazy(() => import('./pages/ClubRulesPage'));
+const NotificationCenter = lazy(() => import('./pages/NotificationCenter'));
 
 // Shared/Public Pages
 const HandReplayerPage = lazy(() => import('./pages/share/HandReplayerPage'));
@@ -734,6 +735,14 @@ export default function App() {
                                 element={
                                     <AuthGuard>
                                         <ClubRulesPage />
+                                    </AuthGuard>
+                                }
+                            />
+                            <Route
+                                path="notifications"
+                                element={
+                                    <AuthGuard>
+                                        <NotificationCenter />
                                     </AuthGuard>
                                 }
                             />

@@ -172,8 +172,8 @@ export default function GlobalHeader({
                         )}
                     </a>
 
-                    {/* Notifications */}
-                    <a href="https://smarter.poker/hub/notifications" className={styles.orbLink}>
+                    {/* Notifications — route to in-app Notification Center */}
+                    <a href="/notifications" className={styles.orbLink}>
                         <img
                             src={`${BASE}images/header-notifications.png`}
                             alt="Notifications"

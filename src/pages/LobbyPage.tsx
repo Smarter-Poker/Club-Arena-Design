@@ -22,6 +22,7 @@ export default function LobbyPage() {
     const { user } = useUserStore();
     const [activeFilter, setActiveFilter] = useState<GameFilter>('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [stakeFilter, setStakeFilter] = useState<string>('any');
     const [tables, setTables] = useState<PokerTable[]>([]);
     const [loading, setLoading] = useState(true);
     const [onlinePlayers, setOnlinePlayers] = useState(0);
@@ -169,6 +170,16 @@ export default function LobbyPage() {
             if (activeFilter === 'tournaments' && (table as any).game_type !== 'tournament') return false;
         }
         if (searchQuery && !table.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+
+        // Stake range filter
+        if (stakeFilter !== 'any' && table.stakes) {
+            const bbMatch = table.stakes.match(/(\d+)\/(\d+)/);
+            const bb = bbMatch ? parseInt(bbMatch[2]) : 0;
+            if (stakeFilter === 'low' && bb > 10) return false;
+            if (stakeFilter === 'mid' && (bb <= 10 || bb > 50)) return false;
+            if (stakeFilter === 'high' && bb <= 50) return false;
+        }
+
         return true;
     });
 
@@ -214,6 +225,22 @@ export default function LobbyPage() {
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className={styles.searchInput}
                     />
+                    <select
+                        value={stakeFilter}
+                        onChange={(e) => setStakeFilter(e.target.value)}
+                        style={{
+                            padding: '6px 10px', borderRadius: 8,
+                            background: 'rgba(0,0,0,0.3)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            color: '#aaa', fontSize: '0.72rem',
+                            marginLeft: 6,
+                        }}
+                    >
+                        <option value="any">All Stakes</option>
+                        <option value="low">Low (≤10 BB)</option>
+                        <option value="mid">Mid (10-50 BB)</option>
+                        <option value="high">High (50+ BB)</option>
+                    </select>
                 </div>
             </section>
 
