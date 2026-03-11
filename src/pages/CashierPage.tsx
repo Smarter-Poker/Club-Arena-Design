@@ -98,6 +98,13 @@ export default function CashierPage() {
         }, 1000);
     }, []);
 
+    // Cleanup cooldown interval on unmount
+    useEffect(() => {
+        return () => {
+            if (cooldownRef.current) clearInterval(cooldownRef.current);
+        };
+    }, []);
+
     // Role state
     const [userRole, setUserRole] = useState<string>('member');
     const [isInUnion, setIsInUnion] = useState(false);

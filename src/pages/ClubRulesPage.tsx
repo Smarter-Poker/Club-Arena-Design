@@ -40,14 +40,16 @@ export default function ClubRulesPage() {
                 .eq('id', clubId)
                 .single();
 
+            let adminFromOwner = false;
             if (club) {
                 setClubName(club.name);
                 setRules(club.rules_text || '');
-                setIsAdmin(club.owner_id === user?.id);
+                adminFromOwner = club.owner_id === user?.id;
+                if (adminFromOwner) setIsAdmin(true);
             }
 
-            // Check if admin/owner via club_members
-            if (!isAdmin) {
+            // Check if admin via club_members (only if not already owner)
+            if (!adminFromOwner) {
                 const { data: membership } = await supabase
                     .from('club_members')
                     .select('role')
