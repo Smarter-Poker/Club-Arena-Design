@@ -1,12 +1,20 @@
 /**
  * ♠ CLUB ARENA — Seat Slot Component
  * ═══════════════════════════════════════════════════════════════════════════════
- * PokerBros/ClubGG-style compact circular player seats
+ * EXACT PokerBros seat layout:
  *
- * Layout: Circular Avatar → Name Pill → Stack
- * Empty: Subtle "+" circle
- * Active: SVG arc timer ring + glow
- * Folded: Greyed out + dimmed
+ *   [Fold badge above]
+ *        ┌──────┐
+ *        │Avatar│  ← 56px circle with custom image
+ *        └──────┘
+ *      ┌──────────┐
+ *      │  ~Name~  │  ← Dark rounded box, neon yellow border when active
+ *      │  7,744   │  ← Green chip count
+ *      └──────────┘
+ *         (D)       ← Position chip near avatar
+ *
+ * Active player: neon yellow glowing border around the info box
+ * that DISAPPEARS as the clock counts down (CSS conic-gradient mask).
  */
 
 import React, { useMemo } from 'react';
@@ -44,10 +52,12 @@ export interface SeatSlotProps {
     isActive: boolean;
     lastAction: LastAction;
     lastBetAmount?: number;
-    timerProgress?: number; // 0-100
+    timerProgress?: number; // 0-100 (100 = full time, 0 = out of time)
     bigBlind?: number;
     isTournament?: boolean;
     bountyValue?: number;
+    isWinner?: boolean;
+    winningHandName?: string; // e.g. "Straight", "Full House"
     onSit?: () => void;
     onAction?: () => void;
     onAvatarClick?: () => void;
@@ -75,105 +85,45 @@ function formatStackAsBB(stack: number, bigBlind: number): string {
 
 function getActionLabel(action: LastAction, amount?: number): string {
     switch (action) {
-        case 'fold': return 'FOLD';
-        case 'check': return 'CHECK';
-        case 'call': return amount ? `CALL ${formatStack(amount)}` : 'CALL';
-        case 'bet': return amount ? `BET ${formatStack(amount)}` : 'BET';
-        case 'raise': return amount ? `RAISE ${formatStack(amount)}` : 'RAISE';
+        case 'fold': return 'Fold';
+        case 'check': return 'Check';
+        case 'call': return amount ? `Call ${formatStack(amount)}` : 'Call';
+        case 'bet': return amount ? `Bet ${formatStack(amount)}` : 'Bet';
+        case 'raise': return amount ? `Raise ${formatStack(amount)}` : 'Raise';
         case 'all_in': return 'ALL IN';
         default: return '';
     }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SVG TIMER ARC — Circular progress ring around avatar
+// HOLE CARDS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function TimerArc({ progress, size = 52 }: { progress: number; size?: number }) {
-    const strokeWidth = 3;
-    const radius = (size - strokeWidth) / 2;
-    const circumference = 2 * Math.PI * radius;
-    const offset = circumference * (1 - progress / 100);
+function HoleCard({ card, hidden = false, index, isHero = false, isWinner = false }: {
+    card?: Card; hidden?: boolean; index: number; isHero?: boolean; isWinner?: boolean;
+}) {
+    // PokerBros-style: hero cards have wider fan tilt, opponents tighter
+    const rotation = isHero
+        ? (index === 0 ? -12 : 12)
+        : (index === 0 ? -8 : 8);
+    const size = isHero ? 'md' : 'sm';
 
-    // Color transitions: green → yellow → red
-    const getColor = (p: number) => {
-        if (p > 60) return '#22C55E';
-        if (p > 30) return '#F59E0B';
-        return '#EF4444';
-    };
-
-    return (
-        <svg
-            className="seat__timer-arc"
-            width={size}
-            height={size}
-            viewBox={`0 0 ${size} ${size}`}
-        >
-            {/* Background track */}
-            <circle
-                cx={size / 2}
-                cy={size / 2}
-                r={radius}
-                fill="none"
-                stroke="rgba(255,255,255,0.08)"
-                strokeWidth={strokeWidth}
-            />
-            {/* Progress arc */}
-            <circle
-                cx={size / 2}
-                cy={size / 2}
-                r={radius}
-                fill="none"
-                stroke={getColor(progress)}
-                strokeWidth={strokeWidth}
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                strokeDashoffset={offset}
-                transform={`rotate(-90 ${size / 2} ${size / 2})`}
-                style={{ transition: 'stroke-dashoffset 0.3s linear, stroke 0.5s ease' }}
-            />
-            {/* Glow filter */}
-            {progress <= 30 && (
-                <circle
-                    cx={size / 2}
-                    cy={size / 2}
-                    r={radius}
-                    fill="none"
-                    stroke={getColor(progress)}
-                    strokeWidth={strokeWidth + 2}
-                    strokeLinecap="round"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={offset}
-                    transform={`rotate(-90 ${size / 2} ${size / 2})`}
-                    opacity={0.3}
-                    style={{ transition: 'stroke-dashoffset 0.3s linear' }}
-                />
-            )}
-        </svg>
-    );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// HOLE CARDS — Compact card display
-// ═══════════════════════════════════════════════════════════════════════════════
-
-function HoleCard({ card, hidden = false, index }: { card?: Card; hidden?: boolean; index: number }) {
     if (hidden || !card) {
         return (
             <div
                 className="seat__card seat__card--back"
-                style={{ transform: `rotate(${index === 0 ? -6 : 6}deg) translateX(${index === 0 ? -2 : 2}px)` }}
+                style={{ transform: `rotate(${rotation}deg)` }}
             >
-                <CardBack size="sm" style="classic_blue" />
+                <CardBack size={size} style="classic_blue" />
             </div>
         );
     }
     return (
         <div
-            className="seat__card seat__card--face"
-            style={{ transform: `rotate(${index === 0 ? -6 : 6}deg) translateX(${index === 0 ? -2 : 2}px)` }}
+            className={`seat__card seat__card--face${isWinner ? ' seat__card--winner' : ''}`}
+            style={{ transform: `rotate(${rotation}deg)` }}
         >
-            <CardImage card={card} deckStyle="4color" size="sm" />
+            <CardImage card={card} deckStyle="4color" size={size} isHighlighted={isWinner} />
         </div>
     );
 }
@@ -201,6 +151,14 @@ function PositionChip({ position }: { position: PositionBadge }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// NEON TIMER BORDER — PokerBros-style disappearing border
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// The info box border glows neon yellow and the border progressively disappears
+// as the clock counts down. We achieve this with a conic-gradient mask on a
+// pseudo-element, driven by a CSS custom property --timer-progress.
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -215,6 +173,8 @@ export function SeatSlot({
     bigBlind = 2,
     isTournament = false,
     bountyValue,
+    isWinner = false,
+    winningHandName,
     onSit,
     onAction,
     onAvatarClick,
@@ -228,10 +188,11 @@ export function SeatSlot({
             cls.push(`seat--${player.status}`);
             if (player.isHero) cls.push('seat--hero');
             if (isActive) cls.push('seat--active');
+            if (isWinner) cls.push('seat--winner');
             if (lastAction === 'fold') cls.push('seat--folded');
         }
         return cls.join(' ');
-    }, [player, isActive, lastAction]);
+    }, [player, isActive, lastAction, isWinner]);
 
     // ─── EMPTY SEAT ────────────────────────────────────────────────────────
     if (!player) {
@@ -240,29 +201,47 @@ export function SeatSlot({
         }
         return (
             <div className={containerClasses} onClick={onSit}>
-                <button className="seat__join-btn" aria-label={`Sit at seat ${seatNumber}`}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                </button>
+                <span className="seat__empty-label">EMPTY</span>
             </div>
         );
     }
 
     // ─── OCCUPIED SEAT ─────────────────────────────────────────────────────
-    const avatarUrl = player.avatar ||
-        `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${encodeURIComponent(player.name)}&backgroundColor=b6e3f4`;
+    // Use custom avatar library default — NOT generic DiceBear icons
+    const avatarUrl = player.avatar || '/avatars/default-player.png';
+
+    // Timer progress as CSS custom prop for conic-gradient border
+    const timerStyle = isActive && timerProgress !== undefined
+        ? { '--timer-progress': `${timerProgress}%` } as React.CSSProperties
+        : undefined;
 
     return (
         <div className={containerClasses} onClick={onAction}>
-            {/* Avatar Ring — Contains avatar + timer arc */}
-            <div className="seat__avatar-ring">
-                {/* SVG Timer Arc (when active) */}
-                {isActive && timerProgress !== undefined && (
-                    <TimerArc progress={timerProgress} size={52} />
-                )}
 
-                {/* Avatar Circle */}
+            {/* Last Action Badge — floats ABOVE the seat like PokerBros */}
+            {lastAction && (
+                <div className={`seat__action seat__action--${lastAction}`}>
+                    {getActionLabel(lastAction, lastBetAmount)}
+                </div>
+            )}
+
+            {/* Hole Cards — opponents: beside avatar at showdown */}
+            {player.holeCards && player.holeCards.length > 0 && !player.isHero && (
+                <div className={`seat__cards seat__cards--opponent${player.showCards ? ' seat__cards--revealed' : ''}`}>
+                    {player.holeCards.map((card, i) => (
+                        <HoleCard
+                            key={i}
+                            card={card}
+                            hidden={!player.showCards}
+                            index={i}
+                            isWinner={isWinner}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {/* Avatar Circle — large, sits on top of info box */}
+            <div className="seat__avatar-wrap">
                 <div
                     className="seat__avatar"
                     onClick={(e) => {
@@ -291,6 +270,11 @@ export function SeatSlot({
                     <span className="seat__avatar-fallback seat__avatar-initial" style={{ display: 'none' }}>
                         {player.name.charAt(0).toUpperCase()}
                     </span>
+
+                    {/* Folded overlay */}
+                    {lastAction === 'fold' && (
+                        <div className="seat__avatar-fold-overlay" />
+                    )}
                 </div>
 
                 {/* Status dot (away/sitting out) */}
@@ -298,41 +282,42 @@ export function SeatSlot({
                     <span className={`seat__status-dot seat__status-dot--${player.status}`} />
                 )}
 
-                {/* Position Chip */}
+                {/* Position Chip — bottom-right of avatar */}
                 <PositionChip position={position} />
             </div>
 
-            {/* Info Pill — Name + Stack */}
-            <div className="seat__info">
+            {/* Info Box — name + stack, with neon timer border when active */}
+            <div className="seat__info" style={timerStyle}>
+                {/* Neon border overlay (rendered via CSS ::before when --active) */}
                 <span className="seat__name">{player.name}</span>
                 <span className="seat__stack">
                     {isTournament ? formatStack(player.stack) : formatStackAsBB(player.stack, bigBlind)}
                 </span>
             </div>
 
-            {/* Hole Cards */}
-            {player.holeCards && player.holeCards.length > 0 && (
-                <div className={`seat__cards ${player.isHero ? 'seat__cards--hero' : ''}`}>
+            {/* Hero Hole Cards — large, PokerBros style beside avatar */}
+            {player.holeCards && player.holeCards.length > 0 && player.isHero && (
+                <div className="seat__cards seat__cards--hero">
                     {player.holeCards.map((card, i) => (
                         <HoleCard
                             key={i}
                             card={card}
-                            hidden={!player.showCards && !player.isHero}
+                            hidden={false}
                             index={i}
+                            isHero={true}
+                            isWinner={isWinner}
                         />
                     ))}
                 </div>
             )}
 
-            {/* Last Action Badge */}
-            {lastAction && (
-                <div className={`seat__action seat__action--${lastAction}`}>
-                    {getActionLabel(lastAction, lastBetAmount)}
-                </div>
+            {/* Winning Hand Name — floats below cards like PokerBros "Straight" label */}
+            {isWinner && winningHandName && (
+                <div className="seat__hand-name">{winningHandName}</div>
             )}
 
             {/* All-In Badge */}
-            {player.status === 'all_in' && (
+            {player.status === 'all_in' && !isWinner && (
                 <div className="seat__allin-badge">ALL IN</div>
             )}
 
@@ -363,6 +348,8 @@ export default React.memo(SeatSlot, (prev, next) => {
         prev.isTournament === next.isTournament &&
         prev.bigBlind === next.bigBlind &&
         prev.bountyValue === next.bountyValue &&
+        prev.isWinner === next.isWinner &&
+        prev.winningHandName === next.winningHandName &&
         prev.player?.id === next.player?.id &&
         prev.player?.stack === next.player?.stack &&
         prev.player?.status === next.player?.status &&

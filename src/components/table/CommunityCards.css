@@ -236,6 +236,49 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+   WINNING HAND NAME — PokerBros "Straight" label below board
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.community-cards__hand-name {
+    margin-top: 6px;
+    padding: 3px 16px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    font-style: italic;
+    color: #FFD700;
+    text-shadow:
+        0 0 12px rgba(255, 215, 0, 0.6),
+        0 2px 4px rgba(0, 0, 0, 0.8);
+    letter-spacing: 0.05em;
+    text-align: center;
+    animation: handNameFadeIn 0.5s ease-out;
+    white-space: nowrap;
+}
+
+@keyframes handNameFadeIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.8) translateY(8px);
+    }
+    60% {
+        opacity: 1;
+        transform: scale(1.05) translateY(-2px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@media (max-width: 480px) {
+    .community-cards__hand-name {
+        font-size: 0.9rem;
+        padding: 2px 12px;
+        margin-top: 4px;
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
    RESPONSIVE
    ───────────────────────────────────────────────────────────────────────────── */
 

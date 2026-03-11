@@ -418,6 +418,11 @@ export default function TablePage() {
     const [ritTimer, setRitTimer] = useState(10);
     const [ritOpponent, setRitOpponent] = useState('Opponent');
 
+    // Winner state — tracks winning players and their hand names for highlighting
+    const [winnerInfo, setWinnerInfo] = useState<{ playerIds: string[]; handName: string; cardIndices: number[] }>({
+        playerIds: [], handName: '', cardIndices: [],
+    });
+
     // Bad Beat Jackpot state
     const [showBBJ, setShowBBJ] = useState(false);
     const [bbjAmount, setBbjAmount] = useState(0);
@@ -1801,6 +1806,27 @@ export default function TablePage() {
                     // Wallet transfers only happen on buy-in (debit) and leave-table (credit).
                     // Winners' chips are added to their table stack via the state update above.
 
+                    // Track winner info for visual highlighting
+                    {
+                        const winnerIds = event.winners.map((w: any) => w.userId);
+                        const bestHand = event.winners.find((w: any) => w.hand?.name)?.hand;
+                        const handName = bestHand?.name || '';
+                        // Find which community card indices are part of the winning hand
+                        const winCardIndices: number[] = [];
+                        if (bestHand?.cards) {
+                            const communityCards = handControllerRef.current?.getState()?.communityCards || [];
+                            bestHand.cards.forEach((wc: any) => {
+                                const idx = communityCards.findIndex((cc: any) =>
+                                    cc.rank === wc.rank && cc.suit === wc.suit
+                                );
+                                if (idx >= 0 && !winCardIndices.includes(idx)) {
+                                    winCardIndices.push(idx);
+                                }
+                            });
+                        }
+                        setWinnerInfo({ playerIds: winnerIds, handName, cardIndices: winCardIndices });
+                    }
+
                     // Trigger achievements for winners
                     for (const winner of event.winners) {
                         achievementTriggerService.onHandComplete(winner.userId, {
@@ -1830,6 +1856,8 @@ export default function TablePage() {
                         _win.__pokerLocks.handActive = false;
                         _win.__pokerLocks.activeHC = null;
                         handNumberRef.current += 1;
+                        // Clear winner highlights
+                        setWinnerInfo({ playerIds: [], handName: '', cardIndices: [] });
                         setTableState(prev => {
                             // Parse big blind for auto-rebuy calculation
                             const bbMatch = prev.blinds.match(/\/(\d+\.?\d*)/);
@@ -2374,7 +2402,8 @@ export default function TablePage() {
                                     <CommunityCards
                                         cards={tableState.communityCards}
                                         stage={tableState.boardStage}
-                                        highlightedIndices={[]}
+                                        highlightedIndices={winnerInfo.cardIndices}
+                                        winningHandName={winnerInfo.handName}
                                     />
                                 </div>
 
@@ -2438,6 +2467,8 @@ export default function TablePage() {
                                     bigBlind={parseFloat(tableState.blinds.split('/')[1]) || 2}
                                     isTournament={tableState.isTournament}
                                     bountyValue={tableState.isBountyTournament && player ? tableState.bountyMap[player.id] : undefined}
+                                    isWinner={player ? winnerInfo.playerIds.includes(player.id) : false}
+                                    winningHandName={player && winnerInfo.playerIds.includes(player.id) ? winnerInfo.handName : undefined}
                                     onSit={() => handleSeatClick(seatNumber)}
                                     onAvatarClick={() => {
                                         // Open throwable selector targeting this seat

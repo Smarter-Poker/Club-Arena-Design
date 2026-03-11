@@ -28,6 +28,7 @@ export interface CommunityCardsProps {
     stage: BoardStage;
     highlightedIndices?: number[];
     isDealing?: boolean;
+    winningHandName?: string; // e.g. "Straight" — shown as overlay at showdown
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -98,6 +99,7 @@ export function CommunityCards({
     stage,
     highlightedIndices = [],
     isDealing = false,
+    winningHandName,
 }: CommunityCardsProps) {
     const visibleCount = useMemo(() => getVisibleCardCount(stage), [stage]);
 
@@ -142,6 +144,13 @@ export function CommunityCards({
                         <div className="community-cards__separator community-cards__separator--turn" />
                     )}
                 </>
+            )}
+
+            {/* Winning Hand Name — PokerBros-style "Straight" label below community cards */}
+            {winningHandName && (
+                <div className="community-cards__hand-name">
+                    {winningHandName}
+                </div>
             )}
         </div>
     );
