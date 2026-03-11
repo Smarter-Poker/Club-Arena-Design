@@ -359,7 +359,7 @@ export default function ClubDetailPage() {
                 .from('clubs')
                 .select('*')
                 .eq('id', clubId)
-                .single();
+                .maybeSingle();
 
             if (clubError || !clubData) {
                 console.error('[ClubDetailPage] Failed to load club:', clubError);

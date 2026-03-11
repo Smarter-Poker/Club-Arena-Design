@@ -61,7 +61,7 @@ export default function TournamentPage() {
                     .select('role')
                     .eq('club_id', clubId)
                     .eq('user_id', currentUser.id)
-                    .single();
+                    .maybeSingle();
 
                 // Owner or admin can manage tournaments
                 setIsOwner(data?.role === 'owner' || data?.role === 'admin');

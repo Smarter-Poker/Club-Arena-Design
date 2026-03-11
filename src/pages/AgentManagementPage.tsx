@@ -174,22 +174,19 @@ export default function AgentManagementPage() {
             )
             .subscribe();
 
-        return () => {
-            masterBus.removeRegisteredChannel(channelKey);
-        };
-    }, [clubId]);
-
-    // Bus event listeners for cross-component sync
-    useEffect(() => {
-        if (!clubId) return;
+        // Bus event listeners for cross-component sync
         const unsubWallet = masterBus.subscribe('WALLET_REFRESHED', () => {
-            // Reload agents when wallet balances change (chip transfers)
             loadAgentsData();
         });
         const unsubBalance = masterBus.subscribe('BALANCE_UPDATED', () => {
             loadAgentsData();
         });
-        return () => { unsubWallet(); unsubBalance(); };
+
+        return () => {
+            masterBus.removeRegisteredChannel(channelKey);
+            unsubWallet();
+            unsubBalance();
+        };
     }, [clubId]);
 
     // Stats summary

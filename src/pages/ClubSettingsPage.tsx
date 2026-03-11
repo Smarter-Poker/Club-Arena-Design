@@ -110,7 +110,7 @@ export default function ClubSettingsPage() {
                 .from('clubs')
                 .select('*')
                 .eq('id', clubId)
-                .single();
+                .maybeSingle();
 
             if (!error && data) {
                 setSettings({

@@ -2154,7 +2154,7 @@ class TournamentService {
       .select('current_bounty')
       .eq('tournament_id', tournamentId)
       .eq('user_id', eliminatedPlayerId)
-      .single();
+      .maybeSingle();
 
     const bountyAmount = eliminatedPlayer?.current_bounty || bountyConfig.baseBounty;
 
@@ -2170,7 +2170,7 @@ class TournamentService {
         .select('current_bounty')
         .eq('tournament_id', tournamentId)
         .eq('user_id', collectorPlayerId)
-        .single();
+        .maybeSingle();
 
       const newCollectorBounty =
         (collector?.current_bounty || bountyConfig.baseBounty) + addedToHead;

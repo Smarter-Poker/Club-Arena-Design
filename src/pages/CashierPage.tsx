@@ -233,7 +233,7 @@ export default function CashierPage() {
         .select('role')
         .eq('club_id', clubId)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
       const role = memberData?.role || 'member';
       setUserRole(role);
 
@@ -242,7 +242,7 @@ export default function CashierPage() {
         .from('clubs')
         .select('name')
         .eq('id', clubId)
-        .single();
+        .maybeSingle();
       setClubName(clubData?.name || '');
 
       // Check if club is in a union
@@ -250,7 +250,7 @@ export default function CashierPage() {
         .from('union_clubs')
         .select('union_id, unions!inner(owner_id)')
         .eq('club_id', clubId)
-        .single();
+        .maybeSingle();
 
       if (unionClub) {
         setIsInUnion(true);

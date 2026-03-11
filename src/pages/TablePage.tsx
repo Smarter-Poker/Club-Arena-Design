@@ -292,7 +292,7 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                     .from('profiles')
                     .select('display_name, username')
                     .eq('id', user.id)
-                    .single();
+                    .maybeSingle();
                 setUsername(profile?.display_name || profile?.username || 'Player');
             }
             setIsLoading(false);
@@ -646,7 +646,7 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                     .from('tables')
                     .select('club_id')
                     .eq('id', tableId)
-                    .single();
+                    .maybeSingle();
                 const actualClubId = tableData?.club_id || tableId;
                 const pool = await BBJService.getPool({ clubId: actualClubId });
                 if (pool) {
@@ -1053,7 +1053,7 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                 .from('tables')
                 .select('*')
                 .eq('id', tableId)
-                .single();
+                .maybeSingle();
 
             if (table && !error) {
                 setTableState(prev => ({
@@ -1080,7 +1080,7 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                         .from('tournaments')
                         .select('is_bounty, is_pko, is_mystery_bounty, bounty_amount, spin_multiplier')
                         .eq('id', table.tournament_id)
-                        .single();
+                        .maybeSingle();
 
                     if (tournData && (tournData.is_bounty || tournData.is_pko || tournData.is_mystery_bounty)) {
                         // Load current bounty values for all players in this tournament
@@ -1161,7 +1161,7 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                                             .select('balance')
                                             .eq('user_id', userId)
                                             .eq('wallet_type', 'PLAYER')
-                                            .single();
+                                            .maybeSingle();
                                         walBal = w?.balance || 0;
                                     }
                                     setAddOnPeriod({
@@ -1310,7 +1310,7 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                         .select('balance')
                         .eq('user_id', userId)
                         .eq('wallet_type', 'PLAYER')
-                        .single();
+                        .maybeSingle();
 
                     if (walletData) {
                         setAccountBalance(walletData.balance || 0);
@@ -3322,7 +3322,7 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                                     .from('tables')
                                     .select('current_players')
                                     .eq('id', tableId)
-                                    .single();
+                                    .maybeSingle();
                                 await supabase
                                     .from('tables')
                                     .update({ current_players: (tableData?.current_players || 0) + 1 })

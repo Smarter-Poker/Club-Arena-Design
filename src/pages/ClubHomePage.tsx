@@ -251,7 +251,7 @@ export default function ClubHomePage() {
             .from('profiles')
             .select('id, username, display_name, avatar_url, player_number')
             .eq('id', authUser.id)
-            .single();
+            .maybeSingle();
 
         if (profileData) {
             setUserProfile(profileData as UserProfileData);
@@ -274,7 +274,7 @@ export default function ClubHomePage() {
                 .from('clubs')
                 .select('*')
                 .eq('id', clubId)
-                .single();
+                .maybeSingle();
 
             if (clubError || !clubData) {
                 console.error('Failed to load club:', clubError);
@@ -295,7 +295,7 @@ export default function ClubHomePage() {
                     .select('chip_balance, role')
                     .eq('club_id', clubId)
                     .eq('user_id', authUser.id)
-                    .single();
+                    .maybeSingle();
 
                 if (memberData) {
                     // Load diamond balance from diamond_wallets table
@@ -441,7 +441,7 @@ export default function ClubHomePage() {
                     .from('bbj_pools')
                     .select('main_balance')
                     .limit(1)
-                    .single();
+                    .maybeSingle();
 
                 if (!bbjError && bbjData) {
                     setJackpotAmount(bbjData.main_balance || 0);

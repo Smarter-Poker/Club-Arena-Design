@@ -402,7 +402,7 @@ export const SettlementService = {
             .from('unions')
             .select('owner_id, name')
             .eq('id', unionId)
-            .single();
+            .maybeSingle();
 
         if (!union?.owner_id) throw new Error('Union not found');
 
@@ -496,7 +496,7 @@ export const SettlementService = {
             .select('*')
             .eq('club_id', clubId)
             .eq('period_id', periodId || (await this.getCurrentPeriod()).id)
-            .single();
+            .maybeSingle();
 
         if (error) return null;
         return this.mapClubSettlement(data);
@@ -511,7 +511,7 @@ export const SettlementService = {
             .select('*')
             .eq('agent_id', agentId)
             .eq('period_id', periodId || (await this.getCurrentPeriod()).id)
-            .single();
+            .maybeSingle();
 
         if (error) return null;
         return this.mapAgentSettlement(data);
