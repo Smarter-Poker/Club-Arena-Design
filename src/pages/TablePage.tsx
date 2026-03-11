@@ -3526,7 +3526,22 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                     profitLoss={sessionPLRef.current}
                     biggestPot={biggestPotRef.current}
                     peakStack={peakStackRef.current}
-                    onClose={() => { setShowSessionSummary(false); navigate('/'); }}
+                    onClose={() => {
+                        // #6: Reset all session tracking refs to prevent stale data on re-seat
+                        handsPlayedRef.current = 0;
+                        biggestPotRef.current = 0;
+                        peakStackRef.current = 0;
+                        sessionPLRef.current = 0;
+                        sessionStartRef.current = Date.now();
+                        setShowSessionSummary(false);
+
+                        // Notify system
+                        import('../core/MasterBus').then(({ masterBus }) => {
+                            masterBus.emit('SESSION_SUMMARY_DISMISSED', { tableId });
+                        });
+
+                        navigate('/');
+                    }}
                 />
             )}
         </div>

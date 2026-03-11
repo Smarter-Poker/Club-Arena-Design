@@ -193,8 +193,22 @@ export default function NotificationCenter() {
                     <div className="notif-loading"><div className="spinner" /></div>
                 ) : filtered.length === 0 ? (
                     <div className="notif-empty">
-                        <span>🔔</span>
-                        <p>{filter === 'unread' ? 'All caught up!' : 'No notifications yet'}</p>
+                        <div className="notif-empty-illustration">
+                            <div className="notif-empty-bell-ring">
+                                <span className="notif-empty-bell">🔔</span>
+                                <span className="notif-empty-sparkle notif-sparkle-1">✦</span>
+                                <span className="notif-empty-sparkle notif-sparkle-2">✦</span>
+                                <span className="notif-empty-sparkle notif-sparkle-3">✧</span>
+                            </div>
+                        </div>
+                        <h3 className="notif-empty-title">
+                            {filter === 'unread' ? "You're all caught up!" : 'No notifications yet'}
+                        </h3>
+                        <p className="notif-empty-subtitle">
+                            {filter === 'unread'
+                                ? "Every notification has been read. Nice work keeping things tidy!"
+                                : "Join a club, sit at a table, or enter a tournament — your activity feed will light up here."}
+                        </p>
                     </div>
                 ) : (
                     filtered.map(notif => (
