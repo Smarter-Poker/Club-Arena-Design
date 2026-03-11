@@ -136,6 +136,7 @@ export default function AgentManagementPage() {
                 setError(null);
             } catch (err) {
                 console.error('Failed to reload agents:', err);
+                toast.error('Failed to load agents');
                 setError(err instanceof Error ? err.message : 'Failed to reload agents');
             } finally {
                 setIsLoading(false);
