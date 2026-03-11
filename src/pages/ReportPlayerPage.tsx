@@ -8,6 +8,12 @@ import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import './ReportPlayerPage.css';
 
+const reportSectionAnimationStyle = (index: number) => ({
+    opacity: 0,
+    transform: 'translateY(8px)',
+    animation: `fadeInUp 0.5s ease-out ${index * 70}ms forwards`,
+});
+
 type ReportReason = 'collusion' | 'abuse' | 'cheating' | 'harassment' | 'other';
 
 interface ReportForm {
@@ -91,12 +97,12 @@ export default function ReportPlayerPage() {
             <div className="report-content">
                 {error && <div className="error-message">{error}</div>}
 
-                <div className="report-warning">
+                <div className="report-warning" style={reportSectionAnimationStyle(0)}>
                     <span className="warning-icon"></span>
                     <p>False reports may result in account suspension. Please only report genuine violations.</p>
                 </div>
 
-                <section className="report-section">
+                <section className="report-section" style={reportSectionAnimationStyle(1)}>
                     <h3>Reason for Report</h3>
                     <div className="reason-options">
                         {reasonOptions.map(opt => (
@@ -112,7 +118,7 @@ export default function ReportPlayerPage() {
                     </div>
                 </section>
 
-                <section className="report-section">
+                <section className="report-section" style={reportSectionAnimationStyle(2)}>
                     <h3>Description</h3>
                     <textarea
                         placeholder="Please describe what happened in detail..."
@@ -122,7 +128,7 @@ export default function ReportPlayerPage() {
                     />
                 </section>
 
-                <section className="report-section">
+                <section className="report-section" style={reportSectionAnimationStyle(3)}>
                     <h3>Hand ID (Optional)</h3>
                     <input
                         type="text"
@@ -132,7 +138,7 @@ export default function ReportPlayerPage() {
                     />
                 </section>
 
-                <section className="report-section">
+                <section className="report-section" style={reportSectionAnimationStyle(4)}>
                     <div className="checkbox-row">
                         <input
                             type="checkbox"

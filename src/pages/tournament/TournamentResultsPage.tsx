@@ -58,6 +58,7 @@ export default function TournamentResultsPage() {
     const { user } = useAuthUser();
     const [tournaments, setTournaments] = useState<CompletedTournament[]>([]);
     const [selectedTournament, setSelectedTournament] = useState<CompletedTournament | null>(null);
+    const [visibleResults, setVisibleResults] = useState<Set<string>>(new Set());
     const [results, setResults] = useState<TournamentResult[]>([]);
     const deepLinkedRef = useRef(false);
     const [handHistory, setHandHistory] = useState<HandHistoryRecord[]>([]);

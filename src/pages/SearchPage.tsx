@@ -2,7 +2,7 @@
  *  SEARCH PAGE
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/common/Toast';
@@ -26,6 +26,8 @@ export default function SearchPage() {
     const [results, setResults] = useState<SearchResult[]>([]);
     const [loading, setLoading] = useState(false);
     const [recentSearches, setRecentSearches] = useState<string[]>([]);
+    const [visibleResults, setVisibleResults] = useState(new Set<number>());
+    const [searchFocused, setSearchFocused] = useState(false);
 
     useEffect(() => {
         const saved = localStorage.getItem('recentSearches');
@@ -116,6 +118,15 @@ export default function SearchPage() {
         setLoading(false);
     }, [category]);
 
+    // Stagger result rows
+    useEffect(() => {
+        setVisibleResults(new Set());
+        const timers = results.map((_, i) =>
+            setTimeout(() => setVisibleResults(prev => new Set([...prev, i])), i * 45)
+        );
+        return () => timers.forEach(t => clearTimeout(t));
+    }, [results.length]);
+
     useEffect(() => {
         const timeout = setTimeout(() => search(query), 300);
         return () => clearTimeout(timeout);
@@ -147,7 +158,13 @@ export default function SearchPage() {
                     placeholder="Search clubs, players, tables..."
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
+                    onFocus={() => setSearchFocused(true)}
+                    onBlur={() => setSearchFocused(false)}
                     autoFocus
+                    style={{
+                        boxShadow: searchFocused ? '0 0 16px rgba(0, 212, 255, 0.4)' : 'none',
+                        transition: 'box-shadow 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    }}
                 />
                 {query && (
                     <button className="clear-btn" onClick={() => setQuery('')}>✕</button>
@@ -189,11 +206,16 @@ export default function SearchPage() {
                     </div>
                 ) : (
                     <div className="results-list">
-                        {results.map(result => (
+                        {results.map((result, index) => (
                             <div
                                 key={`${result.type}-${result.id}`}
                                 className="result-item"
                                 onClick={() => handleResultClick(result)}
+                                style={{
+                                    opacity: visibleResults.has(index) ? 1 : 0,
+                                    transform: visibleResults.has(index) ? 'translateY(0)' : 'translateY(8px)',
+                                    transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                }}
                             >
                                 <div className="result-avatar">
                                     {result.avatar ? (
