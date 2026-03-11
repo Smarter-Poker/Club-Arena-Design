@@ -15,7 +15,7 @@ import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import type { PokerTable } from '../types/database.types';
 
-type GameFilter = 'all' | 'nlh' | 'plo' | 'ofc' | 'tournaments';
+type GameFilter = 'all' | 'nlh' | 'plo' | 'ofc' | 'tournaments' | 'favorites';
 
 export default function LobbyPage() {
     const navigate = useNavigate();
@@ -26,6 +26,24 @@ export default function LobbyPage() {
     const [loading, setLoading] = useState(true);
     const [onlinePlayers, setOnlinePlayers] = useState(0);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Favorite Tables (stored in localStorage)
+    const [favorites, setFavorites] = useState<Set<string>>(() => {
+        try {
+            const stored = JSON.parse(localStorage.getItem('favorite_tables') || '[]');
+            return new Set(stored);
+        } catch { return new Set(); }
+    });
+
+    const toggleFavorite = (tableId: string) => {
+        setFavorites(prev => {
+            const next = new Set(prev);
+            if (next.has(tableId)) next.delete(tableId);
+            else next.add(tableId);
+            localStorage.setItem('favorite_tables', JSON.stringify([...next]));
+            return next;
+        });
+    };
 
     // UNION-FIRST: Check if user belongs to a union and redirect to union lobby
     useEffect(() => {
@@ -143,6 +161,7 @@ export default function LobbyPage() {
     }, []);
 
     const filteredTables = tables.filter(table => {
+        if (activeFilter === 'favorites') return favorites.has(table.id);
         if (activeFilter !== 'all') {
             if (activeFilter === 'nlh' && !['nlh', 'short_deck', 'flh'].includes(table.game_variant)) return false;
             if (activeFilter === 'plo' && !table.game_variant.startsWith('plo')) return false;
@@ -213,7 +232,21 @@ export default function LobbyPage() {
                 ) : filteredTables.length > 0 ? (
                     <div className={styles.tablesGrid}>
                         {filteredTables.map(table => (
-                            <TableCard key={table.id} table={table} />
+                            <div key={table.id} style={{ position: 'relative' }}>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); toggleFavorite(table.id); }}
+                                    style={{
+                                        position: 'absolute', top: 8, right: 8, zIndex: 10,
+                                        background: 'none', border: 'none', cursor: 'pointer',
+                                        fontSize: '1.1rem', filter: favorites.has(table.id) ? 'none' : 'grayscale(1) opacity(0.4)',
+                                        transition: 'filter 0.2s ease',
+                                    }}
+                                    title={favorites.has(table.id) ? 'Remove from favorites' : 'Add to favorites'}
+                                >
+                                    ⭐
+                                </button>
+                                <TableCard table={table} />
+                            </div>
                         ))}
                     </div>
                 ) : (

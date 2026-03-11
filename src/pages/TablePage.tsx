@@ -93,6 +93,7 @@ import SessionTimer from '../components/table/SessionTimer';
 import { horseBugReporter } from '../services/HorseBugReporter';
 import { submitAction } from '../services/GameServerAPI';
 import './TablePage.css';
+import SessionSummary from '../components/table/SessionSummary';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // RAKE CONFIG HELPER — Derives HandController rake from official chart
@@ -359,6 +360,14 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
     const [showSitOut, setShowSitOut] = useState(false);
     const [sitOutTimeRemaining, setSitOutTimeRemaining] = useState(300); // 5 min default
     const [showWaitList, setShowWaitList] = useState(false);
+
+    // Session tracking for end-of-session summary
+    const [showSessionSummary, setShowSessionSummary] = useState(false);
+    const sessionStartRef = useRef(Date.now());
+    const handsPlayedRef = useRef(0);
+    const biggestPotRef = useRef(0);
+    const peakStackRef = useRef(0);
+    const sessionPLRef = useRef(0);
     const [waitListPlayers, setWaitListPlayers] = useState<Array<{
         playerId: string;
         playerName: string;
@@ -863,7 +872,10 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
             const result = await tableService.leaveTable(tableId, tableState.heroSeat, userId);
             if (result.success) {
                 console.log(`[Leave] Success — ${result.chipsReturned} chips returned to wallet`);
-                navigate('/');
+                // Show session summary instead of navigating immediately
+                const heroPlayer = tableState.players[tableState.heroSeat - 1];
+                sessionPLRef.current = (heroPlayer?.stack || 0) - (result.chipsReturned || 0);
+                setShowSessionSummary(true);
             } else {
                 console.error('[Leave] Failed to leave table');
                 setLeaveNotice('Unable to leave right now. You may be in an active hand — you will leave after it completes.');
@@ -3370,6 +3382,18 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                 hands={handHistory}
                 heroId={userId || ''}
             />
+
+            {/* Session Summary Modal — shown when player leaves table */}
+            {showSessionSummary && (
+                <SessionSummary
+                    duration={Math.floor((Date.now() - sessionStartRef.current) / 1000)}
+                    handsPlayed={handsPlayedRef.current}
+                    profitLoss={sessionPLRef.current}
+                    biggestPot={biggestPotRef.current}
+                    peakStack={peakStackRef.current}
+                    onClose={() => { setShowSessionSummary(false); navigate('/'); }}
+                />
+            )}
         </div>
     );
 }

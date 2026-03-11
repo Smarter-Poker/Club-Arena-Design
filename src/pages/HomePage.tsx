@@ -470,6 +470,68 @@ export default function HomePage() {
                 )}
 
                 {/* ═══════════════════════════════════════════════════════════════════════
+                    DAILY CHALLENGES — 3 rotating daily objectives
+                ═══════════════════════════════════════════════════════════════════════ */}
+                <div style={{ padding: '0 16px', marginBottom: 16 }}>
+                    <h3 style={{
+                        fontSize: '0.85rem', fontWeight: 800, color: '#e0b340',
+                        margin: '0 0 10px', letterSpacing: '0.5px',
+                    }}>DAILY CHALLENGES</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {(() => {
+                            const today = new Date();
+                            const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+                            const CHALLENGES = [
+                                { title: 'Win 3 Hands', icon: '🏆', reward: 50, target: 3 },
+                                { title: 'Play 20 Hands', icon: '🃏', reward: 30, target: 20 },
+                                { title: 'Win a Pot > 100 BB', icon: '💰', reward: 75, target: 1 },
+                                { title: 'Play 2 Different Tables', icon: '🎯', reward: 40, target: 2 },
+                                { title: 'Win 5 Hands Pre-Flop', icon: '⚡', reward: 60, target: 5 },
+                                { title: 'Play for 30 Minutes', icon: '⏱️', reward: 45, target: 30 },
+                                { title: 'Win 2 All-In Pots', icon: '🔥', reward: 80, target: 2 },
+                                { title: 'See 10 Flops', icon: '👁️', reward: 25, target: 10 },
+                                { title: 'Win a Hand with a Flush', icon: '♠️', reward: 100, target: 1 },
+                            ];
+                            // Pick 3 deterministic challenges for today
+                            const picked = [0, 1, 2].map(i => CHALLENGES[((seed * (i + 7)) % CHALLENGES.length)]);
+                            const dayKey = `challenges_${seed}`;
+                            const stored = JSON.parse(localStorage.getItem(dayKey) || '{}');
+
+                            return picked.map((ch, i) => {
+                                const progress = stored[i] || 0;
+                                const pct = Math.min(100, (progress / ch.target) * 100);
+                                return (
+                                    <div key={i} style={{
+                                        display: 'flex', alignItems: 'center', gap: 10,
+                                        padding: '10px 12px', borderRadius: 10,
+                                        background: pct >= 100 ? 'rgba(34,197,94,0.08)' : 'rgba(255,255,255,0.03)',
+                                        border: `1px solid ${pct >= 100 ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.06)'}`,
+                                    }}>
+                                        <span style={{ fontSize: '1.3rem' }}>{ch.icon}</span>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                                                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#e0e8f0' }}>{ch.title}</span>
+                                                <span style={{ fontSize: '0.65rem', color: '#e0b340', fontWeight: 700 }}>+{ch.reward} 💎</span>
+                                            </div>
+                                            <div style={{
+                                                height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.08)',
+                                                overflow: 'hidden',
+                                            }}>
+                                                <div style={{
+                                                    height: '100%', borderRadius: 2, width: `${pct}%`,
+                                                    background: pct >= 100 ? '#22c55e' : 'linear-gradient(90deg, #e0b340, #f0d060)',
+                                                    transition: 'width 0.3s ease',
+                                                }} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            });
+                        })()}
+                    </div>
+                </div>
+
+                {/* ═══════════════════════════════════════════════════════════════════════
                     BOTTOM ROW — 5 Quick Link Tile Cards
                 ═══════════════════════════════════════════════════════════════════════ */}
                 <div className={styles.bottomRow}>

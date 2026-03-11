@@ -77,6 +77,7 @@ const VIPPage = lazy(() => import('./pages/VIPPage'));
 const ClubFinancialsPage = lazy(() => import('./pages/ClubFinancialsPage'));
 const BonusPage = lazy(() => import('./pages/BonusPage'));
 const WaitlistPage = lazy(() => import('./pages/WaitlistPage'));
+const ClubRulesPage = lazy(() => import('./pages/ClubRulesPage'));
 
 // Shared/Public Pages
 const HandReplayerPage = lazy(() => import('./pages/share/HandReplayerPage'));
@@ -725,6 +726,14 @@ export default function App() {
                                 element={
                                     <AuthGuard>
                                         <WaitlistPage />
+                                    </AuthGuard>
+                                }
+                            />
+                            <Route
+                                path="clubs/:clubId/rules"
+                                element={
+                                    <AuthGuard>
+                                        <ClubRulesPage />
                                     </AuthGuard>
                                 }
                             />

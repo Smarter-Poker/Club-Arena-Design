@@ -1,0 +1,118 @@
+.overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal {
+    background: linear-gradient(145deg, #1a2332, #0f1923);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    border-radius: 16px;
+    padding: 28px 24px;
+    width: 90%;
+    max-width: 380px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 212, 255, 0.1);
+}
+
+.title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #fff;
+    margin: 0 0 16px;
+    letter-spacing: 0.5px;
+}
+
+.plHero {
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.plHero.profit {
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.plHero.loss {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.plLabel {
+    display: block;
+    font-size: 0.75rem;
+    color: #8a9aaa;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.plValue {
+    display: block;
+    font-size: 2rem;
+    font-weight: 900;
+}
+
+.profit .plValue { color: #22c55e; }
+.loss .plValue { color: #ef4444; }
+
+.statsGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.statItem {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 4px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.statValue {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.statLabel {
+    font-size: 0.65rem;
+    color: #6a7a8a;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.closeBtn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.closeBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}

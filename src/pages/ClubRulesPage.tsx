@@ -1,0 +1,154 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  CLUB RULES PAGE — Custom Club Guidelines
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * Admin-editable club rules that members see. Stored in club_settings.
+ */
+
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import { useUserStore } from '../stores/useUserStore';
+import { useToast } from '../components/common/Toast';
+import ClubBottomNav from '../components/club/ClubBottomNav';
+import './ClubRulesPage.css';
+
+export default function ClubRulesPage() {
+    const { clubId } = useParams<{ clubId: string }>();
+    const { user } = useUserStore();
+    const toast = useToast();
+
+    const [rules, setRules] = useState('');
+    const [isEditing, setIsEditing] = useState(false);
+    const [editValue, setEditValue] = useState('');
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [clubName, setClubName] = useState('');
+
+    useEffect(() => {
+        if (clubId && user?.id) loadRules();
+    }, [clubId, user?.id]);
+
+    const loadRules = async () => {
+        setLoading(true);
+        try {
+            // Load club info
+            const { data: club } = await supabase
+                .from('clubs')
+                .select('name, rules_text, owner_id')
+                .eq('id', clubId)
+                .single();
+
+            if (club) {
+                setClubName(club.name);
+                setRules(club.rules_text || '');
+                setIsAdmin(club.owner_id === user?.id);
+            }
+
+            // Check if admin/owner via club_members
+            if (!isAdmin) {
+                const { data: membership } = await supabase
+                    .from('club_members')
+                    .select('role')
+                    .eq('club_id', clubId)
+                    .eq('user_id', user?.id)
+                    .single();
+
+                if (membership?.role === 'owner' || membership?.role === 'admin') {
+                    setIsAdmin(true);
+                }
+            }
+        } catch (err) {
+            console.error('Failed to load rules:', err);
+        }
+        setLoading(false);
+    };
+
+    const handleSave = async () => {
+        if (!clubId) return;
+        setSaving(true);
+        try {
+            const { error } = await supabase
+                .from('clubs')
+                .update({ rules_text: editValue })
+                .eq('id', clubId);
+
+            if (error) throw error;
+
+            setRules(editValue);
+            setIsEditing(false);
+            toast.success('Club rules updated!');
+        } catch (err) {
+            console.error('Failed to save rules:', err);
+            toast.error('Failed to save rules');
+        }
+        setSaving(false);
+    };
+
+    if (loading) {
+        return (
+            <div className="club-rules-page">
+                <div className="loading-state"><div className="spinner" /></div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="club-rules-page">
+            <div className="rules-header">
+                <h1>{clubName}</h1>
+                <h2>Club Rules & Guidelines</h2>
+            </div>
+
+            <div className="rules-content">
+                {isEditing ? (
+                    <div className="rules-editor">
+                        <textarea
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            placeholder="Enter your club rules and guidelines here...&#10;&#10;Example:&#10;1. Be respectful to all players&#10;2. No slow-rolling&#10;3. Minimum buy-in is 50 BB&#10;4. Seat changes allowed between hands&#10;5. No external software allowed"
+                            rows={18}
+                            className="rules-textarea"
+                        />
+                        <div className="rules-actions">
+                            <button className="btn btn-ghost" onClick={() => setIsEditing(false)} disabled={saving}>
+                                Cancel
+                            </button>
+                            <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+                                {saving ? 'Saving...' : 'Save Rules'}
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="rules-display">
+                        {rules ? (
+                            <div className="rules-text">
+                                {rules.split('\n').map((line, i) => (
+                                    <p key={i}>{line || '\u00A0'}</p>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="empty-rules">
+                                <span className="empty-icon">📋</span>
+                                <h3>No Rules Set</h3>
+                                <p>{isAdmin ? 'Add rules and guidelines for your club members.' : 'The club owner hasn\'t set any rules yet.'}</p>
+                            </div>
+                        )}
+
+                        {isAdmin && (
+                            <button
+                                className="btn btn-primary edit-btn"
+                                onClick={() => { setEditValue(rules); setIsEditing(true); }}
+                            >
+                                {rules ? 'Edit Rules' : 'Add Rules'}
+                            </button>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            <ClubBottomNav clubId={clubId || ''} />
+        </div>
+    );
+}

@@ -5,7 +5,7 @@
 
 import styles from './GameTypeTabs.module.css';
 
-type GameFilter = 'all' | 'nlh' | 'plo' | 'ofc' | 'tournaments';
+type GameFilter = 'all' | 'nlh' | 'plo' | 'ofc' | 'tournaments' | 'favorites';
 
 interface GameTypeTabsProps {
     activeFilter: GameFilter;
@@ -14,6 +14,7 @@ interface GameTypeTabsProps {
 
 const TABS: { id: GameFilter; label: string; icon: string }[] = [
     { id: 'all', label: 'All Games', icon: '' },
+    { id: 'favorites', label: 'Favorites', icon: '⭐' },
     { id: 'nlh', label: "Hold'em", icon: '♠' },
     { id: 'plo', label: 'Omaha', icon: '' },
     { id: 'ofc', label: 'OFC', icon: '' },
