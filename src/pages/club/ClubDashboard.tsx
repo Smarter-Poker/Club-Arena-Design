@@ -179,7 +179,7 @@ export default function ClubDashboard() {
         .from('clubs')
         .select('id, name, avatar_url, created_at')
         .eq('id', clubId)
-        .single();
+        .maybeSingle();
 
       if (clubData) {
         // Get member count — exclude horses

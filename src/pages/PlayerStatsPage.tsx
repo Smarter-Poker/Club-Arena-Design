@@ -188,7 +188,7 @@ export default function PlayerStatsPage() {
         .from('player_stats')
         .select('*')
         .eq('user_id', targetUserId)
-        .single();
+        .maybeSingle();
 
       if (!error && data) {
         setStats(data);
