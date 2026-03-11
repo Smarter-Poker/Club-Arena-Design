@@ -139,7 +139,10 @@ export default function CashierPage() {
   } | null>(null);
 
   // Confirm modal for high-value cashouts
-  const [cashoutConfirm, setCashoutConfirm] = useState<{ show: boolean; value: number }>({ show: false, value: 0 });
+  const [cashoutConfirm, setCashoutConfirm] = useState<{ show: boolean; value: number }>({
+    show: false,
+    value: 0,
+  });
 
   // Rate limiting: 3s cooldown after each action
   const startCooldown = useCallback(() => {
@@ -184,7 +187,9 @@ export default function CashierPage() {
   const animatedPlayerBalance = useCountAnimation(balances.PLAYER.available, 900);
 
   // Pending cashout state (U-02 FIX: show escrow status)
-  const [pendingCashouts, setPendingCashouts] = useState<{ id: string; amount: number; status: string; created_at: string }[]>([]);
+  const [pendingCashouts, setPendingCashouts] = useState<
+    { id: string; amount: number; status: string; created_at: string }[]
+  >([]);
   const [loadingContext, setLoadingContext] = useState(true); // U-01 FIX: loading skeleton
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -214,7 +219,9 @@ export default function CashierPage() {
         .in('status', ['pending', 'processing'])
         .order('created_at', { ascending: false });
       setPendingCashouts(data || []);
-    } catch { /* silent */ }
+    } catch {
+      /* silent */
+    }
   };
 
   const loadUserContext = async () => {
@@ -415,6 +422,30 @@ export default function CashierPage() {
     };
   }, [user?.id, loadBalances, loadTransactions]);
 
+  // ── Bus Listeners: instant balance refresh from engine events ──
+  useEffect(() => {
+    if (!user?.id) return;
+    const unsubBalance = masterBus.subscribeDebounced(
+      'BALANCE_UPDATED',
+      () => {
+        loadBalances(user.id);
+      },
+      500
+    );
+    const unsubHand = masterBus.subscribeDebounced(
+      'HAND_COMPLETED',
+      () => {
+        loadBalances(user.id);
+        loadTransactions();
+      },
+      1000
+    );
+    return () => {
+      unsubBalance();
+      unsubHand();
+    };
+  }, [user?.id, loadBalances, loadTransactions]);
+
   // ─────────────────────────────────────────────────────────────────────────────
   // DETERMINE AVAILABLE TABS
   // ─────────────────────────────────────────────────────────────────────────────
@@ -589,7 +620,10 @@ export default function CashierPage() {
           const { unlockFromTable } = useWalletStore.getState();
           const success = await unlockFromTable(user.id, value, tableId);
           if (success) {
-            setMessage({ type: 'success', text: `Cashed out ${value.toLocaleString()} chips from table` });
+            setMessage({
+              type: 'success',
+              text: `Cashed out ${value.toLocaleString()} chips from table`,
+            });
             notifyWalletChange(user.id, value);
             navigate(`/table/${tableId}`);
           } else {
@@ -606,7 +640,10 @@ export default function CashierPage() {
           }
 
           if (balances.PLAYER.available < value) {
-            setMessage({ type: 'error', text: `Insufficient balance. Available: ${balances.PLAYER.available.toLocaleString()}` });
+            setMessage({
+              type: 'error',
+              text: `Insufficient balance. Available: ${balances.PLAYER.available.toLocaleString()}`,
+            });
             setIsProcessing(false);
             return;
           }
@@ -622,7 +659,7 @@ export default function CashierPage() {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
+              Authorization: `Bearer ${token}`,
               'X-Idempotency-Key': crypto.randomUUID(),
             },
             body: JSON.stringify({ clubId, amount: value }),
@@ -657,7 +694,10 @@ export default function CashierPage() {
     setIsProcessing(true);
     try {
       if (balances.PLAYER.available < value) {
-        setMessage({ type: 'error', text: `Insufficient balance. Available: ${balances.PLAYER.available.toLocaleString()}` });
+        setMessage({
+          type: 'error',
+          text: `Insufficient balance. Available: ${balances.PLAYER.available.toLocaleString()}`,
+        });
         setIsProcessing(false);
         return;
       }
@@ -671,7 +711,7 @@ export default function CashierPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'X-Idempotency-Key': crypto.randomUUID(),
         },
         body: JSON.stringify({ clubId, amount: value }),
@@ -776,17 +816,21 @@ export default function CashierPage() {
             <div className="balance-label">
               Diamonds
               {vipInfo.isVIP && (
-                <span style={{
-                  marginLeft: '6px',
-                  padding: '2px 8px',
-                  borderRadius: '4px',
-                  fontSize: '0.6rem',
-                  fontWeight: 700,
-                  background: 'linear-gradient(135deg, #FFD700, #FFA500)',
-                  color: '#000',
-                  verticalAlign: 'middle',
-                  letterSpacing: '0.5px',
-                }}>VIP</span>
+                <span
+                  style={{
+                    marginLeft: '6px',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontSize: '0.6rem',
+                    fontWeight: 700,
+                    background: 'linear-gradient(135deg, #FFD700, #FFA500)',
+                    color: '#000',
+                    verticalAlign: 'middle',
+                    letterSpacing: '0.5px',
+                  }}
+                >
+                  VIP
+                </span>
               )}
             </div>
             <div className="balance-value">{diamonds.toLocaleString()}</div>
@@ -919,17 +963,36 @@ export default function CashierPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* U-02 FIX: Show pending cashouts when on cashout tab */}
             {action === 'cashout' && pendingCashouts.length > 0 && (
-              <div style={{
-                padding: '12px',
-                background: 'rgba(255, 149, 0, 0.1)',
-                border: '1px solid rgba(255, 149, 0, 0.3)',
-                borderRadius: '8px',
-              }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#ff9500', textTransform: 'uppercase', marginBottom: '8px' }}>
+              <div
+                style={{
+                  padding: '12px',
+                  background: 'rgba(255, 149, 0, 0.1)',
+                  border: '1px solid rgba(255, 149, 0, 0.3)',
+                  borderRadius: '8px',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    color: '#ff9500',
+                    textTransform: 'uppercase',
+                    marginBottom: '8px',
+                  }}
+                >
                   ⏳ Pending Cashouts
                 </div>
-                {pendingCashouts.map(pc => (
-                  <div key={pc.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: '0.85rem', color: '#ccc' }}>
+                {pendingCashouts.map((pc) => (
+                  <div
+                    key={pc.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      padding: '4px 0',
+                      fontSize: '0.85rem',
+                      color: '#ccc',
+                    }}
+                  >
                     <span>{pc.amount.toLocaleString()} chips</span>
                     <span style={{ color: '#ff9500', fontSize: '0.75rem' }}>
                       {pc.status === 'pending' ? 'Awaiting Agent' : 'Processing'}
@@ -974,7 +1037,11 @@ export default function CashierPage() {
                 </MetalButton>
               ))}
               {action === 'cashout' && (
-                <MetalButton variant="ghost" size="sm" onClick={() => setAmount(String(balances.PLAYER.available))}>
+                <MetalButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAmount(String(balances.PLAYER.available))}
+                >
                   Max
                 </MetalButton>
               )}
@@ -993,7 +1060,9 @@ export default function CashierPage() {
                 {action === 'buyin'
                   ? 'CONFIRM BUY-IN'
                   : action === 'cashout'
-                    ? (tableId ? 'CONFIRM CASH-OUT' : 'REQUEST CASHOUT')
+                    ? tableId
+                      ? 'CONFIRM CASH-OUT'
+                      : 'REQUEST CASHOUT'
                     : 'CONFIRM MINT'}
               </MetalButton>
             </div>

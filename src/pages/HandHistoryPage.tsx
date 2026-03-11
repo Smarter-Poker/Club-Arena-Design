@@ -83,6 +83,16 @@ export default function HandHistoryPage() {
     };
   }, [user?.id]);
 
+  // ── Bus Listener: instant refresh when engine completes a hand ──
+  useEffect(() => {
+    const unsub = masterBus.subscribe('HAND_COMPLETED', () => {
+      loadHands(true);
+    });
+    return () => {
+      unsub();
+    };
+  }, []);
+
   const loadHands = async (reset = false, overridePage?: number) => {
     if (!user?.id) return;
     const currentPage = reset ? 1 : (overridePage ?? page);
