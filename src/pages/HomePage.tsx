@@ -17,6 +17,7 @@ import { ClubsService } from '../services/ClubsService';
 import { useToast } from '../components/common/Toast';
 import GlobalHeader from '../components/navigation/GlobalHeader';
 import haptic from '../services/HapticService';
+import PremiumSFX from '../services/PremiumSFX';
 import { masterBus } from '../core/MasterBus';
 import DailyChallenges from '../components/home/DailyChallenges';
 import ClubContextMenu from '../components/home/ClubContextMenu';
@@ -35,8 +36,6 @@ const PINNED_CLUBS_KEY = 'club_arena_pinned_clubs';
 const SOUNDS_ENABLED_KEY = 'club_arena_sounds';
 const CARD_COLOR_KEY = 'club_arena_card_color';
 
-// #14: Card flip sound variety — randomize for natural feel
-const CARD_FLIP_SOUNDS = ['card-flip-1', 'card-flip-2', 'card-flip-3', 'card-flip-4'];
 
 // #6: Card color presets — gradient pairs for club card faces
 const CARD_COLOR_PRESETS: { id: string; name: string; bg: string; overlay: string }[] = [
@@ -81,18 +80,6 @@ const SEASONAL_GRADIENTS: Record<string, string> = {
     wsop: 'linear-gradient(180deg, #0a0a12 0%, #1a1205 50%, #0a0a12 100%)',
     halloween: 'linear-gradient(180deg, #0a0a12 0%, #1a0f05 50%, #0a0a12 100%)',
     default: '',
-};
-
-// #11: Sound effects utility
-const SFX = {
-    play: (soundName: string) => {
-        try {
-            if (localStorage.getItem(SOUNDS_ENABLED_KEY) === 'false') return;
-            const audio = new Audio(`${import.meta.env.BASE_URL}sounds/${soundName}.mp3`);
-            audio.volume = 0.3;
-            audio.play().catch(() => { /* user hasn't interacted yet */ });
-        } catch { /* ignore */ }
-    },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -251,6 +238,7 @@ function CarouselSection({
             if (snapTimer) clearTimeout(snapTimer);
             snapTimer = setTimeout(() => {
                 haptic.light();
+                PremiumSFX.scrollSnap();
             }, 150);
         };
         el.addEventListener('scroll', handleScroll, { passive: true });
@@ -263,6 +251,7 @@ function CarouselSection({
     // Enhancement #8: Drag handlers
     const handleDragStart = useCallback((clubId: string) => {
         setDraggedId(clubId);
+        PremiumSFX.dragStart();
     }, []);
 
     const handleDragOver = useCallback((e: React.DragEvent, clubId: string) => {
@@ -290,6 +279,7 @@ function CarouselSection({
         setDraggedId(null);
         setDragOverId(null);
         haptic.medium();
+        PremiumSFX.dragDrop();
     }, [draggedId]);
 
     const handleDragEnd = useCallback(() => {
@@ -304,6 +294,7 @@ function CarouselSection({
         if (last.id === club.id && now - last.time < 350) {
             // Double tap → navigate
             haptic.medium();
+            PremiumSFX.doubleTap();
             localStorage.setItem(LAST_VISITED_KEY, club.id);
             localStorage.setItem(LAST_CLUB_KEY, club.id);
             navigate(`/clubs/${club.id}`);
@@ -314,6 +305,7 @@ function CarouselSection({
             setTimeout(() => {
                 if (lastTapRef.current.id === club.id && lastTapRef.current.time === now) {
                     haptic.light();
+                    PremiumSFX.tapFlip();
                     setQuickFlipped(prev => {
                         const next = new Set(prev);
                         if (next.has(club.id)) next.delete(club.id);
@@ -478,7 +470,7 @@ function CarouselSection({
             {orderedClubs.length === 0 && (
                 <div
                     className={styles.ctaCard}
-                    onClick={() => { haptic.light(); onOpenJoinModal(); }}
+                    onClick={() => { haptic.light(); PremiumSFX.ctaClick(); onOpenJoinModal(); }}
                     role="button"
                     aria-label="Join a Club"
                     tabIndex={0}
@@ -498,6 +490,7 @@ function CarouselSection({
                 ref={sharkCardRef}
                 onClick={() => {
                     haptic.success();
+                    PremiumSFX.navigate();
                     if (sharkClubId) {
                         localStorage.setItem(LAST_VISITED_KEY, sharkClubId);
                         localStorage.setItem(LAST_CLUB_KEY, sharkClubId);
@@ -524,7 +517,7 @@ function CarouselSection({
             {orderedClubs.length === 0 && (
                 <div
                     className={styles.ctaCard}
-                    onClick={() => { haptic.light(); onOpenCreateModal(); }}
+                    onClick={() => { haptic.light(); PremiumSFX.ctaClick(); onOpenCreateModal(); }}
                     role="button"
                     aria-label="Create a Club"
                     tabIndex={0}
@@ -1059,7 +1052,8 @@ function HomePageInner() {
         setSoundsEnabled(prev => {
             const next = !prev;
             localStorage.setItem(SOUNDS_ENABLED_KEY, String(next));
-            if (next) SFX.play('toggle-on');
+            if (next) PremiumSFX.toggleOn();
+            else PremiumSFX.toggleOff();
             return next;
         });
     }, []);
@@ -1191,7 +1185,7 @@ function HomePageInner() {
                     setFlippedCards(prev => new Set(prev).add(idx));
                     // #10: Haptic on each card flip
                     haptic.light();
-                    if (soundsEnabled) SFX.play(CARD_FLIP_SOUNDS[Math.floor(Math.random() * CARD_FLIP_SOUNDS.length)]);
+                    if (soundsEnabled) PremiumSFX.cardFlip();
                 }, 300 + idx * 150);
                 timerIds.push(id);
             });
@@ -1204,6 +1198,7 @@ function HomePageInner() {
     const tileActions: Record<string, () => void> = useMemo(() => ({
         'Cashier': () => {
             haptic.light();
+            PremiumSFX.navigate();
             const lastClub = localStorage.getItem(LAST_CLUB_KEY);
             if (lastClub) navigate(`/clubs/${lastClub}/cashier`);
             else if (userClubs.length > 0) navigate(`/clubs/${userClubs[0].id}/cashier`);
@@ -1211,6 +1206,7 @@ function HomePageInner() {
         },
         'Marketplace': () => {
             haptic.light();
+            PremiumSFX.navigate();
             if (window.parent !== window) {
                 window.parent.postMessage({ type: 'NAVIGATE', path: '/hub/marketplace' }, '*');
                 const fallbackTimer = setTimeout(() => {
