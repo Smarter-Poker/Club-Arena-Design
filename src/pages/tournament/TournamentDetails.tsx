@@ -67,6 +67,7 @@ export default function TournamentDetails() {
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [lateRegCountdown, setLateRegCountdown] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [unionName, setUnionName] = useState<string>('');
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lateRegTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -296,7 +297,7 @@ export default function TournamentDetails() {
         // Fetch tournament entries from supabase
         const { data: playersData, error } = await supabase
           .from('tournament_players')
-          .select('id, user_id, username, chips, status, position')
+          .select('id, user_id, username, chips, status, position, club_id')
           .eq('tournament_id', data.id)
           .order('registered_at', { ascending: true });
 
@@ -310,6 +311,7 @@ export default function TournamentDetails() {
                 chips?: number;
                 status: string;
                 position?: number | null;
+                club_id?: string | null;
               }) => ({
                 id: e.id,
                 user_id: e.user_id,
@@ -318,6 +320,7 @@ export default function TournamentDetails() {
                 chips: e.chips || data.starting_chips,
                 position: e.position || undefined,
                 status: e.status as TournamentEntry['status'],
+                club_id: e.club_id || undefined,
               })
             )
           );
@@ -340,6 +343,18 @@ export default function TournamentDetails() {
             .select('id, name, status, max_players, current_players, small_blind, big_blind')
             .eq('tournament_id', data.id);
           setTables((tablesData || []) as TournamentTable[]);
+        }
+
+        // Fetch union name for XMTT tournaments
+        if ((data as any).is_xmtt && (data as any).union_id) {
+          try {
+            const { data: unionData } = await supabase
+              .from('unions')
+              .select('name')
+              .eq('id', (data as any).union_id)
+              .maybeSingle();
+            if (unionData?.name) setUnionName(unionData.name);
+          } catch { /* non-critical */ }
         }
       }
     } catch (error) {
@@ -996,9 +1011,9 @@ export default function TournamentDetails() {
             <div className="union-info">
               <h3>Union Tournament (XMTT)</h3>
               <div className="info-row">
-                <span className="info-label">Union ID:</span>
+                <span className="info-label">Union:</span>
                 <span className="info-value">
-                  {((tournament as any).union_id || '').slice(0, 8)}
+                  {unionName || ((tournament as any).union_id || '').slice(0, 8)}
                 </span>
               </div>
               <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, marginTop: 8 }}>
