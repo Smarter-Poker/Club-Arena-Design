@@ -3,12 +3,12 @@
  * 🐴 HYDRA SERVICE — Horse Liquidity Fleet Management
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
- * Manages the Hydra horse fleet (100 Horses #101-#200) to ensure 24/7 table liquidity.
+ * Manages the Hydra horse fleet (300 Horses #101-#400) to ensure 24/7 table liquidity.
  * 
  * LAWS:
  * - "3 Horses to Start": Tables seed with 3 horse players
  * - "Organic Recede": When real player joins, 1 horse leaves after orbit
- * - "Fleet Size": 100 unique sovereign horse IDs (#101-#200)
+ * - "Fleet Size": 300 unique sovereign horse IDs (#101-#400)
  * - "Entry Variance": Random 10-90s delays for natural appearance
  * - "Invisible Fleet": Horses are indistinguishable from human players
  * 
@@ -19,7 +19,7 @@
  * - TRICKY: Deceptive, slowplays, check-raises (15% of fleet)
  * - GRINDER: Disciplined small ball, pot control (10% of fleet)
  *
- * NOTE: Decision logic now handled by BotLogic.ts (upgraded brain)
+ * NOTE: Decision logic now handled by HorseLogic.ts (upgraded brain)
  * HydraService retains fleet management, seating, and lifecycle only.
  */
 
@@ -68,11 +68,8 @@ export interface TableLiquidityStatus {
     needsFewerHorses: boolean;
 }
 
-export interface HorseDecision {
-    action: 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'allin';
-    amount?: number;
-    thinkTime: number; // ms to wait before acting
-}
+// HorseDecision is defined in HorseLogic.ts — use that canonical version
+export type { HorseDecision } from '../engine/HorseLogic';
 
 export interface HandContext {
     pot: number;
@@ -93,7 +90,7 @@ export interface HandContext {
 const DEFAULT_CONFIG: HydraConfig = {
     maxHorsesPerTable: 3,
     minHorsesPerTable: 0,
-    fleetSize: 100,
+    fleetSize: 300,
     entryDelayRange: [10, 90],
     organicRecedeEnabled: true,
     seatWarmupDelay: 2000,
@@ -108,13 +105,13 @@ const PROFILE_WEIGHTS: Record<HorseProfile, {
     call: number;
     bet: number;
     raise: number;
-    allin: number;
+    all_in: number;
 }> = {
-    fish: { fold: 8, check: 15, call: 40, bet: 20, raise: 15, allin: 2 },
-    reg: { fold: 18, check: 20, call: 25, bet: 20, raise: 15, allin: 2 },
-    nit: { fold: 30, check: 25, call: 25, bet: 10, raise: 8, allin: 2 },
-    lag: { fold: 10, check: 10, call: 15, bet: 30, raise: 30, allin: 5 },
-    maniac: { fold: 5, check: 5, call: 10, bet: 35, raise: 35, allin: 10 },
+    fish: { fold: 8, check: 15, call: 40, bet: 20, raise: 15, all_in: 2 },
+    reg: { fold: 18, check: 20, call: 25, bet: 20, raise: 15, all_in: 2 },
+    nit: { fold: 30, check: 25, call: 25, bet: 10, raise: 8, all_in: 2 },
+    lag: { fold: 10, check: 10, call: 15, bet: 30, raise: 30, all_in: 5 },
+    maniac: { fold: 5, check: 5, call: 10, bet: 35, raise: 35, all_in: 10 },
 };
 
 // Stack size ranges per profile (in BB)
@@ -123,7 +120,7 @@ const PROFILE_STACK_RANGES: Record<HorseProfile, [number, number]> = {
     reg: [80, 150],
     nit: [100, 100],
     lag: [100, 200],
-    maniac: [50, 100],
+    maniac: [150, 300],
 };
 
 // Preflop hand ranges (simplified)
@@ -689,7 +686,7 @@ export const HydraService = {
 
             // Check if we should just go all-in
             if (amount >= horse.stack * 0.9) {
-                action = 'allin';
+                action = 'all_in';
                 amount = horse.stack;
             }
         }
@@ -735,7 +732,7 @@ export const HydraService = {
 
         // Pot odds adjustments
         if (context.stackToPotRatio < 3) {
-            base.allin = (base.allin || 0) + 15;
+            base.all_in = (base.all_in || 0) + 15;
             base.raise *= 1.3;
         }
 

@@ -40,7 +40,7 @@ export {
 } from './HandController';
 
 // Horse Logic
-export { BotLogic } from './BotLogic';
+export { HorseLogic } from './HorseLogic';
 
 // OFC Pineapple Engine
 export {

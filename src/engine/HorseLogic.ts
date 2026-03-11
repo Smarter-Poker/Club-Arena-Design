@@ -24,7 +24,7 @@ import { evaluateHand, evaluateOmahaHand } from './PokerEngine';
 
 export type HorseStyle = 'tag' | 'lag' | 'balanced' | 'tricky' | 'grinder';
 
-export interface BotDecision {
+export interface HorseDecision {
     action: ActionType;
     amount?: number;
     thinkTime: number;
@@ -128,13 +128,13 @@ const STYLE_PARAMS: Record<HorseStyle, StyleParams> = {
 // MAIN DECISION ENGINE
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export class BotLogic {
+export class HorseLogic {
 
     static decide(
         player: SeatPlayer,
         gameState: GameState,
         style: HorseStyle = 'balanced'
-    ): BotDecision {
+    ): HorseDecision {
         const params = STYLE_PARAMS[style] || STYLE_PARAMS.balanced;
         const { currentBet, pot, communityCards, stage, bigBlind, minRaise } = gameState;
         const toCall = Math.max(0, currentBet - player.bet);
@@ -153,7 +153,7 @@ export class BotLogic {
         const effectiveStrength = Math.max(0, Math.min(1, handStrength + variance));
 
         // 4. Make stage-specific decision
-        let decision: BotDecision;
+        let decision: HorseDecision;
         if (stage === 'preflop') {
             decision = this.decidePreflop(player, gameState, effectiveStrength, params);
         } else {
@@ -181,7 +181,7 @@ export class BotLogic {
         gs: GameState,
         strength: number,
         params: StyleParams
-    ): BotDecision {
+    ): HorseDecision {
         const { currentBet, pot, bigBlind } = gs;
         const toCall = Math.max(0, currentBet - player.bet);
         const stack = player.stack;
@@ -272,7 +272,7 @@ export class BotLogic {
         strength: number,
         potOdds: number,
         params: StyleParams
-    ): BotDecision {
+    ): HorseDecision {
         const { currentBet, pot, bigBlind, minRaise, stage, gameVariant, communityCards } = gs;
         const toCall = Math.max(0, currentBet - player.bet);
         const stack = player.stack;
@@ -309,7 +309,7 @@ export class BotLogic {
         gs: GameState,
         strength: number,
         params: StyleParams
-    ): BotDecision {
+    ): HorseDecision {
         const { currentBet, pot } = gs;
         const toCall = Math.max(0, currentBet - player.bet);
         const stack = player.stack;
@@ -355,7 +355,7 @@ export class BotLogic {
         strength: number,
         potOdds: number,
         params: StyleParams
-    ): BotDecision {
+    ): HorseDecision {
         const { currentBet, pot } = gs;
         const toCall = Math.max(0, currentBet - player.bet);
         const stack = player.stack;
@@ -394,7 +394,7 @@ export class BotLogic {
         strength: number,
         potOdds: number,
         params: StyleParams
-    ): BotDecision {
+    ): HorseDecision {
         const { currentBet, pot } = gs;
         const toCall = Math.max(0, currentBet - player.bet);
         const stack = player.stack;
@@ -439,7 +439,7 @@ export class BotLogic {
         strength: number,
         potOdds: number,
         params: StyleParams
-    ): BotDecision {
+    ): HorseDecision {
         const { currentBet, pot } = gs;
         const toCall = Math.max(0, currentBet - player.bet);
         const stack = player.stack;

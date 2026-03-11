@@ -5,7 +5,7 @@
  *
  * This adapter provides a unified interface for horse decisions:
  * - Tries HorsePokerBrain (the full 8148-line AI brain) first
- * - Falls back to BotLogic (the simpler built-in brain) if Brain isn't loaded
+ * - Falls back to HorseLogic (the simpler built-in brain) if Brain isn't loaded
  * - Handles format translation between engine state ↔ brain state
  * - Manages brain lifecycle (loading, warming caches, feeding results)
  *
@@ -14,7 +14,7 @@
  */
 
 import type { SeatPlayer, GameVariant } from '../types/database.types';
-import { BotLogic, type HorseStyle, type BotDecision } from './BotLogic';
+import { HorseLogic, type HorseStyle, type HorseDecision } from './HorseLogic';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // BRAIN INTERFACES (matching HorsePokerBrain.js spec)
@@ -130,7 +130,7 @@ class HorseBrainAdapterClass {
 
     /**
      * Initialize the adapter — try to load HorsePokerBrain.js
-     * Falls back to BotLogic if brain isn't available
+     * Falls back to HorseLogic if brain isn't available
      */
     async initialize(): Promise<void> {
         if (this.brainLoadAttempted) return;
@@ -144,7 +144,7 @@ class HorseBrainAdapterClass {
 
             // Check if this is the stub or the real brain
             if (loadedBrain.STUB) {
-                console.log('[HorseBrainAdapter] HorsePokerBrain is a stub — using BotLogic fallback');
+                console.log('[HorseBrainAdapter] HorsePokerBrain is a stub — using HorseLogic fallback');
                 this.brainAvailable = false;
                 return;
             }
@@ -169,10 +169,10 @@ class HorseBrainAdapterClass {
                 );
                 this.brainAvailable = false;
                 this.brain = null;
-                // Fall through to BotLogic fallback
+                // Fall through to HorseLogic fallback
             }
         } catch (err) {
-            console.log('[HorseBrainAdapter] HorsePokerBrain not available — using BotLogic fallback');
+            console.log('[HorseBrainAdapter] HorsePokerBrain not available — using HorseLogic fallback');
             this.brainAvailable = false;
         }
     }
@@ -196,7 +196,7 @@ class HorseBrainAdapterClass {
 
     /**
      * Get a decision for a horse player
-     * Tries HorsePokerBrain first, falls back to BotLogic
+     * Tries HorsePokerBrain first, falls back to HorseLogic
      */
     async getDecision(
         horseId: string,
@@ -214,7 +214,7 @@ class HorseBrainAdapterClass {
         tableId: string,
         horseStyle: HorseStyle,
         gameType: 'cash' | 'tournament' = 'cash'
-    ): Promise<BotDecision> {
+    ): Promise<HorseDecision> {
         // ── Try HorsePokerBrain first ──
         if (this.brain) {
             try {
@@ -236,12 +236,12 @@ class HorseBrainAdapterClass {
                     thinkTime: brainDecision.delayMs || 500,
                 };
             } catch (err) {
-                console.error(`[HorseBrainAdapter] Brain decision failed for ${horseId}, falling back to BotLogic:`, err);
+                console.error(`[HorseBrainAdapter] Brain decision failed for ${horseId}, falling back to HorseLogic:`, err);
             }
         }
 
-        // ── Fallback: use BotLogic ──
-        return BotLogic.decide(enginePlayer, gameState as any, horseStyle);
+        // ── Fallback: use HorseLogic ──
+        return HorseLogic.decide(enginePlayer, gameState as any, horseStyle);
     }
 
     /**

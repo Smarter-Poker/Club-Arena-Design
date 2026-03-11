@@ -19,7 +19,7 @@ import { supabase, broadcastHandState } from '../lib/supabase';
 import { HandController, type HandConfig, type HandEvent } from './HandController';
 import { HandPersistence } from '../services/HandPersistenceService';
 import { HydraService, type HorseDecision } from '../services/HydraService';
-import { BotLogic, type HorseStyle, type BotDecision } from './BotLogic';
+import { HorseLogic, type HorseStyle, type HorseDecision } from './HorseLogic';
 import { HorseBrainAdapter } from './HorseBrainAdapter';
 import { GTOQueryService } from '../services/GTOQueryService';
 import { RakeService, type DealtInPlayer } from '../services/RakeService';
@@ -112,7 +112,7 @@ export class HeadlessTableEngine {
         console.log(`[HeadlessTableEngine:${this.tableId}] Starting...`);
 
         try {
-            // Initialize Horse AI Brain (loads HorsePokerBrain.js if available, else uses BotLogic)
+            // Initialize Horse AI Brain (loads HorsePokerBrain.js if available, else uses HorseLogic)
             await HorseBrainAdapter.initialize();
 
             // Load table configuration from database
@@ -757,13 +757,13 @@ export class HeadlessTableEngine {
             bigBlind: this.tableInfo?.big_blind || 2,
         };
 
-        // ── Get decision from Horse AI Brain (falls back to BotLogic if brain not loaded) ──
+        // ── Get decision from Horse AI Brain (falls back to HorseLogic if brain not loaded) ──
         const gameType = this.isTournamentTable() ? 'tournament' : 'cash';
         const handControllerRef = this.handController;
 
         // Async decision flow — brain may be async, but we handle it within the timer
         (async () => {
-            let decision: BotDecision;
+            let decision: HorseDecision;
             try {
                 decision = await HorseBrainAdapter.getDecision(
                     player.user_id,
@@ -774,10 +774,10 @@ export class HeadlessTableEngine {
                     gameType as 'cash' | 'tournament'
                 );
             } catch {
-                decision = BotLogic.decide(enginePlayer, gameState as any, horseStyle);
+                decision = HorseLogic.decide(enginePlayer, gameState as any, horseStyle);
             }
 
-            // GTO overlay only when using BotLogic fallback (brain has its own GTO integration)
+            // GTO overlay only when using HorseLogic fallback (brain has its own GTO integration)
             if (!HorseBrainAdapter.isBrainAvailable()) {
                 this.enhanceWithGTO(enginePlayer, state, decision, horseStyle).catch(() => {});
             }
@@ -846,14 +846,14 @@ export class HeadlessTableEngine {
     }
 
     /**
-     * GTO Enhancement Layer — overlay PioSolver data on top of BotLogic decisions
+     * GTO Enhancement Layer — overlay PioSolver data on top of HorseLogic decisions
      * This is non-blocking and only modifies the decision if GTO data is available.
-     * Gracefully falls back to BotLogic's built-in evaluation if no data exists.
+     * Gracefully falls back to HorseLogic's built-in evaluation if no data exists.
      */
     private async enhanceWithGTO(
         player: SeatPlayer,
         state: any,
-        decision: BotDecision,
+        decision: HorseDecision,
         style: HorseStyle
     ): Promise<void> {
         try {
@@ -882,7 +882,7 @@ export class HeadlessTableEngine {
                 position, potType, state.stage, board, actionFacing
             );
 
-            if (!gtoSolution) return; // No GTO data — keep BotLogic decision
+            if (!gtoSolution) return; // No GTO data — keep HorseLogic decision
 
             // Use GTO frequencies to influence the decision
             const freqs = gtoSolution.gto_frequencies;
@@ -895,7 +895,7 @@ export class HeadlessTableEngine {
             };
             const adherence = gtoAdherence[style] || 0.70;
 
-            // Only override if GTO strongly disagrees with BotLogic (> adherence threshold)
+            // Only override if GTO strongly disagrees with HorseLogic (> adherence threshold)
             const currentAction = decision.action;
             const gtoFreqForAction = freqs[currentAction] || 0;
 

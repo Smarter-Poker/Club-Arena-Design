@@ -1,8 +1,8 @@
 -- ═══════════════════════════════════════════════════════════════════════════════
--- 🐴 HYDRA HORSE FLEET — Bot User Accounts
+-- 🐴 HYDRA HORSE FLEET — Horse Player Accounts
 -- ═══════════════════════════════════════════════════════════════════════════════
 --
--- Creates the Hydra bot fleet as real user accounts in the system.
+-- Creates the Hydra horse fleet as real user accounts in the system.
 -- Each horse has a unique player number starting at #101.
 --
 -- These accounts are indistinguishable from human players (Invisible Fleet Law)
@@ -69,7 +69,7 @@ CREATE INDEX IF NOT EXISTS idx_horse_sessions_table ON horse_sessions(table_id);
 CREATE INDEX IF NOT EXISTS idx_horse_sessions_active ON horse_sessions(left_at) WHERE left_at IS NULL;
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- SEED HORSE FLEET (100 Horses, #101 - #200)
+-- SEED HORSE FLEET (300 Horses, #101 - #400)
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 -- First names pool
@@ -113,8 +113,8 @@ DECLARE
     v_avatar_seed TEXT;
     v_horse_id UUID;
 BEGIN
-    -- Generate 100 horses (#101 - #200)
-    WHILE v_player_num <= 200 LOOP
+    -- Generate 300 horses (#101 - #400)
+    WHILE v_player_num <= 400 LOOP
         -- Random first name
         SELECT name INTO v_first FROM horse_first_names ORDER BY random() LIMIT 1;
         -- Random last name
@@ -171,7 +171,7 @@ BEGIN
         v_player_num := v_player_num + 1;
     END LOOP;
     
-    RAISE NOTICE 'Created/Updated 100 Hydra horses (#101 - #200)';
+    RAISE NOTICE 'Created/Updated 300 Hydra horses (#101 - #400)';
 END $$;
 
 -- Clean up temp tables
@@ -326,8 +326,8 @@ CREATE POLICY horse_sessions_admin ON horse_sessions
 -- COMMENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-COMMENT ON COLUMN profiles.is_horse IS 'Indicates this account is a Hydra bot player';
-COMMENT ON COLUMN profiles.horse_profile IS 'Bot behavior profile: fish, reg, nit, lag, maniac';
+COMMENT ON COLUMN profiles.is_horse IS 'Indicates this account is a Hydra horse player';
+COMMENT ON COLUMN profiles.horse_profile IS 'Horse behavior profile: fish, reg, nit, lag, maniac';
 COMMENT ON COLUMN profiles.horse_status IS 'Current horse status: available, seated, leaving, disabled';
 COMMENT ON TABLE horse_sessions IS 'Tracks horse activity at tables for analytics';
 COMMENT ON FUNCTION get_available_horses IS 'Retrieves random available horses for table seeding';
