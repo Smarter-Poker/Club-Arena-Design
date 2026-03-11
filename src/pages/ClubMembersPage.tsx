@@ -247,6 +247,9 @@ function PlayerActionModal({
       setSuccess(`${member.username} is now ${getRoleLabel(newRole)}`);
       setConfirmRole(null);
 
+      // Emit bus event so AgentManagement, ClubDetail, and other pages refresh
+      masterBus.emit('BALANCE_UPDATED', { source: 'role_promotion', userId: member.user_id });
+
       // Brief delay to show success, then refresh
       setTimeout(() => {
         onRoleChanged();
