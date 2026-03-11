@@ -3,13 +3,15 @@
  * CLUB CONTEXT MENU — Extracted Reusable Component
  * ═══════════════════════════════════════════════════════════════════════════════
  * Long-press / right-click context menu for club cards.
- * Actions: Go to Lobby, Cashier, Share Code, Leave Club (non-owners).
+ * Actions: Go to Lobby, Cashier, Share Code, Pin/Unpin, Leave Club (non-owners).
+ *
+ * BUG FIX #2: onLeave now delegates to parent for confirmation modal —
+ * this component does NOT call ClubsService.leave() directly.
+ * BUG FIX #3: Added onPin/isPinned props for pin-to-top functionality.
  */
 
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ClubsService } from '../../services/ClubsService';
-import { masterBus } from '../../core/MasterBus';
 import { useToast } from '../../components/common/Toast';
 import styles from '../../pages/HomePage.module.css';
 
@@ -18,10 +20,12 @@ interface ClubContextMenuProps {
     x: number;
     y: number;
     onClose: () => void;
-    onLeave: () => void;
+    onLeave: () => void; // Delegates to parent — parent handles confirmation + actual leave
+    onPin: (clubId: string) => void;
+    isPinned: boolean;
 }
 
-export default function ClubContextMenu({ club, x, y, onClose, onLeave }: ClubContextMenuProps) {
+export default function ClubContextMenu({ club, x, y, onClose, onLeave, onPin, isPinned }: ClubContextMenuProps) {
     const navigate = useNavigate();
     const toast = useToast();
 
@@ -42,17 +46,15 @@ export default function ClubContextMenu({ club, x, y, onClose, onLeave }: ClubCo
         toast.success(`Club code ${code} copied!`);
     }, [club.club_id, onClose, toast]);
 
-    const handleLeave = useCallback(async () => {
+    // BUG FIX #2: Only delegate to parent — do NOT call ClubsService.leave() here
+    const handleLeave = useCallback(() => {
+        onLeave(); // Parent (HomePage) will show confirmation modal
+    }, [onLeave]);
+
+    const handlePin = useCallback(() => {
         onClose();
-        try {
-            await ClubsService.leave(club.id);
-            toast.success('Left the club');
-            masterBus.emit('CLUB_LEFT', { clubId: club.id });
-            onLeave();
-        } catch (err: any) {
-            toast.error(err.message || 'Failed to leave club');
-        }
-    }, [club.id, onClose, onLeave, toast]);
+        onPin(club.id);
+    }, [club.id, onClose, onPin]);
 
     return (
         <>
@@ -71,6 +73,9 @@ export default function ClubContextMenu({ club, x, y, onClose, onLeave }: ClubCo
                 </button>
                 <button className={styles.contextMenuItem} onClick={handleShareCode} role="menuitem">
                     🔗 Share Invite Code
+                </button>
+                <button className={styles.contextMenuItem} onClick={handlePin} role="menuitem">
+                    {isPinned ? '📌 Unpin from Top' : '📌 Pin to Top'}
                 </button>
                 <div className={styles.contextMenuDivider} />
                 {!club.is_owner && (

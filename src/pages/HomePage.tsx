@@ -545,6 +545,15 @@ function HomePageInner() {
         }
     }, []);
 
+    // BUG FIX #1: Cleanup prefetch timer on unmount
+    useEffect(() => {
+        return () => {
+            if (prefetchTimerRef.current) {
+                clearTimeout(prefetchTimerRef.current);
+            }
+        };
+    }, []);
+
     // #11: Toggle sound effects
     const toggleSounds = useCallback(() => {
         setSoundsEnabled(prev => {
@@ -649,6 +658,11 @@ function HomePageInner() {
     // ═══════════════════════════════════════════════════════════════════════════════
     // USER'S CLUBS — sorted (pinned first), filtered, excluding Shark Club
     // ═══════════════════════════════════════════════════════════════════════════════
+    // BUG FIX #4: Track unfiltered count separately so search bar doesn't vanish mid-query
+    const unfilteredClubCount = useMemo(() => {
+        return userClubs.filter((club) => club.id !== sharkClubId).length;
+    }, [userClubs, sharkClubId]);
+
     const displayClubs = useMemo(() => {
         let clubs = userClubs.filter((club) => club.id !== sharkClubId);
         // #9: Search filter
@@ -958,8 +972,8 @@ function HomePageInner() {
                     </div>
                 )}
 
-                {/* #9: Search bar (show when user has 3+ clubs) */}
-                {displayClubs.length >= 3 && (
+                {/* #9: Search bar (show when user has 3+ clubs) — uses unfiltered count to avoid catch-22 */}
+                {(unfilteredClubCount >= 3 || searchQuery) && (
                     <div className={styles.searchBarContainer}>
                         <input
                             id="club-search-input"
@@ -1048,6 +1062,8 @@ function HomePageInner() {
                         setLeaveConfirm({ visible: true, club: contextMenu.club });
                         closeContextMenu();
                     }}
+                    onPin={togglePinClub}
+                    isPinned={pinnedClubIds.includes(contextMenu.club.id)}
                 />
             )}
 

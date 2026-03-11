@@ -298,6 +298,15 @@ export default function ClubDetailPage() {
         };
     }, [clubId]);
 
+    // ── Bus Listeners: cross-page event reactivity ──
+    useEffect(() => {
+        const unsubJoined = masterBus.subscribe('CLUB_JOINED', () => { loadClubData(); });
+        const unsubLeft = masterBus.subscribe('CLUB_LEFT', () => { loadClubData(); });
+        const unsubSeated = masterBus.subscribe('TABLE_SEATED', () => { loadClubData(); });
+        const unsubTableLeft = masterBus.subscribe('TABLE_LEFT', () => { loadClubData(); });
+        return () => { unsubJoined(); unsubLeft(); unsubSeated(); unsubTableLeft(); };
+    }, []);
+
     const loadClubData = async () => {
         if (!clubId) {
             setLoading(false);

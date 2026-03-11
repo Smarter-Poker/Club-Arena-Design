@@ -96,6 +96,13 @@ export default function ClubSettingsPage() {
         return () => { masterBus.removeRegisteredChannel(channelKey); };
     }, [clubId]);
 
+    // ── Bus Listeners: cross-page event reactivity ──
+    useEffect(() => {
+        const unsubJoined = masterBus.subscribe('CLUB_JOINED', () => { loadClubSettings(); });
+        const unsubLeft = masterBus.subscribe('CLUB_LEFT', () => { loadClubSettings(); });
+        return () => { unsubJoined(); unsubLeft(); };
+    }, []);
+
     const loadClubSettings = async () => {
         setLoading(true);
         try {
