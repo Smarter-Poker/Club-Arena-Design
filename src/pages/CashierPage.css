@@ -47,6 +47,25 @@
 .balance-card-content {
     text-align: center;
     padding: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+.balance-card-content::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.04), transparent);
+    animation: balanceSheen 5s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes balanceSheen {
+    0%, 100% { left: -100%; }
+    50% { left: 150%; }
 }
 
 .balance-icon {
@@ -142,6 +161,14 @@
     margin: 16px 0;
     border: 2px solid;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    animation: messageSlideIn 0.3s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+}
+
+@keyframes messageSlideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .cashier-message.success {
@@ -389,11 +416,14 @@
     gap: 10px;
     padding: 12px 14px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-    transition: background 0.15s;
+    transition: all 0.2s ease;
+    border-left: 2px solid transparent;
 }
 
 .tx-row:hover {
     background: rgba(0, 212, 255, 0.03);
+    border-left-color: rgba(0, 212, 255, 0.4);
+    padding-left: 16px;
 }
 
 .tx-icon {
@@ -521,7 +551,7 @@
 .cashier-select:focus {
     outline: none;
     border-color: #00d4ff;
-    box-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.3), 0 0 24px rgba(0, 212, 255, 0.1);
 }
 
 .cashier-select option {
@@ -532,9 +562,12 @@
 
 .transfer-preview {
     background: rgba(0, 212, 255, 0.05);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(0, 212, 255, 0.15);
     border-radius: 8px;
     padding: 12px 14px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(0, 212, 255, 0.06);
 }
 
 .transfer-preview .preview-row {

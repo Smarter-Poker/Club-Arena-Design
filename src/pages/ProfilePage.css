@@ -26,8 +26,23 @@
     background: linear-gradient(145deg,
             rgba(255, 255, 255, 0.06) 0%,
             rgba(100, 100, 100, 0.03) 100%);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 2px solid #2a3a4a;
     border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.profile-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(0, 212, 255, 0.2) 50%, transparent 100%);
 }
 
 .profile-avatar {
@@ -41,7 +56,13 @@
     border: 3px solid rgba(0, 212, 255, 0.5);
     border-radius: 50%;
     position: relative;
-    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4), 0 0 40px rgba(0, 212, 255, 0.15);
+    animation: avatarGlow 4s ease-in-out infinite;
+}
+
+@keyframes avatarGlow {
+    0%, 100% { box-shadow: 0 0 20px rgba(0, 212, 255, 0.4), 0 0 40px rgba(0, 212, 255, 0.15); }
+    50% { box-shadow: 0 0 28px rgba(0, 212, 255, 0.5), 0 0 56px rgba(0, 212, 255, 0.2); }
 }
 
 .vip-badge {
@@ -53,12 +74,19 @@
     font-weight: 700;
     padding: 0.25rem 0.5rem;
     background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    background-size: 200% 100%;
     color: #000;
     border-radius: 20px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     font-family: 'Orbitron', sans-serif;
     box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    animation: vipBadgeShimmer 3s ease-in-out infinite;
+}
+
+@keyframes vipBadgeShimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
 }
 
 .profile-info {
@@ -83,8 +111,30 @@
     gap: 0.25rem;
     padding: 1rem 1.5rem;
     background: linear-gradient(145deg, rgba(255, 215, 0, 0.1) 0%, rgba(100, 100, 100, 0.03) 100%);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 2px solid rgba(255, 215, 0, 0.3);
     border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.profile-chips::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.06), transparent);
+    animation: chipsSheen 4s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes chipsSheen {
+    0%, 100% { left: -100%; }
+    50% { left: 150%; }
 }
 
 .chips-icon {
@@ -134,8 +184,17 @@
     background: linear-gradient(145deg,
             rgba(255, 255, 255, 0.06) 0%,
             rgba(100, 100, 100, 0.03) 100%);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 2px solid #2a3a4a;
     border-radius: 12px;
+    transition: all 0.25s ease;
+}
+
+.stat-card:hover {
+    border-color: rgba(0, 212, 255, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), 0 0 12px rgba(0, 212, 255, 0.06);
 }
 
 .stat-card .stat-value {
@@ -181,8 +240,17 @@
     background: linear-gradient(145deg,
             rgba(255, 255, 255, 0.06) 0%,
             rgba(100, 100, 100, 0.03) 100%);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 2px solid #2a3a4a;
     border-radius: 12px;
+    transition: all 0.25s ease;
+}
+
+.quick-stat:hover {
+    border-color: rgba(0, 212, 255, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .quick-icon {
@@ -211,8 +279,15 @@
     background: linear-gradient(145deg,
             rgba(255, 255, 255, 0.06) 0%,
             rgba(100, 100, 100, 0.03) 100%);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 2px solid #2a3a4a;
     border-radius: 12px;
+    transition: border-color 0.3s ease;
+}
+
+.settings-section:hover {
+    border-color: rgba(0, 212, 255, 0.2);
 }
 
 .settings-section h2 {
