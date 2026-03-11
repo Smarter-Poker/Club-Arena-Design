@@ -5,14 +5,7 @@
  * Hand evaluation, dealing, pot management
  */
 
-import type {
-  Card,
-  CardRank,
-  CardSuit,
-  HandStage,
-  SeatPlayer,
-  ActionType,
-} from '../types/database.types';
+import type { Card, CardRank, CardSuit, SeatPlayer, ActionType } from '../types/database.types';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -304,7 +297,7 @@ function checkStraight(ranks: number[]): boolean {
   return false;
 }
 
-function getKickers(counts: Map<number, number>, ...targetCounts: number[]): number[] {
+function getKickers(counts: Map<number, number>, ..._targetCounts: number[]): number[] {
   const kickers: number[] = [];
   const sorted = [...counts.entries()].sort((a, b) => {
     if (b[1] !== a[1]) return b[1] - a[1];

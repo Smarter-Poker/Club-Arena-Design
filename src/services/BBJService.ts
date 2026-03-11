@@ -164,8 +164,11 @@ export const BBJService = {
       .select()
       .maybeSingle();
 
-    if (error) {
-      console.error('BBJService.ensurePoolExists: Failed to create pool:', error);
+    if (error || !newPool) {
+      console.error(
+        'BBJService.ensurePoolExists: Failed to create pool:',
+        error || 'No data returned'
+      );
       return null;
     }
 
@@ -422,10 +425,10 @@ export const BBJService = {
     }
 
     const totalAmount = pool.main_balance;
-    const winnerShare = totalAmount * PAYOUT_SHARES.WINNER;
-    const loserShare = totalAmount * PAYOUT_SHARES.LOSER;
-    const tableShare = totalAmount * PAYOUT_SHARES.TABLE;
-    const perPlayerShare = tableShare / params.dealtInPlayerIds.length;
+    // Share calculations are documented here for reference; the award_bbj RPC
+    // performs the actual split atomically to prevent partial payouts.
+    const _tableShare = totalAmount * PAYOUT_SHARES.TABLE;
+    void _tableShare; // used for logging below if needed
 
     // Call RPC to atomically execute the BBJ payout with real parameters
     // Using the existing award_bbj function

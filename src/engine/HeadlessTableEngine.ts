@@ -18,7 +18,6 @@
 import { supabase, broadcastHandState } from '../lib/supabase';
 import { HandController, type HandConfig, type HandEvent } from './HandController';
 import { HandPersistence } from '../services/HandPersistenceService';
-import { HydraService } from '../services/HydraService';
 import { HorseLogic, type HorseStyle, type HorseDecision } from './HorseLogic';
 import { HorseBrainAdapter } from './HorseBrainAdapter';
 import { GTOQueryService } from '../services/GTOQueryService';
@@ -788,7 +787,6 @@ export class HeadlessTableEngine {
     const enginePlayer = state.players.find((p) => p.seat === seat);
     if (!enginePlayer) return;
 
-    const activePlayers = state.players.filter((p) => !p.is_folded && p.stack > 0).length;
     const toCall = Math.max(0, state.currentBet - enginePlayer.bet);
 
     // ── Map horse_profile to winning style ──
@@ -888,7 +886,7 @@ export class HeadlessTableEngine {
 
         try {
           handControllerRef.performAction(seat, action as any, amount);
-        } catch (err) {
+        } catch {
           // If action fails, try folding as fallback
           try {
             handControllerRef.performAction(seat, 'fold');
@@ -1048,7 +1046,7 @@ export class HeadlessTableEngine {
       return;
     }
 
-    const results = await Promise.allSettled(
+    await Promise.allSettled(
       seats.map(async (seat) => {
         // tournament_players.chips is INTEGER — truncate to whole number (never round up)
         const rounded = Math.trunc(seat.stack);
@@ -1105,13 +1103,10 @@ export class HeadlessTableEngine {
         }
 
         // 2. Deduct from Player Wallet via SECURITY DEFINER RPC
-        const { data: deductResult, error: deductError } = await this.supabaseClient.rpc(
-          'deduct_player_wallet',
-          {
-            p_user_id: horse.user_id,
-            p_amount: rebuyAmount,
-          }
-        );
+        const { error: deductError } = await this.supabaseClient.rpc('deduct_player_wallet', {
+          p_user_id: horse.user_id,
+          p_amount: rebuyAmount,
+        });
 
         if (deductError) {
           console.error(
@@ -1197,13 +1192,10 @@ export class HeadlessTableEngine {
 
         if (chipsToReturn > 0) {
           // Credit chips back to Player Wallet via SECURITY DEFINER RPC
-          const { data: creditResult, error: creditError } = await this.supabaseClient.rpc(
-            'credit_player_wallet',
-            {
-              p_user_id: seat.user_id,
-              p_amount: chipsToReturn,
-            }
-          );
+          const { error: creditError } = await this.supabaseClient.rpc('credit_player_wallet', {
+            p_user_id: seat.user_id,
+            p_amount: chipsToReturn,
+          });
 
           if (creditError) {
             console.error(

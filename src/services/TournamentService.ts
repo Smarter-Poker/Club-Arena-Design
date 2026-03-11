@@ -1758,8 +1758,6 @@ class TournamentService {
     if (!tournament) return 0;
 
     const buyIn = tournament.buy_in_amount || 0;
-    const rebuyCost = tournament.rebuy_cost || buyIn;
-    const addonCost = tournament.addon_cost || buyIn;
     const guarantee = tournament.guaranteed_prize || 0;
 
     // Count entries
@@ -1927,7 +1925,7 @@ class TournamentService {
    * Create final table (consolidate to 1 table when 9 or fewer players remain)
    */
   async createFinalTable(tournamentId: string): Promise<{ finalTableId: string | null }> {
-    const { data: activePlayers, count } = await supabase
+    const { count } = await supabase
       .from('tournament_players')
       .select('*', { count: 'exact' })
       .eq('tournament_id', tournamentId)
