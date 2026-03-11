@@ -162,7 +162,7 @@ export const BBJService = {
                 created_at: new Date().toISOString(),
             })
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) {
             console.error('BBJService.ensurePoolExists: Failed to create pool:', error);
@@ -204,7 +204,7 @@ export const BBJService = {
             return null;
         }
 
-        const { data, error } = await query.single();
+        const { data, error } = await query.maybeSingle();
 
         if (error) {
             // No pool found is not a critical error — return a default empty pool
@@ -283,7 +283,7 @@ export const BBJService = {
                 .from('tables')
                 .select('club_id')
                 .eq('id', params.tableId)
-                .single();
+                .maybeSingle();
             clubId = tableData?.club_id || '';
         }
 
@@ -401,7 +401,7 @@ export const BBJService = {
             .from('bbj_pools')
             .select('*')
             .eq('id', params.poolId)
-            .single();
+            .maybeSingle();
 
         if (poolError || !pool) {
             console.error('BBJService.executePayout: Pool not found:', poolError);
@@ -479,6 +479,11 @@ export const BBJService = {
         recipientUserIds: string[];
         reason: string;
     }): Promise<boolean> {
+        // Guard: no recipients = nothing to distribute
+        if (params.recipientUserIds.length === 0) {
+            console.warn('BBJService.executePromoPayout: No recipients — nothing to distribute');
+            return true;
+        }
         // Distribute promo payout to each recipient — exact cent-precision
         const totalCents = Math.trunc(params.amount * 100);
         const baseCents = Math.trunc(totalCents / params.recipientUserIds.length);

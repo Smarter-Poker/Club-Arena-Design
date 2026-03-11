@@ -291,7 +291,7 @@ export const RakeService = {
                     .from('unions')
                     .select('total_rake')
                     .eq('id', unionId)
-                    .single();
+                    .maybeSingle();
 
                 if (unionData) {
                     await supabase
@@ -476,7 +476,7 @@ export const RakeService = {
                             .from('agents')
                             .select('rake_generated')
                             .eq('id', agentId)
-                            .single();
+                            .maybeSingle();
 
                         if (agent) {
                             await supabase

@@ -165,9 +165,10 @@ export default function AgentManagementPage() {
                     event: '*',
                     schema: 'public',
                     table: 'wallet_transactions',
+                    filter: `club_id=eq.${clubId}`,
                 },
                 (payload) => {
-                    // Commission tracking - reload on any transaction change
+                    // Commission tracking - reload on any transaction change for this club
                     loadAgentsData();
                 }
             )

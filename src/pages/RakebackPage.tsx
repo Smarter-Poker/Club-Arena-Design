@@ -20,6 +20,8 @@ interface RakebackPeriod {
     status: 'pending' | 'paid';
 }
 
+type ClaimStatus = 'idle' | 'claiming' | 'success' | 'error';
+
 export default function RakebackPage() {
     const navigate = useNavigate();
     const { user } = useUserStore();
@@ -28,6 +30,8 @@ export default function RakebackPage() {
     const [loading, setLoading] = useState(true);
     const [totalEarned, setTotalEarned] = useState(0);
     const [currentRate, setCurrentRate] = useState(0);
+    const [claimStatus, setClaimStatus] = useState<ClaimStatus>('idle');
+    const [claimMessage, setClaimMessage] = useState('');
     const [visiblePeriodRows, setVisiblePeriodRows] = useState(new Set<number>());
 
     // Refs to avoid stale closures
@@ -141,6 +145,57 @@ export default function RakebackPage() {
         .filter(p => p.status === 'pending')
         .reduce((sum, p) => sum + p.rakeback_earned, 0);
 
+    const pendingPeriodIds = periods
+        .filter(p => p.status === 'pending')
+        .map(p => p.id);
+
+    // ── Claim rakeback handler ──
+    const handleClaimRakeback = async (periodId?: string) => {
+        setClaimStatus('claiming');
+        setClaimMessage('');
+        try {
+            const session = await supabase.auth.getSession();
+            const token = session?.data?.session?.access_token;
+            if (!token) {
+                setClaimStatus('error');
+                setClaimMessage('Authentication error. Please refresh.');
+                return;
+            }
+
+            // Claims via the rakeback API
+            const res = await fetch('/api/club-arena/rakeback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                    'X-Idempotency-Key': crypto.randomUUID(),
+                },
+                body: JSON.stringify({
+                    action: 'claim',
+                    periodId: periodId || pendingPeriodIds[0],
+                }),
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                setClaimStatus('success');
+                setClaimMessage(`Claimed ${(data.amount || pendingAmount).toLocaleString()} chips!`);
+                // Reload data to reflect changed status
+                loadRakebackData();
+                setTimeout(() => {
+                    setClaimStatus('idle');
+                    setClaimMessage('');
+                }, 3000);
+            } else {
+                setClaimStatus('error');
+                setClaimMessage(data.error || 'Claim failed. Try again.');
+            }
+        } catch (err) {
+            setClaimStatus('error');
+            setClaimMessage('Network error. Please try again.');
+        }
+    };
+
     return (
         <div className="rakeback-page">
 
@@ -160,6 +215,28 @@ export default function RakebackPage() {
                     <div className="summary-card pending">
                         <span className="card-value">{pendingAmount.toLocaleString()}</span>
                         <span className="card-label">Pending</span>
+                        {pendingAmount > 0 && (
+                            <button
+                                className="claim-btn"
+                                onClick={() => handleClaimRakeback()}
+                                disabled={claimStatus === 'claiming'}
+                                style={{
+                                    marginTop: '8px',
+                                    padding: '6px 16px',
+                                    background: claimStatus === 'success' ? '#34c759' : 'var(--accent-success, #34c759)',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontWeight: 700,
+                                    fontSize: '0.8rem',
+                                    cursor: claimStatus === 'claiming' ? 'wait' : 'pointer',
+                                    opacity: claimStatus === 'claiming' ? 0.6 : 1,
+                                    transition: 'all 0.2s',
+                                }}
+                            >
+                                {claimStatus === 'claiming' ? 'Claiming...' : claimStatus === 'success' ? '✓ Claimed!' : 'Claim All'}
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -180,6 +257,20 @@ export default function RakebackPage() {
                             <Bar dataKey="earned" fill="var(--accent-success)" radius={[4, 4, 0, 0]} />
                         </BarChart>
                     </ResponsiveContainer>
+                </div>
+            )}
+
+            {claimMessage && (
+                <div style={{
+                    padding: '10px 16px',
+                    borderRadius: '8px',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    background: claimStatus === 'success' ? 'rgba(52, 199, 89, 0.15)' : claimStatus === 'error' ? 'rgba(255, 59, 48, 0.15)' : 'transparent',
+                    color: claimStatus === 'success' ? '#34c759' : '#ff3b30',
+                    border: `1px solid ${claimStatus === 'success' ? 'rgba(52, 199, 89, 0.3)' : 'rgba(255, 59, 48, 0.3)'}`,
+                }}>
+                    {claimMessage}
                 </div>
             )}
 

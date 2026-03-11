@@ -6,6 +6,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase'
 import { masterBus } from '../core/MasterBus';
+import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import './BadBeatJackpotPage.css';
@@ -36,6 +37,7 @@ interface JackpotHistory {
 export default function BadBeatJackpotPage() {
     const navigate = useNavigate();
     const { clubId } = useParams();
+    const { user } = useUserStore();
     const toast = useToast();
 
     const [jackpot, setJackpot] = useState<JackpotInfo | null>(null);
@@ -43,6 +45,7 @@ export default function BadBeatJackpotPage() {
     const [loading, setLoading] = useState(true);
     const [justUpdated, setJustUpdated] = useState(false);
     const [visibleHistoryRows, setVisibleHistoryRows] = useState(new Set<number>());
+    const [playerContribution, setPlayerContribution] = useState(0);
     const prevAmountRef = useRef<number>(0);
 
     useEffect(() => {
@@ -121,6 +124,18 @@ export default function BadBeatJackpotPage() {
             if (historyData) {
                 setHistory(historyData);
             }
+
+            // Load player's personal contribution
+            if (user?.id) {
+                const { data: contribData } = await supabase
+                    .from('bbj_contributions')
+                    .select('amount')
+                    .eq('club_id', clubId)
+                    .eq('player_id', user.id);
+
+                const total = (contribData || []).reduce((sum, c) => sum + (c.amount || 0), 0);
+                setPlayerContribution(total);
+            }
         } catch (error) {
             console.error('Failed to load jackpot:', error);
         }
@@ -175,6 +190,12 @@ export default function BadBeatJackpotPage() {
                     <span className="info-label">Contribution</span>
                     <span className="info-value">{((jackpot?.contribution_rate || 0.01) * 100).toFixed(1)}% of rake</span>
                 </div>
+                {playerContribution > 0 && (
+                    <div className="info-card" style={{ border: '1px solid rgba(52, 199, 89, 0.3)', background: 'rgba(52, 199, 89, 0.08)' }}>
+                        <span className="info-label">Your Contribution</span>
+                        <span className="info-value" style={{ color: '#34c759' }}>{playerContribution.toLocaleString()} chips</span>
+                    </div>
+                )}
             </div>
 
             {/* Payout Structure */}

@@ -88,7 +88,7 @@ class TableService {
             .from('tables')
             .select('*')
             .eq('id', tableId)
-            .single();
+            .maybeSingle();
 
         if (error) {
             console.error('[TableService] Error fetching table:', error);
@@ -161,7 +161,7 @@ class TableService {
                 settings: defaultSettings,
             })
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) throw error;
         return data;
@@ -216,7 +216,7 @@ class TableService {
                 .eq('seat_number', seatNumber)
                 .eq('user_id', userId)
                 .is('left_at', null)
-                .single();
+                .maybeSingle();
 
             if (seatError || !seat) {
                 console.error('[TableService] Seat not found:', seatError);
@@ -243,7 +243,7 @@ class TableService {
                 .from('tables')
                 .select('club_id, tournament_id')
                 .eq('id', tableId)
-                .single();
+                .maybeSingle();
 
             const clubId = tableData?.club_id;
             if (!clubId) {
@@ -294,7 +294,7 @@ class TableService {
                 .from('tables')
                 .select('tournament_id')
                 .eq('id', tableId)
-                .single();
+                .maybeSingle();
 
             if (tblInfo?.tournament_id) {
                 await supabase
@@ -320,7 +320,7 @@ class TableService {
                 .eq('table_id', tableId)
                 .order('position', { ascending: true })
                 .limit(1)
-                .single();
+                .maybeSingle();
 
             if (nextWaiter) {
                 // Send notification to next in waitlist
@@ -466,7 +466,7 @@ class TableService {
             .eq('table_id', tableId)
             .eq('user_id', userId)
             .is('left_at', null)
-            .single();
+            .maybeSingle();
 
         if (!seat) return false;
 

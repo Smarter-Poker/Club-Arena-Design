@@ -62,7 +62,7 @@ class WaitlistServiceClass {
             .eq('table_id', tableId)
             .eq('user_id', userId)
             .eq('status', 'waiting')
-            .single();
+            .maybeSingle();
 
         if (!entry) return null;
 
@@ -125,7 +125,7 @@ class WaitlistServiceClass {
             .eq('table_id', tableId)
             .eq('user_id', userId)
             .eq('status', 'waiting')
-            .single();
+            .maybeSingle();
 
         if (error || !data) return null;
 
@@ -182,7 +182,7 @@ class WaitlistServiceClass {
             .eq('status', 'waiting')
             .order('position', { ascending: true })
             .limit(1)
-            .single();
+            .maybeSingle();
 
         if (!next) {
             return false;

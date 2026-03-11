@@ -123,7 +123,7 @@ export const WalletService = {
             .from('clubs')
             .select('id, name, owner_id, union_id')
             .eq('id', clubId)
-            .single();
+            .maybeSingle();
 
         if (!club) throw new Error('Club not found');
 
@@ -133,7 +133,7 @@ export const WalletService = {
                 .from('unions')
                 .select('id, owner_id, name')
                 .eq('id', club.union_id)
-                .single();
+                .maybeSingle();
 
             if (!union) throw new Error('Union not found');
 
@@ -315,7 +315,7 @@ export const WalletService = {
             .select('balance')
             .eq('user_id', userId)
             .eq('wallet_type', 'PLAYER')
-            .single();
+            .maybeSingle();
 
         if (!walletData || (walletData.balance || 0) < amount) {
             throw new Error(`Insufficient chips in Player Wallet. Need ${amount}, have ${walletData?.balance || 0}`);
@@ -495,7 +495,7 @@ export const WalletService = {
             .select('amount')
             .eq('user_id', userId)
             .eq('table_id', tableId)
-            .single();
+            .maybeSingle();
 
         if (lockError || !lockData) {
             console.error('WalletService.processDealerTip: No chip lock found:', lockError);
@@ -533,7 +533,7 @@ export const WalletService = {
             .select('amount')
             .eq('user_id', userId)
             .eq('table_id', tableId)
-            .single();
+            .maybeSingle();
 
         if (chipLockError || !chipLock) {
             console.error('[WalletService] Insurance: No chip lock found:', chipLockError);

@@ -10,6 +10,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import { SettlementService } from '../services/SettlementService';
+import { exportToCSV } from '../lib/export';
 import styles from './SettlementPage.module.css';
 import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
@@ -75,6 +76,8 @@ export default function SettlementPage() {
     const [clubWires, setClubWires] = useState<ClubWire[]>([]);
     const [agentPayouts, setAgentPayouts] = useState<AgentPayout[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [autoSettlement, setAutoSettlement] = useState(false);
+    const [togglingAutoSettle, setTogglingAutoSettle] = useState(false);
     const [visibleWires, setVisibleWires] = useState<Set<string>>(new Set());
     const [visiblePayouts, setVisiblePayouts] = useState<Set<string>>(new Set());
 
@@ -319,6 +322,65 @@ export default function SettlementPage() {
         }
     };
 
+    // ─── Toggle auto-settlement ───
+    const handleToggleAutoSettlement = async () => {
+        setTogglingAutoSettle(true);
+        try {
+            const session = await supabase.auth.getSession();
+            const token = session?.data?.session?.access_token;
+            if (!token) { toast.error('Auth error'); return; }
+
+            const res = await fetch('/api/club-arena/settlement-history', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    action: 'auto_schedule',
+                    clubId: clubId || unionId,
+                    enabled: !autoSettlement,
+                }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setAutoSettlement(data.autoSettlement);
+                toast.success(`Auto-settlement ${data.autoSettlement ? 'enabled' : 'disabled'}`);
+            } else {
+                toast.error(data.error || 'Toggle failed');
+            }
+        } catch {
+            toast.error('Failed to toggle auto-settlement');
+        } finally {
+            setTogglingAutoSettle(false);
+        }
+    };
+
+    // ─── CSV Export ───
+    const handleExportSettlement = () => {
+        if (clubWires.length > 0) {
+            exportToCSV(clubWires.map(w => ({
+                Club: w.clubName,
+                'Net Player P/L': w.netPlayerPL,
+                'Gross Rake': w.grossRake,
+                'Union Tax': w.unionTax,
+                'Agent Commissions': w.agentCommissions,
+                'Final Wire': w.finalWire,
+                Direction: w.direction,
+                Status: w.status,
+            })), `settlement_${selectedPeriod?.periodNumber || 'period'}.csv`, [
+                { key: 'Club', label: 'Club' },
+                { key: 'Net Player P/L', label: 'Net Player P/L' },
+                { key: 'Gross Rake', label: 'Gross Rake' },
+                { key: 'Union Tax', label: 'Union Tax' },
+                { key: 'Agent Commissions', label: 'Agent Comm.' },
+                { key: 'Final Wire', label: 'Final Wire' },
+                { key: 'Direction', label: 'Direction' },
+                { key: 'Status', label: 'Status' },
+            ]);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className={styles.page}>
@@ -352,6 +414,38 @@ export default function SettlementPage() {
                     {selectedPeriod.status === 'open' && ' Open'}
                     {selectedPeriod.status === 'processing' && '🟡 Processing'}
                     {selectedPeriod.status === 'settled' && ' Settled'}
+                </div>
+                <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+                    <button
+                        onClick={handleExportSettlement}
+                        style={{
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            background: 'rgba(255,255,255,0.05)',
+                            color: '#fff',
+                            fontSize: '0.75rem',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        📥 Export CSV
+                    </button>
+                    <button
+                        onClick={handleToggleAutoSettlement}
+                        disabled={togglingAutoSettle}
+                        style={{
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            border: `1px solid ${autoSettlement ? 'rgba(52,199,89,0.4)' : 'rgba(255,255,255,0.2)'}`,
+                            background: autoSettlement ? 'rgba(52,199,89,0.15)' : 'rgba(255,255,255,0.05)',
+                            color: autoSettlement ? '#34c759' : '#fff',
+                            fontSize: '0.75rem',
+                            cursor: togglingAutoSettle ? 'wait' : 'pointer',
+                            opacity: togglingAutoSettle ? 0.6 : 1,
+                        }}
+                    >
+                        {autoSettlement ? '⏱ Auto: ON' : '⏱ Auto: OFF'}
+                    </button>
                 </div>
             </header>
 

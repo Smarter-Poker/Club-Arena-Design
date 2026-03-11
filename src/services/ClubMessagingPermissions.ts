@@ -76,7 +76,7 @@ class ClubMessagingPermissionsClass {
             `)
             .eq('user_id', userId)
             .in('unions.clubs.id', [clubId])
-            .single();
+            .maybeSingle();
 
         if (unionRole) {
             const role = unionRole.role === 'owner' ? 'union_owner' : 'union_admin';
@@ -89,7 +89,7 @@ class ClubMessagingPermissionsClass {
             .select('role, agent_id')
             .eq('user_id', userId)
             .eq('club_id', clubId)
-            .single();
+            .maybeSingle();
 
         if (!clubMember) {
             return null;

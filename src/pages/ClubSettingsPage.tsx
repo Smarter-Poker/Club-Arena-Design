@@ -158,10 +158,14 @@ export default function ClubSettingsPage() {
                 .eq('id', clubId);
 
             if (!error) {
+                toast.success('Settings saved!');
                 navigate(`/clubs/${clubId}`);
+            } else {
+                toast.error('Failed to save settings: ' + error.message);
             }
         } catch (error) {
             console.error('Failed to save settings:', error);
+            toast.error('Failed to save settings');
         }
         setSaving(false);
     };
@@ -257,7 +261,10 @@ export default function ClubSettingsPage() {
                         <input
                             type="number"
                             value={settings.default_rake_percent}
-                            onChange={(e) => updateSetting('default_rake_percent', parseFloat(e.target.value))}
+                            onChange={(e) => {
+                                const val = parseFloat(e.target.value);
+                                updateSetting('default_rake_percent', isNaN(val) ? 0 : val);
+                            }}
                             min={0}
                             max={10}
                             step={0.5}
@@ -269,7 +276,10 @@ export default function ClubSettingsPage() {
                         <input
                             type="number"
                             value={settings.rake_cap}
-                            onChange={(e) => updateSetting('rake_cap', parseFloat(e.target.value))}
+                            onChange={(e) => {
+                                const val = parseFloat(e.target.value);
+                                updateSetting('rake_cap', isNaN(val) ? 0 : val);
+                            }}
                             min={1}
                             max={10}
                             step={0.5}
@@ -281,7 +291,7 @@ export default function ClubSettingsPage() {
                         <input
                             type="number"
                             value={settings.time_bank_seconds}
-                            onChange={(e) => updateSetting('time_bank_seconds', parseInt(e.target.value))}
+                            onChange={(e) => updateSetting('time_bank_seconds', parseInt(e.target.value) || 0)}
                             min={15}
                             max={120}
                             disabled={!isOwner}
@@ -328,7 +338,7 @@ export default function ClubSettingsPage() {
                             <input
                                 type="number"
                                 value={settings.min_buyin_bb}
-                                onChange={(e) => updateSetting('min_buyin_bb', parseInt(e.target.value))}
+                                onChange={(e) => updateSetting('min_buyin_bb', parseInt(e.target.value) || 0)}
                                 min={20}
                                 max={100}
                                 disabled={!isOwner}
@@ -339,7 +349,7 @@ export default function ClubSettingsPage() {
                             <input
                                 type="number"
                                 value={settings.max_buyin_bb}
-                                onChange={(e) => updateSetting('max_buyin_bb', parseInt(e.target.value))}
+                                onChange={(e) => updateSetting('max_buyin_bb', parseInt(e.target.value) || 0)}
                                 min={100}
                                 max={1000}
                                 disabled={!isOwner}

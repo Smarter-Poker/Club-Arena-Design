@@ -135,7 +135,9 @@ export default function LobbyPage() {
                     // Debounce seat changes to avoid rapid refetching
                     if (debounceRef.current) clearTimeout(debounceRef.current);
                     debounceRef.current = setTimeout(() => {
-                        tableService.getActiveTables().then(setTables);
+                        tableService.getActiveTables().then(setTables).catch(err => {
+                            console.error('[LobbyPage] Failed to refresh tables on seat change:', err);
+                        });
                     }, 500);
                 }
             )
@@ -172,7 +174,7 @@ export default function LobbyPage() {
             if (activeFilter === 'ofc' && !table.game_variant.startsWith('ofc')) return false;
             if (activeFilter === 'tournaments' && (table as any).game_type !== 'tournament') return false;
         }
-        if (searchQuery && !table.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+        if (searchQuery && !(table.name || '').toLowerCase().includes(searchQuery.toLowerCase())) return false;
 
         // Stake range filter
         if (stakeFilter !== 'any' && table.stakes) {

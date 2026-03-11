@@ -167,6 +167,7 @@ import { useToast } from '../components/common/Toast';
 import { ClubsService } from '../services/ClubsService';
 import DailyChallengesWidget from '../components/rewards/DailyChallengesWidget';
 import ClubBottomNav from '../components/club/ClubBottomNav';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 export default function ClubDetailPage() {
     const { clubId } = useParams();
@@ -190,6 +191,24 @@ export default function ClubDetailPage() {
     const [showMemberMenu, setShowMemberMenu] = useState<string | null>(null);
     const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
 
+    // Controlled settings form state (replaces document.getElementById)
+    const [settingsForm, setSettingsForm] = useState({
+        name: '',
+        description: '',
+        isPublic: false,
+        requiresApproval: false,
+        defaultRakePercent: 5,
+        rakeCap: 3,
+        minBuyInBB: 40,
+        maxBuyInBB: 200,
+        timeBankSeconds: 30,
+        allowStraddle: false,
+        allowRunItTwice: true,
+    });
+
+    // Confirm modal state for table deletion
+    const [deleteTableConfirm, setDeleteTableConfirm] = useState<{ show: boolean; tableId: string | null; tableName: string | null }>({ show: false, tableId: null, tableName: null });
+
     // Animated stats
     const animatedOnlineCount = useCountAnimation(onlineCount, 800);
     const animatedMemberCount = useCountAnimation(club?.memberCount || 0, 800);
@@ -198,6 +217,25 @@ export default function ClubDetailPage() {
     useEffect(() => {
         loadClubData();
     }, [clubId]);
+
+    // Sync settings form with loaded club data
+    useEffect(() => {
+        if (club) {
+            setSettingsForm({
+                name: club.name,
+                description: club.description,
+                isPublic: club.isPublic,
+                requiresApproval: club.requiresApproval,
+                defaultRakePercent: club.settings.defaultRakePercent,
+                rakeCap: club.settings.rakeCap,
+                minBuyInBB: club.settings.minBuyInBB,
+                maxBuyInBB: club.settings.maxBuyInBB,
+                timeBankSeconds: club.settings.timeBankSeconds,
+                allowStraddle: club.settings.allowStraddle,
+                allowRunItTwice: club.settings.allowRunItTwice,
+            });
+        }
+    }, [club?.name, club?.settings]);
 
     // Filter members when search changes
     useEffect(() => {
@@ -417,23 +455,24 @@ export default function ClubDetailPage() {
         }
     };
 
-    // Save settings handler
+    // Save settings handler (uses controlled state instead of document.getElementById)
     const handleSaveSettings = async () => {
         if (!clubId || !club) return;
         setSavingSettings(true);
         try {
+            const safeNum = (val: number, fallback: number) => isNaN(val) ? fallback : val;
             const updates = {
-                name: (document.getElementById('clubName') as HTMLInputElement)?.value || club.name,
-                description: (document.getElementById('clubDesc') as HTMLTextAreaElement)?.value || club.description,
-                is_public: (document.getElementById('clubPublic') as HTMLInputElement)?.checked ?? club.isPublic,
-                requires_approval: (document.getElementById('clubApproval') as HTMLInputElement)?.checked ?? club.requiresApproval,
-                default_rake_percent: Number((document.getElementById('rakePercent') as HTMLInputElement)?.value) || club.settings.defaultRakePercent,
-                rake_cap: Number((document.getElementById('rakeCap') as HTMLInputElement)?.value) || club.settings.rakeCap,
-                min_buyin_bb: Number((document.getElementById('minBuyin') as HTMLInputElement)?.value) || club.settings.minBuyInBB,
-                max_buyin_bb: Number((document.getElementById('maxBuyin') as HTMLInputElement)?.value) || club.settings.maxBuyInBB,
-                time_bank_seconds: Number((document.getElementById('timeBank') as HTMLInputElement)?.value) || club.settings.timeBankSeconds,
-                allow_straddle: (document.getElementById('allowStraddle') as HTMLInputElement)?.checked ?? club.settings.allowStraddle,
-                allow_run_it_twice: (document.getElementById('allowRIT') as HTMLInputElement)?.checked ?? club.settings.allowRunItTwice,
+                name: settingsForm.name || club.name,
+                description: settingsForm.description || club.description,
+                is_public: settingsForm.isPublic,
+                requires_approval: settingsForm.requiresApproval,
+                default_rake_percent: safeNum(settingsForm.defaultRakePercent, club.settings.defaultRakePercent),
+                rake_cap: safeNum(settingsForm.rakeCap, club.settings.rakeCap),
+                min_buyin_bb: safeNum(settingsForm.minBuyInBB, club.settings.minBuyInBB),
+                max_buyin_bb: safeNum(settingsForm.maxBuyInBB, club.settings.maxBuyInBB),
+                time_bank_seconds: safeNum(settingsForm.timeBankSeconds, club.settings.timeBankSeconds),
+                allow_straddle: settingsForm.allowStraddle,
+                allow_run_it_twice: settingsForm.allowRunItTwice,
             };
             await ClubsService.updateClub(clubId, updates);
             toast.success('Settings saved successfully!');
@@ -605,21 +644,9 @@ export default function ClubDetailPage() {
                                             {(userRole === 'owner' || userRole === 'admin') && (
                                                 <button
                                                     className={styles.deleteTableBtn}
-                                                    onClick={async (e) => {
+                                                    onClick={(e) => {
                                                         e.stopPropagation();
-                                                        if (!confirm(`Delete table "${table.name}"?`)) return;
-                                                        setDeletingTableId(table.id);
-                                                        try {
-                                                            const { error } = await supabase.from('tables').update({ status: 'deleted', is_active: false }).eq('id', table.id);
-                                                            if (error) throw error;
-                                                            setTables(prev => prev.filter(t => t.id !== table.id));
-                                                            toast.success('Table deleted');
-                                                        } catch (err) {
-                                                            console.error('Failed to delete table:', err);
-                                                            toast.error('Failed to delete table');
-                                                        } finally {
-                                                            setDeletingTableId(null);
-                                                        }
+                                                        setDeleteTableConfirm({ show: true, tableId: table.id, tableName: table.name });
                                                     }}
                                                     disabled={deletingTableId === table.id}
                                                     title="Delete table"
@@ -781,19 +808,19 @@ export default function ClubDetailPage() {
                             <h3> General</h3>
                             <div className={styles.settingRow}>
                                 <label>Club Name</label>
-                                <input id="clubName" type="text" defaultValue={club.name} className={styles.textInput} />
+                                <input type="text" value={settingsForm.name} onChange={e => setSettingsForm(f => ({ ...f, name: e.target.value }))} className={styles.textInput} />
                             </div>
                             <div className={styles.settingRow}>
                                 <label>Description</label>
-                                <textarea id="clubDesc" defaultValue={club.description} className={styles.textArea} rows={3} />
+                                <textarea value={settingsForm.description} onChange={e => setSettingsForm(f => ({ ...f, description: e.target.value }))} className={styles.textArea} rows={3} />
                             </div>
                             <div className={styles.settingRow}>
                                 <label>Public Club</label>
-                                <input id="clubPublic" type="checkbox" defaultChecked={club.isPublic} />
+                                <input type="checkbox" checked={settingsForm.isPublic} onChange={e => setSettingsForm(f => ({ ...f, isPublic: e.target.checked }))} />
                             </div>
                             <div className={styles.settingRow}>
                                 <label>Require Approval</label>
-                                <input id="clubApproval" type="checkbox" defaultChecked={club.requiresApproval} />
+                                <input type="checkbox" checked={settingsForm.requiresApproval} onChange={e => setSettingsForm(f => ({ ...f, requiresApproval: e.target.checked }))} />
                             </div>
                         </div>
 
@@ -801,11 +828,11 @@ export default function ClubDetailPage() {
                             <h3> Rake Settings</h3>
                             <div className={styles.settingRow}>
                                 <label>Default Rake %</label>
-                                <input id="rakePercent" type="number" defaultValue={club.settings.defaultRakePercent} min={0} max={10} className={styles.numberInput} />
+                                <input type="number" value={settingsForm.defaultRakePercent} onChange={e => setSettingsForm(f => ({ ...f, defaultRakePercent: Number(e.target.value) || 0 }))} min={0} max={10} className={styles.numberInput} />
                             </div>
                             <div className={styles.settingRow}>
                                 <label>Rake Cap (BB)</label>
-                                <input id="rakeCap" type="number" defaultValue={club.settings.rakeCap} min={0} max={10} className={styles.numberInput} />
+                                <input type="number" value={settingsForm.rakeCap} onChange={e => setSettingsForm(f => ({ ...f, rakeCap: Number(e.target.value) || 0 }))} min={0} max={10} className={styles.numberInput} />
                             </div>
                         </div>
 
@@ -813,23 +840,23 @@ export default function ClubDetailPage() {
                             <h3> Table Defaults</h3>
                             <div className={styles.settingRow}>
                                 <label>Min Buy-in (BB)</label>
-                                <input id="minBuyin" type="number" defaultValue={club.settings.minBuyInBB} className={styles.numberInput} />
+                                <input type="number" value={settingsForm.minBuyInBB} onChange={e => setSettingsForm(f => ({ ...f, minBuyInBB: Number(e.target.value) || 0 }))} className={styles.numberInput} />
                             </div>
                             <div className={styles.settingRow}>
                                 <label>Max Buy-in (BB)</label>
-                                <input id="maxBuyin" type="number" defaultValue={club.settings.maxBuyInBB} className={styles.numberInput} />
+                                <input type="number" value={settingsForm.maxBuyInBB} onChange={e => setSettingsForm(f => ({ ...f, maxBuyInBB: Number(e.target.value) || 0 }))} className={styles.numberInput} />
                             </div>
                             <div className={styles.settingRow}>
                                 <label>Time Bank (seconds)</label>
-                                <input id="timeBank" type="number" defaultValue={club.settings.timeBankSeconds} className={styles.numberInput} />
+                                <input type="number" value={settingsForm.timeBankSeconds} onChange={e => setSettingsForm(f => ({ ...f, timeBankSeconds: Number(e.target.value) || 0 }))} className={styles.numberInput} />
                             </div>
                             <div className={styles.settingRow}>
                                 <label>Allow Straddle</label>
-                                <input id="allowStraddle" type="checkbox" defaultChecked={club.settings.allowStraddle} />
+                                <input type="checkbox" checked={settingsForm.allowStraddle} onChange={e => setSettingsForm(f => ({ ...f, allowStraddle: e.target.checked }))} />
                             </div>
                             <div className={styles.settingRow}>
                                 <label>Allow Run It Twice</label>
-                                <input id="allowRIT" type="checkbox" defaultChecked={club.settings.allowRunItTwice} />
+                                <input type="checkbox" checked={settingsForm.allowRunItTwice} onChange={e => setSettingsForm(f => ({ ...f, allowRunItTwice: e.target.checked }))} />
                             </div>
                         </div>
 
@@ -874,6 +901,34 @@ export default function ClubDetailPage() {
                     clubName={club?.name}
                 />
             )}
+
+            {/* Confirm Modal for Table Deletion */}
+            <ConfirmModal
+                isOpen={deleteTableConfirm.show}
+                title="Delete Table"
+                message={`Delete table "${deleteTableConfirm.tableName || ''}"? This cannot be undone.`}
+                variant="danger"
+                confirmText="Delete"
+                onConfirm={async () => {
+                    if (deleteTableConfirm.tableId) {
+                        const id = deleteTableConfirm.tableId;
+                        setDeleteTableConfirm({ show: false, tableId: null, tableName: null });
+                        setDeletingTableId(id);
+                        try {
+                            const { error } = await supabase.from('tables').update({ status: 'deleted', is_active: false }).eq('id', id);
+                            if (error) throw error;
+                            setTables(prev => prev.filter(t => t.id !== id));
+                            toast.success('Table deleted');
+                        } catch (err) {
+                            console.error('Failed to delete table:', err);
+                            toast.error('Failed to delete table');
+                        } finally {
+                            setDeletingTableId(null);
+                        }
+                    }
+                }}
+                onCancel={() => setDeleteTableConfirm({ show: false, tableId: null, tableName: null })}
+            />
         </div>
     );
 }

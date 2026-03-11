@@ -20,7 +20,7 @@ import type { SeatPlayer, Card, LastAction, PositionBadge } from '../components/
 import type { SidePot } from '../components/table/PotDisplay';
 import type { BoardStage } from '../components/table/CommunityCards';
 import { useTableWebSocket } from '../services/TableWebSocket';
-import { supabase, subscribeToHandState } from '../lib/supabase';
+import { supabase, subscribeToHandState, broadcastHandState } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import { avatarService } from '../services/AvatarService';
 import PlayerNotesPanel from '../components/gameplay/PlayerNotesPanel';
@@ -617,7 +617,7 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
             console.error('Failed to add chips:', error);
             // Surface error to user — alert as fallback since toast not always available
             const msg = error instanceof Error ? error.message : 'Failed to add chips';
-            if (typeof window !== 'undefined') window.alert(msg);
+            if (typeof window !== 'undefined') toast.error(msg);
         }
     };
 
@@ -2369,7 +2369,36 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
         setShowRaiseSlider(true);
     };
 
+    // Broadcast current hand state via Supabase Realtime (fallback when game server is unreachable)
+    const broadcastLocalHandState = useCallback(() => {
+        if (!handControllerRef.current || !tableId) return;
+        const state = handControllerRef.current.getState();
+        const currentSeatPlayer = state.players?.find((p: any) => p.seat === state.currentPlayerSeat);
+        broadcastHandState(tableId, {
+            table_id: tableId,
+            pot: state.pot ?? 0,
+            community_cards: state.communityCards ?? [],
+            current_bet: state.currentBet ?? 0,
+            current_player: currentSeatPlayer?.user_id ?? null,
+            dealer_seat: state.dealerSeat ?? 0,
+            stage: state.stage ?? 'preflop',
+            players: (state.players ?? []).map((p: any) => ({
+                seat: p.seat,
+                user_id: p.user_id,
+                username: p.username,
+                stack: p.stack,
+                bet: p.bet ?? 0,
+                cards: p.cards ?? [],
+                is_folded: p.is_folded ?? false,
+                is_all_in: p.is_all_in ?? false,
+                is_sitting_out: p.is_sitting_out ?? false,
+            })),
+        });
+    }, [tableId]);
+
     // Unified action handler for ActionPanel component
+    // Architecture: LOCAL engine is authoritative → broadcast via Supabase Realtime (PRIMARY)
+    // → fire-and-forget server call (SECONDARY, for when game server is deployed)
     const handleActionPanelAction = useCallback(async (action: 'fold' | 'check' | 'call' | 'raise' | 'allin', amount?: number) => {
         const heroSeat = tableState.heroSeat;
         const hero = getPlayerAtSeat(heroSeat);
@@ -2381,30 +2410,24 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                     if (handControllerRef.current) handControllerRef.current.performAction(heroSeat, 'fold');
                 });
                 soundService.playFold();
-                if (tableId) {
-                    const result = await submitAction(tableId, userId, 'fold');
-                    if (!result.success) console.warn('[TablePage] Server fold failed:', result.error);
-                }
+                broadcastLocalHandState();
+                if (tableId) submitAction(tableId, userId, 'fold').catch(() => {});
                 break;
             case 'check':
                 startTransition(() => {
                     if (handControllerRef.current) handControllerRef.current.performAction(heroSeat, 'check');
                 });
                 soundService.playCheck();
-                if (tableId) {
-                    const result = await submitAction(tableId, userId, 'check');
-                    if (!result.success) console.warn('[TablePage] Server check failed:', result.error);
-                }
+                broadcastLocalHandState();
+                if (tableId) submitAction(tableId, userId, 'check').catch(() => {});
                 break;
             case 'call':
                 startTransition(() => {
                     if (handControllerRef.current) handControllerRef.current.performAction(heroSeat, 'call');
                 });
                 soundService.playChips();
-                if (tableId) {
-                    const result = await submitAction(tableId, userId, 'call');
-                    if (!result.success) console.warn('[TablePage] Server call failed:', result.error);
-                }
+                broadcastLocalHandState();
+                if (tableId) submitAction(tableId, userId, 'call').catch(() => {});
                 break;
             case 'raise':
                 if (amount) {
@@ -2416,10 +2439,8 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                         }
                     });
                     soundService.playRaise();
-                    if (tableId) {
-                        const result = await submitAction(tableId, userId, 'raise', clamped);
-                        if (!result.success) console.warn('[TablePage] Server raise failed:', result.error);
-                    }
+                    broadcastLocalHandState();
+                    if (tableId) submitAction(tableId, userId, 'raise', clamped).catch(() => {});
                 }
                 break;
             case 'allin':
@@ -2429,13 +2450,11 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                 });
                 soundService.playAllIn();
                 setIsAllInMode(true);
-                if (tableId) {
-                    const result = await submitAction(tableId, userId, 'allin', heroStack);
-                    if (!result.success) console.warn('[TablePage] Server all-in failed:', result.error);
-                }
+                broadcastLocalHandState();
+                if (tableId) submitAction(tableId, userId, 'allin', heroStack).catch(() => {});
                 break;
         }
-    }, [tableState.heroSeat, tableId, userId]);
+    }, [tableState.heroSeat, tableId, userId, broadcastLocalHandState]);
 
     const handleConfirmRaise = async () => {
         const heroSeat = tableState.heroSeat;
@@ -2458,11 +2477,10 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                 }
             });
             soundService.playChips();
-            // Submit to server (authoritative)
-            if (tableId) {
-                const result = await submitAction(tableId, userId, 'raise', clampedRaise);
-                if (!result.success) console.warn('[TablePage] Server raise failed:', result.error);
-            }
+            // PRIMARY: Broadcast via Supabase Realtime
+            broadcastLocalHandState();
+            // SECONDARY: Fire-and-forget server call
+            if (tableId) submitAction(tableId, userId, 'raise', clampedRaise).catch(() => {});
         } catch (err) {
             console.warn('[TablePage] Raise error:', err);
         }
@@ -2480,11 +2498,10 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                 }
             });
             soundService.playChips();
-            // Submit to server (authoritative)
-            if (tableId) {
-                const result = await submitAction(tableId, userId, 'allin', heroStack);
-                if (!result.success) console.warn('[TablePage] Server all-in failed:', result.error);
-            }
+            // PRIMARY: Broadcast via Supabase Realtime
+            broadcastLocalHandState();
+            // SECONDARY: Fire-and-forget server call
+            if (tableId) submitAction(tableId, userId, 'allin', heroStack).catch(() => {});
         } catch (err) {
             console.warn('[TablePage] All-in error:', err);
         }
@@ -3352,7 +3369,7 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                                 } catch (refundErr) {
                                     console.error('[BuyIn] CRITICAL — refund also failed:', refundErr);
                                 }
-                                alert('Buy-in failed. Your chips have been refunded.');
+                                toast.error('Buy-in failed. Your chips have been refunded.');
                             }
                         } else {
                             console.error('[BuyIn] FELL THROUGH - no branch matched:', {

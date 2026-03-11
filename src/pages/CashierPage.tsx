@@ -27,7 +27,9 @@ import { WalletService } from '../services/WalletService';
 import { ChipFlowService } from '../services/ChipFlowService';
 import { supabase } from '../lib/supabase';
 import ClubBottomNav from '../components/club/ClubBottomNav';
+import ConfirmModal from '../components/common/ConfirmModal';
 import { MetalFrame, MetalButton, MetalInput, MetalCard } from '../components/metal-ui';
+import { useVIPStatus } from '../hooks/useVIP';
 import './CashierPage.css';
 
 type CashierAction = 'send' | 'buyin' | 'cashout' | 'mint' | 'history';
@@ -123,6 +125,7 @@ export default function CashierPage() {
   const clubId = routeClubId || searchParams.get('club');
 
   const { user } = useUserStore();
+  const vipInfo = useVIPStatus();
   const { balances, diamonds, mintChips, loadBalances } = useWalletStore();
 
   const [action, setAction] = useState<CashierAction>('send');
@@ -134,6 +137,9 @@ export default function CashierPage() {
     type: 'success' | 'error' | 'info';
     text: string;
   } | null>(null);
+
+  // Confirm modal for high-value cashouts
+  const [cashoutConfirm, setCashoutConfirm] = useState<{ show: boolean; value: number }>({ show: false, value: 0 });
 
   // Rate limiting: 3s cooldown after each action
   const startCooldown = useCallback(() => {
@@ -592,7 +598,9 @@ export default function CashierPage() {
         } else {
           // Standard cashout: request-cashout API (escrow → agent approval)
           // U-03 FIX: Confirmation for high-value cashouts
-          if (value >= 10000 && !window.confirm(`Confirm cashout of ${value.toLocaleString()} chips? Your chips will be held in escrow until your agent approves.`)) {
+          if (value >= 10000) {
+            // High-value cashout: show confirmation modal instead of blocking confirm()
+            setCashoutConfirm({ show: true, value });
             setIsProcessing(false);
             return;
           }
@@ -640,6 +648,52 @@ export default function CashierPage() {
     }
     setIsProcessing(false);
     startCooldown(); // Rate limit
+  };
+
+  // Process high-value cashout after ConfirmModal approval
+  const processHighValueCashout = async (value: number) => {
+    if (!user?.id) return;
+    setCashoutConfirm({ show: false, value: 0 });
+    setIsProcessing(true);
+    try {
+      if (balances.PLAYER.available < value) {
+        setMessage({ type: 'error', text: `Insufficient balance. Available: ${balances.PLAYER.available.toLocaleString()}` });
+        setIsProcessing(false);
+        return;
+      }
+      const token = (await supabase.auth.getSession())?.data?.session?.access_token;
+      if (!token) {
+        setMessage({ type: 'error', text: 'Authentication error. Please refresh.' });
+        setIsProcessing(false);
+        return;
+      }
+      const cashoutRes = await fetch('/api/club-arena/request-cashout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'X-Idempotency-Key': crypto.randomUUID(),
+        },
+        body: JSON.stringify({ clubId, amount: value }),
+      });
+      const cashoutData = await cashoutRes.json();
+      if (cashoutData.success) {
+        setMessage({
+          type: 'success',
+          text: `Cashout request submitted! ${value.toLocaleString()} chips are now held in escrow. Your agent will review shortly.`,
+        });
+        loadBalances(user.id);
+        loadPendingCashouts();
+        notifyWalletChange(user.id, value);
+        setAmount('');
+      } else {
+        setMessage({ type: 'error', text: cashoutData.error || 'Cashout request failed.' });
+      }
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Cashout failed. Please try again.' });
+    }
+    setIsProcessing(false);
+    startCooldown();
   };
 
   const DIAMOND_RATE = 38 / 100;
@@ -719,7 +773,22 @@ export default function CashierPage() {
         <MetalCard size="sm" glow className="cashier-balance-card">
           <div className="balance-card-content">
             <span className="balance-icon">◆</span>
-            <div className="balance-label">Diamonds</div>
+            <div className="balance-label">
+              Diamonds
+              {vipInfo.isVIP && (
+                <span style={{
+                  marginLeft: '6px',
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                  fontSize: '0.6rem',
+                  fontWeight: 700,
+                  background: 'linear-gradient(135deg, #FFD700, #FFA500)',
+                  color: '#000',
+                  verticalAlign: 'middle',
+                  letterSpacing: '0.5px',
+                }}>VIP</span>
+              )}
+            </div>
             <div className="balance-value">{diamonds.toLocaleString()}</div>
           </div>
         </MetalCard>
@@ -1044,6 +1113,17 @@ export default function CashierPage() {
           userRole={userRole as 'owner' | 'admin' | 'agent' | 'member'}
         />
       )}
+
+      {/* Confirm Modal for High-Value Cashouts */}
+      <ConfirmModal
+        isOpen={cashoutConfirm.show}
+        title="Confirm High-Value Cashout"
+        message={`Confirm cashout of ${cashoutConfirm.value.toLocaleString()} chips? Your chips will be held in escrow until your agent approves.`}
+        variant="default"
+        confirmText="Confirm Cashout"
+        onConfirm={() => processHighValueCashout(cashoutConfirm.value)}
+        onCancel={() => setCashoutConfirm({ show: false, value: 0 })}
+      />
     </div>
   );
 }

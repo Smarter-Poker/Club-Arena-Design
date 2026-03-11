@@ -104,7 +104,7 @@ export const CreditService = {
             .from('agents')
             .select('id, user_id, credit_limit, agent_wallet_balance, is_prepaid, status, profiles!agents_profiles_fkey(display_name)')
             .eq('id', agentId)
-            .single();
+            .maybeSingle();
 
         if (error || !agent) return null;
 
@@ -162,7 +162,7 @@ export const CreditService = {
                 status: 'pending',
             })
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) throw error;
         return this.mapCreditRequest(data, account.agentName);
@@ -182,9 +182,9 @@ export const CreditService = {
             .from('credit_limit_requests')
             .select('agent_id, requested_limit')
             .eq('id', requestId)
-            .single();
+            .maybeSingle();
 
-        if (fetchError) throw fetchError;
+        if (fetchError || !request) throw fetchError || new Error('Credit request not found');
 
         // Update request
         await supabase
@@ -219,9 +219,9 @@ export const CreditService = {
             .from('agents')
             .select('credit_limit, agent_wallet_balance, is_prepaid')
             .eq('id', agentId)
-            .single();
+            .maybeSingle();
 
-        if (error) throw error;
+        if (error || !agent) throw error || new Error('Agent not found');
 
         if (agent.is_prepaid) {
             return {
@@ -300,7 +300,7 @@ export const CreditService = {
                 due_date: dueDate.toISOString(),
             })
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) throw error;
         return this.mapInvoice(data, account.agentName);
@@ -333,7 +333,7 @@ export const CreditService = {
             .from('credit_invoices')
             .select('*')
             .eq('id', invoiceId)
-            .single();
+            .maybeSingle();
 
         if (fetchError) throw fetchError;
 
@@ -344,7 +344,7 @@ export const CreditService = {
                 .from('agents')
                 .select('user_id')
                 .eq('id', invoice.agent_id)
-                .single();
+                .maybeSingle();
 
             if (!agentData?.user_id) {
                 throw new Error('Agent user not found for wallet deduction');
@@ -374,7 +374,7 @@ export const CreditService = {
             .from('credit_invoices')
             .select('amount_paid, amount_remaining')
             .eq('id', invoiceId)
-            .single();
+            .maybeSingle();
 
         if (fetchError2) {
             throw new Error(`Failed to fetch invoice: ${fetchError2.message}`);
@@ -419,7 +419,7 @@ export const CreditService = {
                 payment_method: method,
             })
             .select()
-            .single();
+            .maybeSingle();
 
         if (payError) throw payError;
 

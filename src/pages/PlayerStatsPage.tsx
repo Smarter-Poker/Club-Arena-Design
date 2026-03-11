@@ -309,29 +309,29 @@ export default function PlayerStatsPage() {
             <div className="stats-content">
                 {category === 'overview' && stats && (
                     <div className="stats-grid">
-                        <StatRow label="VPIP" value={`${(stats.vpip * 100).toFixed(1)}%`} />
-                        <StatRow label="PFR" value={`${(stats.pfr * 100).toFixed(1)}%`} />
-                        <StatRow label="Aggression Factor" value={stats.aggression_factor.toFixed(2)} />
-                        <StatRow label="Hours Played" value={`${stats.hours_played.toFixed(1)}h`} />
+                        <StatRow label="VPIP" value={`${((stats.vpip || 0) * 100).toFixed(1)}%`} />
+                        <StatRow label="PFR" value={`${((stats.pfr || 0) * 100).toFixed(1)}%`} />
+                        <StatRow label="Aggression Factor" value={(stats.aggression_factor || 0).toFixed(2)} />
+                        <StatRow label="Hours Played" value={`${(stats.hours_played || 0).toFixed(1)}h`} />
                         <StatRow label="Showdown Win %" value={`${showdownWinRate}%`} />
-                        <StatRow label="BB/100" value={stats.bb_per_100.toFixed(2)} highlight />
+                        <StatRow label="BB/100" value={(stats.bb_per_100 || 0).toFixed(2)} highlight />
                     </div>
                 )}
 
                 {category === 'preflop' && stats && (
                     <div className="stats-grid">
-                        <StatRow label="VPIP" value={`${(stats.vpip * 100).toFixed(1)}%`} />
-                        <StatRow label="PFR" value={`${(stats.pfr * 100).toFixed(1)}%`} />
-                        <StatRow label="3-Bet %" value={`${(stats.three_bet_percent * 100).toFixed(1)}%`} />
-                        <StatRow label="Fold to 3-Bet" value={`${(stats.fold_to_three_bet * 100).toFixed(1)}%`} />
+                        <StatRow label="VPIP" value={`${((stats.vpip || 0) * 100).toFixed(1)}%`} />
+                        <StatRow label="PFR" value={`${((stats.pfr || 0) * 100).toFixed(1)}%`} />
+                        <StatRow label="3-Bet %" value={`${((stats.three_bet_percent || 0) * 100).toFixed(1)}%`} />
+                        <StatRow label="Fold to 3-Bet" value={`${((stats.fold_to_three_bet || 0) * 100).toFixed(1)}%`} />
                     </div>
                 )}
 
                 {category === 'postflop' && stats && (
                     <div className="stats-grid">
-                        <StatRow label="C-Bet Flop" value={`${(stats.cbet_flop * 100).toFixed(1)}%`} />
-                        <StatRow label="C-Bet Turn" value={`${(stats.cbet_turn * 100).toFixed(1)}%`} />
-                        <StatRow label="Aggression Factor" value={stats.aggression_factor.toFixed(2)} />
+                        <StatRow label="C-Bet Flop" value={`${((stats.cbet_flop || 0) * 100).toFixed(1)}%`} />
+                        <StatRow label="C-Bet Turn" value={`${((stats.cbet_turn || 0) * 100).toFixed(1)}%`} />
+                        <StatRow label="Aggression Factor" value={(stats.aggression_factor || 0).toFixed(2)} />
                         <StatRow label="Showdown Win %" value={`${showdownWinRate}%`} />
                     </div>
                 )}
@@ -339,7 +339,7 @@ export default function PlayerStatsPage() {
                 {category === 'results' && stats && (
                     <div className="stats-grid">
                         <StatRow label="Total Profit" value={`${stats.total_profit.toLocaleString()}`} highlight />
-                        <StatRow label="BB/100" value={stats.bb_per_100.toFixed(2)} />
+                        <StatRow label="BB/100" value={(stats.bb_per_100 || 0).toFixed(2)} />
                         <StatRow label="Biggest Pot Won" value={`${stats.biggest_pot_won.toLocaleString()}`} />
                         <StatRow label="Biggest Pot Lost" value={`${stats.biggest_pot_lost.toLocaleString()}`} />
                         <StatRow label="Hands Won" value={stats.hands_won.toLocaleString()} />

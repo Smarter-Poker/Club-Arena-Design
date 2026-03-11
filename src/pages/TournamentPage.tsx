@@ -202,6 +202,10 @@ export default function TournamentPage() {
     // Register for tournament
     const handleRegister = async () => {
         if (!selectedTournament) return;
+        if (currentUser.id === 'guest') {
+            toast.error('You must be logged in to register');
+            return;
+        }
         try {
             // NOTE: Do NOT call WalletService.lockForBuyIn here — registerPlayer()
             // already handles wallet deduction atomically (buy_in + rake).
@@ -285,6 +289,10 @@ export default function TournamentPage() {
     // Unregister
     const handleUnregister = async () => {
         if (!selectedTournament) return;
+        if (currentUser.id === 'guest') {
+            toast.error('You must be logged in to unregister');
+            return;
+        }
         try {
             // unregisterPlayer handles the full refund to Player Wallet via credit_player_wallet RPC
             await tournamentService.unregisterPlayer(selectedTournament.id, currentUser.id);
@@ -294,13 +302,13 @@ export default function TournamentPage() {
             const prizeContribution = selectedTournament.buy_in_amount;
             setTournaments(prev => prev.map(t =>
                 t.id === selectedTournament.id
-                    ? { ...t, current_players: t.current_players - 1, prize_pool: t.prize_pool - prizeContribution }
+                    ? { ...t, current_players: Math.max(0, t.current_players - 1), prize_pool: Math.max(0, t.prize_pool - prizeContribution) }
                     : t
             ));
             setSelectedTournament(prev => prev ? {
                 ...prev,
-                current_players: prev.current_players - 1,
-                prize_pool: prev.prize_pool - prizeContribution,
+                current_players: Math.max(0, prev.current_players - 1),
+                prize_pool: Math.max(0, prev.prize_pool - prizeContribution),
             } : null);
 
             notifyWalletChange(selectedTournament.buy_in_amount, false);

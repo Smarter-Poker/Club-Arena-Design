@@ -36,6 +36,9 @@ export default function TransactionHistoryPage() {
     const [filter, setFilter] = useState<TransactionFilter>('all');
     const [hasMore, setHasMore] = useState(true);
     const [page, setPage] = useState(0);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
     const [visibleTransactions, setVisibleTransactions] = useState(new Set<number>());
 
     // Stagger transaction rows
@@ -54,7 +57,7 @@ export default function TransactionHistoryPage() {
             setHasMore(true);
             loadTransactions(0, true);
         }
-    }, [user?.id, filter]);
+    }, [user?.id, filter, dateFrom, dateTo]);
 
     // ── Realtime: live transaction updates ──
     useEffect(() => {
@@ -99,6 +102,14 @@ export default function TransactionHistoryPage() {
             else if (filter === 'withdrawals') query = query.in('transaction_type', ['cash_out', 'withdrawal']);
             else if (filter === 'transfers') query = query.in('transaction_type', ['transfer_in', 'transfer_out', 'agent_transfer']);
             else if (filter === 'rake') query = query.in('transaction_type', ['rake', 'rakeback']);
+
+            // Date range filter
+            if (dateFrom) query = query.gte('created_at', new Date(dateFrom).toISOString());
+            if (dateTo) {
+                const endDate = new Date(dateTo);
+                endDate.setHours(23, 59, 59, 999);
+                query = query.lte('created_at', endDate.toISOString());
+            }
 
             const { data, error } = await query;
 
@@ -178,8 +189,19 @@ export default function TransactionHistoryPage() {
         }
     };
 
-    // Calculate totals
-    const totals = transactions.reduce(
+    // Apply local search filter
+    const displayTransactions = useMemo(() => {
+        if (!searchQuery.trim()) return transactions;
+        const q = searchQuery.toLowerCase();
+        return transactions.filter(tx =>
+            (tx.description || '').toLowerCase().includes(q) ||
+            (tx.club_name || '').toLowerCase().includes(q) ||
+            tx.type.toLowerCase().includes(q)
+        );
+    }, [transactions, searchQuery]);
+
+    // Calculate totals from visible transactions
+    const totals = displayTransactions.reduce(
         (acc, tx) => {
             if (tx.amount > 0) acc.deposits += tx.amount;
             else acc.withdrawals += Math.abs(tx.amount);
@@ -187,6 +209,7 @@ export default function TransactionHistoryPage() {
         },
         { deposits: 0, withdrawals: 0 }
     );
+    const netFlow = totals.deposits - totals.withdrawals;
 
     return (
         <div className="transaction-history-page">
@@ -201,9 +224,78 @@ export default function TransactionHistoryPage() {
                     <span className="summary-value negative">-{totals.withdrawals.toLocaleString()}</span>
                     <span className="summary-label">Withdrawals</span>
                 </div>
+                <div className="summary-card">
+                    <span className={`summary-value ${netFlow >= 0 ? 'positive' : 'negative'}`}>
+                        {netFlow >= 0 ? '+' : ''}{netFlow.toLocaleString()}
+                    </span>
+                    <span className="summary-label">Net Flow</span>
+                </div>
                 <button className="export-btn" onClick={handleExportCSV}>
                     Export CSV
                 </button>
+            </div>
+
+            {/* Search + Date Range */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <input
+                    type="text"
+                    placeholder="Search transactions..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                        flex: 1,
+                        minWidth: '160px',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        background: 'rgba(255,255,255,0.05)',
+                        color: 'inherit',
+                        fontSize: '0.85rem',
+                    }}
+                />
+                <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    style={{
+                        padding: '8px 10px',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        background: 'rgba(255,255,255,0.05)',
+                        color: 'inherit',
+                        fontSize: '0.8rem',
+                    }}
+                />
+                <span style={{ color: '#888', fontSize: '0.8rem' }}>to</span>
+                <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    style={{
+                        padding: '8px 10px',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        background: 'rgba(255,255,255,0.05)',
+                        color: 'inherit',
+                        fontSize: '0.8rem',
+                    }}
+                />
+                {(dateFrom || dateTo || searchQuery) && (
+                    <button
+                        onClick={() => { setDateFrom(''); setDateTo(''); setSearchQuery(''); }}
+                        style={{
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(255,59,48,0.3)',
+                            background: 'rgba(255,59,48,0.1)',
+                            color: '#ff3b30',
+                            fontSize: '0.75rem',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        Clear
+                    </button>
+                )}
             </div>
 
             <div className="filter-tabs">
@@ -221,14 +313,14 @@ export default function TransactionHistoryPage() {
             <div className="transactions-list">
                 {loading ? (
                     <div className="loading-state"><div className="spinner" /></div>
-                ) : transactions.length === 0 ? (
+                ) : displayTransactions.length === 0 ? (
                     <div className="empty-state">
                         <span className="empty-icon">○</span>
                         <p>No transactions found</p>
                     </div>
                 ) : (
                     <>
-                        {transactions.map((tx, index) => (
+                        {displayTransactions.map((tx, index) => (
                             <div
                                 key={tx.id}
                                 className="transaction-row"

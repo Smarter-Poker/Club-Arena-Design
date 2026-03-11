@@ -360,7 +360,7 @@ class TournamentService {
       .from('tournaments')
       .select('*')
       .eq('id', tournamentId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('[TournamentService] Error fetching tournament:', error);
@@ -494,7 +494,7 @@ class TournamentService {
         union_id: config.unionId || null,
       })
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return data;
@@ -559,7 +559,7 @@ class TournamentService {
       .select('balance')
       .eq('user_id', userId)
       .eq('wallet_type', 'PLAYER')
-      .single();
+      .maybeSingle();
 
     if (!walletData || (walletData.balance || 0) < totalCost) {
       throw new Error(
@@ -656,7 +656,7 @@ class TournamentService {
           : {}),
       })
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
       // Check for race condition: duplicate registration (unique constraint violation)
@@ -692,7 +692,7 @@ class TournamentService {
       .from('tournaments')
       .select('current_players, guaranteed_prize')
       .eq('id', tournamentId)
-      .single();
+      .maybeSingle();
     const freshPlayerCount = (freshTournament?.current_players || 0) + 1;
     const entriesPrize = buyIn * freshPlayerCount;
     const freshGuarantee = freshTournament?.guaranteed_prize ?? tournament.guaranteed_prize;
@@ -985,7 +985,7 @@ class TournamentService {
       .from('tournaments')
       .select('current_players, guaranteed_prize')
       .eq('id', tournamentId)
-      .single();
+      .maybeSingle();
     const newPlayerCount = Math.max(
       0,
       (freshTourney?.current_players ?? tournament.current_players) - 1
@@ -1164,7 +1164,7 @@ class TournamentService {
           settings: { auto_muck: true, time_bank_seconds: 30 },
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (table) createdTables.push(table);
     }
@@ -1199,7 +1199,7 @@ class TournamentService {
       })
       .eq('id', tournamentId)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
 
@@ -1462,7 +1462,7 @@ class TournamentService {
       .select('chips')
       .eq('tournament_id', tournamentId)
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (!player) return { allowed: false, reason: 'Player not found' };
     if (player.chips > tournament.starting_chips) {
@@ -1496,7 +1496,7 @@ class TournamentService {
       .select('balance')
       .eq('user_id', userId)
       .eq('wallet_type', 'PLAYER')
-      .single();
+      .maybeSingle();
 
     if (!walletData || (walletData.balance || 0) < rebuyCost) {
       throw new Error(
@@ -1618,7 +1618,7 @@ class TournamentService {
       .select('balance')
       .eq('user_id', userId)
       .eq('wallet_type', 'PLAYER')
-      .single();
+      .maybeSingle();
 
     if (!addonWallet || (addonWallet.balance || 0) < addonCost) {
       throw new Error(
@@ -1902,7 +1902,7 @@ class TournamentService {
           settings: { auto_muck: true, time_bank_seconds: 45 },
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (newTable) {
         finalTable = { id: newTable.id };
