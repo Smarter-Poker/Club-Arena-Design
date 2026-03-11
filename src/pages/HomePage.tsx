@@ -94,21 +94,13 @@ export default function HomePage() {
 
     // Fetch user stats and clubs from Supabase
     useEffect(() => {
+        let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
+
         async function fetchUserData() {
             setIsLoading(true);
             try {
                 const { data: { user: authUser } } = await supabase.auth.getUser();
                 if (authUser) {
-                    // Fetch diamonds from profile
-                    const { data: profileData } = await supabase
-                        .from('profiles')
-                        .select('diamonds')
-                        .eq('id', authUser.id)
-                        .maybeSingle();
-
-                    // Diamond count available for future features
-                    void profileData;
-
                     // Fetch user's clubs (unlimited)
                     const memberships = await ClubsService.getUserMemberships();
                     const clubs = memberships?.map((m: any) => ({
@@ -133,7 +125,7 @@ export default function HomePage() {
             const { data: { user: authUser } } = await supabase.auth.getUser();
             if (!authUser?.id) return;
 
-            const channel = supabase
+            realtimeChannel = supabase
                 .channel(`user-clubs-${authUser.id}`)
                 .on(
                     'postgres_changes',
@@ -149,13 +141,15 @@ export default function HomePage() {
                     }
                 )
                 .subscribe();
-
-            return () => {
-                supabase.removeChannel(channel);
-            };
         };
 
         setupRealtimeSubscription();
+
+        return () => {
+            if (realtimeChannel) {
+                supabase.removeChannel(realtimeChannel);
+            }
+        };
     }, []);
 
     // Fetch Shark Club stats — ALL data from live Supabase queries
@@ -361,7 +355,6 @@ export default function HomePage() {
                 ═══════════════════════════════════════════════════════════════════════ */}
                 <div
                     className={styles.featuredCardContainer}
-                    style={{ animation: 'scaleIn 0.7s ease-out 100ms both' }}
                 >
                     <div className={styles.featuredPedestal}></div>
                     <div
@@ -398,9 +391,6 @@ export default function HomePage() {
                                 <div
                                     key={club.id}
                                     className={styles.clubCard}
-                                    style={{
-                                        animation: `cardRise 0.6s ease-out ${200 + idx * 80}ms both`,
-                                    }}
                                     onClick={() => {
                                         haptic.medium();
                                         localStorage.setItem(LAST_VISITED_KEY, club.id);
@@ -553,9 +543,6 @@ export default function HomePage() {
                             key={tile.alt}
                             className={styles.tileCard}
                             onClick={tile.action}
-                            style={{
-                                animation: `cardRise 0.5s ease-out ${400 + idx * 80}ms both`,
-                            }}
                         >
                             <div className={styles.tilePedestal}></div>
                             <div className={styles.tileImageWrapper}>
