@@ -205,9 +205,14 @@ export const SeatSlot = memo(function SeatSlot(props: SeatSlotProps) {
             if (isActive) cls.push('seat--active');
             if (isWinner) cls.push('seat--winner');
             if (lastAction === 'fold') cls.push('seat--folded');
+            // Timer urgency classes for color transitions
+            if (isActive && timerProgress !== undefined) {
+                if (timerProgress <= 20) cls.push('seat--timer-critical');
+                else if (timerProgress <= 33) cls.push('seat--timer-urgent');
+            }
         }
         return cls.join(' ');
-    }, [player, isActive, lastAction, isWinner]);
+    }, [player, isActive, lastAction, isWinner, timerProgress]);
 
     // ─── EMPTY SEAT ────────────────────────────────────────────────────────
     if (!player) {

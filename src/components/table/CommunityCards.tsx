@@ -10,9 +10,10 @@
  * - Uses CardImage component for custom deck rendering
  */
 
-import React, { useMemo, memo } from 'react';
+import React, { useMemo, useEffect, useRef, memo } from 'react';
 import { CardImage, CardBack } from './CardImage';
 import type { Card } from './CardImage';
+import { haptic } from '../../services/SoundService';
 import './CommunityCards.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -55,13 +56,24 @@ interface CardFaceProps {
     index: number;
     isHighlighted: boolean;
     isDealing: boolean;
+    stage: BoardStage;
 }
 
-function CardFace({ card, index, isHighlighted, isDealing }: CardFaceProps) {
+function CardFace({ card, index, isHighlighted, isDealing, stage }: CardFaceProps) {
+    // Apply turn/river emphasis animations to the newly dealt card
+    const isTurnCard = stage === 'turn' && index === 3;
+    const isRiverCard = (stage === 'river' || stage === 'showdown') && index === 4;
+
     return (
         <div
-            className={`community-cards__card ${isHighlighted ? 'community-cards__card--highlighted' : ''} ${isDealing ? 'community-cards__card--dealing' : ''}`}
-            style={{ animationDelay: `${index * 100}ms` }}
+            className={[
+                'community-cards__card',
+                isHighlighted ? 'community-cards__card--highlighted' : '',
+                isDealing ? 'community-cards__card--dealing' : '',
+                isTurnCard ? 'community-cards__card--turn' : '',
+                isRiverCard ? 'community-cards__card--river' : '',
+            ].filter(Boolean).join(' ')}
+            style={{ animationDelay: `${index * 100}ms`, '--card-index': index } as React.CSSProperties}
         >
             <CardImage
                 card={card}
@@ -102,6 +114,23 @@ function CommunityCardsComponent({
     winningHandName,
 }: CommunityCardsProps) {
     const visibleCount = useMemo(() => getVisibleCardCount(stage), [stage]);
+    const prevStageRef = useRef(stage);
+
+    // Haptic feedback when new community cards are dealt
+    useEffect(() => {
+        if (stage !== prevStageRef.current) {
+            if (stage === 'flop') {
+                haptic.medium();
+            } else if (stage === 'turn') {
+                haptic.light();
+            } else if (stage === 'river') {
+                haptic.medium();
+            } else if (stage === 'showdown') {
+                haptic.strong();
+            }
+            prevStageRef.current = stage;
+        }
+    }, [stage]);
 
     // Create array of 5 slots
     const slots = useMemo(() => {
@@ -129,6 +158,7 @@ function CommunityCardsComponent({
                             index={i}
                             isHighlighted={slot.isHighlighted}
                             isDealing={isDealing && i === visibleCount - 1}
+                            stage={stage}
                         />
                     ) : (
                         <PlaceholderCard key={`placeholder-${i}`} index={i} />

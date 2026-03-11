@@ -17,12 +17,25 @@
     right: 0;
     padding: var(--space-md) var(--space-lg);
     padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom, 0));
-    background: linear-gradient(180deg, rgba(15, 18, 25, 0.97) 0%, rgba(8, 10, 16, 1) 100%);
+    background: linear-gradient(180deg, rgba(15, 18, 25, 0.95) 0%, rgba(8, 10, 16, 0.99) 100%);
     border-top: 1px solid var(--border-default);
     z-index: var(--z-action-panel);
     -webkit-tap-highlight-color: transparent;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    /* Slide-up entrance when it's hero's turn */
+    animation: actionPanelSlideUp 0.35s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+}
+
+@keyframes actionPanelSlideUp {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .action-panel--raise {
@@ -468,12 +481,34 @@
     letter-spacing: 0.5px;
     cursor: pointer;
     box-shadow: 0 3px 0 #B45309, 0 4px 12px rgba(245, 158, 11, 0.3);
-    transition: all 0.12s ease;
+    transition: all 0.15s var(--ease-spring, ease);
     touch-action: manipulation;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Subtle shimmer on confirm button */
+.raise-confirm::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -120%;
+    width: 80%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+    animation: confirmShimmer 2.5s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes confirmShimmer {
+    0% { left: -120%; }
+    40%, 100% { left: 120%; }
 }
 
 .raise-confirm:hover {
     filter: brightness(1.1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 0 #B45309, 0 6px 20px rgba(245, 158, 11, 0.4);
 }
 
 .raise-confirm:active {

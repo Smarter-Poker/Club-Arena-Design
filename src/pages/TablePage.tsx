@@ -57,6 +57,8 @@ import HandHistoryPanel from '../components/table/HandHistoryPanel';
 import type { HandRecord, HandHistoryAction, HandHistoryStreet } from '../components/table/HandHistoryPanel';
 import { usePlayerStats } from '../hooks/usePlayerStats';
 import { useTableSettings } from '../hooks/useTableSettings';
+import { useTableTimer } from '../hooks/useTableTimer';
+import { useTableModals } from '../hooks/useTableModals';
 import { GTOQueryService, type GTOSolution } from '../services/GTOQueryService';
 import { RakeService, type RakeCalculation } from '../services/RakeService';
 import { tableService } from '../services/TableService';

@@ -124,18 +124,40 @@
     align-items: center;
     justify-content: center;
     background: rgba(255, 255, 255, 0.08);
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
     color: #94A3B8;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s var(--ease-spring, ease);
     -webkit-tap-highlight-color: transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Glass overlay on header buttons */
+.header-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 100%);
+    pointer-events: none;
+    border-radius: 7px 7px 0 0;
 }
 
 .header-btn:hover,
 .header-btn:active {
     background: rgba(255, 255, 255, 0.15);
     color: #E2E8F0;
+    border-color: rgba(255, 255, 255, 0.12);
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.header-btn:active {
+    transform: scale(0.95);
 }
 
 .header-left {
@@ -157,7 +179,8 @@
     font-weight: 700;
     color: #E2E8F0;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .header-blinds {
@@ -165,6 +188,11 @@
     font-weight: 600;
     color: #22C55E;
     font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    text-shadow: 0 0 8px rgba(34, 197, 94, 0.3);
+    padding: 2px 8px;
+    background: rgba(34, 197, 94, 0.08);
+    border-radius: 4px;
+    border: 1px solid rgba(34, 197, 94, 0.15);
 }
 
 .header-right {
@@ -464,8 +492,23 @@
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    background: rgba(10, 15, 26, 0.85);
+    background: linear-gradient(180deg, rgba(10, 15, 26, 0.88) 0%, rgba(5, 8, 16, 0.92) 100%);
+    backdrop-filter: blur(16px) saturate(1.3);
+    -webkit-backdrop-filter: blur(16px) saturate(1.3);
     border-top: 1px solid rgba(255, 255, 255, 0.06);
+    position: relative;
+}
+
+/* Glass shine line across top */
+.control-strip::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.08) 30%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0.08) 70%, transparent 100%);
+    pointer-events: none;
 }
 
 .control-strip__btn {
@@ -474,14 +517,29 @@
     gap: 4px;
     padding: 5px 10px;
     background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 8px;
     color: rgba(255, 255, 255, 0.6);
     font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.2s var(--ease-spring, ease);
     -webkit-tap-highlight-color: transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Glass overlay on buttons */
+.control-strip__btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 100%);
+    pointer-events: none;
+    border-radius: 7px 7px 0 0;
 }
 
 .control-strip__btn:active {
@@ -490,7 +548,10 @@
 
 .control-strip__btn:hover {
     background: rgba(255, 255, 255, 0.12);
-    color: rgba(255, 255, 255, 0.85);
+    color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    transform: translateY(-1px);
 }
 
 .control-strip__btn--muted {
@@ -507,13 +568,34 @@
     font-size: 0.6875rem;
     color: #FFD700;
     font-weight: 700;
+    text-shadow: 0 0 6px rgba(255, 215, 0, 0.3);
 }
 
 .control-strip__timer {
     padding: 4px 10px;
-    background: rgba(255, 215, 0, 0.15);
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.12) 0%, rgba(255, 180, 0, 0.08) 100%);
     border: 1px solid rgba(255, 215, 0, 0.3);
     border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Timer shimmer */
+.control-strip__timer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.1), transparent);
+    animation: timerShimmer 3s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes timerShimmer {
+    0% { left: -100%; }
+    50%, 100% { left: 100%; }
 }
 
 .control-strip__timer-val {
@@ -521,6 +603,8 @@
     font-size: 0.8125rem;
     font-weight: 700;
     color: #FFD700;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+    position: relative;
 }
 
 .control-strip__spacer {

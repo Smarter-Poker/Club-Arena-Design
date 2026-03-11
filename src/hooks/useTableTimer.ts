@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { soundService } from '../services/SoundService';
 
 /**
@@ -18,83 +18,72 @@ import { soundService } from '../services/SoundService';
 
 export interface UseTableTimerProps {
     isHeroTurn: boolean;
-    heroSeat: number;
     isSoundEnabled: boolean;
-    onAutoFold: () => void;
+    onTimeout: () => void;
     initialTime?: number;
+    urgencyThreshold?: number;
 }
 
 export interface UseTableTimerReturn {
     timeRemaining: number;
     setTimeRemaining: (time: number) => void;
     resetTimer: (time?: number) => void;
-    isUrgent: boolean;        // true when < 5 seconds
+    isUrgent: boolean;        // true when < urgencyThreshold seconds
     timerProgress: number;    // 0-100 percentage
 }
 
 const DEFAULT_INITIAL_TIME = 15;
-const URGENCY_THRESHOLD = 5; // seconds
+const DEFAULT_URGENCY_THRESHOLD = 5;
 
 export function useTableTimer({
     isHeroTurn,
-    heroSeat,
     isSoundEnabled,
-    onAutoFold,
+    onTimeout,
     initialTime = DEFAULT_INITIAL_TIME,
+    urgencyThreshold = DEFAULT_URGENCY_THRESHOLD,
 }: UseTableTimerProps): UseTableTimerReturn {
     const [timeRemaining, setTimeRemaining] = useState(initialTime);
-    const [isUrgent, setIsUrgent] = useState(false);
+    const onTimeoutRef = useRef(onTimeout);
+    onTimeoutRef.current = onTimeout;
+
+    const isUrgent = isHeroTurn && timeRemaining <= urgencyThreshold && timeRemaining > 0;
 
     // Calculate progress as percentage (0-100)
     const timerProgress = Math.max(0, Math.min(100, (timeRemaining / initialTime) * 100));
 
     // Reset timer to initial time or custom time
     const resetTimer = useCallback((newTime?: number) => {
-        const time = newTime ?? initialTime;
-        setTimeRemaining(time);
-        setIsUrgent(false);
+        setTimeRemaining(newTime ?? initialTime);
     }, [initialTime]);
 
-    // Timer countdown with auto-fold on timeout
+    // Timer countdown — only runs when it's hero's turn
     useEffect(() => {
-        if (!isHeroTurn) {
-            setIsUrgent(false);
-            return;
-        }
+        if (!isHeroTurn) return;
 
         const interval = setInterval(() => {
             setTimeRemaining(prev => {
                 if (prev <= 0) return 0;
                 const newValue = prev - 1;
-
-                // Auto-fold when timer expires
                 if (newValue <= 0) {
-                    onAutoFold();
+                    onTimeoutRef.current();
                     return 0;
                 }
-
                 return newValue;
             });
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [isHeroTurn, onAutoFold]);
+    }, [isHeroTurn]);
 
-    // Manage urgency state and warning sound
+    // Timer warning sound
     useEffect(() => {
-        const isNowUrgent = isHeroTurn && timeRemaining <= URGENCY_THRESHOLD && timeRemaining > 0;
-        setIsUrgent(isNowUrgent);
-
-        if (isNowUrgent && isSoundEnabled) {
+        if (isUrgent && isSoundEnabled) {
             soundService.startTimerWarning();
         } else {
             soundService.stopTimerWarning();
         }
-
-        return () => {
-            soundService.stopTimerWarning();
-        };
-    }, [isHeroTurn, timeRemaining, isSoundEnabled]);
+        return () => soundService.stopTimerWarning();
+    }, [isUrgent, isSoundEnabled]);
 
     return {
         timeRemaining,
