@@ -4,7 +4,8 @@
  * Professional 3-button horizontal layout with raise mode sub-panel
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { haptic } from '../../services/SoundService';
 import './ActionPanel.css';
 
 interface ActionPanelProps {
@@ -56,20 +57,27 @@ export default function ActionPanel({
         if (!isMyTurn) setIsRaiseMode(false);
     }, [isMyTurn]);
 
+    // Smart presets — adapt to street context
     const presets = [
-        { label: '½ POT', value: Math.round(pot * 0.5) },
-        { label: 'POT', value: pot },
-        { label: '2×', value: Math.round(bigBlind * 2 + callAmount) },
-        { label: '3×', value: Math.round(bigBlind * 3 + callAmount) },
+        { label: '⅓ Pot', value: Math.round(pot * 0.33) },
+        { label: '½ Pot', value: Math.round(pot * 0.5) },
+        { label: '¾ Pot', value: Math.round(pot * 0.75) },
+        { label: 'Pot', value: pot },
     ];
+
+    // Track last slider value for haptic snap feedback
+    const lastSnapRef = useRef<number>(minRaise);
 
     const handleRaiseClick = useCallback(() => {
         if (!canRaise && !canAllIn) return;
+        haptic.light();
         setIsRaiseMode(true);
         setRaiseAmount(minRaise);
+        lastSnapRef.current = minRaise;
     }, [canRaise, canAllIn, minRaise]);
 
     const handleConfirmRaise = useCallback(() => {
+        haptic.strong();
         if (raiseAmount >= maxRaise) {
             onAction('allin', maxRaise);
         } else {
@@ -79,17 +87,43 @@ export default function ActionPanel({
     }, [raiseAmount, maxRaise, onAction]);
 
     const handleAllIn = useCallback(() => {
+        haptic.strong();
         onAction('allin', maxRaise);
         setIsRaiseMode(false);
     }, [maxRaise, onAction]);
 
     const adjustRaise = useCallback((delta: number) => {
+        haptic.light();
         setRaiseAmount(prev => Math.max(minRaise, Math.min(maxRaise, prev + delta)));
     }, [minRaise, maxRaise]);
 
     const setPreset = useCallback((value: number) => {
+        haptic.medium();
         setRaiseAmount(Math.max(minRaise, Math.min(maxRaise, value)));
     }, [minRaise, maxRaise]);
+
+    // Slider change with snap-to-preset haptic feedback
+    const handleSliderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = Number(e.target.value);
+        setRaiseAmount(val);
+
+        // Snap feedback — trigger haptic when crossing a BB boundary
+        const currentBB = Math.round(val / (bigBlind || 1));
+        const lastBB = Math.round(lastSnapRef.current / (bigBlind || 1));
+        if (currentBB !== lastBB) {
+            haptic.light();
+            lastSnapRef.current = val;
+        }
+
+        // Stronger haptic when hitting a preset value (within 1 BB tolerance)
+        const tolerance = bigBlind || 1;
+        for (const p of presets) {
+            if (Math.abs(val - p.value) <= tolerance && Math.abs(lastSnapRef.current - p.value) > tolerance) {
+                haptic.medium();
+                break;
+            }
+        }
+    }, [bigBlind, presets]);
 
     const sliderProgress = maxRaise > minRaise
         ? ((raiseAmount - minRaise) / (maxRaise - minRaise)) * 100
@@ -134,7 +168,7 @@ export default function ActionPanel({
                         max={maxRaise}
                         step={bigBlind || 1}
                         value={raiseAmount}
-                        onChange={(e) => setRaiseAmount(Number(e.target.value))}
+                        onChange={handleSliderChange}
                         style={{ '--slider-progress': `${sliderProgress}%` } as React.CSSProperties}
                     />
                 </div>
@@ -176,7 +210,7 @@ export default function ActionPanel({
                 {/* FOLD — Always Red, Left */}
                 <button
                     className="action-btn action-btn--fold"
-                    onClick={() => onAction('fold')}
+                    onClick={() => { haptic.medium(); onAction('fold'); }}
                     disabled={!canFold}
                 >
                     <span className="action-btn__label">Fold</span>
@@ -186,14 +220,14 @@ export default function ActionPanel({
                 {canCheck ? (
                     <button
                         className="action-btn action-btn--check"
-                        onClick={() => onAction('check')}
+                        onClick={() => { haptic.medium(); onAction('check'); }}
                     >
                         <span className="action-btn__label">Check</span>
                     </button>
                 ) : canCall ? (
                     <button
                         className="action-btn action-btn--call"
-                        onClick={() => onAction('call')}
+                        onClick={() => { haptic.medium(); onAction('call'); }}
                     >
                         <span className="action-btn__label">Call</span>
                         <span className="action-btn__amount">{formatChips(callAmount)}</span>
@@ -220,6 +254,9 @@ export default function ActionPanel({
                         disabled={!canRaise}
                     >
                         <span className="action-btn__label">Raise</span>
+                        {minRaise > 0 && bigBlind > 0 && (
+                            <span className="action-btn__amount">{(minRaise / bigBlind).toFixed(0)} BB</span>
+                        )}
                     </button>
                 )}
             </div>

@@ -174,78 +174,126 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   THEME: Blue
+   THEME: Blue (Ocean / Deep Sea)
    ═══════════════════════════════════════════════════════════════════════════════ */
 [data-theme="blue"] {
     --felt-color: #1e3a5f;
-    --felt-gradient: radial-gradient(ellipse at 50% 50%, #2563eb20 0%, #1e3a5f 60%, #152a47 100%);
-    --rail-gradient: linear-gradient(180deg, #374151 0%, #1f2937 50%, #111827 100%);
-    --table-border: 4px solid #1f2937;
+    --felt-gradient: radial-gradient(ellipse at 50% 45%, #2a5a8f 0%, #1e3a5f 45%, #152a47 75%, #0d1b2e 100%);
+    --rail-gradient: linear-gradient(180deg, #4a5568 0%, #2d3748 30%, #1a202c 70%, #0f1218 100%);
+    --rail-highlight: rgba(100, 160, 255, 0.06);
+    --table-border: 4px solid #2d3748;
+    --timer-color: #60a5fa;
+    --timer-glow: rgba(96, 165, 250, 0.6);
+    --seat-bg: rgba(13, 27, 46, 0.93);
+    --seat-border: rgba(96, 165, 250, 0.08);
+    --seat-active-border: #60a5fa;
+    --color-allin: #2563eb;
+    --color-allin-dark: #1d4ed8;
+    --color-allin-glow: rgba(37, 99, 235, 0.4);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   THEME: Red (ClubGG Style)
+   THEME: Red (ClubGG / Casino Red)
    ═══════════════════════════════════════════════════════════════════════════════ */
 [data-theme="red"] {
     --felt-color: #7f1d1d;
-    --felt-gradient: radial-gradient(ellipse at 50% 50%, #991b1b30 0%, #7f1d1d 60%, #581818 100%);
-    --rail-gradient: linear-gradient(180deg, #451a03 0%, #2c0d00 50%, #1a0800 100%);
-    --table-border: 4px solid #2c0d00;
+    --felt-gradient: radial-gradient(ellipse at 50% 45%, #a83232 0%, #7f1d1d 45%, #581818 75%, #3b0f0f 100%);
+    --rail-gradient: linear-gradient(180deg, #6b3a1a 0%, #451a03 30%, #2c0d00 70%, #1a0800 100%);
+    --rail-highlight: rgba(255, 120, 80, 0.06);
+    --table-border: 4px solid #451a03;
+    --seat-bg: rgba(59, 15, 15, 0.93);
+    --seat-border: rgba(239, 68, 68, 0.08);
+    --color-fold: #991b1b;
+    --color-fold-dark: #7f1d1d;
+    --color-fold-glow: rgba(153, 27, 27, 0.3);
+    --color-raise: #ef4444;
+    --color-raise-dark: #dc2626;
+    --color-raise-glow: rgba(239, 68, 68, 0.3);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   THEME: Purple
+   THEME: Purple (Twilight / VIP Lounge)
    ═══════════════════════════════════════════════════════════════════════════════ */
 [data-theme="purple"] {
     --felt-color: #4c1d95;
-    --felt-gradient: radial-gradient(ellipse at 50% 50%, #6d28d920 0%, #4c1d95 60%, #3b0f80 100%);
-    --rail-gradient: linear-gradient(180deg, #374151 0%, #1f2937 50%, #111827 100%);
-    --table-border: 4px solid #1f2937;
+    --felt-gradient: radial-gradient(ellipse at 50% 45%, #6d3abf 0%, #4c1d95 45%, #3b0f80 75%, #2a0a5e 100%);
+    --rail-gradient: linear-gradient(180deg, #4a3560 0%, #2e1f45 30%, #1a1030 70%, #0d0818 100%);
+    --rail-highlight: rgba(167, 139, 250, 0.06);
+    --table-border: 4px solid #2e1f45;
+    --timer-color: #a78bfa;
+    --timer-glow: rgba(167, 139, 250, 0.6);
+    --seat-bg: rgba(42, 10, 94, 0.93);
+    --seat-border: rgba(139, 92, 246, 0.08);
+    --seat-active-border: #a78bfa;
+    --color-allin: #9333ea;
+    --color-allin-dark: #7e22ce;
+    --color-allin-glow: rgba(147, 51, 234, 0.4);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   THEME: Black (Stealth)
+   THEME: Black (Stealth / Midnight)
    ═══════════════════════════════════════════════════════════════════════════════ */
 [data-theme="black"] {
     --felt-color: #18181b;
-    --felt-gradient: radial-gradient(ellipse at 50% 50%, #27272a30 0%, #18181b 60%, #09090b 100%);
-    --rail-gradient: linear-gradient(180deg, #27272a 0%, #18181b 50%, #09090b 100%);
-    --table-border: 4px solid #18181b;
+    --felt-gradient: radial-gradient(ellipse at 50% 45%, #2c2c30 0%, #18181b 45%, #0e0e10 75%, #050506 100%);
+    --rail-gradient: linear-gradient(180deg, #3f3f46 0%, #27272a 30%, #18181b 70%, #09090b 100%);
+    --rail-highlight: rgba(255, 255, 255, 0.03);
+    --table-border: 4px solid #27272a;
     --seat-bg: rgba(10, 10, 14, 0.95);
+    --seat-border: rgba(255, 255, 255, 0.05);
+    --timer-color: #e4e4e7;
+    --timer-glow: rgba(228, 228, 231, 0.5);
+    --color-fold: #a1a1aa;
+    --color-fold-dark: #71717a;
+    --color-fold-glow: rgba(161, 161, 170, 0.2);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   THEME: Gold (VIP)
+   THEME: Gold (VIP / High Roller)
    ═══════════════════════════════════════════════════════════════════════════════ */
 [data-theme="gold"] {
     --felt-color: #1c1a0e;
-    --felt-gradient: radial-gradient(ellipse at 50% 50%, #f59e0b10 0%, #1c1a0e 60%, #14120a 100%);
-    --rail-gradient: linear-gradient(180deg, #92700a 0%, #5c4512 50%, #3a2c0e 100%);
-    --rail-highlight: rgba(255, 215, 0, 0.08);
-    --table-border: 4px solid #5c4512;
-    --timer-color: #f59e0b;
+    --felt-gradient: radial-gradient(ellipse at 50% 45%, #3d3518 0%, #1c1a0e 45%, #14120a 75%, #0a0906 100%);
+    --rail-gradient: linear-gradient(180deg, #b8940e 0%, #92700a 30%, #5c4512 70%, #3a2c0e 100%);
+    --rail-highlight: rgba(255, 215, 0, 0.1);
+    --table-border: 4px solid #7a5c14;
+    --timer-color: #fbbf24;
+    --timer-glow: rgba(251, 191, 36, 0.6);
+    --seat-bg: rgba(20, 18, 10, 0.93);
+    --seat-border: rgba(245, 158, 11, 0.1);
+    --seat-active-border: #fbbf24;
+    --color-raise: #fbbf24;
+    --color-raise-dark: #f59e0b;
+    --color-raise-glow: rgba(251, 191, 36, 0.3);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   THEME: Light Mode
+   THEME: Light Mode (Day Table)
    ═══════════════════════════════════════════════════════════════════════════════ */
 [data-theme="light"] {
-    --bg-primary: #f8fafc;
-    --bg-secondary: #f1f5f9;
+    --bg-primary: #f0f4f0;
+    --bg-secondary: #e8ede8;
     --bg-surface: #ffffff;
     --bg-elevated: #ffffff;
-    --bg-overlay: rgba(0, 0, 0, 0.3);
-    --bg-header: rgba(255, 255, 255, 0.9);
-    --text-primary: #1e293b;
-    --text-secondary: #475569;
-    --text-muted: #94a3b8;
+    --bg-overlay: rgba(0, 0, 0, 0.25);
+    --bg-header: rgba(255, 255, 255, 0.92);
+    --text-primary: #1a2e1a;
+    --text-secondary: #3d5a3d;
+    --text-muted: #7a9a7a;
     --text-inverse: #f3f4f6;
     --border-default: rgba(0, 0, 0, 0.08);
     --border-active: rgba(0, 0, 0, 0.15);
     --border-strong: rgba(0, 0, 0, 0.25);
     --felt-color: #1a7a4a;
-    --felt-gradient: radial-gradient(ellipse at 50% 50%, #22c55e20 0%, #1a7a4a 60%, #0f5132 100%);
-    --rail-gradient: linear-gradient(180deg, #8b6914 0%, #5c4512 50%, #3a2c0e 100%);
-    --seat-bg: rgba(255, 255, 255, 0.92);
-    --seat-border: rgba(0, 0, 0, 0.08);
+    --felt-gradient: radial-gradient(ellipse at 50% 45%, #28a060 0%, #1a7a4a 45%, #0f5132 75%, #0a3d24 100%);
+    --rail-gradient: linear-gradient(180deg, #a07830 0%, #8b6914 30%, #5c4512 70%, #3a2c0e 100%);
+    --rail-highlight: rgba(255, 255, 255, 0.12);
+    --seat-bg: rgba(255, 255, 255, 0.94);
+    --seat-border: rgba(0, 0, 0, 0.1);
+    --timer-color: #d97706;
+    --timer-glow: rgba(217, 119, 6, 0.5);
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.1);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.15);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
 }

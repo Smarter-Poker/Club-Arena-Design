@@ -205,7 +205,7 @@ export const SeatSlot = memo(function SeatSlot(props: SeatSlotProps) {
         }
         return (
             <div className={containerClasses} onClick={onSit}>
-                <span className="seat__empty-label">EMPTY</span>
+                <span className="seat__empty-label">+ SIT</span>
             </div>
         );
     }
