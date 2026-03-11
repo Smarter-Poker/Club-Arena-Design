@@ -730,7 +730,7 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
 
         if (bbWon >= 50) {
             soundService.playBigWin();
-            setShowConfetti(true);
+            // Confetti disabled — annoying on repeated wins
         } else {
             soundService.playWin();
         }
@@ -3129,13 +3129,8 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                 onEventComplete={handleThrowComplete}
             />
 
-            {/* Win Confetti Overlay */}
-            <ConfettiCanvas
-                active={showConfetti}
-                duration={3500}
-                count={55}
-                onComplete={() => setShowConfetti(false)}
-            />
+            {/* Win Confetti — disabled (cheesy and annoying on repeated wins) */}
+            {/* <ConfettiCanvas active={showConfetti} duration={3500} count={55} onComplete={() => setShowConfetti(false)} /> */}
 
             {/* Tip Dealer Modal */}
             <TipDealer
