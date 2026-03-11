@@ -52,38 +52,8 @@ export default function WaitlistPage() {
                 )
                 .subscribe();
 
-            // Auto-seat: watch for table_seats vacancies
-            const seatChannel = supabase
-                .channel('waitlist-auto-seat')
-                .on(
-                    'postgres_changes',
-                    {
-                        event: 'DELETE',
-                        schema: 'public',
-                        table: 'table_seats',
-                    },
-                    (payload) => {
-                        // A seat was vacated — check if we're waiting for that table
-                        const vacatedTableId = (payload.old as any)?.table_id;
-                        if (!vacatedTableId) return;
-
-                        setEntries(prev => {
-                            const match = prev.find(e => e.table_id === vacatedTableId && e.position === 1);
-                            if (match) {
-                                toast.success(`Seat available at ${match.table_name}! Joining in 3s...`);
-                                setTimeout(() => {
-                                    navigate(`/table/${vacatedTableId}`);
-                                }, 3000);
-                            }
-                            return prev;
-                        });
-                    }
-                )
-                .subscribe();
-
             return () => {
                 supabase.removeChannel(channel);
-                supabase.removeChannel(seatChannel);
             };
         }
     }, [user?.id]);

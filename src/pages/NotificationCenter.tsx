@@ -103,6 +103,21 @@ export default function NotificationCenter() {
                     }, ...prev]);
                 }
             )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'notifications',
+                    filter: `user_id=eq.${user.id}`,
+                },
+                (payload) => {
+                    const updated = payload.new as any;
+                    setNotifications(prev => 
+                        prev.map(n => n.id === updated.id ? { ...n, read: updated.read } : n)
+                    );
+                }
+            )
             .subscribe();
 
         return () => { supabase.removeChannel(channel); };

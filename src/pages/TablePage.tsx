@@ -2061,6 +2061,15 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                             potTotal: currentState.pot,
                         };
                         setHandHistory(prev => [record, ...prev].slice(0, 50)); // Keep last 50 hands
+
+                        // ── Session Tracking: update refs for end-of-session summary ──
+                        handsPlayedRef.current += 1;
+                        if (currentState.pot > biggestPotRef.current) {
+                            biggestPotRef.current = currentState.pot;
+                        }
+                        if (heroEndStack > peakStackRef.current) {
+                            peakStackRef.current = heroEndStack;
+                        }
                     }
 
                     // Delayed cleanup: clear board and cards after 3 seconds, then start next hand

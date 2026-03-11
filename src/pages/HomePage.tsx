@@ -502,7 +502,9 @@ export default function HomePage() {
                                 picked.push(CHALLENGES[idx]);
                             }
                             const dayKey = `challenges_${seed}`;
-                            const stored = JSON.parse(localStorage.getItem(dayKey) || '{}');
+                            let stored: Record<string, number> = {};
+                            try { stored = JSON.parse(localStorage.getItem(dayKey) || '{}'); }
+                            catch { localStorage.removeItem(dayKey); }
 
                             return picked.map((ch, i) => {
                                 const progress = stored[i] || 0;
