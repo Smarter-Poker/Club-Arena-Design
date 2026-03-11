@@ -364,7 +364,7 @@ export const CreditService = {
       if (deductError) {
         throw new Error(`Wallet deduction failed: ${deductError.message}`);
       }
-      if (deductResult === false) {
+      if (!deductResult) {
         throw new Error('Insufficient wallet balance for payment');
       }
 

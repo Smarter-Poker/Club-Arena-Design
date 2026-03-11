@@ -259,6 +259,8 @@ export const LeaderboardService = {
       return null;
     }
 
+    if (!data) return null;
+
     return {
       userId: data.user_id,
       handsPlayed: data.hands_played || 0,

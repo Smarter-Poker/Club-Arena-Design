@@ -182,6 +182,7 @@ export const CommissionService = {
     });
 
     if (error) throw error;
+    if (!data) throw new Error('Commission spread calculation failed: no data returned');
     return data;
   },
 

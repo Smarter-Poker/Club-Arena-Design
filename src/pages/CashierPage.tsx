@@ -30,6 +30,7 @@ import ClubBottomNav from '../components/club/ClubBottomNav';
 import ConfirmModal from '../components/common/ConfirmModal';
 import { MetalFrame, MetalButton, MetalInput, MetalCard } from '../components/metal-ui';
 import { useVIPStatus } from '../hooks/useVIP';
+import { useToast } from '../components/common/Toast';
 import './CashierPage.css';
 
 type CashierAction = 'send' | 'buyin' | 'cashout' | 'mint' | 'history';
@@ -127,6 +128,7 @@ export default function CashierPage() {
   const { user } = useUserStore();
   const vipInfo = useVIPStatus();
   const { balances, diamonds, mintChips, loadBalances } = useWalletStore();
+  const toast = useToast();
 
   const [action, setAction] = useState<CashierAction>('send');
   const [amount, setAmount] = useState('');
@@ -207,6 +209,22 @@ export default function CashierPage() {
     if (!clubId || !user?.id) return;
     loadPendingCashouts();
   }, [clubId, user?.id, action]);
+
+  // Subscribe to wallet updates
+  useEffect(() => {
+    const unsubscribe = masterBus.on('WALLET_UPDATED', () => {
+      loadBalances();
+    });
+
+    const unsubscribe2 = masterBus.on('CHIPS_TRANSFERRED', () => {
+      loadBalances();
+    });
+
+    return () => {
+      unsubscribe?.();
+      unsubscribe2?.();
+    };
+  }, [loadBalances]);
 
   const loadPendingCashouts = async () => {
     if (!clubId || !user?.id) return;

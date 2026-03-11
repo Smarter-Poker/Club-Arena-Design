@@ -27,44 +27,63 @@ import type { RealtimeChannel, RealtimePresenceState } from '@supabase/supabase-
 export type ChannelType = 'club' | 'tournament' | 'table' | 'hand' | 'lobby';
 
 export interface ClubPresence {
-    id: string;
-    displayName: string;
-    playerNumber: number;
-    avatarUrl: string;
-    status: 'online' | 'away' | 'playing';
-    currentTableId?: string;
-    joinedAt: string;
+  id: string;
+  displayName: string;
+  playerNumber: number;
+  avatarUrl: string;
+  status: 'online' | 'away' | 'playing';
+  currentTableId?: string;
+  joinedAt: string;
 }
 
 export interface ClubEvent {
-    type: 'member_joined' | 'member_left' | 'table_created' | 'table_closed' |
-    'announcement' | 'tournament_starting' | 'jackpot_hit';
-    payload: any;
-    timestamp: string;
+  type:
+    | 'member_joined'
+    | 'member_left'
+    | 'table_created'
+    | 'table_closed'
+    | 'announcement'
+    | 'tournament_starting'
+    | 'jackpot_hit';
+  payload: any;
+  timestamp: string;
 }
 
 export interface TournamentEvent {
-    type: 'registration_open' | 'registration_closed' | 'tournament_started' |
-    'player_registered' | 'player_eliminated' | 'level_up' |
-    'final_table' | 'heads_up' | 'winner' | 'payout' |
-    'hand_for_hand' | 'prize_pool_finalized' | 'bubble_burst' |
-    'BREAK_START' | 'BREAK_END' | 'ADDON_PERIOD_START' | 'ADDON_PERIOD_END';
-    payload: any;
-    timestamp: string;
+  type:
+    | 'registration_open'
+    | 'registration_closed'
+    | 'tournament_started'
+    | 'player_registered'
+    | 'player_eliminated'
+    | 'level_up'
+    | 'final_table'
+    | 'heads_up'
+    | 'winner'
+    | 'payout'
+    | 'hand_for_hand'
+    | 'prize_pool_finalized'
+    | 'bubble_burst'
+    | 'BREAK_START'
+    | 'BREAK_END'
+    | 'ADDON_PERIOD_START'
+    | 'ADDON_PERIOD_END';
+  payload: any;
+  timestamp: string;
 }
 
 export interface HandEvent {
-    type: 'deal' | 'action' | 'street' | 'showdown' | 'pot_awarded';
-    payload: any;
-    timestamp: string;
+  type: 'deal' | 'action' | 'street' | 'showdown' | 'pot_awarded';
+  payload: any;
+  timestamp: string;
 }
 
 export interface ChannelSubscription {
-    channel: RealtimeChannel;
-    type: ChannelType;
-    entityId: string;
-    onEvent: (event: any) => void;
-    onPresenceSync?: (members: ClubPresence[]) => void;
+  channel: RealtimeChannel;
+  type: ChannelType;
+  entityId: string;
+  onEvent: (event: any) => void;
+  onPresenceSync?: (members: ClubPresence[]) => void;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -76,539 +95,562 @@ const MAX_CONCURRENT_SUBSCRIPTIONS = 10;
 const SUBSCRIPTION_CLEANUP_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 
 class RealtimeChannelService {
-    private subscriptions: Map<string, ChannelSubscription> = new Map();
-    private presenceState: Map<string, ClubPresence[]> = new Map();
-    private subscriptionTimestamps: Map<string, number> = new Map();
-    private cleanupInterval: ReturnType<typeof setInterval> | null = null;
+  private subscriptions: Map<string, ChannelSubscription> = new Map();
+  private presenceState: Map<string, ClubPresence[]> = new Map();
+  private subscriptionTimestamps: Map<string, number> = new Map();
+  private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
-    /**
-     * Initialize cleanup interval for stale subscriptions
-     */
-    private initializeCleanupInterval(): void {
-        if (this.cleanupInterval) return;
+  /**
+   * Initialize cleanup interval for stale subscriptions
+   */
+  private initializeCleanupInterval(): void {
+    if (this.cleanupInterval) return;
 
-        this.cleanupInterval = setInterval(() => {
-            const now = Date.now();
-            const staleKeys: string[] = [];
+    this.cleanupInterval = setInterval(
+      () => {
+        const now = Date.now();
+        const staleKeys: string[] = [];
 
-            this.subscriptionTimestamps.forEach((timestamp, key) => {
-                if (now - timestamp > SUBSCRIPTION_CLEANUP_TIMEOUT) {
-                    staleKeys.push(key);
-                }
-            });
+        this.subscriptionTimestamps.forEach((timestamp, key) => {
+          if (now - timestamp > SUBSCRIPTION_CLEANUP_TIMEOUT) {
+            staleKeys.push(key);
+          }
+        });
 
-            if (staleKeys.length > 0) {
-                console.warn(
-                    `[RealtimeChannelService] Found ${staleKeys.length} stale subscriptions (>30 min old). Cleaning up...`
-                );
-                staleKeys.forEach(key => {
-                    const sub = this.subscriptions.get(key);
-                    if (sub) {
-                        sub.channel.unsubscribe().catch(() => { /* best effort */ });
-                        this.subscriptions.delete(key);
-                        this.subscriptionTimestamps.delete(key);
-                        subscriptionMonitor.unregister(key);
-                    }
-                });
+        if (staleKeys.length > 0) {
+          console.warn(
+            `[RealtimeChannelService] Found ${staleKeys.length} stale subscriptions (>30 min old). Cleaning up...`
+          );
+          staleKeys.forEach((key) => {
+            const sub = this.subscriptions.get(key);
+            if (sub) {
+              sub.channel
+                .unsubscribe()
+                .catch((e) => console.warn('[RealtimeChannel] Cleanup failed:', e));
+              this.subscriptions.delete(key);
+              this.subscriptionTimestamps.delete(key);
+              subscriptionMonitor.unregister(key);
             }
-        }, 5 * 60 * 1000); // Check every 5 minutes
+          });
+        }
+      },
+      5 * 60 * 1000
+    ); // Check every 5 minutes
+  }
+
+  /**
+   * Enforce subscription limit by removing oldest if necessary
+   */
+  private enforceSubscriptionLimit(): void {
+    if (this.subscriptions.size >= MAX_CONCURRENT_SUBSCRIPTIONS) {
+      // Find oldest subscription
+      let oldestKey: string | null = null;
+      let oldestTime = Infinity;
+
+      this.subscriptionTimestamps.forEach((timestamp, key) => {
+        if (timestamp < oldestTime) {
+          oldestTime = timestamp;
+          oldestKey = key;
+        }
+      });
+
+      // Remove oldest if found
+      if (oldestKey) {
+        const oldest = this.subscriptions.get(oldestKey);
+        if (oldest) {
+          oldest.channel
+            .unsubscribe()
+            .catch((e) => console.warn('[RealtimeChannel] Cleanup failed:', e));
+          this.subscriptions.delete(oldestKey);
+          this.subscriptionTimestamps.delete(oldestKey);
+          subscriptionMonitor.unregister(oldestKey);
+          console.warn(
+            `[RealtimeChannelService] Max subscriptions (${MAX_CONCURRENT_SUBSCRIPTIONS}) reached. ` +
+              `Removed oldest subscription: ${oldestKey}`
+          );
+        }
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CLUB CHANNELS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Subscribe to club channel for presence and events
+   */
+  subscribeToClub(
+    clubId: string,
+    userId: string,
+    userInfo: Omit<ClubPresence, 'joinedAt'>,
+    callbacks: {
+      onMemberJoin?: (member: ClubPresence) => void;
+      onMemberLeave?: (memberId: string) => void;
+      onEvent?: (event: ClubEvent) => void;
+      onPresenceSync?: (members: ClubPresence[]) => void;
+    }
+  ): () => void {
+    const channelName = `club:${clubId}`;
+
+    // Initialize cleanup on first subscription
+    this.initializeCleanupInterval();
+
+    if (this.subscriptions.has(channelName)) {
+      return () => this.unsubscribeFromClub(clubId);
     }
 
-    /**
-     * Enforce subscription limit by removing oldest if necessary
-     */
-    private enforceSubscriptionLimit(): void {
-        if (this.subscriptions.size >= MAX_CONCURRENT_SUBSCRIPTIONS) {
-            // Find oldest subscription
-            let oldestKey: string | null = null;
-            let oldestTime = Infinity;
+    // Enforce subscription limit before creating new subscription
+    this.enforceSubscriptionLimit();
 
-            this.subscriptionTimestamps.forEach((timestamp, key) => {
-                if (timestamp < oldestTime) {
-                    oldestTime = timestamp;
-                    oldestKey = key;
-                }
-            });
+    const channel = supabase.channel(channelName, {
+      config: { presence: { key: userId } },
+    });
 
-            // Remove oldest if found
-            if (oldestKey) {
-                const oldest = this.subscriptions.get(oldestKey);
-                if (oldest) {
-                    oldest.channel.unsubscribe().catch(() => { /* best effort */ });
-                    this.subscriptions.delete(oldestKey);
-                    this.subscriptionTimestamps.delete(oldestKey);
-                    subscriptionMonitor.unregister(oldestKey);
-                    console.warn(
-                        `[RealtimeChannelService] Max subscriptions (${MAX_CONCURRENT_SUBSCRIPTIONS}) reached. ` +
-                        `Removed oldest subscription: ${oldestKey}`
-                    );
-                }
-            }
-        }
+    // Handle presence
+    channel.on('presence', { event: 'sync' }, () => {
+      const state = channel.presenceState<ClubPresence>();
+      const members = Object.values(state).flat() as ClubPresence[];
+      this.presenceState.set(clubId, members);
+      callbacks.onPresenceSync?.(members);
+    });
+
+    channel.on('presence', { event: 'join' }, ({ newPresences }) => {
+      newPresences.forEach((presence: any) => {
+        callbacks.onMemberJoin?.(presence as ClubPresence);
+      });
+    });
+
+    channel.on('presence', { event: 'leave' }, ({ leftPresences }) => {
+      leftPresences.forEach((presence: any) => {
+        callbacks.onMemberLeave?.(presence.id);
+      });
+    });
+
+    // Handle broadcast events
+    channel.on('broadcast', { event: 'club_event' }, ({ payload }) => {
+      callbacks.onEvent?.(payload as ClubEvent);
+    });
+
+    // Subscribe and track presence
+    channel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await channel.track({
+          ...userInfo,
+          joinedAt: new Date().toISOString(),
+        });
+      }
+    });
+
+    this.subscriptions.set(channelName, {
+      channel,
+      type: 'club',
+      entityId: clubId,
+      onEvent: callbacks.onEvent || (() => {}),
+      onPresenceSync: callbacks.onPresenceSync,
+    });
+
+    // Track subscription for monitoring
+    this.subscriptionTimestamps.set(channelName, Date.now());
+    subscriptionMonitor.register(channelName, 'club');
+
+    return () => this.unsubscribeFromClub(clubId);
+  }
+
+  /**
+   * Unsubscribe from club channel
+   */
+  async unsubscribeFromClub(clubId: string): Promise<void> {
+    const channelName = `club:${clubId}`;
+    const subscription = this.subscriptions.get(channelName);
+
+    if (subscription) {
+      await subscription.channel.unsubscribe();
+      this.subscriptions.delete(channelName);
+      this.subscriptionTimestamps.delete(channelName);
+      this.presenceState.delete(clubId);
+      subscriptionMonitor.unregister(channelName);
+    }
+  }
+
+  /**
+   * Broadcast an event to a club channel
+   */
+  async broadcastClubEvent(clubId: string, event: Omit<ClubEvent, 'timestamp'>): Promise<void> {
+    const channelName = `club:${clubId}`;
+    const subscription = this.subscriptions.get(channelName);
+
+    if (!subscription) {
+      console.warn(`Not subscribed to ${channelName}`);
+      return;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // CLUB CHANNELS
-    // ─────────────────────────────────────────────────────────────────────────────
+    const fullEvent: ClubEvent = {
+      ...event,
+      timestamp: new Date().toISOString(),
+    };
 
-    /**
-     * Subscribe to club channel for presence and events
-     */
-    subscribeToClub(
-        clubId: string,
-        userId: string,
-        userInfo: Omit<ClubPresence, 'joinedAt'>,
-        callbacks: {
-            onMemberJoin?: (member: ClubPresence) => void;
-            onMemberLeave?: (memberId: string) => void;
-            onEvent?: (event: ClubEvent) => void;
-            onPresenceSync?: (members: ClubPresence[]) => void;
-        }
-    ): () => void {
-        const channelName = `club:${clubId}`;
+    await subscription!.channel.send({
+      type: 'broadcast',
+      event: 'club_event',
+      payload: fullEvent,
+    });
+  }
 
-        // Initialize cleanup on first subscription
-        this.initializeCleanupInterval();
+  /**
+   * Get current club presence
+   */
+  getClubPresence(clubId: string): ClubPresence[] {
+    return this.presenceState.get(clubId) || [];
+  }
 
-        if (this.subscriptions.has(channelName)) {
-            return () => this.unsubscribeFromClub(clubId);
-        }
+  // ─────────────────────────────────────────────────────────────────────────────
+  // TOURNAMENT CHANNELS
+  // ─────────────────────────────────────────────────────────────────────────────
 
-        // Enforce subscription limit before creating new subscription
-        this.enforceSubscriptionLimit();
+  /**
+   * Subscribe to tournament channel for updates
+   */
+  subscribeToTournament(
+    tournamentId: string,
+    callbacks: {
+      onEvent?: (event: TournamentEvent) => void;
+      onPlayerRegistered?: (player: any) => void;
+      onPlayerEliminated?: (elimination: any) => void;
+      onLevelUp?: (level: any) => void;
+      onWinner?: (winner: any) => void;
+    }
+  ): () => void {
+    const channelName = `tournament:${tournamentId}`;
 
-        const channel = supabase.channel(channelName, {
-            config: { presence: { key: userId } },
-        });
+    // Initialize cleanup on first subscription
+    this.initializeCleanupInterval();
 
-        // Handle presence
-        channel.on('presence', { event: 'sync' }, () => {
-            const state = channel.presenceState<ClubPresence>();
-            const members = Object.values(state).flat() as ClubPresence[];
-            this.presenceState.set(clubId, members);
-            callbacks.onPresenceSync?.(members);
-        });
-
-        channel.on('presence', { event: 'join' }, ({ newPresences }) => {
-            newPresences.forEach((presence: any) => {
-                callbacks.onMemberJoin?.(presence as ClubPresence);
-            });
-        });
-
-        channel.on('presence', { event: 'leave' }, ({ leftPresences }) => {
-            leftPresences.forEach((presence: any) => {
-                callbacks.onMemberLeave?.(presence.id);
-            });
-        });
-
-        // Handle broadcast events
-        channel.on('broadcast', { event: 'club_event' }, ({ payload }) => {
-            callbacks.onEvent?.(payload as ClubEvent);
-        });
-
-        // Subscribe and track presence
-        channel.subscribe(async (status) => {
-            if (status === 'SUBSCRIBED') {
-                await channel.track({
-                    ...userInfo,
-                    joinedAt: new Date().toISOString(),
-                });
-            }
-        });
-
-        this.subscriptions.set(channelName, {
-            channel,
-            type: 'club',
-            entityId: clubId,
-            onEvent: callbacks.onEvent || (() => { }),
-            onPresenceSync: callbacks.onPresenceSync,
-        });
-
-        // Track subscription for monitoring
-        this.subscriptionTimestamps.set(channelName, Date.now());
-        subscriptionMonitor.register(channelName, 'club');
-
-        return () => this.unsubscribeFromClub(clubId);
+    if (this.subscriptions.has(channelName)) {
+      return () => this.unsubscribeFromTournament(tournamentId);
     }
 
-    /**
-     * Unsubscribe from club channel
-     */
-    async unsubscribeFromClub(clubId: string): Promise<void> {
-        const channelName = `club:${clubId}`;
-        const subscription = this.subscriptions.get(channelName);
+    // Enforce subscription limit before creating new subscription
+    this.enforceSubscriptionLimit();
 
-        if (subscription) {
-            await subscription.channel.unsubscribe();
-            this.subscriptions.delete(channelName);
-            this.subscriptionTimestamps.delete(channelName);
-            this.presenceState.delete(clubId);
-            subscriptionMonitor.unregister(channelName);
-        }
+    const channel = supabase.channel(channelName);
+
+    channel.on('broadcast', { event: 'tournament_event' }, ({ payload }) => {
+      const event = payload as TournamentEvent;
+      callbacks.onEvent?.(event);
+
+      // Route to specific callbacks
+      switch (event.type) {
+        case 'player_registered':
+          callbacks.onPlayerRegistered?.(event.payload);
+          break;
+        case 'player_eliminated':
+          callbacks.onPlayerEliminated?.(event.payload);
+          break;
+        case 'level_up':
+          callbacks.onLevelUp?.(event.payload);
+          break;
+        case 'winner':
+          callbacks.onWinner?.(event.payload);
+          break;
+      }
+    });
+
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        // no-op
+      }
+    });
+
+    this.subscriptions.set(channelName, {
+      channel,
+      type: 'tournament',
+      entityId: tournamentId,
+      onEvent: callbacks.onEvent || (() => {}),
+    });
+
+    // Track subscription for monitoring
+    this.subscriptionTimestamps.set(channelName, Date.now());
+    subscriptionMonitor.register(channelName, 'tournament');
+
+    return () => this.unsubscribeFromTournament(tournamentId);
+  }
+
+  /**
+   * Unsubscribe from tournament channel
+   */
+  async unsubscribeFromTournament(tournamentId: string): Promise<void> {
+    const channelName = `tournament:${tournamentId}`;
+    const subscription = this.subscriptions.get(channelName);
+
+    if (subscription) {
+      await subscription.channel.unsubscribe();
+      this.subscriptions.delete(channelName);
+      this.subscriptionTimestamps.delete(channelName);
+      subscriptionMonitor.unregister(channelName);
     }
+  }
 
-    /**
-     * Broadcast an event to a club channel
-     */
-    async broadcastClubEvent(clubId: string, event: Omit<ClubEvent, 'timestamp'>): Promise<void> {
-        const channelName = `club:${clubId}`;
-        const subscription = this.subscriptions.get(channelName);
+  /**
+   * Broadcast tournament event
+   */
+  async broadcastTournamentEvent(
+    tournamentId: string,
+    event: Omit<TournamentEvent, 'timestamp'>
+  ): Promise<void> {
+    const channelName = `tournament:${tournamentId}`;
+    const subscription = this.subscriptions.get(channelName);
 
-        if (!subscription) {
-            console.warn(`Not subscribed to ${channelName}`);
-            return;
-        }
-
-        const fullEvent: ClubEvent = {
-            ...event,
-            timestamp: new Date().toISOString(),
-        };
-
-        await subscription!.channel.send({
-            type: 'broadcast',
-            event: 'club_event',
-            payload: fullEvent,
+    // Create temporary channel if not subscribed
+    if (!subscription) {
+      const channel = supabase.channel(channelName);
+      try {
+        await channel.subscribe();
+        await channel.send({
+          type: 'broadcast',
+          event: 'tournament_event',
+          payload: { ...event, timestamp: new Date().toISOString() },
         });
-    }
-
-    /**
-     * Get current club presence
-     */
-    getClubPresence(clubId: string): ClubPresence[] {
-        return this.presenceState.get(clubId) || [];
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // TOURNAMENT CHANNELS
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Subscribe to tournament channel for updates
-     */
-    subscribeToTournament(
-        tournamentId: string,
-        callbacks: {
-            onEvent?: (event: TournamentEvent) => void;
-            onPlayerRegistered?: (player: any) => void;
-            onPlayerEliminated?: (elimination: any) => void;
-            onLevelUp?: (level: any) => void;
-            onWinner?: (winner: any) => void;
-        }
-    ): () => void {
-        const channelName = `tournament:${tournamentId}`;
-
-        // Initialize cleanup on first subscription
-        this.initializeCleanupInterval();
-
-        if (this.subscriptions.has(channelName)) {
-            return () => this.unsubscribeFromTournament(tournamentId);
-        }
-
-        // Enforce subscription limit before creating new subscription
-        this.enforceSubscriptionLimit();
-
-        const channel = supabase.channel(channelName);
-
-        channel.on('broadcast', { event: 'tournament_event' }, ({ payload }) => {
-            const event = payload as TournamentEvent;
-            callbacks.onEvent?.(event);
-
-            // Route to specific callbacks
-            switch (event.type) {
-                case 'player_registered':
-                    callbacks.onPlayerRegistered?.(event.payload);
-                    break;
-                case 'player_eliminated':
-                    callbacks.onPlayerEliminated?.(event.payload);
-                    break;
-                case 'level_up':
-                    callbacks.onLevelUp?.(event.payload);
-                    break;
-                case 'winner':
-                    callbacks.onWinner?.(event.payload);
-                    break;
-            }
-        });
-
-        channel.subscribe((status) => {
-            if (status === 'SUBSCRIBED') {
-                // no-op
-            }
-        });
-
-        this.subscriptions.set(channelName, {
-            channel,
-            type: 'tournament',
-            entityId: tournamentId,
-            onEvent: callbacks.onEvent || (() => { }),
-        });
-
-        // Track subscription for monitoring
-        this.subscriptionTimestamps.set(channelName, Date.now());
-        subscriptionMonitor.register(channelName, 'tournament');
-
-        return () => this.unsubscribeFromTournament(tournamentId);
-    }
-
-    /**
-     * Unsubscribe from tournament channel
-     */
-    async unsubscribeFromTournament(tournamentId: string): Promise<void> {
-        const channelName = `tournament:${tournamentId}`;
-        const subscription = this.subscriptions.get(channelName);
-
-        if (subscription) {
-            await subscription.channel.unsubscribe();
-            this.subscriptions.delete(channelName);
-            this.subscriptionTimestamps.delete(channelName);
-            subscriptionMonitor.unregister(channelName);
-        }
-    }
-
-    /**
-     * Broadcast tournament event
-     */
-    async broadcastTournamentEvent(tournamentId: string, event: Omit<TournamentEvent, 'timestamp'>): Promise<void> {
-        const channelName = `tournament:${tournamentId}`;
-        const subscription = this.subscriptions.get(channelName);
-
-        // Create temporary channel if not subscribed
-        if (!subscription) {
-            const channel = supabase.channel(channelName);
-            try {
-                await channel.subscribe();
-                await channel.send({
-                    type: 'broadcast',
-                    event: 'tournament_event',
-                    payload: { ...event, timestamp: new Date().toISOString() },
-                });
-            } catch (e) {
-                console.warn(`[RealtimeChannelService] Tournament broadcast failed for ${tournamentId}:`, e);
-            } finally {
-                // Always clean up — prevents orphaned channels
-                try { await channel.unsubscribe(); } catch { /* best effort */ }
-            }
-            return;
-        }
-
-        await subscription.channel.send({
-            type: 'broadcast',
-            event: 'tournament_event',
-            payload: { ...event, timestamp: new Date().toISOString() },
-        });
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // HAND REPLAY STREAMING
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Subscribe to hand replay channel
-     */
-    subscribeToHandReplay(
-        handId: string,
-        callbacks: {
-            onEvent?: (event: HandEvent) => void;
-        }
-    ): () => void {
-        const channelName = `hand:${handId}`;
-
-        const channel = supabase.channel(channelName);
-
-        channel.on('broadcast', { event: 'hand_event' }, ({ payload }) => {
-            callbacks.onEvent?.(payload as HandEvent);
-        });
-
-        channel.subscribe((status) => {
-            if (status === 'SUBSCRIBED') {
-                // no-op
-            }
-        });
-
-        this.subscriptions.set(channelName, {
-            channel,
-            type: 'hand',
-            entityId: handId,
-            onEvent: callbacks.onEvent || (() => { }),
-        });
-
-        return () => this.unsubscribeFromHand(handId);
-    }
-
-    /**
-     * Unsubscribe from hand channel
-     */
-    async unsubscribeFromHand(handId: string): Promise<void> {
-        const channelName = `hand:${handId}`;
-        const subscription = this.subscriptions.get(channelName);
-
-        if (subscription) {
-            await subscription.channel.unsubscribe();
-            this.subscriptions.delete(channelName);
-            this.subscriptionTimestamps.delete(channelName);
-            subscriptionMonitor.unregister(channelName);
-        }
-    }
-
-    /**
-     * Stream hand events for replay
-     */
-    async streamHandReplay(handId: string, events: HandEvent[], speedMs: number = 1000): Promise<void> {
-        const channel = supabase.channel(`hand:${handId}`);
-        try {
-            await channel.subscribe();
-            for (const event of events) {
-                await new Promise(resolve => setTimeout(resolve, speedMs));
-                await channel.send({
-                    type: 'broadcast',
-                    event: 'hand_event',
-                    payload: event,
-                });
-            }
-        } catch (e) {
-            console.error(`[RealtimeChannelService] Hand replay stream failed for ${handId}:`, e);
-        } finally {
-            // Always clean up — prevents orphaned channels
-            try { await channel.unsubscribe(); } catch { /* best effort */ }
-        }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // LOBBY CHANNEL (Global)
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Subscribe to global lobby for club activity
-     */
-    subscribeToLobby(
-        callbacks: {
-            onClubActivity?: (clubId: string, playersOnline: number) => void;
-            onTournamentStarting?: (tournament: any) => void;
-            onJackpotHit?: (jackpot: any) => void;
-        }
-    ): () => void {
-        const channelName = 'lobby:global';
-
-        // Initialize cleanup on first subscription
-        this.initializeCleanupInterval();
-
-        if (this.subscriptions.has(channelName)) {
-            return () => this.unsubscribeFromLobby();
-        }
-
-        // Enforce subscription limit before creating new subscription
-        this.enforceSubscriptionLimit();
-
-        const channel = supabase.channel(channelName);
-
-        channel.on('broadcast', { event: 'lobby_update' }, ({ payload }) => {
-            switch (payload.type) {
-                case 'club_activity':
-                    callbacks.onClubActivity?.(payload.clubId, payload.playersOnline);
-                    break;
-                case 'tournament_starting':
-                    callbacks.onTournamentStarting?.(payload.tournament);
-                    break;
-                case 'jackpot_hit':
-                    callbacks.onJackpotHit?.(payload.jackpot);
-                    break;
-            }
-        });
-
-        channel.subscribe();
-
-        this.subscriptions.set(channelName, {
-            channel,
-            type: 'lobby',
-            entityId: 'global',
-            onEvent: () => { },
-        });
-
-        // Track subscription for monitoring
-        this.subscriptionTimestamps.set(channelName, Date.now());
-        subscriptionMonitor.register(channelName, 'lobby');
-
-        return () => this.unsubscribeFromLobby();
-    }
-
-    /**
-     * Unsubscribe from lobby
-     */
-    async unsubscribeFromLobby(): Promise<void> {
-        const channelName = 'lobby:global';
-        const subscription = this.subscriptions.get(channelName);
-
-        if (subscription) {
-            await subscription.channel.unsubscribe();
-            this.subscriptions.delete(channelName);
-            this.subscriptionTimestamps.delete(channelName);
-            subscriptionMonitor.unregister(channelName);
-        }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // UTILITIES
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Get all active subscriptions
-     */
-    getActiveSubscriptions(): Array<{ channel: string; type: ChannelType; entityId: string }> {
-        return Array.from(this.subscriptions.entries()).map(([channel, sub]) => ({
-            channel,
-            type: sub.type,
-            entityId: sub.entityId,
-        }));
-    }
-
-    /**
-     * Unsubscribe from all channels
-     */
-    async unsubscribeAll(): Promise<void> {
-        const promises = Array.from(this.subscriptions.values()).map(sub =>
-            sub.channel.unsubscribe()
+      } catch (e) {
+        console.warn(
+          `[RealtimeChannelService] Tournament broadcast failed for ${tournamentId}:`,
+          e
         );
-        await Promise.all(promises);
-        this.subscriptions.clear();
-        this.subscriptionTimestamps.clear();
-        this.presenceState.clear();
-        subscriptionMonitor.cleanup();
-
-        // Stop cleanup interval
-        if (this.cleanupInterval) {
-            clearInterval(this.cleanupInterval);
-            this.cleanupInterval = null;
+      } finally {
+        // Always clean up — prevents orphaned channels
+        try {
+          await channel.unsubscribe();
+        } catch (e) {
+          console.warn('[RealtimeChannel] Cleanup failed:', e);
         }
+      }
+      return;
     }
 
-    /**
-     * Get diagnostics for subscription health
-     */
-    getDiagnostics() {
-        return {
-            subscriptions: {
-                count: this.subscriptions.size,
-                byType: this.getSubscriptionsByType(),
-                details: Array.from(this.subscriptions.entries()).map(([name, sub]) => ({
-                    name,
-                    type: sub.type,
-                    entityId: sub.entityId,
-                })),
-            },
-            monitor: subscriptionMonitor.getDiagnostics(),
-        };
-    }
+    await subscription.channel.send({
+      type: 'broadcast',
+      event: 'tournament_event',
+      payload: { ...event, timestamp: new Date().toISOString() },
+    });
+  }
 
-    /**
-     * Get subscriptions grouped by type
-     */
-    private getSubscriptionsByType(): Record<string, number> {
-        const grouped: Record<string, number> = {};
-        this.subscriptions.forEach(sub => {
-            grouped[sub.type] = (grouped[sub.type] || 0) + 1;
+  // ─────────────────────────────────────────────────────────────────────────────
+  // HAND REPLAY STREAMING
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Subscribe to hand replay channel
+   */
+  subscribeToHandReplay(
+    handId: string,
+    callbacks: {
+      onEvent?: (event: HandEvent) => void;
+    }
+  ): () => void {
+    const channelName = `hand:${handId}`;
+
+    const channel = supabase.channel(channelName);
+
+    channel.on('broadcast', { event: 'hand_event' }, ({ payload }) => {
+      callbacks.onEvent?.(payload as HandEvent);
+    });
+
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        // no-op
+      }
+    });
+
+    this.subscriptions.set(channelName, {
+      channel,
+      type: 'hand',
+      entityId: handId,
+      onEvent: callbacks.onEvent || (() => {}),
+    });
+
+    return () => this.unsubscribeFromHand(handId);
+  }
+
+  /**
+   * Unsubscribe from hand channel
+   */
+  async unsubscribeFromHand(handId: string): Promise<void> {
+    const channelName = `hand:${handId}`;
+    const subscription = this.subscriptions.get(channelName);
+
+    if (subscription) {
+      await subscription.channel.unsubscribe();
+      this.subscriptions.delete(channelName);
+      this.subscriptionTimestamps.delete(channelName);
+      subscriptionMonitor.unregister(channelName);
+    }
+  }
+
+  /**
+   * Stream hand events for replay
+   */
+  async streamHandReplay(
+    handId: string,
+    events: HandEvent[],
+    speedMs: number = 1000
+  ): Promise<void> {
+    const channel = supabase.channel(`hand:${handId}`);
+    try {
+      await channel.subscribe();
+      for (const event of events) {
+        await new Promise((resolve) => setTimeout(resolve, speedMs));
+        await channel.send({
+          type: 'broadcast',
+          event: 'hand_event',
+          payload: event,
         });
-        return grouped;
+      }
+    } catch (e) {
+      console.error(`[RealtimeChannelService] Hand replay stream failed for ${handId}:`, e);
+    } finally {
+      // Always clean up — prevents orphaned channels
+      try {
+        await channel.unsubscribe();
+      } catch (e) {
+        console.warn('[RealtimeChannel] Cleanup failed:', e);
+      }
     }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // LOBBY CHANNEL (Global)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Subscribe to global lobby for club activity
+   */
+  subscribeToLobby(callbacks: {
+    onClubActivity?: (clubId: string, playersOnline: number) => void;
+    onTournamentStarting?: (tournament: any) => void;
+    onJackpotHit?: (jackpot: any) => void;
+  }): () => void {
+    const channelName = 'lobby:global';
+
+    // Initialize cleanup on first subscription
+    this.initializeCleanupInterval();
+
+    if (this.subscriptions.has(channelName)) {
+      return () => this.unsubscribeFromLobby();
+    }
+
+    // Enforce subscription limit before creating new subscription
+    this.enforceSubscriptionLimit();
+
+    const channel = supabase.channel(channelName);
+
+    channel.on('broadcast', { event: 'lobby_update' }, ({ payload }) => {
+      switch (payload.type) {
+        case 'club_activity':
+          callbacks.onClubActivity?.(payload.clubId, payload.playersOnline);
+          break;
+        case 'tournament_starting':
+          callbacks.onTournamentStarting?.(payload.tournament);
+          break;
+        case 'jackpot_hit':
+          callbacks.onJackpotHit?.(payload.jackpot);
+          break;
+      }
+    });
+
+    channel.subscribe();
+
+    this.subscriptions.set(channelName, {
+      channel,
+      type: 'lobby',
+      entityId: 'global',
+      onEvent: () => {},
+    });
+
+    // Track subscription for monitoring
+    this.subscriptionTimestamps.set(channelName, Date.now());
+    subscriptionMonitor.register(channelName, 'lobby');
+
+    return () => this.unsubscribeFromLobby();
+  }
+
+  /**
+   * Unsubscribe from lobby
+   */
+  async unsubscribeFromLobby(): Promise<void> {
+    const channelName = 'lobby:global';
+    const subscription = this.subscriptions.get(channelName);
+
+    if (subscription) {
+      await subscription.channel.unsubscribe();
+      this.subscriptions.delete(channelName);
+      this.subscriptionTimestamps.delete(channelName);
+      subscriptionMonitor.unregister(channelName);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // UTILITIES
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Get all active subscriptions
+   */
+  getActiveSubscriptions(): Array<{ channel: string; type: ChannelType; entityId: string }> {
+    return Array.from(this.subscriptions.entries()).map(([channel, sub]) => ({
+      channel,
+      type: sub.type,
+      entityId: sub.entityId,
+    }));
+  }
+
+  /**
+   * Unsubscribe from all channels
+   */
+  async unsubscribeAll(): Promise<void> {
+    const promises = Array.from(this.subscriptions.values()).map((sub) =>
+      sub.channel.unsubscribe()
+    );
+    await Promise.allSettled(promises);
+    this.subscriptions.clear();
+    this.subscriptionTimestamps.clear();
+    this.presenceState.clear();
+    subscriptionMonitor.cleanup();
+
+    // Stop cleanup interval
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
+  }
+
+  /**
+   * Get diagnostics for subscription health
+   */
+  getDiagnostics() {
+    return {
+      subscriptions: {
+        count: this.subscriptions.size,
+        byType: this.getSubscriptionsByType(),
+        details: Array.from(this.subscriptions.entries()).map(([name, sub]) => ({
+          name,
+          type: sub.type,
+          entityId: sub.entityId,
+        })),
+      },
+      monitor: subscriptionMonitor.getDiagnostics(),
+    };
+  }
+
+  /**
+   * Get subscriptions grouped by type
+   */
+  private getSubscriptionsByType(): Record<string, number> {
+    const grouped: Record<string, number> = {};
+    this.subscriptions.forEach((sub) => {
+      grouped[sub.type] = (grouped[sub.type] || 0) + 1;
+    });
+    return grouped;
+  }
 }
 
 export const realtimeChannelService = new RealtimeChannelService();

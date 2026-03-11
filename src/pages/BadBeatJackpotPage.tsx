@@ -142,6 +142,19 @@ export default function BadBeatJackpotPage() {
     setLoading(false);
   }, [clubId]);
 
+  // Bus listener: reload jackpot data when a hand completes (BBJ contribution may have been added)
+  useEffect(() => {
+    if (!clubId) return;
+    const unsubHand = masterBus.subscribeDebounced(
+      'HAND_COMPLETED',
+      () => {
+        loadJackpotData();
+      },
+      2000
+    );
+    return unsubHand;
+  }, [clubId, loadJackpotData]);
+
   // Stagger history rows
   useEffect(() => {
     setVisibleHistoryRows(new Set());

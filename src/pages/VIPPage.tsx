@@ -115,6 +115,19 @@ export default function VIPPage() {
     }
   }, [user?.id]);
 
+  // Bus listener: update diamond balance when changed from other pages (e.g. diamond purchase, feature buy)
+  useEffect(() => {
+    if (!user?.id) return;
+    const unsubDiamond = masterBus.subscribe('DIAMOND_BALANCE_CHANGED', (event: any) => {
+      if (event?.payload?.balance !== undefined) {
+        setDiamonds(event.payload.balance);
+      } else {
+        loadVIPStatus();
+      }
+    });
+    return unsubDiamond;
+  }, [user?.id]);
+
   const loadVIPStatus = async () => {
     if (!user?.id) {
       setLoading(false);
