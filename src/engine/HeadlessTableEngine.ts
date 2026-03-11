@@ -772,6 +772,7 @@ export class HeadlessTableEngine {
         this.currentHandWinnerIds = [];
         break;
       }
+    }
   }
 
   private handleTurnChange(event: HandEvent, players: SeatedPlayer[]): void {

@@ -5,222 +5,223 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { useToast } from '../common/Toast';
 import './RakeReports.css';
 
 interface RakeData {
-    period: string;
-    totalRake: number;
-    totalHands: number;
-    avgRakePerHand: number;
-    topGames: { game: string; rake: number; hands: number }[];
-    dailyBreakdown: { date: string; rake: number; hands: number }[];
+  period: string;
+  totalRake: number;
+  totalHands: number;
+  avgRakePerHand: number;
+  topGames: { game: string; rake: number; hands: number }[];
+  dailyBreakdown: { date: string; rake: number; hands: number }[];
 }
 
 interface RakeReportsProps {
-    clubId: string;
+  clubId: string;
 }
 
 export const RakeReports: React.FC<RakeReportsProps> = ({ clubId }) => {
-    const [data, setData] = useState<RakeData | null>(null);
-    const [rawRecords, setRawRecords] = useState<any[]>([]);
-    const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'year'>('week');
-    const [loading, setLoading] = useState(true);
-    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+  const toast = useToast();
+  const [data, setData] = useState<RakeData | null>(null);
+  const [rawRecords, setRawRecords] = useState<any[]>([]);
+  const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'year'>('week');
+  const [loading, setLoading] = useState(true);
+  const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
-    useEffect(() => {
-        loadRakeData();
-    }, [clubId, period]);
+  useEffect(() => {
+    loadRakeData();
+  }, [clubId, period]);
 
-    const loadRakeData = async () => {
-        setLoading(true);
-        try {
-            // Calculate date ranges based on period
-            const now = new Date();
-            let startDate = new Date();
-            
-            if (period === 'today') {
-                startDate.setHours(0, 0, 0, 0);
-            } else if (period === 'week') {
-                startDate.setDate(now.getDate() - 7);
-            } else if (period === 'month') {
-                startDate.setMonth(now.getMonth() - 1);
-            } else if (period === 'year') {
-                startDate.setFullYear(now.getFullYear() - 1);
-            }
+  const loadRakeData = async () => {
+    setLoading(true);
+    try {
+      // Calculate date ranges based on period
+      const now = new Date();
+      const startDate = new Date();
 
-            const { data: records, error } = await supabase
-                .from('rake_records')
-                .select('rake_amount, created_at')
-                .eq('club_id', clubId)
-                .gte('created_at', startDate.toISOString());
+      if (period === 'today') {
+        startDate.setHours(0, 0, 0, 0);
+      } else if (period === 'week') {
+        startDate.setDate(now.getDate() - 7);
+      } else if (period === 'month') {
+        startDate.setMonth(now.getMonth() - 1);
+      } else if (period === 'year') {
+        startDate.setFullYear(now.getFullYear() - 1);
+      }
 
-            if (error) throw error;
-            
-            setRawRecords(records || []);
+      const { data: records, error } = await supabase
+        .from('rake_records')
+        .select('rake_amount, created_at')
+        .eq('club_id', clubId)
+        .gte('created_at', startDate.toISOString());
 
-            let totalRake = 0;
-            const dailyData: Record<string, { rake: number, hands: number }> = {};
-            
-            (records || []).forEach((record: any) => {
-                totalRake += Number(record.rake_amount || 0);
-                
-                // Group by day for the chart
-                const dateKey = new Date(record.created_at).toLocaleDateString();
-                if (!dailyData[dateKey]) {
-                    dailyData[dateKey] = { rake: 0, hands: 0 };
-                }
-                dailyData[dateKey].rake += Number(record.rake_amount || 0);
-                dailyData[dateKey].hands += 1;
-            });
+      if (error) throw error;
 
-            // Map dailyData to array
-            const dailyBreakdown = Object.keys(dailyData).map(date => ({
-                date,
-                rake: Math.round(dailyData[date].rake * 100) / 100,
-                hands: dailyData[date].hands
-            })).slice(-7); // Keep last 7 days for the chart
+      setRawRecords(records || []);
 
-            const totalHands = records?.length || 0;
+      let totalRake = 0;
+      const dailyData: Record<string, { rake: number; hands: number }> = {};
 
-            const liveData: RakeData = {
-                period: `Past ${period}`,
-                totalRake: Math.round(totalRake * 100) / 100,
-                totalHands,
-                avgRakePerHand: totalHands > 0 ? (totalRake / totalHands) : 0,
-                topGames: [], // Need table joins for this, empty for now
-                dailyBreakdown: dailyBreakdown.length > 0 ? dailyBreakdown : [{ date: 'Today', rake: 0, hands: 0 }],
-            };
-            setData(liveData);
-            setVisibleItems(new Set());
-            dailyBreakdown.forEach((_, i) => {
-                setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
-            });
-        } catch (error) {
-            console.error('Failed to load rake data:', error);
-        } finally {
-            setLoading(false);
+      (records || []).forEach((record: any) => {
+        totalRake += Number(record.rake_amount || 0);
+
+        // Group by day for the chart
+        const dateKey = new Date(record.created_at).toLocaleDateString();
+        if (!dailyData[dateKey]) {
+          dailyData[dateKey] = { rake: 0, hands: 0 };
         }
-    };
+        dailyData[dateKey].rake += Number(record.rake_amount || 0);
+        dailyData[dateKey].hands += 1;
+      });
 
-    const exportCSV = () => {
-        if (rawRecords.length === 0) {
-            alert('No rake records found for this period.');
-            return;
-        }
+      // Map dailyData to array
+      const dailyBreakdown = Object.keys(dailyData)
+        .map((date) => ({
+          date,
+          rake: Math.round(dailyData[date].rake * 100) / 100,
+          hands: dailyData[date].hands,
+        }))
+        .slice(-7); // Keep last 7 days for the chart
 
-        const headers = ['Date', 'Time', 'Rake Amount'];
-        const rows = rawRecords.map(record => {
-            const dateObj = new Date(record.created_at);
-            const date = dateObj.toLocaleDateString();
-            const time = dateObj.toLocaleTimeString();
-            const amount = record.rake_amount || 0;
-            return [date, time, amount].join(',');
-        });
+      const totalHands = records?.length || 0;
 
-        const csvContent = [headers.join(','), ...rows].join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.setAttribute('href', url);
-        link.setAttribute('download', `rake_report_${clubId}_${period}_${new Date().toISOString().split('T')[0]}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
+      const liveData: RakeData = {
+        period: `Past ${period}`,
+        totalRake: Math.round(totalRake * 100) / 100,
+        totalHands,
+        avgRakePerHand: totalHands > 0 ? totalRake / totalHands : 0,
+        topGames: [], // Need table joins for this, empty for now
+        dailyBreakdown:
+          dailyBreakdown.length > 0 ? dailyBreakdown : [{ date: 'Today', rake: 0, hands: 0 }],
+      };
+      setData(liveData);
+      setVisibleItems(new Set());
+      dailyBreakdown.forEach((_, i) => {
+        setTimeout(() => setVisibleItems((prev) => new Set(prev).add(i)), i * 60);
+      });
+    } catch (error) {
+      console.error('Failed to load rake data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    if (loading || !data) {
-        return (
-            <div className="rake-reports loading">
-                <div className="spinner" />
-            </div>
-        );
+  const exportCSV = () => {
+    if (rawRecords.length === 0) {
+      toast.info('No rake records found for this period.');
+      return;
     }
 
-    const maxRake = Math.max(...data.dailyBreakdown.map(d => d.rake));
+    const headers = ['Date', 'Time', 'Rake Amount'];
+    const rows = rawRecords.map((record) => {
+      const dateObj = new Date(record.created_at);
+      const date = dateObj.toLocaleDateString();
+      const time = dateObj.toLocaleTimeString();
+      const amount = record.rake_amount || 0;
+      return [date, time, amount].join(',');
+    });
 
-    return (
-        <div className="rake-reports">
-            <div className="reports-header">
-                <h2>💰 Rake Reports</h2>
-                <div className="period-selector">
-                    {(['today', 'week', 'month', 'year'] as const).map(p => (
-                        <button
-                            key={p}
-                            className={period === p ? 'active' : ''}
-                            onClick={() => setPeriod(p)}
-                        >
-                            {p.charAt(0).toUpperCase() + p.slice(1)}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Summary Cards */}
-            <div className="summary-cards">
-                <div className="summary-card">
-                    <span className="card-value">{data.totalRake.toLocaleString()}</span>
-                    <span className="card-label">Total Rake</span>
-                </div>
-                <div className="summary-card">
-                    <span className="card-value">{data.totalHands.toLocaleString()}</span>
-                    <span className="card-label">Hands Played</span>
-                </div>
-                <div className="summary-card">
-                    <span className="card-value">{Math.trunc(data.avgRakePerHand * 100) / 100}</span>
-                    <span className="card-label">Avg per Hand</span>
-                </div>
-            </div>
-
-            {/* Daily Chart */}
-            <div className="daily-chart">
-                <h3>Daily Breakdown</h3>
-                <div className="chart-bars">
-                    {data.dailyBreakdown.map((day, i) => (
-                        <div
-                            key={day.date}
-                            className="bar-group"
-                            style={{
-                                opacity: visibleItems.has(i) ? 1 : 0,
-                                transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
-                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-                            }}
-                        >
-                            <div className="bar-container">
-                                <div
-                                    className="bar-fill"
-                                    style={{ height: `${(day.rake / maxRake) * 100}%` }}
-                                />
-                            </div>
-                            <span className="bar-label">{day.date}</span>
-                            <span className="bar-value">{day.rake}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Top Games */}
-            <div className="top-games">
-                <h3>Top Games by Rake</h3>
-                <div className="games-list">
-                    {data.topGames.map((game, index) => (
-                        <div key={game.game} className="game-row">
-                            <span className="game-rank">#{index + 1}</span>
-                            <span className="game-name">{game.game}</span>
-                            <div className="game-stats">
-                                <span className="game-rake">{game.rake.toLocaleString()}</span>
-                                <span className="game-hands">{game.hands.toLocaleString()} hands</span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Export Button */}
-            <button className="export-btn" onClick={exportCSV}>
-                📥 Export Report
-            </button>
-        </div>
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute(
+      'download',
+      `rake_report_${clubId}_${period}_${new Date().toISOString().split('T')[0]}.csv`
     );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  if (loading || !data) {
+    return (
+      <div className="rake-reports loading">
+        <div className="spinner" />
+      </div>
+    );
+  }
+
+  const maxRake = Math.max(...data.dailyBreakdown.map((d) => d.rake));
+
+  return (
+    <div className="rake-reports">
+      <div className="reports-header">
+        <h2>💰 Rake Reports</h2>
+        <div className="period-selector">
+          {(['today', 'week', 'month', 'year'] as const).map((p) => (
+            <button key={p} className={period === p ? 'active' : ''} onClick={() => setPeriod(p)}>
+              {p.charAt(0).toUpperCase() + p.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="summary-cards">
+        <div className="summary-card">
+          <span className="card-value">{data.totalRake.toLocaleString()}</span>
+          <span className="card-label">Total Rake</span>
+        </div>
+        <div className="summary-card">
+          <span className="card-value">{data.totalHands.toLocaleString()}</span>
+          <span className="card-label">Hands Played</span>
+        </div>
+        <div className="summary-card">
+          <span className="card-value">{Math.trunc(data.avgRakePerHand * 100) / 100}</span>
+          <span className="card-label">Avg per Hand</span>
+        </div>
+      </div>
+
+      {/* Daily Chart */}
+      <div className="daily-chart">
+        <h3>Daily Breakdown</h3>
+        <div className="chart-bars">
+          {data.dailyBreakdown.map((day, i) => (
+            <div
+              key={day.date}
+              className="bar-group"
+              style={{
+                opacity: visibleItems.has(i) ? 1 : 0,
+                transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+              }}
+            >
+              <div className="bar-container">
+                <div className="bar-fill" style={{ height: `${(day.rake / maxRake) * 100}%` }} />
+              </div>
+              <span className="bar-label">{day.date}</span>
+              <span className="bar-value">{day.rake}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Top Games */}
+      <div className="top-games">
+        <h3>Top Games by Rake</h3>
+        <div className="games-list">
+          {data.topGames.map((game, index) => (
+            <div key={game.game} className="game-row">
+              <span className="game-rank">#{index + 1}</span>
+              <span className="game-name">{game.game}</span>
+              <div className="game-stats">
+                <span className="game-rake">{game.rake.toLocaleString()}</span>
+                <span className="game-hands">{game.hands.toLocaleString()} hands</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Export Button */}
+      <button className="export-btn" onClick={exportCSV}>
+        📥 Export Report
+      </button>
+    </div>
+  );
 };
 
 export default RakeReports;

@@ -9,6 +9,7 @@ import { useUserStore } from '../stores/useUserStore';
 import { clubService } from '../services/ClubService';
 import { MembershipService } from '../services/MembershipService';
 import { useToast } from '../components/common/Toast';
+import { masterBus } from '../core/MasterBus';
 import './InvitePage.css';
 
 const inviteStepAnimationStyle = {
@@ -45,6 +46,12 @@ export default function InvitePage() {
 
   useEffect(() => {
     loadClubInfo();
+
+    // Refresh when membership changes (another user joins via invite)
+    const unsubJoined = masterBus.subscribe('CLUB_JOINED', () => loadClubInfo());
+    return () => {
+      unsubJoined();
+    };
   }, [clubId, inviteCode]);
 
   const loadClubInfo = async () => {

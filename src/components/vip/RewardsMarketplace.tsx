@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import { useToast } from '../common/Toast';
 import './RewardsMarketplace.css';
 
 export interface Reward {
@@ -129,7 +130,11 @@ interface RewardsMarketplaceProps {
   onRedeem?: (reward: Reward) => void;
 }
 
-export const RewardsMarketplace: React.FC<RewardsMarketplaceProps> = ({ currentPoints, onRedeem }) => {
+export const RewardsMarketplace: React.FC<RewardsMarketplaceProps> = ({
+  currentPoints,
+  onRedeem,
+}) => {
+  const toast = useToast();
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>('all');
   const [sortBy, setSortBy] = useState<SortOption>('popular');
   const [redeemingId, setRedeemingId] = useState<string | null>(null);
@@ -139,7 +144,7 @@ export const RewardsMarketplace: React.FC<RewardsMarketplaceProps> = ({ currentP
 
     // Filter by category
     if (activeCategory !== 'all') {
-      filtered = filtered.filter(r => r.category === activeCategory);
+      filtered = filtered.filter((r) => r.category === activeCategory);
     }
 
     // Sort
@@ -161,30 +166,48 @@ export const RewardsMarketplace: React.FC<RewardsMarketplaceProps> = ({ currentP
     return sorted;
   }, [activeCategory, sortBy]);
 
-  const featuredReward = REWARDS.find(r => r.featured);
+  const featuredReward = REWARDS.find((r) => r.featured);
   const categories = [
     { id: 'all', label: 'All Rewards', count: REWARDS.length },
-    { id: 'tournament', label: 'Tournaments', count: REWARDS.filter(r => r.category === 'tournament').length },
-    { id: 'avatar', label: 'Avatar Items', count: REWARDS.filter(r => r.category === 'avatar').length },
-    { id: 'theme', label: 'Table Themes', count: REWARDS.filter(r => r.category === 'theme').length },
-    { id: 'bonus', label: 'Bonus Cash', count: REWARDS.filter(r => r.category === 'bonus').length },
-    { id: 'merch', label: 'Merch', count: REWARDS.filter(r => r.category === 'merch').length },
+    {
+      id: 'tournament',
+      label: 'Tournaments',
+      count: REWARDS.filter((r) => r.category === 'tournament').length,
+    },
+    {
+      id: 'avatar',
+      label: 'Avatar Items',
+      count: REWARDS.filter((r) => r.category === 'avatar').length,
+    },
+    {
+      id: 'theme',
+      label: 'Table Themes',
+      count: REWARDS.filter((r) => r.category === 'theme').length,
+    },
+    {
+      id: 'bonus',
+      label: 'Bonus Cash',
+      count: REWARDS.filter((r) => r.category === 'bonus').length,
+    },
+    { id: 'merch', label: 'Merch', count: REWARDS.filter((r) => r.category === 'merch').length },
   ];
 
   const handleRedeem = async (reward: Reward) => {
     if (currentPoints < reward.pointsCost) {
-      alert(`You need ${reward.pointsCost - currentPoints} more points to redeem this reward.`);
+      toast.error(
+        `You need ${reward.pointsCost - currentPoints} more points to redeem this reward.`
+      );
       return;
     }
 
     setRedeemingId(reward.id);
     try {
       // Simulate redemption delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise((resolve) => setTimeout(resolve, 800));
       if (onRedeem) {
         onRedeem(reward);
       }
-      alert(`Successfully redeemed ${reward.name}!`);
+      toast.success(`Successfully redeemed ${reward.name}!`);
     } finally {
       setRedeemingId(null);
     }
@@ -228,7 +251,11 @@ export const RewardsMarketplace: React.FC<RewardsMarketplaceProps> = ({ currentP
             <button
               className={`featured-redeem-btn ${!canRedeem(featuredReward) ? 'disabled' : ''} ${redeemingId === featuredReward.id ? 'redeeming' : ''}`}
               onClick={() => handleRedeem(featuredReward)}
-              disabled={!canRedeem(featuredReward) || redeemingId === featuredReward.id || isOutOfStock(featuredReward)}
+              disabled={
+                !canRedeem(featuredReward) ||
+                redeemingId === featuredReward.id ||
+                isOutOfStock(featuredReward)
+              }
             >
               {redeemingId === featuredReward.id ? '...' : 'Redeem'}
             </button>
@@ -238,7 +265,7 @@ export const RewardsMarketplace: React.FC<RewardsMarketplaceProps> = ({ currentP
 
       {/* Category Tabs */}
       <div className="category-tabs">
-        {categories.map(cat => (
+        {categories.map((cat) => (
           <button
             key={cat.id}
             className={`category-tab ${activeCategory === cat.id ? 'active' : ''}`}
@@ -287,18 +314,16 @@ export const RewardsMarketplace: React.FC<RewardsMarketplaceProps> = ({ currentP
 
                 <div className="reward-footer">
                   <div className="reward-meta">
-                    <span className="points-cost">
-                      {reward.pointsCost.toLocaleString()} pts
-                    </span>
-                    {reward.stock && (
-                      <span className="stock-badge">{reward.stock} left</span>
-                    )}
+                    <span className="points-cost">{reward.pointsCost.toLocaleString()} pts</span>
+                    {reward.stock && <span className="stock-badge">{reward.stock} left</span>}
                   </div>
 
                   <button
                     className={`redeem-btn ${redeemingId === reward.id ? 'redeeming' : ''}`}
                     onClick={() => handleRedeem(reward)}
-                    disabled={!canRedeem(reward) || redeemingId === reward.id || isOutOfStock(reward)}
+                    disabled={
+                      !canRedeem(reward) || redeemingId === reward.id || isOutOfStock(reward)
+                    }
                   >
                     {redeemingId === reward.id ? '...' : 'Redeem'}
                   </button>
@@ -306,7 +331,10 @@ export const RewardsMarketplace: React.FC<RewardsMarketplaceProps> = ({ currentP
               </div>
 
               {canRedeem(reward) && (
-                <div className="card-glow" style={{ boxShadow: `0 0 12px rgba(255, 215, 0, 0.3)` }} />
+                <div
+                  className="card-glow"
+                  style={{ boxShadow: `0 0 12px rgba(255, 215, 0, 0.3)` }}
+                />
               )}
             </div>
           ))

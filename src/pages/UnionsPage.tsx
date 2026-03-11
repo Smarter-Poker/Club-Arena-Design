@@ -9,128 +9,156 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import CreateUnionModal from '../components/union/CreateUnionModal';
 import { unionService, type Union } from '../services/UnionService';
+import { masterBus } from '../core/MasterBus';
 
 const unionCardAnimationStyle = (index: number) => ({
-    opacity: 0,
-    transform: 'translateY(12px)',
-    animation: `fadeInUp 0.6s ease-out ${index * 80}ms forwards`,
+  opacity: 0,
+  transform: 'translateY(12px)',
+  animation: `fadeInUp 0.6s ease-out ${index * 80}ms forwards`,
 });
 
 function UnionCard({ union, idx }: { union: Union; idx: number }) {
-    const [memberDisplay, setMemberDisplay] = useState(0);
-    const [onlineDisplay, setOnlineDisplay] = useState(0);
+  const [memberDisplay, setMemberDisplay] = useState(0);
+  const [onlineDisplay, setOnlineDisplay] = useState(0);
 
-    useEffect(() => {
-        const animateNumber = (start: number, end: number, setter: (n: number) => void) => {
-            const duration = 500;
-            const startTime = performance.now();
+  useEffect(() => {
+    const animateNumber = (start: number, end: number, setter: (n: number) => void) => {
+      const duration = 500;
+      const startTime = performance.now();
 
-            const animate = (currentTime: number) => {
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                setter(Math.floor(start + (end - start) * progress));
+      const animate = (currentTime: number) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        setter(Math.floor(start + (end - start) * progress));
 
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                }
-            };
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        }
+      };
 
-            requestAnimationFrame(animate);
-        };
+      requestAnimationFrame(animate);
+    };
 
-        animateNumber(0, union.memberCount, setMemberDisplay);
-        animateNumber(0, union.onlineCount || 0, setOnlineDisplay);
-    }, [union.memberCount, union.onlineCount]);
+    animateNumber(0, union.memberCount, setMemberDisplay);
+    animateNumber(0, union.onlineCount || 0, setOnlineDisplay);
+  }, [union.memberCount, union.onlineCount]);
 
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
-    return (
-        <div key={union.id} className="union-card" onClick={() => navigate(`/unions/${union.id}`)} style={{ ...unionCardAnimationStyle(idx), cursor: 'pointer' }}>
-            <div className="union-header">
-                <span className="union-icon">{union.avatarUrl || ''}</span>
-                <h3>{union.name}</h3>
-            </div>
-            <p className="union-description">{union.description}</p>
-            <div className="union-stats">
-                <div className="union-stat">
-                    <span className="stat-value">{union.clubCount}</span>
-                    <span className="stat-label">Clubs</span>
-                </div>
-                <div className="union-stat">
-                    <span className="stat-value">{memberDisplay.toLocaleString()}</span>
-                    <span className="stat-label">Members</span>
-                </div>
-                <div className="union-stat">
-                    <span className="stat-value online">{onlineDisplay.toLocaleString()}</span>
-                    <span className="stat-label">Online</span>
-                </div>
-            </div>
-            <Link to={`/unions/${union.id}`} className="btn btn-primary" style={{ width: '100%', textAlign: 'center' }}>
-                View Union
-            </Link>
+  return (
+    <div
+      key={union.id}
+      className="union-card"
+      onClick={() => navigate(`/unions/${union.id}`)}
+      style={{ ...unionCardAnimationStyle(idx), cursor: 'pointer' }}
+    >
+      <div className="union-header">
+        <span className="union-icon">{union.avatarUrl || ''}</span>
+        <h3>{union.name}</h3>
+      </div>
+      <p className="union-description">{union.description}</p>
+      <div className="union-stats">
+        <div className="union-stat">
+          <span className="stat-value">{union.clubCount}</span>
+          <span className="stat-label">Clubs</span>
         </div>
-    );
+        <div className="union-stat">
+          <span className="stat-value">{memberDisplay.toLocaleString()}</span>
+          <span className="stat-label">Members</span>
+        </div>
+        <div className="union-stat">
+          <span className="stat-value online">{onlineDisplay.toLocaleString()}</span>
+          <span className="stat-label">Online</span>
+        </div>
+      </div>
+      <Link
+        to={`/unions/${union.id}`}
+        className="btn btn-primary"
+        style={{ width: '100%', textAlign: 'center' }}
+      >
+        View Union
+      </Link>
+    </div>
+  );
 }
 
 export default function UnionsPage() {
-    const navigate = useNavigate();
-    const [unions, setUnions] = useState<Union[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [isCreating, setIsCreating] = useState(false);
+  const navigate = useNavigate();
+  const [unions, setUnions] = useState<Union[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
 
-    const loadUnions = () => {
-        setLoading(true);
-        unionService.getUnions().then(data => {
-            setUnions(data);
-            setLoading(false);
-        }).catch(err => {
-            console.error('[UnionsPage] Failed to load unions:', err);
-            setLoading(false);
-        });
+  const loadUnions = () => {
+    setLoading(true);
+    unionService
+      .getUnions()
+      .then((data) => {
+        setUnions(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('[UnionsPage] Failed to load unions:', err);
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    loadUnions();
+
+    // Refresh when club membership changes
+    const unsubJoined = masterBus.subscribe('CLUB_JOINED', () => loadUnions());
+    const unsubLeft = masterBus.subscribe('CLUB_LEFT', () => loadUnions());
+    return () => {
+      unsubJoined();
+      unsubLeft();
     };
+  }, []);
 
-    useEffect(() => {
-        loadUnions();
-    }, []);
-
-    if (loading) {
-        return <div className="loader-container"><div className="loader-spinner" /></div>;
-    }
-
+  if (loading) {
     return (
-        <div className="unions-page">
-            <header className="unions-header">
-                <div>
-                    <p>Join club networks for more players and bigger games.</p>
-                </div>
-                <button className="btn btn-primary" onClick={() => setIsCreating(true)}>
-                    + New Union
-                </button>
-            </header>
-
-            <div className="unions-grid">
-                {unions.map((union, idx) => (
-                    <UnionCard key={union.id} union={union} idx={idx} />
-                ))}
-            </div>
-
-            <section className="create-union-cta">
-                <h2>Create Your Own Union</h2>
-                <p>Bring together multiple clubs under one network for shared player pools and coordinated events.</p>
-                <button className="btn btn-ghost btn-lg" onClick={() => setIsCreating(true)}>
-                    Start a Union
-                </button>
-            </section>
-
-            {isCreating && (
-                <CreateUnionModal
-                    onClose={() => setIsCreating(false)}
-                    onSuccess={() => {
-                        setIsCreating(false);
-                        loadUnions();
-                    }}
-                />
-            )}
-        </div>
+      <div className="loader-container">
+        <div className="loader-spinner" />
+      </div>
     );
+  }
+
+  return (
+    <div className="unions-page">
+      <header className="unions-header">
+        <div>
+          <p>Join club networks for more players and bigger games.</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => setIsCreating(true)}>
+          + New Union
+        </button>
+      </header>
+
+      <div className="unions-grid">
+        {unions.map((union, idx) => (
+          <UnionCard key={union.id} union={union} idx={idx} />
+        ))}
+      </div>
+
+      <section className="create-union-cta">
+        <h2>Create Your Own Union</h2>
+        <p>
+          Bring together multiple clubs under one network for shared player pools and coordinated
+          events.
+        </p>
+        <button className="btn btn-ghost btn-lg" onClick={() => setIsCreating(true)}>
+          Start a Union
+        </button>
+      </section>
+
+      {isCreating && (
+        <CreateUnionModal
+          onClose={() => setIsCreating(false)}
+          onSuccess={() => {
+            setIsCreating(false);
+            loadUnions();
+          }}
+        />
+      )}
+    </div>
+  );
 }

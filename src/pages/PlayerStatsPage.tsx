@@ -328,7 +328,7 @@ export default function PlayerStatsPage() {
             transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
           }}
         >
-          <span className="stat-value">{stats?.total_hands.toLocaleString()}</span>
+          <span className="stat-value">{(stats?.total_hands ?? 0).toLocaleString()}</span>
           <span className="stat-label">Hands Played</span>
         </div>
         <div
@@ -353,7 +353,7 @@ export default function PlayerStatsPage() {
           <span
             className={`stat-value ${(stats?.total_profit || 0) >= 0 ? 'positive' : 'negative'}`}
           >
-            {stats?.total_profit.toLocaleString()}
+            {(stats?.total_profit ?? 0).toLocaleString()}
           </span>
           <span className="stat-label">Total Profit</span>
         </div>
