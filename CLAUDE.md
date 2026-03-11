@@ -1,11 +1,24 @@
 # Claude Instructions for Club Arena
 
+## CRITICAL: Testing & Deployment Rules
+
+**ALL live E2E testing MUST be done on `smarter.poker` — NEVER on `club-arena.vercel.app` directly.**
+
+Club Arena is embedded inside smarter.poker via iframe. The standalone URL (`club-arena.vercel.app`)
+is NOT how users access the app. Auth tokens, navigation, and the full user experience only work
+correctly when accessed through `smarter.poker/hub/club-arena/*`.
+
+- Test URL: `https://smarter.poker/hub/club-arena/`
+- NEVER navigate to or test on `club-arena.vercel.app` directly
+- All updates publish automatically to smarter.poker via Vercel (no separate deploy needed)
+- Auth flows, postMessage, and iframe context only work on smarter.poker
+
 ## Architecture — How This App Is Served
 
-Club Arena is a **Vite + React SPA** that runs at two locations:
+Club Arena is a **Vite + React SPA** embedded inside `smarter.poker`:
 
-1. **Standalone**: `club-arena.vercel.app` (direct access)
-2. **Embedded in smarter.poker**: via iframe at `smarter.poker/hub/club-arena/*`
+1. **Production (user-facing)**: `smarter.poker/hub/club-arena/*` — accessed via iframe embed
+2. **Build target**: `club-arena.vercel.app` — Vercel deployment URL (NOT for testing)
 
 The main smarter.poker site (Smarter-Poker-World-Hub, a Next.js app) embeds this SPA
 using the `ClubArenaEmbed` component, which loads an iframe pointing to `club-arena.vercel.app`.

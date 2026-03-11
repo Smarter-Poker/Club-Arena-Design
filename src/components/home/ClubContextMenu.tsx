@@ -10,7 +10,7 @@
  * BUG FIX #3: Added onPin/isPinned props for pin-to-top functionality.
  */
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../components/common/Toast';
 import styles from '../../pages/HomePage.module.css';
@@ -56,14 +56,46 @@ export default function ClubContextMenu({ club, x, y, onClose, onLeave, onPin, i
         onPin(club.id);
     }, [club.id, onClose, onPin]);
 
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    // Phase 8 #6: Auto-focus first item on open
+    useEffect(() => {
+        const firstItem = menuRef.current?.querySelector('button[role="menuitem"]') as HTMLElement;
+        firstItem?.focus();
+    }, []);
+
+    // Phase 8 #6: Keyboard navigation
+    const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+        const items = menuRef.current?.querySelectorAll('button[role="menuitem"]') as NodeListOf<HTMLElement>;
+        if (!items?.length) return;
+        const currentIndex = Array.from(items).indexOf(document.activeElement as HTMLElement);
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                items[(currentIndex + 1) % items.length]?.focus();
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                items[(currentIndex - 1 + items.length) % items.length]?.focus();
+                break;
+            case 'Escape':
+                e.preventDefault();
+                onClose();
+                break;
+        }
+    }, [onClose]);
+
     return (
         <>
             <div className={styles.contextMenuOverlay} onClick={onClose} />
             <div
+                ref={menuRef}
                 className={styles.contextMenu}
                 style={{ top: y, left: Math.min(x, window.innerWidth - 200) }}
                 role="menu"
                 aria-label="Club actions"
+                onKeyDown={handleKeyDown}
             >
                 <button className={styles.contextMenuItem} onClick={handleGoToLobby} role="menuitem">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 8, flexShrink: 0 }}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>

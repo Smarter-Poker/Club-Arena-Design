@@ -62,6 +62,7 @@ function pickChallenges(): Challenge[] {
 export default function DailyChallenges() {
     const [progress, setProgress] = useState<Record<string, number>>({});
     const [claimed, setClaimed] = useState<Record<string, boolean>>({});
+    const [claimingIndex, setClaimingIndex] = useState<number | null>(null);
     const [currentDayKey, setCurrentDayKey] = useState(getDayKey());
     const dayKey = currentDayKey;
     const picked = useRef(pickChallenges()); // stable across re-renders
@@ -232,6 +233,7 @@ export default function DailyChallenges() {
     // Phase 7 #4: Claim challenge reward
     const claimReward = useCallback(async (challengeIndex: number, reward: number) => {
         if (claimed[challengeIndex]) return;
+        setClaimingIndex(challengeIndex);
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
@@ -242,9 +244,10 @@ export default function DailyChallenges() {
                     .eq('id', user.id)
                     .maybeSingle();
                 const currentBalance = profile?.diamond_balance || 0;
+                const newBalance = currentBalance + reward;
                 await supabase
                     .from('profiles')
-                    .update({ diamond_balance: currentBalance + reward })
+                    .update({ diamond_balance: newBalance })
                     .eq('id', user.id);
 
                 // Mark claimed in daily_challenge_progress
@@ -258,8 +261,12 @@ export default function DailyChallenges() {
                         completed: true,
                     }, { onConflict: 'user_id,day_key,challenge_index' });
 
-                // Emit bus event for diamond balance update
-                masterBus.emit('NOTIFICATION_READ', { notifId: null, allRead: false });
+                // Phase 8 #1: Emit DIAMOND_BALANCE_CHANGED for header + tile badges
+                masterBus.emit('DIAMOND_BALANCE_CHANGED', {
+                    newBalance,
+                    delta: reward,
+                    source: 'daily_challenge',
+                });
             }
         } catch {
             // silent
@@ -269,6 +276,8 @@ export default function DailyChallenges() {
             try { localStorage.setItem(`${dayKey}_claimed`, JSON.stringify(next)); } catch { /* */ }
             return next;
         });
+        // Fade out animation timing
+        setTimeout(() => setClaimingIndex(null), 600);
     }, [claimed, dayKey, progress]);
 
     // Phase 7 #5: Midnight auto-reset
@@ -348,6 +357,7 @@ export default function DailyChallenges() {
                                                 cursor: 'pointer',
                                                 boxShadow: '0 0 10px rgba(0, 255, 136, 0.3)',
                                                 transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                                                animation: claimingIndex === i ? 'claimPop 0.5s ease-out forwards' : 'none',
                                             }}
                                         >CLAIM</button>
                                     )}
@@ -395,6 +405,47 @@ export default function DailyChallenges() {
                     );
                 })}
             </div>
+
+            {/* Phase 8 #2: All-claimed congratulations banner */}
+            {picked.current.length > 0 && picked.current.every((_ch, i) => claimed[i]) && (
+                <div style={{
+                    marginTop: 12,
+                    padding: '14px 20px',
+                    background: 'linear-gradient(135deg, rgba(0, 255, 136, 0.08), rgba(0, 212, 255, 0.08))',
+                    border: '1px solid rgba(0, 255, 136, 0.2)',
+                    borderRadius: 10,
+                    textAlign: 'center',
+                    animation: 'allClaimedFadeIn 0.5s ease-out',
+                }}>
+                    <span style={{
+                        fontSize: '0.85rem',
+                        fontWeight: 800,
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase',
+                        background: 'linear-gradient(90deg, #00ff88, #00d4ff)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                    }}>All Challenges Complete</span>
+                    <div style={{
+                        fontSize: '0.7rem',
+                        color: 'rgba(224, 232, 240, 0.5)',
+                        marginTop: 4,
+                        fontWeight: 600,
+                    }}>New challenges unlock at midnight</div>
+                </div>
+            )}
+
+            <style>{`
+                @keyframes claimPop {
+                    0% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.15); opacity: 0.8; }
+                    100% { transform: scale(0.8); opacity: 0; }
+                }
+                @keyframes allClaimedFadeIn {
+                    from { opacity: 0; transform: translateY(8px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+            `}</style>
         </div>
     );
 }

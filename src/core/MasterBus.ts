@@ -56,7 +56,9 @@ export type BusEventType =
     | 'FLUSH_WIN'
     | 'PLAY_MINUTES'
     // Phase 5: Card color customization
-    | 'CARD_COLOR_CHANGED';
+    | 'CARD_COLOR_CHANGED'
+    // Phase 8: Diamond economy bus event
+    | 'DIAMOND_BALANCE_CHANGED';
 
 // #13: Type-safe payload map — compile-time enforcement of correct payloads
 export interface BusPayloadMap {
@@ -86,6 +88,8 @@ export interface BusPayloadMap {
     PLAY_MINUTES: { minutes: number };
     // UI customization
     CARD_COLOR_CHANGED: { preset: string };
+    // Phase 8: Diamond economy
+    DIAMOND_BALANCE_CHANGED: { newBalance: number; delta: number; source: string };
 }
 
 export interface BusEvent<T = unknown> {

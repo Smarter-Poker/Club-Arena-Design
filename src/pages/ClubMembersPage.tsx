@@ -189,11 +189,10 @@ function PlayerActionModal({ member, myRole, clubId, onClose, onRoleChanged }: P
                             user_id: member.user_id,
                             role: newRole,
                             status: 'active',
-                            commission_rate: newRole === 'super_agent' ? 50 : 30,
-                            rakeback_rate: newRole === 'super_agent' ? 30 : 20,
+                            commission_rate: newRole === 'super_agent' ? 0.50 : 0.30,
+                            player_rakeback_rate: newRole === 'super_agent' ? 0.30 : 0.20,
                             credit_limit: 0,
-                            referral_code: profile?.player_number || member.user_id.slice(0, 8),
-                            parent_agent_id: myRole === 'super_agent' ? undefined : null,
+                            parent_agent_id: null,
                         });
                 }
             }

@@ -371,6 +371,10 @@ function CarouselSection({
                 {pinnedClubIds.includes(club.id) && (
                     <span className={styles.pinnedBadge} title="Pinned">*</span>
                 )}
+                {/* Phase 8 #3: Live table green pulse indicator */}
+                {isLive && (
+                    <span className={styles.liveIndicator} title="Live tables active" />
+                )}
                 <div className={styles.carouselCardPedestal}></div>
                 <div className={styles.clubCardFlipInner} style={{ height: '100%' }}>
                     {/* Card Back (face-down) */}
@@ -771,6 +775,17 @@ function HomePageInner() {
             setTileBadges({});
         });
 
+        // Phase 8 #5: Listen for diamond balance changes from challenge claims
+        const unsubDiamond = masterBus.subscribe('DIAMOND_BALANCE_CHANGED', (event) => {
+            const delta = event.payload?.delta as number;
+            if (delta && delta > 0) {
+                setTileBadges(prev => ({
+                    ...prev,
+                    'Player Stats': (prev['Player Stats'] || 0) + 1,
+                }));
+            }
+        });
+
         return () => {
             supabase.auth.getUser().then(({ data: { user: authUser } }) => {
                 if (authUser?.id) {
@@ -781,6 +796,7 @@ function HomePageInner() {
             unsubLeft();
             unsubAuth();
             unsubNotif();
+            unsubDiamond();
         };
     }, [fetchUserData]);
 
@@ -1373,6 +1389,20 @@ function HomePageInner() {
                                 aria-label="Clear search"
                             >✕</button>
                         )}
+                    </div>
+                )}
+
+                {/* Phase 8 #7: Search empty state */}
+                {searchQuery.trim() && displayClubs.length === 0 && (
+                    <div style={{
+                        textAlign: 'center',
+                        padding: '24px 16px',
+                        color: 'rgba(176, 179, 184, 0.6)',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        letterSpacing: '0.03em',
+                    }}>
+                        No clubs match "{searchQuery}"
                     </div>
                 )}
 
