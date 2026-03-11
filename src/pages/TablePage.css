@@ -279,235 +279,107 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   ACTION PANEL — 2x2 Grid Layout (PokerIQ Style)
+   ACTION PANEL WRAPPER — Bottom controls area
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .action-panel-wrapper {
     display: flex;
     flex-direction: column;
     background: transparent;
-    /* ActionPanel.css handles its own background */
+    padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
-.timer-display {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
-    background: rgba(0, 0, 0, 0.4);
-    border-radius: 8px;
-    font-size: 0.875rem;
-    color: #E4E6EB;
-}
-
-.timer-icon {
-    font-size: 1rem;
-}
-
-.timer-value {
-    font-weight: 700;
-    font-family: 'JetBrains Mono', monospace;
-    color: #D4A84B;
-}
-
-.time-bank {
-    font-size: 0.625rem;
-    color: #6E7681;
-    padding: 2px 6px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-}
-
-.action-btn {
-    padding: 16px 24px;
-    font-size: 1rem;
-    font-weight: 700;
-    text-transform: capitalize;
-    letter-spacing: 0.02em;
-    border: 2px solid transparent;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-/* Fold - Blue */
-.fold-btn {
-    background: #1E3A5F;
-    border-color: #2E5A8F;
-    color: #FFFFFF;
-}
-
-.fold-btn:hover {
-    background: #2E4A6F;
-    border-color: #4E7AAF;
-}
-
-/* Check - Blue */
-.check-btn {
-    background: #1E3A5F;
-    border-color: #2E5A8F;
-    color: #FFFFFF;
-}
-
-.check-btn:hover {
-    background: #2E4A6F;
-}
-
-/* Call - Blue */
-.call-btn {
-    background: #1E3A5F;
-    border-color: #2E5A8F;
-    color: #FFFFFF;
-}
-
-.call-btn:hover {
-    background: #2E4A6F;
-}
-
-/* Raise - Amber/Gold */
-.raise-btn {
-    background: linear-gradient(180deg, #D4A84B 0%, #B8922A 100%);
-    border-color: #C9A227;
-    color: #0A0A1A;
-}
-
-.raise-btn:hover {
-    background: linear-gradient(180deg, #E4B85B 0%, #D4A84B 100%);
-}
-
-/* All-In - Amber/Gold (prominent) */
-.allin-btn {
-    background: linear-gradient(180deg, #D4A84B 0%, #B8922A 100%);
-    border-color: #C9A227;
-    color: #0A0A1A;
-    animation: allInGlow 2s ease-in-out infinite;
-}
-
-@keyframes allInGlow {
-
-    0%,
-    100% {
-        box-shadow: 0 0 0 0 rgba(212, 168, 75, 0.4);
-    }
-
-    50% {
-        box-shadow: 0 0 15px 5px rgba(212, 168, 75, 0.3);
-    }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   RAISE SLIDER PANEL
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-.raise-slider-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    max-width: 400px;
-    margin: 0 auto;
-}
-
-.raise-display {
-    text-align: center;
-}
-
-.raise-amount {
-    font-size: 2rem;
-    font-weight: 800;
-    font-family: 'JetBrains Mono', monospace;
-    color: #FFB800;
-}
-
-.raise-controls {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.raise-adjust-btn {
-    width: 44px;
-    height: 44px;
+/* ─── SPECTATOR MODE ─── */
+.spectator-mode {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
-    color: #E4E6EB;
-    font-size: 1.5rem;
-    cursor: pointer;
-    transition: all 0.15s ease;
+    gap: 10px;
+    padding: 14px 24px;
+    background: rgba(0, 0, 0, 0.6);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.875rem;
 }
 
-.raise-adjust-btn:hover {
-    background: #1877F2;
-    border-color: #1877F2;
+.spectator-mode__icon {
+    font-size: 1.1rem;
 }
 
-.raise-slider {
-    flex: 1;
-    -webkit-appearance: none;
-    appearance: none;
-    height: 8px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    outline: none;
+.spectator-mode__text {
+    font-weight: 500;
 }
 
-.raise-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 28px;
-    height: 28px;
-    background: linear-gradient(135deg, #FFB800 0%, #F59E0B 100%);
-    border-radius: 50%;
-    cursor: grab;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-.raise-slider::-webkit-slider-thumb:active {
-    cursor: grabbing;
-    transform: scale(1.1);
-}
-
-.raise-presets {
+/* ─── CONTROL STRIP — Clean icon row above action buttons ─── */
+.control-strip {
     display: flex;
-    gap: 8px;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(10, 15, 26, 0.85);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.preset-btn {
+.control-strip__btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.control-strip__btn:active {
+    transform: scale(0.96);
+}
+
+.control-strip__btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.control-strip__btn--muted {
+    opacity: 0.4;
+}
+
+.control-strip__icon {
+    font-size: 0.8125rem;
+    line-height: 1;
+}
+
+.control-strip__count {
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    font-size: 0.6875rem;
+    color: #FFD700;
+    font-weight: 700;
+}
+
+.control-strip__timer {
+    padding: 4px 10px;
+    background: rgba(255, 215, 0, 0.15);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 8px;
+}
+
+.control-strip__timer-val {
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #FFD700;
+}
+
+.control-strip__spacer {
     flex: 1;
-    padding: 12px;
-    font-size: 0.875rem;
-    font-weight: 700;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
-    color: #E4E6EB;
-    cursor: pointer;
-    transition: all 0.15s ease;
 }
 
-.preset-btn:hover {
-    background: #1877F2;
-    border-color: #1877F2;
-}
-
-.confirm-btn {
-    flex: 1.5;
-    padding: 12px 20px;
-    font-size: 0.875rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, #FFB800 0%, #F59E0B 100%);
-    border: none;
-    border-radius: 10px;
-    color: #0A0A0F;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.confirm-btn:hover {
-    background: linear-gradient(135deg, #FFD54F 0%, #FFB800 100%);
-}
+/* ActionPanel.css handles its own button styling */
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    SIDE MENU
@@ -651,7 +523,7 @@
 
 @media (max-width: 768px) {
     .table-container {
-        padding: 50px 8px 10px;
+        padding: 4px 8px 4px;
     }
 
     .table-scaler {
@@ -674,58 +546,9 @@
         font-size: 0.5rem;
     }
 
-    /* Improved action panel for mobile */
-    .action-panel {
-        padding: 12px;
-        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0));
-        background: linear-gradient(180deg, rgba(10, 10, 26, 0.98) 0%, rgba(5, 5, 15, 1) 100%);
-    }
-
-    .action-btn {
-        padding: 16px 12px;
-        font-size: 0.9375rem;
-        min-height: 52px;
-        font-weight: 700;
-        border-radius: 10px;
-    }
-
-    .action-buttons {
-        gap: 10px;
-        max-width: 100%;
-    }
-
     .side-menu {
         width: 100%;
         max-width: 320px;
-    }
-
-    .pot-badge {
-        padding: 6px 14px;
-        gap: 6px;
-    }
-
-    .pot-badge__amount {
-        font-size: 0.95rem;
-    }
-
-    .pot-badge__label {
-        font-size: 0.55rem;
-    }
-
-    .game-info {
-        gap: 3px;
-    }
-
-    .game-type {
-        font-size: 0.8125rem;
-    }
-
-    .game-variant {
-        font-size: 0.55rem;
-    }
-
-    .game-blinds {
-        font-size: 0.6875rem;
     }
 
     .dealer-button {
@@ -734,57 +557,18 @@
         font-size: 0.625rem;
     }
 
-    .add-chips-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 1.25rem;
-        top: 54px;
-        left: 8px;
-    }
-
     .table-header {
         padding: 8px 10px;
     }
 
-    .observing-indicator {
-        bottom: 100px;
-        padding: 8px 18px;
-        font-size: 0.8rem;
+    .control-strip {
+        gap: 5px;
+        padding: 5px 10px;
     }
 
-    .raise-slider-panel {
-        gap: 10px;
-        padding: 0 12px;
-    }
-
-    .raise-presets {
-        gap: 6px;
-    }
-
-    .preset-btn {
-        padding: 10px;
-        font-size: 0.8rem;
-        min-height: 44px;
-    }
-
-    .raise-adjust-btn {
-        width: 44px;
-        height: 44px;
-        font-size: 1.25rem;
-    }
-
-    .raise-display {
-        gap: 12px;
-    }
-
-    .amount-value {
-        font-size: 1.75rem;
-    }
-
-    .confirm-btn {
-        padding: 12px 16px;
-        font-size: 0.875rem;
-        min-height: 48px;
+    .control-strip__btn {
+        padding: 4px 8px;
+        font-size: 0.6875rem;
     }
 }
 
@@ -799,48 +583,18 @@
         font-size: 0.875rem;
     }
 
-    .table-id {
+    .control-strip {
+        gap: 4px;
+        padding: 4px 8px;
+    }
+
+    .control-strip__btn {
+        padding: 3px 6px;
         font-size: 0.625rem;
-        padding: 0 6px;
+        border-radius: 6px;
     }
 
-    .raise-amount {
-        font-size: 1.5rem;
-    }
-
-    .action-btn {
-        padding: 14px 10px;
-        font-size: 0.875rem;
-        min-height: 50px;
-        border-radius: 8px;
-    }
-
-    .confirm-btn {
-        padding: 12px 16px;
-        font-size: 0.8125rem;
-        min-height: 48px;
-    }
-
-    .action-buttons {
-        gap: 8px;
-    }
-
-    .adjust-btn {
-        width: 44px;
-        height: 44px;
-        font-size: 1.25rem;
-    }
-
-    .pot-badge {
-        padding: 5px 12px;
-    }
-
-    .pot-badge__amount {
-        font-size: 0.875rem;
-    }
-
-    .preset-btn {
-        padding: 10px 8px;
+    .control-strip__timer-val {
         font-size: 0.75rem;
     }
 }
@@ -850,13 +604,12 @@
         padding: 2px 2px 2px;
     }
 
-    .action-btn {
-        padding: 10px 6px;
-        font-size: 0.8125rem;
-    }
-
     .table-header {
         padding: 4px 6px;
+    }
+
+    .control-strip {
+        padding: 3px 6px;
     }
 }
 

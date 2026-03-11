@@ -2111,6 +2111,73 @@ export default function TablePage() {
         setShowRaiseSlider(true);
     };
 
+    // Unified action handler for ActionPanel component
+    const handleActionPanelAction = useCallback(async (action: 'fold' | 'check' | 'call' | 'raise' | 'allin', amount?: number) => {
+        const heroSeat = tableState.heroSeat;
+        const hero = getPlayerAtSeat(heroSeat);
+        const heroStack = hero?.stack || 0;
+
+        switch (action) {
+            case 'fold':
+                startTransition(() => {
+                    if (handControllerRef.current) handControllerRef.current.performAction(heroSeat, 'fold');
+                });
+                soundService.playFold();
+                if (tableId) {
+                    const result = await submitAction(tableId, userId, 'fold');
+                    if (!result.success) console.warn('[TablePage] Server fold failed:', result.error);
+                }
+                break;
+            case 'check':
+                startTransition(() => {
+                    if (handControllerRef.current) handControllerRef.current.performAction(heroSeat, 'check');
+                });
+                soundService.playCheck();
+                if (tableId) {
+                    const result = await submitAction(tableId, userId, 'check');
+                    if (!result.success) console.warn('[TablePage] Server check failed:', result.error);
+                }
+                break;
+            case 'call':
+                startTransition(() => {
+                    if (handControllerRef.current) handControllerRef.current.performAction(heroSeat, 'call');
+                });
+                soundService.playChips();
+                if (tableId) {
+                    const result = await submitAction(tableId, userId, 'call');
+                    if (!result.success) console.warn('[TablePage] Server call failed:', result.error);
+                }
+                break;
+            case 'raise':
+                if (amount) {
+                    const clamped = Math.min(amount, heroStack);
+                    if (clamped <= 0) return;
+                    startTransition(() => {
+                        if (handControllerRef.current) {
+                            handControllerRef.current.performAction(heroSeat, 'raise', clamped);
+                        }
+                    });
+                    soundService.playChips();
+                    if (tableId) {
+                        const result = await submitAction(tableId, userId, 'raise', clamped);
+                        if (!result.success) console.warn('[TablePage] Server raise failed:', result.error);
+                    }
+                }
+                break;
+            case 'allin':
+                if (heroStack <= 0) return;
+                startTransition(() => {
+                    if (handControllerRef.current) handControllerRef.current.performAction(heroSeat, 'all_in');
+                });
+                soundService.playChips();
+                if (tableId) {
+                    const result = await submitAction(tableId, userId, 'allin', heroStack);
+                    if (!result.success) console.warn('[TablePage] Server all-in failed:', result.error);
+                }
+                break;
+        }
+    }, [tableState.heroSeat, tableId, userId]);
+
     const handleConfirmRaise = async () => {
         const heroSeat = tableState.heroSeat;
         const hero = getPlayerAtSeat(heroSeat);
@@ -2483,122 +2550,110 @@ export default function TablePage() {
             </div>
 
             {/* ═══════════════════════════════════════════════════════════════════════
-          ACTION PANEL + PRE-ACTION BAR
+          BOTTOM CONTROLS + ACTION PANEL
           ═══════════════════════════════════════════════════════════════════════ */}
             <div className="action-panel-wrapper">
                 {/* Spectator Mode - Show when user is not seated */}
                 {!tableState.players[tableState.heroSeat - 1] ? (
-                    <div className="spectator-mode" style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '12px',
-                        padding: '16px 24px',
-                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                        borderRadius: '12px',
-                        color: '#888',
-                        fontSize: '14px',
-                    }}>
-                        <span style={{ fontSize: '18px' }}></span>
-                        <span>{tableState.isTournament ? 'Observing tournament' : 'You are watching — Click a seat to join'}</span>
+                    <div className="spectator-mode">
+                        <span className="spectator-mode__icon">👁</span>
+                        <span className="spectator-mode__text">
+                            {tableState.isTournament ? 'Observing tournament' : 'Click a seat to join'}
+                        </span>
                     </div>
-                ) : showRaiseSlider && tableState.currentPlayerSeat === tableState.heroSeat && tableState.isHandInProgress ? (
-                    /* Raise Slider Mode */
-                    <div className="raise-slider-panel">
-                        <div className="raise-display">
-                            <span className="raise-amount">{raiseAmount}</span>
-                        </div>
-                        <div className="raise-controls">
-                            <button
-                                className="raise-adjust-btn"
-                                onClick={() => setRaiseAmount(prev => Math.max(10, prev - 10))}
-                            >
-                                −
-                            </button>
-                            <input
-                                type="range"
-                                className="raise-slider"
-                                min={(() => {
-                                    const bb = parseFloat(tableState.blinds.split('/')[1]) || 2;
-                                    const hs = handControllerRef.current?.getState();
-                                    const currentBet = hs?.currentBet || 0;
-                                    return Math.max(bb, currentBet > 0 ? currentBet * 2 : bb * 2);
-                                })()}
-                                max={getPlayerAtSeat(tableState.heroSeat)?.stack || 1000}
-                                value={raiseAmount}
-                                onChange={(e) => setRaiseAmount(Number(e.target.value))}
-                            />
-                            <button
-                                className="raise-adjust-btn"
-                                onClick={() => setRaiseAmount(prev => prev + 10)}
-                            >
-                                +
-                            </button>
-                        </div>
-                        <div className="raise-presets">
-                            <button className="preset-btn" onClick={() => setRaiseAmount(tableState.pot * 2)}>2X</button>
-                            <button className="preset-btn" onClick={() => setRaiseAmount(tableState.pot * 3)}>3X</button>
-                            <button className="preset-btn" onClick={() => setRaiseAmount(tableState.pot * 4)}>4X</button>
-                            <button className="confirm-btn" onClick={handleConfirmRaise}>Confirm</button>
-                        </div>
-                    </div>
-                ) : tableState.currentPlayerSeat === tableState.heroSeat && tableState.isHandInProgress ? (
-                    /* Normal Action Buttons - Show dynamically based on game state */
-                    (() => {
-                        // Get call amount from hand engine (the authoritative source)
-                        const handState = handControllerRef.current?.getState();
-                        const currentBet = handState?.currentBet || 0;
-                        const myEngineBet = handState?.players.find(p => p.user_id === userId)?.bet || 0;
-                        const callAmount = Math.max(0, currentBet - myEngineBet);
-                        const hasActiveBet = callAmount > 0;
+                ) : (
+                    <>
+                        {/* ─── CONTROL STRIP — Clean icon row above action buttons ─── */}
+                        {tableState.isHandInProgress && (
+                            <div className="control-strip">
+                                {/* Straddle Toggle */}
+                                <button
+                                    className="control-strip__btn"
+                                    title="Straddle"
+                                    onClick={() => {/* toggle straddle */}}
+                                >
+                                    <span className="control-strip__icon">STR</span>
+                                </button>
 
-                        return (
-                            <div className="action-buttons">
-                                <div className="timer-display">
-                                    <span className="timer-icon"></span>
-                                    <span className="timer-value">{actionTimeRemaining}</span>
-                                    <span className="time-bank">20s</span>
-                                </div>
-                                <button className="action-btn fold-btn" onClick={handleFold}>
-                                    Fold
+                                {/* Time Bank */}
+                                <button className="control-strip__btn" title="Time Bank">
+                                    <span className="control-strip__icon">⏱</span>
+                                    <span className="control-strip__count">3</span>
                                 </button>
-                                {hasActiveBet ? (
-                                    <button className="action-btn call-btn" onClick={handleCall}>
-                                        Call {callAmount}
-                                    </button>
-                                ) : (
-                                    <button className="action-btn check-btn" onClick={handleCheck}>
-                                        Check
-                                    </button>
+
+                                {/* Timer Display */}
+                                {tableState.currentPlayerSeat === tableState.heroSeat && (
+                                    <div className="control-strip__timer">
+                                        <span className="control-strip__timer-val">{actionTimeRemaining}s</span>
+                                    </div>
                                 )}
-                                <button className="action-btn raise-btn" onClick={hasActiveBet ? handleRaise : handleBet}>
-                                    {hasActiveBet ? 'Raise' : 'Bet'}
+
+                                {/* Spacer */}
+                                <div className="control-strip__spacer" />
+
+                                {/* Rabbit Hunt */}
+                                <button className="control-strip__btn" title="Rabbit Hunt">
+                                    <span className="control-strip__icon">🐰</span>
                                 </button>
-                                <button className="action-btn allin-btn" onClick={handleAllIn}
-                                    style={{ backgroundColor: '#c41e3a', fontWeight: 'bold' }}>
-                                    All In
+
+                                {/* Chat Toggle */}
+                                <button
+                                    className={`control-strip__btn ${isChatMuted ? 'control-strip__btn--muted' : ''}`}
+                                    title="Chat"
+                                    onClick={() => setIsChatCollapsed(!isChatCollapsed)}
+                                >
+                                    <span className="control-strip__icon">💬</span>
                                 </button>
                             </div>
-                        );
-                    })()
-                ) : null}
+                        )}
 
-                {/* Pre-Action Bar - Show when seated but not player's turn */}
-                {tableState.players[tableState.heroSeat - 1] && tableState.isHandInProgress && tableState.currentPlayerSeat !== tableState.heroSeat && (
-                    <PreActionBar
-                        canCheck={
+                        {/* ─── ACTION PANEL — PokerBros 3-button layout ─── */}
+                        {tableState.currentPlayerSeat === tableState.heroSeat && tableState.isHandInProgress ? (
                             (() => {
                                 const handState = handControllerRef.current?.getState();
                                 const currentBet = handState?.currentBet || 0;
                                 const myEngineBet = handState?.players.find(p => p.user_id === userId)?.bet || 0;
                                 const callAmount = Math.max(0, currentBet - myEngineBet);
-                                return callAmount === 0;
+                                const heroStack = getPlayerAtSeat(tableState.heroSeat)?.stack || 0;
+                                const bb = parseFloat(tableState.blinds.split('/')[1]) || 2;
+                                const minRaise = Math.max(bb, currentBet > 0 ? currentBet * 2 : bb * 2);
+
+                                return (
+                                    <ActionPanel
+                                        canFold={true}
+                                        canCheck={callAmount === 0}
+                                        canCall={callAmount > 0}
+                                        canRaise={heroStack > minRaise}
+                                        canAllIn={heroStack > 0}
+                                        callAmount={callAmount}
+                                        minRaise={minRaise}
+                                        maxRaise={heroStack}
+                                        pot={tableState.pot}
+                                        bigBlind={bb}
+                                        onAction={handleActionPanelAction}
+                                        isMyTurn={true}
+                                    />
+                                );
                             })()
-                        }
-                        isMyTurn={tableState.currentPlayerSeat === tableState.heroSeat}
-                        preAction={preAction}
-                        onPreActionChange={setPreAction}
-                    />
+                        ) : null}
+
+                        {/* ─── PRE-ACTION BAR — Show when not hero's turn ─── */}
+                        {tableState.isHandInProgress && tableState.currentPlayerSeat !== tableState.heroSeat && (
+                            <PreActionBar
+                                canCheck={
+                                    (() => {
+                                        const handState = handControllerRef.current?.getState();
+                                        const currentBet = handState?.currentBet || 0;
+                                        const myEngineBet = handState?.players.find(p => p.user_id === userId)?.bet || 0;
+                                        return Math.max(0, currentBet - myEngineBet) === 0;
+                                    })()
+                                }
+                                isMyTurn={false}
+                                preAction={preAction}
+                                onPreActionChange={setPreAction}
+                            />
+                        )}
+                    </>
                 )}
             </div>
 

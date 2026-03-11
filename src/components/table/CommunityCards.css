@@ -17,7 +17,7 @@
 
 .community-cards__container {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     perspective: 1000px;
 }
 
@@ -27,13 +27,14 @@
 
 .community-cards__card {
     position: relative;
-    width: 54px;
-    height: 78px;
+    width: 64px;
+    height: 92px;
     border-radius: 6px;
     overflow: hidden;
     box-shadow:
-        0 4px 12px rgba(0, 0, 0, 0.3),
-        0 1px 3px rgba(0, 0, 0, 0.2);
+        0 4px 16px rgba(0, 0, 0, 0.4),
+        0 1px 4px rgba(0, 0, 0, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     cursor: default;
     animation: cardDeal 0.4s ease-out forwards;
@@ -194,11 +195,11 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 .community-cards__placeholder {
-    width: 54px;
-    height: 78px;
+    width: 64px;
+    height: 92px;
     border-radius: 6px;
     overflow: hidden;
-    opacity: 0.4;
+    opacity: 0.3;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -228,11 +229,11 @@
 }
 
 .community-cards__separator--flop {
-    left: calc(3 * (60px + 8px) - 4px);
+    left: calc(3 * (64px + 8px) - 4px);
 }
 
 .community-cards__separator--turn {
-    left: calc(4 * (60px + 8px) - 4px);
+    left: calc(4 * (64px + 8px) - 4px);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -284,13 +285,13 @@
 
 @media (max-width: 768px) {
     .community-cards__container {
-        gap: 5px;
+        gap: 6px;
     }
 
     .community-cards__card,
     .community-cards__placeholder {
-        width: 50px;
-        height: 72px;
+        width: 56px;
+        height: 80px;
         border-radius: 5px;
     }
 
@@ -301,14 +302,14 @@
 
 @media (max-width: 640px) {
     .community-cards__container {
-        gap: 4px;
+        gap: 5px;
     }
 
     .community-cards__card,
     .community-cards__placeholder {
-        width: 46px;
-        height: 66px;
-        border-radius: 4px;
+        width: 50px;
+        height: 72px;
+        border-radius: 5px;
     }
 
     .community-cards__corner-rank { font-size: 0.875rem; }
@@ -318,13 +319,13 @@
 
 @media (max-width: 480px) {
     .community-cards__container {
-        gap: 3px;
+        gap: 4px;
     }
 
     .community-cards__card,
     .community-cards__placeholder {
-        width: 42px;
-        height: 60px;
+        width: 44px;
+        height: 64px;
         border-radius: 4px;
     }
 
@@ -336,8 +337,8 @@
 @media (max-width: 380px) {
     .community-cards__card,
     .community-cards__placeholder {
-        width: 38px;
-        height: 54px;
+        width: 40px;
+        height: 58px;
         border-radius: 3px;
     }
 

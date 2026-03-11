@@ -66,7 +66,7 @@ function CardFace({ card, index, isHighlighted, isDealing }: CardFaceProps) {
             <CardImage
                 card={card}
                 deckStyle="4color"
-                size="md"
+                size="lg"
                 isHighlighted={isHighlighted}
             />
             {/* Highlight Glow */}
@@ -85,7 +85,7 @@ function PlaceholderCard({ index }: PlaceholderCardProps) {
             className="community-cards__placeholder"
             style={{ animationDelay: `${index * 100}ms` }}
         >
-            <CardBack size="md" style="classic" />
+            <CardBack size="lg" style="classic" />
         </div>
     );
 }

@@ -1,116 +1,150 @@
 /**
  * ♠ CLUB ARENA — Pre-Action Bar Styles
- * Dark theme, checkbox-style toggles for queued actions
+ * PokerBros-style pill toggles with checkmark indicators
  */
 
 .pre-action-bar {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-3) var(--space-4);
-    background: linear-gradient(180deg, rgba(25, 30, 40, 0.9) 0%, rgba(18, 22, 32, 0.95) 100%);
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    margin-top: auto;
-}
-
-.pre-action-label {
-    font-size: var(--fs-sm);
-    font-weight: var(--fw-semi-bold);
-    color: rgba(255, 255, 255, 0.6);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
-    padding: 0 var(--space-2);
+    justify-content: center;
+    padding: 8px 16px;
+    background: linear-gradient(180deg, rgba(20, 24, 32, 0.95) 0%, rgba(14, 17, 24, 0.98) 100%);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .pre-action-buttons {
     display: flex;
-    gap: var(--space-2);
-    flex: 1;
-}
-
-.pre-action-btn {
-    flex: 1;
-    min-height: 44px;
-    padding: var(--space-2) var(--space-3);
-    font-size: var(--fs-sm);
-    font-weight: var(--fw-bold);
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.05);
-    color: rgba(255, 255, 255, 0.7);
-    cursor: pointer;
-    transition: all var(--transition-base);
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.pre-action-btn:active {
-    transform: scale(0.98);
+    gap: 10px;
+    width: 100%;
+    max-width: 420px;
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   BUTTON STATES
+   PILL BUTTONS — PokerBros-style rounded toggles
    ═══════════════════════════════════════════════════════════════ */
 
-/* Fold / Check-Fold Button */
+.pre-action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 8px 14px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 24px; /* Full pill shape */
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.55);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+.pre-action-btn:active {
+    transform: scale(0.96);
+}
+
+/* Checkmark indicator */
+.pre-action-btn__check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 900;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    background: transparent;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FOLD — Red tint
+   ═══════════════════════════════════════════════════════════════ */
+
 .pre-action-btn.fold {
-    color: rgba(255, 255, 255, 0.6);
-    border-color: rgba(231, 76, 60, 0.3);
+    border-color: rgba(239, 68, 68, 0.2);
 }
 
 .pre-action-btn.fold:hover {
-    background: rgba(231, 76, 60, 0.15);
-    border-color: rgba(231, 76, 60, 0.5);
-    color: rgba(255, 255, 255, 0.85);
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: rgba(255, 255, 255, 0.8);
 }
 
 .pre-action-btn.fold.active {
-    background: linear-gradient(180deg, rgba(231, 76, 60, 0.4) 0%, rgba(192, 57, 43, 0.4) 100%);
-    border-color: #e74c3c;
-    color: #ff6b6b;
-    box-shadow: 0 0 12px rgba(231, 76, 60, 0.3);
+    background: linear-gradient(180deg, rgba(239, 68, 68, 0.3) 0%, rgba(185, 28, 28, 0.3) 100%);
+    border-color: #ef4444;
+    color: #fca5a5;
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-/* Check Button */
+.pre-action-btn.fold.active .pre-action-btn__check {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: #fff;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CHECK — Green tint
+   ═══════════════════════════════════════════════════════════════ */
+
 .pre-action-btn.check {
-    color: rgba(255, 255, 255, 0.6);
-    border-color: rgba(46, 204, 113, 0.3);
+    border-color: rgba(34, 197, 94, 0.2);
 }
 
 .pre-action-btn.check:hover {
-    background: rgba(46, 204, 113, 0.15);
-    border-color: rgba(46, 204, 113, 0.5);
-    color: rgba(255, 255, 255, 0.85);
+    background: rgba(34, 197, 94, 0.1);
+    border-color: rgba(34, 197, 94, 0.4);
+    color: rgba(255, 255, 255, 0.8);
 }
 
 .pre-action-btn.check.active {
-    background: linear-gradient(180deg, rgba(46, 204, 113, 0.4) 0%, rgba(39, 174, 96, 0.4) 100%);
-    border-color: #2ecc71;
-    color: #52d46e;
-    box-shadow: 0 0 12px rgba(46, 204, 113, 0.3);
+    background: linear-gradient(180deg, rgba(34, 197, 94, 0.3) 0%, rgba(22, 163, 74, 0.3) 100%);
+    border-color: #22c55e;
+    color: #86efac;
+    box-shadow: 0 0 16px rgba(34, 197, 94, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-/* Call Button */
+.pre-action-btn.check.active .pre-action-btn__check {
+    background: #22c55e;
+    border-color: #22c55e;
+    color: #fff;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CALL — Amber tint
+   ═══════════════════════════════════════════════════════════════ */
+
 .pre-action-btn.call {
-    color: rgba(255, 255, 255, 0.6);
-    border-color: rgba(243, 156, 18, 0.3);
+    border-color: rgba(245, 158, 11, 0.2);
 }
 
 .pre-action-btn.call:hover {
-    background: rgba(243, 156, 18, 0.15);
-    border-color: rgba(243, 156, 18, 0.5);
-    color: rgba(255, 255, 255, 0.85);
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.4);
+    color: rgba(255, 255, 255, 0.8);
 }
 
 .pre-action-btn.call.active {
-    background: linear-gradient(180deg, rgba(243, 156, 18, 0.4) 0%, rgba(230, 126, 34, 0.4) 100%);
-    border-color: #f39c12;
-    color: #ffc857;
-    box-shadow: 0 0 12px rgba(243, 156, 18, 0.3);
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.3) 0%, rgba(217, 119, 6, 0.3) 100%);
+    border-color: #f59e0b;
+    color: #fcd34d;
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.pre-action-btn.call.active .pre-action-btn__check {
+    background: #f59e0b;
+    border-color: #f59e0b;
+    color: #fff;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -119,32 +153,7 @@
 
 @media (max-width: 768px) {
     .pre-action-bar {
-        gap: var(--space-2);
-        padding: var(--space-3) var(--space-3);
-    }
-
-    .pre-action-label {
-        font-size: 11px;
-        padding: 0 var(--space-1);
-    }
-
-    .pre-action-btn {
-        min-height: 40px;
-        padding: var(--space-2) var(--space-2);
-        font-size: 11px;
-        border-radius: 8px;
-    }
-}
-
-@media (max-width: 640px) {
-    .pre-action-bar {
-        gap: var(--space-2);
-        padding: 10px 12px;
-    }
-
-    .pre-action-label {
-        font-size: 10px;
-        padding: 0 6px;
+        padding: 8px 12px;
     }
 
     .pre-action-buttons {
@@ -153,21 +162,21 @@
 
     .pre-action-btn {
         min-height: 38px;
-        padding: 8px 10px;
+        padding: 6px 10px;
+        font-size: 0.75rem;
+        border-radius: 20px;
+    }
+
+    .pre-action-btn__check {
+        width: 16px;
+        height: 16px;
         font-size: 10px;
-        border-radius: 6px;
     }
 }
 
 @media (max-width: 480px) {
     .pre-action-bar {
-        gap: 8px;
-        padding: 8px 10px;
-    }
-
-    .pre-action-label {
-        font-size: 9px;
-        padding: 0 4px;
+        padding: 6px 10px;
     }
 
     .pre-action-buttons {
@@ -175,9 +184,26 @@
     }
 
     .pre-action-btn {
-        min-height: 36px;
-        padding: 6px 8px;
+        min-height: 34px;
+        padding: 5px 8px;
+        font-size: 0.6875rem;
+        border-radius: 18px;
+        gap: 4px;
+    }
+
+    .pre-action-btn__check {
+        width: 14px;
+        height: 14px;
         font-size: 9px;
-        border-radius: 6px;
+        border-width: 1.5px;
+    }
+}
+
+@media (max-width: 380px) {
+    .pre-action-btn {
+        min-height: 32px;
+        padding: 4px 6px;
+        font-size: 0.625rem;
+        border-radius: 16px;
     }
 }
