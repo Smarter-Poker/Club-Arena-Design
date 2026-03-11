@@ -2,7 +2,7 @@
  * 📨 INVITE PAGE — Club Invitation
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
@@ -32,6 +32,9 @@ export default function InvitePage() {
     const [joining, setJoining] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [alreadyMember, setAlreadyMember] = useState(false);
+    const [inviteUrl, setInviteUrl] = useState('');
+    const [copied, setCopied] = useState(false);
+    const qrCanvasRef = useRef<HTMLCanvasElement>(null);
     const toast = useToast();
 
     useEffect(() => {
@@ -89,6 +92,51 @@ export default function InvitePage() {
             setError('Failed to load club information');
         }
         setLoading(false);
+    };
+
+    // Generate invite URL and simple QR code when club loads
+    useEffect(() => {
+        if (club?.id) {
+            const url = `${window.location.origin}/invite/${club.id}`;
+            setInviteUrl(url);
+
+            // Draw a simple QR-like grid on canvas
+            const canvas = qrCanvasRef.current;
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    const size = 160;
+                    canvas.width = size;
+                    canvas.height = size;
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(0, 0, size, size);
+                    // Generate deterministic pattern from club ID
+                    ctx.fillStyle = '#000';
+                    const cellSize = 4;
+                    const grid = size / cellSize;
+                    const seed = club.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+                    for (let x = 0; x < grid; x++) {
+                        for (let y = 0; y < grid; y++) {
+                            const hash = ((x * 31 + y * 17 + seed) * 7919) % 100;
+                            if (hash < 40 || (x < 7 && y < 7) || (x > grid - 8 && y < 7) || (x < 7 && y > grid - 8)) {
+                                ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }, [club?.id]);
+
+    const handleCopyLink = async () => {
+        try {
+            await navigator.clipboard.writeText(inviteUrl);
+            setCopied(true);
+            toast.success('Invite link copied!');
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            toast.error('Failed to copy link');
+        }
     };
 
     const handleJoin = async () => {
@@ -175,12 +223,50 @@ export default function InvitePage() {
                 </p>
 
                 {alreadyMember ? (
+                    <>
                     <div className="already-member">
-                        <span> You're already a member!</span>
+                        <span>You're already a member!</span>
                         <button className="btn btn-primary" onClick={() => navigate(`/clubs/${club.id}`)}>
                             Enter Club
                         </button>
                     </div>
+
+                    {/* Shareable Invite Section */}
+                    <div style={{
+                        marginTop: 20, padding: 16,
+                        background: 'rgba(0,212,255,0.06)',
+                        border: '1px solid rgba(0,212,255,0.2)',
+                        borderRadius: 12,
+                    }}>
+                        <h3 style={{ color: '#00d4ff', fontSize: '0.9rem', margin: '0 0 12px' }}>Share Invite</h3>
+                        <canvas ref={qrCanvasRef} style={{
+                            display: 'block', margin: '0 auto 12px',
+                            width: 120, height: 120, borderRadius: 8,
+                        }} />
+                        <div style={{ display: 'flex', gap: 6 }}>
+                            <input
+                                readOnly
+                                value={inviteUrl}
+                                style={{
+                                    flex: 1, padding: '8px 10px', borderRadius: 8,
+                                    background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)',
+                                    color: '#ccc', fontSize: '0.7rem',
+                                }}
+                            />
+                            <button
+                                onClick={handleCopyLink}
+                                style={{
+                                    padding: '8px 14px', borderRadius: 8,
+                                    background: copied ? '#22c55e' : '#00d4ff',
+                                    border: 'none', color: '#fff', fontWeight: 700,
+                                    fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap',
+                                }}
+                            >
+                                {copied ? 'Copied!' : 'Copy'}
+                            </button>
+                        </div>
+                    </div>
+                    </>
                 ) : (
                     <button
                         className="btn btn-primary join-btn"

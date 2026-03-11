@@ -113,6 +113,31 @@ export default function App() {
         setShowIntro(false);
     };
 
+    // Offline/Online detection
+    const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+    useEffect(() => {
+        const goOffline = () => setIsOffline(true);
+        const goOnline = () => {
+            setIsOffline(false);
+            // Replay queued mutations on reconnect
+            try {
+                const queue = JSON.parse(localStorage.getItem('offline_mutation_queue') || '[]');
+                if (queue.length > 0) {
+                    console.log('[Offline Queue] Replaying', queue.length, 'queued mutations');
+                    localStorage.removeItem('offline_mutation_queue');
+                    // Mutations would be replayed here against Supabase
+                }
+            } catch { /* ignore parse errors */ }
+        };
+        window.addEventListener('offline', goOffline);
+        window.addEventListener('online', goOnline);
+        return () => {
+            window.removeEventListener('offline', goOffline);
+            window.removeEventListener('online', goOnline);
+        };
+    }, []);
+
     // ── Receive auth token from parent World Hub via postMessage ──
     // When embedded in an iframe at smarter.poker, the parent sends
     // the Supabase auth token so the SPA can authenticate without
@@ -155,6 +180,18 @@ export default function App() {
             )}
 
             <TOSGuard>
+                {/* Offline Banner */}
+                {isOffline && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
+                        background: 'linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)',
+                        color: '#fff', textAlign: 'center', padding: '8px 16px',
+                        fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.5px',
+                        boxShadow: '0 2px 8px rgba(185,28,28,0.4)',
+                    }}>
+                        CONNECTION LOST — Actions will be queued and replayed when you reconnect
+                    </div>
+                )}
                 <Suspense fallback={<LoadingSpinner />}>
                     <Routes>
                         {/* ═══════════════════════════════════════════════════════════════

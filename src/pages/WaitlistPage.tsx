@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { waitlistService, type WaitlistEntry as ServiceEntry } from '../services/WaitlistService';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
+import { useToast } from '../components/common/Toast';
 import './WaitlistPage.css';
 
 interface WaitlistEntry {
@@ -23,6 +24,7 @@ interface WaitlistEntry {
 export default function WaitlistPage() {
     const navigate = useNavigate();
     const { user } = useUserStore();
+    const toast = useToast();
 
     const [entries, setEntries] = useState<WaitlistEntry[]>([]);
     const [loading, setLoading] = useState(true);
@@ -50,8 +52,38 @@ export default function WaitlistPage() {
                 )
                 .subscribe();
 
+            // Auto-seat: watch for table_seats vacancies
+            const seatChannel = supabase
+                .channel('waitlist-auto-seat')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'DELETE',
+                        schema: 'public',
+                        table: 'table_seats',
+                    },
+                    (payload) => {
+                        // A seat was vacated — check if we're waiting for that table
+                        const vacatedTableId = (payload.old as any)?.table_id;
+                        if (!vacatedTableId) return;
+
+                        setEntries(prev => {
+                            const match = prev.find(e => e.table_id === vacatedTableId && e.position === 1);
+                            if (match) {
+                                toast.success(`Seat available at ${match.table_name}! Joining in 3s...`);
+                                setTimeout(() => {
+                                    navigate(`/table/${vacatedTableId}`);
+                                }, 3000);
+                            }
+                            return prev;
+                        });
+                    }
+                )
+                .subscribe();
+
             return () => {
                 supabase.removeChannel(channel);
+                supabase.removeChannel(seatChannel);
             };
         }
     }, [user?.id]);

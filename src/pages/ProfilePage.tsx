@@ -7,7 +7,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
@@ -18,6 +18,7 @@ import { VIPStatusCard } from '../components/vip/VIPStatusCard';
 import { VIPProgressRing } from '../components/vip/VIPProgressRing';
 import { profileService } from '../services/ProfileService';
 import { bonusService } from '../services/BonusService';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import styles from './ProfilePage.module.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -162,6 +163,7 @@ export default function ProfilePage() {
     const [achievements, setAchievements] = useState<Achievement[]>([]);
     const [diamonds, setDiamonds] = useState(0);
     const [isVIP, setIsVIP] = useState(false);
+    const [transactions, setTransactions] = useState<any[]>([]);
 
     // Load profile data from Supabase
     useEffect(() => {
@@ -230,6 +232,20 @@ export default function ProfilePage() {
                 } catch {
                     // Achievements table may not exist yet
                     setAchievements([]);
+                }
+
+                // Load transaction history for profit graph
+                try {
+                    const { data: txns } = await supabase
+                        .from('wallet_transactions')
+                        .select('id, type, amount, created_at, description')
+                        .eq('user_id', authUser.id)
+                        .order('created_at', { ascending: true })
+                        .limit(200);
+
+                    if (txns) setTransactions(txns);
+                } catch {
+                    setTransactions([]);
                 }
             } catch (err) {
                 console.error('[PROFILE] Load failed:', err);
@@ -551,11 +567,75 @@ export default function ProfilePage() {
 
                 {activeTab === 'history' && (
                     <div className={styles.historyContainer}>
-                        <div className={styles.emptyHistory}>
-                            <span className={styles.emptyIcon}></span>
-                            <p>No recent hands to display.</p>
-                            <button className={styles.playButton} onClick={() => navigate('/lobby')}>Start Playing</button>
-                        </div>
+                        {transactions.length > 0 ? (
+                            <>
+                                {/* Profit Graph */}
+                                <div style={{ width: '100%', height: 200, marginBottom: 16 }}>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={(() => {
+                                            let cumulative = 0;
+                                            const grouped: Record<string, number> = {};
+                                            transactions.forEach(tx => {
+                                                const day = new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                                const amt = tx.type === 'credit' ? (tx.amount || 0) : -(tx.amount || 0);
+                                                grouped[day] = (grouped[day] || 0) + amt;
+                                            });
+                                            return Object.entries(grouped).map(([day, net]) => {
+                                                cumulative += net;
+                                                return { day, profit: Math.round(cumulative) };
+                                            });
+                                        })()}>
+                                            <defs>
+                                                <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#00d4ff" stopOpacity={0.3} />
+                                                    <stop offset="95%" stopColor="#00d4ff" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <XAxis dataKey="day" tick={{ fill: '#6a7a8a', fontSize: 10 }} axisLine={false} tickLine={false} />
+                                            <YAxis tick={{ fill: '#6a7a8a', fontSize: 10 }} axisLine={false} tickLine={false} width={50} />
+                                            <Tooltip
+                                                contentStyle={{ background: '#1a2332', border: '1px solid #2a3a4a', borderRadius: 8, color: '#fff', fontSize: 12 }}
+                                                formatter={(value: any) => [Number(value).toLocaleString(), 'Cumulative P/L']}
+                                            />
+                                            <Area type="monotone" dataKey="profit" stroke="#00d4ff" fill="url(#profitGrad)" strokeWidth={2} />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                </div>
+
+                                {/* Transaction List */}
+                                <h3 style={{ color: '#8a9aaa', fontSize: '0.8rem', marginBottom: 8 }}>Recent Transactions</h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 300, overflowY: 'auto' }}>
+                                    {[...transactions].reverse().slice(0, 50).map(tx => (
+                                        <div key={tx.id} style={{
+                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                            padding: '8px 12px', background: 'rgba(255,255,255,0.03)',
+                                            borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)',
+                                        }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                <span style={{ color: '#ccc', fontSize: '0.8rem', fontWeight: 600 }}>
+                                                    {tx.description || tx.type}
+                                                </span>
+                                                <span style={{ color: '#4a5a6a', fontSize: '0.7rem' }}>
+                                                    {new Date(tx.created_at).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                            <span style={{
+                                                color: tx.type === 'credit' ? '#22c55e' : '#ef4444',
+                                                fontWeight: 700, fontSize: '0.85rem',
+                                            }}>
+                                                {tx.type === 'credit' ? '+' : '-'}{(tx.amount || 0).toLocaleString()}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        ) : (
+                            <div className={styles.emptyHistory}>
+                                <span className={styles.emptyIcon}></span>
+                                <p>No recent transactions to display.</p>
+                                <button className={styles.playButton} onClick={() => navigate('/lobby')}>Start Playing</button>
+                            </div>
+                        )}
                     </div>
                 )}
 

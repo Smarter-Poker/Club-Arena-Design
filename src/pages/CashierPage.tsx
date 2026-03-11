@@ -18,7 +18,7 @@
  *  Every single chip transaction is recorded with full audit trail.
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { useWalletStore } from '../stores/useWalletStore';
 import { useUserStore } from '../stores/useUserStore';
@@ -78,7 +78,25 @@ export default function CashierPage() {
     const [action, setAction] = useState<CashierAction>('send');
     const [amount, setAmount] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
+    const [cooldown, setCooldown] = useState(0);
+    const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+
+    // Rate limiting: 3s cooldown after each action
+    const startCooldown = useCallback(() => {
+        setCooldown(3);
+        if (cooldownRef.current) clearInterval(cooldownRef.current);
+        cooldownRef.current = setInterval(() => {
+            setCooldown(prev => {
+                if (prev <= 1) {
+                    clearInterval(cooldownRef.current!);
+                    cooldownRef.current = null;
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    }, []);
 
     // Role state
     const [userRole, setUserRole] = useState<string>('member');
@@ -451,6 +469,7 @@ export default function CashierPage() {
             setMessage({ type: 'error', text: error.message || 'Transaction failed. Please try again.' });
         }
         setIsProcessing(false);
+        startCooldown(); // Rate limit
     };
 
     const DIAMOND_RATE = 38 / 100;
@@ -607,7 +626,7 @@ export default function CashierPage() {
                                 variant="primary"
                                 fullWidth
                                 onClick={handleAction}
-                                disabled={isProcessing || !amount || !selectedRecipient}
+                                disabled={isProcessing || cooldown > 0 || !amount || !selectedRecipient}
                                 loading={isProcessing}
                             >
                                 CONFIRM SEND
@@ -659,7 +678,7 @@ export default function CashierPage() {
                                 variant="primary"
                                 fullWidth
                                 onClick={handleAction}
-                                disabled={isProcessing || !amount}
+                                disabled={isProcessing || cooldown > 0 || !amount}
                                 loading={isProcessing}
                             >
                                 {action === 'buyin' ? 'CONFIRM BUY-IN' :
