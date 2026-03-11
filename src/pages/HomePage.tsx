@@ -849,24 +849,30 @@ function HomePageInner() {
         };
     }, []);
 
-    // Enhancement #6: Real-time stats refresh for ALL club cards
+    // Enhancement #6: Real-time stats refresh for ALL club cards (debounced)
     useEffect(() => {
         const allClubsKey = 'clubs-all-live-stats';
         const allClubsChannel = masterBus.getOrCreateChannel(allClubsKey);
+        let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+        const debouncedFetch = () => {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => { fetchUserData(true); }, 500);
+        };
         allClubsChannel
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'club_members' },
-                () => { fetchUserData(true); }
+                debouncedFetch
             )
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'table_seats' },
-                () => { fetchUserData(true); }
+                debouncedFetch
             )
             .subscribe();
 
         return () => {
+            if (debounceTimer) clearTimeout(debounceTimer);
             masterBus.removeRegisteredChannel(allClubsKey);
         };
     }, [fetchUserData]);
