@@ -99,6 +99,18 @@ export default function SuperAgentDashboard() {
         }
     }, [clubId, user?.id]);
 
+    // Bus event listeners for cross-component sync
+    useEffect(() => {
+        if (!clubId || !user?.id) return;
+        const unsubWallet = masterBus.subscribe('WALLET_REFRESHED', () => {
+            loadDashboardData();
+        });
+        const unsubBalance = masterBus.subscribe('BALANCE_UPDATED', () => {
+            loadDashboardData();
+        });
+        return () => { unsubWallet(); unsubBalance(); };
+    }, [clubId, user?.id]);
+
     const loadDashboardData = async () => {
         setLoading(true);
         try {

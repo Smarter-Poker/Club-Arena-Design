@@ -67,7 +67,7 @@ class BonusServiceClass {
             .from('user_bonuses')
             .select('*')
             .eq('user_id', userId)
-            .single();
+            .maybeSingle();
 
         const today = new Date().toISOString().split('T')[0];
         const lastClaim = bonusData?.last_daily_claim?.split('T')[0];
@@ -161,7 +161,7 @@ class BonusServiceClass {
             .select('*')
             .eq('id', bonusId)
             .eq('user_id', userId)
-            .single();
+            .maybeSingle();
 
         if (!bonus) {
             throw new Error('Bonus not found');

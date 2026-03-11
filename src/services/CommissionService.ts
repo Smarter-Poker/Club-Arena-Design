@@ -118,7 +118,7 @@ export const CommissionService = {
                 created_by: setBy,
             }, { onConflict: 'club_id,agent_id,target_role' })
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) throw error;
         return {

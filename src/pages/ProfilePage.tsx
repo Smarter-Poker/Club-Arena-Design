@@ -202,7 +202,7 @@ export default function ProfilePage() {
                     .from('profiles')
                     .select('*')
                     .eq('id', authUser.id)
-                    .single();
+                    .maybeSingle();
 
                 if (profile) {
                     setUser({
@@ -290,6 +290,58 @@ export default function ProfilePage() {
         loadProfile();
     }, []);
 
+    // ── Bus Listeners: cross-page profile reactivity ──
+    useEffect(() => {
+        const unsubProfile = masterBus.subscribe('PROFILE_UPDATED', () => {
+            // Re-load profile when updated from settings or other pages
+            supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+                if (authUser) {
+                    supabase.from('profiles').select('*').eq('id', authUser.id).maybeSingle().then(({ data: profile }) => {
+                        if (profile) {
+                            setUser({
+                                id: profile.id,
+                                username: profile.username || 'Player',
+                                displayName: profile.display_name || profile.username || 'Player',
+                                playerNumber: profile.player_number || 0,
+                                avatarUrl: profile.avatar_url || '',
+                                vipLevel: profile.vip_level || 'bronze',
+                                memberSince: profile.created_at,
+                            });
+                            setDiamonds(profile.diamonds || 0);
+                            setIsVIP(profile.is_vip || false);
+                        }
+                    });
+                }
+            });
+        });
+        const unsubHand = masterBus.subscribe('HAND_COMPLETED', () => {
+            // Refresh stats after a hand is completed
+            supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+                if (authUser) {
+                    supabase.from('profiles').select('stats').eq('id', authUser.id).maybeSingle().then(({ data: profile }) => {
+                        if (profile?.stats) {
+                            setStats({
+                                totalHands: profile.stats.total_hands || 0,
+                                vpip: profile.stats.vpip || 0,
+                                pfr: profile.stats.pfr || 0,
+                                threeBet: profile.stats.three_bet || 0,
+                                aggression: profile.stats.aggression_factor || 0,
+                                bbPer100: profile.stats.bb_per_100 || 0,
+                                biggestPot: profile.stats.biggest_pot || 0,
+                                totalProfit: profile.stats.total_profit || 0,
+                                winRate: profile.stats.win_rate || 0,
+                                tournamentsPlayed: profile.stats.tournaments_played || 0,
+                                tournamentsWon: profile.stats.tournaments_won || 0,
+                                bountyKOs: profile.stats.bounty_kos || 0,
+                            });
+                        }
+                    });
+                }
+            });
+        });
+        return () => { unsubProfile(); unsubHand(); };
+    }, []);
+
     // #1+#2: Setup Supabase Realtime via Channel Registry (fixed cleanup leak)
     useEffect(() => {
         let channelKey = '';
@@ -320,7 +372,7 @@ export default function ProfilePage() {
                                 .from('profiles')
                                 .select('*')
                                 .eq('id', authUser.id)
-                                .single();
+                                .maybeSingle();
 
                             if (updatedProfile) {
                                 setUser({
@@ -370,7 +422,7 @@ export default function ProfilePage() {
                                 .from('profiles')
                                 .select('diamonds, is_vip')
                                 .eq('id', authUser.id)
-                                .single();
+                                .maybeSingle();
 
                             if (updatedProfile) {
                                 setDiamonds(updatedProfile.diamonds || 0);

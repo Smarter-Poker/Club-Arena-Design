@@ -171,7 +171,7 @@ class AgentServiceClass {
                 )
             `)
             .eq('id', agentId)
-            .single();
+            .maybeSingle();
 
         if (error || !data) return null;
 
@@ -224,7 +224,7 @@ class AgentServiceClass {
             .select('id')
             .eq('club_id', input.clubId)
             .eq('user_id', input.userId)
-            .single();
+            .maybeSingle();
 
         // If sub-agent, verify parent exists and has capacity + rate limits
         if (input.parentAgentId) {
@@ -253,7 +253,7 @@ class AgentServiceClass {
                 is_prepaid: input.isPrepaid || false,
             })
             .select()
-            .single();
+            .maybeSingle();
 
         if (error) throw error;
 
@@ -289,7 +289,7 @@ class AgentServiceClass {
             .from('agents')
             .select('role, membership_id')
             .eq('id', agentId)
-            .single();
+            .maybeSingle();
 
         if (!agent) return false;
 
@@ -372,7 +372,7 @@ class AgentServiceClass {
             .from('profiles')
             .select('id, username, player_number')
             .eq('id', userId)
-            .single();
+            .maybeSingle();
 
         if (!profile) throw new Error(`User ${userId} not found`);
 
@@ -387,7 +387,7 @@ class AgentServiceClass {
                     .from('profiles')
                     .select('id')
                     .eq('player_number', playerNumber)
-                    .single();
+                    .maybeSingle();
                 if (!existing) break;
                 attempts++;
             } while (attempts < 50);
@@ -407,7 +407,7 @@ class AgentServiceClass {
                 .select('user_id')
                 .eq('user_id', userId)
                 .eq('wallet_type', walletType)
-                .single();
+                .maybeSingle();
 
             if (!existing) {
                 await supabase.from('wallets').insert({
@@ -426,7 +426,7 @@ class AgentServiceClass {
             .select('id')
             .eq('user_id', userId)
             .eq('club_id', clubId)
-            .single();
+            .maybeSingle();
 
         if (existingAgent) {
             console.log(`[AgentService] ${profile.username} is already an agent in club ${clubId}`);
@@ -474,7 +474,7 @@ class AgentServiceClass {
             .from('profiles')
             .select('id, username')
             .eq('player_number', referralCode)
-            .single();
+            .maybeSingle();
 
         if (!agentProfile) {
             return { success: false };
@@ -486,7 +486,7 @@ class AgentServiceClass {
             .select('id, user_id')
             .eq('user_id', agentProfile.id)
             .eq('club_id', clubId)
-            .single();
+            .maybeSingle();
 
         if (!agentRecord) {
             return { success: false };
@@ -532,7 +532,7 @@ class AgentServiceClass {
             .select('id, total_players, active_player_count')
             .eq('user_id', agentUserId)
             .eq('club_id', clubId)
-            .single();
+            .maybeSingle();
 
         if (!agentRecord) {
             console.error(`[AgentService] Agent ${agentUserId} not found in club ${clubId}`);
@@ -578,7 +578,7 @@ class AgentServiceClass {
             .from('agents')
             .select('credit_limit, parent_agent_id')
             .eq('id', agentId)
-            .single();
+            .maybeSingle();
 
         if (!agent) throw new Error('Agent not found');
 
@@ -588,7 +588,7 @@ class AgentServiceClass {
                 .from('agents')
                 .select('credit_limit')
                 .eq('id', agent.parent_agent_id)
-                .single();
+                .maybeSingle();
             if (parent && newLimit > Number(parent.credit_limit)) {
                 throw new Error('Credit limit cannot exceed parent agent limit');
             }
@@ -658,7 +658,7 @@ class AgentServiceClass {
             .from('agents')
             .select('membership_id')
             .eq('id', agentId)
-            .single();
+            .maybeSingle();
 
         if (!agent) return [];
 

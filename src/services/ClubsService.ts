@@ -74,7 +74,7 @@ export async function getClub(identifier: string): Promise<Club | null> {
         .from('clubs')
         .select('*')
         .eq(isUUID ? 'id' : 'slug', identifier)
-        .single();
+        .maybeSingle();
 
     if (error) {
         if (error.code === 'PGRST116') return null; // Not found
@@ -138,7 +138,7 @@ export async function createClub(clubData: {
             country: clubData.country,
         })
         .select()
-        .single();
+        .maybeSingle();
 
     if (error) {
         console.error('[ClubsService] Club creation failed:', error);
@@ -197,7 +197,7 @@ export async function joinClub(
             orange_ball_status: 'cold',
         })
         .select()
-        .single();
+        .maybeSingle();
 
     if (error) {
         console.error('[ClubsService] Join club failed:', error);
@@ -339,7 +339,7 @@ export async function deleteClub(clubId: string): Promise<void> {
         .from('clubs')
         .select('owner_id')
         .eq('id', clubId)
-        .single();
+        .maybeSingle();
 
     if (clubError || !club) {
         throw new Error('Club not found');
@@ -384,7 +384,7 @@ export async function updateClub(clubId: string, updates: Record<string, any>): 
         .update(updates)
         .eq('id', clubId)
         .select()
-        .single();
+        .maybeSingle();
 
     if (error) {
         console.error('[ClubsService] Update club failed:', error);

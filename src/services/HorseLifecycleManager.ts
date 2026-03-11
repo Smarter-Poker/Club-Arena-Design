@@ -509,7 +509,7 @@ class HorseLifecycleManagerCore {
             .from('tournaments')
             .select('buy_in_amount')
             .eq('id', sng.id)
-            .single();
+            .maybeSingle();
 
           // Get all registered players
           const { data: players } = await supabase
@@ -621,7 +621,7 @@ class HorseLifecycleManagerCore {
             .from('profiles')
             .select('is_horse')
             .eq('id', seat.user_id)
-            .single();
+            .maybeSingle();
           if (profile?.is_horse) {
             await this.resetHorse(seat.user_id);
           }

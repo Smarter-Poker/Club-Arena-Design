@@ -1403,7 +1403,7 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                 case 'PLAYER_LEFT':
                     // Handle player leaving
                     break;
-                case 'PLAYER_ACTION':
+                case 'PLAYER_ACTION': {
                     // Handle player action broadcast with sound effects
                     const action = (msg.payload as any)?.action?.toLowerCase() || '';
                     if (action === 'bet' || action === 'raise' || action === 'call' || action === 'allin') {
@@ -1414,6 +1414,7 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                         soundService.playFold();
                     }
                     break;
+                }
                 case 'CHAT':
                     // Handle chat message
                     break;
@@ -1678,6 +1679,7 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                     // Play card deal sound
                     if (isSoundEnabled) soundService.playDeal();
 
+                    {
                     // Convert HandController Card format to UI format
                     const suitMapDeal: Record<string, 'h' | 'd' | 'c' | 's'> = {
                         'hearts': 'h', 'diamonds': 'd', 'clubs': 'c', 'spades': 's'
@@ -1699,9 +1701,10 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                         }
                         return { ...prev, players: updatedPlayers };
                     });
+                    }
                     break;
 
-                case 'COMMUNITY_CARDS':
+                case 'COMMUNITY_CARDS': {
                     // Play community card reveal sound (stagger for each card)
                     if (isSoundEnabled) {
                         event.cards.forEach((_: any, i: number) => {
@@ -1723,6 +1726,7 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
                         lastActions: Array(prev.maxPlayers).fill(null), // Clear for new betting round
                     }));
                     break;
+                }
 
                 case 'POT_UPDATE':
                     setTableState(prev => ({ ...prev, pot: event.pot }));

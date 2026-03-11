@@ -63,7 +63,7 @@ class GTOQueryServiceClass {
             .from('gto_solutions')
             .select('gto_action, gto_frequencies, ev, ev_by_action, raise_sizes')
             .eq('scenario_hash', scenarioHash)
-            .single();
+            .maybeSingle();
 
         if (error || !data) {
             return null;
@@ -94,7 +94,7 @@ class GTOQueryServiceClass {
             query = query.eq('facing_position', facingPosition);
         }
 
-        const { data, error } = await query.single();
+        const { data, error } = await query.maybeSingle();
         return error ? null : data as PreflopRange;
     }
 

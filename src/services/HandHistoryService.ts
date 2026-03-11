@@ -86,7 +86,7 @@ class HandHistoryServiceClass {
                 )
             `)
             .eq('id', handId)
-            .single();
+            .maybeSingle();
 
         if (error || !data) return null;
 

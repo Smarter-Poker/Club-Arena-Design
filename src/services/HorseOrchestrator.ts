@@ -594,7 +594,7 @@ class HorseOrchestrator {
                         },
                     })
                     .select()
-                    .single();
+                    .maybeSingle();
 
                 if (error) {
                     this.logError(`Failed to create table "${config.name}": ${error.message}`);
@@ -656,7 +656,7 @@ class HorseOrchestrator {
         const horses = await HydraService.getAvailableHorses(config.horsesPerTable);
 
         // Determine table type for multi-table enforcement
-        const { data: tableData } = await supabase.from('tables').select('type').eq('id', tableId).single();
+        const { data: tableData } = await supabase.from('tables').select('type').eq('id', tableId).maybeSingle();
         const tableType = (tableData?.type === 'tournament' ? 'tournament' : 'cash') as 'cash' | 'tournament';
 
         for (const horse of horses) {
@@ -766,7 +766,7 @@ class HorseOrchestrator {
                     late_reg_mins: 8,
                 })
                 .select()
-                .single();
+                .maybeSingle();
 
             if (error) {
                 this.logError(`Tournament creation failed: ${error.message}`);
@@ -867,7 +867,7 @@ class HorseOrchestrator {
                     start_time: new Date(Date.now() + 10_000).toISOString(), // Start 10s from now
                 })
                 .select()
-                .single();
+                .maybeSingle();
 
             if (error) {
                 this.logError(`SNG creation failed: ${error.message}`);
@@ -962,7 +962,7 @@ class HorseOrchestrator {
                     start_time: new Date(Date.now() + 10_000).toISOString(),
                 })
                 .select()
-                .single();
+                .maybeSingle();
 
             if (error) {
                 this.logError(`Spin creation failed: ${error.message}`);

@@ -67,7 +67,9 @@ export type BusEventType =
     | 'NOTIFICATION_COUNT_CHANGED'
     // Friend events
     | 'FRIEND_REQUEST_SENT'
-    | 'FRIEND_REQUEST_ACCEPTED';
+    | 'FRIEND_REQUEST_ACCEPTED'
+    // Settings sync
+    | 'SETTINGS_UPDATED';
 
 // #13: Type-safe payload map — compile-time enforcement of correct payloads
 export interface BusPayloadMap {
@@ -107,6 +109,8 @@ export interface BusPayloadMap {
     NOTIFICATION_COUNT_CHANGED: Record<string, unknown>;
     FRIEND_REQUEST_SENT: { toUserId: string };
     FRIEND_REQUEST_ACCEPTED: { friendshipId: string };
+    // Settings sync
+    SETTINGS_UPDATED: { settings: Record<string, unknown> };
 }
 
 export interface BusEvent<T = unknown> {

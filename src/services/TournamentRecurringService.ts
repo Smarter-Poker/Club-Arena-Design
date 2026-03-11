@@ -743,7 +743,7 @@ class TournamentRecurringService {
                     late_reg_mins: 8,
                 })
                 .select()
-                .single();
+                .maybeSingle();
 
             if (error) {
                 console.error(`[TournamentRecurring] Tournament creation failed: ${error.message}`);
@@ -807,7 +807,7 @@ class TournamentRecurringService {
                     late_reg_mins: 8,
                 })
                 .select()
-                .single();
+                .maybeSingle();
 
             if (error) {
                 console.error(`[TournamentRecurring] SNG creation failed: ${error.message}`);
@@ -873,7 +873,7 @@ class TournamentRecurringService {
                     late_reg_mins: 0,
                 })
                 .select()
-                .single();
+                .maybeSingle();
 
             if (error) {
                 console.error(`[TournamentRecurring] Spin creation failed: ${error.message}`);

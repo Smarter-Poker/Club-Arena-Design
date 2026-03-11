@@ -213,7 +213,7 @@ class AutoRebuyServiceCore {
         .eq('table_id', tableId)
         .eq('user_id', horseId)
         .is('left_at', null)
-        .single();
+        .maybeSingle();
 
       if (seatData) {
         const newStack = (seatData.stack || 0) + amount;
@@ -275,7 +275,7 @@ class AutoRebuyServiceCore {
     this.rebuyInProgress.add(reseatKey);
     try {
       // Get table info for BB
-      const { data: tableData } = await supabase.from('tables').select('big_blind').eq('id', tableId).single();
+      const { data: tableData } = await supabase.from('tables').select('big_blind').eq('id', tableId).maybeSingle();
 
       if (!tableData) {
         console.error('[AutoRebuy] Table not found:', tableId);
@@ -345,7 +345,7 @@ class AutoRebuyServiceCore {
         const needToAdd = minCount - currentHorseCount;
 
         // Get table info
-        const { data: tableData } = await supabase.from('tables').select('big_blind').eq('id', tableId).single();
+        const { data: tableData } = await supabase.from('tables').select('big_blind').eq('id', tableId).maybeSingle();
 
         if (!tableData) {
           console.error('[AutoRebuy] Table not found:', tableId);
@@ -375,7 +375,7 @@ class AutoRebuyServiceCore {
         .from('player_wallets')
         .select('available_balance')
         .eq('user_id', horseId)
-        .single();
+        .maybeSingle();
 
       if (walletError) {
         console.warn('[AutoRebuy] Could not fetch wallet for horse ' + horseId + ':', walletError);

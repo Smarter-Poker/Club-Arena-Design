@@ -286,7 +286,7 @@ function PlayerActionModal({
         {/* Stats */}
         <div className="player-modal__stats">
           <div className="player-modal__stat">
-            <span className="stat-value">{member.chip_balance.toLocaleString()}</span>
+            <span className="stat-value">{(member.chip_balance ?? 0).toLocaleString()}</span>
             <span className="stat-label">Chips</span>
           </div>
           <div className="player-modal__stat">

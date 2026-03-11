@@ -160,7 +160,7 @@ export const PermissionService = {
             .from('profiles')
             .select('role')
             .eq('id', userId)
-            .single();
+            .maybeSingle();
 
         if (profile?.role === 'super_admin' || profile?.role === 'admin') {
             return {

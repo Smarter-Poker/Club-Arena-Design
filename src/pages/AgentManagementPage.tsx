@@ -179,6 +179,19 @@ export default function AgentManagementPage() {
         };
     }, [clubId]);
 
+    // Bus event listeners for cross-component sync
+    useEffect(() => {
+        if (!clubId) return;
+        const unsubWallet = masterBus.subscribe('WALLET_REFRESHED', () => {
+            // Reload agents when wallet balances change (chip transfers)
+            loadAgentsData();
+        });
+        const unsubBalance = masterBus.subscribe('BALANCE_UPDATED', () => {
+            loadAgentsData();
+        });
+        return () => { unsubWallet(); unsubBalance(); };
+    }, [clubId]);
+
     // Stats summary
     const totalAgents = agents.length;
     const activeAgents = agents.filter(a => a.status === 'active').length;

@@ -8,6 +8,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { masterBus } from '../core/MasterBus';
 import { notificationService } from '../services/NotificationService';
 import UserProfileEdit from '../components/social/UserProfileEdit';
 import { useSettingsStore } from '../stores/useSettingsStore';
@@ -532,6 +533,9 @@ export default function SettingsPage() {
             }
 
             setHasChanges(false);
+
+            // Notify other components that settings changed
+            masterBus.emit('SETTINGS_UPDATED', { settings: settings as unknown as Record<string, unknown> });
         } catch (error) {
             console.error('Failed to sync settings:', error);
         } finally {

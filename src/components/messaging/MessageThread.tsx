@@ -168,7 +168,7 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
                     image_url: imageUrl || null
                 })
                 .select()
-                .single();
+                .maybeSingle();
 
             if (!error && data) {
                 // Add to local state immediately
@@ -312,6 +312,12 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
             masterBus.removeRegisteredChannel(channelKey);
         };
     }, [conversationId, loadConversation, loadMessages, user?.id]);
+
+    // ── Bus Listener: cross-tab message sync ──
+    useEffect(() => {
+        const unsub = masterBus.subscribe('MESSAGE_RECEIVED', () => { loadMessages(true); });
+        return () => unsub();
+    }, [loadMessages]);
 
     // Auto-scroll on new messages
     useEffect(() => {

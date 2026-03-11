@@ -4,8 +4,9 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
+import { masterBus } from '../../core/MasterBus';
 import { useUserStore } from '../../stores/useUserStore';
 import { useToast } from '../common/Toast';
 import './AgentCommissionDashboard.css';
@@ -56,6 +57,50 @@ export function AgentCommissionDashboard() {
         if (user?.id) {
             loadData();
         }
+    }, [user?.id]);
+
+    // ── Real-time bus listeners for commission updates ──
+    const loadDataRef = useRef<() => void>(() => {});
+    useEffect(() => { loadDataRef.current = loadData; }, [user?.id]);
+
+    useEffect(() => {
+        if (!user?.id) return;
+
+        // Postgres Changes: live commission_records updates
+        const channelKey = `agent-commission-live-${user.id}`;
+        const channel = masterBus.getOrCreateChannel(channelKey);
+        channel
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'commission_records',
+                    filter: `agent_id=eq.${user.id}`,
+                },
+                () => loadDataRef.current()
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'wallets',
+                    filter: `user_id=eq.${user.id}`,
+                },
+                () => loadDataRef.current()
+            )
+            .subscribe();
+
+        // Bus event: BALANCE_UPDATED from engine
+        const unsubBalance = masterBus.subscribeDebounced('BALANCE_UPDATED', () => {
+            loadDataRef.current();
+        }, 500);
+
+        return () => {
+            masterBus.removeRegisteredChannel(channelKey);
+            unsubBalance();
+        };
     }, [user?.id]);
 
     useEffect(() => {

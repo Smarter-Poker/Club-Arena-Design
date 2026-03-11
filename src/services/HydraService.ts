@@ -396,7 +396,7 @@ export const HydraService = {
       .select('id, display_name, player_number, avatar_url, horse_profile')
       .eq('id', horseId)
       .eq('is_horse', true)
-      .single();
+      .maybeSingle();
 
     if (!horseData) return null;
 
@@ -416,7 +416,7 @@ export const HydraService = {
       .from('tables')
       .select('max_players')
       .eq('id', tableId)
-      .single();
+      .maybeSingle();
 
     const maxSeats = tableData?.max_players || 9;
     let availableSeat = 0;
@@ -437,7 +437,7 @@ export const HydraService = {
       .from('tables')
       .select('club_id')
       .eq('id', tableId)
-      .single();
+      .maybeSingle();
 
     const clubId = tableClubData?.club_id;
     if (clubId) {
@@ -572,7 +572,7 @@ export const HydraService = {
       .eq('table_id', tableId)
       .eq('user_id', horseId)
       .is('left_at', null)
-      .single();
+      .maybeSingle();
 
     if (seatFetchErr || !seatData) {
       console.warn(
@@ -602,7 +602,7 @@ export const HydraService = {
         .from('tables')
         .select('club_id')
         .eq('id', tableId)
-        .single();
+        .maybeSingle();
 
       const clubId = tableClubData?.club_id;
       if (clubId) {

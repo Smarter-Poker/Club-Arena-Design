@@ -245,7 +245,7 @@ export const LeaderboardService = {
             query = query.eq('club_id', clubId);
         }
 
-        const { data, error } = await query.single();
+        const { data, error } = await query.maybeSingle();
 
         if (error) {
             console.error('LeaderboardService.getPlayerStats error:', error);

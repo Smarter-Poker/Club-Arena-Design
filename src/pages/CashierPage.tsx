@@ -414,6 +414,19 @@ export default function CashierPage() {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'cashout_requests',
+          filter: `player_id=eq.${user.id}`,
+        },
+        (payload) => {
+          // Auto-refresh pending cashouts when status changes
+          loadPendingCashouts();
+        }
+      )
       .subscribe();
 
     // Cleanup: remove channel via registry on unmount
