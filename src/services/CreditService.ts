@@ -339,6 +339,7 @@ export const CreditService = {
       .maybeSingle();
 
     if (fetchError) throw fetchError;
+    if (!invoice) throw new Error(`Invoice not found: ${invoiceId}`);
 
     // STEP 1: If paying from wallet, deduct FIRST (before recording anything)
     if (method === 'wallet') {

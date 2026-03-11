@@ -700,6 +700,28 @@ export default function TablePage({
       await WalletService.lockForBuyIn(userId, tableId, amount);
       setAccountBalance((prev) => Math.max(0, prev - amount));
       totalBuyInRef.current += amount; // Track for session P/L
+      // Update hero's table stack in local state AND sync to DB
+      setTableState((prev) => {
+        const updatedPlayers = [...prev.players];
+        const heroIdx = prev.heroSeat - 1;
+        if (heroIdx >= 0 && updatedPlayers[heroIdx]) {
+          updatedPlayers[heroIdx] = {
+            ...updatedPlayers[heroIdx]!,
+            stack: updatedPlayers[heroIdx]!.stack + amount,
+          };
+        }
+        return { ...prev, players: updatedPlayers };
+      });
+      // Sync stack to Supabase table_seats (fire-and-forget)
+      supabase
+        .from('table_seats')
+        .update({ stack: (tableState.players[tableState.heroSeat - 1]?.stack || 0) + amount })
+        .eq('table_id', tableId)
+        .eq('seat_number', tableState.heroSeat)
+        .is('left_at', null)
+        .then(({ error: syncErr }) => {
+          if (syncErr) console.warn('[Cashier] Add chips stack sync failed:', syncErr.message);
+        });
     } catch (error) {
       console.error('Failed to add chips:', error);
       // Surface error to user — alert as fallback since toast not always available
@@ -717,6 +739,30 @@ export default function TablePage({
     try {
       await WalletService.unlockFromTable(userId, tableId, amount);
       setAccountBalance((prev) => prev + amount); // BUG-08 FIX: Withdrawing FROM table adds TO wallet
+      // Update hero's table stack in local state AND sync to DB
+      setTableState((prev) => {
+        const updatedPlayers = [...prev.players];
+        const heroIdx = prev.heroSeat - 1;
+        if (heroIdx >= 0 && updatedPlayers[heroIdx]) {
+          updatedPlayers[heroIdx] = {
+            ...updatedPlayers[heroIdx]!,
+            stack: Math.max(0, updatedPlayers[heroIdx]!.stack - amount),
+          };
+        }
+        return { ...prev, players: updatedPlayers };
+      });
+      // Sync stack to Supabase table_seats (fire-and-forget)
+      supabase
+        .from('table_seats')
+        .update({
+          stack: Math.max(0, (tableState.players[tableState.heroSeat - 1]?.stack || 0) - amount),
+        })
+        .eq('table_id', tableId)
+        .eq('seat_number', tableState.heroSeat)
+        .is('left_at', null)
+        .then(({ error: syncErr }) => {
+          if (syncErr) console.warn('[Cashier] Withdraw chips stack sync failed:', syncErr.message);
+        });
     } catch (error) {
       console.error('Failed to withdraw chips:', error);
     }
@@ -819,7 +865,8 @@ export default function TablePage({
 
   // Play turn alert when it's hero's turn
   const playTurnAlert = () => {
-    if (isSoundEnabled) {
+    // NEW-BUG-1 FIX: use dynamic isEnabled() not stale isSoundEnabled closure
+    if (soundService.isEnabled()) {
       soundService.playTurnAlert();
     }
   };
@@ -859,7 +906,8 @@ export default function TablePage({
 
   // Play win sound — escalates based on pot size
   const playWinSound = (potAmount?: number) => {
-    if (!isSoundEnabled) return;
+    // NEW-BUG-2 FIX: use dynamic isEnabled() not stale isSoundEnabled closure
+    if (!soundService.isEnabled()) return;
     const bb = parseFloat(tableState.blinds.split('/')[1]) || 2;
     const bbWon = (potAmount || tableState.pot) / bb;
 
