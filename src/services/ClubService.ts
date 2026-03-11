@@ -8,6 +8,7 @@
 
 import { supabase } from '../lib/supabase';
 import { WalletService } from './WalletService';
+import { BBJService } from './BBJService';
 import type { Club, ClubMember, ClubSettings, MemberRole } from '../types/database.types';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -128,6 +129,22 @@ class ClubServiceClass {
 
         // Auto-add owner as a member
         await this.addMember(data.id, ownerId, 'owner');
+
+        // Initialize BBJ pool for the new club
+        const { error: poolError } = await supabase.from('bbj_pools').insert({
+            club_id: data.id,
+            union_id: null,
+            main_balance: 0,
+            backup_balance: 0,
+            promo_balance: 0,
+            status: 'active',
+            created_at: new Date().toISOString(),
+        });
+
+        if (poolError) {
+            console.error('Failed to initialize BBJ pool for club:', poolError);
+            // Log but don't fail the club creation — pool can be created later
+        }
 
         return data;
     }

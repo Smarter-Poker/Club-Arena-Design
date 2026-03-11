@@ -70,6 +70,26 @@ export interface BBJTriggerResult {
     reason?: string;
 }
 
+export interface BBJPayoutParams {
+    poolId: string;
+    handId: string;
+    clubId: string;
+    tableId: string;
+    handNumber: number;
+    bigBlind: number;
+    stakesTier: string;
+    gameVariant: string;
+    winnerUserId: string;
+    winnerHand: string;
+    winnerCards: string;
+    winnerDisplayName: string;
+    loserUserId: string;
+    loserHand: string;
+    loserCards: string;
+    loserDisplayName: string;
+    dealtInPlayerIds: string[];
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -97,8 +117,8 @@ const ALLOCATION = {
  * BBJ Payout Distribution
  */
 const PAYOUT_SHARES = {
-    WINNER: 0.50,      // 50% to the player with the better hand (who beat the qualifier)
-    LOSER: 0.25,       // 25% to the player with the qualifying losing hand
+    LOSER: 0.50,       // 50% to the player whose qualifying hand was beaten (bad beat victim)
+    WINNER: 0.25,      // 25% to the player who beat the qualifying hand
     TABLE: 0.25,       // 25% split among all dealt-in players at the table
 };
 
@@ -118,6 +138,55 @@ const BBJ_EXCLUDED_VARIANTS: GameVariant[] = ['plo6', 'ofc'];
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const BBJService = {
+    /**
+     * Ensure a BBJ pool exists for a club, creating one if missing
+     * Used for backward compatibility with clubs created before pool initialization
+     */
+    async ensurePoolExists(clubId: string): Promise<BBJPool | null> {
+        // Try to get existing pool
+        let pool = await this.getPool({ clubId });
+        if (pool) {
+            return pool;
+        }
+
+        // Pool doesn't exist — create it
+        const { data: newPool, error } = await supabase
+            .from('bbj_pools')
+            .insert({
+                club_id: clubId,
+                union_id: null,
+                main_balance: 0,
+                backup_balance: 0,
+                promo_balance: 0,
+                status: 'active',
+                created_at: new Date().toISOString(),
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error('BBJService.ensurePoolExists: Failed to create pool:', error);
+            return null;
+        }
+
+        // Map and return the newly created pool
+        const mapped: BBJPool = {
+            id: newPool.id,
+            union_id: newPool.union_id,
+            club_id: newPool.club_id,
+            main_balance: newPool.main_balance || 0,
+            backup_balance: newPool.backup_balance || 0,
+            promo_balance: newPool.promo_balance || 0,
+            total_contributed: newPool.total_contributed || 0,
+            last_hit_at: newPool.last_hit_at,
+            last_hit_amount: newPool.last_hit_amount || 0,
+            created_at: newPool.created_at,
+            updated_at: newPool.updated_at,
+        };
+
+        return mapped;
+    },
+
     /**
      * Get BBJ pool balances for a union or independent club
      */
@@ -218,12 +287,21 @@ export const BBJService = {
             clubId = tableData?.club_id || '';
         }
 
+        // Apply allocation ratios based on current pool size
+        const ratios = this.getAllocationRatios(params.currentMainBalance);
+        const mainPortion = Math.trunc(contribution * ratios.MAIN * 100) / 100;
+        const backupPortion = Math.trunc(contribution * ratios.BACKUP * 100) / 100;
+        const promoPortion = contribution - mainPortion - backupPortion; // remainder to ensure precision
+
         // Call RPC to atomically update pool and record contribution
-        // Using the existing add_bbj_contribution function signature
+        // Using the existing add_bbj_contribution function signature with allocation portions
         const { data, error } = await supabase.rpc('add_bbj_contribution', {
             p_table_id: params.tableId,
             p_club_id: clubId,
             p_amount: contribution,
+            p_main_portion: mainPortion,
+            p_backup_portion: backupPortion,
+            p_promo_portion: promoPortion,
             p_big_blind: params.bigBlind,
             p_hand_number: params.handNumber || 0,
             p_stakes_tier: stakesTier,
@@ -310,19 +388,13 @@ export const BBJService = {
 
     /**
      * Execute BBJ payout
-     * 
+     *
      * DISTRIBUTION:
-     * - 50% to "loser" (holder of the beaten qualifying hand)
-     * - 25% to "winner" (holder of the hand that beat it)
+     * - 50% to "loser" (holder of the beaten qualifying hand — bad beat victim)
+     * - 25% to "winner" (holder of the hand that beat the qualifier)
      * - 25% split among all dealt-in players at the table
      */
-    async executePayout(params: {
-        poolId: string;
-        handId: string;
-        loserUserId: string;
-        winnerUserId: string;
-        dealtInPlayerIds: string[];
-    }): Promise<BBJPayout | null> {
+    async executePayout(params: BBJPayoutParams): Promise<BBJPayout | null> {
         // Get current pool by ID (NOT by clubId — params.poolId is the pool's primary key)
         const { data: pool, error: poolError } = await supabase
             .from('bbj_pools')
@@ -346,39 +418,23 @@ export const BBJService = {
         const tableShare = totalAmount * PAYOUT_SHARES.TABLE;
         const perPlayerShare = tableShare / params.dealtInPlayerIds.length;
 
-        // Get table/club context from pool
-        const { data: poolContext } = await supabase
-            .from('bbj_pools')
-            .select('club_id')
-            .eq('id', params.poolId)
-            .single();
-
-        // Get actual table_id from the hand record
-        const { data: handRecord } = await supabase
-            .from('hands')
-            .select('table_id')
-            .eq('id', params.handId)
-            .single();
-        const tableId = handRecord?.table_id || params.handId;
-        const clubId = poolContext?.club_id || '';
-
-        // Call RPC to atomically execute the BBJ payout
+        // Call RPC to atomically execute the BBJ payout with real parameters
         // Using the existing award_bbj function
         const { data, error } = await supabase.rpc('award_bbj', {
-            p_club_id: clubId,
-            p_table_id: tableId,
-            p_hand_number: 0,
-            p_big_blind: 0,
-            p_stakes_tier: 'mid',
-            p_game_variant: 'nlh',
+            p_club_id: params.clubId,
+            p_table_id: params.tableId,
+            p_hand_number: params.handNumber,
+            p_big_blind: params.bigBlind,
+            p_stakes_tier: params.stakesTier,
+            p_game_variant: params.gameVariant,
             p_winner_user_id: params.winnerUserId,
-            p_winner_hand: 'BBJ Winner',
-            p_winner_cards: '',
-            p_winner_display_name: '',
+            p_winner_hand: params.winnerHand,
+            p_winner_cards: params.winnerCards,
+            p_winner_display_name: params.winnerDisplayName,
             p_loser_user_id: params.loserUserId,
-            p_loser_hand: 'BBJ Qualifier',
-            p_loser_cards: '',
-            p_loser_display_name: '',
+            p_loser_hand: params.loserHand,
+            p_loser_cards: params.loserCards,
+            p_loser_display_name: params.loserDisplayName,
             p_payout_total_pct: 100,
             p_payout_winner_pct: PAYOUT_SHARES.WINNER * 100,
             p_payout_loser_pct: PAYOUT_SHARES.LOSER * 100,

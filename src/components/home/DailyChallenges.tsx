@@ -161,7 +161,7 @@ export default function DailyChallenges() {
     useEffect(() => {
         loadProgress();
 
-        // 🎮 Core game events
+        // Core game events
         const unsubHandCompleted = masterBus.subscribe('HAND_COMPLETED', () => {
             incrementByEvent('HAND_COMPLETED');
         });
@@ -190,7 +190,7 @@ export default function DailyChallenges() {
             incrementByEvent('FLUSH_WIN');
         });
 
-        // 🪑 Table session tracking
+        // Table session tracking
         const unsubSeated = masterBus.subscribe('TABLE_SEATED', () => {
             incrementByEvent('TABLE_SEATED');
             tableSessionStart.current = Date.now();
@@ -261,7 +261,7 @@ export default function DailyChallenges() {
                                     color: isComplete ? 'rgba(0, 255, 136, 0.95)' : 'rgba(224, 232, 240, 0.9)',
                                     letterSpacing: '0.02em',
                                 }}>
-                                    {isComplete ? '✓ ' : ''}{ch.title}
+                                    {isComplete ? '[DONE] ' : ''}{ch.title}
                                 </span>
                                 <span style={{
                                     fontSize: '0.8rem',

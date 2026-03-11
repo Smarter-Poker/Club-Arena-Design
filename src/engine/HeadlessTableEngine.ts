@@ -23,6 +23,7 @@ import { BotLogic, type HorseStyle, type BotDecision } from './BotLogic';
 import { HorseBrainAdapter } from './HorseBrainAdapter';
 import { GTOQueryService } from '../services/GTOQueryService';
 import { RakeService, type DealtInPlayer } from '../services/RakeService';
+import { BBJService, type GameVariant as BBJGameVariant } from '../services/BBJService';
 import { workerTimeout, cancelWorkerTimeout } from '../hooks/useTabKeepAlive';
 import type { SeatPlayer, GameVariant } from '../types/database.types';
 import { WalletService } from '../services/WalletService';
@@ -79,6 +80,8 @@ export class HeadlessTableEngine {
     private currentHandDealerSeat: number = 0;
     // Winner IDs captured from WINNERS event for Horse Brain processing
     private currentHandWinnerIds: string[] = [];
+    // Showdown results captured for BBJ trigger checking
+    private currentHandShowdownResults: any[] = [];
     // Stack sync promise — awaited before loading seats for next hand
     private stackSyncPromise: Promise<void> | null = null;
     // Callback fired after each hand completes — used by TournamentEngine for real-time chip sync
@@ -592,6 +595,13 @@ export class HeadlessTableEngine {
                     this.currentHandWentToFlop = true;
                 }
                 // Broadcast new community cards
+                this.broadcastCurrentState();
+                break;
+
+            case 'SHOWDOWN':
+                // Capture showdown results for BBJ trigger checking
+                this.currentHandShowdownResults = event.results || [];
+                // Broadcast showdown
                 this.broadcastCurrentState();
                 break;
 
@@ -1190,39 +1200,9 @@ export class HeadlessTableEngine {
     // ═════════════════════════════════════════════════════════════════════════════
 
     private getRakeConfig(sb: number, bb: number): any {
-        // Official rake chart: 10% rake with tier-based caps, no flop no drop
-        const CAPS: [number, number, number][] = [
-            [0.10, 0.20, 3],
-            [0.20, 0.40, 3],
-            [0.25, 0.50, 3],
-            [0.30, 0.60, 5],
-            [0.50, 1.00, 5],
-            [1.00, 2.00, 5],
-            [2.00, 4.00, 7.50],
-            [2.00, 5.00, 7.50],
-            [5.00, 5.00, 7.50],
-            [3.00, 6.00, 8],
-            [4.00, 8.00, 10],
-            [5.00, 10.0, 12.50],
-            [10.0, 20.0, 15],
-            [10.0, 25.0, 15],
-        ];
-
-        const exact = CAPS.find(([s, b]) => s === sb && b === bb);
-        if (exact) return { percent: 10, cap: exact[2], noFlop: true };
-
-        // Fallback to closest
-        let closest = CAPS[0];
-        let minDiff = Math.abs(bb - closest[1]);
-        for (const tier of CAPS) {
-            const diff = Math.abs(bb - tier[1]);
-            if (diff < minDiff) {
-                minDiff = diff;
-                closest = tier;
-            }
-        }
-
-        return { percent: 10, cap: closest[2], noFlop: true };
+        // Use RakeService for single source of truth on rake tiers
+        const tier = RakeService.getTier(sb, bb);
+        return { percent: 10, cap: tier.maxAmount, noFlop: true };
     }
 }
 

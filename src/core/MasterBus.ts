@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🚌 MASTER BUS — Centralized State & Event Management Layer (v2.0)
+ * MASTER BUS -- Centralized State & Event Management Layer (v2.0)
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * The Master Bus is the central nervous system of Club Arena, orchestrating:
@@ -338,7 +338,7 @@ class MasterBusCore {
                 try {
                     handler(event as BusEvent);
                 } catch (e) {
-                    console.error(`🚌 [BUS ERROR] Handler failed for ${type}:`, e);
+                    console.error(`[BUS ERROR] Handler failed for ${type}:`, e);
                 }
             });
         }
@@ -546,7 +546,7 @@ class MasterBusCore {
             this.channelRegistry.forEach((channel, key) => {
                 const state = (channel as any).state;
                 if (state === 'closed' || state === 'errored') {
-                    console.warn(`🚌 [HEALTH] Dead channel detected: "${key}" (state: ${state})`);
+                    console.warn(`[BUS HEALTH] Dead channel detected: "${key}" (state: ${state})`);
                     deadChannels.push(key);
                 }
             });
@@ -556,14 +556,14 @@ class MasterBusCore {
                 const factory = this.channelFactoryRegistry.get(key);
                 this.removeRegisteredChannel(key);
                 if (factory) {
-                    console.log(`🚌 [HEALTH] Auto-recovering channel: "${key}"`);
+                    console.log(`[BUS HEALTH] Auto-recovering channel: "${key}"`);
                     try {
                         factory();
                     } catch (e) {
-                        console.error(`🚌 [HEALTH] Recovery failed for "${key}":`, e);
+                        console.error(`[BUS HEALTH] Recovery failed for "${key}":`, e);
                     }
                 } else {
-                    console.warn(`🚌 [HEALTH] No factory for "${key}" — removed only`);
+                    console.warn(`[BUS HEALTH] No factory for "${key}" -- removed only`);
                 }
             });
         }, 30_000); // Every 30 seconds

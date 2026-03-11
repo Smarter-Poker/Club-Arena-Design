@@ -990,7 +990,7 @@ function HomePageInner() {
             {/* #15: Offline indicator banner */}
             {!isOnline && (
                 <div className={styles.offlineBanner} role="alert">
-                    <span>📡 Offline — showing cached data</span>
+                    <span>Offline -- showing cached data</span>
                 </div>
             )}
 

@@ -8,6 +8,7 @@ export interface HandContext {
     handId: string;
     clubId: string;
     totalPot: number;
+    smallBlind?: number;
     bigBlind: number; // For scaling caps
     players: any[]; // Dealt-in players
 }
@@ -31,17 +32,18 @@ export class RakeWaterfallEngine {
      */
     static async processHand(ctx: HandContext) {
 
-        // 1. CALCULATE RAKE & BBJ
-        // LAW: 10% Rate | Cap 2.5BB | BBJ 0.5BB (LOCKED)
+        // 1. CALCULATE RAKE & BBJ using RakeService (Single Source of Truth)
+        // LAW: 10% Rate | Tier-based Cap | BBJ from chart (LOCKED)
 
-        const rakePercent = 0.10;
-        const rakeCap = ctx.bigBlind * 2.5; //  LOCKED: 2.5x Big Blind
+        const sb = ctx.smallBlind ?? ctx.bigBlind / 2;
+        const rakeResult = RakeService.calculateRake(ctx.totalPot, ctx.bigBlind, true, sb);
 
-        const grossRake = Math.min(ctx.totalPot * rakePercent, rakeCap);
+        const rakePercent = rakeResult.rakePercent;
+        const rakeCap = rakeResult.rakeCap;
+        const grossRake = rakeResult.cappedRake;
 
-        // 2. BBJ DROP
-        //  LOCKED: 0.5x Big Blind
-        const bbjDrop = ctx.bigBlind * 0.5;
+        // 2. BBJ DROP from RakeService
+        const bbjDrop = rakeResult.bbjDrop;
 
         // 3. EXECUTE POT DEDUCTION (Move Chips to Union/Club/BBJ Wallets)
         // This is the "Physical" movement of chips from the table
