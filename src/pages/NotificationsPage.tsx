@@ -67,6 +67,13 @@ export default function NotificationsPage() {
         }
     }, [user?.id]);
 
+    // ── Bus Listeners: cross-page notification reactivity ──
+    useEffect(() => {
+        const unsubReceived = masterBus.subscribe('NOTIFICATION_RECEIVED', () => { loadNotifications(); });
+        const unsubCount = masterBus.subscribe('NOTIFICATION_COUNT_CHANGED', () => { loadNotifications(); });
+        return () => { unsubReceived(); unsubCount(); };
+    }, []);
+
     const loadNotifications = async () => {
         setLoading(true);
         try {

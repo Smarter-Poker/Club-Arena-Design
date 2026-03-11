@@ -255,11 +255,11 @@ export default function SuperAgentDashboard() {
                             <h3>Your Rates</h3>
                             <div className="rate-row">
                                 <span>Commission Rate</span>
-                                <span className="rate-value">{(agent.commissionRate * 100).toFixed(1)}%</span>
+                                <span className="rate-value">{((agent.commissionRate || 0) * 100).toFixed(1)}%</span>
                             </div>
                             <div className="rate-row">
                                 <span>Player Rakeback</span>
-                                <span className="rate-value">{(agent.playerRakebackRate * 100).toFixed(1)}%</span>
+                                <span className="rate-value">{((agent.playerRakebackRate || 0) * 100).toFixed(1)}%</span>
                             </div>
                         </div>
                         {/* Credit Request Widget */}
@@ -332,7 +332,7 @@ export default function SuperAgentDashboard() {
                                     </div>
                                     <div className="player-info">
                                         <span className="player-name">{player.displayName}</span>
-                                        <span className="player-rakeback">{(player.rakebackPercent * 100).toFixed(1)}% rakeback</span>
+                                        <span className="player-rakeback">{((player.rakebackPercent || 0) * 100).toFixed(1)}% rakeback</span>
                                     </div>
                                     <div className="player-balance">
                                         {player.chipBalance.toLocaleString()}
@@ -349,7 +349,7 @@ export default function SuperAgentDashboard() {
                         <div className="commission-summary">
                             <div className="commission-row">
                                 <span>Gross Commission Rate</span>
-                                <span className="value">{(spread.grossCommissionRate * 100).toFixed(1)}%</span>
+                                <span className="value">{((spread.grossCommissionRate || 0) * 100).toFixed(1)}%</span>
                             </div>
                             <div className="commission-row">
                                 <span>Paid to Downlines</span>

@@ -99,6 +99,14 @@ export default function FriendsPage() {
         };
     }, [user?.id]);
 
+    // ── Bus Listeners: cross-page friend reactivity ──
+    useEffect(() => {
+        const unsubAccepted = masterBus.subscribe('FRIEND_REQUEST_ACCEPTED', () => { loadFriends(); });
+        const unsubSent = masterBus.subscribe('FRIEND_REQUEST_SENT', () => { loadFriends(); });
+        const unsubProfile = masterBus.subscribe('PROFILE_UPDATED', () => { loadFriends(); });
+        return () => { unsubAccepted(); unsubSent(); unsubProfile(); };
+    }, []);
+
     const loadFriends = async () => {
         setLoading(true);
         try {

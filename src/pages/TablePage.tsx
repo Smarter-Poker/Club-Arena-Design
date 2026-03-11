@@ -2311,65 +2311,8 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
         await updateSeat(seatNumber);
     };
 
-    // Action handlers - wired to Game Server HTTP endpoint (authoritative)
-    // The server validates the action, updates its HandController, and broadcasts
-    // the new hand state to all clients via Supabase Realtime.
-    const handleFold = async () => {
-        const heroSeat = tableState.heroSeat;
-        setShowRaiseSlider(false);
-        // Optimistic local update — wrapped in startTransition to avoid INP blocking
-        startTransition(() => {
-            if (handControllerRef.current) {
-                handControllerRef.current.performAction(heroSeat, 'fold');
-            }
-        });
-        soundService.playFold();
-        // Submit to server (authoritative)
-        if (tableId) {
-            const result = await submitAction(tableId, userId, 'fold');
-            if (!result.success) console.warn('[TablePage] Server fold failed:', result.error);
-        }
-    };
-
-    const handleCheck = async () => {
-        const heroSeat = tableState.heroSeat;
-        setShowRaiseSlider(false);
-        startTransition(() => {
-            if (handControllerRef.current) {
-                handControllerRef.current.performAction(heroSeat, 'check');
-            }
-        });
-        soundService.playCheck();
-        if (tableId) {
-            const result = await submitAction(tableId, userId, 'check');
-            if (!result.success) console.warn('[TablePage] Server check failed:', result.error);
-        }
-    };
-
-    const handleCall = async () => {
-        const heroSeat = tableState.heroSeat;
-        setShowRaiseSlider(false);
-        startTransition(() => {
-            if (handControllerRef.current) {
-                handControllerRef.current.performAction(heroSeat, 'call');
-            }
-        });
-        soundService.playChips();
-        if (tableId) {
-            const result = await submitAction(tableId, userId, 'call');
-            if (!result.success) console.warn('[TablePage] Server call failed:', result.error);
-        }
-    };
-
-    const handleBet = () => {
-        setShowRaiseSlider(true);
-    };
-
-    const handleRaise = () => {
-        setShowRaiseSlider(true);
-    };
-
-    // Broadcast current hand state via Supabase Realtime (fallback when game server is unreachable)
+    // Broadcast current hand state via Supabase Realtime — PRIMARY sync mechanism
+    // Mirrors HeadlessTableEngine.broadcastCurrentState() for human player actions
     const broadcastLocalHandState = useCallback(() => {
         if (!handControllerRef.current || !tableId) return;
         const state = handControllerRef.current.getState();
@@ -2395,6 +2338,55 @@ export default function TablePage({ embeddedTableId, onTableInfoUpdate, isMultiT
             })),
         });
     }, [tableId]);
+
+    // Action handlers — LOCAL engine is authoritative → broadcast via Supabase Realtime (PRIMARY)
+    // → fire-and-forget server call (SECONDARY, for when game server is deployed)
+    const handleFold = async () => {
+        const heroSeat = tableState.heroSeat;
+        setShowRaiseSlider(false);
+        startTransition(() => {
+            if (handControllerRef.current) {
+                handControllerRef.current.performAction(heroSeat, 'fold');
+            }
+        });
+        soundService.playFold();
+        broadcastLocalHandState();
+        if (tableId) submitAction(tableId, userId, 'fold').catch(() => {});
+    };
+
+    const handleCheck = async () => {
+        const heroSeat = tableState.heroSeat;
+        setShowRaiseSlider(false);
+        startTransition(() => {
+            if (handControllerRef.current) {
+                handControllerRef.current.performAction(heroSeat, 'check');
+            }
+        });
+        soundService.playCheck();
+        broadcastLocalHandState();
+        if (tableId) submitAction(tableId, userId, 'check').catch(() => {});
+    };
+
+    const handleCall = async () => {
+        const heroSeat = tableState.heroSeat;
+        setShowRaiseSlider(false);
+        startTransition(() => {
+            if (handControllerRef.current) {
+                handControllerRef.current.performAction(heroSeat, 'call');
+            }
+        });
+        soundService.playChips();
+        broadcastLocalHandState();
+        if (tableId) submitAction(tableId, userId, 'call').catch(() => {});
+    };
+
+    const handleBet = () => {
+        setShowRaiseSlider(true);
+    };
+
+    const handleRaise = () => {
+        setShowRaiseSlider(true);
+    };
 
     // Unified action handler for ActionPanel component
     // Architecture: LOCAL engine is authoritative → broadcast via Supabase Realtime (PRIMARY)

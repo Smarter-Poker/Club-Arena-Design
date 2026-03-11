@@ -188,7 +188,7 @@ export default function AgentManagementPage() {
 
     // Format helpers
     const formatMoney = (amount: number) => amount.toLocaleString('en-US', { minimumFractionDigits: 2 });
-    const formatPercent = (rate: number) => `${(rate * 100).toFixed(0)}%`;
+    const formatPercent = (rate: number) => `${((rate || 0) * 100).toFixed(0)}%`;
     const getCreditUtilization = (agent: Agent) => agent.creditLimit > 0 ? (agent.creditUsed / agent.creditLimit) * 100 : 0;
 
     const getUtilizationStatus = (agent: Agent) => {
@@ -563,7 +563,7 @@ export default function AgentManagementPage() {
                                         <div className={styles.creditHeader}>
                                             <span>Credit Line: {formatMoney(agent.creditUsed)} / {formatMoney(agent.creditLimit)}</span>
                                             <span className={`${styles.utilBadge} ${styles[getUtilizationStatus(agent)]}`}>
-                                                {getCreditUtilization(agent).toFixed(0)}% Used
+                                                {(getCreditUtilization(agent) || 0).toFixed(0)}% Used
                                             </span>
                                         </div>
                                         <div className={styles.creditProgress}>
@@ -671,7 +671,7 @@ export default function AgentManagementPage() {
                                         <td>{formatMoney(agent.creditUsed)}</td>
                                         <td>
                                             <span className={`${styles.utilBadge} ${styles[getUtilizationStatus(agent)]}`}>
-                                                {getCreditUtilization(agent).toFixed(0)}%
+                                                {(getCreditUtilization(agent) || 0).toFixed(0)}%
                                             </span>
                                         </td>
                                         <td>
