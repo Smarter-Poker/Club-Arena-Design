@@ -14,7 +14,7 @@
  * - Club Owner → Player (direct)
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
 import { useToast } from '../common/Toast';
@@ -58,6 +58,15 @@ export default function ChipTransferModal({
     const [senderBalance, setSenderBalance] = useState<number>(0);
     const [senderRole, setSenderRole] = useState<string>('member');
     const [clubName, setClubName] = useState<string>('');
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setTimeout(() => setMounted(true), 50);
+        } else {
+            setMounted(false);
+        }
+    }, [isOpen]);
 
     // Load sender's wallet balance and role
     useEffect(() => {
@@ -284,7 +293,7 @@ export default function ChipTransferModal({
 
     return (
         <div className="chip-transfer-overlay" onClick={handleClose}>
-            <div className="chip-transfer-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="chip-transfer-modal" onClick={(e) => e.stopPropagation()} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 <div className="chip-transfer-header">
                     <h2>Cashier Transfer</h2>
                     <button className="close-btn" onClick={handleClose}>x</button>

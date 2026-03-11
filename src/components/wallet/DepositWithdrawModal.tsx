@@ -5,7 +5,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../common/Toast';
 import styles from './DepositWithdrawModal.module.css';
@@ -109,9 +109,18 @@ export default function DepositWithdrawModal({
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [referenceId, setReferenceId] = useState<string | null>(null);
+    const [mounted, setMounted] = useState(false);
 
     // Withdrawal-specific fields
     const [withdrawAddress, setWithdrawAddress] = useState('');
+
+    useEffect(() => {
+        if (isOpen) {
+            setTimeout(() => setMounted(true), 50);
+        } else {
+            setMounted(false);
+        }
+    }, [isOpen]);
 
     const currentMethod = PAYMENT_METHODS.find(m => m.id === selectedMethod);
     const numericAmount = parseFloat(amount) || 0;
@@ -207,7 +216,7 @@ export default function DepositWithdrawModal({
 
     return (
         <div className={styles.overlay} onClick={handleClose}>
-            <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modal} onClick={e => e.stopPropagation()} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 {/* Header */}
                 <div className={styles.header}>
                     <h2>

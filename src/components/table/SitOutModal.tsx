@@ -89,11 +89,17 @@ export function SitOutModal({
         onClose();
     }, [onLeaveTable, onClose]);
 
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        if (isOpen) setTimeout(() => setMounted(true), 50);
+        else setMounted(false);
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     return (
         <div className="sitout-overlay" onClick={onClose}>
-            <div className="sitout-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="sitout-modal" onClick={(e) => e.stopPropagation()} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 {/* Header */}
                 <div className="sitout-modal__header">
                     <h2 className="sitout-modal__title">You're Sitting Out</h2>

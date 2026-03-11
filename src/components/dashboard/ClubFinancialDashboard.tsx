@@ -54,10 +54,24 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
     const [mintAmount, setMintAmount] = useState(1000);
     const [loading, setLoading] = useState(false);
     const [revenueData, setRevenueData] = useState(getEmptyRevenueData());
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
     // Commission State
     const [agentId, setAgentId] = useState('');
     const [commissionRate, setCommissionRate] = useState(0.5);
+
+    const kpiCards = [
+        { label: 'Diamond Vault', value: diamondBalance.toLocaleString(), color: 'blue' },
+        { label: 'Weekly Revenue', value: revenueData.reduce((sum, d) => sum + d.revenue, 0).toLocaleString(), color: 'green' },
+        { label: 'Weekly Rake', value: revenueData.reduce((sum, d) => sum + d.rake, 0).toLocaleString(), color: 'orange' },
+        { label: 'Active Tables', value: '12', color: 'purple' }
+    ];
+
+    useEffect(() => {
+        kpiCards.forEach((_, i) => {
+            setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
+        });
+    }, []);
 
     useEffect(() => {
         fetchDiamondBalance();
@@ -172,19 +186,19 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
 
             {/* KPI Summary Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-gray-800 p-4 rounded-lg border border-blue-500/30">
+                <div className="bg-gray-800 p-4 rounded-lg border border-blue-500/30" style={{ opacity: visibleItems.has(0) ? 1 : 0, transform: visibleItems.has(0) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                     <div className="text-gray-400 text-xs uppercase">Diamond Vault</div>
                     <div className="text-2xl font-mono text-blue-400">{diamondBalance.toLocaleString()}</div>
                 </div>
-                <div className="bg-gray-800 p-4 rounded-lg border border-green-500/30">
+                <div className="bg-gray-800 p-4 rounded-lg border border-green-500/30" style={{ opacity: visibleItems.has(1) ? 1 : 0, transform: visibleItems.has(1) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                     <div className="text-gray-400 text-xs uppercase">Weekly Revenue</div>
                     <div className="text-2xl font-mono text-green-400">{totalWeeklyRevenue.toLocaleString()}</div>
                 </div>
-                <div className="bg-gray-800 p-4 rounded-lg border border-orange-500/30">
+                <div className="bg-gray-800 p-4 rounded-lg border border-orange-500/30" style={{ opacity: visibleItems.has(2) ? 1 : 0, transform: visibleItems.has(2) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                     <div className="text-gray-400 text-xs uppercase">Weekly Rake</div>
                     <div className="text-2xl font-mono text-orange-400">{totalWeeklyRake.toLocaleString()}</div>
                 </div>
-                <div className="bg-gray-800 p-4 rounded-lg border border-purple-500/30">
+                <div className="bg-gray-800 p-4 rounded-lg border border-purple-500/30" style={{ opacity: visibleItems.has(3) ? 1 : 0, transform: visibleItems.has(3) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                     <div className="text-gray-400 text-xs uppercase">Active Tables</div>
                     <div className="text-2xl font-mono text-purple-400">12</div>
                 </div>

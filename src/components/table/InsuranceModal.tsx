@@ -10,7 +10,7 @@
  * - Accept/decline
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import './InsuranceModal.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -75,6 +75,15 @@ export function InsuranceModal({
     currency = '',
 }: InsuranceModalProps) {
     const [coverageAmount, setCoverageAmount] = useState(offer.maxCoverage);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setTimeout(() => setMounted(true), 50);
+        } else {
+            setMounted(false);
+        }
+    }, [isOpen]);
 
     // Calculate premium
     const premium = useMemo(() => {
@@ -103,7 +112,7 @@ export function InsuranceModal({
 
     return (
         <div className="insurance-overlay">
-            <div className="insurance-modal">
+            <div className="insurance-modal" style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 {/* Header */}
                 <div className="insurance-modal__header">
                     <div className="insurance-modal__title-row">

@@ -9,7 +9,7 @@
  * - All-time table stats
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import './LeaderboardPanel.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -70,9 +70,15 @@ const PERIOD_LABELS: Record<LeaderboardPeriod, string> = {
 interface PlayerRowProps {
     player: LeaderboardPlayer;
     currency: string;
+    index?: number;
 }
 
-function PlayerRow({ player, currency }: PlayerRowProps) {
+function PlayerRow({ player, currency, index = 0 }: PlayerRowProps) {
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setTimeout(() => setMounted(true), index * 50);
+    }, [index]);
     const rankBadge = useMemo(() => {
         if (player.rank === 1) return '1st';
         if (player.rank === 2) return '2nd';
@@ -81,7 +87,7 @@ function PlayerRow({ player, currency }: PlayerRowProps) {
     }, [player.rank]);
 
     return (
-        <div className={`leaderboard-row ${player.isCurrentUser ? 'leaderboard-row--current' : ''}`}>
+        <div className={`leaderboard-row ${player.isCurrentUser ? 'leaderboard-row--current' : ''}`} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
             <span className={`leaderboard-row__rank ${player.rank <= 3 ? 'leaderboard-row__rank--top' : ''}`}>
                 {rankBadge}
             </span>

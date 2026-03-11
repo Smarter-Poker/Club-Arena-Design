@@ -76,9 +76,16 @@ interface TreeNodeProps {
     onToggle: (id: string) => void;
     onAgentClick?: (agent: Agent) => void;
     onTransferClick?: (agent: Agent) => void;
+    index?: number;
 }
 
-function TreeNode({ node, depth, onToggle, onAgentClick, onTransferClick }: TreeNodeProps) {
+function TreeNode({ node, depth, onToggle, onAgentClick, onTransferClick, index = 0 }: TreeNodeProps) {
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setTimeout(() => setMounted(true), index * 60);
+    }, [index]);
+
     const hasChildren = node.children.length > 0;
     const roleColors = {
         super_agent: '#fbbf24',
@@ -92,7 +99,7 @@ function TreeNode({ node, depth, onToggle, onAgentClick, onTransferClick }: Tree
     };
 
     return (
-        <div className={styles.treeNode} style={{ marginLeft: depth * 24 }}>
+        <div className={styles.treeNode} style={{ marginLeft: depth * 24, opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
             <div
                 className={`${styles.nodeCard} ${node.status !== 'active' ? styles.inactive : ''}`}
                 onClick={() => onAgentClick?.(node)}
@@ -167,7 +174,7 @@ function TreeNode({ node, depth, onToggle, onAgentClick, onTransferClick }: Tree
             {/* Children */}
             {node.isExpanded && hasChildren && (
                 <div className={styles.nodeChildren}>
-                    {node.children.map(child => (
+                    {node.children.map((child, i) => (
                         <TreeNode
                             key={child.id}
                             node={child}
@@ -175,6 +182,7 @@ function TreeNode({ node, depth, onToggle, onAgentClick, onTransferClick }: Tree
                             onToggle={onToggle}
                             onAgentClick={onAgentClick}
                             onTransferClick={onTransferClick}
+                            index={i}
                         />
                     ))}
                 </div>

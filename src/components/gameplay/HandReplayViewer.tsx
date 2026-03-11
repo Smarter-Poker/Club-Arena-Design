@@ -61,6 +61,16 @@ export default function HandReplayViewer({
     const [playSpeed, setPlaySpeed] = useState(1);
     const [visibleCards, setVisibleCards] = useState<string[]>([]);
     const [currentPot, setCurrentPot] = useState(0);
+    const [visibleActions, setVisibleActions] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        if (!hand) return;
+        hand.actions.forEach((_, i) => {
+            if (i <= currentStep) {
+                setTimeout(() => setVisibleActions(prev => new Set(prev).add(i)), i * 40);
+            }
+        });
+    }, [hand?.actions.length, currentStep]);
 
     useEffect(() => {
         if (handId && !propHandData) {
@@ -266,6 +276,7 @@ export default function HandReplayViewer({
                     <div
                         key={i}
                         className={`${styles.historyItem} ${i === currentStep ? styles.current : ''}`}
+                        style={{ opacity: visibleActions.has(i) ? 1 : 0, transform: visibleActions.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
                     >
                         <span className={styles.historyPlayer}>{action.playerName}</span>
                         <span style={{ color: getActionDisplay(action).color }}>

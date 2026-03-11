@@ -75,6 +75,13 @@ export function WaitListModal({
     avgWaitTimeMinutes = 5,
 }: WaitListModalProps) {
     const [showConfirmLeave, setShowConfirmLeave] = useState(false);
+    const [visiblePlayers, setVisiblePlayers] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        players.forEach((_, i) => {
+            setTimeout(() => setVisiblePlayers(prev => new Set(prev).add(i)), i * 50);
+        });
+    }, [players.length]);
 
     // Find my position
     const myPosition = useMemo(() => {
@@ -146,10 +153,11 @@ export function WaitListModal({
                                 No players waiting
                             </div>
                         ) : (
-                            players.map((player) => (
+                            players.map((player, i) => (
                                 <div
                                     key={player.playerId}
                                     className={`waitlist-modal__player ${player.playerId === myPlayerId ? 'waitlist-modal__player--me' : ''}`}
+                                    style={{ opacity: visiblePlayers.has(i) ? 1 : 0, transform: visiblePlayers.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
                                 >
                                     <span className="waitlist-modal__player-position">
                                         #{player.position}

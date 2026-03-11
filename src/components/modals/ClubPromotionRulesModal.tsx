@@ -18,7 +18,16 @@ interface ClubPromotionRulesModalProps {
 export default function ClubPromotionRulesModal({ isOpen, onClose, onAccept }: ClubPromotionRulesModalProps) {
     const [hasAgreed, setHasAgreed] = useState(false);
     const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
+    const [mounted, setMounted] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            setTimeout(() => setMounted(true), 50);
+        } else {
+            setMounted(false);
+        }
+    }, [isOpen]);
 
     // Track scroll to enable checkbox
     const handleScroll = () => {
@@ -42,7 +51,7 @@ export default function ClubPromotionRulesModal({ isOpen, onClose, onAccept }: C
 
     return (
         <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
-            <div className={styles.modal}>
+            <div className={styles.modal} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 <header className={styles.header}>
                     <h2>Club Promotion Rules</h2>
                     <button className={styles.closeButton} onClick={onClose}>✕</button>

@@ -10,7 +10,7 @@
  * - Danger Zone (Delete Club)
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './ClubSettings.css';
 import ClubLogoSelector from '../ClubLogoSelector';
 
@@ -41,6 +41,11 @@ export function ClubSettings({
     const [formData, setFormData] = useState<ClubSettingsData>(initialSettings);
     const [activeTab, setActiveTab] = useState<'general' | 'game' | 'policy'>('general');
     const [hasChanges, setHasChanges] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setTimeout(() => setMounted(true), 50);
+    }, []);
 
     const handleChange = (key: keyof ClubSettingsData, value: any) => {
         setFormData((prev) => ({ ...prev, [key]: value }));
@@ -55,7 +60,7 @@ export function ClubSettings({
 
     return (
         <div className="club-settings-overlay" onClick={onClose}>
-            <form className="club-settings" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
+            <form className="club-settings" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 {/* Header */}
                 <div className="club-settings__header">
                     <h2 className="club-settings__title">Club Settings</h2>

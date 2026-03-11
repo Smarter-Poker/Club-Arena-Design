@@ -44,6 +44,7 @@ export default function MessagesPanel({
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
+    const [visibleMessages, setVisibleMessages] = useState<Set<number>>(new Set());
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -61,6 +62,9 @@ export default function MessagesPanel({
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        messages.forEach((_, i) => {
+            setTimeout(() => setVisibleMessages(prev => new Set(prev).add(i)), i * 50);
+        });
     }, [messages]);
 
     // Real-time subscription
@@ -276,10 +280,11 @@ export default function MessagesPanel({
                         </div>
 
                         <div className={styles.messages}>
-                            {messages.map(msg => (
+                            {messages.map((msg, i) => (
                                 <div
                                     key={msg.id}
                                     className={`${styles.message} ${msg.isOwn ? styles.own : styles.other}`}
+                                    style={{ opacity: visibleMessages.has(i) ? 1 : 0, transform: visibleMessages.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
                                 >
                                     <div className={styles.bubble}>{msg.content}</div>
                                     <span className={styles.msgTime}>{formatTime(msg.createdAt)}</span>

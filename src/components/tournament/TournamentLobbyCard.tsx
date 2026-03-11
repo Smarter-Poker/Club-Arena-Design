@@ -62,6 +62,11 @@ export default function TournamentLobbyCard({
     const [countdown, setCountdown] = useState<string>('');
     const [lateRegCountdown, setLateRegCountdown] = useState<string>('');
     const [lateRegActive, setLateRegActive] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setTimeout(() => setMounted(true), 50);
+    }, []);
 
     useEffect(() => {
         checkRegistration();
@@ -233,7 +238,7 @@ export default function TournamentLobbyCard({
     const isFull = hasMaxPlayers && spotsRemaining <= 0;
 
     return (
-        <div className={`${styles.card} ${tournament.isPinned ? styles.pinnedCard : ''}`} onClick={() => navigate(`/tournaments/${tournament.id}`)} style={{ cursor: 'pointer' }}>
+        <div className={`${styles.card} ${tournament.isPinned ? styles.pinnedCard : ''}`} onClick={() => navigate(`/tournaments/${tournament.id}`)} style={{ cursor: 'pointer', opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
             {/* Header */}
             <div className={styles.header}>
                 {tournament.isPinned && <span className={styles.pinnedBadge}>PINNED</span>}

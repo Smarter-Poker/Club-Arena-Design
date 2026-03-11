@@ -9,7 +9,7 @@
  * - Submission to Supabase
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
 import { useToast } from '../common/Toast';
@@ -24,7 +24,13 @@ export function FeedbackForm({ isOpen, onClose }: { isOpen: boolean, onClose: ()
     const [submitted, setSubmitted] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [mounted, setMounted] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (isOpen) setTimeout(() => setMounted(true), 50);
+        else setMounted(false);
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -94,7 +100,7 @@ export function FeedbackForm({ isOpen, onClose }: { isOpen: boolean, onClose: ()
     if (submitted) {
         return (
             <div className="feedback-overlay" onClick={onClose}>
-                <div className="feedback-modal success" onClick={(e) => e.stopPropagation()}>
+                <div className="feedback-modal success" onClick={(e) => e.stopPropagation()} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                     <div className="success-icon"></div>
                     <h3>Feedback Sent!</h3>
                     <p>Thank you for helping us improve Poker Club.</p>

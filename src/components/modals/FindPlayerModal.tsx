@@ -6,7 +6,7 @@
  * Shows "Not currently playing" or 1-4 active tables/tournaments.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import haptic from '../../services/HapticService';
@@ -44,6 +44,15 @@ export default function FindPlayerModal({ isOpen, onClose }: FindPlayerModalProp
     const [searchResult, setSearchResult] = useState<PlayerResult | null>(null);
     const [notFound, setNotFound] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [visibleTables, setVisibleTables] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        if (searchResult?.tables) {
+            searchResult.tables.forEach((_, i) => {
+                setTimeout(() => setVisibleTables(prev => new Set(prev).add(i)), i * 60);
+            });
+        }
+    }, [searchResult?.tables]);
 
     const handleSearch = async () => {
         if (!searchQuery.trim()) return;
@@ -250,11 +259,12 @@ export default function FindPlayerModal({ isOpen, onClose }: FindPlayerModalProp
                                 </div>
 
                                 <div className={styles.tablesList}>
-                                    {searchResult.tables.map((table) => (
+                                    {searchResult.tables.map((table, i) => (
                                         <button
                                             key={table.id}
                                             className={styles.tableCard}
                                             onClick={() => handleTableClick(table)}
+                                            style={{ opacity: visibleTables.has(i) ? 1 : 0, transform: visibleTables.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
                                         >
                                             <div className={styles.tableInfo}>
                                                 <span className={styles.tableName}>{table.name}</span>

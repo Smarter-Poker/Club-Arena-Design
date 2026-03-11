@@ -32,6 +32,11 @@ export const UnionSettingsPanel: React.FC<UnionSettingsPanelProps> = ({
     const [settings, setSettings] = useState<UnionSettings | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setTimeout(() => setMounted(true), 50);
+    }, []);
 
     useEffect(() => {
         loadSettings();
@@ -76,7 +81,7 @@ export const UnionSettingsPanel: React.FC<UnionSettingsPanelProps> = ({
     }
 
     return (
-        <div className="union-settings-panel">
+        <div className="union-settings-panel" style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
             <div className="settings-header">
                 <h3>Union Settings</h3>
                 {!isOwner && <span className="readonly-badge">View Only</span>}

@@ -26,6 +26,11 @@ export const AgentFinancialPortal: React.FC<AgentPortalProps> = ({ agentId }) =>
     });
     const [commissionData, setCommissionData] = useState<ChartData[]>([]);
     const [isTransferring, setIsTransferring] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setTimeout(() => setMounted(true), 50);
+    }, []);
 
     useEffect(() => {
         fetchWalletData();
@@ -106,7 +111,7 @@ export const AgentFinancialPortal: React.FC<AgentPortalProps> = ({ agentId }) =>
     };
 
     return (
-        <div className="p-6 bg-slate-900 text-white rounded-lg shadow-xl  border border-blue-900">
+        <div className="p-6 bg-slate-900 text-white rounded-lg shadow-xl  border border-blue-900" style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
             <h1 className="text-2xl font-bold mb-6 text-blue-400">Agent Command Center</h1>
 
             {/* TRIPLE WALLET GRID */}

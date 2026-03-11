@@ -11,7 +11,7 @@
  * - Observer list
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import './RealTimeResults.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -96,6 +96,15 @@ export function RealTimeResults({
     currency = '',
 }: RealTimeResultsProps) {
     const [sessionDuration, setSessionDuration] = useState('00:00:00');
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setTimeout(() => setMounted(true), 50);
+        } else {
+            setMounted(false);
+        }
+    }, [isOpen]);
 
     // Update session duration every second
     React.useEffect(() => {
@@ -114,7 +123,7 @@ export function RealTimeResults({
 
     return (
         <div className="rtr-overlay" onClick={onClose}>
-            <div className="rtr-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="rtr-panel" onClick={(e) => e.stopPropagation()} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 {/* Header */}
                 <div className="rtr-header">
                     <span className="rtr-duration">{sessionDuration}</span>

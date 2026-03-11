@@ -41,6 +41,15 @@ export function HandReplayer({ handId, isOpen, onClose }: HandReplayerProps) {
     const [isPlaying, setIsPlaying] = useState(false);
     const [playbackSpeed, setPlaybackSpeed] = useState(1);
     const [visibleCards, setVisibleCards] = useState<string[]>([]);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setTimeout(() => setMounted(true), 50);
+        } else {
+            setMounted(false);
+        }
+    }, [isOpen]);
 
     useEffect(() => {
         if (isOpen && handId) {
@@ -147,7 +156,7 @@ export function HandReplayer({ handId, isOpen, onClose }: HandReplayerProps) {
 
     return (
         <div className="replayer-overlay" onClick={onClose}>
-            <div className="replayer" onClick={e => e.stopPropagation()}>
+            <div className="replayer" onClick={e => e.stopPropagation()} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 <div className="replayer__header">
                     <h3>🎬 Hand Replayer</h3>
                     <button className="close-btn" onClick={onClose}>×</button>

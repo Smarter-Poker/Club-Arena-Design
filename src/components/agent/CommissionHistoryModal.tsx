@@ -59,6 +59,13 @@ export default function CommissionHistoryModal({
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'rake' | 'payout'>('all');
     const [dateRange, setDateRange] = useState<'week' | 'month' | 'all'>('month');
+    const [visibleEntries, setVisibleEntries] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        entries.forEach((_, i) => {
+            setTimeout(() => setVisibleEntries(prev => new Set(prev).add(i)), i * 50);
+        });
+    }, [entries.length]);
 
     useEffect(() => {
         if (isOpen && agentId) {
@@ -245,8 +252,8 @@ export default function CommissionHistoryModal({
                     ) : filteredEntries.length === 0 ? (
                         <div className={styles.empty}>No commission history found</div>
                     ) : (
-                        filteredEntries.map(entry => (
-                            <div key={entry.id} className={styles.entryCard}>
+                        filteredEntries.map((entry, i) => (
+                            <div key={entry.id} className={styles.entryCard} style={{ opacity: visibleEntries.has(i) ? 1 : 0, transform: visibleEntries.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                                 <div className={styles.entryIcon}>
                                     {entry.type === 'rake' ? '' : ''}
                                 </div>

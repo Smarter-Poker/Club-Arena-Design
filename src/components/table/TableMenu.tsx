@@ -98,6 +98,14 @@ export function TableMenu({
     position = 'top-right',
     tableName,
 }: TableMenuProps) {
+    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        const allActions = sections.flatMap(s => s.actions);
+        allActions.forEach((_, i) => {
+            setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 40);
+        });
+    }, [sections.length]);
     const menuRef = useRef<HTMLDivElement>(null);
 
     // Close on click outside
@@ -162,12 +170,15 @@ export function TableMenu({
                                 {section.title && (
                                     <span className="table-menu__section-title">{section.title}</span>
                                 )}
-                                {section.actions.map((action) => (
+                                {section.actions.map((action, i) => {
+                                    const actionIndex = sections.slice(0, sections.indexOf(section)).flatMap(s => s.actions).length + i;
+                                    return (
                                     <button
                                         key={action.id}
                                         className={`table-menu__action ${action.danger ? 'table-menu__action--danger' : ''} ${action.disabled ? 'table-menu__action--disabled' : ''}`}
                                         onClick={() => handleActionClick(action)}
                                         disabled={action.disabled}
+                                        style={{ opacity: visibleItems.has(actionIndex) ? 1 : 0, transform: visibleItems.has(actionIndex) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
                                     >
                                         <span className="table-menu__action-icon">{action.icon}</span>
                                         <span className="table-menu__action-label">{action.label}</span>
@@ -175,7 +186,8 @@ export function TableMenu({
                                             <span className="table-menu__action-badge">{action.badge}</span>
                                         )}
                                     </button>
-                                ))}
+                                    );
+                                })}
                             </div>
                         ))}
                     </div>

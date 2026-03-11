@@ -34,6 +34,15 @@ export default function CashoutRequestModal({
     const [success, setSuccess] = useState(false);
     const [pendingCashouts, setPendingCashouts] = useState<CashoutRequest[]>([]);
     const [loadingPending, setLoadingPending] = useState(true);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setTimeout(() => setMounted(true), 50);
+        } else {
+            setMounted(false);
+        }
+    }, [isOpen]);
 
     // Load pending cashouts
     useEffect(() => {
@@ -107,7 +116,7 @@ export default function CashoutRequestModal({
 
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="cashout-modal" onClick={e => e.stopPropagation()}>
+            <div className="cashout-modal" onClick={e => e.stopPropagation()} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 <div className="modal-header">
                     <h2> Request Cashout</h2>
                     <button className="close-btn" onClick={onClose}>×</button>

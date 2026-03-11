@@ -49,6 +49,15 @@ export default function PlayerInviteModal({
     const [inviting, setInviting] = useState(false);
     const [adding, setAdding] = useState<string | null>(null);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setTimeout(() => setMounted(true), 50);
+        } else {
+            setMounted(false);
+        }
+    }, [isOpen]);
 
     useEffect(() => {
         if (isOpen) {
@@ -186,7 +195,7 @@ export default function PlayerInviteModal({
 
     return (
         <div className={styles.overlay} onClick={onClose}>
-            <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modal} onClick={e => e.stopPropagation()} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
                 {/* Header */}
                 <div className={styles.header}>
                     <h2> Add Player</h2>

@@ -41,6 +41,13 @@ export const PlayerNotes: React.FC<PlayerNotesProps> = ({
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
+    const [visibleNotes, setVisibleNotes] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        notes.forEach((_, i) => {
+            setTimeout(() => setVisibleNotes(prev => new Set(prev).add(i)), i * 50);
+        });
+    }, [notes.length]);
 
     const colors: { id: PlayerNote['noteColor']; label: string }[] = [
         { id: 'green', label: 'Fish' },
@@ -183,11 +190,12 @@ export const PlayerNotes: React.FC<PlayerNotesProps> = ({
                         <p>No notes yet</p>
                     </div>
                 ) : (
-                    filteredNotes.map(note => (
+                    filteredNotes.map((note, i) => (
                         <div
                             key={note.id}
                             className={`note-card color-${note.noteColor}`}
                             onClick={() => setSelectedNote(note)}
+                            style={{ opacity: visibleNotes.has(i) ? 1 : 0, transform: visibleNotes.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
                         >
                             <div className="note-header">
                                 <div className="player-info">
