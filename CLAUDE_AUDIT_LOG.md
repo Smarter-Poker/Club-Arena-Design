@@ -536,6 +536,17 @@ All pages verified live on production:
 - Union clubs (Shark Club, Club JAQK) share tables/tournaments at Midway Union level
 - Only standalone clubs have their own tables and tournaments
 
+**PRODUCTION VERIFICATION (100% COMPLETE):**
+- [x] Agent Dashboard text overlap: FIXED on smarter.poker — "No Club Selected" properly stacked vertically
+- [x] Homepage stat labels: Session 60 fix still intact on smarter.poker
+- [x] Midway Union overview: 2 Member Clubs, 112 Total Players, Live Tables (2 active) — clean
+- [x] Shark Club lobby — ALL filter: NLH, FLH, MIXED, OFC, 6+SD, PLO_HL, PLO6 tables with "U" union badges
+- [x] Shark Club lobby — Hold'em filter: NLH tables only, BBJ + "U" badges
+- [x] Shark Club lobby — Omaha filter: PLO_HL + PLO6 tables, BBJ + "U" badges
+- [x] Shark Club lobby — Mixed filter: MIXED + OFC + 6+SD tables, BBJ + "U" badges
+- [x] Shark Club lobby — MTT filter: Diverse tournaments (NLH, PLO, PLO4, PLO8, PKO, FREE), all "U" union badges
+- [x] Shark Club lobby — Spin-It filter: Spin-It NLH cards at various buy-ins, "U" badges, 3 Max
+
 **Files Modified:**
 - `src/pages/AgentManagementPage.module.css` — flex-direction fix
 - `src/pages/ClubHomePage.tsx` — union-aware table/tournament fetching
