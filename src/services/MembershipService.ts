@@ -183,6 +183,7 @@ export const MembershipService = {
             .maybeSingle();
 
         if (error) throw error;
+        if (!data) throw new Error('Member creation returned no data');
 
         return {
             id: data.id,

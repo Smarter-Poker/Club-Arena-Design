@@ -421,6 +421,7 @@ export default function TableConfigPage() {
         .maybeSingle();
 
       if (error) throw error;
+      if (!data) throw new Error('Template save returned no data');
 
       setTemplates((prev) => [data, ...prev]);
       toast.success('Template saved! You can now duplicate this table easily.');
@@ -643,6 +644,7 @@ export default function TableConfigPage() {
         .maybeSingle();
 
       if (error) throw error;
+      if (!data) throw new Error('Table start returned no data');
 
       toast.success('Table created and started!');
       navigate(`/table/${data.id}`);

@@ -16,6 +16,7 @@ import FAQPanel from '../components/support/FAQPanel';
 import TermsGate from '../components/auth/TermsGate';
 import styles from './SettingsPage.module.css';
 import ConfirmModal from '../components/common/ConfirmModal';
+import { useToast } from '../components/common/Toast';
 
 const settingsSectionAnimationStyle = (index: number) => ({
     opacity: 0,
@@ -204,6 +205,7 @@ const ColorPicker = ({
 
 export default function SettingsPage() {
     const [searchParams] = useSearchParams();
+    const toast = useToast();
     const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
     const [hasChanges, setHasChanges] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -289,9 +291,10 @@ export default function SettingsPage() {
             if (error) throw error;
             setShowEmailModal(false);
             setNewEmail('');
-            // Email confirmation will be sent
-        } catch (err) {
+            toast.success('Confirmation email sent! Check your inbox to verify.');
+        } catch (err: any) {
             console.error('Email update failed:', err);
+            toast.error(err?.message || 'Failed to update email.');
         }
         setActionLoading(false);
     };
@@ -306,8 +309,10 @@ export default function SettingsPage() {
             setShowPasswordModal(false);
             setNewPassword('');
             setConfirmPassword('');
-        } catch (err) {
+            toast.success('Password updated successfully!');
+        } catch (err: any) {
             console.error('Password update failed:', err);
+            toast.error(err?.message || 'Failed to update password.');
         }
         setActionLoading(false);
     };
@@ -342,8 +347,10 @@ export default function SettingsPage() {
             a.download = `club-arena-export-${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             URL.revokeObjectURL(url);
+            toast.success('Data exported successfully!');
         } catch (err) {
             console.error('Export failed:', err);
+            toast.error('Failed to export data. Please try again.');
         }
         setActionLoading(false);
     };
@@ -368,6 +375,7 @@ export default function SettingsPage() {
                 window.location.href = '/';
             } catch (err) {
                 console.error('Account deletion failed:', err);
+                toast.error('Account deletion failed. Please try again.');
             }
             setActionLoading(false);
         } else if (actionType === 'disable-2fa') {
@@ -377,8 +385,10 @@ export default function SettingsPage() {
                 if (error) throw error;
                 setTwoFactorEnabled(false);
                 setFactorId('');
+                toast.success('Two-factor authentication disabled.');
             } catch (err) {
                 console.error('Failed to disable 2FA:', err);
+                toast.error('Failed to disable 2FA. Please try again.');
             }
             setActionLoading(false);
         } else if (actionType === 'reset-settings') {
@@ -536,8 +546,10 @@ export default function SettingsPage() {
 
             // Notify other components that settings changed
             masterBus.emit('SETTINGS_UPDATED', { settings: settings as unknown as Record<string, unknown> });
+            toast.success('Settings saved!');
         } catch (error) {
             console.error('Failed to sync settings:', error);
+            toast.error('Failed to save settings. Please try again.');
         } finally {
             setSaving(false);
         }

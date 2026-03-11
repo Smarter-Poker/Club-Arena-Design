@@ -121,6 +121,7 @@ export const CommissionService = {
             .maybeSingle();
 
         if (error) throw error;
+        if (!data) throw new Error('Commission rate upsert returned no data');
         return {
             id: data.id,
             clubId: data.club_id,

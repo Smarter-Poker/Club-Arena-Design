@@ -189,6 +189,7 @@ class UnionServiceClass {
             .maybeSingle();
 
         if (error) throw error;
+        if (!data) throw new Error('Union creation returned no data');
 
         // Add owner as union_lead
         await this.addAdmin(data.id, ownerId, 'union_lead');
@@ -215,6 +216,7 @@ class UnionServiceClass {
             .maybeSingle();
 
         if (error) throw error;
+        if (!data) return null;
 
         return this.mapUnion(data);
     }

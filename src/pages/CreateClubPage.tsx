@@ -614,6 +614,7 @@ export default function CreateClubPage() {
         .maybeSingle();
 
       if (insertError) throw insertError;
+      if (!data) throw new Error('Club creation returned no data');
 
       // Add owner as first member — if this fails, delete the orphaned club
       const { error: memberError } = await supabase.from('club_members').insert({

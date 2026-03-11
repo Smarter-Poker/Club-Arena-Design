@@ -72,6 +72,7 @@ export const InviteService = {
             .maybeSingle();
 
         if (error) throw error;
+        if (!data) throw new Error('Invite creation returned no data');
 
         return {
             id: data.id,

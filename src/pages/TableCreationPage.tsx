@@ -88,6 +88,7 @@ export default function TableCreationPage() {
         .maybeSingle();
 
       if (createError) throw createError;
+      if (!data) throw new Error('Table creation returned no data');
 
       navigate(`/table/${data.id}`);
     } catch (err: any) {

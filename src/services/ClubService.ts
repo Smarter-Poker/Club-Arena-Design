@@ -126,8 +126,7 @@ class ClubServiceClass {
             .maybeSingle();
 
         if (error) throw error;
-
-        // Auto-add owner as a member
+        if (!data) throw new Error('Club creation returned no data');
         await this.addMember(data.id, ownerId, 'owner');
 
         // Initialize BBJ pool for the new club

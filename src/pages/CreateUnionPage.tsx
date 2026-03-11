@@ -161,6 +161,7 @@ export default function CreateUnionPage() {
         .maybeSingle();
 
       if (insertError) throw insertError;
+      if (!data) throw new Error('Union creation returned no data');
       navigate(`/unions/${data.id}`);
     } catch (err: any) {
       console.error('Failed to create union:', err);
