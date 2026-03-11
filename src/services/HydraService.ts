@@ -294,6 +294,14 @@ export const HydraService = {
   async getTableLiquidityStatus(tableId: string): Promise<TableLiquidityStatus> {
     const horses = await this.getActiveHorses(tableId);
 
+    // Get table max_players for accurate seat count
+    const { data: tableInfo } = await supabase
+      .from('tables')
+      .select('max_players')
+      .eq('id', tableId)
+      .maybeSingle();
+    const maxPlayers = tableInfo?.max_players || 9;
+
     // Simple seat count query — only active seats
     const { data: seats, error } = await supabase
       .from('table_seats')
@@ -307,7 +315,7 @@ export const HydraService = {
         tableId,
         realPlayers: 0,
         horsePlayers: horses.length,
-        availableSeats: 9,
+        availableSeats: maxPlayers,
         needsMoreHorses: true,
         needsFewerHorses: false,
       };
@@ -316,7 +324,7 @@ export const HydraService = {
     const totalPlayers = seats?.length || 0;
     const horsePlayers = horses.length;
     const realPlayers = totalPlayers - horsePlayers;
-    const availableSeats = 9 - totalPlayers;
+    const availableSeats = maxPlayers - totalPlayers;
 
     return {
       tableId,
@@ -686,7 +694,9 @@ export const HydraService = {
         randomInRange(this.config.entryDelayRange[0], this.config.entryDelayRange[1]) * 1000; // Convert seconds to milliseconds
 
       setTimeout(() => {
-        this.seedTable(tableId, bigBlind);
+        this.seedTable(tableId, bigBlind).catch((err) => {
+          console.error(`[HydraService] Failed to reseed table ${tableId} after player left:`, err);
+        });
       }, delay);
     }
   },

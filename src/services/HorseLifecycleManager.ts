@@ -69,7 +69,9 @@ class HorseLifecycleManagerCore {
     }
 
     this.isRunning = true;
-    console.log('[LifecycleManager] Starting monitoring (interval: ' + this.monitoringInterval + 'ms)');
+    console.log(
+      '[LifecycleManager] Starting monitoring (interval: ' + this.monitoringInterval + 'ms)'
+    );
 
     // Initial check
     this.performMaintenanceCycle();
@@ -159,7 +161,10 @@ class HorseLifecycleManagerCore {
             .eq('tournament_id', tournament.id);
 
           if (playerError) {
-            console.error('[LifecycleManager] Failed to fetch tournament players for ' + tournament.id + ':', playerError);
+            console.error(
+              '[LifecycleManager] Failed to fetch tournament players for ' + tournament.id + ':',
+              playerError
+            );
             continue;
           }
 
@@ -168,7 +173,7 @@ class HorseLifecycleManagerCore {
           }
 
           // Filter for horses only
-          const playerIds = players.map(p => p.user_id);
+          const playerIds = players.map((p) => p.user_id);
           const { data: profiles } = await supabase
             .from('profiles')
             .select('id')
@@ -192,9 +197,15 @@ class HorseLifecycleManagerCore {
             .from('tournament_players')
             .delete()
             .eq('tournament_id', tournament.id)
-            .in('user_id', profiles.map(p => p.id));
+            .in(
+              'user_id',
+              profiles.map((p) => p.id)
+            );
         } catch (err) {
-          console.error('[LifecycleManager] Error processing tournament ' + tournament.id + ':', err);
+          console.error(
+            '[LifecycleManager] Error processing tournament ' + tournament.id + ':',
+            err
+          );
         }
       }
 
@@ -208,11 +219,14 @@ class HorseLifecycleManagerCore {
           category: 'tournament_bug',
           severity: 'info',
           title: 'Tournament cleanup completed',
-          description: 'Reset ' + horsesReset + ' horses from ' + tournaments.length + ' finished tournaments',
+          description:
+            'Reset ' + horsesReset + ' horses from ' + tournaments.length + ' finished tournaments',
           context: { tournamentCount: tournaments.length, horsesReset },
         });
 
-        console.log('[LifecycleManager] Reset ' + horsesReset + ' horses from finished tournaments');
+        console.log(
+          '[LifecycleManager] Reset ' + horsesReset + ' horses from finished tournaments'
+        );
       }
     } catch (err) {
       console.error('[LifecycleManager] Error in cleanupFinishedTournaments:', err);
@@ -266,13 +280,14 @@ class HorseLifecycleManagerCore {
             continue;
           }
 
-          // Check if horse is in active tournament
+          // Check if horse is in active tournament (use maybeSingle — horse could be in 0 or 1+)
           const { data: activeTournament } = await supabase
             .from('tournament_players')
             .select('tournament_id')
             .eq('user_id', horse.id)
             .eq('status', 'in_progress')
-            .single();
+            .limit(1)
+            .maybeSingle();
 
           if (activeTournament) {
             // In active tournament - don't force reset
@@ -293,8 +308,17 @@ class HorseLifecycleManagerCore {
               category: 'state_desync',
               severity: 'low',
               title: 'Stuck horse force-reset',
-              description: 'Horse was stuck in ' + horse.horse_status + ' state for ' + this.stuckHorseThreshold + ' hours. Force-reset to available.',
-              context: { horseId: horse.id, previousStatus: horse.horse_status, updatedAt: horse.updated_at },
+              description:
+                'Horse was stuck in ' +
+                horse.horse_status +
+                ' state for ' +
+                this.stuckHorseThreshold +
+                ' hours. Force-reset to available.',
+              context: {
+                horseId: horse.id,
+                previousStatus: horse.horse_status,
+                updatedAt: horse.updated_at,
+              },
             });
           }
         } catch (err) {
@@ -361,7 +385,10 @@ class HorseLifecycleManagerCore {
       });
 
       if (creditError) {
-        console.error('[LifecycleManager] Failed to credit winnings to horse ' + horseId + ':', creditError);
+        console.error(
+          '[LifecycleManager] Failed to credit winnings to horse ' + horseId + ':',
+          creditError
+        );
         horseBugReporter.report({
           horseName: 'LifecycleManager',
           horseId,
@@ -379,12 +406,20 @@ class HorseLifecycleManagerCore {
 
       // Log transaction via centralized WalletService RPC
       await WalletService.logTransaction(
-        horseId, 'PLAYER', amount, 'credit', 'prize',
+        horseId,
+        'PLAYER',
+        amount,
+        'credit',
+        'prize',
         'Tournament winnings: ' + amount + ' credits',
-        undefined, undefined, tournamentId
+        undefined,
+        undefined,
+        tournamentId
       );
 
-      console.log('[LifecycleManager] Credited ' + amount + ' tournament winnings to horse ' + horseId);
+      console.log(
+        '[LifecycleManager] Credited ' + amount + ' tournament winnings to horse ' + horseId
+      );
       return true;
     } catch (err) {
       console.error('[LifecycleManager] Error in processWinnings:', err);
@@ -492,13 +527,22 @@ class HorseLifecycleManagerCore {
                   p_user_id: player.user_id,
                   p_amount: buyInAmount,
                 });
-                if (refundErr) console.error(`[HorseLifecycle] SNG cancel refund FAILED for ${player.user_id.slice(0, 8)}: ${refundErr.message}`);
+                if (refundErr)
+                  console.error(
+                    `[HorseLifecycle] SNG cancel refund FAILED for ${player.user_id.slice(0, 8)}: ${refundErr.message}`
+                  );
 
                 // Log refund via centralized WalletService RPC
                 await WalletService.logTransaction(
-                  player.user_id, 'PLAYER', buyInAmount, 'credit', 'refund',
+                  player.user_id,
+                  'PLAYER',
+                  buyInAmount,
+                  'credit',
+                  'refund',
                   'SNG cancelled refund: ' + buyInAmount + ' chips',
-                  undefined, undefined, sng.id
+                  undefined,
+                  undefined,
+                  sng.id
                 );
               }
             }
@@ -528,7 +572,12 @@ class HorseLifecycleManagerCore {
           category: 'tournament_bug',
           severity: 'info',
           title: 'Stale SNGs cancelled',
-          description: 'Cancelled ' + cancelled + ' SNGs that never started and were older than ' + this.staleSngThreshold + ' hours',
+          description:
+            'Cancelled ' +
+            cancelled +
+            ' SNGs that never started and were older than ' +
+            this.staleSngThreshold +
+            ' hours',
           context: { cancelledCount: cancelled },
         });
 
@@ -568,17 +617,25 @@ class HorseLifecycleManagerCore {
           cleaned++;
 
           // If user is a horse, reset to available
-          const { data: profile } = await supabase.from('profiles').select('is_horse').eq('id', seat.user_id).single();
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_horse')
+            .eq('id', seat.user_id)
+            .single();
           if (profile?.is_horse) {
             await this.resetHorse(seat.user_id);
           }
-        } catch { /* skip individual errors */ }
+        } catch {
+          /* skip individual errors */
+        }
       }
 
       if (cleaned > 0) {
         console.log('[LifecycleManager] Cleaned up ' + cleaned + ' stale table seats');
       }
-    } catch { /* non-critical cleanup */ }
+    } catch {
+      /* non-critical cleanup */
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -625,14 +682,14 @@ class HorseLifecycleManagerCore {
       const thresholdTime = new Date(Date.now() - thresholdMs);
 
       // Batch query for tournament registrations
-      const horseIds = horses.map(h => h.id);
+      const horseIds = horses.map((h) => h.id);
       const { data: tournamentRegs } = await supabase
         .from('tournament_players')
         .select('user_id')
         .in('user_id', horseIds)
         .eq('status', 'in_progress');
 
-      const horsesInTournament = new Set(tournamentRegs?.map(r => r.user_id) || []);
+      const horsesInTournament = new Set(tournamentRegs?.map((r) => r.user_id) || []);
 
       let available = 0;
       let seated = 0;
