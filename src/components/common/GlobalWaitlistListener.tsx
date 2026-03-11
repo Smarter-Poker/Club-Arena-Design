@@ -14,6 +14,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
+import { masterBus } from '../../core/MasterBus';
 import { useToast } from './Toast';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -66,12 +67,10 @@ export default function GlobalWaitlistListener() {
 
                         // #10: Emit position change for any waitlist entry
                         if (data) {
-                            import('../../core/MasterBus').then(({ masterBus }) => {
-                                masterBus.emit('WAITLIST_POSITION_CHANGED', {
-                                    tableId: vacatedTableId,
-                                    position: data.position,
-                                    tableName: (data.poker_tables as any)?.name || 'Unknown',
-                                });
+                            masterBus.emit('WAITLIST_POSITION_CHANGED', {
+                                tableId: vacatedTableId,
+                                position: data.position,
+                                tableName: (data.poker_tables as any)?.name || 'Unknown',
                             });
                         }
                     } catch (err) {

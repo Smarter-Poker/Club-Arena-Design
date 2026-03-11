@@ -14,6 +14,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { masterBus } from '../../core/MasterBus';
 import { useWalletStore } from '../../stores/useWalletStore';
 import HamburgerMenu from './HamburgerMenu';
 import styles from './GlobalHeader.module.css';
@@ -84,18 +85,16 @@ export default function GlobalHeader({
         let unsubWallet: (() => void) | null = null;
         let unsubProfile: (() => void) | null = null;
 
-        import('../../core/MasterBus').then(({ masterBus }) => {
-            // #4: Debounced — collapses rapid-fire wallet refreshes into one call
-            unsubWallet = masterBus.subscribeDebounced('WALLET_REFRESHED', async () => {
-                const { data } = await supabase.auth.getUser();
-                if (data.user?.id && mounted) loadBalances(data.user.id);
-            }, 300);
+        // #4: Debounced — collapses rapid-fire wallet refreshes into one call
+        unsubWallet = masterBus.subscribeDebounced('WALLET_REFRESHED', async () => {
+            const { data } = await supabase.auth.getUser();
+            if (data.user?.id && mounted) loadBalances(data.user.id);
+        }, 300);
 
-            unsubProfile = masterBus.subscribe('USER_PROFILE_LOADED', (event) => {
-                if (mounted && event.payload?.avatarUrl) {
-                    setAvatarUrl(event.payload.avatarUrl);
-                }
-            });
+        unsubProfile = masterBus.subscribe('USER_PROFILE_LOADED', (event) => {
+            if (mounted && event.payload?.avatarUrl) {
+                setAvatarUrl(event.payload.avatarUrl);
+            }
         });
 
         return () => {

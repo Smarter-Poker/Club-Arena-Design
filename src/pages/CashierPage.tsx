@@ -373,12 +373,10 @@ export default function CashierPage() {
     const notifyWalletChange = (targetUserId: string, chipAmount: number) => {
         try {
             // 1. Notify local React app via MasterBus for instant sync
-            import('../core/MasterBus').then(({ masterBus }) => {
-                masterBus.emit('WALLET_REFRESHED', {
-                    walletType: 'PLAYER',
-                    available: balances.PLAYER.available,
-                    total: balances.PLAYER.total
-                });
+            masterBus.emit('WALLET_REFRESHED', {
+                walletType: 'PLAYER',
+                available: balances.PLAYER.available,
+                total: balances.PLAYER.total
             });
 
             // 2. Notify parent World Hub iframe
