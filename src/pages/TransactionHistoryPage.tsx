@@ -4,22 +4,30 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
+import { useToast } from '../components/common/Toast';
 import { exportToCSV } from '../lib/export';
 import './TransactionHistoryPage.css';
 
 interface Transaction {
-    id: string;
-    type: 'deposit' | 'withdrawal' | 'transfer_in' | 'transfer_out' | 'rake' | 'rakeback' | 'settlement';
-    amount: number;
-    currency: 'chips' | 'diamonds' | 'usd';
-    description: string;
-    created_at: string;
-    club_id?: string;
-    club_name?: string;
-    counterparty_name?: string;
+  id: string;
+  type:
+    | 'deposit'
+    | 'withdrawal'
+    | 'transfer_in'
+    | 'transfer_out'
+    | 'rake'
+    | 'rakeback'
+    | 'settlement';
+  amount: number;
+  currency: 'chips' | 'diamonds' | 'usd';
+  description: string;
+  created_at: string;
+  club_id?: string;
+  club_name?: string;
+  counterparty_name?: string;
 }
 
 type TransactionFilter = 'all' | 'deposits' | 'withdrawals' | 'transfers' | 'rake';
@@ -27,64 +35,72 @@ type TransactionFilter = 'all' | 'deposits' | 'withdrawals' | 'transfers' | 'rak
 const PAGE_SIZE = 25;
 
 export default function TransactionHistoryPage() {
-    const navigate = useNavigate();
-    const { user } = useUserStore();
+  const navigate = useNavigate();
+  const { user } = useUserStore();
+  const toast = useToast();
 
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [loadingMore, setLoadingMore] = useState(false);
-    const [filter, setFilter] = useState<TransactionFilter>('all');
-    const [hasMore, setHasMore] = useState(true);
-    const [page, setPage] = useState(0);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [dateFrom, setDateFrom] = useState('');
-    const [dateTo, setDateTo] = useState('');
-    const [visibleTransactions, setVisibleTransactions] = useState(new Set<number>());
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [filter, setFilter] = useState<TransactionFilter>('all');
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [visibleTransactions, setVisibleTransactions] = useState(new Set<number>());
 
-    // Stagger transaction rows
-    useEffect(() => {
-        setVisibleTransactions(new Set());
-        const timers = transactions.map((_, i) =>
-            setTimeout(() => setVisibleTransactions(prev => new Set([...prev, i])), i * 35)
-        );
-        return () => timers.forEach(t => clearTimeout(t));
-    }, [transactions.length]);
+  // Stagger transaction rows
+  useEffect(() => {
+    setVisibleTransactions(new Set());
+    const timers = transactions.map((_, i) =>
+      setTimeout(() => setVisibleTransactions((prev) => new Set([...prev, i])), i * 35)
+    );
+    return () => timers.forEach((t) => clearTimeout(t));
+  }, [transactions.length]);
 
-    useEffect(() => {
-        if (user?.id) {
-            setTransactions([]);
-            setPage(0);
-            setHasMore(true);
-            loadTransactions(0, true);
+  useEffect(() => {
+    if (user?.id) {
+      setTransactions([]);
+      setPage(0);
+      setHasMore(true);
+      loadTransactions(0, true);
+    }
+  }, [user?.id, filter, dateFrom, dateTo]);
+
+  // ── Realtime: live transaction updates ──
+  useEffect(() => {
+    if (!user?.id) return;
+    const channelKey = `tx-history-${user.id}`;
+
+    const channel = masterBus.getOrCreateChannel(channelKey);
+    channel
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chip_transactions',
+        },
+        () => {
+          loadTransactions(0, true);
         }
-    }, [user?.id, filter, dateFrom, dateTo]);
+      )
+      .subscribe();
+    return () => {
+      masterBus.removeRegisteredChannel(channelKey);
+    };
+  }, [user?.id]);
 
-    // ── Realtime: live transaction updates ──
-    useEffect(() => {
-        if (!user?.id) return;
-        const channelKey = `tx-history-${user.id}`;
+  const loadTransactions = async (pageNum: number, reset = false) => {
+    if (reset) setLoading(true);
+    else setLoadingMore(true);
 
-        const channel = masterBus.getOrCreateChannel(channelKey);
-            channel
-            .on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'chip_transactions',
-            }, () => {
-                loadTransactions(0, true);
-            })
-            .subscribe();
-        return () => { masterBus.removeRegisteredChannel(channelKey); };
-    }, [user?.id]);
-
-    const loadTransactions = async (pageNum: number, reset = false) => {
-        if (reset) setLoading(true);
-        else setLoadingMore(true);
-
-        try {
-            let query = supabase
-                .from('chip_transactions')
-                .select(`
+    try {
+      let query = supabase
+        .from('chip_transactions')
+        .select(
+          `
                     id,
                     transaction_type,
                     amount,
@@ -92,273 +108,297 @@ export default function TransactionHistoryPage() {
                     created_at,
                     club_id,
                     clubs (name)
-                `)
-                .or(`from_user_id.eq.${user?.id},to_user_id.eq.${user?.id}`)
-                .order('created_at', { ascending: false })
-                .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1);
+                `
+        )
+        .or(`from_user_id.eq.${user?.id},to_user_id.eq.${user?.id}`)
+        .order('created_at', { ascending: false })
+        .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1);
 
-            // Apply filter
-            if (filter === 'deposits') query = query.eq('transaction_type', 'deposit');
-            else if (filter === 'withdrawals') query = query.in('transaction_type', ['cash_out', 'withdrawal']);
-            else if (filter === 'transfers') query = query.in('transaction_type', ['transfer_in', 'transfer_out', 'agent_transfer']);
-            else if (filter === 'rake') query = query.in('transaction_type', ['rake', 'rakeback']);
+      // Apply filter
+      if (filter === 'deposits') query = query.eq('transaction_type', 'deposit');
+      else if (filter === 'withdrawals')
+        query = query.in('transaction_type', ['cash_out', 'withdrawal']);
+      else if (filter === 'transfers')
+        query = query.in('transaction_type', ['transfer_in', 'transfer_out', 'agent_transfer']);
+      else if (filter === 'rake') query = query.in('transaction_type', ['rake', 'rakeback']);
 
-            // Date range filter
-            if (dateFrom) query = query.gte('created_at', new Date(dateFrom).toISOString());
-            if (dateTo) {
-                const endDate = new Date(dateTo);
-                endDate.setHours(23, 59, 59, 999);
-                query = query.lte('created_at', endDate.toISOString());
-            }
+      // Date range filter
+      if (dateFrom) query = query.gte('created_at', new Date(dateFrom).toISOString());
+      if (dateTo) {
+        const endDate = new Date(dateTo);
+        endDate.setHours(23, 59, 59, 999);
+        query = query.lte('created_at', endDate.toISOString());
+      }
 
-            const { data, error } = await query;
+      const { data, error } = await query;
 
-            if (!error && data) {
-                const mapped = data.map((t: any) => ({
-                    id: t.id,
-                    type: t.transaction_type,
-                    amount: t.amount,
-                    currency: 'chips' as const,
-                    description: t.notes || '',
-                    created_at: t.created_at,
-                    club_id: t.club_id,
-                    club_name: t.clubs?.name,
-                }));
+      if (!error && data) {
+        const mapped = data.map((t: any) => ({
+          id: t.id,
+          type: t.transaction_type,
+          amount: t.amount,
+          currency: 'chips' as const,
+          description: t.notes || '',
+          created_at: t.created_at,
+          club_id: t.club_id,
+          club_name: t.clubs?.name,
+        }));
 
-                if (reset) {
-                    setTransactions(mapped);
-                } else {
-                    setTransactions(prev => [...prev, ...mapped]);
-                }
-
-                setHasMore(data.length === PAGE_SIZE);
-                setPage(pageNum);
-            }
-        } catch (error) {
-            console.error('Failed to load transactions:', error);
-            toast.error('Failed to load transactions');
+        if (reset) {
+          setTransactions(mapped);
+        } else {
+          setTransactions((prev) => [...prev, ...mapped]);
         }
-        setLoading(false);
-        setLoadingMore(false);
-    };
 
-    const loadMore = () => {
-        if (!loadingMore && hasMore) {
-            loadTransactions(page + 1);
-        }
-    };
+        setHasMore(data.length === PAGE_SIZE);
+        setPage(pageNum);
+      }
+    } catch (error) {
+      console.error('Failed to load transactions:', error);
+      toast.error('Failed to load transactions');
+    }
+    setLoading(false);
+    setLoadingMore(false);
+  };
 
-    const handleExportCSV = () => {
-        exportToCSV(transactions, 'transactions.csv', [
-            { key: 'created_at', label: 'Date' },
-            { key: 'type', label: 'Type' },
-            { key: 'description', label: 'Description' },
-            { key: 'amount', label: 'Amount' },
-            { key: 'currency', label: 'Currency' },
-            { key: 'club_name', label: 'Club' },
-        ]);
-    };
+  const loadMore = () => {
+    if (!loadingMore && hasMore) {
+      loadTransactions(page + 1);
+    }
+  };
 
-    const getIcon = (type: string): string => {
-        switch (type) {
-            case 'deposit': return '▲';
-            case 'withdrawal': return '▼';
-            case 'transfer_in': return '←';
-            case 'transfer_out': return '→';
-            case 'rake': return '%';
-            case 'rakeback': return '↺';
-            case 'settlement': return '☐';
-            default: return '●';
-        }
-    };
+  const handleExportCSV = () => {
+    exportToCSV(transactions, 'transactions.csv', [
+      { key: 'created_at', label: 'Date' },
+      { key: 'type', label: 'Type' },
+      { key: 'description', label: 'Description' },
+      { key: 'amount', label: 'Amount' },
+      { key: 'currency', label: 'Currency' },
+      { key: 'club_name', label: 'Club' },
+    ]);
+  };
 
-    const formatDate = (dateStr: string): string => {
-        const date = new Date(dateStr);
-        return date.toLocaleDateString(undefined, {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
-    };
+  const getIcon = (type: string): string => {
+    switch (type) {
+      case 'deposit':
+        return '▲';
+      case 'withdrawal':
+        return '▼';
+      case 'transfer_in':
+        return '←';
+      case 'transfer_out':
+        return '→';
+      case 'rake':
+        return '%';
+      case 'rakeback':
+        return '↺';
+      case 'settlement':
+        return '☐';
+      default:
+        return '●';
+    }
+  };
 
-    const getCurrencySymbol = (currency: string): string => {
-        switch (currency) {
-            case 'diamonds': return '◆';
-            case 'usd': return '';
-            default: return '♠';
-        }
-    };
+  const formatDate = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
 
-    // Apply local search filter
-    const displayTransactions = useMemo(() => {
-        if (!searchQuery.trim()) return transactions;
-        const q = searchQuery.toLowerCase();
-        return transactions.filter(tx =>
-            (tx.description || '').toLowerCase().includes(q) ||
-            (tx.club_name || '').toLowerCase().includes(q) ||
-            tx.type.toLowerCase().includes(q)
-        );
-    }, [transactions, searchQuery]);
+  const getCurrencySymbol = (currency: string): string => {
+    switch (currency) {
+      case 'diamonds':
+        return '◆';
+      case 'usd':
+        return '';
+      default:
+        return '♠';
+    }
+  };
 
-    // Calculate totals from visible transactions
-    const totals = displayTransactions.reduce(
-        (acc, tx) => {
-            if (tx.amount > 0) acc.deposits += tx.amount;
-            else acc.withdrawals += Math.abs(tx.amount);
-            return acc;
-        },
-        { deposits: 0, withdrawals: 0 }
+  // Apply local search filter
+  const displayTransactions = useMemo(() => {
+    if (!searchQuery.trim()) return transactions;
+    const q = searchQuery.toLowerCase();
+    return transactions.filter(
+      (tx) =>
+        (tx.description || '').toLowerCase().includes(q) ||
+        (tx.club_name || '').toLowerCase().includes(q) ||
+        tx.type.toLowerCase().includes(q)
     );
-    const netFlow = totals.deposits - totals.withdrawals;
+  }, [transactions, searchQuery]);
 
-    return (
-        <div className="transaction-history-page">
+  // Calculate totals from visible transactions
+  const totals = displayTransactions.reduce(
+    (acc, tx) => {
+      if (tx.amount > 0) acc.deposits += tx.amount;
+      else acc.withdrawals += Math.abs(tx.amount);
+      return acc;
+    },
+    { deposits: 0, withdrawals: 0 }
+  );
+  const netFlow = totals.deposits - totals.withdrawals;
 
-            {/* Summary */}
-            <div className="tx-summary">
-                <div className="summary-card">
-                    <span className="summary-value positive">+{totals.deposits.toLocaleString()}</span>
-                    <span className="summary-label">Deposits</span>
-                </div>
-                <div className="summary-card">
-                    <span className="summary-value negative">-{totals.withdrawals.toLocaleString()}</span>
-                    <span className="summary-label">Withdrawals</span>
-                </div>
-                <div className="summary-card">
-                    <span className={`summary-value ${netFlow >= 0 ? 'positive' : 'negative'}`}>
-                        {netFlow >= 0 ? '+' : ''}{netFlow.toLocaleString()}
-                    </span>
-                    <span className="summary-label">Net Flow</span>
-                </div>
-                <button className="export-btn" onClick={handleExportCSV}>
-                    Export CSV
-                </button>
-            </div>
-
-            {/* Search + Date Range */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-                <input
-                    type="text"
-                    placeholder="Search transactions..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{
-                        flex: 1,
-                        minWidth: '160px',
-                        padding: '8px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        background: 'rgba(255,255,255,0.05)',
-                        color: 'inherit',
-                        fontSize: '0.85rem',
-                    }}
-                />
-                <input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                    style={{
-                        padding: '8px 10px',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        background: 'rgba(255,255,255,0.05)',
-                        color: 'inherit',
-                        fontSize: '0.8rem',
-                    }}
-                />
-                <span style={{ color: '#888', fontSize: '0.8rem' }}>to</span>
-                <input
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    style={{
-                        padding: '8px 10px',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        background: 'rgba(255,255,255,0.05)',
-                        color: 'inherit',
-                        fontSize: '0.8rem',
-                    }}
-                />
-                {(dateFrom || dateTo || searchQuery) && (
-                    <button
-                        onClick={() => { setDateFrom(''); setDateTo(''); setSearchQuery(''); }}
-                        style={{
-                            padding: '6px 12px',
-                            borderRadius: '6px',
-                            border: '1px solid rgba(255,59,48,0.3)',
-                            background: 'rgba(255,59,48,0.1)',
-                            color: '#ff3b30',
-                            fontSize: '0.75rem',
-                            cursor: 'pointer',
-                        }}
-                    >
-                        Clear
-                    </button>
-                )}
-            </div>
-
-            <div className="filter-tabs">
-                {(['all', 'deposits', 'withdrawals', 'transfers', 'rake'] as TransactionFilter[]).map(f => (
-                    <button
-                        key={f}
-                        className={filter === f ? 'active' : ''}
-                        onClick={() => setFilter(f)}
-                    >
-                        {f.charAt(0).toUpperCase() + f.slice(1)}
-                    </button>
-                ))}
-            </div>
-
-            <div className="transactions-list">
-                {loading ? (
-                    <div className="loading-state"><div className="spinner" /></div>
-                ) : displayTransactions.length === 0 ? (
-                    <div className="empty-state">
-                        <span className="empty-icon">○</span>
-                        <p>No transactions found</p>
-                    </div>
-                ) : (
-                    <>
-                        {displayTransactions.map((tx, index) => (
-                            <div
-                                key={tx.id}
-                                className="transaction-row"
-                                style={{
-                                    opacity: visibleTransactions.has(index) ? 1 : 0,
-                                    transform: visibleTransactions.has(index) ? 'translateY(0)' : 'translateY(6px)',
-                                    transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                                }}
-                            >
-                                <span className="tx-icon">{getIcon(tx.type)}</span>
-                                <div className="tx-info">
-                                    <span className="tx-desc">{tx.description || tx.type.replace('_', ' ')}</span>
-                                    <span className="tx-meta">
-                                        {tx.club_name && <span className="tx-club">{tx.club_name}</span>}
-                                        {formatDate(tx.created_at)}
-                                    </span>
-                                </div>
-                                <span className={`tx-amount ${tx.amount >= 0 ? 'positive' : 'negative'}`}>
-                                    {tx.amount >= 0 ? '+' : ''}{getCurrencySymbol(tx.currency)}{Math.abs(tx.amount).toLocaleString()}
-                                </span>
-                            </div>
-                        ))}
-
-                        {/* Load More Button */}
-                        {hasMore && (
-                            <button
-                                className="load-more-btn"
-                                onClick={loadMore}
-                                disabled={loadingMore}
-                            >
-                                {loadingMore ? 'Loading...' : 'Load More'}
-                            </button>
-                        )}
-                    </>
-                )}
-            </div>
+  return (
+    <div className="transaction-history-page">
+      {/* Summary */}
+      <div className="tx-summary">
+        <div className="summary-card">
+          <span className="summary-value positive">+{totals.deposits.toLocaleString()}</span>
+          <span className="summary-label">Deposits</span>
         </div>
-    );
-}
+        <div className="summary-card">
+          <span className="summary-value negative">-{totals.withdrawals.toLocaleString()}</span>
+          <span className="summary-label">Withdrawals</span>
+        </div>
+        <div className="summary-card">
+          <span className={`summary-value ${netFlow >= 0 ? 'positive' : 'negative'}`}>
+            {netFlow >= 0 ? '+' : ''}
+            {netFlow.toLocaleString()}
+          </span>
+          <span className="summary-label">Net Flow</span>
+        </div>
+        <button className="export-btn" onClick={handleExportCSV}>
+          Export CSV
+        </button>
+      </div>
 
+      {/* Search + Date Range */}
+      <div
+        style={{
+          display: 'flex',
+          gap: '8px',
+          marginBottom: '12px',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+        }}
+      >
+        <input
+          type="text"
+          placeholder="Search transactions..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{
+            flex: 1,
+            minWidth: '160px',
+            padding: '8px 12px',
+            borderRadius: '8px',
+            border: '1px solid rgba(255,255,255,0.15)',
+            background: 'rgba(255,255,255,0.05)',
+            color: 'inherit',
+            fontSize: '0.85rem',
+          }}
+        />
+        <input
+          type="date"
+          value={dateFrom}
+          onChange={(e) => setDateFrom(e.target.value)}
+          style={{
+            padding: '8px 10px',
+            borderRadius: '8px',
+            border: '1px solid rgba(255,255,255,0.15)',
+            background: 'rgba(255,255,255,0.05)',
+            color: 'inherit',
+            fontSize: '0.8rem',
+          }}
+        />
+        <span style={{ color: '#888', fontSize: '0.8rem' }}>to</span>
+        <input
+          type="date"
+          value={dateTo}
+          onChange={(e) => setDateTo(e.target.value)}
+          style={{
+            padding: '8px 10px',
+            borderRadius: '8px',
+            border: '1px solid rgba(255,255,255,0.15)',
+            background: 'rgba(255,255,255,0.05)',
+            color: 'inherit',
+            fontSize: '0.8rem',
+          }}
+        />
+        {(dateFrom || dateTo || searchQuery) && (
+          <button
+            onClick={() => {
+              setDateFrom('');
+              setDateTo('');
+              setSearchQuery('');
+            }}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '6px',
+              border: '1px solid rgba(255,59,48,0.3)',
+              background: 'rgba(255,59,48,0.1)',
+              color: '#ff3b30',
+              fontSize: '0.75rem',
+              cursor: 'pointer',
+            }}
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
+      <div className="filter-tabs">
+        {(['all', 'deposits', 'withdrawals', 'transfers', 'rake'] as TransactionFilter[]).map(
+          (f) => (
+            <button key={f} className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>
+              {f.charAt(0).toUpperCase() + f.slice(1)}
+            </button>
+          )
+        )}
+      </div>
+
+      <div className="transactions-list">
+        {loading ? (
+          <div className="loading-state">
+            <div className="spinner" />
+          </div>
+        ) : displayTransactions.length === 0 ? (
+          <div className="empty-state">
+            <span className="empty-icon">○</span>
+            <p>No transactions found</p>
+          </div>
+        ) : (
+          <>
+            {displayTransactions.map((tx, index) => (
+              <div
+                key={tx.id}
+                className="transaction-row"
+                style={{
+                  opacity: visibleTransactions.has(index) ? 1 : 0,
+                  transform: visibleTransactions.has(index) ? 'translateY(0)' : 'translateY(6px)',
+                  transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                }}
+              >
+                <span className="tx-icon">{getIcon(tx.type)}</span>
+                <div className="tx-info">
+                  <span className="tx-desc">{tx.description || tx.type.replace('_', ' ')}</span>
+                  <span className="tx-meta">
+                    {tx.club_name && <span className="tx-club">{tx.club_name}</span>}
+                    {formatDate(tx.created_at)}
+                  </span>
+                </div>
+                <span className={`tx-amount ${tx.amount >= 0 ? 'positive' : 'negative'}`}>
+                  {tx.amount >= 0 ? '+' : ''}
+                  {getCurrencySymbol(tx.currency)}
+                  {Math.abs(tx.amount).toLocaleString()}
+                </span>
+              </div>
+            ))}
+
+            {/* Load More Button */}
+            {hasMore && (
+              <button className="load-more-btn" onClick={loadMore} disabled={loadingMore}>
+                {loadingMore ? 'Loading...' : 'Load More'}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
