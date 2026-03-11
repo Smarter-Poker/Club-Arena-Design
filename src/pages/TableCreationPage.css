@@ -32,10 +32,13 @@
     background: linear-gradient(145deg,
             rgba(255, 255, 255, 0.06) 0%,
             rgba(100, 100, 100, 0.03) 100%);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 2px solid #2a3a4a;
     border-radius: 12px;
     padding: 1rem;
     margin-bottom: 1rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .creation-section h3 {
@@ -55,13 +58,13 @@
     background: linear-gradient(180deg, #0d1520 0%, #1a2332 100%);
     color: #fff;
     font-size: 1rem;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .name-input:focus {
     outline: none;
     border-color: #00d4ff;
-    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -83,17 +86,18 @@
     border-radius: 12px;
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.04) 0%, rgba(100, 100, 100, 0.02) 100%);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .game-type-btn:hover {
     border-color: #3a4a5a;
+    transform: translateY(-2px);
 }
 
 .game-type-btn.active {
     border-color: #00d4ff;
     background: rgba(0, 212, 255, 0.1);
-    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .game-icon {
@@ -128,18 +132,19 @@
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.04) 0%, rgba(100, 100, 100, 0.02) 100%);
     color: #6a7a8a;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .stake-btn:hover {
     border-color: #3a4a5a;
+    transform: translateY(-2px);
 }
 
 .stake-btn.active {
     background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
     border-color: #00d4ff;
     color: white;
-    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -173,11 +178,13 @@
     color: #00d4ff;
     text-align: center;
     font-family: 'Orbitron', monospace;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .stake-input input:focus {
     outline: none;
     border-color: #00d4ff;
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.4);
 }
 
 .stake-divider {
@@ -202,18 +209,19 @@
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.04) 0%, rgba(100, 100, 100, 0.02) 100%);
     color: #6a7a8a;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .size-btn:hover {
     border-color: #3a4a5a;
+    transform: translateY(-2px);
 }
 
 .size-btn.active {
     background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
     border-color: #00d4ff;
     color: white;
-    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -247,11 +255,13 @@
     color: #FFD700;
     text-align: center;
     font-family: 'Orbitron', monospace;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .buyin-input input:focus {
     outline: none;
     border-color: #FFD700;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
 }
 
 .range-divider {
@@ -293,14 +303,14 @@
     font-weight: 600;
     cursor: pointer;
     min-width: 50px;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .toggle-btn.on {
     background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
     border-color: #00d4ff;
     color: white;
-    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -320,13 +330,13 @@
     text-transform: uppercase;
     letter-spacing: 1px;
     cursor: pointer;
-    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
-    transition: all 0.2s ease;
+    box-shadow: 0 0 25px rgba(0, 212, 255, 0.5);
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .create-btn:hover:not(:disabled) {
-    box-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
-    transform: translateY(-2px);
+    box-shadow: 0 0 40px rgba(0, 212, 255, 0.7);
+    transform: translateY(-3px);
 }
 
 .create-btn:disabled {

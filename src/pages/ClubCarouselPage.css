@@ -79,6 +79,8 @@
 
 .header__menu {
     background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
     width: 44px;
@@ -86,6 +88,12 @@
     color: white;
     font-size: 1.5rem;
     cursor: pointer;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.header__menu:hover {
+    transform: translateY(-2px);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -100,12 +108,15 @@
 
 .vip-badge {
     background: linear-gradient(135deg, #2a2a4e, #1a1a3e);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 1px solid #FFB800;
     border-radius: 4px;
     padding: 0.25rem 0.5rem;
     color: #FFB800;
     font-size: 0.8rem;
     font-weight: bold;
+    box-shadow: 0 0 10px rgba(255, 184, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .wallet-balances {
@@ -119,9 +130,13 @@
     align-items: center;
     gap: 0.25rem;
     background: linear-gradient(180deg, #2a2a4e 0%, #1a1a3e 100%);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 20px;
     padding: 0.25rem 0.5rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .balance.gold {
@@ -163,6 +178,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+.balance-add:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -178,12 +200,20 @@
     width: 50px;
     height: 50px;
     background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
 }
 
 .action-icon {
@@ -222,12 +252,14 @@
     font-size: 1.5rem;
     cursor: pointer;
     z-index: 20;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .carousel-arrow:hover {
     background: #1877F2;
     color: white;
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 0 20px rgba(24, 119, 242, 0.5);
 }
 
 .carousel-arrow.left {
@@ -252,7 +284,8 @@
 }
 
 .club-card.active {
-    box-shadow: 0 20px 60px rgba(0, 200, 255, 0.4);
+    box-shadow: 0 20px 60px rgba(0, 200, 255, 0.5);
+    filter: drop-shadow(0 0 20px rgba(0, 200, 255, 0.3));
 }
 
 /* Frame overlay - covers entire card */
@@ -328,6 +361,9 @@
     gap: 0.75rem;
     padding: 1rem;
     background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .club-avatar {
@@ -398,6 +434,13 @@
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: 0 0 15px rgba(24, 119, 242, 0.4);
+}
+
+.join-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 20px rgba(24, 119, 242, 0.6);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════

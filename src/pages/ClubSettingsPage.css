@@ -32,6 +32,8 @@
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.08),
         inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
 }
 
 .settings-section h3 {
@@ -70,14 +72,14 @@
     border-radius: 8px;
     color: #fff;
     font-size: 0.9rem;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .form-group input:focus,
 .form-group textarea:focus {
     outline: none;
     border-color: #00d4ff;
-    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .form-group input:disabled,
@@ -138,20 +140,21 @@
     font-weight: 600;
     cursor: pointer;
     min-width: 55px;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
     text-transform: uppercase;
 }
 
 .toggle-btn:hover {
     border-color: #4a5a6a;
     color: #8a9aaa;
+    transform: translateY(-2px);
 }
 
 .toggle-btn.on {
     background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
     border-color: #00d4ff;
     color: #fff;
-    box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .toggle-btn:disabled {
@@ -176,13 +179,15 @@
     cursor: pointer;
     text-transform: uppercase;
     letter-spacing: 1px;
-    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
-    transition: all 0.2s ease;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    position: relative;
+    overflow: hidden;
 }
 
 .save-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
+    transform: translateY(-3px);
+    box-shadow: 0 0 30px rgba(0, 212, 255, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .save-btn:disabled {
@@ -247,13 +252,13 @@
     border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .btn-danger:hover {
-    box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
-    transform: translateY(-1px);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
 }
 
 .btn-danger:disabled {
@@ -265,6 +270,17 @@
    MODAL — Metal Frame
    ───────────────────────────────────────────────────────────────────────────── */
 
+@keyframes slideUpSpring {
+    0% {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -274,7 +290,8 @@
     justify-content: center;
     padding: 1rem;
     z-index: 1000;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
 }
 
 .modal-content {
@@ -289,6 +306,9 @@
     box-shadow:
         0 0 30px rgba(255, 68, 68, 0.2),
         inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    animation: slideUpSpring 0.4s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .modal-content h3 {
@@ -324,12 +344,14 @@
     border-radius: 8px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .btn-secondary:hover {
     border-color: #4a5a6a;
     color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 /* ─────────────────────────────────────────────────────────────────────────────
    MOBILE RESPONSIVE

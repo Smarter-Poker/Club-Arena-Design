@@ -37,7 +37,13 @@
     margin-bottom: 1.5rem;
     overflow: hidden;
     border: 3px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 0 30px rgba(0, 212, 255, 0.4);
+    box-shadow: 0 0 30px rgba(0, 212, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+}
+
+.club-avatar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 40px rgba(0, 212, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .club-avatar img {
@@ -119,12 +125,12 @@
     text-transform: uppercase;
     letter-spacing: 1px;
     cursor: pointer;
-    box-shadow: 0 0 25px rgba(0, 212, 255, 0.5);
-    transition: all 0.2s ease;
+    box-shadow: 0 0 25px rgba(0, 212, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .join-btn:hover {
-    box-shadow: 0 0 40px rgba(0, 212, 255, 0.7);
+    box-shadow: 0 0 40px rgba(0, 212, 255, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06);
     transform: translateY(-2px);
 }
 

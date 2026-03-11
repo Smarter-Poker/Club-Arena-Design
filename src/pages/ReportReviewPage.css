@@ -82,15 +82,20 @@
     background: linear-gradient(145deg,
             rgba(255, 255, 255, 0.06) 0%,
             rgba(100, 100, 100, 0.03) 100%);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 2px solid #2a3a4a;
     border-radius: 12px;
     padding: 1rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .report-card:hover {
     border-color: #3a4a5a;
+    transform: translateY(-2px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 24px rgba(0, 212, 255, 0.15);
 }
 
 .report-card.selected {
@@ -169,12 +174,15 @@
 
 .modal-content {
     background: linear-gradient(180deg, #1a2535 0%, #0d1520 100%);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 2px solid #2a3a4a;
     border-radius: 16px;
     width: 100%;
     max-width: 500px;
     max-height: 80vh;
     overflow-y: auto;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .modal-header {
@@ -269,7 +277,7 @@
     border-radius: 8px;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .btn-danger {

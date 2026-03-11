@@ -28,12 +28,15 @@
     color: #fff;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
-    transition: all 0.2s ease;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    position: relative;
+    overflow: hidden;
 }
 
 .admin-bar button:hover {
-    box-shadow: 0 0 25px rgba(0, 212, 255, 0.6);
+    box-shadow: 0 0 25px rgba(0, 212, 255, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -48,6 +51,8 @@
     border: 2px solid #2a3a4a;
     margin: 0 1rem 1rem;
     border-radius: 12px;
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
 }
 
 .composer-title {
@@ -60,12 +65,13 @@
     font-size: 1rem;
     font-weight: 700;
     margin-bottom: 0.75rem;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .composer-title:focus {
     outline: none;
     border-color: #00d4ff;
-    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .composer-content {
@@ -78,12 +84,13 @@
     font-size: 0.875rem;
     resize: vertical;
     margin-bottom: 0.75rem;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .composer-content:focus {
     outline: none;
     border-color: #00d4ff;
-    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .composer-actions {
@@ -110,11 +117,15 @@
     border: 2px solid #2a3a4a;
     border-radius: 12px;
     padding: 1rem;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
 }
 
 .announcement-card:hover {
-    border-color: #3a4a5a;
+    border-color: #00d4ff;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    transform: translateY(-2px);
 }
 
 .announcement-card.pinned {
@@ -122,7 +133,7 @@
     background: linear-gradient(145deg,
             rgba(255, 215, 0, 0.08) 0%,
             rgba(100, 100, 100, 0.03) 100%);
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .pin-badge {
@@ -174,7 +185,7 @@
     border-radius: 6px;
     cursor: pointer;
     font-weight: 600;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .announcement-admin-actions .btn-ghost {
@@ -185,6 +196,8 @@
 
 .announcement-admin-actions .btn-ghost:hover {
     background: rgba(255, 215, 0, 0.25);
+    transform: translateY(-1px);
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .announcement-admin-actions .btn-danger {
@@ -195,6 +208,8 @@
 
 .announcement-admin-actions .btn-danger:hover {
     background: rgba(239, 68, 68, 0.25);
+    transform: translateY(-1px);
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────

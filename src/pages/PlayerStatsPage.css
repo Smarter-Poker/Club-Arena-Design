@@ -30,6 +30,9 @@
     border-radius: 12px;
     padding: 1rem;
     text-align: center;
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .stat-card.profit {
@@ -37,7 +40,7 @@
     background: linear-gradient(145deg,
             rgba(0, 212, 255, 0.12) 0%,
             rgba(0, 212, 255, 0.04) 100%);
-    box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .stat-value {
@@ -86,7 +89,7 @@
     cursor: pointer;
     border-bottom: 2px solid transparent;
     margin-bottom: -2px;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .stats-tabs button:hover {
@@ -121,11 +124,15 @@
             rgba(100, 100, 100, 0.02) 100%);
     border: 1px solid #2a3a4a;
     border-radius: 12px;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
 }
 
 .stat-row:hover {
     border-color: #3a4a5a;
+    transform: translateY(-2px);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.15);
 }
 
 .stat-row.highlight {
@@ -169,6 +176,9 @@
     border: 2px solid #2a3a4a;
     border-radius: 12px;
     padding: 1rem;
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .chart-card h3 {

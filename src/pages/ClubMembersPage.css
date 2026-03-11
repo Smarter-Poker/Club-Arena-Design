@@ -33,6 +33,8 @@
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.08),
         inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
 }
 
 .summary-stat.online {
@@ -40,7 +42,7 @@
     background: linear-gradient(145deg,
             rgba(16, 185, 129, 0.15) 0%,
             rgba(16, 185, 129, 0.05) 100%);
-    box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .summary-stat .stat-value {
@@ -80,13 +82,13 @@
     border-radius: 10px;
     color: #fff;
     font-size: 0.9rem;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .members-search input:focus {
     outline: none;
     border-color: #00d4ff;
-    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .members-search input::placeholder {
@@ -114,19 +116,20 @@
     font-weight: 500;
     white-space: nowrap;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .members-filters button:hover {
     border-color: #4a5a6a;
     color: #8a9aaa;
+    transform: translateY(-2px);
 }
 
 .members-filters button.active {
     background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
     border-color: #00d4ff;
     color: #fff;
-    box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -151,13 +154,15 @@
     border: 1px solid #2a3a4a;
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
 }
 
 .member-row:hover {
     border-color: #00d4ff;
-    box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
-    transform: translateX(4px);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    transform: translateX(6px);
 }
 
 .member-avatar {
@@ -190,7 +195,7 @@
     background: #10b981;
     border-radius: 50%;
     border: 2px solid #0d1520;
-    box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
     animation: onlinePulse 2s ease-in-out infinite;
 }
 

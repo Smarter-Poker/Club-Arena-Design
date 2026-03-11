@@ -23,11 +23,20 @@
     padding: 6px 14px;
     border-radius: 8px;
     background: rgba(0, 212, 255, 0.12);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 1px solid rgba(0, 212, 255, 0.25);
     color: #00d4ff;
     font-size: 0.7rem;
     font-weight: 700;
     cursor: pointer;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 10px rgba(0, 212, 255, 0.2);
+}
+
+.mark-all-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 15px rgba(0, 212, 255, 0.3);
 }
 
 .notif-filters {
@@ -69,14 +78,19 @@
     border-radius: 10px;
     margin-bottom: 6px;
     background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 1px solid rgba(255, 255, 255, 0.04);
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
     position: relative;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .notif-item:hover {
     background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-2px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 24px rgba(0, 212, 255, 0.15);
 }
 
 .notif-item.unread {

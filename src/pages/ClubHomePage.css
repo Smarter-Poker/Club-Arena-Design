@@ -41,7 +41,10 @@
     justify-content: space-between;
     padding: 0.75rem 1rem;
     background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .club-home__user {
@@ -98,12 +101,16 @@
 
 .club-home__vip-badge {
     background: linear-gradient(135deg, #2a2a3e, #1a1a2e);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 1px solid #FFB800;
     color: #FFB800;
     padding: 0.25rem 0.75rem;
     border-radius: 4px;
     font-size: 0.8rem;
     font-weight: bold;
+    box-shadow: 0 0 10px rgba(255, 184, 0, 0.3);
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .club-home__header-right {
@@ -295,9 +302,13 @@
     align-items: center;
     gap: 0.5rem;
     background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 4px;
     padding: 0.25rem 0.5rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .wallet-row.gold {
@@ -340,6 +351,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+.wallet-add-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -351,12 +369,15 @@
 
 .club-home__intro p {
     background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     padding: 0.75rem;
     color: #888;
     font-size: 0.85rem;
     margin: 0;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -384,11 +405,12 @@
     font-size: 0.85rem;
     cursor: pointer;
     white-space: nowrap;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .filter-tab:hover {
     background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
 }
 
 .filter-tab.active {
@@ -432,13 +454,16 @@
     width: 140px;
     height: 90px;
     background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border-radius: 50px;
     border: 2px solid rgba(255, 255, 255, 0.2);
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .create-table-card__table:hover {
@@ -478,16 +503,20 @@
     display: flex;
     flex-direction: column;
     background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     padding: 0.75rem;
     text-decoration: none;
-    transition: all 0.3s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .table-card:hover {
     border-color: #1877F2;
     transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(24, 119, 242, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .table-card__header {
@@ -549,10 +578,12 @@
 .status-dot.running,
 .status-dot.active {
     background: #10b981;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
 }
 
 .status-dot.waiting {
     background: #f59e0b;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -562,11 +593,14 @@
     display: flex;
     flex-direction: column;
     background: linear-gradient(180deg, #1a2a3e 0%, #0f1a2e 100%);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 1px solid rgba(59, 130, 246, 0.2);
     border-radius: 8px;
     padding: 0.75rem;
     text-decoration: none;
-    transition: all 0.3s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .tournament-card:hover {
@@ -576,7 +610,7 @@
 
 .tournament-card.live {
     border-color: rgba(239, 68, 68, 0.4);
-    box-shadow: 0 0 12px rgba(239, 68, 68, 0.15);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .tournament-card__header {
@@ -713,12 +747,14 @@
     align-items: center;
     justify-content: center;
     z-index: 2;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .table-card__delete-btn:hover {
     background: rgba(255, 59, 48, 0.35);
     border-color: #ff3b30;
+    transform: translateY(-2px);
+    box-shadow: 0 0 10px rgba(255, 59, 48, 0.5);
 }
 
 .table-card__delete-btn:disabled {

@@ -167,10 +167,13 @@
     background: linear-gradient(145deg,
             rgba(255, 255, 255, 0.04) 0%,
             rgba(100, 100, 100, 0.02) 100%);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 2px solid transparent;
     border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .agent-card:hover {
@@ -178,6 +181,8 @@
     background: linear-gradient(145deg,
             rgba(0, 212, 255, 0.08) 0%,
             rgba(0, 212, 255, 0.03) 100%);
+    transform: translateY(-2px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 24px rgba(0, 212, 255, 0.2);
 }
 
 .agent-card.selected {
@@ -281,13 +286,18 @@
     background: linear-gradient(145deg,
             rgba(255, 255, 255, 0.04) 0%,
             rgba(100, 100, 100, 0.02) 100%);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 1px solid #2a3a4a;
     border-radius: 10px;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .player-card:hover {
     border-color: #3a4a5a;
+    transform: translateY(-2px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 24px rgba(16, 185, 129, 0.15);
 }
 
 .player-avatar {
@@ -391,6 +401,8 @@
     background: linear-gradient(145deg,
             rgba(255, 255, 255, 0.08) 0%,
             rgba(100, 100, 100, 0.04) 100%);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 2px solid #2a3a4a;
     border-radius: 16px;
     padding: 1.5rem;

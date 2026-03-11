@@ -61,15 +61,19 @@
     background: linear-gradient(145deg,
             rgba(255, 255, 255, 0.06) 0%,
             rgba(100, 100, 100, 0.03) 100%);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 2px solid #2a3a4a;
     border-radius: 16px;
     overflow: hidden;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .promo-card:hover {
     border-color: #00d4ff;
-    box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 24px rgba(0, 212, 255, 0.2);
 }
 
 .promo-image {
@@ -186,6 +190,10 @@
     box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
 }
 
+.daily-bonus-banner {
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+}
+
 .daily-bonus-banner:hover {
     transform: translateY(-2px);
     box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
@@ -230,6 +238,8 @@
 .bonus-wheel-modal {
     position: relative;
     background: linear-gradient(180deg, #1a2535 0%, #0d1520 100%);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
     border: 2px solid #2a3a4a;
     border-radius: 20px;
     padding: 1.5rem;
@@ -237,7 +247,7 @@
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 0 40px rgba(0, 212, 255, 0.2);
+    box-shadow: 0 0 40px rgba(0, 212, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .modal-close {

@@ -24,6 +24,8 @@
             rgba(255, 255, 255, 0.06) 0%,
             rgba(100, 100, 100, 0.03) 100%);
     border-bottom: 2px solid #2a3a4a;
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
 }
 
 .leaderboard-header .back-btn {
@@ -34,7 +36,7 @@
     color: #8a9aaa;
     cursor: pointer;
     padding: 0.5rem 0.75rem;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .leaderboard-header .back-btn:hover {
@@ -64,8 +66,11 @@
     color: white;
     border: 2px solid rgba(255, 255, 255, 0.2);
     box-shadow:
-        0 0 30px rgba(0, 212, 255, 0.4),
+        0 0 30px rgba(0, 212, 255, 0.6),
         inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .user-rank-position {
@@ -125,7 +130,7 @@
     font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .scope-toggle button:hover {
@@ -135,7 +140,7 @@
 .scope-toggle button.active {
     background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
     color: #fff;
-    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.6);
 }
 
 .filter-group select {
@@ -145,7 +150,7 @@
     border-radius: 8px;
     color: #fff;
     font-size: 0.85rem;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .filter-group select:focus {
@@ -179,11 +184,14 @@
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
 }
 
 .podium-place:hover {
     transform: translateY(-4px);
     border-color: #3a4a5a;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
 }
 
 .podium-1st {
@@ -343,6 +351,7 @@
     border-radius: 4px;
     letter-spacing: 0.5px;
     margin-top: 0.25rem;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
 
 .entry-vip-tag {
@@ -354,6 +363,7 @@
     border-radius: 3px;
     margin-left: 6px;
     vertical-align: middle;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -430,12 +440,15 @@
     border: 1px solid #2a3a4a;
     border-radius: 12px;
     margin-bottom: 0.5rem;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
 }
 
 .leaderboard-entry:hover {
-    transform: translateX(4px);
+    transform: translateX(4px) translateY(-2px);
     border-color: #3a4a5a;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.15);
 }
 
 .leaderboard-entry.current-user {
@@ -651,13 +664,13 @@
     font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
 }
 
 .join-club-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 0 25px rgba(0, 212, 255, 0.5);
+    box-shadow: 0 0 25px rgba(0, 212, 255, 0.7);
 }
 
 /* Spinner */
@@ -735,7 +748,7 @@
     font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 .tab-btn:hover {
@@ -790,12 +803,15 @@
     border: 1px solid #2a3a4a;
     border-radius: 12px;
     margin-bottom: 0.5rem;
-    transition: all 0.2s ease;
+    transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
 }
 
 .tournament-stats-entry:hover {
-    transform: translateX(4px);
+    transform: translateX(4px) translateY(-2px);
     border-color: #3a4a5a;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.15);
 }
 
 .tournament-stats-entry.current-user {
