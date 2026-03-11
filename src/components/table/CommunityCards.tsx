@@ -117,12 +117,7 @@ export function CommunityCards({
 
     return (
         <div className="community-cards">
-            {/* Stage Label */}
-            <div className="community-cards__stage-label">
-                {stage.toUpperCase()}
-            </div>
-
-            {/* Card Container */}
+            {/* Card Container — no stage label clutter */}
             <div className="community-cards__container">
                 {slots.map((slot, i) => (
                     slot.type === 'card' ? (

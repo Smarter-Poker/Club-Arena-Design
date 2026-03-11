@@ -1,882 +1,618 @@
 /**
+ * ♠ CLUB ARENA — Seat Slot Styles
  * ═══════════════════════════════════════════════════════════════════════════════
- * 🪑 SEAT SLOT — Styles
- * ═══════════════════════════════════════════════════════════════════════════════
+ * PokerBros / ClubGG premium compact seat design
+ *
+ * Structure:
+ *   .seat                   — Root container
+ *     .seat__avatar-ring    — Avatar + timer arc wrapper
+ *       .seat__timer-arc    — SVG circular timer
+ *       .seat__avatar       — 44px circular avatar
+ *       .seat__position-chip — D/SB/BB badge
+ *       .seat__status-dot   — Away/sitting out indicator
+ *     .seat__info           — Name + stack pill
+ *     .seat__cards          — Hole cards
+ *     .seat__action         — Last action badge
  */
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   BASE CONTAINER — PokerIQ Style
-   ───────────────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BASE CONTAINER
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
-.seat-slot {
+.seat {
     position: relative;
-    width: 90px;
-    min-height: 60px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    background: transparent;
-    border: none;
-    padding: 0;
-    transition: all 0.3s ease;
+    gap: 2px;
+    width: 72px;
     cursor: pointer;
-    overflow: visible;
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.3s ease, filter 0.3s ease;
 }
 
-.seat-slot:hover {
-    transform: scale(1.05);
-}
+/* ═══════════════════════════════════════════════════════════════════════════════
+   EMPTY SEAT — Subtle "+" circle
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   EMPTY SEAT
-   ───────────────────────────────────────────────────────────────────────────── */
-
-.seat-slot--empty {
-    background: rgba(18, 18, 26, 0.6);
-    border: 2px dashed rgba(212, 168, 75, 0.3);
-    border-radius: 8px;
-    padding: 8px;
+.seat--empty {
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.seat-slot--empty:hover {
-    background: rgba(212, 168, 75, 0.1);
-    border-color: rgba(212, 168, 75, 0.5);
-}
-
-.seat-slot__empty-marker {
+.seat__join-btn {
+    width: 40px;
+    height: 40px;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 4px;
-}
-
-.seat-slot__seat-number {
-    font-size: 0.625rem;
-    color: rgba(212, 168, 75, 0.6);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.seat-slot__sit-button {
-    background: linear-gradient(180deg, #D4A84B 0%, #B8922A 100%);
-    border: 1px solid #C9A227;
-    color: #0A0A1A;
-    padding: 6px 12px;
-    border-radius: 4px;
-    font-size: 0.625rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.06);
+    border: 2px dashed rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    color: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
     transition: all 0.2s ease;
-    cursor: pointer;
-    min-height: 44px;
-    min-width: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    padding: 0;
 }
 
-.seat-slot__sit-button:hover {
-    background: linear-gradient(180deg, #E4B85B 0%, #D4A84B 100%);
-    transform: scale(1.05);
+.seat__join-btn:hover,
+.seat__join-btn:active {
+    background: rgba(34, 197, 94, 0.15);
+    border-color: rgba(34, 197, 94, 0.5);
+    color: #22C55E;
+    transform: scale(1.08);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   STATE VARIANTS
-   ───────────────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   AVATAR RING — Circular container for avatar + timer arc
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
-.seat-slot--hero {
-    border-color: rgba(16, 185, 129, 0.5);
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
-}
-
-.seat-slot--active {
-    border-color: rgba(255, 215, 0, 0.6);
-    box-shadow: 0 0 25px rgba(255, 215, 0, 0.2);
-    animation: activeGlow 1.5s ease-in-out infinite;
-}
-
-@keyframes activeGlow {
-
-    0%,
-    100% {
-        box-shadow: 0 0 25px rgba(255, 215, 0, 0.2);
-    }
-
-    50% {
-        box-shadow: 0 0 35px rgba(255, 215, 0, 0.35);
-    }
-}
-
-.seat-slot--folded {
-    opacity: 0.5;
-    filter: grayscale(50%);
-}
-
-.seat-slot--away,
-.seat-slot--sitting_out {
-    opacity: 0.7;
-}
-
-.seat-slot--all_in {
-    border-color: rgba(244, 63, 94, 0.6);
-    box-shadow: 0 0 20px rgba(244, 63, 94, 0.2);
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   ACTIVE GLOW EFFECT
-   ───────────────────────────────────────────────────────────────────────────── */
-
-.seat-slot__active-glow {
-    position: absolute;
-    inset: -4px;
-    border-radius: 14px;
-    background: radial-gradient(circle at center, rgba(255, 215, 0, 0.15) 0%, transparent 70%);
-    pointer-events: none;
-    animation: pulseGlow 2s ease-in-out infinite;
-}
-
-@keyframes pulseGlow {
-
-    0%,
-    100% {
-        opacity: 0.5;
-    }
-
-    50% {
-        opacity: 1;
-    }
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   TIMER BAR
-   ───────────────────────────────────────────────────────────────────────────── */
-
-.seat-slot__timer-bar {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 12px 12px 0 0;
-    overflow: hidden;
-}
-
-.seat-slot__timer-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #10B981 0%, #FFD700 50%, #F43F5E 100%);
-    transition: width 0.1s linear;
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   CONTENT LAYOUT
-   ───────────────────────────────────────────────────────────────────────────── */
-
-.seat-slot__content {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   AVATAR — Large Character Style (125px height)
-   ───────────────────────────────────────────────────────────────────────────── */
-
-.seat-slot__avatar-container {
+.seat__avatar-ring {
     position: relative;
+    width: 48px;
+    height: 48px;
     flex-shrink: 0;
-    margin-bottom: 0;
 }
 
-.seat-slot__avatar {
-    width: auto;
-    height: 125px;
-    max-width: 100px;
-    border-radius: 8px;
-    border: 3px solid #D4A84B;
-    object-fit: contain;
-    background: linear-gradient(135deg, #1E3A5F 0%, #0D1F33 100%);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+/* SVG timer arc overlays the avatar ring exactly */
+.seat__timer-arc {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    z-index: 2;
+    pointer-events: none;
 }
 
-.seat-slot__avatar--default {
-    width: 80px;
-    height: 125px;
+/* ─── AVATAR ──────────────────────────────────────────────────────────── */
+
+.seat__avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    overflow: hidden;
+    position: relative;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.seat__avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.seat__avatar-initial {
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #1E3A5F 0%, #0D1F33 100%);
-    color: #D4A84B;
-    font-size: 2.5rem;
+    font-size: 1.25rem;
     font-weight: 700;
-    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.7);
+    background: linear-gradient(135deg, #334155 0%, #1E293B 100%);
 }
 
-.seat-slot__status-dot {
+.seat__avatar-fallback {
     position: absolute;
-    bottom: 4px;
-    right: 4px;
+    inset: 0;
+    border-radius: 50%;
+}
+
+/* ─── STATUS DOT ──────────────────────────────────────────────────────── */
+
+.seat__status-dot {
+    position: absolute;
+    bottom: 0;
+    right: 0;
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    border: 2px solid #0A0A1A;
+    border: 2px solid #0F172A;
+    z-index: 3;
 }
 
-.seat-slot__status-dot--away {
+.seat__status-dot--away {
     background: #F59E0B;
 }
 
-.seat-slot__status-dot--sitting_out {
+.seat__status-dot--sitting_out {
     background: #6B7280;
 }
 
-.seat-slot__status-dot--all_in {
-    background: #F43F5E;
-}
+/* ─── POSITION CHIP (D / SB / BB) ────────────────────────────────────── */
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   PLAYER INFO BOX — Golden Box with Name + Chip Count
-   ───────────────────────────────────────────────────────────────────────────── */
-
-.seat-slot__info {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-width: 80px;
-    background: linear-gradient(180deg, rgba(20, 20, 35, 0.95) 0%, rgba(10, 10, 26, 0.98) 100%);
-    border: 2px solid #D4A84B;
-    border-radius: 8px;
-    padding: 6px 12px;
-    margin-top: -12px;
-    position: relative;
-    z-index: 5;
-    box-shadow: 0 4px 12px rgba(212, 168, 75, 0.2), 0 2px 6px rgba(0, 0, 0, 0.4);
-}
-
-.seat-slot__name {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #FFFFFF;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 80px;
-    text-align: center;
-    line-height: 1.2;
-}
-
-.seat-slot__stack {
-    font-size: 0.6875rem;
-    font-weight: 700;
-    color: #D4A84B;
-    font-family: 'JetBrains Mono', 'SF Mono', monospace;
-    margin-top: 2px;
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   POSITION CHIP
-   ───────────────────────────────────────────────────────────────────────────── */
-
-.seat-slot__position-chip {
+.seat__position-chip {
     position: absolute;
-    top: -8px;
-    right: -8px;
-    width: 24px;
-    height: 24px;
+    bottom: -2px;
+    left: -4px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.625rem;
+    font-size: 0.5625rem;
     font-weight: 800;
-    color: #0A0A0F;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-    border: 2px solid rgba(0, 0, 0, 0.2);
+    letter-spacing: -0.02em;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+    z-index: 4;
+    border: 1.5px solid rgba(0, 0, 0, 0.2);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   HOLE CARDS — PokerIQ Style (Large & Visible)
-   ───────────────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   INFO PILL — Name + Stack
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
-.seat-slot__cards {
-    position: absolute;
-    bottom: -8px;
-    left: 100%;
-    margin-left: 8px;
+.seat__info {
     display: flex;
-    gap: 4px;
+    flex-direction: column;
+    align-items: center;
+    padding: 2px 8px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    min-width: 60px;
+    max-width: 80px;
+    margin-top: -4px;
+    position: relative;
+    z-index: 1;
+}
+
+.seat__name {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: #E2E8F0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 70px;
+    text-align: center;
+    line-height: 1.3;
+}
+
+.seat__stack {
+    font-size: 0.625rem;
+    font-weight: 700;
+    color: #22C55E;
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    line-height: 1.2;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   STATE VARIANTS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ─── HERO ────────────────────────────────────────────────────────────── */
+
+.seat--hero .seat__avatar {
+    border-color: #22C55E;
+    box-shadow: 0 0 12px rgba(34, 197, 94, 0.25);
+}
+
+.seat--hero .seat__info {
+    border-color: rgba(34, 197, 94, 0.2);
+}
+
+/* ─── ACTIVE PLAYER ───────────────────────────────────────────────────── */
+
+.seat--active .seat__avatar {
+    border-color: #FFD700;
+    box-shadow:
+        0 0 16px rgba(255, 215, 0, 0.3),
+        0 0 32px rgba(255, 215, 0, 0.1);
+    animation: avatarPulse 2s ease-in-out infinite;
+}
+
+@keyframes avatarPulse {
+    0%, 100% { box-shadow: 0 0 16px rgba(255, 215, 0, 0.3), 0 0 32px rgba(255, 215, 0, 0.1); }
+    50% { box-shadow: 0 0 24px rgba(255, 215, 0, 0.5), 0 0 48px rgba(255, 215, 0, 0.15); }
+}
+
+/* ─── FOLDED ──────────────────────────────────────────────────────────── */
+
+.seat--folded {
+    opacity: 0.4;
+    filter: grayscale(60%);
+}
+
+.seat--folded .seat__avatar {
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: none;
+}
+
+/* ─── AWAY / SITTING OUT ──────────────────────────────────────────────── */
+
+.seat--away,
+.seat--sitting_out {
+    opacity: 0.55;
+}
+
+/* ─── ALL IN ──────────────────────────────────────────────────────────── */
+
+.seat--all_in .seat__avatar {
+    border-color: #EF4444;
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.3);
+}
+
+.seat--all_in .seat__stack {
+    color: #F87171;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   HOLE CARDS
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.seat__cards {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    margin-left: 4px;
+    display: flex;
     z-index: 20;
 }
 
-/* Hero cards are larger and more prominent */
-.seat-slot--hero .seat-slot__cards {
-    left: 50%;
-    margin-left: 50px;
-    bottom: 50%;
-    transform: translateY(50%);
-}
-
-.seat-slot__card {
-    width: 40px;
-    height: 56px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
+/* Hero cards — larger, positioned below avatar */
+.seat__cards--hero {
+    position: relative;
+    left: auto;
+    margin-left: 0;
+    margin-top: 2px;
     justify-content: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    transition: transform 0.2s ease;
+}
+
+.seat__card {
+    width: 32px;
+    height: 44px;
+    border-radius: 4px;
     overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    transition: transform 0.2s ease;
 }
 
-.seat-slot__card--face {
-    background: transparent;
-    border: none;
-    padding: 0;
-}
-
-.seat-slot__card--face .card-image,
-.seat-slot__card--face .card-image__img {
+.seat__card--face .card-image,
+.seat__card--face .card-image__img {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    border-radius: 4px;
+    border-radius: 3px;
 }
 
 /* Hero gets larger cards */
-.seat-slot--hero .seat-slot__card {
-    width: 52px;
-    height: 72px;
-    border-radius: 8px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+.seat__cards--hero .seat__card {
+    width: 44px;
+    height: 62px;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 
-.seat-slot--hero .seat-slot__card--face {
-    border: 2px solid #D4A84B;
+.seat__cards--hero .seat__card--face {
+    border: 1.5px solid rgba(34, 197, 94, 0.4);
 }
 
-.seat-slot__card--hidden {
-    background: linear-gradient(180deg, #1E3A5F 0%, #0D1F33 100%);
-    border-color: #2E5A8F;
-}
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ACTION BADGE — Floating action label
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
-.seat-slot__card-back {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-}
-
-.seat-slot__card-pattern {
-    color: rgba(212, 168, 75, 0.4);
-    font-size: 1.5rem;
-}
-
-.seat-slot__card-rank {
-    font-size: 1.125rem;
-    font-weight: 800;
-    line-height: 1;
-}
-
-.seat-slot--hero .seat-slot__card-rank {
-    font-size: 1.5rem;
-}
-
-.seat-slot__card-suit {
-    font-size: 1.25rem;
-    line-height: 1;
-}
-
-.seat-slot--hero .seat-slot__card-suit {
-    font-size: 1.75rem;
-}
-
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   ACTION BADGE
-   ───────────────────────────────────────────────────────────────────────────── */
-
-.seat-slot__action-badge {
+.seat__action {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    white-space: nowrap;
-    animation: badgePopIn 0.3s ease;
-}
-
-@keyframes badgePopIn {
-    0% {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(0.8);
-    }
-
-    100% {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
-    }
-}
-
-.seat-slot__action-badge--fold {
-    background: rgba(107, 114, 128, 0.9);
-    color: #FFFFFF;
-}
-
-.seat-slot__action-badge--check {
-    background: rgba(16, 185, 129, 0.9);
-    color: #FFFFFF;
-}
-
-.seat-slot__action-badge--call {
-    background: rgba(65, 105, 225, 0.9);
-    color: #FFFFFF;
-}
-
-.seat-slot__action-badge--bet,
-.seat-slot__action-badge--raise {
-    background: rgba(245, 158, 11, 0.9);
-    color: #0A0A0F;
-}
-
-.seat-slot__action-badge--all_in {
-    background: linear-gradient(135deg, #DC143C 0%, #F43F5E 100%);
-    color: #FFFFFF;
-    animation: allInPulse 1s ease-in-out infinite;
-}
-
-@keyframes allInPulse {
-
-    0%,
-    100% {
-        box-shadow: 0 0 10px rgba(244, 63, 94, 0.5);
-    }
-
-    50% {
-        box-shadow: 0 0 20px rgba(244, 63, 94, 0.8);
-    }
-}
-
-@keyframes bountyBadgeGlow {
-
-    0%,
-    100% {
-        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.1);
-    }
-
-    50% {
-        box-shadow: 0 2px 12px rgba(239, 68, 68, 0.9), inset 0 1px 2px rgba(255, 255, 255, 0.15);
-    }
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   ALL-IN BADGE (PERMANENT)
-   ───────────────────────────────────────────────────────────────────────────── */
-
-.seat-slot__all-in-badge {
-    position: absolute;
-    bottom: -6px;
+    top: -8px;
     left: 50%;
     transform: translateX(-50%);
     padding: 2px 8px;
-    background: linear-gradient(135deg, #DC143C 0%, #F43F5E 100%);
-    color: #FFFFFF;
-    border-radius: 4px;
-    font-size: 0.625rem;
-    font-weight: 800;
+    border-radius: 10px;
+    font-size: 0.5625rem;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    box-shadow: 0 2px 8px rgba(244, 63, 94, 0.4);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    z-index: 25;
+    animation: actionPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   BOUNTY BADGE — Shows bounty value on player's head (KO/PKO tournaments)
-   ───────────────────────────────────────────────────────────────────────────── */
+@keyframes actionPop {
+    0% { opacity: 0; transform: translateX(-50%) scale(0.7) translateY(4px); }
+    100% { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
+}
 
-.seat-slot__bounty-badge {
+.seat__action--fold {
+    background: rgba(100, 116, 139, 0.85);
+    color: #FFF;
+}
+
+.seat__action--check {
+    background: rgba(34, 197, 94, 0.85);
+    color: #FFF;
+}
+
+.seat__action--call {
+    background: rgba(59, 130, 246, 0.85);
+    color: #FFF;
+}
+
+.seat__action--bet,
+.seat__action--raise {
+    background: rgba(245, 158, 11, 0.9);
+    color: #0F172A;
+}
+
+.seat__action--all_in {
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+    color: #FFF;
+    animation: actionPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), allInGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes allInGlow {
+    0%, 100% { box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
+    50% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.7); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ALL-IN BADGE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.seat__allin-badge {
     position: absolute;
-    top: -10px;
-    right: -8px;
-    padding: 2px 6px;
-    background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
-    color: #FFFFFF;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 1px 6px;
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+    color: #FFF;
     border-radius: 6px;
-    font-size: 0.55rem;
+    font-size: 0.5rem;
     font-weight: 800;
-    letter-spacing: 0.02em;
-    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+    z-index: 5;
+    white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BOUNTY BADGE
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.seat__bounty {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    padding: 1px 5px;
+    background: linear-gradient(135deg, #EF4444 0%, #F97316 100%);
+    color: #FFF;
+    border-radius: 6px;
+    font-size: 0.5rem;
+    font-weight: 800;
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.5);
     white-space: nowrap;
     z-index: 10;
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     display: flex;
     align-items: center;
     gap: 2px;
-    animation: bountyBadgeGlow 2s ease-in-out infinite;
+    animation: bountyGlow 2s ease-in-out infinite;
 }
 
-.seat-slot__bounty-icon {
-    font-size: 0.7rem;
-    display: inline-block;
+@keyframes bountyGlow {
+    0%, 100% { box-shadow: 0 2px 6px rgba(239, 68, 68, 0.5); }
+    50% { box-shadow: 0 2px 10px rgba(239, 68, 68, 0.8); }
+}
+
+.seat__bounty-target {
+    font-size: 0.6rem;
     line-height: 1;
 }
 
-.seat-slot__bounty-amount {
+.seat__bounty-val {
     font-family: 'JetBrains Mono', 'SF Mono', monospace;
-    font-size: 0.55rem;
+    font-size: 0.5rem;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   RESPONSIVE
-   ───────────────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   RESPONSIVE — Scale down gracefully
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
-@media (max-width: 768px) {
-    .seat-slot {
-        width: 80px;
-        min-height: 50px;
+@media (max-width: 640px) {
+    .seat {
+        width: 64px;
     }
 
-    .seat-slot__content {
-        gap: 6px;
-    }
-
-    .seat-slot__avatar {
-        height: 60px;
-        max-width: 50px;
-        border-width: 2px;
-    }
-
-    .seat-slot__avatar--default {
-        width: 50px;
-        height: 60px;
-        font-size: 1.6rem;
-    }
-
-    .seat-slot__info {
-        min-width: 65px;
-        padding: 4px 8px;
-        margin-top: -10px;
-        border-width: 2px;
-    }
-
-    .seat-slot__name {
-        font-size: 0.65rem;
-        max-width: 60px;
-        line-height: 1.2;
-    }
-
-    .seat-slot__stack {
-        font-size: 0.625rem;
-        margin-top: 2px;
-    }
-
-    .seat-slot__card {
-        width: 32px;
+    .seat__avatar-ring {
+        width: 44px;
         height: 44px;
     }
 
-    .seat-slot__card-rank {
-        font-size: 0.9375rem;
-    }
-
-    .seat-slot__card-suit {
-        font-size: 0.9rem;
-    }
-
-    .seat-slot__cards {
-        margin-left: 6px;
-        gap: 3px;
-    }
-
-    .seat-slot--hero .seat-slot__card {
-        width: 44px;
-        height: 62px;
-    }
-
-    .seat-slot--hero .seat-slot__cards {
-        margin-left: 36px;
-    }
-
-    .seat-slot__position-chip {
-        width: 20px;
-        height: 20px;
-        font-size: 0.55rem;
-        top: -6px;
-        right: -6px;
-    }
-
-    .seat-slot__action-badge {
-        font-size: 0.6rem;
-        padding: 3px 7px;
-    }
-
-    .seat-slot__all-in-badge {
-        font-size: 0.55rem;
-        padding: 2px 5px;
-    }
-
-    .seat-slot__bounty-badge {
-        top: -8px;
-        right: -6px;
-        padding: 2px 5px;
-        font-size: 0.52rem;
-    }
-
-    .seat-slot__bounty-icon {
-        font-size: 0.65rem;
-    }
-
-    .seat-slot__bounty-amount {
-        font-size: 0.52rem;
-    }
-
-    .seat-slot--empty {
-        padding: 6px;
-    }
-
-    .seat-slot__sit-button {
-        padding: 5px 10px;
-        font-size: 0.6rem;
-    }
-}
-
-@media (max-width: 640px) {
-    .seat-slot {
-        width: 74px;
-        min-height: 46px;
-    }
-
-    .seat-slot__avatar {
-        height: 54px;
-        max-width: 46px;
-    }
-
-    .seat-slot__avatar--default {
-        width: 46px;
-        height: 54px;
-        font-size: 1.4rem;
-    }
-
-    .seat-slot__info {
-        min-width: 60px;
-        padding: 3px 6px;
-        margin-top: -8px;
-    }
-
-    .seat-slot__name {
-        font-size: 0.6rem;
-        max-width: 54px;
-    }
-
-    .seat-slot__stack {
-        font-size: 0.6rem;
-    }
-
-    .seat-slot__card {
-        width: 30px;
-        height: 42px;
-    }
-
-    .seat-slot--hero .seat-slot__card {
+    .seat__avatar {
         width: 40px;
-        height: 56px;
+        height: 40px;
     }
 
-    .seat-slot__bounty-badge {
-        top: -7px;
-        right: -6px;
-        padding: 1px 4px;
+    .seat__info {
+        min-width: 54px;
+        padding: 2px 6px;
+    }
+
+    .seat__name {
+        font-size: 0.625rem;
+        max-width: 58px;
+    }
+
+    .seat__stack {
+        font-size: 0.5625rem;
+    }
+
+    .seat__card {
+        width: 28px;
+        height: 38px;
+    }
+
+    .seat__cards--hero .seat__card {
+        width: 38px;
+        height: 54px;
+    }
+
+    .seat__position-chip {
+        width: 18px;
+        height: 18px;
         font-size: 0.5rem;
     }
 
-    .seat-slot__bounty-icon {
-        font-size: 0.6rem;
+    .seat--empty {
+        width: 38px;
+        height: 38px;
     }
 
-    .seat-slot__bounty-amount {
-        font-size: 0.5rem;
+    .seat__join-btn {
+        width: 34px;
+        height: 34px;
     }
 }
 
 @media (max-width: 480px) {
-    .seat-slot {
-        width: 66px;
-        min-height: 40px;
+    .seat {
+        width: 58px;
     }
 
-    .seat-slot__content {
-        gap: 4px;
-    }
-
-    .seat-slot__avatar {
-        height: 48px;
-        max-width: 42px;
-    }
-
-    .seat-slot__avatar--default {
-        width: 42px;
-        height: 48px;
-        font-size: 1.2rem;
-    }
-
-    .seat-slot__info {
-        min-width: 56px;
-        padding: 3px 6px;
-        margin-top: -6px;
-        border-width: 2px;
-    }
-
-    .seat-slot__name {
-        font-size: 0.55rem;
-        max-width: 50px;
-    }
-
-    .seat-slot__stack {
-        font-size: 0.55rem;
-        margin-top: 1px;
-    }
-
-    .seat-slot__card {
-        width: 28px;
+    .seat__avatar-ring {
+        width: 40px;
         height: 40px;
     }
 
-    .seat-slot__card-rank {
-        font-size: 0.8125rem;
+    .seat__avatar {
+        width: 36px;
+        height: 36px;
     }
 
-    .seat-slot__card-suit {
-        font-size: 0.8rem;
-    }
-
-    .seat-slot__cards {
-        margin-left: 4px;
-        gap: 2px;
-    }
-
-    .seat-slot--hero .seat-slot__card {
-        width: 38px;
-        height: 54px;
-    }
-
-    .seat-slot--hero .seat-slot__cards {
-        margin-left: 28px;
-    }
-
-    .seat-slot__position-chip {
-        width: 18px;
-        height: 18px;
-        font-size: 0.5rem;
-        top: -4px;
-        right: -4px;
-    }
-
-    .seat-slot__action-badge {
-        font-size: 0.5625rem;
-        padding: 2px 6px;
-    }
-
-    .seat-slot__all-in-badge {
-        font-size: 0.5rem;
-        padding: 1px 4px;
-    }
-
-    .seat-slot__bounty-badge {
-        top: -6px;
-        right: -5px;
-        padding: 1px 4px;
-        font-size: 0.48rem;
-        gap: 1px;
-    }
-
-    .seat-slot__bounty-icon {
-        font-size: 0.55rem;
-    }
-
-    .seat-slot__bounty-amount {
-        font-size: 0.48rem;
-    }
-
-    .seat-slot--empty {
-        padding: 4px;
-    }
-
-    .seat-slot__sit-button {
-        padding: 3px 8px;
-        font-size: 0.55rem;
-    }
-}
-
-@media (max-width: 380px) {
-    .seat-slot {
-        width: 60px;
-        min-height: 36px;
-    }
-
-    .seat-slot__avatar {
-        height: 42px;
-        max-width: 38px;
-    }
-
-    .seat-slot__avatar--default {
-        width: 38px;
-        height: 42px;
-        font-size: 1rem;
-    }
-
-    .seat-slot__info {
+    .seat__info {
         min-width: 50px;
-        padding: 2px 5px;
-        margin-top: -4px;
-        border-width: 1px;
+        padding: 1px 5px;
     }
 
-    .seat-slot__name {
+    .seat__name {
+        font-size: 0.5625rem;
+        max-width: 50px;
+    }
+
+    .seat__stack {
         font-size: 0.5rem;
-        max-width: 46px;
     }
 
-    .seat-slot__stack {
-        font-size: 0.5rem;
-        margin-top: 1px;
+    .seat__card {
+        width: 26px;
+        height: 36px;
     }
 
-    .seat-slot__card {
-        width: 24px;
-        height: 34px;
-    }
-
-    .seat-slot--hero .seat-slot__card {
+    .seat__cards--hero .seat__card {
         width: 34px;
         height: 48px;
     }
 
-    .seat-slot__position-chip {
+    .seat__position-chip {
         width: 16px;
         height: 16px;
         font-size: 0.45rem;
     }
 
-    .seat-slot__bounty-badge {
-        top: -5px;
-        right: -4px;
-        padding: 1px 3px;
-        font-size: 0.45rem;
+    .seat__action {
+        font-size: 0.5rem;
+        padding: 1px 6px;
     }
 
-    .seat-slot__bounty-icon {
-        font-size: 0.52rem;
+    .seat--empty {
+        width: 34px;
+        height: 34px;
     }
 
-    .seat-slot__bounty-amount {
-        font-size: 0.45rem;
+    .seat__join-btn {
+        width: 30px;
+        height: 30px;
+    }
+}
+
+@media (max-width: 380px) {
+    .seat {
+        width: 52px;
+    }
+
+    .seat__avatar-ring {
+        width: 36px;
+        height: 36px;
+    }
+
+    .seat__avatar {
+        width: 32px;
+        height: 32px;
+    }
+
+    .seat__info {
+        min-width: 46px;
+        padding: 1px 4px;
+    }
+
+    .seat__name {
+        font-size: 0.5rem;
+        max-width: 44px;
+    }
+
+    .seat__stack {
+        font-size: 0.5rem;
+    }
+
+    .seat__card {
+        width: 22px;
+        height: 30px;
+    }
+
+    .seat__cards--hero .seat__card {
+        width: 30px;
+        height: 42px;
+    }
+
+    .seat__position-chip {
+        width: 14px;
+        height: 14px;
+        font-size: 0.4rem;
+    }
+
+    .seat--empty {
+        width: 30px;
+        height: 30px;
+    }
+
+    .seat__join-btn {
+        width: 26px;
+        height: 26px;
+    }
+
+    .seat__join-btn svg {
+        width: 12px;
+        height: 12px;
     }
 }

@@ -17,7 +17,7 @@
     z-index: 1100;
     display: flex;
     flex-direction: column;
-    background: linear-gradient(180deg, #0A0A1A 0%, #0D1020 100%);
+    background: linear-gradient(180deg, #0B1120 0%, #0A0F1A 40%, #080D15 100%);
     overflow: hidden;
     /* Mobile touch optimizations */
     touch-action: manipulation;
@@ -28,37 +28,42 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   HEADER BAR
+   HEADER BAR — PokerBros compact style
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .table-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 6px 10px;
+    padding-top: calc(6px + env(safe-area-inset-top, 0));
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     z-index: 100;
+    min-height: 44px;
 }
 
 .header-btn {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
     border: none;
     border-radius: 8px;
-    color: #E4E6EB;
-    font-size: 1rem;
+    color: #94A3B8;
     cursor: pointer;
     transition: all 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.header-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+.header-btn:hover,
+.header-btn:active {
+    background: rgba(255, 255, 255, 0.15);
+    color: #E2E8F0;
 }
 
 .header-left {
@@ -70,32 +75,30 @@
 .header-center {
     flex: 1;
     display: flex;
+    align-items: center;
     justify-content: center;
+    gap: 8px;
 }
 
-.back-btn {
-    width: auto;
-    padding: 0 10px;
+.header-game-type {
     font-size: 0.8125rem;
-    font-weight: 600;
+    font-weight: 700;
+    color: #E2E8F0;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
-.menu-btn {
-    width: 40px;
-    height: 40px;
-}
-
-.menu-icon {
-    font-size: 1.5rem;
-    font-weight: bold;
-}
-
-.table-id {
-    width: auto;
-    padding: 0 12px;
+.header-blinds {
     font-size: 0.75rem;
-    font-family: 'JetBrains Mono', monospace;
-    color: #8B949E;
+    font-weight: 600;
+    color: #22C55E;
+    font-family: 'JetBrains Mono', 'SF Mono', monospace;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 /* Jackpot Banner */
@@ -146,33 +149,7 @@
     gap: 8px;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   ADD CHIPS BUTTON
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-.add-chips-btn {
-    position: absolute;
-    left: 12px;
-    top: 70px;
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 12px;
-    color: #E4E6EB;
-    font-size: 1.5rem;
-    cursor: pointer;
-    z-index: 50;
-    transition: all 0.2s ease;
-}
-
-.add-chips-btn:hover {
-    background: rgba(24, 119, 242, 0.3);
-    border-color: #1877F2;
-}
+/* Add chips icon is now integrated into the header */
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    TABLE CONTAINER — Fixed viewport with CSS scaling
@@ -184,9 +161,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 60px 10px 10px;
+    padding: 8px 8px 4px;
     overflow: hidden;
-    /* Container for scaling - centered */
 }
 
 /* Table Wrapper - Scales uniformly via CSS transform */
@@ -210,31 +186,28 @@
 .table-rail {
     width: 100%;
     height: 100%;
-    padding: 8px;
-    /* Gold/Bronze ornate rail */
+    padding: 6px;
+    /* Refined dark wood rail — less gaudy than gold */
     background: linear-gradient(180deg,
-            #C9A227 0%,
-            #8B6914 15%,
-            #D4A84B 30%,
-            #8B6914 45%,
-            #C9A227 50%,
-            #8B6914 55%,
-            #D4A84B 70%,
-            #8B6914 85%,
-            #C9A227 100%);
+            #4A3728 0%,
+            #3A2A1E 20%,
+            #5A4232 40%,
+            #3A2A1E 60%,
+            #4A3728 80%,
+            #3A2A1E 100%);
     border-radius: 45% / 35%;
     box-shadow:
-        0 0 0 3px rgba(0, 0, 0, 0.5),
-        0 0 30px rgba(201, 162, 39, 0.3),
-        0 20px 60px rgba(0, 0, 0, 0.6),
-        inset 0 0 20px rgba(0, 0, 0, 0.4);
+        0 0 0 2px rgba(0, 0, 0, 0.6),
+        0 8px 40px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        inset 0 0 16px rgba(0, 0, 0, 0.4);
 }
 
 .table-surface {
     width: 100%;
     height: 100%;
-    /* Dark green felt */
-    background: linear-gradient(180deg, #1A3D2E 0%, #0D2820 50%, #0A1F18 100%);
+    /* Rich deep green felt */
+    background: linear-gradient(180deg, #1B4332 0%, #143D2B 40%, #0D2E1F 100%);
     border-radius: 44% / 34%;
     display: flex;
     flex-direction: column;
@@ -243,50 +216,18 @@
     gap: 8px;
     position: relative;
     box-shadow:
-        inset 0 0 80px rgba(0, 0, 0, 0.5),
-        inset 0 0 20px rgba(0, 0, 0, 0.3);
-    border: 2px solid rgba(139, 105, 20, 0.6);
+        inset 0 0 60px rgba(0, 0, 0, 0.45),
+        inset 0 0 16px rgba(0, 0, 0, 0.2);
+    border: 1.5px solid rgba(255, 255, 255, 0.04);
 }
 
-/* Pot Area — PokerIQ Badge Style */
+/* Pot Area — Clean centered display */
 .pot-area {
     position: absolute;
-    top: 18%;
+    top: 22%;
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 20;
-}
-
-.pot-badge {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    background: rgba(0, 0, 0, 0.85);
-    border-radius: 20px;
-    border: 1px solid rgba(212, 168, 75, 0.3);
-}
-
-.pot-badge__label {
-    font-size: 0.625rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: #10B981;
-}
-
-.pot-badge__dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #10B981;
-}
-
-.pot-badge__amount {
-    font-size: 1rem;
-    font-weight: 800;
-    font-family: 'JetBrains Mono', monospace;
-    color: #FFFFFF;
 }
 
 /* Community Cards Area */
@@ -297,36 +238,16 @@
     transform: translate(-50%, -50%);
 }
 
-/* Game Info — Center of Table */
-.game-info {
+/* Game Info — Removed from center of table for clean PokerBros look */
+/* Game type and blinds are now shown in the header bar */
+
+/* Spectator badge — bottom edge of felt */
+.spectator-area {
     position: absolute;
-    top: 55%;
+    bottom: 8%;
     left: 50%;
-    transform: translate(-50%, -50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-}
-
-.game-type {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #FFFFFF;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-}
-
-.game-variant {
-    font-size: 0.625rem;
-    color: rgba(255, 255, 255, 0.5);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-}
-
-.game-blinds {
-    font-size: 0.75rem;
-    color: rgba(212, 168, 75, 0.8);
-    font-weight: 600;
+    transform: translateX(-50%);
+    z-index: 15;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -364,23 +285,8 @@
 .action-panel-wrapper {
     display: flex;
     flex-direction: column;
-    background: linear-gradient(180deg, #0A0A1A 0%, #0D1020 100%);
-    border-top: 1px solid rgba(212, 168, 75, 0.2);
-}
-
-.action-panel {
-    padding: 16px;
-    background: linear-gradient(180deg, #0A0A1A 0%, #0D1020 100%);
-    border-top: 1px solid rgba(212, 168, 75, 0.2);
-}
-
-/* 2x2 Action Button Grid */
-.action-buttons {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    max-width: 500px;
-    margin: 0 auto;
+    background: transparent;
+    /* ActionPanel.css handles its own background */
 }
 
 .timer-display {

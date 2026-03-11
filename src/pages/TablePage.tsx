@@ -183,25 +183,26 @@ interface TableState {
 // SEAT POSITIONS — Fixed percentages for vertical table layout (never move)
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// Seat positions — PokerBros-style tight oval hugging the felt edge
 const SEAT_POSITIONS_6MAX = [
-    { x: 50, y: 95 },  // Seat 1 (Hero - bottom center)
-    { x: 8, y: 75 },   // Seat 2 (left middle-bottom)
-    { x: 8, y: 35 },   // Seat 3 (left middle-top)
-    { x: 50, y: 5 },   // Seat 4 (top center)
-    { x: 92, y: 35 },  // Seat 5 (right middle-top)
-    { x: 92, y: 75 },  // Seat 6 (right middle-bottom)
+    { x: 50, y: 93 },  // Seat 1 (Hero — bottom center)
+    { x: 10, y: 72 },  // Seat 2 (bottom left)
+    { x: 10, y: 32 },  // Seat 3 (top left)
+    { x: 50, y: 7 },   // Seat 4 (top center)
+    { x: 90, y: 32 },  // Seat 5 (top right)
+    { x: 90, y: 72 },  // Seat 6 (bottom right)
 ];
 
 const SEAT_POSITIONS_9MAX = [
-    { x: 50, y: 97 },  // Seat 1 (Hero - bottom center)
-    { x: 15, y: 88 },  // Seat 2 (left bottom)
-    { x: 3, y: 65 },   // Seat 3 (left middle)
-    { x: 3, y: 40 },   // Seat 4 (left upper)
-    { x: 20, y: 12 },  // Seat 5 (top left)
-    { x: 50, y: 3 },   // Seat 6 (top center)
-    { x: 80, y: 12 },  // Seat 7 (top right)
-    { x: 97, y: 40 },  // Seat 8 (right upper)
-    { x: 97, y: 65 },  // Seat 9 (right middle)
+    { x: 50, y: 95 },  // Seat 1 (Hero — bottom center)
+    { x: 17, y: 87 },  // Seat 2 (bottom left)
+    { x: 5, y: 64 },   // Seat 3 (left middle)
+    { x: 5, y: 38 },   // Seat 4 (left upper)
+    { x: 22, y: 12 },  // Seat 5 (top left)
+    { x: 50, y: 5 },   // Seat 6 (top center)
+    { x: 78, y: 12 },  // Seat 7 (top right)
+    { x: 95, y: 38 },  // Seat 8 (right upper)
+    { x: 95, y: 64 },  // Seat 9 (right middle)
 ];
 
 // HORSE AVATARS — Assign custom avatars to horse players using DiceBear API
@@ -2307,18 +2308,45 @@ export default function TablePage() {
 
     return (
         <div className="table-page">
-            {/* HEADER REMOVED — No header on poker playing tables per directive */}
-
             {/* ═══════════════════════════════════════════════════════════════════════
-          ADD CHIPS BUTTON (Left side)
+          HEADER BAR — Compact PokerBros-style with game info
           ═══════════════════════════════════════════════════════════════════════ */}
-            <button className="add-chips-btn" title="Add Chips" onClick={() => {
-                if (tableState.players[tableState.heroSeat - 1]) {
-                    setShowBuyInModal(true);
-                }
-            }}>
-                <span>+</span>
-            </button>
+            <div className="table-header">
+                <div className="header-left">
+                    <button className="header-btn back-btn" onClick={() => navigate(-1)} title="Back">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M12 4l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                    </button>
+                    <button className="header-btn add-chips-icon" onClick={() => {
+                        if (tableState.players[tableState.heroSeat - 1]) setShowBuyInModal(true);
+                    }} title="Add Chips">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                            <circle cx="9" cy="9" r="7" stroke="currentColor" strokeWidth="1.5"/>
+                            <path d="M9 6v6M6 9h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+                <div className="header-center">
+                    <span className="header-game-type">{tableState.gameType}</span>
+                    <span className="header-blinds">{tableState.blinds}</span>
+                </div>
+                <div className="header-right">
+                    <button className="header-btn" onClick={() => setShowSettings(true)} title="Settings">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                            <circle cx="9" cy="9" r="2" stroke="currentColor" strokeWidth="1.5"/>
+                            <path d="M9 1v2M9 15v2M1 9h2M15 9h2M3.3 3.3l1.4 1.4M13.3 13.3l1.4 1.4M3.3 14.7l1.4-1.4M13.3 4.7l1.4-1.4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                        </svg>
+                    </button>
+                    <button className="header-btn menu-btn" onClick={() => setShowTableMenu(true)} title="Menu">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                            <circle cx="9" cy="4" r="1.5" fill="currentColor"/>
+                            <circle cx="9" cy="9" r="1.5" fill="currentColor"/>
+                            <circle cx="9" cy="14" r="1.5" fill="currentColor"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
 
             {/* ═══════════════════════════════════════════════════════════════════════
           TABLE AREA
@@ -2350,16 +2378,12 @@ export default function TablePage() {
                                     />
                                 </div>
 
-                                {/* Game Info */}
-                                <div className="game-info">
-                                    <span className="game-type">{tableState.gameType}</span>
-                                    <span className="game-variant">{getGameVariantLabel(tableState.gameType)}</span>
-                                    <span className="game-blinds">Blinds: {tableState.blinds}</span>
-                                    {/* Spectator Badge */}
-                                    {presence?.observers && presence.observers.length > 0 && (
+                                {/* Spectator Badge — moved out of center clutter */}
+                                {presence?.observers && presence.observers.length > 0 && (
+                                    <div className="spectator-area">
                                         <SpectatorBadge observers={presence.observers} />
-                                    )}
-                                </div>
+                                    </div>
+                                )}
 
                                 {/* Spin Multiplier Badge */}
                                 {tableState.isTournament && tableState.spinMultiplier && tableState.spinMultiplier > 1 && (
