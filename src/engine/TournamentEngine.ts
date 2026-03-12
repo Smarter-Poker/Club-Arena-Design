@@ -393,7 +393,7 @@ export class TournamentEngine {
       .from('tables')
       .select('id, name, current_players')
       .eq('tournament_id', this.tournamentId)
-      .eq('status', 'running');
+      .eq('status', 'RUNNING');
 
     if (!existingTables || existingTables.length === 0) {
       // No tables exist — need to create them and seat players
@@ -706,7 +706,7 @@ export class TournamentEngine {
         big_blind: firstBlinds.bigBlind,
         ante: firstBlinds.ante || 0,
         max_players: capacity,
-        status: 'running',
+        status: 'RUNNING',
       };
 
       const { data, error } = await this.supabase
