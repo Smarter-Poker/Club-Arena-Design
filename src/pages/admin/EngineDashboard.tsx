@@ -41,10 +41,19 @@ export default function EngineDashboard() {
     const unsubTournament = masterBus.subscribe('TOURNAMENT_UPDATED', () => {
       setTStats(tournamentOrchestrator.getStats());
     });
+    // Phase 3: Refresh Hydra stats when horses are seated or removed
+    const unsubHorseSeated = masterBus.subscribe('HORSE_SEATED', () => {
+      loadHydraStats();
+    });
+    const unsubHorseRemoved = masterBus.subscribe('HORSE_REMOVED', () => {
+      loadHydraStats();
+    });
     return () => {
       unsubTable();
       unsubHand();
       unsubTournament();
+      unsubHorseSeated();
+      unsubHorseRemoved();
     };
   }, []);
 
