@@ -89,46 +89,40 @@ export function subscribeToTable<T>(
  * Called by HeadlessTableEngine on every hand event.
  *
  * CRITICAL: Supabase Realtime requires channels to be subscribed (joined)
- * before .send() can deliver messages. We maintain a cache of subscribed
- * channels to avoid re-subscribing on every broadcast call.
+ * before .send() can deliver messages. We use a Promise-based ready pattern
+ * so ALL sends (including those arriving during the subscribe handshake)
+ * are queued until the channel is confirmed SUBSCRIBED.
  */
-const broadcastChannels = new Map<string, ReturnType<typeof supabase.channel>>();
+const broadcastReady = new Map<string, Promise<ReturnType<typeof supabase.channel>>>();
 
 export function broadcastHandState(tableId: string, handState: Record<string, unknown>): void {
   const channelName = `hand-state:${tableId}`;
 
-  // Reuse existing subscribed channel if available
-  let channel = broadcastChannels.get(channelName);
-  if (!channel) {
-    channel = supabase.channel(channelName);
-    channel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        // Channel is now ready — send any pending state
-        channel!
-          .send({
-            type: 'broadcast',
-            event: 'hand_state',
-            payload: handState,
-          })
-          .catch((err: unknown) => {
-            console.warn(`[Broadcast] Failed to send hand state for ${tableId}:`, err);
-          });
-      }
+  // Create a ready Promise on first call; reuse on subsequent calls
+  if (!broadcastReady.has(channelName)) {
+    const readyPromise = new Promise<ReturnType<typeof supabase.channel>>((resolve) => {
+      const channel = supabase.channel(channelName);
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          resolve(channel);
+        }
+      });
     });
-    broadcastChannels.set(channelName, channel);
-    return; // First call subscribes; the callback above will send once joined
+    broadcastReady.set(channelName, readyPromise);
   }
 
-  // Channel already subscribed — send immediately
-  channel
-    .send({
-      type: 'broadcast',
-      event: 'hand_state',
-      payload: handState,
-    })
-    .catch((err: unknown) => {
-      console.warn(`[Broadcast] Failed to send hand state for ${tableId}:`, err);
-    });
+  // All calls (including during subscribe handshake) queue on the same Promise
+  broadcastReady.get(channelName)!.then((channel) => {
+    channel
+      .send({
+        type: 'broadcast',
+        event: 'hand_state',
+        payload: handState,
+      })
+      .catch((err: unknown) => {
+        console.warn(`[Broadcast] Failed to send hand state for ${tableId}:`, err);
+      });
+  });
 }
 
 /**
