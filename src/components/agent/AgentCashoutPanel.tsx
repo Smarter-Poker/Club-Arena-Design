@@ -5,7 +5,7 @@
  * Component for agents to view and process pending cashout requests
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { cashoutService, CashoutRequest } from '../../services/CashoutService';
 import { useUserStore } from '../../stores/useUserStore';
 import { masterBus } from '../../core/MasterBus';
@@ -24,6 +24,7 @@ export default function AgentCashoutPanel({ clubId, onCashoutProcessed }: AgentC
   const [processing, setProcessing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+  const staggerTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   // Load pending cashouts
   const loadCashouts = useCallback(async () => {
@@ -34,9 +35,11 @@ export default function AgentCashoutPanel({ clubId, onCashoutProcessed }: AgentC
       const pending = await cashoutService.getAgentPendingCashouts(user.id, clubId);
       setCashouts(pending);
       setVisibleItems(new Set());
-      pending.forEach((_, i) => {
-        setTimeout(() => setVisibleItems((prev) => new Set(prev).add(i)), i * 60);
-      });
+      // Clear previous stagger timers
+      staggerTimersRef.current.forEach((t) => clearTimeout(t));
+      staggerTimersRef.current = pending.map((_, i) =>
+        setTimeout(() => setVisibleItems((prev) => new Set(prev).add(i)), i * 60)
+      );
     } catch (err) {
       console.error('Failed to load cashouts:', err);
     }
@@ -71,6 +74,8 @@ export default function AgentCashoutPanel({ clubId, onCashoutProcessed }: AgentC
       clearInterval(interval);
       unsubBalance();
       supabase.removeChannel(channel);
+      staggerTimersRef.current.forEach((t) => clearTimeout(t));
+      staggerTimersRef.current = [];
     };
   }, [loadCashouts, user?.id]);
 
