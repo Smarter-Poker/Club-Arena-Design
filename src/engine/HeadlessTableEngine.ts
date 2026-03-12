@@ -1299,7 +1299,8 @@ export class HeadlessTableEngine {
     const { data: seats, error: seatErr } = await this.supabaseClient
       .from('table_seats')
       .select('user_id, stack')
-      .eq('table_id', this.tableId);
+      .eq('table_id', this.tableId)
+      .is('left_at', null);
 
     if (seatErr || !seats || seats.length === 0) {
       console.warn(
