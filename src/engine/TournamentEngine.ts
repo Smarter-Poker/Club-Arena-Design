@@ -1228,15 +1228,11 @@ export class TournamentEngine {
         // tournament_players.chips is INTEGER — truncate to whole number (never round up)
         const rounded = Math.trunc(stack);
 
-        // We only upsert the fields necessary + the primary/unique keys so it knows what to update
+        // Build payload with unique key + fields to update
         upsertPayload.push({
           tournament_id: this.tournamentId,
           user_id: user_id,
           chips: rounded,
-          // Need to include status to satisfy constraints if it acts like a full replace on conflict,
-          // but upsert by default updates only the columns provided. Wait, in Supabase upsert requires the whole row
-          // if not specifying `onConflict`. Let's actually just use an RPC or specific `upsert` with `onConflict`.
-          // Supabase's javascript client for upsert:
         });
       }
     }
