@@ -197,6 +197,36 @@ export const OfflineQueueService = {
         });
         return data !== false;
       }
+      case 'CREDIT_COMMISSION': {
+        const { agentId, amount, periodId, clubId } = mutation.payload as {
+          agentId: string;
+          amount: number;
+          periodId: string;
+          clubId: string;
+        };
+        const { error } = await supabase.rpc('credit_agent_commission', {
+          p_agent_id: agentId,
+          p_amount: amount,
+          p_period_id: periodId,
+          p_club_id: clubId,
+        });
+        return !error;
+      }
+      case 'CREDIT_RAKEBACK': {
+        const { userId, amount, periodId, clubId } = mutation.payload as {
+          userId: string;
+          amount: number;
+          periodId: string;
+          clubId: string;
+        };
+        const { error } = await supabase.rpc('credit_player_rakeback', {
+          p_user_id: userId,
+          p_amount: amount,
+          p_period_id: periodId,
+          p_club_id: clubId,
+        });
+        return !error;
+      }
       default:
         console.warn(`[OfflineQueue] Unknown action: ${mutation.action}`);
         return false;

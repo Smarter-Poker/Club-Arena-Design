@@ -104,21 +104,21 @@ export default function MultiTablePage() {
   useEffect(() => {
     const unsubSeated = masterBus.subscribe('TABLE_SEATED', (event) => {
       const tableId = (event as any)?.tableId;
-      if (tableId && !tables.find((t) => t.id === tableId)) {
-        setTables((prev) => {
-          if (prev.length >= MAX_TABLES || prev.find((t) => t.id === tableId)) return prev;
-          return [
-            ...prev,
-            {
-              id: tableId,
-              name: (event as any)?.tableName || `Table ${prev.length + 1}`,
-              stakes: '',
-              isMyTurn: false,
-              pot: 0,
-            },
-          ];
-        });
-      }
+      if (!tableId) return;
+      // Functional updater handles dedup check via prev.find — no closure dep needed
+      setTables((prev) => {
+        if (prev.length >= MAX_TABLES || prev.find((t) => t.id === tableId)) return prev;
+        return [
+          ...prev,
+          {
+            id: tableId,
+            name: (event as any)?.tableName || `Table ${prev.length + 1}`,
+            stakes: '',
+            isMyTurn: false,
+            pot: 0,
+          },
+        ];
+      });
     });
     const unsubLeft = masterBus.subscribe('TABLE_LEFT', (event) => {
       const tableId = (event as any)?.tableId;
@@ -151,7 +151,8 @@ export default function MultiTablePage() {
       unsubWsDisconnected();
       unsubWsReconnecting();
     };
-  }, [tables]);
+     
+  }, []);
 
   // ─── Derived state ───────────────────────────────────────────────────
   const activeTableId = tables[activeIndex]?.id || '';
