@@ -41,16 +41,16 @@ BEGIN
     
     -- 3. Log audit trail for SENDER (debit)
     INSERT INTO wallet_transactions (
-        user_id, type, amount, category, description, related_user_id, reference_id
+        user_id, type, amount, category, description, related_entity_id
     ) VALUES (
-        p_from_user_id, 'debit', -p_amount, p_category, p_description, p_to_user_id, p_related_entity_id
+        p_from_user_id, 'debit', -p_amount, p_category, p_description, p_related_entity_id
     );
 
     -- 4. Log audit trail for RECEIVER (credit)
     INSERT INTO wallet_transactions (
-        user_id, type, amount, category, description, related_user_id, reference_id
+        user_id, type, amount, category, description, related_entity_id
     ) VALUES (
-        p_to_user_id, 'credit', p_amount, p_category, p_description, p_from_user_id, p_related_entity_id
+        p_to_user_id, 'credit', p_amount, p_category, p_description, p_related_entity_id
     );
 
 END;

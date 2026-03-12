@@ -541,7 +541,7 @@
   gap: 6px;
 }
 
-.fr-filter-chip {
+.friends-tabs .fr-filter-chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -555,19 +555,22 @@
   cursor: pointer;
   transition: all 0.25s ease;
   white-space: nowrap;
+  flex: unset;
+  border-bottom: none;
 }
 
-.fr-filter-chip:hover {
+.friends-tabs .fr-filter-chip:hover {
   border-color: rgba(0, 212, 255, 0.4);
   color: #00d4ff;
   background: rgba(0, 212, 255, 0.08);
 }
 
-.fr-filter-chip.active {
+.friends-tabs .fr-filter-chip.active {
   border-color: #00d4ff;
   color: #fff;
   background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 153, 204, 0.15));
   box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+  border-bottom-color: #00d4ff;
 }
 
 /* Pending count badge */

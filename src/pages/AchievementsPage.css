@@ -593,7 +593,7 @@
   display: none;
 }
 
-.ach-filter-chip {
+.category-filter .ach-filter-chip {
   padding: 6px 14px;
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -606,13 +606,13 @@
   white-space: nowrap;
 }
 
-.ach-filter-chip:hover {
+.category-filter .ach-filter-chip:hover {
   border-color: rgba(0, 212, 255, 0.4);
   color: #00d4ff;
   background: rgba(0, 212, 255, 0.08);
 }
 
-.ach-filter-chip.active {
+.category-filter .ach-filter-chip.active {
   border-color: #00d4ff;
   color: #fff;
   background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 153, 204, 0.15));

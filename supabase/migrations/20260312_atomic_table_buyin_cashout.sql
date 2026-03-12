@@ -42,7 +42,7 @@ BEGIN
 
     -- D. Log transaction
     INSERT INTO wallet_transactions (
-        user_id, type, amount, category, description, reference_id
+        user_id, type, amount, category, description, table_id
     ) VALUES (
         p_user_id, 'debit', -p_amount, 'buyin', 'Cash game buy-in at table', p_table_id
     );
@@ -91,7 +91,7 @@ BEGIN
 
         -- Log transaction
         INSERT INTO wallet_transactions (
-            user_id, type, amount, category, description, reference_id
+            user_id, type, amount, category, description, table_id
         ) VALUES (
             p_user_id, 'credit', v_stack, 'cashout', 'Cash-out from table', p_table_id
         );
@@ -151,7 +151,7 @@ BEGIN
 
     -- D. Log transaction
     INSERT INTO wallet_transactions (
-        user_id, type, amount, category, description, reference_id
+        user_id, type, amount, category, description, table_id
     ) VALUES (
         p_user_id, 'debit', -p_amount, 'rebuy', 'Auto-rebuy topup at table', p_table_id
     );
