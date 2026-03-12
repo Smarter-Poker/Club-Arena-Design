@@ -100,7 +100,10 @@ export type BusEventType =
   | 'SERVICES_READY'
   | 'SHOW_TOAST'
   | 'WS_METRICS'
-  | 'OFFLINE_QUEUE_METRICS';
+  | 'OFFLINE_QUEUE_METRICS'
+  // Engine orchestration events
+  | 'TABLE_UPDATED'
+  | 'TOURNAMENT_UPDATED';
 
 // #13: Type-safe payload map — compile-time enforcement of correct payloads
 export interface BusPayloadMap {
@@ -218,6 +221,9 @@ export interface BusPayloadMap {
     mutationsReplayed: number;
     mutationsFailed: number;
   };
+  // Engine orchestration events
+  TABLE_UPDATED: { tableId: string; status?: string };
+  TOURNAMENT_UPDATED: { tournamentId: string; status?: string };
 }
 
 export interface BusEvent<T = unknown> {

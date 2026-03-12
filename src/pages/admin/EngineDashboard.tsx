@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { cashGameOrchestrator } from '../../engine/CashGameOrchestrator';
 import { tournamentOrchestrator } from '../../engine/TournamentOrchestrator';
 import { supabase } from '../../lib/supabase';
+import { masterBus } from '../../core/MasterBus';
 import { useToast } from '../../components/common/Toast';
 import './EngineDashboard.css';
 
@@ -24,6 +25,25 @@ export default function EngineDashboard() {
     loadHydraStats();
     const interval = setInterval(loadHydraStats, 10000); // 10s refresh for Hydra
     return () => clearInterval(interval);
+  }, []);
+
+  // Bus listeners: immediately refresh stats when engine events fire
+  useEffect(() => {
+    const unsubTable = masterBus.subscribe('TABLE_UPDATED', () => {
+      setStats(cashGameOrchestrator.getStats());
+      loadHydraStats();
+    });
+    const unsubHand = masterBus.subscribe('HAND_COMPLETED', () => {
+      setStats(cashGameOrchestrator.getStats());
+    });
+    const unsubTournament = masterBus.subscribe('TOURNAMENT_UPDATED', () => {
+      setTStats(tournamentOrchestrator.getStats());
+    });
+    return () => {
+      unsubTable();
+      unsubHand();
+      unsubTournament();
+    };
   }, []);
 
   const loadHydraStats = async () => {

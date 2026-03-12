@@ -3,8 +3,9 @@
  * Shows VPIP, PFR, and win rate for each position
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
+import { masterBus } from '../../core/MasterBus';
 import './PositionWinRates.css';
 
 interface PositionStats {
@@ -88,42 +89,52 @@ const PositionWinRates: React.FC = () => {
   const [visiblePositions, setVisiblePositions] = useState<Set<number>>(new Set());
   const [hoveredPosition, setHoveredPosition] = useState<number | null>(null);
 
-  useEffect(() => {
-    async function loadPositionStats() {
-      const { data: userResp } = await supabase.auth.getUser();
-      if (!userResp.user) return;
+  const loadPositionStats = useCallback(async () => {
+    const { data: userResp } = await supabase.auth.getUser();
+    if (!userResp.user) return;
 
-      const { data: posData, error } = await supabase
-        .from('player_position_stats')
-        .select('*')
-        .eq('user_id', userResp.user.id);
+    const { data: posData, error } = await supabase
+      .from('player_position_stats')
+      .select('*')
+      .eq('user_id', userResp.user.id);
 
-      if (!error && posData && posData.length > 0) {
-        // Map DB data correctly to positional cards
-        const updatedStats = DEFAULT_STATS.map((defPos) => {
-          const live = posData.find((p) => p.position === defPos.position);
-          if (live) {
-            return {
-              ...defPos,
-              handsPlayed: live.hands_played || 0,
-              vpip: live.hands_played > 0 ? (live.vpip_count / live.hands_played) * 100 : 0,
-              pfr: live.hands_played > 0 ? (live.pfr_count / live.hands_played) * 100 : 0,
-            };
-          }
-          return defPos;
-        });
-        setStatsData(updatedStats);
-      }
+    if (!error && posData && posData.length > 0) {
+      // Map DB data correctly to positional cards
+      const updatedStats = DEFAULT_STATS.map((defPos) => {
+        const live = posData.find((p) => p.position === defPos.position);
+        if (live) {
+          return {
+            ...defPos,
+            handsPlayed: live.hands_played || 0,
+            vpip: live.hands_played > 0 ? (live.vpip_count / live.hands_played) * 100 : 0,
+            pfr: live.hands_played > 0 ? (live.pfr_count / live.hands_played) * 100 : 0,
+          };
+        }
+        return defPos;
+      });
+      setStatsData(updatedStats);
     }
+  }, []);
 
+  useEffect(() => {
     loadPositionStats();
 
-    statsData.forEach((_, i) => {
+    DEFAULT_STATS.forEach((_, i) => {
       setTimeout(() => {
         setVisiblePositions((prev) => new Set([...prev, i]));
       }, i * 80);
     });
-  }, []);
+  }, [loadPositionStats]);
+
+  // Bus listener: refresh position stats when a hand completes
+  useEffect(() => {
+    const unsubHand = masterBus.subscribeDebounced(
+      'HAND_COMPLETED',
+      () => loadPositionStats(),
+      2000
+    );
+    return () => unsubHand();
+  }, [loadPositionStats]);
 
   // Find best and worst positions (with at least 1 hand played to prevent 0.0 ties)
   const activeStats = statsData.filter((s) => s.handsPlayed > 0);

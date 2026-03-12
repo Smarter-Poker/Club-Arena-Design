@@ -33,10 +33,11 @@ class PostgresSyncHooksService {
           console.debug('[PostgresSync] External Wallet mutation detected:', payload);
           // Broadcast to local UI components
           masterBus.emit('BALANCE_UPDATED', { source: 'postgres_sync' });
+          const w = payload.new as any;
           masterBus.emit('WALLET_REFRESHED', {
-            walletType: payload.new.currency_type || 'PLAYER',
-            available: payload.new.available_balance || 0,
-            total: payload.new.total_balance || 0,
+            walletType: w.wallet_type || 'PLAYER',
+            available: (w.balance || 0) - (w.locked_balance || 0),
+            total: w.balance || 0,
           });
         }
       )
@@ -48,10 +49,12 @@ class PostgresSyncHooksService {
           console.debug('[PostgresSync] External Profile mutation detected:', payload);
           masterBus.emit('PROFILE_UPDATED', { userId: payload.new.id, updates: payload.new });
 
-          if (payload.new.diamonds !== payload.old.diamonds) {
+          const newDiamonds = (payload.new as any).diamonds;
+          const oldDiamonds = (payload.old as any)?.diamonds;
+          if (newDiamonds != null && oldDiamonds != null && newDiamonds !== oldDiamonds) {
             masterBus.emit('DIAMOND_BALANCE_CHANGED', {
-              newBalance: payload.new.diamonds,
-              delta: payload.new.diamonds - payload.old.diamonds,
+              newBalance: newDiamonds,
+              delta: newDiamonds - oldDiamonds,
               source: 'postgres_sync',
             });
           }
