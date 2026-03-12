@@ -348,21 +348,28 @@ export default function TablePage({
   const [boardStageKey, setBoardStageKey] = useState(0); // Trigger board transitions
 
   // Initialize user on mount
+  const isMounted = useRef(true);
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   useEffect(() => {
     async function initUser() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        setUserId(user.id);
+        if (isMounted.current) setUserId(user.id);
         const { data: profile } = await supabase
           .from('profiles')
           .select('display_name, username')
           .eq('id', user.id)
           .maybeSingle();
-        setUsername(profile?.display_name || profile?.username || 'Player');
+        if (isMounted.current) setUsername(profile?.display_name || profile?.username || 'Player');
       }
-      setIsLoading(false);
+      if (isMounted.current) setIsLoading(false);
     }
     initUser();
 
@@ -420,6 +427,7 @@ export default function TablePage({
   const [showGameRules, setShowGameRules] = useState(false);
 
   const [showSitOut, setShowSitOut] = useState(false);
+  const [sitOutNextHand, setSitOutNextHand] = useState(false);
   const [sitOutTimeRemaining, setSitOutTimeRemaining] = useState(300); // 5 min default
   const [showWaitList, setShowWaitList] = useState(false);
 
@@ -775,7 +783,7 @@ export default function TablePage({
           .maybeSingle();
         const actualClubId = tableData?.club_id || tableId;
         const pool = await BBJService.getPool({ clubId: actualClubId });
-        if (pool) {
+        if (pool && isMounted.current) {
           setBbjAmount(pool.main_balance);
         }
       } catch (error) {
@@ -2333,7 +2341,10 @@ export default function TablePage({
               const playerIdx = updatedPlayers.findIndex((p) => p?.id === result.userId);
               if (playerIdx >= 0 && updatedPlayers[playerIdx]) {
                 const isWinner = (result.hand?.ranking || 0) >= maxRanking;
-                const shouldMuck = !isWinner && userSettingsRef.current.autoMuck;
+                const isUncontested = event.results.length === 1;
+                const shouldMuck =
+                  (!isWinner && userSettingsRef.current.autoMuck) ||
+                  (isWinner && isUncontested && userSettingsRef.current.autoMuckWinners);
 
                 // Convert card format and show cards
                 const suitMapShowdown: Record<string, 'h' | 'd' | 'c' | 's'> = {
@@ -2482,6 +2493,12 @@ export default function TablePage({
             isHandInProgress: false,
           }));
           setLastHandId(`hand-${event.handNumber}`);
+
+          // Trigger Sit Out Next Hand if enabled
+          if (sitOutNextHand) {
+            setSitOutNextHand(false);
+            setShowSitOut(true);
+          }
 
           // Build HandRecord from accumulated actions
           {
@@ -3679,6 +3696,8 @@ export default function TablePage({
                         bigBlind={bb}
                         onAction={handleActionPanelAction}
                         isMyTurn={true}
+                        showPotOdds={userSettings.showPotOdds}
+                        confirmAllIn={userSettings.confirmAllIn}
                       />
                     </>
                   );
@@ -4377,8 +4396,8 @@ export default function TablePage({
         onClose={() => setShowSettings(false)}
         settings={{
           autoMuckLosers: userSettings.autoMuck,
-          autoMuckWinners: false,
-          autoPostBlinds: true,
+          autoMuckWinners: userSettings.autoMuckWinners,
+          autoPostBlinds: userSettings.autoPostBlinds,
           soundEnabled: isSoundEnabled,
           soundVolume: 70,
           showHandStrength: userSettings.showHUD,
@@ -4393,7 +4412,7 @@ export default function TablePage({
           showStackInBB: userSettings.showStackInBB,
           showBetSizePresets: true,
           confirmAllIn: userSettings.confirmAllIn,
-          sitOutNextHand: false,
+          sitOutNextHand: sitOutNextHand,
         }}
         onSettingsChange={(settingsUpdate) => {
           if (settingsUpdate.soundEnabled !== undefined) {
@@ -4423,6 +4442,15 @@ export default function TablePage({
           }
           if (settingsUpdate.showStackInBB !== undefined) {
             updateSetting('showStackInBB', settingsUpdate.showStackInBB);
+          }
+          if (settingsUpdate.sitOutNextHand !== undefined) {
+            setSitOutNextHand(settingsUpdate.sitOutNextHand);
+          }
+          if (settingsUpdate.autoMuckWinners !== undefined) {
+            updateSetting('autoMuckWinners', settingsUpdate.autoMuckWinners);
+          }
+          if (settingsUpdate.autoPostBlinds !== undefined) {
+            updateSetting('autoPostBlinds', settingsUpdate.autoPostBlinds);
           }
         }}
       />

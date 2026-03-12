@@ -50,6 +50,14 @@ export default function LobbyPage() {
     });
   };
 
+  // Mount ref
+  const isMounted = useRef(true);
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   // UNION-FIRST: Check if user belongs to a union and redirect to union lobby
   useEffect(() => {
     const checkUnionMembership = async () => {
@@ -61,7 +69,7 @@ export default function LobbyPage() {
           .select('club_id')
           .eq('user_id', user.id);
 
-        if (!memberships?.length) return;
+        if (!memberships?.length || !isMounted.current) return;
 
         // Check if any of these clubs are in a union
         const clubIds = memberships.map((m) => m.club_id);
@@ -72,12 +80,13 @@ export default function LobbyPage() {
           .limit(1)
           .maybeSingle();
 
-        if (unionClub) {
+        if (unionClub && isMounted.current) {
           // User's club is in a union — redirect to union lobby
           navigate(`/unions/${unionClub.union_id}`, { replace: true });
           return;
         }
       } catch (err) {
+        if (!isMounted.current) return;
         console.warn('[LobbyPage] Union check failed, showing all tables:', err);
       }
     };
@@ -93,12 +102,13 @@ export default function LobbyPage() {
         // For users in unions, they'll be redirected above.
         // This fallback shows all tables for standalone (non-union) users.
         const activeTables = await tableService.getActiveTables();
-        setTables(activeTables);
+        if (isMounted.current) setTables(activeTables);
       } catch (error) {
+        if (!isMounted.current) return;
         console.error('Failed to fetch tables:', error);
         setTables([]);
       } finally {
-        setLoading(false);
+        if (isMounted.current) setLoading(false);
       }
     };
 

@@ -506,7 +506,28 @@ export const BBJService = {
       console.warn('BBJService.executePromoPayout: No recipients — nothing to distribute');
       return true;
     }
-    // Distribute promo payout to each recipient — exact cent-precision
+
+    // Phase 1: Atomically deduct from BBJ Promo Pool and record the event
+    // The RPC bbj_promo_payout handles the deduction and balance checks
+    const { error: poolError } = await retryAsync(
+      () =>
+        supabase.rpc('bbj_promo_payout', {
+          p_pool_id: params.poolId,
+          p_amount: params.amount,
+          p_recipient_user_ids: params.recipientUserIds,
+          p_reason: params.reason,
+          p_triggered_by: null, // Note: triggered_by param could be added later if needed
+          p_event_type: 'custom',
+        }),
+      3
+    );
+
+    if (poolError) {
+      console.error('BBJService.executePromoPayout error: Failed to deduct from pool:', poolError);
+      return false; // Stop before printing any money
+    }
+
+    // Phase 2: Distribute promo payout to each recipient — exact cent-precision
     const totalCents = Math.trunc(params.amount * 100);
     const baseCents = Math.trunc(totalCents / params.recipientUserIds.length);
     const remainderCents = totalCents - baseCents * params.recipientUserIds.length;

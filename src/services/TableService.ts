@@ -261,8 +261,8 @@ class TableService {
         return { success: false, chipsReturned: 0 };
       }
 
-      // Return chips to Player Wallet via credit_player_wallet RPC
-      if (chipsToReturn > 0) {
+      // Return chips to Player Wallet via credit_player_wallet RPC (ONLY for cash games!)
+      if (chipsToReturn > 0 && !tableData?.tournament_id) {
         const { data: creditResult, error: creditError } = await retryAsync(
           () =>
             supabase.rpc('credit_player_wallet', {

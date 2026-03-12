@@ -1488,10 +1488,19 @@ export class TournamentEngine {
     const emptyTables = activeTables.filter((t) => t.playerCount === 0);
     for (const empty of emptyTables) {
       empty.engine.stop();
+      // 1. Evict any ghost seats to keep DB clean
+      await this.supabase
+        .from('table_seats')
+        .update({ left_at: new Date().toISOString() })
+        .eq('table_id', empty.tableId)
+        .is('left_at', null);
+
+      // 2. Mark table closed
       await this.supabase
         .from('tables')
         .update({ status: 'closed', current_players: 0 })
         .eq('id', empty.tableId);
+
       this.removeTable(empty);
     }
 
@@ -1556,9 +1565,16 @@ export class TournamentEngine {
 
     if (!brokenSnapshot || brokenSnapshot.players.length === 0) {
       await this.supabase
+        .from('table_seats')
+        .update({ left_at: new Date().toISOString() })
+        .eq('table_id', sourceTable.tableId)
+        .is('left_at', null);
+
+      await this.supabase
         .from('tables')
         .update({ status: 'closed', current_players: 0 })
         .eq('id', sourceTable.tableId);
+
       this.removeTable(sourceTable);
       return;
     }
@@ -1620,6 +1636,14 @@ export class TournamentEngine {
 
     // Clean up source table
     this.removeTable(sourceTable);
+
+    // Evict all seats (should be empty from the merge, but safe cleanup)
+    await this.supabase
+      .from('table_seats')
+      .update({ left_at: new Date().toISOString() })
+      .eq('table_id', sourceTable.tableId)
+      .is('left_at', null);
+
     await this.supabase.from('tables').update({ status: 'closed' }).eq('id', sourceTable.tableId);
 
     console.log(
@@ -1683,8 +1707,14 @@ export class TournamentEngine {
       })
       .eq('id', this.tournamentId);
 
-    // Close all tournament tables
+    // Close all tournament tables and evict seats
     for (const table of this.tables) {
+      await this.supabase
+        .from('table_seats')
+        .update({ left_at: new Date().toISOString() })
+        .eq('table_id', table.tableId)
+        .is('left_at', null);
+
       await this.supabase.from('tables').update({ status: 'closed' }).eq('id', table.tableId);
     }
 

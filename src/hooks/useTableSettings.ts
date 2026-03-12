@@ -25,6 +25,8 @@ export interface TableUserSettings {
   showPotOdds: boolean;
   confirmAllIn: boolean;
   autoMuck: boolean;
+  autoMuckWinners: boolean;
+  autoPostBlinds: boolean;
   cardBack: string; // Card back design ID
   showStackInBB: boolean;
 }
@@ -38,6 +40,8 @@ const DEFAULT_SETTINGS: TableUserSettings = {
   showPotOdds: false,
   confirmAllIn: true,
   autoMuck: false,
+  autoMuckWinners: false,
+  autoPostBlinds: true,
   cardBack: 'black',
   showStackInBB: false,
 };

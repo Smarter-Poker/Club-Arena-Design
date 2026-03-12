@@ -46,6 +46,7 @@ interface TableInfo {
   ante?: number;
   game_type?: string; // 'cash' | 'tournament'
   tournament_id?: string; // Set if this table belongs to a tournament
+  action_time_seconds?: number;
 }
 
 interface SeatedPlayer {
@@ -270,7 +271,7 @@ export class HeadlessTableEngine {
     const { data, error } = await this.supabaseClient
       .from('tables')
       .select(
-        'id, club_id, small_blind, big_blind, game_variant, max_players, ante, game_type, tournament_id'
+        'id, club_id, small_blind, big_blind, game_variant, max_players, ante, game_type, tournament_id, action_time_seconds'
       )
       .eq('id', this.tableId)
       .maybeSingle();
@@ -961,6 +962,33 @@ export class HeadlessTableEngine {
     if (!enginePlayer) return;
 
     const toCall = Math.max(0, state.currentBet - enginePlayer.bet);
+
+    // ── HUMAN ACTION TIMER (Auto-Fold/Check if Timeout) ──
+    if (!player.is_horse) {
+      const actionTimeMs = (this.tableInfo?.action_time_seconds || 15) * 1000;
+
+      const timerId = workerTimeout(() => {
+        if (!this.handController || !this.running) return;
+
+        // Auto-action logic: Check if possible, otherwise Fold
+        const action = toCall === 0 ? 'check' : 'fold';
+        console.log(
+          `[HeadlessTableEngine:${this.tableId}] Human player ${player.username} timed out. Auto-${action}.`
+        );
+
+        try {
+          this.handController.performAction(player.seat_number, action as any);
+        } catch (err) {
+          console.error(
+            `[HeadlessTableEngine:${this.tableId}] Auto-action failed for ${player.username}:`,
+            err
+          );
+        }
+      }, actionTimeMs);
+
+      this.pendingTimerIds.push(timerId);
+      return; // Stop here! Don't let the HorseBrainAdapter play for humans!
+    }
 
     // ── Map horse_profile to winning style ──
     // All horses are fundamentally winning players with different styles

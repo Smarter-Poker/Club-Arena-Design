@@ -1126,76 +1126,52 @@ class TournamentService {
       throw new Error('Cannot cancel — tournament has 3 or more players registered');
     }
 
-    // Get all registered players
-    const { data: players } = await supabase
-      .from('tournament_players')
-      .select('user_id, username')
-      .eq('tournament_id', tournamentId);
+    // Execute atomic cancellation and refund (prevents partial refunds on server crash)
+    const { data: cancelResult, error: cancelError } = await retryAsync(
+      () =>
+        supabase.rpc('atomic_cancel_tournament', {
+          p_tournament_id: tournamentId,
+          p_admin_id: '00000000-0000-0000-0000-000000000000', // System action
+        }),
+      3
+    );
 
-    let totalRefunded = 0;
-    let playersRefunded = 0;
-    const refundAmount = (tournament.buy_in_amount || 0) + (tournament.buy_in_fee || 0);
-
-    // Refund each player's buy-in to their Player Wallet
-    if (players && players.length > 0 && refundAmount > 0) {
-      for (const player of players) {
-        try {
-          const { error: refundError } = await retryAsync(
-            () =>
-              supabase.rpc('credit_player_wallet', {
-                p_user_id: player.user_id,
-                p_amount: refundAmount,
-              }),
-            3
-          );
-
-          if (refundError) {
-            console.error(`[TournamentService] Failed to refund ${player.user_id}:`, refundError);
-            continue;
-          }
-
-          // Log refund transaction
-          await WalletService.logTransaction(
-            player.user_id,
-            'PLAYER',
-            refundAmount,
-            'credit',
-            'refund',
-            `Tournament cancelled: ${tournament.name} — ${reason}`,
-            undefined,
-            undefined,
-            tournamentId
-          );
-          masterBus.emit('BALANCE_UPDATED', {
-            source: 'tournament_cancel_refund',
-            userId: player.user_id,
-          });
-
-          totalRefunded += refundAmount;
-          playersRefunded++;
-        } catch (err) {
-          console.error(`[TournamentService] Refund error for ${player.user_id}:`, err);
-        }
-      }
+    if (cancelError) {
+      console.error(`[TournamentService] CRITICAL: atomic_cancel_tournament failed:`, cancelError);
+      throw new Error(`Failed to cancel tournament: ${cancelError.message}`);
     }
 
-    // Delete all tournament_players entries
-    await supabase.from('tournament_players').delete().eq('tournament_id', tournamentId);
+    // Process result
+    const refunded = cancelResult?.total_refunded || 0;
+    const playersRefunded = cancelResult?.refunded_count || 0;
 
-    // Update tournament status to CANCELLED
+    // Fetch the players to emit balance updates (RPC already refunded DB)
+    const { data: players } = await supabase
+      .from('tournament_players')
+      .select('user_id')
+      .eq('tournament_id', tournamentId);
+
+    if (players && players.length > 0) {
+      players.forEach((p) => {
+        masterBus.emit('BALANCE_UPDATED', {
+          source: 'tournament_cancel_refund',
+          userId: p.user_id,
+        });
+      });
+    }
     await supabase
       .from('tournaments')
       .update({
         status: 'CANCELLED',
-        current_players: 0,
+        cancelled_at: new Date().toISOString(),
         prize_pool: 0,
       })
       .eq('id', tournamentId);
 
     console.debug(
-      `[TournamentService] Cancelled tournament ${tournament.name}: refunded ${playersRefunded} players, ${totalRefunded} chips`
+      `[TournamentService] Cancelled tournament ${tournament.name}: refunded ${playersRefunded} players, ${refunded} chips`
     );
-    return { refunded: totalRefunded, playersRefunded };
+    return { refunded: refunded, playersRefunded };
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -1382,7 +1358,7 @@ class TournamentService {
 
       if (prizeError) {
         console.error(
-          '[TournamentService] CRITICAL: Prize credit to Player Wallet failed:',
+          `[TournamentService] CRITICAL: Prize credit to Player Wallet failed:`,
           prizeError
         );
         throw new Error(`Failed to credit ${ordinal(position)} place prize of ${prize}`);
