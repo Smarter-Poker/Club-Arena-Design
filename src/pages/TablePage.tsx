@@ -861,8 +861,19 @@ export default function TablePage({
     }>
   >([]);
 
-  // Sound settings state
-  const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+  // Sound settings state — initialize from persisted settings
+  const [isSoundEnabled, setIsSoundEnabled] = useState(() => {
+    try {
+      const saved = localStorage.getItem('club-arena-table-settings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.isSoundEnabled !== undefined ? parsed.isSoundEnabled : true;
+      }
+    } catch {
+      /* ignore parse errors */
+    }
+    return true;
+  });
 
   // Play turn alert when it's hero's turn
   const playTurnAlert = () => {
@@ -895,9 +906,10 @@ export default function TablePage({
     userSettingsRef.current = userSettings;
   }, [userSettings]);
 
-  // Sync persisted sound volume to SoundService on mount
+  // Sync persisted sound settings to SoundService on mount
   useEffect(() => {
     soundService.setMasterVolume(userSettings.soundVolume / 100);
+    soundService.setEnabled(userSettings.isSoundEnabled);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only on mount
 
