@@ -16,6 +16,20 @@ interface SessionHUDProps {
   bigBlind: number;
 }
 
+// ── Tier classification helpers ──
+function getVpipTier(vpip: number): string {
+  if (vpip <= 18) return 'tight';
+  if (vpip <= 28) return 'normal';
+  if (vpip <= 40) return 'loose';
+  return 'maniac';
+}
+
+function getPfrTier(pfr: number): string {
+  if (pfr <= 12) return 'tight';
+  if (pfr <= 22) return 'normal';
+  return 'aggressive';
+}
+
 export const SessionHUD: React.FC<SessionHUDProps> = ({
   tableId,
   userId,
@@ -196,16 +210,23 @@ export const SessionHUD: React.FC<SessionHUDProps> = ({
             <div className="sh-adv-bar">
               <div
                 className="sh-adv-fill sh-vpip-fill"
+                data-vpip-tier={getVpipTier(stats.vpipPercent)}
                 style={{ width: `${Math.min(stats.vpipPercent, 100)}%` }}
               />
             </div>
             <span className="sh-adv-value">{stats.vpipPercent}%</span>
+            {stats.handsWon >= 3 &&
+              stats.handsPlayed > 0 &&
+              stats.handsWon / stats.handsPlayed > 0.4 && (
+                <span className="sh-hot-streak">{stats.handsWon}W</span>
+              )}
           </div>
           <div className="sh-adv-row">
             <span className="sh-adv-label">PFR</span>
             <div className="sh-adv-bar">
               <div
                 className="sh-adv-fill sh-pfr-fill"
+                data-pfr-tier={getPfrTier(stats.pfrPercent)}
                 style={{ width: `${Math.min(stats.pfrPercent, 100)}%` }}
               />
             </div>

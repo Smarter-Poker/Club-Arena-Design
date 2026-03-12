@@ -208,3 +208,91 @@
   width: 32px;
   text-align: right;
 }
+
+/* ── Color-Coded VPIP Tiers ── */
+/* Tight: 0-18% → cool cyan */
+.sh-vpip-fill[data-vpip-tier='tight'] {
+  background: linear-gradient(90deg, #22d3ee, #06b6d4);
+}
+/* Normal: 19-28% → standard blue */
+.sh-vpip-fill[data-vpip-tier='normal'] {
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+}
+/* Loose: 29-40% → warm orange */
+.sh-vpip-fill[data-vpip-tier='loose'] {
+  background: linear-gradient(90deg, #f97316, #fb923c);
+}
+/* Maniac: 41%+ → hot red */
+.sh-vpip-fill[data-vpip-tier='maniac'] {
+  background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+/* ── PFR Tier Matching ── */
+.sh-pfr-fill[data-pfr-tier='tight'] {
+  background: linear-gradient(90deg, #a78bfa, #8b5cf6);
+}
+.sh-pfr-fill[data-pfr-tier='normal'] {
+  background: linear-gradient(90deg, #f97316, #fb923c);
+}
+.sh-pfr-fill[data-pfr-tier='aggressive'] {
+  background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+/* ── Hot Streak Flame Icon ── */
+.sh-hot-streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #f59e0b;
+  margin-left: 6px;
+  animation: flamePulse 1.2s ease-in-out infinite alternate;
+}
+
+.sh-hot-streak::before {
+  content: '🔥';
+  font-size: 12px;
+}
+
+@keyframes flamePulse {
+  from {
+    opacity: 0.7;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+/* ── Win Rate Badge ── */
+.sh-win-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.sh-win-badge--hot {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.sh-win-badge--cold {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+/* ── Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .sh-hot-streak {
+    animation: none;
+  }
+}

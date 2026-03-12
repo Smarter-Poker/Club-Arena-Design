@@ -115,12 +115,12 @@ ActionPanel, SitOutModal, WaitListModal, TimeBank, CashierModal, BuyInModal, Str
 - [x] `FlashPoolEngine.ts` — fast-fold player pool with instant reassignment
 - [x] `FlashTransition.tsx` + CSS — table wipe (wipe/fade/blur)
 
-### 🔲 Phase 5: Feature Parity+
+### ✅ Phase 5: Feature Parity+ — COMPLETE
 
-- [ ] EV Cashout tab in InsuranceModal
-- [ ] Paid hand reveal (HandReveal.tsx)
-- [ ] Smart HUD visual upgrade (color VPIP, flame icon)
-- [ ] SessionAnalytics.tsx — PokerCraft-style dashboard
+- [x] EV Cashout tab in InsuranceModal — two-tab modal (Insurance + EV Cashout)
+- [x] Paid hand reveal (HandReveal.tsx) — show/muck + diamond-gated reveal
+- [x] Smart HUD visual upgrade — color-coded VPIP/PFR tiers, flame icon
+- [x] SessionAnalytics.tsx — PokerCraft-style 4-tab dashboard
 
 ---
 
@@ -136,7 +136,7 @@ ActionPanel, SitOutModal, WaitListModal, TimeBank, CashierModal, BuyInModal, Str
 | Equity Display    | ✅  |    ❌     |   ❌   |     ❌     |
 | Spin-It           | ✅  |    ✅     |   ❌   |     ❌     |
 | Flash/Fast-Fold   | ✅  |    ❌     |   ❌   |     ✅     |
-| EV Cashout        | ❌  |    ❌     |   ✅   |     ❌     |
+| EV Cashout        | ✅  |    ❌     |   ✅   |     ❌     |
 
 ---
 

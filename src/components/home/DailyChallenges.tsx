@@ -259,14 +259,9 @@ export default function DailyChallenges() {
           data: { user },
         } = await supabase.auth.getUser();
         if (user) {
-          // Atomically increment diamond balance (TOCTOU-safe — no SELECT→UPDATE race)
-          const { data: rpcResult } = await supabase.rpc('increment_diamonds', {
-            p_user_id: user.id,
-            p_amount: reward,
-          });
-          const newBalance = typeof rpcResult === 'number' ? rpcResult : reward;
-
-          // Mark claimed in daily_challenge_progress
+          // STEP 1: Mark claimed in DB FIRST (idempotent upsert — safe to re-run)
+          // This MUST happen before diamonds are incremented to prevent double-reward exploit:
+          // If diamond increment succeeds but this upsert fails, user could re-claim.
           await supabase.from('daily_challenge_progress').upsert(
             {
               user_id: user.id,
@@ -278,14 +273,7 @@ export default function DailyChallenges() {
             { onConflict: 'user_id,day_key,challenge_index' }
           );
 
-          // Phase 8 #1: Emit DIAMOND_BALANCE_CHANGED for header + tile badges
-          masterBus.emit('DIAMOND_BALANCE_CHANGED', {
-            newBalance,
-            delta: reward,
-            source: 'daily_challenge',
-          });
-
-          // SUCCESS: Only mark as claimed AFTER DB writes succeed
+          // Lock claimed in local state IMMEDIATELY after DB confirms
           setClaimed((prev) => {
             const next = { ...prev, [challengeIndex]: true };
             try {
@@ -294,6 +282,22 @@ export default function DailyChallenges() {
               /* */
             }
             return next;
+          });
+
+          // STEP 2: Atomically increment diamond balance (TOCTOU-safe)
+          // If this fails, user already lost their claim but gained 0 diamonds.
+          // This is safer than the reverse (gaining diamonds but retaining claim ability).
+          const { data: rpcResult } = await supabase.rpc('increment_diamonds', {
+            p_user_id: user.id,
+            p_amount: reward,
+          });
+          const newBalance = typeof rpcResult === 'number' ? rpcResult : reward;
+
+          // Emit DIAMOND_BALANCE_CHANGED for header + tile badges
+          masterBus.emit('DIAMOND_BALANCE_CHANGED', {
+            newBalance,
+            delta: reward,
+            source: 'daily_challenge',
           });
         }
       } catch (err) {
