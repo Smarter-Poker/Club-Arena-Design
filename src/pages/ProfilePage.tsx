@@ -7,7 +7,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
@@ -195,6 +195,13 @@ const AchievementCard = ({ achievement }: { achievement: Achievement }) => {
 
 export default function ProfilePage() {
   const navigate = useNavigate();
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   const { user: storeUser } = useUserStore();
   const [activeTab, setActiveTab] = useState<'stats' | 'achievements' | 'history' | 'social'>(
     'stats'
@@ -804,9 +811,11 @@ export default function ProfilePage() {
                 targetMission.id,
                 targetMission.rewardAmount
               );
-              setMissions((prev) =>
-                prev.map((m) => (m.id === missionId ? { ...m, claimed: true } : m))
-              );
+              if (isMountedRef.current) {
+                setMissions((prev) =>
+                  prev.map((m) => (m.id === missionId ? { ...m, claimed: true } : m))
+                );
+              }
             } catch (err: any) {
               console.error('Failed to claim mission:', err);
               // Fallback to error handling if needed, button remains active on failure
