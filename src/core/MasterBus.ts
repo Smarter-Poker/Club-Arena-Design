@@ -512,8 +512,15 @@ class MasterBusCore {
     if (!fromBroadcast && this.broadcastChannel) {
       try {
         this.broadcastChannel.postMessage({ type, payload });
-      } catch (e) {
+      } catch (e: any) {
         console.warn('[MasterBus] Failed to broadcast event cross-tab:', e);
+        // Phase 11: Structured error telemetry for Sentry visibility
+        if (type !== 'SYSTEM_ERROR') {
+          this.emit('SYSTEM_ERROR', {
+            message: `BroadcastChannel postMessage failed for ${type}: ${e?.message || 'unknown'}`,
+            code: 'BROADCAST_CHANNEL_ERROR',
+          });
+        }
       }
     }
 

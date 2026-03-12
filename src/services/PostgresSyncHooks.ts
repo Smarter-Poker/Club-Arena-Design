@@ -4,19 +4,47 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * POSTGRES SYNC HOOKS (Phase 7: Absolute Sync Perfection)
+ * POSTGRES SYNC HOOKS (Phase 7: Absolute Sync Perfection + Phase 11 Optimizations)
  * ═══════════════════════════════════════════════════════════════════════════════
  *
- * This service ensures that even if absolute external agents (Cron Jobs, Stripe Webhooks,
- * Supabase Admin Dashboard operations, Edge Functions) mutate the database completely
- * outside of the user's React session, the user's UI still updates instantly via the MasterBus.
+ * Ensures that external agents (Cron Jobs, Stripe Webhooks, Supabase Admin Dashboard,
+ * Edge Functions) that mutate the database outside the user's React session still trigger
+ * instant UI updates via the MasterBus.
  *
- * Row Level Security (RLS) automatically ensures the client only receives network packets
- * for data they are allowed to see.
+ * Phase 11 enhancements:
+ *  - Internal debouncing: batches rapid-fire events (e.g., admin bulk-updating 50 members)
+ *  - Health monitoring: logs connection status changes for observability
+ *
+ * RLS automatically ensures the client only receives data they are authorized to see.
  */
 class PostgresSyncHooksService {
   private channel: RealtimeChannel | null = null;
   private initialized: boolean = false;
+
+  // Phase 11: Internal debounce timers to batch rapid-fire events
+  private debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private static readonly DEBOUNCE_MS = 300;
+
+  /**
+   * Debounced emit — batches rapid-fire events into a single emission per key.
+   * Prevents UI thrashing when external agents modify many rows at once.
+   */
+  private debouncedEmit<K extends Parameters<typeof masterBus.emit>[0]>(
+    key: string,
+    eventType: K,
+    payload: Parameters<typeof masterBus.emit>[1]
+  ): void {
+    const existing = this.debounceTimers.get(key);
+    if (existing) clearTimeout(existing);
+
+    this.debounceTimers.set(
+      key,
+      setTimeout(() => {
+        masterBus.emit(eventType, payload as any);
+        this.debounceTimers.delete(key);
+      }, PostgresSyncHooksService.DEBOUNCE_MS)
+    );
+  }
 
   init(userId: string) {
     // Guard: If already initialized with a live channel, skip.
@@ -33,13 +61,12 @@ class PostgresSyncHooksService {
     this.channel = supabase.channel(`global_db_sync:${userId}`);
 
     this.channel
-      // 1. Wallets (Financial integrity)
+      // 1. Wallets (Financial integrity) — NOT debounced (money must be instant)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'wallets', filter: `user_id=eq.${userId}` },
         (payload) => {
           console.debug('[PostgresSync] External Wallet mutation detected:', payload);
-          // Broadcast to local UI components
           masterBus.emit('BALANCE_UPDATED', { source: 'postgres_sync' });
           const w = payload.new as any;
           masterBus.emit('WALLET_REFRESHED', {
@@ -49,7 +76,7 @@ class PostgresSyncHooksService {
           });
         }
       )
-      // 2. Profiles (Display names, avatars, diamonds)
+      // 2. Profiles (Display names, avatars, diamonds) — NOT debounced (personal data)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${userId}` },
@@ -68,17 +95,19 @@ class PostgresSyncHooksService {
           }
         }
       )
-      // 3. Clubs
+      // 3. Clubs — DEBOUNCED (global listener, could fire for many clubs)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'clubs' }, (payload) => {
         console.debug('[PostgresSync] External Club mutation detected:', payload);
-        masterBus.emit('CLUB_UPDATED', { clubId: payload.new.id });
+        const clubId = payload.new.id;
+        this.debouncedEmit(`club_${clubId}`, 'CLUB_UPDATED', { clubId });
       })
-      // 4. Unions
+      // 4. Unions — DEBOUNCED (global listener, could fire for many unions)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'unions' }, (payload) => {
         console.debug('[PostgresSync] External Union mutation detected:', payload);
-        masterBus.emit('UNION_UPDATED', { unionId: payload.new.id });
+        const unionId = payload.new.id;
+        this.debouncedEmit(`union_${unionId}`, 'UNION_UPDATED', { unionId });
       })
-      // 5. User Settings
+      // 5. User Settings — debounced (settings toggle spam protection)
       .on(
         'postgres_changes',
         {
@@ -89,10 +118,10 @@ class PostgresSyncHooksService {
         },
         (payload) => {
           console.debug('[PostgresSync] External Settings mutation detected:', payload);
-          masterBus.emit('SETTINGS_UPDATED', { settings: payload.new });
+          this.debouncedEmit('settings', 'SETTINGS_UPDATED', { settings: payload.new });
         }
       )
-      // 6. Club Memberships
+      // 6. Club Memberships — DEBOUNCED (bulk operations protection)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'club_members', filter: `user_id=eq.${userId}` },
@@ -101,19 +130,31 @@ class PostgresSyncHooksService {
           if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
             const clubId = (payload.new as any)?.club_id;
             if (clubId) {
-              masterBus.emit('CLUB_UPDATED', { clubId });
+              this.debouncedEmit(`membership_${clubId}`, 'CLUB_UPDATED', { clubId });
             }
           } else if (payload.eventType === 'DELETE') {
             // With default replica identity, payload.old only has the PK (id),
-            // not club_id. We emit with what we have — most consumers just reload all data.
+            // not club_id. Emit immediately — this is a critical access change.
             const clubId = (payload.old as any)?.club_id || 'unknown';
             masterBus.emit('CLUB_LEFT', { clubId });
           }
         }
       )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.info(`[PostgresSync] Absolute Replication Hook Mounted for user ${userId}.`);
+      // Phase 11: Health monitoring with reconnect logging
+      .subscribe((status, err) => {
+        switch (status) {
+          case 'SUBSCRIBED':
+            console.info(`[PostgresSync] ✅ Realtime Hook Active for user ${userId}.`);
+            break;
+          case 'CHANNEL_ERROR':
+            console.error(`[PostgresSync] ❌ Channel error:`, err?.message || err);
+            break;
+          case 'TIMED_OUT':
+            console.warn(`[PostgresSync] ⏱️ Channel timed out — will auto-reconnect.`);
+            break;
+          case 'CLOSED':
+            console.info(`[PostgresSync] Channel closed for user ${userId}.`);
+            break;
         }
       });
   }
@@ -124,6 +165,9 @@ class PostgresSyncHooksService {
       supabase.removeChannel(this.channel);
       this.channel = null;
     }
+    // Clear any pending debounce timers to prevent orphaned emissions
+    this.debounceTimers.forEach((timer) => clearTimeout(timer));
+    this.debounceTimers.clear();
     this.initialized = false;
   }
 }
