@@ -344,35 +344,45 @@ export default function LeaderboardPage() {
           </button>
         </div>
 
-        {/* Period Selector */}
-        <div className="filter-group">
-          <select value={period} onChange={(e) => setPeriod(e.target.value as LeaderboardPeriod)}>
-            {PERIOD_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+        {/* Period Selector — Pill Chips (Initiative 2) */}
+        <div className="filter-group lb-chip-bar">
+          {PERIOD_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              className={`lb-filter-chip ${period === opt.value ? 'active' : ''}`}
+              onClick={() => setPeriod(opt.value)}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
 
-        {/* Metric Selector */}
-        <div className="filter-group">
-          <select value={metric} onChange={(e) => setMetric(e.target.value as LeaderboardMetric)}>
-            {METRIC_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.icon} {opt.label}
-              </option>
-            ))}
-          </select>
+        {/* Metric Selector — Pill Chips (Initiative 2) */}
+        <div className="filter-group lb-chip-bar lb-chip-scroll">
+          {METRIC_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              className={`lb-filter-chip ${metric === opt.value ? 'active' : ''}`}
+              onClick={() => setMetric(opt.value)}
+            >
+              {opt.icon} {opt.label}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Leaderboard Content */}
       <div className="leaderboard-list">
         {clubsLoading ? (
-          <div className="loading-state">
-            <div className="spinner" />
-            <p>Loading clubs...</p>
+          <div className="lb-skeleton-wrapper">
+            <div className="lb-skeleton-podium">
+              <div className="lb-skel-pod" />
+              <div className="lb-skel-pod tall" />
+              <div className="lb-skel-pod" />
+            </div>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="lb-skeleton-row" />
+            ))}
           </div>
         ) : userClubs.length === 0 ? (
           <div className="empty-state">
@@ -383,9 +393,15 @@ export default function LeaderboardPage() {
             </button>
           </div>
         ) : activeTab === 'rankings' && loading ? (
-          <div className="loading-state">
-            <div className="spinner" />
-            <p>Loading rankings...</p>
+          <div className="lb-skeleton-wrapper">
+            <div className="lb-skeleton-podium">
+              <div className="lb-skel-pod" />
+              <div className="lb-skel-pod tall" />
+              <div className="lb-skel-pod" />
+            </div>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="lb-skeleton-row" />
+            ))}
           </div>
         ) : activeTab === 'rankings' && entries.length === 0 ? (
           <div className="empty-state">
@@ -394,9 +410,10 @@ export default function LeaderboardPage() {
             <p className="empty-sub">Start playing to climb the leaderboard!</p>
           </div>
         ) : activeTab === 'tournaments' && tournamentsLoading ? (
-          <div className="loading-state">
-            <div className="spinner" />
-            <p>Loading tournament stats...</p>
+          <div className="lb-skeleton-wrapper">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="lb-skeleton-row" />
+            ))}
           </div>
         ) : activeTab === 'tournaments' && tournamentStats.length === 0 ? (
           <div className="empty-state">
