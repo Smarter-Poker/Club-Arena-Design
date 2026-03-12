@@ -33,26 +33,26 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const haptic = {
-    /** Light tap — button press */
-    light() {
-        if ('vibrate' in navigator) navigator.vibrate(8);
-    },
-    /** Medium pulse — your turn, win */
-    medium() {
-        if ('vibrate' in navigator) navigator.vibrate(40);
-    },
-    /** Strong pulse — all-in, timer urgent */
-    strong() {
-        if ('vibrate' in navigator) navigator.vibrate(80);
-    },
-    /** Double pulse — timer warning */
-    double() {
-        if ('vibrate' in navigator) navigator.vibrate([25, 40, 25]);
-    },
-    /** Triple pulse — big win */
-    triple() {
-        if ('vibrate' in navigator) navigator.vibrate([30, 30, 30, 30, 30]);
-    },
+  /** Light tap — button press */
+  light() {
+    if ('vibrate' in navigator) navigator.vibrate(8);
+  },
+  /** Medium pulse — your turn, win */
+  medium() {
+    if ('vibrate' in navigator) navigator.vibrate(40);
+  },
+  /** Strong pulse — all-in, timer urgent */
+  strong() {
+    if ('vibrate' in navigator) navigator.vibrate(80);
+  },
+  /** Double pulse — timer warning */
+  double() {
+    if ('vibrate' in navigator) navigator.vibrate([25, 40, 25]);
+  },
+  /** Triple pulse — big win */
+  triple() {
+    if ('vibrate' in navigator) navigator.vibrate([30, 30, 30, 30, 30]);
+  },
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -60,691 +60,714 @@ export const haptic = {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class SoundService {
-    private ctx: AudioContext | null = null;
-    private enabled: boolean = true;
-    private masterVolume: number = 0.7;
-    private effectsVolume: number = 0.5;
-    private masterGain: GainNode | null = null;
-    private timerWarningInterval: number | null = null;
+  private ctx: AudioContext | null = null;
+  private enabled: boolean = true;
+  private masterVolume: number = 0.7;
+  private effectsVolume: number = 0.5;
+  private masterGain: GainNode | null = null;
+  private timerWarningInterval: number | null = null;
 
-    constructor() {
-        try {
-            const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-            if (AudioCtx) {
-                this.ctx = new AudioCtx();
-                this.masterGain = this.ctx.createGain();
-                this.masterGain.gain.value = this.masterVolume * this.effectsVolume;
-                this.masterGain.connect(this.ctx.destination);
-            }
-        } catch (e) {
-            console.warn('[SoundService] Web Audio API not supported');
-        }
+  constructor() {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx) {
+        this.ctx = new AudioCtx();
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.value = this.masterVolume * this.effectsVolume;
+        this.masterGain.connect(this.ctx.destination);
+      }
+    } catch (e) {
+      console.warn('[SoundService] Web Audio API not supported');
+    }
+  }
+
+  // ─── Context Management ──────────────────────────────────────────────
+
+  private ensureContext(): boolean {
+    if (!this.ctx || !this.masterGain) return false;
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+    return true;
+  }
+
+  private get out(): GainNode {
+    return this.masterGain!;
+  }
+
+  // ─── Volume Controls ─────────────────────────────────────────────────
+
+  setEnabled(enabled: boolean) {
+    this.enabled = enabled;
+  }
+
+  isEnabled(): boolean {
+    return this.enabled;
+  }
+
+  setMasterVolume(vol: number) {
+    this.masterVolume = Math.max(0, Math.min(1, vol));
+    if (this.masterGain) {
+      this.masterGain.gain.value = this.masterVolume * this.effectsVolume;
+    }
+  }
+
+  setEffectsVolume(vol: number) {
+    this.effectsVolume = Math.max(0, Math.min(1, vol));
+    if (this.masterGain) {
+      this.masterGain.gain.value = this.masterVolume * this.effectsVolume;
+    }
+  }
+
+  getMasterVolume(): number {
+    return this.masterVolume;
+  }
+  getEffectsVolume(): number {
+    return this.effectsVolume;
+  }
+
+  // ─── Internal Helpers ────────────────────────────────────────────────
+
+  private createNoiseBurst(time: number, duration: number, volume = 0.2, filterFreq = 1000) {
+    if (!this.ctx) return;
+    const bufferSize = Math.floor(this.ctx.sampleRate * duration);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
     }
 
-    // ─── Context Management ──────────────────────────────────────────────
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
 
-    private ensureContext(): boolean {
-        if (!this.ctx || !this.masterGain) return false;
-        if (this.ctx.state === 'suspended') {
-            this.ctx.resume();
-        }
-        return true;
-    }
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = filterFreq;
 
-    private get out(): GainNode {
-        return this.masterGain!;
-    }
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(volume, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
 
-    // ─── Volume Controls ─────────────────────────────────────────────────
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.out);
+    noise.start(time);
+  }
 
-    setEnabled(enabled: boolean) {
-        this.enabled = enabled;
-    }
+  private playTone(
+    freq: number,
+    duration: number,
+    volume = 0.2,
+    type: OscillatorType = 'sine',
+    delay = 0
+  ) {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime + delay;
 
-    isEnabled(): boolean {
-        return this.enabled;
-    }
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
 
-    setMasterVolume(vol: number) {
-        this.masterVolume = Math.max(0, Math.min(1, vol));
-        if (this.masterGain) {
-            this.masterGain.gain.value = this.masterVolume * this.effectsVolume;
-        }
-    }
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t);
 
-    setEffectsVolume(vol: number) {
-        this.effectsVolume = Math.max(0, Math.min(1, vol));
-        if (this.masterGain) {
-            this.masterGain.gain.value = this.masterVolume * this.effectsVolume;
-        }
-    }
+    gain.gain.setValueAtTime(volume, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
 
-    getMasterVolume(): number { return this.masterVolume; }
-    getEffectsVolume(): number { return this.effectsVolume; }
+    osc.connect(gain);
+    gain.connect(this.out);
 
-    // ─── Internal Helpers ────────────────────────────────────────────────
+    osc.start(t);
+    osc.stop(t + duration);
+  }
 
-    private createNoiseBurst(time: number, duration: number, volume = 0.2, filterFreq = 1000) {
+  // ═══════════════════════════════════════════════════════════════════════
+  // GAME SOUNDS
+  // ═══════════════════════════════════════════════════════════════════════
+
+  /**
+   * Card deal/slide — soft paper shuffle sound
+   */
+  playDeal() {
+    if (!this.enabled || !this.ensureContext()) return;
+    const t = this.ctx!.currentTime;
+
+    // Filtered noise burst simulating paper slide
+    this.createNoiseBurst(t, 0.12, 0.15, 3000);
+
+    // Subtle high-frequency click at end
+    const osc = this.ctx!.createOscillator();
+    const gain = this.ctx!.createGain();
+    osc.frequency.setValueAtTime(4000, t + 0.08);
+    osc.frequency.exponentialRampToValueAtTime(1000, t + 0.12);
+    gain.gain.setValueAtTime(0.08, t + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    osc.connect(gain);
+    gain.connect(this.out);
+    osc.start(t + 0.08);
+    osc.stop(t + 0.12);
+
+    haptic.light();
+  }
+
+  /**
+   * Check — double table tap (wood-like thud)
+   */
+  playCheck() {
+    if (!this.enabled || !this.ensureContext()) return;
+    const t = this.ctx!.currentTime;
+
+    // First tap
+    this.createNoiseBurst(t, 0.04, 0.25, 800);
+    this.playTone(200, 0.04, 0.15, 'sine');
+
+    // Second tap (slightly softer)
+    setTimeout(() => {
+      if (!this.ctx) return;
+      const t2 = this.ctx.currentTime;
+      this.createNoiseBurst(t2, 0.04, 0.18, 800);
+      this.playTone(180, 0.04, 0.1, 'sine');
+    }, 120);
+
+    haptic.light();
+  }
+
+  /**
+   * Chips — bet/call chip clink (two-click stack)
+   */
+  playChips() {
+    if (!this.enabled || !this.ensureContext()) return;
+    const t = this.ctx!.currentTime;
+
+    // First ceramic click
+    const osc = this.ctx!.createOscillator();
+    const gain = this.ctx!.createGain();
+    osc.frequency.setValueAtTime(2200, t);
+    osc.frequency.exponentialRampToValueAtTime(100, t + 0.05);
+    gain.gain.setValueAtTime(0.25, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+    osc.connect(gain);
+    gain.connect(this.out);
+    osc.start(t);
+    osc.stop(t + 0.06);
+
+    // Second click (stacking)
+    setTimeout(() => {
+      if (!this.ctx) return;
+      const t2 = this.ctx.currentTime;
+      const osc2 = this.ctx.createOscillator();
+      const gain2 = this.ctx.createGain();
+      osc2.frequency.setValueAtTime(2600, t2);
+      osc2.frequency.exponentialRampToValueAtTime(200, t2 + 0.04);
+      gain2.gain.setValueAtTime(0.18, t2);
+      gain2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.05);
+      osc2.connect(gain2);
+      gain2.connect(this.out);
+      osc2.start(t2);
+      osc2.stop(t2 + 0.05);
+    }, 35);
+
+    haptic.light();
+  }
+
+  /**
+   * Raise — triple chip cascade (larger bet sound)
+   */
+  playRaise() {
+    if (!this.enabled || !this.ensureContext()) return;
+
+    // Three staggered chip clinks with increasing pitch
+    const freqs = [1800, 2200, 2800];
+    freqs.forEach((freq, i) => {
+      setTimeout(() => {
         if (!this.ctx) return;
-        const bufferSize = Math.floor(this.ctx.sampleRate * duration);
-        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-            data[i] = Math.random() * 2 - 1;
-        }
-
-        const noise = this.ctx.createBufferSource();
-        noise.buffer = buffer;
-
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = filterFreq;
-
-        const gain = this.ctx.createGain();
-        gain.gain.setValueAtTime(volume, time);
-        gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
-
-        noise.connect(filter);
-        filter.connect(gain);
-        gain.connect(this.out);
-        noise.start(time);
-    }
-
-    private playTone(freq: number, duration: number, volume = 0.2, type: OscillatorType = 'sine', delay = 0) {
-        if (!this.ctx) return;
-        const t = this.ctx.currentTime + delay;
-
+        const t = this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
-
-        osc.type = type;
         osc.frequency.setValueAtTime(freq, t);
-
-        gain.gain.setValueAtTime(volume, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
-
-        osc.connect(gain);
-        gain.connect(this.out);
-
-        osc.start(t);
-        osc.stop(t + duration);
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // GAME SOUNDS
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /**
-     * Card deal/slide — soft paper shuffle sound
-     */
-    playDeal() {
-        if (!this.enabled || !this.ensureContext()) return;
-        const t = this.ctx!.currentTime;
-
-        // Filtered noise burst simulating paper slide
-        this.createNoiseBurst(t, 0.12, 0.15, 3000);
-
-        // Subtle high-frequency click at end
-        const osc = this.ctx!.createOscillator();
-        const gain = this.ctx!.createGain();
-        osc.frequency.setValueAtTime(4000, t + 0.08);
-        osc.frequency.exponentialRampToValueAtTime(1000, t + 0.12);
-        gain.gain.setValueAtTime(0.08, t + 0.08);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-        osc.connect(gain);
-        gain.connect(this.out);
-        osc.start(t + 0.08);
-        osc.stop(t + 0.12);
-    }
-
-    /**
-     * Check — double table tap (wood-like thud)
-     */
-    playCheck() {
-        if (!this.enabled || !this.ensureContext()) return;
-        const t = this.ctx!.currentTime;
-
-        // First tap
-        this.createNoiseBurst(t, 0.04, 0.25, 800);
-        this.playTone(200, 0.04, 0.15, 'sine');
-
-        // Second tap (slightly softer)
-        setTimeout(() => {
-            if (!this.ctx) return;
-            const t2 = this.ctx.currentTime;
-            this.createNoiseBurst(t2, 0.04, 0.18, 800);
-            this.playTone(180, 0.04, 0.1, 'sine');
-        }, 120);
-
-        haptic.light();
-    }
-
-    /**
-     * Chips — bet/call chip clink (two-click stack)
-     */
-    playChips() {
-        if (!this.enabled || !this.ensureContext()) return;
-        const t = this.ctx!.currentTime;
-
-        // First ceramic click
-        const osc = this.ctx!.createOscillator();
-        const gain = this.ctx!.createGain();
-        osc.frequency.setValueAtTime(2200, t);
-        osc.frequency.exponentialRampToValueAtTime(100, t + 0.05);
-        gain.gain.setValueAtTime(0.25, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+        osc.frequency.exponentialRampToValueAtTime(100, t + 0.06);
+        gain.gain.setValueAtTime(0.22, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
         osc.connect(gain);
         gain.connect(this.out);
         osc.start(t);
-        osc.stop(t + 0.06);
+        osc.stop(t + 0.07);
+      }, i * 45);
+    });
 
-        // Second click (stacking)
-        setTimeout(() => {
-            if (!this.ctx) return;
-            const t2 = this.ctx.currentTime;
-            const osc2 = this.ctx.createOscillator();
-            const gain2 = this.ctx.createGain();
-            osc2.frequency.setValueAtTime(2600, t2);
-            osc2.frequency.exponentialRampToValueAtTime(200, t2 + 0.04);
-            gain2.gain.setValueAtTime(0.18, t2);
-            gain2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.05);
-            osc2.connect(gain2);
-            gain2.connect(this.out);
-            osc2.start(t2);
-            osc2.stop(t2 + 0.05);
-        }, 35);
+    // Subtle bass thud on final chip
+    setTimeout(() => {
+      this.playTone(80, 0.1, 0.15, 'sine');
+    }, 100);
 
-        haptic.light();
+    haptic.medium();
+  }
+
+  /**
+   * Fold — card swoosh to muck
+   */
+  playFold() {
+    if (!this.enabled || !this.ensureContext()) return;
+    const t = this.ctx!.currentTime;
+
+    // Swoosh: filtered sawtooth sweep down
+    const osc = this.ctx!.createOscillator();
+    const gain = this.ctx!.createGain();
+    const filter = this.ctx!.createBiquadFilter();
+
+    osc.type = 'sawtooth';
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(900, t);
+    filter.frequency.linearRampToValueAtTime(80, t + 0.18);
+
+    gain.gain.setValueAtTime(0.18, t);
+    gain.gain.linearRampToValueAtTime(0, t + 0.2);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.out);
+    osc.start(t);
+    osc.stop(t + 0.2);
+
+    // Noise tail (paper slide)
+    this.createNoiseBurst(t, 0.15, 0.08, 2000);
+
+    haptic.light();
+  }
+
+  /**
+   * All-In — dramatic bass thud + chip cascade + tension build
+   */
+  playAllIn() {
+    if (!this.enabled || !this.ensureContext()) return;
+    const t = this.ctx!.currentTime;
+
+    // Deep bass impact
+    const bass = this.ctx!.createOscillator();
+    const bassGain = this.ctx!.createGain();
+    bass.type = 'sine';
+    bass.frequency.setValueAtTime(60, t);
+    bass.frequency.exponentialRampToValueAtTime(30, t + 0.3);
+    bassGain.gain.setValueAtTime(0.4, t);
+    bassGain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+    bass.connect(bassGain);
+    bassGain.connect(this.out);
+    bass.start(t);
+    bass.stop(t + 0.4);
+
+    // Noise burst (impact thud)
+    this.createNoiseBurst(t, 0.08, 0.3, 500);
+
+    // Chip cascade (5 rapid clicks, ascending pitch)
+    for (let i = 0; i < 5; i++) {
+      setTimeout(
+        () => {
+          if (!this.ctx) return;
+          const tc = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const g = this.ctx.createGain();
+          osc.frequency.setValueAtTime(1500 + i * 400, tc);
+          osc.frequency.exponentialRampToValueAtTime(100, tc + 0.04);
+          g.gain.setValueAtTime(0.15, tc);
+          g.gain.exponentialRampToValueAtTime(0.001, tc + 0.05);
+          osc.connect(g);
+          g.connect(this.out);
+          osc.start(tc);
+          osc.stop(tc + 0.05);
+        },
+        80 + i * 30
+      );
     }
 
-    /**
-     * Raise — triple chip cascade (larger bet sound)
-     */
-    playRaise() {
-        if (!this.enabled || !this.ensureContext()) return;
+    // Rising tension tone
+    const tension = this.ctx!.createOscillator();
+    const tensionGain = this.ctx!.createGain();
+    tension.type = 'triangle';
+    tension.frequency.setValueAtTime(220, t + 0.15);
+    tension.frequency.linearRampToValueAtTime(440, t + 0.45);
+    tensionGain.gain.setValueAtTime(0.08, t + 0.15);
+    tensionGain.gain.linearRampToValueAtTime(0.001, t + 0.5);
+    tension.connect(tensionGain);
+    tensionGain.connect(this.out);
+    tension.start(t + 0.15);
+    tension.stop(t + 0.5);
 
-        // Three staggered chip clinks with increasing pitch
-        const freqs = [1800, 2200, 2800];
-        freqs.forEach((freq, i) => {
-            setTimeout(() => {
-                if (!this.ctx) return;
-                const t = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.frequency.setValueAtTime(freq, t);
-                osc.frequency.exponentialRampToValueAtTime(100, t + 0.06);
-                gain.gain.setValueAtTime(0.22, t);
-                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
-                osc.connect(gain);
-                gain.connect(this.out);
-                osc.start(t);
-                osc.stop(t + 0.07);
-            }, i * 45);
-        });
+    haptic.strong();
+  }
 
-        // Subtle bass thud on final chip
-        setTimeout(() => {
-            this.playTone(80, 0.1, 0.15, 'sine');
-        }, 100);
+  /**
+   * Win — C major arpeggio (satisfying victory sound)
+   */
+  playWin() {
+    if (!this.enabled || !this.ensureContext()) return;
+    const t = this.ctx!.currentTime;
+    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
 
-        haptic.medium();
+    notes.forEach((freq, i) => {
+      const startTime = t + i * 0.1;
+      const osc = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, startTime);
+
+      gain.gain.setValueAtTime(0.2, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5);
+
+      osc.connect(gain);
+      gain.connect(this.out);
+      osc.start(startTime);
+      osc.stop(startTime + 0.5);
+    });
+
+    haptic.medium();
+  }
+
+  /**
+   * Big Win — Extended celebration with shimmer and double arpeggio
+   */
+  playBigWin() {
+    if (!this.enabled || !this.ensureContext()) return;
+    const t = this.ctx!.currentTime;
+
+    // First arpeggio (C major)
+    const notes1 = [523.25, 659.25, 783.99, 1046.5];
+    notes1.forEach((freq, i) => {
+      this.playTone(freq, 0.6, 0.2, 'sine', i * 0.08);
+    });
+
+    // Second arpeggio (octave higher, delayed)
+    const notes2 = [1046.5, 1318.51, 1567.98, 2093.0];
+    notes2.forEach((freq, i) => {
+      this.playTone(freq, 0.8, 0.15, 'sine', 0.35 + i * 0.08);
+    });
+
+    // Shimmer (high-frequency noise burst)
+    setTimeout(() => {
+      if (!this.ctx) return;
+      this.createNoiseBurst(this.ctx.currentTime, 0.4, 0.08, 8000);
+    }, 600);
+
+    // Victory bass note
+    this.playTone(130.81, 0.8, 0.12, 'sine', 0.7); // C3
+
+    haptic.triple();
+  }
+
+  /**
+   * Turn Alert — bell ding (your turn notification)
+   */
+  playTurnAlert() {
+    if (!this.enabled || !this.ensureContext()) return;
+    const t = this.ctx!.currentTime;
+
+    // Primary bell tone
+    const osc = this.ctx!.createOscillator();
+    const gain = this.ctx!.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, t); // A5
+
+    gain.gain.setValueAtTime(0.25, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+
+    osc.connect(gain);
+    gain.connect(this.out);
+    osc.start(t);
+    osc.stop(t + 0.6);
+
+    // Harmonic overtone (octave + fifth)
+    const osc2 = this.ctx!.createOscillator();
+    const gain2 = this.ctx!.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(1320, t); // E6
+
+    gain2.gain.setValueAtTime(0.08, t);
+    gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+
+    osc2.connect(gain2);
+    gain2.connect(this.out);
+    osc2.start(t);
+    osc2.stop(t + 0.4);
+
+    haptic.medium();
+  }
+
+  /**
+   * Timer Warning — tick-tock pulse (call repeatedly for <5s countdown)
+   */
+  playTimerWarning() {
+    if (!this.enabled || !this.ensureContext()) return;
+    const t = this.ctx!.currentTime;
+
+    // Sharp tick
+    const osc = this.ctx!.createOscillator();
+    const gain = this.ctx!.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1200, t);
+    osc.frequency.exponentialRampToValueAtTime(800, t + 0.03);
+
+    gain.gain.setValueAtTime(0.2, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+
+    osc.connect(gain);
+    gain.connect(this.out);
+    osc.start(t);
+    osc.stop(t + 0.05);
+
+    haptic.double();
+  }
+
+  /**
+   * Start continuous timer warning ticks (call once, auto-stops)
+   */
+  startTimerWarning() {
+    this.stopTimerWarning();
+    this.playTimerWarning();
+    this.timerWarningInterval = window.setInterval(() => {
+      this.playTimerWarning();
+    }, 1000);
+  }
+
+  /**
+   * Stop continuous timer warning
+   */
+  stopTimerWarning() {
+    if (this.timerWarningInterval !== null) {
+      clearInterval(this.timerWarningInterval);
+      this.timerWarningInterval = null;
+    }
+  }
+
+  /**
+   * Community Card — card snap/flip for board reveal
+   */
+  playCommunityCard() {
+    if (!this.enabled || !this.ensureContext()) return;
+    const t = this.ctx!.currentTime;
+
+    // Quick snap (higher energy than deal)
+    this.createNoiseBurst(t, 0.06, 0.2, 4000);
+
+    // Card flip accent
+    const osc = this.ctx!.createOscillator();
+    const gain = this.ctx!.createGain();
+    osc.frequency.setValueAtTime(3000, t);
+    osc.frequency.exponentialRampToValueAtTime(600, t + 0.08);
+    gain.gain.setValueAtTime(0.12, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+    osc.connect(gain);
+    gain.connect(this.out);
+    osc.start(t);
+    osc.stop(t + 0.1);
+
+    haptic.light();
+  }
+
+  /**
+   * Showdown — dramatic rising reveal (string swell effect)
+   */
+  playShowdown() {
+    if (!this.enabled || !this.ensureContext()) return;
+    const t = this.ctx!.currentTime;
+
+    // Rising 4-note sequence: C4→E4→G4→C5 (80ms each)
+    const notes = [261.63, 329.63, 392.0, 523.25];
+    notes.forEach((freq, i) => {
+      const start = t + i * 0.08;
+      const osc = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, start);
+
+      gain.gain.setValueAtTime(0.15, start);
+      gain.gain.linearRampToValueAtTime(0.18, start + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.3);
+
+      osc.connect(gain);
+      gain.connect(this.out);
+      osc.start(start);
+      osc.stop(start + 0.3);
+    });
+
+    // Tension noise swell
+    this.createNoiseBurst(t, 0.35, 0.06, 3000);
+
+    haptic.medium();
+  }
+
+  /**
+   * Button Click — soft UI tap
+   */
+  playButtonClick() {
+    if (!this.enabled || !this.ensureContext()) return;
+    const t = this.ctx!.currentTime;
+
+    const osc = this.ctx!.createOscillator();
+    const gain = this.ctx!.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1500, t);
+    osc.frequency.exponentialRampToValueAtTime(800, t + 0.03);
+
+    gain.gain.setValueAtTime(0.1, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+
+    osc.connect(gain);
+    gain.connect(this.out);
+    osc.start(t);
+    osc.stop(t + 0.04);
+
+    haptic.light();
+  }
+
+  /**
+   * Time Bank Activated — hourglass two-tone chime
+   */
+  playTimeBankActivated() {
+    if (!this.enabled || !this.ensureContext()) return;
+
+    // G5 then C6 (pleasant two-note chime)
+    this.playTone(783.99, 0.3, 0.18, 'sine', 0);
+    this.playTone(1046.5, 0.4, 0.15, 'sine', 0.12);
+
+    // Subtle shimmer
+    setTimeout(() => {
+      if (!this.ctx) return;
+      this.createNoiseBurst(this.ctx.currentTime, 0.15, 0.04, 6000);
+    }, 200);
+
+    haptic.medium();
+  }
+
+  /**
+   * Pot Collect — chips sweep to winner (satisfying collection sound)
+   */
+  playPotCollect() {
+    if (!this.enabled || !this.ensureContext()) return;
+
+    // Rapid ascending chip clicks (collecting chips)
+    for (let i = 0; i < 6; i++) {
+      setTimeout(() => {
+        if (!this.ctx) return;
+        const tc = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.frequency.setValueAtTime(1200 + i * 250, tc);
+        osc.frequency.exponentialRampToValueAtTime(100, tc + 0.03);
+        g.gain.setValueAtTime(0.12, tc);
+        g.gain.exponentialRampToValueAtTime(0.001, tc + 0.04);
+        osc.connect(g);
+        g.connect(this.out);
+        osc.start(tc);
+        osc.stop(tc + 0.04);
+      }, i * 25);
     }
 
-    /**
-     * Fold — card swoosh to muck
-     */
-    playFold() {
-        if (!this.enabled || !this.ensureContext()) return;
-        const t = this.ctx!.currentTime;
+    // Satisfying bass thud at end
+    setTimeout(() => {
+      this.playTone(100, 0.1, 0.12, 'sine');
+    }, 180);
 
-        // Swoosh: filtered sawtooth sweep down
-        const osc = this.ctx!.createOscillator();
-        const gain = this.ctx!.createGain();
-        const filter = this.ctx!.createBiquadFilter();
+    haptic.medium();
+  }
 
-        osc.type = 'sawtooth';
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(900, t);
-        filter.frequency.linearRampToValueAtTime(80, t + 0.18);
+  /**
+   * Seat Taken — short chime when a new player sits down
+   */
+  playSeatTaken() {
+    if (!this.enabled || !this.ensureContext()) return;
+    const now = this.ctx!.currentTime;
+    const gain = this.createGain(0.12);
 
-        gain.gain.setValueAtTime(0.18, t);
-        gain.gain.linearRampToValueAtTime(0, t + 0.2);
+    // Short ascending two-note chime
+    const osc = this.ctx!.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, now);
+    osc.frequency.setValueAtTime(1100, now + 0.08);
+    osc.connect(gain);
+    osc.start(now);
+    osc.stop(now + 0.15);
+    haptic.light();
+  }
 
-        osc.connect(filter);
-        filter.connect(gain);
-        gain.connect(this.out);
-        osc.start(t);
-        osc.stop(t + 0.2);
+  /**
+   * New Hand — subtle "new hand starting" indicator
+   */
+  playNewHand() {
+    if (!this.enabled || !this.ensureContext()) return;
+    const now = this.ctx!.currentTime;
+    const gain = this.createGain(0.08);
 
-        // Noise tail (paper slide)
-        this.createNoiseBurst(t, 0.15, 0.08, 2000);
+    // Soft double-tap
+    for (let i = 0; i < 2; i++) {
+      const osc = this.ctx!.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = 600;
+      const env = this.ctx!.createGain();
+      env.gain.setValueAtTime(0.6, now + i * 0.07);
+      env.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.04);
+      osc.connect(env);
+      env.connect(gain);
+      osc.start(now + i * 0.07);
+      osc.stop(now + i * 0.07 + 0.05);
     }
 
-    /**
-     * All-In — dramatic bass thud + chip cascade + tension build
-     */
-    playAllIn() {
-        if (!this.enabled || !this.ensureContext()) return;
-        const t = this.ctx!.currentTime;
+    haptic.light();
+  }
 
-        // Deep bass impact
-        const bass = this.ctx!.createOscillator();
-        const bassGain = this.ctx!.createGain();
-        bass.type = 'sine';
-        bass.frequency.setValueAtTime(60, t);
-        bass.frequency.exponentialRampToValueAtTime(30, t + 0.3);
-        bassGain.gain.setValueAtTime(0.4, t);
-        bassGain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
-        bass.connect(bassGain);
-        bassGain.connect(this.out);
-        bass.start(t);
-        bass.stop(t + 0.4);
+  /**
+   * Reconnect — connection restored sound
+   */
+  playReconnect() {
+    if (!this.enabled || !this.ensureContext()) return;
+    const now = this.ctx!.currentTime;
+    const gain = this.createGain(0.15);
 
-        // Noise burst (impact thud)
-        this.createNoiseBurst(t, 0.08, 0.3, 500);
+    // Rising three-note chime (connection restored)
+    [523, 659, 784].forEach((freq, i) => {
+      const osc = this.ctx!.createOscillator();
+      osc.type = 'sine';
+      const env = this.ctx!.createGain();
+      env.gain.setValueAtTime(0.5, now + i * 0.1);
+      env.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.2);
+      osc.frequency.value = freq;
+      osc.connect(env);
+      env.connect(gain);
+      osc.start(now + i * 0.1);
+      osc.stop(now + i * 0.1 + 0.25);
+    });
+    haptic.medium();
+  }
 
-        // Chip cascade (5 rapid clicks, ascending pitch)
-        for (let i = 0; i < 5; i++) {
-            setTimeout(() => {
-                if (!this.ctx) return;
-                const tc = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                const g = this.ctx.createGain();
-                osc.frequency.setValueAtTime(1500 + i * 400, tc);
-                osc.frequency.exponentialRampToValueAtTime(100, tc + 0.04);
-                g.gain.setValueAtTime(0.15, tc);
-                g.gain.exponentialRampToValueAtTime(0.001, tc + 0.05);
-                osc.connect(g);
-                g.connect(this.out);
-                osc.start(tc);
-                osc.stop(tc + 0.05);
-            }, 80 + i * 30);
-        }
-
-        // Rising tension tone
-        const tension = this.ctx!.createOscillator();
-        const tensionGain = this.ctx!.createGain();
-        tension.type = 'triangle';
-        tension.frequency.setValueAtTime(220, t + 0.15);
-        tension.frequency.linearRampToValueAtTime(440, t + 0.45);
-        tensionGain.gain.setValueAtTime(0.08, t + 0.15);
-        tensionGain.gain.linearRampToValueAtTime(0.001, t + 0.5);
-        tension.connect(tensionGain);
-        tensionGain.connect(this.out);
-        tension.start(t + 0.15);
-        tension.stop(t + 0.5);
-
-        haptic.strong();
+  /**
+   * Check if sounds should play
+   */
+  private shouldPlay(): boolean {
+    if (this.ctx!.state === 'suspended') {
+      this.ctx!.resume().catch(() => {});
+      return false;
     }
+    return this.masterVolume > 0 && this.effectsVolume > 0;
+  }
 
-    /**
-     * Win — C major arpeggio (satisfying victory sound)
-     */
-    playWin() {
-        if (!this.enabled || !this.ensureContext()) return;
-        const t = this.ctx!.currentTime;
-        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+  /**
+   * Create a gain node with automatic volume scaling
+   */
+  private createGain(volume: number): GainNode {
+    const gain = this.ctx!.createGain();
+    gain.gain.value = volume * this.masterVolume * this.effectsVolume;
+    gain.connect(this.out);
+    return gain;
+  }
 
-        notes.forEach((freq, i) => {
-            const startTime = t + i * 0.1;
-            const osc = this.ctx!.createOscillator();
-            const gain = this.ctx!.createGain();
+  // ─── Cleanup ─────────────────────────────────────────────────────────
 
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, startTime);
-
-            gain.gain.setValueAtTime(0.2, startTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5);
-
-            osc.connect(gain);
-            gain.connect(this.out);
-            osc.start(startTime);
-            osc.stop(startTime + 0.5);
-        });
-
-        haptic.medium();
+  destroy() {
+    this.stopTimerWarning();
+    if (this.ctx && this.ctx.state !== 'closed') {
+      this.ctx.close();
     }
-
-    /**
-     * Big Win — Extended celebration with shimmer and double arpeggio
-     */
-    playBigWin() {
-        if (!this.enabled || !this.ensureContext()) return;
-        const t = this.ctx!.currentTime;
-
-        // First arpeggio (C major)
-        const notes1 = [523.25, 659.25, 783.99, 1046.50];
-        notes1.forEach((freq, i) => {
-            this.playTone(freq, 0.6, 0.2, 'sine', i * 0.08);
-        });
-
-        // Second arpeggio (octave higher, delayed)
-        const notes2 = [1046.50, 1318.51, 1567.98, 2093.00];
-        notes2.forEach((freq, i) => {
-            this.playTone(freq, 0.8, 0.15, 'sine', 0.35 + i * 0.08);
-        });
-
-        // Shimmer (high-frequency noise burst)
-        setTimeout(() => {
-            if (!this.ctx) return;
-            this.createNoiseBurst(this.ctx.currentTime, 0.4, 0.08, 8000);
-        }, 600);
-
-        // Victory bass note
-        this.playTone(130.81, 0.8, 0.12, 'sine', 0.7); // C3
-
-        haptic.triple();
-    }
-
-    /**
-     * Turn Alert — bell ding (your turn notification)
-     */
-    playTurnAlert() {
-        if (!this.enabled || !this.ensureContext()) return;
-        const t = this.ctx!.currentTime;
-
-        // Primary bell tone
-        const osc = this.ctx!.createOscillator();
-        const gain = this.ctx!.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, t); // A5
-
-        gain.gain.setValueAtTime(0.25, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
-
-        osc.connect(gain);
-        gain.connect(this.out);
-        osc.start(t);
-        osc.stop(t + 0.6);
-
-        // Harmonic overtone (octave + fifth)
-        const osc2 = this.ctx!.createOscillator();
-        const gain2 = this.ctx!.createGain();
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(1320, t); // E6
-
-        gain2.gain.setValueAtTime(0.08, t);
-        gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
-
-        osc2.connect(gain2);
-        gain2.connect(this.out);
-        osc2.start(t);
-        osc2.stop(t + 0.4);
-
-        haptic.medium();
-    }
-
-    /**
-     * Timer Warning — tick-tock pulse (call repeatedly for <5s countdown)
-     */
-    playTimerWarning() {
-        if (!this.enabled || !this.ensureContext()) return;
-        const t = this.ctx!.currentTime;
-
-        // Sharp tick
-        const osc = this.ctx!.createOscillator();
-        const gain = this.ctx!.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(1200, t);
-        osc.frequency.exponentialRampToValueAtTime(800, t + 0.03);
-
-        gain.gain.setValueAtTime(0.2, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
-
-        osc.connect(gain);
-        gain.connect(this.out);
-        osc.start(t);
-        osc.stop(t + 0.05);
-
-        haptic.double();
-    }
-
-    /**
-     * Start continuous timer warning ticks (call once, auto-stops)
-     */
-    startTimerWarning() {
-        this.stopTimerWarning();
-        this.playTimerWarning();
-        this.timerWarningInterval = window.setInterval(() => {
-            this.playTimerWarning();
-        }, 1000);
-    }
-
-    /**
-     * Stop continuous timer warning
-     */
-    stopTimerWarning() {
-        if (this.timerWarningInterval !== null) {
-            clearInterval(this.timerWarningInterval);
-            this.timerWarningInterval = null;
-        }
-    }
-
-    /**
-     * Community Card — card snap/flip for board reveal
-     */
-    playCommunityCard() {
-        if (!this.enabled || !this.ensureContext()) return;
-        const t = this.ctx!.currentTime;
-
-        // Quick snap (higher energy than deal)
-        this.createNoiseBurst(t, 0.06, 0.2, 4000);
-
-        // Card flip accent
-        const osc = this.ctx!.createOscillator();
-        const gain = this.ctx!.createGain();
-        osc.frequency.setValueAtTime(3000, t);
-        osc.frequency.exponentialRampToValueAtTime(600, t + 0.08);
-        gain.gain.setValueAtTime(0.12, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
-        osc.connect(gain);
-        gain.connect(this.out);
-        osc.start(t);
-        osc.stop(t + 0.1);
-    }
-
-    /**
-     * Showdown — dramatic rising reveal (string swell effect)
-     */
-    playShowdown() {
-        if (!this.enabled || !this.ensureContext()) return;
-        const t = this.ctx!.currentTime;
-
-        // Rising 4-note sequence: C4→E4→G4→C5 (80ms each)
-        const notes = [261.63, 329.63, 392.00, 523.25];
-        notes.forEach((freq, i) => {
-            const start = t + i * 0.08;
-            const osc = this.ctx!.createOscillator();
-            const gain = this.ctx!.createGain();
-
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(freq, start);
-
-            gain.gain.setValueAtTime(0.15, start);
-            gain.gain.linearRampToValueAtTime(0.18, start + 0.04);
-            gain.gain.exponentialRampToValueAtTime(0.001, start + 0.3);
-
-            osc.connect(gain);
-            gain.connect(this.out);
-            osc.start(start);
-            osc.stop(start + 0.3);
-        });
-
-        // Tension noise swell
-        this.createNoiseBurst(t, 0.35, 0.06, 3000);
-
-        haptic.medium();
-    }
-
-    /**
-     * Button Click — soft UI tap
-     */
-    playButtonClick() {
-        if (!this.enabled || !this.ensureContext()) return;
-        const t = this.ctx!.currentTime;
-
-        const osc = this.ctx!.createOscillator();
-        const gain = this.ctx!.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(1500, t);
-        osc.frequency.exponentialRampToValueAtTime(800, t + 0.03);
-
-        gain.gain.setValueAtTime(0.1, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
-
-        osc.connect(gain);
-        gain.connect(this.out);
-        osc.start(t);
-        osc.stop(t + 0.04);
-
-        haptic.light();
-    }
-
-    /**
-     * Time Bank Activated — hourglass two-tone chime
-     */
-    playTimeBankActivated() {
-        if (!this.enabled || !this.ensureContext()) return;
-
-        // G5 then C6 (pleasant two-note chime)
-        this.playTone(783.99, 0.3, 0.18, 'sine', 0);
-        this.playTone(1046.50, 0.4, 0.15, 'sine', 0.12);
-
-        // Subtle shimmer
-        setTimeout(() => {
-            if (!this.ctx) return;
-            this.createNoiseBurst(this.ctx.currentTime, 0.15, 0.04, 6000);
-        }, 200);
-
-        haptic.medium();
-    }
-
-    /**
-     * Pot Collect — chips sweep to winner (satisfying collection sound)
-     */
-    playPotCollect() {
-        if (!this.enabled || !this.ensureContext()) return;
-
-        // Rapid ascending chip clicks (collecting chips)
-        for (let i = 0; i < 6; i++) {
-            setTimeout(() => {
-                if (!this.ctx) return;
-                const tc = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                const g = this.ctx.createGain();
-                osc.frequency.setValueAtTime(1200 + i * 250, tc);
-                osc.frequency.exponentialRampToValueAtTime(100, tc + 0.03);
-                g.gain.setValueAtTime(0.12, tc);
-                g.gain.exponentialRampToValueAtTime(0.001, tc + 0.04);
-                osc.connect(g);
-                g.connect(this.out);
-                osc.start(tc);
-                osc.stop(tc + 0.04);
-            }, i * 25);
-        }
-
-        // Satisfying bass thud at end
-        setTimeout(() => {
-            this.playTone(100, 0.1, 0.12, 'sine');
-        }, 180);
-    }
-
-    /**
-     * Seat Taken — short chime when a new player sits down
-     */
-    playSeatTaken() {
-        if (!this.enabled || !this.ensureContext()) return;
-        const now = this.ctx!.currentTime;
-        const gain = this.createGain(0.12);
-
-        // Short ascending two-note chime
-        const osc = this.ctx!.createOscillator();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, now);
-        osc.frequency.setValueAtTime(1100, now + 0.08);
-        osc.connect(gain);
-        osc.start(now);
-        osc.stop(now + 0.15);
-        haptic.light();
-    }
-
-    /**
-     * New Hand — subtle "new hand starting" indicator
-     */
-    playNewHand() {
-        if (!this.enabled || !this.ensureContext()) return;
-        const now = this.ctx!.currentTime;
-        const gain = this.createGain(0.08);
-
-        // Soft double-tap
-        for (let i = 0; i < 2; i++) {
-            const osc = this.ctx!.createOscillator();
-            osc.type = 'sine';
-            osc.frequency.value = 600;
-            const env = this.ctx!.createGain();
-            env.gain.setValueAtTime(0.6, now + i * 0.07);
-            env.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.04);
-            osc.connect(env);
-            env.connect(gain);
-            osc.start(now + i * 0.07);
-            osc.stop(now + i * 0.07 + 0.05);
-        }
-    }
-
-    /**
-     * Reconnect — connection restored sound
-     */
-    playReconnect() {
-        if (!this.enabled || !this.ensureContext()) return;
-        const now = this.ctx!.currentTime;
-        const gain = this.createGain(0.15);
-
-        // Rising three-note chime (connection restored)
-        [523, 659, 784].forEach((freq, i) => {
-            const osc = this.ctx!.createOscillator();
-            osc.type = 'sine';
-            const env = this.ctx!.createGain();
-            env.gain.setValueAtTime(0.5, now + i * 0.1);
-            env.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.2);
-            osc.frequency.value = freq;
-            osc.connect(env);
-            env.connect(gain);
-            osc.start(now + i * 0.1);
-            osc.stop(now + i * 0.1 + 0.25);
-        });
-        haptic.medium();
-    }
-
-    /**
-     * Check if sounds should play
-     */
-    private shouldPlay(): boolean {
-        if (this.ctx!.state === 'suspended') {
-            this.ctx!.resume().catch(() => {});
-            return false;
-        }
-        return this.masterVolume > 0 && this.effectsVolume > 0;
-    }
-
-    /**
-     * Create a gain node with automatic volume scaling
-     */
-    private createGain(volume: number): GainNode {
-        const gain = this.ctx!.createGain();
-        gain.gain.value = volume * this.masterVolume * this.effectsVolume;
-        gain.connect(this.out);
-        return gain;
-    }
-
-    // ─── Cleanup ─────────────────────────────────────────────────────────
-
-    destroy() {
-        this.stopTimerWarning();
-        if (this.ctx && this.ctx.state !== 'closed') {
-            this.ctx.close();
-        }
-    }
+  }
 }
 
 export const soundService = new SoundService();
