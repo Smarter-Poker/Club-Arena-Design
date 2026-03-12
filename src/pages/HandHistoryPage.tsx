@@ -161,7 +161,8 @@ export default function HandHistoryPage() {
       const p = h.players.find((pl) => pl.user_id === user?.id);
       return sum + (p?.result || 0);
     }, 0);
-    return { wins, losses, totalPL };
+    const biggestPot = hands.reduce((max, h) => Math.max(max, h.main_pot || 0), 0);
+    return { wins, losses, totalPL, biggestPot };
   }, [hands, user?.id]);
 
   const handleExport = () => {
@@ -247,21 +248,21 @@ export default function HandHistoryPage() {
 
   return (
     <div className="hand-history-page">
-      {/* Filters */}
+      {/* Filters — Pill Chips (Initiative 5) */}
       <div className="hh-filters">
         {(['all', 'won', 'lost', 'big-pots'] as HistoryFilter[]).map((f) => (
           <button
             key={f}
-            className={`filter-btn ${filter === f ? 'active' : ''}`}
+            className={`hh-filter-chip ${filter === f ? 'active' : ''}`}
             onClick={() => setFilter(f)}
           >
             {f === 'all'
               ? 'All Hands'
               : f === 'won'
-                ? ' Won'
+                ? '✅ Won'
                 : f === 'lost'
-                  ? ' Lost'
-                  : ' Big Pots'}
+                  ? '❌ Lost'
+                  : '🔥 Big Pots'}
           </button>
         ))}
       </div>
@@ -287,6 +288,10 @@ export default function HandHistoryPage() {
               {stats.totalPL.toLocaleString()}
             </span>
             <span className="stat-label">P/L</span>
+          </div>
+          <div className="summary-stat">
+            <span className="stat-value">{stats.biggestPot.toLocaleString()}</span>
+            <span className="stat-label">Biggest Pot</span>
           </div>
           <button
             className="export-btn"
@@ -339,12 +344,9 @@ export default function HandHistoryPage() {
                     <span className="pot-label">Pot</span>
                     <span className="pot-value">{hand.main_pot.toLocaleString()}</span>
                   </div>
-                  <div className={`result-info ${result >= 0 ? 'positive' : 'negative'}`}>
-                    <span className="result-label">Result</span>
-                    <span className="result-value">
-                      {result >= 0 ? '+' : ''}
-                      {result.toLocaleString()}
-                    </span>
+                  <div className={`result-badge ${result >= 0 ? 'win' : 'loss'}`}>
+                    {result >= 0 ? '▲' : '▼'} {result >= 0 ? '+' : ''}
+                    {result.toLocaleString()}
                   </div>
                 </div>
                 <div className="hand-footer">

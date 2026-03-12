@@ -17,15 +17,36 @@ CREATE TABLE IF NOT EXISTS public.table_hole_cards (
 
 ALTER TABLE public.table_hole_cards ENABLE ROW LEVEL SECURITY;
 
+-- SELECT: Users can only read their own hole cards (prevents God Mode)
 CREATE POLICY "Users can read own hole cards" 
 ON public.table_hole_cards FOR SELECT TO authenticated 
 USING (auth.uid() = user_id);
 
+-- INSERT: HeadlessTableEngine uses service_role (bypasses RLS), but this
+-- policy exists for defense-in-depth if any client-side code ever attempts writes
+CREATE POLICY "Service role can insert hole cards"
+ON public.table_hole_cards FOR INSERT TO authenticated
+WITH CHECK (false); -- Block all authenticated client INSERTs; only service_role can write
+
+-- Performance index for the client-side fallback query pattern
+-- (SELECT ... WHERE table_id = ? AND user_id = ? ORDER BY hand_number DESC LIMIT 1)
+CREATE INDEX IF NOT EXISTS idx_hole_cards_table_user
+ON public.table_hole_cards (table_id, user_id, hand_number DESC);
+
 ALTER PUBLICATION supabase_realtime ADD TABLE table_hole_cards;
 
+-- Cleanup function — removes cards older than 24 hours to prevent unbounded growth
 CREATE OR REPLACE FUNCTION cleanup_old_hole_cards()
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
     DELETE FROM public.table_hole_cards WHERE created_at < NOW() - INTERVAL '24 hours';
 END;
 $$;
+
+-- Schedule cleanup via pg_cron (runs every 6 hours)
+-- NOTE: pg_cron must be enabled in Supabase dashboard
+SELECT cron.schedule(
+    'cleanup-hole-cards',
+    '0 */6 * * *',
+    $$SELECT cleanup_old_hole_cards()$$
+);
