@@ -1115,6 +1115,7 @@ export default function ClubDetailPage() {
                 .eq('id', id);
               if (error) throw error;
               setTables((prev) => prev.filter((t) => t.id !== id));
+              masterBus.emit('TABLE_UPDATED', { tableId: id, status: 'deleted' });
               toast.success('Table deleted');
             } catch (err) {
               console.error('Failed to delete table:', err);
