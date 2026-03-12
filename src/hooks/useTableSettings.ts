@@ -130,6 +130,9 @@ export function useTableSettings() {
   // Reset all settings to defaults
   const resetSettings = useCallback(() => {
     setSettings(DEFAULT_SETTINGS);
+    // Broadcast reset for cross-tab sync — emit each default as individual change
+    localOriginRef.current = true;
+    masterBus.emit('SETTINGS_CHANGED', { setting: '__reset__', value: true as any });
   }, []);
 
   // Bulk update multiple settings at once
@@ -138,6 +141,11 @@ export function useTableSettings() {
       ...prev,
       ...updates,
     }));
+    // Broadcast each change for cross-tab sync
+    localOriginRef.current = true;
+    for (const [key, value] of Object.entries(updates)) {
+      masterBus.emit('SETTINGS_CHANGED', { setting: key, value: value as any });
+    }
   }, []);
 
   return {

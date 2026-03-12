@@ -2851,19 +2851,22 @@ export default function TablePage({
             });
             // ─── Hero Auto-Rebuy ─────────────────────────────────────────────
             // If hero busted and autoRebuy is enabled, automatically add chips
-            if (userSettingsRef.current.autoRebuy && prev.heroSeat > 0) {
-              const heroAfterHand = prev.players[prev.heroSeat - 1];
-              if (heroAfterHand && heroAfterHand.isHero && heroAfterHand.stack <= 0) {
-                const bbMatchRebuy = prev.blinds.match(/\/(\d+\.?\d*)/);
-                const bbRebuy = bbMatchRebuy ? parseFloat(bbMatchRebuy[1]) : 0.5;
-                const heroRebuyAmount = bbRebuy * 100; // 100 BB standard rebuy
-                // Fire-and-forget: attempt auto-rebuy asynchronously
-                // handleAddChips checks wallet balance, syncs to Supabase, emits bus
-                workerTimeout(() => {
-                  handleAddChips(heroRebuyAmount).catch((err: unknown) => {
-                    console.warn('[AutoRebuy] Hero auto-rebuy failed:', err);
-                  });
-                }, 200); // Small delay to let state settle
+            {
+              const tsCur = tableStateRef.current;
+              if (userSettingsRef.current.autoRebuy && tsCur.heroSeat > 0) {
+                const heroAfterHand = tsCur.players[tsCur.heroSeat - 1];
+                if (heroAfterHand && heroAfterHand.isHero && heroAfterHand.stack <= 0) {
+                  const bbMatchRebuy = tsCur.blinds.match(/\/(\d+\.?\d*)/);
+                  const bbRebuy = bbMatchRebuy ? parseFloat(bbMatchRebuy[1]) : 0.5;
+                  const heroRebuyAmount = bbRebuy * 100; // 100 BB standard rebuy
+                  // Fire-and-forget: attempt auto-rebuy asynchronously
+                  // handleAddChips checks wallet balance, syncs to Supabase, emits bus
+                  workerTimeout(() => {
+                    handleAddChips(heroRebuyAmount).catch((err: unknown) => {
+                      console.warn('[AutoRebuy] Hero auto-rebuy failed:', err);
+                    });
+                  }, 200); // Small delay to let state settle
+                }
               }
             }
             // Start next hand IMPERATIVELY (not via useEffect)
@@ -3787,7 +3790,7 @@ export default function TablePage({
                   hudStats={player && !player.isHero ? getPlayerHUDStats(player.id) : null}
                   showHUD={userSettings.showHUD && !!player && !player.isHero}
                   deckStyle={userSettings.fourColorDeck ? '4color' : '2color'}
-                  cardBack={userSettings.cardBack || 'classic_blue'}
+                  cardBack={userSettings.cardBack || 'black'}
                   showStackInBB={userSettings.showStackInBB}
                   playerStyle={
                     userSettings.showHUD && player && !player.isHero
