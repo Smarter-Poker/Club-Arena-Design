@@ -29,6 +29,7 @@ import haptic from '../services/HapticService';
 import PremiumSFX from '../services/PremiumSFX';
 import { masterBus } from '../core/MasterBus';
 import DailyChallenges from '../components/home/DailyChallenges';
+import PresenceHub from '../components/home/PresenceHub';
 import ClubContextMenu from '../components/home/ClubContextMenu';
 import LOBBY_TILES from '../config/lobbyTiles.config';
 import styles from './HomePage.module.css';
@@ -1616,6 +1617,7 @@ function HomePageInner() {
         {/* ═══════════════════════════════════════════════════════════════════════
                     DAILY CHALLENGES — Extracted Component (#16)
                 ═══════════════════════════════════════════════════════════════════════ */}
+        <PresenceHub />
         <DailyChallenges />
 
         {/* ═══════════════════════════════════════════════════════════════════════

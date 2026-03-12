@@ -1679,11 +1679,13 @@ export default function TablePage({
           const seatedPlayer = Array.from(tableState.players).find((p) => p && p.id === senderId);
           const senderName = seatedPlayer?.name || chatPayload?.display_name || 'Player';
 
-          // Skip if empty content or sent by us (already optimistically added)
-          if (!content || senderId === userId) break;
+          if (!content) break;
 
-          // Check if it's a special message (reaction/throw) — don't add to chat
+          // Check if it's a special message (reaction/throw) — processes animation for all users (including sender)
           if (parseIncomingMessage(content, senderId)) break;
+
+          // Skip normal chat if sent by us (we already added it optimistically to chat display)
+          if (senderId === userId) break;
 
           // Normal chat message — add to display
           setChatMessages((prev) => [
