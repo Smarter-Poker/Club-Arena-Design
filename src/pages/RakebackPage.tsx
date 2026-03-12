@@ -229,6 +229,14 @@ export default function RakebackPage() {
 
   return (
     <div className="rakeback-page">
+      {/* Promotional Banner — WPT-style */}
+      {currentRate > 0 && (
+        <div className="rakeback-promo-banner">
+          <h3>You're Earning {(currentRate * 100).toFixed(0)}% Rakeback</h3>
+          <p>Every hand you play earns you cash back. Keep playing to increase your rate!</p>
+        </div>
+      )}
+
       <div className="rakeback-summary">
         <div className="summary-card main">
           <span className="card-icon"></span>

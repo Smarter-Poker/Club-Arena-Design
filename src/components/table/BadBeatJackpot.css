@@ -9,45 +9,72 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .bbj-widget {
-    position: absolute;
-    top: 10px;
-    right: 80px;
-    /* Offset from menu/other controls */
-    background: linear-gradient(135deg, #2D1B4E 0%, #1A102E 100%);
-    border: 1px solid rgba(255, 215, 0, 0.3);
-    border-radius: 8px;
-    padding: 6px 12px;
-    cursor: help;
-    z-index: 50;
-    box-shadow: 0 0 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    transition: transform 0.2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275)), box-shadow 0.2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
-    backdrop-filter: blur(10px) saturate(1.2);
-    -webkit-backdrop-filter: blur(10px) saturate(1.2);
+  position: absolute;
+  top: 10px;
+  right: 80px;
+  background: linear-gradient(135deg, #2d1b4e 0%, #1a102e 100%);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  border-radius: 10px;
+  padding: 8px 14px;
+  cursor: help;
+  z-index: 50;
+  box-shadow:
+    0 0 16px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(255, 215, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition:
+    transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    box-shadow 0.2s ease;
+  backdrop-filter: blur(10px) saturate(1.2);
+  -webkit-backdrop-filter: blur(10px) saturate(1.2);
+  animation: bbjPulseGlow 3s ease-in-out infinite;
+}
+
+@keyframes bbjPulseGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 16px rgba(0, 0, 0, 0.4),
+      0 0 20px rgba(255, 215, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+  50% {
+    box-shadow:
+      0 0 16px rgba(0, 0, 0, 0.4),
+      0 0 40px rgba(255, 215, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
 }
 
 .bbj-widget:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 0 20px rgba(163, 113, 247, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 215, 0, 0.6);
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 20px rgba(163, 113, 247, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 215, 0, 0.6);
 }
 
 .bbj-widget__label {
-    font-size: 0.5625rem;
-    font-weight: 700;
-    color: #FFD700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    margin-bottom: 2px;
-    text-align: center;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  color: #ffd700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+  text-align: center;
 }
 
 .bbj-widget__amount {
-    font-size: 0.9375rem;
-    font-weight: 800;
-    color: #FFF;
-    font-family: 'JetBrains Mono', monospace;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-    text-align: center;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  text-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+  text-align: center;
+  background: linear-gradient(135deg, #fff 20%, #ffd700 80%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -55,55 +82,57 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .bbj-info {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    margin-top: 8px;
-    width: 200px;
-    padding: 12px;
-    background: rgba(20, 10, 30, 0.95);
-    border: 1px solid rgba(255, 215, 0, 0.2);
-    border-radius: 8px;
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    pointer-events: none;
-    /* Let clicks pass through if just hovering */
-    animation: fadeIn 0.2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
-    backdrop-filter: blur(12px) saturate(1.3);
-    -webkit-backdrop-filter: blur(12px) saturate(1.3);
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  width: 200px;
+  padding: 12px;
+  background: rgba(20, 10, 30, 0.95);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 8px;
+  box-shadow:
+    0 0 30px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+  /* Let clicks pass through if just hovering */
+  animation: fadeIn 0.2s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+  backdrop-filter: blur(12px) saturate(1.3);
+  -webkit-backdrop-filter: blur(12px) saturate(1.3);
 }
 
 .bbj-info__title {
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #FFD700;
-    margin: 0 0 6px 0;
-    text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #ffd700;
+  margin: 0 0 6px 0;
+  text-transform: uppercase;
 }
 
 .bbj-info__rule {
-    font-size: 0.8125rem;
-    color: #E4E6EB;
-    margin: 0 0 4px 0;
-    font-weight: 600;
+  font-size: 0.8125rem;
+  color: #e4e6eb;
+  margin: 0 0 4px 0;
+  font-weight: 600;
 }
 
 .bbj-info__sub {
-    font-size: 0.6875rem;
-    color: #8B949E;
-    margin: 0;
-    font-style: italic;
+  font-size: 0.6875rem;
+  color: #8b949e;
+  margin: 0;
+  font-style: italic;
 }
 
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-5px);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -111,87 +140,87 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .bbj-hit-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    animation: bgPulse 0.5s ease-in-out infinite alternate;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  animation: bgPulse 0.5s ease-in-out infinite alternate;
 }
 
 @keyframes bgPulse {
-    from {
-        background: rgba(45, 27, 78, 0.85);
-    }
+  from {
+    background: rgba(45, 27, 78, 0.85);
+  }
 
-    to {
-        background: rgba(75, 40, 120, 0.9);
-    }
+  to {
+    background: rgba(75, 40, 120, 0.9);
+  }
 }
 
 .bbj-hit-content {
-    text-align: center;
-    animation: scaleBounce 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  text-align: center;
+  animation: scaleBounce 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 @keyframes scaleBounce {
-    0% {
-        transform: scale(0);
-        opacity: 0;
-    }
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
 
-    60% {
-        transform: scale(1.2);
-        opacity: 1;
-    }
+  60% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
 
-    100% {
-        transform: scale(1);
-    }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .bbj-hit__title {
-    font-size: 2rem;
-    font-weight: 900;
-    color: #FFD700;
-    text-shadow: 0 4px 10px rgba(255, 215, 0, 0.5);
-    letter-spacing: 0.1em;
-    margin-bottom: 0px;
+  font-size: 2rem;
+  font-weight: 900;
+  color: #ffd700;
+  text-shadow: 0 4px 10px rgba(255, 215, 0, 0.5);
+  letter-spacing: 0.1em;
+  margin-bottom: 0px;
 }
 
 .bbj-hit__subtitle {
-    font-size: 6rem;
-    font-weight: 900;
-    background: linear-gradient(180deg, #FFFFFF 0%, #FFD700 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.6));
-    line-height: 1;
-    margin-bottom: 20px;
-    animation: pulseText 0.5s infinite alternate;
+  font-size: 6rem;
+  font-weight: 900;
+  background: linear-gradient(180deg, #ffffff 0%, #ffd700 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.6));
+  line-height: 1;
+  margin-bottom: 20px;
+  animation: pulseText 0.5s infinite alternate;
 }
 
 @keyframes pulseText {
-    from {
-        transform: scale(1);
-        filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.6));
-    }
+  from {
+    transform: scale(1);
+    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.6));
+  }
 
-    to {
-        transform: scale(1.05);
-        filter: drop-shadow(0 0 40px rgba(255, 215, 0, 0.9));
-    }
+  to {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 40px rgba(255, 215, 0, 0.9));
+  }
 }
 
 .bbj-hit__amount {
-    font-size: 3.5rem;
-    font-weight: 800;
-    color: #FFF;
-    font-family: 'JetBrains Mono', monospace;
-    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -199,73 +228,73 @@
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 .bbj-particle {
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #FFD700;
-    top: 50%;
-    left: 50%;
-    pointer-events: none;
-    animation: shoot 2s ease-out infinite;
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ffd700;
+  top: 50%;
+  left: 50%;
+  pointer-events: none;
+  animation: shoot 2s ease-out infinite;
 }
 
 /* Generate different trajectories for particles */
 .bbj-particle:nth-child(1) {
-    transform: rotate(0deg) translate(0px);
-    animation-delay: 0s;
+  transform: rotate(0deg) translate(0px);
+  animation-delay: 0s;
 }
 
 .bbj-particle:nth-child(2) {
-    transform: rotate(18deg) translate(0px);
-    animation-delay: 0.1s;
-    background: #FFF;
+  transform: rotate(18deg) translate(0px);
+  animation-delay: 0.1s;
+  background: #fff;
 }
 
 .bbj-particle:nth-child(3) {
-    transform: rotate(36deg) translate(0px);
-    animation-delay: 0.2s;
+  transform: rotate(36deg) translate(0px);
+  animation-delay: 0.2s;
 }
 
 .bbj-particle:nth-child(4) {
-    transform: rotate(54deg) translate(0px);
-    animation-delay: 0.3s;
-    background: #FF4500;
+  transform: rotate(54deg) translate(0px);
+  animation-delay: 0.3s;
+  background: #ff4500;
 }
 
 /* ... simpler to do keyframes for a few generic directions or use JS, sticking to CSS animation for simplicity here */
 
 @keyframes shoot {
-    0% {
-        transform: translate(-50%, -50%) scale(1);
-        opacity: 1;
-    }
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
 
-    100% {
-        transform: translate(calc(var(--tx, 100px) - 50%), calc(var(--ty, 100px) - 50%)) scale(0);
-        opacity: 0;
-    }
+  100% {
+    transform: translate(calc(var(--tx, 100px) - 50%), calc(var(--ty, 100px) - 50%)) scale(0);
+    opacity: 0;
+  }
 }
 
 /* Hardcoded random scatter for pure CSS demo - in production might use JS or a library */
 .bbj-particle:nth-child(odd) {
-    --tx: 40vw;
-    --ty: -40vh;
+  --tx: 40vw;
+  --ty: -40vh;
 }
 
 .bbj-particle:nth-child(even) {
-    --tx: -40vw;
-    --ty: 40vh;
+  --tx: -40vw;
+  --ty: 40vh;
 }
 
 .bbj-particle:nth-child(3n) {
-    --tx: 30vw;
-    --ty: 30vh;
-    background: #00FFFF;
+  --tx: 30vw;
+  --ty: 30vh;
+  background: #00ffff;
 }
 
 .bbj-particle:nth-child(4n) {
-    --tx: -30vw;
-    --ty: -30vh;
-    background: #FF00FF;
+  --tx: -30vw;
+  --ty: -30vh;
+  background: #ff00ff;
 }

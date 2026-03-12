@@ -10,14 +10,14 @@ This skill covers **everything that happens at the poker table** — the live ga
 
 ### Core Files
 
-| Component                  | Path                                | Size        | Purpose                        |
-| :------------------------- | :---------------------------------- | :---------- | :----------------------------- |
-| **TablePage.tsx**          | `src/pages/TablePage.tsx`           | 4,377 lines | Monolithic table orchestrator  |
-| **HeadlessTableEngine.ts** | `src/engine/HeadlessTableEngine.ts` | 59KB        | Server-authoritative game loop |
-| **TournamentEngine.ts**    | `src/engine/TournamentEngine.ts`    | 66KB        | Full MTT/SNG lifecycle         |
-| **HandController.ts**      | `src/engine/HandController.ts`      | 29KB        | Hand-level game logic          |
-| **PokerEngine.ts**         | `src/engine/PokerEngine.ts`         | 25KB        | Deck, evaluation, pot calc     |
-| **HorseLogic.ts**          | `src/engine/HorseLogic.ts`          | 27KB        | Horse (bot) decision AI        |
+| Component                  | Path                                | Size        | Purpose                                              |
+| :------------------------- | :---------------------------------- | :---------- | :--------------------------------------------------- |
+| **TablePage.tsx**          | `src/pages/TablePage.tsx`           | 4,478 lines | Monolithic table orchestrator (decomposed → 5 hooks) |
+| **HeadlessTableEngine.ts** | `src/engine/HeadlessTableEngine.ts` | 59KB        | Server-authoritative game loop                       |
+| **TournamentEngine.ts**    | `src/engine/TournamentEngine.ts`    | 66KB        | Full MTT/SNG lifecycle                               |
+| **HandController.ts**      | `src/engine/HandController.ts`      | 29KB        | Hand-level game logic                                |
+| **PokerEngine.ts**         | `src/engine/PokerEngine.ts`         | 25KB        | Deck, evaluation, pot calc                           |
+| **HorseLogic.ts**          | `src/engine/HorseLogic.ts`          | 27KB        | Horse (bot) decision AI                              |
 
 ### Card Rendering (Custom PNG Deck)
 
@@ -66,16 +66,20 @@ ActionPanel, SitOutModal, WaitListModal, TimeBank, CashierModal, BuyInModal, Str
 
 ## Card Back Designs Available
 
-| ID       | Name         | Type            | Path                        |
-| :------- | :----------- | :-------------- | :-------------------------- |
-| black    | Black        | Default         | `/cards/backs/black.jpeg`   |
-| red      | Red          | Default         | `/cards/backs/red.jpeg`     |
-| blue     | Blue         | Default         | `/cards/backs/blue.jpeg`    |
-| white    | White        | Default         | `/cards/backs/white.jpeg`   |
-| classic  | Classic      | Premium (💎50)  | `/cards/backs/classic.jpg`  |
-| burgundy | Burgundy     | Premium (💎75)  | `/cards/backs/burgundy.jpg` |
-| navy     | Navy         | Premium (💎75)  | `/cards/backs/navy.jpg`     |
-| gold     | Premium Gold | Premium (💎150) | `/cards/backs/gold.jpg`     |
+| ID           | Name         | Type              | Path                            |
+| :----------- | :----------- | :---------------- | :------------------------------ |
+| black        | Black        | Default           | `/cards/backs/black.jpeg`       |
+| red          | Red          | Default           | `/cards/backs/red.jpeg`         |
+| blue         | Blue         | Default           | `/cards/backs/blue.jpeg`        |
+| white        | White        | Default           | `/cards/backs/white.jpeg`       |
+| classic      | Classic      | Premium (💎50)    | `/cards/backs/classic.jpg`      |
+| burgundy     | Burgundy     | Premium (💎75)    | `/cards/backs/burgundy.jpg`     |
+| navy         | Navy         | Premium (💎75)    | `/cards/backs/navy.jpg`         |
+| gold         | Premium Gold | Premium (💎150)   | `/cards/backs/gold.jpg`         |
+| holographic  | Holographic  | Exclusive (💎200) | `/cards/backs/holographic.jpg`  |
+| carbon       | Carbon Fiber | Exclusive (💎175) | `/cards/backs/carbon.jpg`       |
+| club-branded | Club Crest   | Exclusive (💎250) | `/cards/backs/club-branded.jpg` |
+| diamond-foil | Diamond Foil | Exclusive (💎300) | `/cards/backs/diamond-foil.jpg` |
 
 ---
 
@@ -122,6 +126,12 @@ ActionPanel, SitOutModal, WaitListModal, TimeBank, CashierModal, BuyInModal, Str
 - [x] Smart HUD visual upgrade — color-coded VPIP/PFR tiers, flame icon
 - [x] SessionAnalytics.tsx — PokerCraft-style 4-tab dashboard
 
+### ✅ Phase 6: Architecture Polish & Customization — COMPLETE
+
+- [x] TablePage.tsx decomposition — 5 custom hooks (`useTableGameState`, `useTableChat`, `useTableAnimations`, `useTableSidePanels`, `useTableTournament`)
+- [x] Card Back Store — 12 backs (4 free + 4 premium + 4 exclusive), purchase modal, `DIAMOND_SPENT` bus
+- [x] Avatar Gallery — 3-tab gallery (Free 25 / VIP 50 / Upload), photo upload, Supabase persistence
+
 ---
 
 ## Competitive Benchmarks
@@ -146,6 +156,7 @@ ActionPanel, SitOutModal, WaitListModal, TimeBank, CashierModal, BuyInModal, Str
 2. **Haptic feedback** — use `haptic.light()/medium()/strong()` from SoundService for all user interactions
 3. **Card type** — always use `Card` interface from `CardImage.tsx` (`rank: '2'-'A'`, `suit: 'h'|'d'|'c'|'s'`)
 4. **4-color default** — use `deckStyle="4color"` unless user setting overrides
-5. **Performance** — `TablePage.tsx` is 4,377 lines; prefer extracting to custom hooks over adding more inline logic
-6. **Animations** — use `requestAnimationFrame` for smooth motion; CSS transitions for simple state changes
-7. **Sound** — coordinate SoundService playback with animation timing (e.g., `playDeal()` syncs with card arc arrival)
+5. **Performance** — `TablePage.tsx` has 5 extracted hooks; prefer using these modular hooks over adding inline logic
+6. **Extracted hooks** — `useTableGameState`, `useTableChat`, `useTableAnimations`, `useTableSidePanels`, `useTableTournament` live in `src/hooks/`
+7. **Animations** — use `requestAnimationFrame` for smooth motion; CSS transitions for simple state changes
+8. **Sound** — coordinate SoundService playback with animation timing (e.g., `playDeal()` syncs with card arc arrival)
