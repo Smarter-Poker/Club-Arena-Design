@@ -64,7 +64,7 @@ export default function LuckyDrawWheel({
   const segAngle = segments.length > 0 ? 360 / segments.length : 45; // fallback to 8 segments
 
   const handleSpin = useCallback(async () => {
-    if (spinning || spinsRemaining <= 0) return;
+    if (spinning || spinsRemaining <= 0 || segments.length === 0) return;
     setSpinning(true);
     setResult(null);
     triggerHaptic('medium');
