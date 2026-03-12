@@ -365,7 +365,7 @@ export class HeadlessTableEngine {
     // Sync current_players count to tables row so lobby displays correctly
     await this.supabaseClient
       .from('tables')
-      .update({ current_players: this.seatedPlayers.length, status: 'running' })
+      .update({ current_players: this.seatedPlayers.length, status: 'RUNNING' })
       .eq('id', this.tableId);
   }
 

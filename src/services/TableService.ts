@@ -311,14 +311,17 @@ class TableService {
           .eq('user_id', userId);
       }
 
-      // Update player count (only count active seats — not left players)
-      const { count } = await supabase
-        .from('table_seats')
-        .select('*', { count: 'exact', head: true })
-        .eq('table_id', tableId)
-        .is('left_at', null);
+      // Update player count for TOURNAMENT leaves only
+      // (atomic_table_cashout already updates current_players for cash game leaves)
+      if (tableData?.tournament_id) {
+        const { count } = await supabase
+          .from('table_seats')
+          .select('*', { count: 'exact', head: true })
+          .eq('table_id', tableId)
+          .is('left_at', null);
 
-      await this.updatePlayerCount(tableId, count || 0);
+        await this.updatePlayerCount(tableId, count || 0);
+      }
 
       // Check waitlist and notify next player
       const { data: nextWaiter } = await supabase

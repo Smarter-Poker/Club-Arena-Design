@@ -12,7 +12,10 @@ CREATE OR REPLACE FUNCTION atomic_tournament_register(
   p_current_bounty NUMERIC,
   p_mystery_bounty_value NUMERIC,
   p_is_bounty_tournament BOOLEAN
-) RETURNS UUID AS $$
+) RETURNS UUID
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
   v_wallet_balance NUMERIC;
   v_player_id UUID;
@@ -73,6 +76,6 @@ BEGIN
 
   RETURN v_player_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 GRANT EXECUTE ON FUNCTION atomic_tournament_register(UUID, UUID, TEXT, NUMERIC, NUMERIC, NUMERIC, BOOLEAN) TO anon, authenticated;
