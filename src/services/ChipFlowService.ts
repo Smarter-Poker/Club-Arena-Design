@@ -19,6 +19,7 @@
 
 import { supabase } from '../lib/supabase';
 import { WalletService } from './WalletService';
+import { masterBus } from '../core/MasterBus';
 
 // Exact cent precision — never round
 const exact = (v: number): number => Math.trunc(v * 100) / 100;
@@ -104,7 +105,15 @@ export const ChipFlowService = {
       relatedEntityId || fromUserId
     );
 
-    // 4. Get final balances
+    // 4. Emit bus events so CashierPage/PlayerWallet pages refresh for BOTH parties
+    masterBus.emit('BALANCE_UPDATED', {
+      source: 'chip_transfer',
+      userId: fromUserId,
+      amount: -amt,
+    });
+    masterBus.emit('BALANCE_UPDATED', { source: 'chip_transfer', userId: toUserId, amount: amt });
+
+    // 5. Get final balances
     const { data: fromWallet } = await supabase
       .from('wallets')
       .select('balance')
