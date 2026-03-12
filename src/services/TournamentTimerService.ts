@@ -31,6 +31,19 @@ class TournamentTimerServiceClass {
   private readonly TICK_INTERVAL_MS = 1000; // Check every second
   private breakIntervals: Map<string, number> = new Map(); // configurable break every N levels
 
+  constructor() {
+    // Listen for player eliminations to trigger final table / heads-up detection
+    masterBus.subscribe('PLAYER_ELIMINATED', (event: any) => {
+      const tournamentId = event.payload?.tournamentId;
+      if (tournamentId && this.activeTimers.has(tournamentId)) {
+        // Debounce: small delay to let DB state settle after elimination
+        setTimeout(() => {
+          this.checkTableSize(tournamentId);
+        }, 500);
+      }
+    });
+  }
+
   /**
    * Start monitoring a tournament for level changes
    */
