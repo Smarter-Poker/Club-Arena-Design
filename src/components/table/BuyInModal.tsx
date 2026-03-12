@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { haptic } from '../../services/SoundService';
 import './BuyInModal.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -18,17 +19,17 @@ import './BuyInModal.css';
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface BuyInModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onConfirm: (amount: number, autoRebuy: boolean) => void;
-    tableName?: string;
-    minBuyIn: number;
-    maxBuyIn: number;
-    defaultBuyIn?: number;
-    accountBalance: number;
-    bigBlind: number;
-    currency?: string;
-    countdown?: number; // Seconds remaining to buy in
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (amount: number, autoRebuy: boolean) => void;
+  tableName?: string;
+  minBuyIn: number;
+  maxBuyIn: number;
+  defaultBuyIn?: number;
+  accountBalance: number;
+  bigBlind: number;
+  currency?: string;
+  countdown?: number; // Seconds remaining to buy in
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -37,7 +38,7 @@ export interface BuyInModalProps {
 
 // EXACT precision — no abbreviations, no rounding
 function formatAmount(amount: number, currency: string = ''): string {
-    return `${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -45,218 +46,220 @@ function formatAmount(amount: number, currency: string = ''): string {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function BuyInModal({
-    isOpen,
-    onClose,
-    onConfirm,
-    tableName,
-    minBuyIn,
-    maxBuyIn,
-    defaultBuyIn,
-    accountBalance,
-    bigBlind,
-    currency = '',
-    countdown,
+  isOpen,
+  onClose,
+  onConfirm,
+  tableName,
+  minBuyIn,
+  maxBuyIn,
+  defaultBuyIn,
+  accountBalance,
+  bigBlind,
+  currency = '',
+  countdown,
 }: BuyInModalProps) {
-    // State
-    const [buyInAmount, setBuyInAmount] = useState(defaultBuyIn || Math.min(minBuyIn * 2, maxBuyIn));
-    const [autoRebuy, setAutoRebuy] = useState(false);
-    const [rebuyThreshold, setRebuyThreshold] = useState(0);
-    const [displayAmount, setDisplayAmount] = useState(defaultBuyIn || Math.min(minBuyIn * 2, maxBuyIn));
-    const [isConfirmPulsing, setIsConfirmPulsing] = useState(false);
-    const animationFrameRef = useRef<number>(0);
-    const countStartRef = useRef<number>(0);
+  // State
+  const [buyInAmount, setBuyInAmount] = useState(defaultBuyIn || Math.min(minBuyIn * 2, maxBuyIn));
+  const [autoRebuy, setAutoRebuy] = useState(false);
+  const [rebuyThreshold, setRebuyThreshold] = useState(0);
+  const [displayAmount, setDisplayAmount] = useState(
+    defaultBuyIn || Math.min(minBuyIn * 2, maxBuyIn)
+  );
+  const [isConfirmPulsing, setIsConfirmPulsing] = useState(false);
+  const animationFrameRef = useRef<number>(0);
+  const countStartRef = useRef<number>(0);
 
-    // Clamp buy-in to valid range
-    const clampedBuyIn = useMemo(() => {
-        return Math.max(minBuyIn, Math.min(maxBuyIn, buyInAmount));
-    }, [buyInAmount, minBuyIn, maxBuyIn]);
+  // Clamp buy-in to valid range
+  const clampedBuyIn = useMemo(() => {
+    return Math.max(minBuyIn, Math.min(maxBuyIn, buyInAmount));
+  }, [buyInAmount, minBuyIn, maxBuyIn]);
 
-    // Calculate slider percentage
-    const sliderPercent = useMemo(() => {
-        const range = maxBuyIn - minBuyIn;
-        return range > 0 ? ((clampedBuyIn - minBuyIn) / range) * 100 : 0;
-    }, [clampedBuyIn, minBuyIn, maxBuyIn]);
+  // Calculate slider percentage
+  const sliderPercent = useMemo(() => {
+    const range = maxBuyIn - minBuyIn;
+    return range > 0 ? ((clampedBuyIn - minBuyIn) / range) * 100 : 0;
+  }, [clampedBuyIn, minBuyIn, maxBuyIn]);
 
-    // Check if user has enough balance
-    const hasEnoughBalance = accountBalance >= clampedBuyIn;
+  // Check if user has enough balance
+  const hasEnoughBalance = accountBalance >= clampedBuyIn;
 
-    // Animate amount counter when buyInAmount changes
-    useEffect(() => {
-        if (!isOpen) return;
+  // Animate amount counter when buyInAmount changes
+  useEffect(() => {
+    if (!isOpen) return;
 
-        countStartRef.current = displayAmount;
-        const startTime = Date.now();
-        const duration = 400;
+    countStartRef.current = displayAmount;
+    const startTime = Date.now();
+    const duration = 400;
 
-        const animate = () => {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(1, elapsed / duration);
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(1, elapsed / duration);
 
-            // Easing function for smooth spring-like animation
-            const easeOut = 1 - Math.pow(1 - progress, 3);
-            const current = countStartRef.current + (clampedBuyIn - countStartRef.current) * easeOut;
+      // Easing function for smooth spring-like animation
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      const current = countStartRef.current + (clampedBuyIn - countStartRef.current) * easeOut;
 
-            setDisplayAmount(current);
+      setDisplayAmount(current);
 
-            if (progress < 1) {
-                animationFrameRef.current = requestAnimationFrame(animate);
-            }
-        };
-
+      if (progress < 1) {
         animationFrameRef.current = requestAnimationFrame(animate);
+      }
+    };
 
-        return () => {
-            if (animationFrameRef.current) {
-                cancelAnimationFrame(animationFrameRef.current);
-            }
-        };
-    }, [clampedBuyIn, isOpen]);
+    animationFrameRef.current = requestAnimationFrame(animate);
 
-    // Pulse confirm button when ready
-    useEffect(() => {
-        if (hasEnoughBalance) {
-            setIsConfirmPulsing(true);
-            const timer = setTimeout(() => setIsConfirmPulsing(false), 2000);
-            return () => clearTimeout(timer);
-        }
-    }, [hasEnoughBalance]);
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [clampedBuyIn, isOpen]);
 
-    // Handle slider change
-    const handleSliderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        setBuyInAmount(Number(e.target.value));
-    }, []);
+  // Pulse confirm button when ready
+  useEffect(() => {
+    if (hasEnoughBalance) {
+      setIsConfirmPulsing(true);
+      const timer = setTimeout(() => setIsConfirmPulsing(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [hasEnoughBalance]);
 
-    // Handle quick amount buttons
-    const handleQuickAmount = useCallback((multiplier: number) => {
-        const amount = Math.min(minBuyIn * multiplier, maxBuyIn);
-        setBuyInAmount(amount);
-    }, [minBuyIn, maxBuyIn]);
+  // Handle slider change
+  const handleSliderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setBuyInAmount(Number(e.target.value));
+  }, []);
 
-    // Handle confirm
-    const handleConfirm = useCallback(() => {
-        if (hasEnoughBalance) {
-            onConfirm(clampedBuyIn, autoRebuy);
-        }
-    }, [clampedBuyIn, autoRebuy, hasEnoughBalance, onConfirm]);
+  // Handle quick amount buttons
+  const handleQuickAmount = useCallback(
+    (multiplier: number) => {
+      const amount = Math.min(minBuyIn * multiplier, maxBuyIn);
+      setBuyInAmount(amount);
+    },
+    [minBuyIn, maxBuyIn]
+  );
 
-    if (!isOpen) return null;
+  // Handle confirm
+  const handleConfirm = useCallback(() => {
+    if (hasEnoughBalance) {
+      haptic.medium();
+      onConfirm(clampedBuyIn, autoRebuy);
+    }
+  }, [clampedBuyIn, autoRebuy, hasEnoughBalance, onConfirm]);
 
-    return (
-        <div className="buy-in-modal__overlay" onClick={onClose}>
-            <div className="buy-in-modal" onClick={(e) => e.stopPropagation()}>
-                {/* Header */}
-                <div className="buy-in-modal__header">
-                    {countdown !== undefined && (
-                        <span className="buy-in-modal__countdown">{countdown}s (Close)</span>
-                    )}
-                    <h2 className="buy-in-modal__title">BUY-IN</h2>
-                    <button className="buy-in-modal__close" onClick={onClose}>
-                        ×
-                    </button>
-                </div>
+  if (!isOpen) return null;
 
-                {/* Amount Display */}
-                <div className="buy-in-modal__amount-display">
-                    <span className="buy-in-modal__min-label">{formatAmount(minBuyIn, currency)}</span>
-                    <div className="buy-in-modal__current-amount">
-                        <span className="buy-in-modal__amount-value">{displayAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                        <span className="buy-in-modal__chip-icon">◉</span>
-                    </div>
-                    <span className="buy-in-modal__max-label">{formatAmount(maxBuyIn, currency)}</span>
-                </div>
-
-                {/* Slider */}
-                <div className="buy-in-modal__slider-container">
-                    <input
-                        type="range"
-                        className="buy-in-modal__slider"
-                        min={minBuyIn}
-                        max={maxBuyIn}
-                        value={clampedBuyIn}
-                        onChange={handleSliderChange}
-                        step={bigBlind}
-                        style={{
-                            '--slider-percent': `${sliderPercent}%`,
-                        } as React.CSSProperties}
-                    />
-                    <div className="buy-in-modal__slider-labels">
-                        <span>Min</span>
-                        <span>Max</span>
-                    </div>
-                </div>
-
-                {/* Quick Amounts */}
-                <div className="buy-in-modal__quick-amounts">
-                    <button
-                        className="buy-in-modal__quick-btn"
-                        onClick={() => handleQuickAmount(1)}
-                    >
-                        20BB
-                    </button>
-                    <button
-                        className="buy-in-modal__quick-btn"
-                        onClick={() => handleQuickAmount(2)}
-                    >
-                        40BB
-                    </button>
-                    <button
-                        className="buy-in-modal__quick-btn"
-                        onClick={() => handleQuickAmount(5)}
-                    >
-                        100BB
-                    </button>
-                    <button
-                        className="buy-in-modal__quick-btn buy-in-modal__quick-btn--max"
-                        onClick={() => setBuyInAmount(maxBuyIn)}
-                    >
-                        MAX
-                    </button>
-                </div>
-
-                {/* Balance Display */}
-                <div className="buy-in-modal__balance">
-                    <span className="buy-in-modal__balance-label">( Account Balance:</span>
-                    <span className={`buy-in-modal__balance-value ${!hasEnoughBalance ? 'buy-in-modal__balance-value--insufficient' : ''}`}>
-                        {formatAmount(accountBalance, currency)}
-                    </span>
-                    <span className="buy-in-modal__balance-label">)</span>
-                </div>
-
-                {/* Auto Rebuy */}
-                <div className="buy-in-modal__auto-rebuy">
-                    <label className="buy-in-modal__toggle">
-                        <input
-                            type="checkbox"
-                            checked={autoRebuy}
-                            onChange={(e) => setAutoRebuy(e.target.checked)}
-                        />
-                        <span className="buy-in-modal__toggle-slider" />
-                        <span className="buy-in-modal__toggle-label">Auto Rebuy</span>
-                    </label>
-                    <p className="buy-in-modal__auto-rebuy-info">
-                        When your stack drops to <strong>{rebuyThreshold}%</strong> of the initial buy-in,
-                        it will be automatically replenished.
-                    </p>
-                </div>
-
-                {/* Confirm Button */}
-                <button
-                    className={`buy-in-modal__confirm ${!hasEnoughBalance ? 'buy-in-modal__confirm--disabled' : ''} ${isConfirmPulsing ? 'buy-in-modal__confirm--pulse' : ''}`}
-                    onClick={handleConfirm}
-                    disabled={!hasEnoughBalance}
-                >
-                    {hasEnoughBalance ? 'Buy Chips' : 'Insufficient Balance'}
-                </button>
-
-                {/* Top Up Link */}
-                {!hasEnoughBalance && (
-                    <button className="buy-in-modal__top-up">
-                        Top Up Account
-                    </button>
-                )}
-            </div>
+  return (
+    <div className="buy-in-modal__overlay" onClick={onClose}>
+      <div className="buy-in-modal" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="buy-in-modal__header">
+          {countdown !== undefined && (
+            <span className="buy-in-modal__countdown">{countdown}s (Close)</span>
+          )}
+          <h2 className="buy-in-modal__title">BUY-IN</h2>
+          <button className="buy-in-modal__close" onClick={onClose}>
+            ×
+          </button>
         </div>
-    );
+
+        {/* Amount Display */}
+        <div className="buy-in-modal__amount-display">
+          <span className="buy-in-modal__min-label">{formatAmount(minBuyIn, currency)}</span>
+          <div className="buy-in-modal__current-amount">
+            <span className="buy-in-modal__amount-value">
+              {displayAmount.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
+            <span className="buy-in-modal__chip-icon">◉</span>
+          </div>
+          <span className="buy-in-modal__max-label">{formatAmount(maxBuyIn, currency)}</span>
+        </div>
+
+        {/* Slider */}
+        <div className="buy-in-modal__slider-container">
+          <input
+            type="range"
+            className="buy-in-modal__slider"
+            min={minBuyIn}
+            max={maxBuyIn}
+            value={clampedBuyIn}
+            onChange={handleSliderChange}
+            step={bigBlind}
+            style={
+              {
+                '--slider-percent': `${sliderPercent}%`,
+              } as React.CSSProperties
+            }
+          />
+          <div className="buy-in-modal__slider-labels">
+            <span>Min</span>
+            <span>Max</span>
+          </div>
+        </div>
+
+        {/* Quick Amounts */}
+        <div className="buy-in-modal__quick-amounts">
+          <button className="buy-in-modal__quick-btn" onClick={() => handleQuickAmount(1)}>
+            20BB
+          </button>
+          <button className="buy-in-modal__quick-btn" onClick={() => handleQuickAmount(2)}>
+            40BB
+          </button>
+          <button className="buy-in-modal__quick-btn" onClick={() => handleQuickAmount(5)}>
+            100BB
+          </button>
+          <button
+            className="buy-in-modal__quick-btn buy-in-modal__quick-btn--max"
+            onClick={() => setBuyInAmount(maxBuyIn)}
+          >
+            MAX
+          </button>
+        </div>
+
+        {/* Balance Display */}
+        <div className="buy-in-modal__balance">
+          <span className="buy-in-modal__balance-label">( Account Balance:</span>
+          <span
+            className={`buy-in-modal__balance-value ${!hasEnoughBalance ? 'buy-in-modal__balance-value--insufficient' : ''}`}
+          >
+            {formatAmount(accountBalance, currency)}
+          </span>
+          <span className="buy-in-modal__balance-label">)</span>
+        </div>
+
+        {/* Auto Rebuy */}
+        <div className="buy-in-modal__auto-rebuy">
+          <label className="buy-in-modal__toggle">
+            <input
+              type="checkbox"
+              checked={autoRebuy}
+              onChange={(e) => setAutoRebuy(e.target.checked)}
+            />
+            <span className="buy-in-modal__toggle-slider" />
+            <span className="buy-in-modal__toggle-label">Auto Rebuy</span>
+          </label>
+          <p className="buy-in-modal__auto-rebuy-info">
+            When your stack drops to <strong>{rebuyThreshold}%</strong> of the initial buy-in, it
+            will be automatically replenished.
+          </p>
+        </div>
+
+        {/* Confirm Button */}
+        <button
+          className={`buy-in-modal__confirm ${!hasEnoughBalance ? 'buy-in-modal__confirm--disabled' : ''} ${isConfirmPulsing ? 'buy-in-modal__confirm--pulse' : ''}`}
+          onClick={handleConfirm}
+          disabled={!hasEnoughBalance}
+        >
+          {hasEnoughBalance ? 'Buy Chips' : 'Insufficient Balance'}
+        </button>
+
+        {/* Top Up Link */}
+        {!hasEnoughBalance && <button className="buy-in-modal__top-up">Top Up Account</button>}
+      </div>
+    </div>
+  );
 }
 
 export default BuyInModal;

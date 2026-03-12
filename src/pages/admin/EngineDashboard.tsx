@@ -48,12 +48,22 @@ export default function EngineDashboard() {
     const unsubHorseRemoved = masterBus.subscribe('HORSE_REMOVED', () => {
       loadHydraStats();
     });
+    // Phase 4: Refresh stats on table break completions (tournament rebalancing)
+    const unsubTableBreak = masterBus.subscribe('TABLE_BREAK_COMPLETED', () => {
+      setTStats(tournamentOrchestrator.getStats());
+    });
+    // Phase 4: Refresh stats on bomb pot triggers (cash game activity)
+    const unsubBombPot = masterBus.subscribe('BOMB_POT_TRIGGERED', () => {
+      setStats(cashGameOrchestrator.getStats());
+    });
     return () => {
       unsubTable();
       unsubHand();
       unsubTournament();
       unsubHorseSeated();
       unsubHorseRemoved();
+      unsubTableBreak();
+      unsubBombPot();
     };
   }, []);
 

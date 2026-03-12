@@ -51,11 +51,13 @@ export function SettlementCronStatus() {
     const timer = setInterval(refresh, 30_000);
 
     // Also refresh on settlement events
-    const unsub = masterBus.subscribe('SETTLEMENT_CYCLE_COMPLETED', refresh);
+    const unsubComplete = masterBus.subscribe('SETTLEMENT_CYCLE_COMPLETED', refresh);
+    const unsubStarted = masterBus.subscribe('SETTLEMENT_CYCLE_STARTED', refresh);
 
     return () => {
       clearInterval(timer);
-      unsub();
+      unsubComplete();
+      unsubStarted();
     };
   }, [refresh]);
 
