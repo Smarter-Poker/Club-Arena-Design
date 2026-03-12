@@ -289,6 +289,7 @@ export default function BonusPage() {
                     <button
                       className="btn btn-sm btn-primary"
                       onClick={() => claimSpecialBonus(bonus.id)}
+                      disabled={claiming}
                     >
                       Claim
                     </button>

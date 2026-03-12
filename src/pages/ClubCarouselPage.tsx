@@ -131,11 +131,12 @@ export default function ClubCarouselPage() {
   useEffect(() => {
     if (clubs.length === 0) return;
     setVisibleCards(new Set());
-    clubs.forEach((club, index) => {
+    const timers = clubs.map((club, index) =>
       setTimeout(() => {
         setVisibleCards((prev) => new Set(prev).add(club.id));
-      }, index * 60);
-    });
+      }, index * 60)
+    );
+    return () => timers.forEach((t) => clearTimeout(t));
   }, [clubs]);
 
   const loadUserData = async () => {

@@ -159,11 +159,12 @@ export default function ClubMessagesPage() {
   useEffect(() => {
     if (conversations.length === 0) return;
     setVisibleConversations(new Set());
-    conversations.forEach((conv, index) => {
+    const timers = conversations.map((conv, index) =>
       setTimeout(() => {
         setVisibleConversations((prev) => new Set(prev).add(conv.id));
-      }, index * 60);
-    });
+      }, index * 60)
+    );
+    return () => timers.forEach((t) => clearTimeout(t));
   }, [conversations]);
 
   // Format relative time
