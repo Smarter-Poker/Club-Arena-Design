@@ -3044,6 +3044,7 @@ export default function TablePage({
     const currentSeatPlayer = state.players?.find((p: any) => p.seat === state.currentPlayerSeat);
     broadcastHandState(tableId, {
       table_id: tableId,
+      hand_number: handNumberRef.current,
       pot: state.pot ?? 0,
       community_cards: state.communityCards ?? [],
       current_bet: state.currentBet ?? 0,
@@ -3056,7 +3057,9 @@ export default function TablePage({
         username: p.username,
         stack: p.stack,
         bet: p.bet ?? 0,
-        cards: p.cards ?? [],
+        // SECURITY: Only reveal cards at showdown for non-folded players.
+        // During active play, cards are delivered via secure postgres_changes channel.
+        cards: state.stage === 'showdown' && !p.is_folded ? (p.cards ?? null) : null,
         is_folded: p.is_folded ?? false,
         is_all_in: p.is_all_in ?? false,
         is_sitting_out: p.is_sitting_out ?? false,
