@@ -2810,6 +2810,9 @@ export default function TablePage({
 
           // Delayed cleanup: clear board and cards after 3 seconds, then start next hand
           workerTimeout(() => {
+            // Increment hand number for next hand — prevents _lastHandNumber stale card detection
+            // from seeing the same hand_number and skipping card clears
+            handNumberRef.current += 1;
             // Clear ALL locks to allow next hand
             handInProgressRef.current = false;
             handControllerRef.current = null;
