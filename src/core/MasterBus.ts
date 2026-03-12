@@ -558,6 +558,8 @@ class MasterBusCore {
 
     const channel = supabase.channel(key);
     this.channelRegistry.set(key, channel);
+    // Emit REALTIME_CONNECTED so ConnectionIndicator knows we have live channels
+    this.emit('REALTIME_CONNECTED', { channelName: key });
     return channel;
   }
 
@@ -649,6 +651,8 @@ class MasterBusCore {
         if (state === 'closed' || state === 'errored') {
           console.warn(`[BUS HEALTH] Dead channel detected: "${key}" (state: ${state})`);
           deadChannels.push(key);
+          // Emit REALTIME_DISCONNECTED so ConnectionIndicator shows offline
+          this.emit('REALTIME_DISCONNECTED', { channelName: key, reason: `Channel ${state}` });
         }
       });
 
@@ -660,6 +664,8 @@ class MasterBusCore {
           console.log(`[BUS HEALTH] Auto-recovering channel: "${key}"`);
           try {
             factory();
+            // Emit REALTIME_CONNECTED after successful recovery
+            this.emit('REALTIME_CONNECTED', { channelName: key });
           } catch (e) {
             console.error(`[BUS HEALTH] Recovery failed for "${key}":`, e);
           }
