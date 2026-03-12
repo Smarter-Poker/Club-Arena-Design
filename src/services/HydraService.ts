@@ -458,7 +458,7 @@ export const HydraService = {
         return null;
       }
 
-      console.log(`[HydraService] Deducted ${stack} chips from horse ${horseId} Player Wallet`);
+      console.debug(`[HydraService] Deducted ${stack} chips from horse ${horseId} Player Wallet`);
 
       // Log buy-in transaction via centralized WalletService RPC
       await WalletService.logTransaction(
@@ -480,7 +480,7 @@ export const HydraService = {
         notes: `Horse buy-in at table ${tableId}`,
       });
 
-      console.log(`HydraService.seatHorse: Deducted ${stack} from horse ${horseId} wallet`);
+      console.debug(`HydraService.seatHorse: Deducted ${stack} from horse ${horseId} wallet`);
     }
 
     // Insert into table_seats
@@ -509,7 +509,7 @@ export const HydraService = {
           `Refund buy-in — seat insert failed at table ${tableId}`,
           tableId
         );
-        console.log(
+        console.debug(
           `[HydraService] Refunded ${stack} to horse ${horseId} Player Wallet after seat insert failure`
         );
       } else {
@@ -623,7 +623,7 @@ export const HydraService = {
           return false;
         }
 
-        console.log(
+        console.debug(
           `[HydraService] Credited ${remainingStack} chips to horse ${horseId} Player Wallet`
         );
 
@@ -647,7 +647,7 @@ export const HydraService = {
           notes: `Horse cash-out from table ${tableId}`,
         });
 
-        console.log(
+        console.debug(
           `HydraService.removeHorse: Credited ${remainingStack} back to ${horseId} wallet`
         );
       }

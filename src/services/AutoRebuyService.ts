@@ -67,7 +67,7 @@ class AutoRebuyServiceCore {
     }
 
     this.isRunning = true;
-    console.log('[AutoRebuy] Starting monitoring (interval: ' + this.monitoringInterval + 'ms)');
+    console.debug('[AutoRebuy] Starting monitoring (interval: ' + this.monitoringInterval + 'ms)');
 
     // Initial check
     this.checkAllTables();
@@ -93,7 +93,7 @@ class AutoRebuyServiceCore {
       this.intervalHandle = null;
     }
 
-    console.log('[AutoRebuy] Stopped monitoring');
+    console.debug('[AutoRebuy] Stopped monitoring');
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -122,13 +122,16 @@ class AutoRebuyServiceCore {
 
       // Process each table in parallel for improved throughput
       const results = await Promise.allSettled(
-        tables.map(table => this.processTable(table.id, table.big_blind))
+        tables.map((table) => this.processTable(table.id, table.big_blind))
       );
 
       // Log any individual table failures
       results.forEach((result, idx) => {
         if (result.status === 'rejected') {
-          console.error('[AutoRebuy] Error processing table ' + tables[idx].id + ':', result.reason);
+          console.error(
+            '[AutoRebuy] Error processing table ' + tables[idx].id + ':',
+            result.reason
+          );
         }
       });
     } catch (err) {
@@ -187,13 +190,19 @@ class AutoRebuyServiceCore {
     this.rebuyInProgress.add(rebuyKey);
     try {
       // Step 1: Deduct from wallet
-      const { data: deductResult, error: deductError } = await supabase.rpc('deduct_player_wallet', {
-        p_user_id: horseId,
-        p_amount: amount,
-      });
+      const { data: deductResult, error: deductError } = await supabase.rpc(
+        'deduct_player_wallet',
+        {
+          p_user_id: horseId,
+          p_amount: amount,
+        }
+      );
 
       if (deductError) {
-        console.error('[AutoRebuy] Wallet deduction failed for horse ' + horseId + ':', deductError.message);
+        console.error(
+          '[AutoRebuy] Wallet deduction failed for horse ' + horseId + ':',
+          deductError.message
+        );
         horseBugReporter.report({
           horseName: 'AutoRebuy',
           horseId,
@@ -203,7 +212,11 @@ class AutoRebuyServiceCore {
           category: 'wallet_sync',
           severity: 'high',
           title: 'Auto-rebuy wallet deduction failed',
-          description: 'Could not deduct ' + amount + ' from horse wallet: ' + (deductError.message || 'unknown error'),
+          description:
+            'Could not deduct ' +
+            amount +
+            ' from horse wallet: ' +
+            (deductError.message || 'unknown error'),
           context: { horseId, tableId, amount },
         });
         return false;
@@ -228,13 +241,20 @@ class AutoRebuyServiceCore {
           .is('left_at', null);
 
         if (stackError) {
-          console.error('[AutoRebuy] Stack update failed for horse ' + horseId + ':', stackError.message);
+          console.error(
+            '[AutoRebuy] Stack update failed for horse ' + horseId + ':',
+            stackError.message
+          );
         }
       }
 
       // Log transaction via centralized WalletService RPC
       await WalletService.logTransaction(
-        horseId, 'PLAYER', amount, 'debit', 'rebuy',
+        horseId,
+        'PLAYER',
+        amount,
+        'debit',
+        'rebuy',
         'Auto-rebuy: topup ' + amount + ' chips',
         tableId
       );
@@ -252,7 +272,9 @@ class AutoRebuyServiceCore {
         context: { horseId, tableId, amount },
       });
 
-      console.log('[AutoRebuy] Rebought horse ' + horseId + ' for ' + amount + ' at table ' + tableId);
+      console.debug(
+        '[AutoRebuy] Rebought horse ' + horseId + ' for ' + amount + ' at table ' + tableId
+      );
       return true;
     } catch (err) {
       console.error('[AutoRebuy] Error in rebuyHorse:', err);
@@ -278,7 +300,11 @@ class AutoRebuyServiceCore {
     this.rebuyInProgress.add(reseatKey);
     try {
       // Get table info for BB
-      const { data: tableData } = await supabase.from('tables').select('big_blind').eq('id', tableId).maybeSingle();
+      const { data: tableData } = await supabase
+        .from('tables')
+        .select('big_blind')
+        .eq('id', tableId)
+        .maybeSingle();
 
       if (!tableData) {
         console.error('[AutoRebuy] Table not found:', tableId);
@@ -289,7 +315,7 @@ class AutoRebuyServiceCore {
 
       // Random delay before reseating (5-15 seconds)
       const delay = 5000 + Math.random() * 10000;
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
 
       // Step 1: Remove the busted horse
       const removed = await HydraService.removeHorse(tableId, horseId);
@@ -317,11 +343,14 @@ class AutoRebuyServiceCore {
         category: 'gameplay_anomaly',
         severity: 'info',
         title: 'Horse reseated after bust',
-        description: 'Busted horse removed and re-seated with fresh ' + this.rebuyStackBB * bigBlind + ' chip stack',
+        description:
+          'Busted horse removed and re-seated with fresh ' +
+          this.rebuyStackBB * bigBlind +
+          ' chip stack',
         context: { horseId, tableId, newStack: this.rebuyStackBB * bigBlind },
       });
 
-      console.log('[AutoRebuy] Reseated horse ' + horseId + ' at table ' + tableId);
+      console.debug('[AutoRebuy] Reseated horse ' + horseId + ' at table ' + tableId);
       return true;
     } catch (err) {
       console.error('[AutoRebuy] Error in reseatHorse:', err);
@@ -348,7 +377,11 @@ class AutoRebuyServiceCore {
         const needToAdd = minCount - currentHorseCount;
 
         // Get table info
-        const { data: tableData } = await supabase.from('tables').select('big_blind').eq('id', tableId).maybeSingle();
+        const { data: tableData } = await supabase
+          .from('tables')
+          .select('big_blind')
+          .eq('id', tableId)
+          .maybeSingle();
 
         if (!tableData) {
           console.error('[AutoRebuy] Table not found:', tableId);
@@ -360,7 +393,7 @@ class AutoRebuyServiceCore {
         // Seed additional horses
         const seeded = await HydraService.seedTable(tableId, bigBlind);
         if (seeded.length > 0) {
-          console.log('[AutoRebuy] Seeded ' + seeded.length + ' horses at table ' + tableId);
+          console.debug('[AutoRebuy] Seeded ' + seeded.length + ' horses at table ' + tableId);
         }
       }
     } catch (err) {
@@ -401,13 +434,19 @@ class AutoRebuyServiceCore {
       }
 
       // Credit wallet via RPC
-      const { data: creditResult, error: creditError } = await supabase.rpc('credit_player_wallet', {
-        p_user_id: horseId,
-        p_amount: topupAmount,
-      });
+      const { data: creditResult, error: creditError } = await supabase.rpc(
+        'credit_player_wallet',
+        {
+          p_user_id: horseId,
+          p_amount: topupAmount,
+        }
+      );
 
       if (creditError) {
-        console.error('[AutoRebuy] Wallet topup failed for horse ' + horseId + ':', creditError.message);
+        console.error(
+          '[AutoRebuy] Wallet topup failed for horse ' + horseId + ':',
+          creditError.message
+        );
         horseBugReporter.report({
           horseName: 'AutoRebuy',
           horseId,
@@ -417,7 +456,11 @@ class AutoRebuyServiceCore {
           category: 'wallet_sync',
           severity: 'high',
           title: 'Auto-rebuy wallet topup failed',
-          description: 'Could not credit ' + topupAmount + ' to horse wallet: ' + (creditError.message || 'unknown error'),
+          description:
+            'Could not credit ' +
+            topupAmount +
+            ' to horse wallet: ' +
+            (creditError.message || 'unknown error'),
           context: { horseId, topupAmount },
         });
         return false;
@@ -425,11 +468,17 @@ class AutoRebuyServiceCore {
 
       // Log transaction via centralized WalletService RPC
       await WalletService.logTransaction(
-        horseId, 'PLAYER', topupAmount, 'credit', 'topup',
+        horseId,
+        'PLAYER',
+        topupAmount,
+        'credit',
+        'topup',
         'Auto-rebuy: wallet topup ' + topupAmount + ' credits'
       );
 
-      console.log('[AutoRebuy] Topped up horse ' + horseId + ' wallet with ' + topupAmount + ' credits');
+      console.debug(
+        '[AutoRebuy] Topped up horse ' + horseId + ' wallet with ' + topupAmount + ' credits'
+      );
       return true;
     } catch (err) {
       console.error('[AutoRebuy] Error in topUpWallet:', err);
@@ -447,7 +496,7 @@ class AutoRebuyServiceCore {
   async getTableHorseStacks(tableId: string): Promise<Array<{ horseId: string; stack: number }>> {
     try {
       const horses = await HydraService.getActiveHorses(tableId);
-      return horses.map(h => ({
+      return horses.map((h) => ({
         horseId: h.id,
         stack: h.stack,
       }));

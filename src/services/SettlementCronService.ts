@@ -61,7 +61,11 @@ export const SettlementCronService = {
       requireCanaryCheck: config.requireCanaryCheck ?? true,
     };
 
-    console.log('[SettlementCron] Started — checking every', this.config.checkIntervalMs / 1000, 's');
+    console.debug(
+      '[SettlementCron] Started — checking every',
+      this.config.checkIntervalMs / 1000,
+      's'
+    );
 
     // Check immediately on start
     this.check();
@@ -78,7 +82,7 @@ export const SettlementCronService = {
       clearInterval(this.timer);
       this.timer = null;
     }
-    console.log('[SettlementCron] Stopped');
+    console.debug('[SettlementCron] Stopped');
   },
 
   /**
@@ -86,7 +90,7 @@ export const SettlementCronService = {
    */
   async check(): Promise<void> {
     if (this.isRunning) {
-      console.log('[SettlementCron] Already running — skipping');
+      console.debug('[SettlementCron] Already running — skipping');
       return;
     }
 
@@ -106,7 +110,7 @@ export const SettlementCronService = {
         return;
       }
 
-      console.log(`[SettlementCron] Period ${period.id} expired — initiating settlement cycle`);
+      console.debug(`[SettlementCron] Period ${period.id} expired — initiating settlement cycle`);
 
       masterBus.emit('SETTLEMENT_CYCLE_STARTED', {
         periodId: period.id,
@@ -119,7 +123,7 @@ export const SettlementCronService = {
         if (!canary.passed) {
           console.error(
             `[SettlementCron] CANARY CHECK FAILED: credits=${canary.totalCredits}, ` +
-            `debits=${canary.totalDebits}, diff=${canary.difference}`
+              `debits=${canary.totalDebits}, diff=${canary.difference}`
           );
 
           // Raise critical alert
@@ -131,7 +135,9 @@ export const SettlementCronService = {
               'SettlementCronService',
               { ...canary }
             );
-          } catch { /* best effort */ }
+          } catch {
+            /* best effort */
+          }
 
           masterBus.emit('SETTLEMENT_CYCLE_COMPLETED', {
             periodId: period.id,
@@ -141,19 +147,19 @@ export const SettlementCronService = {
           return;
         }
 
-        console.log('[SettlementCron] Canary check passed');
+        console.debug('[SettlementCron] Canary check passed');
       }
 
       // Step 2: Close period
       await SettlementService.closePeriod(period.id);
-      console.log(`[SettlementCron] Period ${period.id} closed`);
+      console.debug(`[SettlementCron] Period ${period.id} closed`);
 
       // Step 3: Execute payouts (if auto-execute is enabled)
       if (this.config.autoExecutePayouts) {
         const result = await SettlementService.executeMondayPayouts(period.id);
-        console.log(
+        console.debug(
           `[SettlementCron] Payouts complete: ${result.agentsPaid} agents, ` +
-          `${result.playersWithRakeback} players, $${result.totalDisbursed} total`
+            `${result.playersWithRakeback} players, $${result.totalDisbursed} total`
         );
 
         masterBus.emit('SETTLEMENT_CYCLE_COMPLETED', {
@@ -162,7 +168,7 @@ export const SettlementCronService = {
           ...result,
         });
       } else {
-        console.log('[SettlementCron] Period closed — manual payout execution required');
+        console.debug('[SettlementCron] Period closed — manual payout execution required');
         masterBus.emit('SETTLEMENT_CYCLE_COMPLETED', {
           periodId: period.id,
           status: 'closed_pending_payout',

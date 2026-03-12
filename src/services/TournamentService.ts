@@ -778,7 +778,7 @@ class TournamentService {
       freshPlayerCount >= tournament.max_players &&
       (tournament.variant === 'sng' || tournament.variant === 'spin')
     ) {
-      console.log(
+      console.debug(
         `[TournamentService] SNG ${tournamentId} is full (${freshPlayerCount}/${tournament.max_players}), auto-starting...`
       );
       try {
@@ -797,7 +797,7 @@ class TournamentService {
 
     // ── LATE REGISTRATION: seat player at active table immediately ──
     if (isLateRegOpen) {
-      console.log(
+      console.debug(
         `[TournamentService] Late reg: seating ${userId.slice(0, 8)} in running tournament ${tournamentId.slice(0, 8)}`
       );
       try {
@@ -868,7 +868,7 @@ class TournamentService {
                   current_players: Math.max((tournament.current_players || 1) - 1, 0),
                 })
                 .eq('id', tournamentId);
-              console.log(`[TournamentService] Late reg refund issued for ${userId.slice(0, 8)}`);
+              console.debug(`[TournamentService] Late reg refund issued for ${userId.slice(0, 8)}`);
             } catch (refundErr) {
               console.error(
                 `[TournamentService] CRITICAL: Late reg refund failed for ${userId.slice(0, 8)}:`,
@@ -1155,7 +1155,7 @@ class TournamentService {
       })
       .eq('id', tournamentId);
 
-    console.log(
+    console.debug(
       `[TournamentService] Cancelled tournament ${tournament.name}: refunded ${playersRefunded} players, ${totalRefunded} chips`
     );
     return { refunded: totalRefunded, playersRefunded };
@@ -1194,7 +1194,7 @@ class TournamentService {
 
     // Auto-cancel if fewer than 3 players — minimum for a valid tournament
     if (players.length < 3) {
-      console.log(
+      console.debug(
         `[TournamentService] Auto-cancelling tournament ${tournament.name}: only ${players.length} players (minimum 3 required)`
       );
       await this.cancelTournament(
@@ -1801,7 +1801,7 @@ class TournamentService {
       })
       .eq('id', tournamentId);
 
-    console.log(
+    console.debug(
       `[TournamentService] Prize pool recalculated for ${tournamentId.slice(0, 8)}: ${finalPool} (${entryCount} entries, ${rebuyTotal} rebuys, ${addonTotal} addons, ${guarantee} GTD)`
     );
 
@@ -1829,7 +1829,7 @@ class TournamentService {
       await supabase.from('tournaments').update({ prize_pool: finalPool }).eq('id', tournamentId);
     }
 
-    console.log(
+    console.debug(
       `[TournamentService] Prize pool FINALIZED for ${tournamentId.slice(0, 8)}: ${finalPool}`
     );
 

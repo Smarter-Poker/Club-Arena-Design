@@ -411,7 +411,7 @@ export const WalletService = {
     // Emit bus event so CashierPage/PlayerWalletPage refresh balances
     masterBus.emit('BALANCE_UPDATED', { source: 'buyin', userId, tableId });
 
-    console.log(
+    console.debug(
       `[WalletService] Buy-in: ${amount} chips deducted from Player Wallet for user ${userId}`
     );
     return true;
@@ -450,7 +450,7 @@ export const WalletService = {
     // Emit bus event so CashierPage/PlayerWalletPage refresh balances
     masterBus.emit('BALANCE_UPDATED', { source: 'cashout', userId, tableId });
 
-    console.log(
+    console.debug(
       `[WalletService] Cash-out: ${amount} chips credited to Player Wallet for user ${userId}`
     );
     return true;

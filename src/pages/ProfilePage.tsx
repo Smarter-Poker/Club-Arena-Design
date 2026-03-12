@@ -429,7 +429,7 @@ export default function ProfilePage() {
               filter: `id=eq.${authUser.id}`,
             },
             async (payload) => {
-              console.log('[PROFILE] Profile updated:', payload);
+              console.debug('[PROFILE] Profile updated:', payload);
               const { data: updatedProfile } = await supabase
                 .from('profiles')
                 .select('*')
@@ -480,7 +480,7 @@ export default function ProfilePage() {
               filter: `user_id=eq.${authUser.id}`,
             },
             async (payload) => {
-              console.log('[PROFILE] Wallet updated:', payload);
+              console.debug('[PROFILE] Wallet updated:', payload);
               const { data: updatedProfile } = await supabase
                 .from('profiles')
                 .select('diamonds, is_vip')

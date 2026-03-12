@@ -69,7 +69,7 @@ class HorseLifecycleManagerCore {
     }
 
     this.isRunning = true;
-    console.log(
+    console.debug(
       '[LifecycleManager] Starting monitoring (interval: ' + this.monitoringInterval + 'ms)'
     );
 
@@ -97,7 +97,7 @@ class HorseLifecycleManagerCore {
       this.intervalHandle = null;
     }
 
-    console.log('[LifecycleManager] Stopped monitoring');
+    console.debug('[LifecycleManager] Stopped monitoring');
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -109,7 +109,7 @@ class HorseLifecycleManagerCore {
    */
   private async performMaintenanceCycle(): Promise<void> {
     try {
-      console.log('[LifecycleManager] Starting maintenance cycle');
+      console.debug('[LifecycleManager] Starting maintenance cycle');
 
       // Run all cleanup tasks in parallel
       await Promise.all([
@@ -119,7 +119,7 @@ class HorseLifecycleManagerCore {
         this.cleanupStaleSeats(),
       ]);
 
-      console.log('[LifecycleManager] Maintenance cycle completed');
+      console.debug('[LifecycleManager] Maintenance cycle completed');
     } catch (err) {
       console.error('[LifecycleManager] Fatal error in maintenance cycle:', err);
     }
@@ -224,7 +224,7 @@ class HorseLifecycleManagerCore {
           context: { tournamentCount: tournaments.length, horsesReset },
         });
 
-        console.log(
+        console.debug(
           '[LifecycleManager] Reset ' + horsesReset + ' horses from finished tournaments'
         );
       }
@@ -327,7 +327,7 @@ class HorseLifecycleManagerCore {
       }
 
       if (forcedResets > 0) {
-        console.log('[LifecycleManager] Force-reset ' + forcedResets + ' stuck horses');
+        console.debug('[LifecycleManager] Force-reset ' + forcedResets + ' stuck horses');
       }
     } catch (err) {
       console.error('[LifecycleManager] Error in detectStuckHorses:', err);
@@ -361,7 +361,7 @@ class HorseLifecycleManagerCore {
         return false;
       }
 
-      console.log('[LifecycleManager] Reset horse ' + horseId + ' to available');
+      console.debug('[LifecycleManager] Reset horse ' + horseId + ' to available');
       return true;
     } catch (err) {
       console.error('[LifecycleManager] Error in resetHorse:', err);
@@ -417,7 +417,7 @@ class HorseLifecycleManagerCore {
         tournamentId
       );
 
-      console.log(
+      console.debug(
         '[LifecycleManager] Credited ' + amount + ' tournament winnings to horse ' + horseId
       );
       return true;
@@ -460,7 +460,7 @@ class HorseLifecycleManagerCore {
         context: { horseId, tournamentId },
       });
 
-      console.log('[LifecycleManager] Processed elimination for horse ' + horseId);
+      console.debug('[LifecycleManager] Processed elimination for horse ' + horseId);
       return reset;
     } catch (err) {
       console.error('[LifecycleManager] Error in processElimination:', err);
@@ -556,7 +556,7 @@ class HorseLifecycleManagerCore {
 
           cancelled++;
 
-          console.log('[LifecycleManager] Cancelled stale SNG ' + sng.name);
+          console.debug('[LifecycleManager] Cancelled stale SNG ' + sng.name);
         } catch (err) {
           console.error('[LifecycleManager] Error cancelling SNG ' + sng.id + ':', err);
         }
@@ -581,7 +581,7 @@ class HorseLifecycleManagerCore {
           context: { cancelledCount: cancelled },
         });
 
-        console.log('[LifecycleManager] Cancelled ' + cancelled + ' stale SNGs');
+        console.debug('[LifecycleManager] Cancelled ' + cancelled + ' stale SNGs');
       }
     } catch (err) {
       console.error('[LifecycleManager] Error in cleanupStaleSNGs:', err);
@@ -631,7 +631,7 @@ class HorseLifecycleManagerCore {
       }
 
       if (cleaned > 0) {
-        console.log('[LifecycleManager] Cleaned up ' + cleaned + ' stale table seats');
+        console.debug('[LifecycleManager] Cleaned up ' + cleaned + ' stale table seats');
       }
     } catch {
       /* non-critical cleanup */

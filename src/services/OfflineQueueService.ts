@@ -55,7 +55,7 @@ export const OfflineQueueService = {
     // Auto-replay when coming back online
     if (typeof window !== 'undefined') {
       this._onlineHandler = () => {
-        console.log('[OfflineQueue] Back online — replaying queue');
+        console.debug('[OfflineQueue] Back online — replaying queue');
         this.replayQueue();
       };
       window.addEventListener('online', this._onlineHandler);
@@ -107,7 +107,7 @@ export const OfflineQueueService = {
       const store = tx.objectStore(STORE_NAME);
       const req = store.add(entry);
       req.onsuccess = () => {
-        console.log(`[OfflineQueue] Queued: ${entry.action} (${entry.operationId})`);
+        console.debug(`[OfflineQueue] Queued: ${entry.action} (${entry.operationId})`);
         resolve(true);
       };
       req.onerror = () => {
@@ -126,7 +126,7 @@ export const OfflineQueueService = {
     const mutations = await this.getAll();
     if (mutations.length === 0) return { replayed: 0, failed: 0 };
 
-    console.log(`[OfflineQueue] Replaying ${mutations.length} queued mutations`);
+    console.debug(`[OfflineQueue] Replaying ${mutations.length} queued mutations`);
 
     let replayed = 0;
     let failed = 0;

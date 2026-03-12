@@ -118,7 +118,7 @@ export class ReconnectingWebSocket {
       this.ws = new WebSocket(this.url);
 
       this.ws.onopen = () => {
-        console.log('[ReconnectingWS] Connected');
+        console.debug('[ReconnectingWS] Connected');
         const wasReconnect = this.retryCount > 0;
         this.retryCount = 0;
         this.setStatus('connected');
@@ -152,7 +152,7 @@ export class ReconnectingWebSocket {
       };
 
       this.ws.onclose = (event) => {
-        console.log(`[ReconnectingWS] Closed: code=${event.code} reason=${event.reason}`);
+        console.debug(`[ReconnectingWS] Closed: code=${event.code} reason=${event.reason}`);
         this.stopHeartbeat();
 
         if (!this.intentionalClose) {
@@ -193,7 +193,7 @@ export class ReconnectingWebSocket {
     const jitter = Math.random() * baseDelay * 0.3; // 0-30% jitter
     const delay = baseDelay + jitter;
 
-    console.log(
+    console.debug(
       `[ReconnectingWS] Reconnecting in ${Math.round(delay)}ms (attempt ${this.retryCount}/${this.options.maxRetries})`
     );
 

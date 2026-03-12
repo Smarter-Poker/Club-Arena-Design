@@ -22,7 +22,6 @@ import styles from './UnionDetailPage.module.css';
 import { useToast } from '../components/common/Toast';
 import ConfirmModal from '../components/common/ConfirmModal';
 import CreateTournamentModal from '../components/club/CreateTournamentModal';
-import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -53,7 +52,6 @@ interface FinancialSummary {
 
 export default function UnionDetailPage() {
   const { unionId } = useParams<{ unionId: string }>();
-  useVisibilityRefresh(() => loadData());
   const { user } = useUserStore();
   const toast = useToast();
 

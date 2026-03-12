@@ -588,7 +588,7 @@ export default function TablePage({
     if (showInsurance) {
       // Auto-decline after 15 seconds
       insuranceTimeoutRef.current = workerTimeout(() => {
-        console.log('[Insurance] Auto-declined after 15s timeout');
+        console.debug('[Insurance] Auto-declined after 15s timeout');
         handleInsuranceDecline();
       }, 15000);
     } else {
@@ -1170,7 +1170,7 @@ export default function TablePage({
     try {
       const result = await tableService.leaveTable(tableId, tableState.heroSeat, userId);
       if (result.success) {
-        console.log(`[Leave] Success — ${result.chipsReturned} chips returned to wallet`);
+        console.debug(`[Leave] Success — ${result.chipsReturned} chips returned to wallet`);
 
         // Notify system
         masterBus.emit('TABLE_LEFT', { tableId, seat: tableState.heroSeat });
@@ -1491,7 +1491,7 @@ export default function TablePage({
               } else if (data?.type === 'player_eliminated') {
                 // A player was eliminated from the tournament
                 const elimData = data.payload || {};
-                console.log(
+                console.debug(
                   `[TablePage] Player eliminated: ${elimData.userId?.slice(0, 8)} at position ${elimData.position}`
                 );
 
@@ -1538,7 +1538,7 @@ export default function TablePage({
                 }
               } else if (data?.type === 'table_rebalance') {
                 // Players moved between tables — check if current user was moved
-                console.log('[TablePage] Table rebalance detected');
+                console.debug('[TablePage] Table rebalance detected');
                 (async () => {
                   try {
                     if (userId && tableState.tournamentId) {
@@ -1551,7 +1551,7 @@ export default function TablePage({
 
                       if (playerData?.table_id && playerData.table_id !== tableId) {
                         // Current user was moved to a different table — redirect
-                        console.log(
+                        console.debug(
                           `[TablePage] User moved from ${tableId} to ${playerData.table_id}`
                         );
                         const cId = actualClubIdRef.current || tableId || 'demo';
@@ -1580,7 +1580,7 @@ export default function TablePage({
                 // A player rebuyed — refresh their stack
                 const rebuyData = data.payload || {};
                 if (rebuyData.userId) {
-                  console.log(
+                  console.debug(
                     `[TablePage] Rebuy: ${rebuyData.userId.slice(0, 8)} +${rebuyData.chips} chips`
                   );
                 }
@@ -3413,7 +3413,7 @@ export default function TablePage({
                 {/* Session Timer */}
                 <SessionTimer
                   breakInterval={60}
-                  onBreakSuggested={() => console.log('Break suggested')}
+                  onBreakSuggested={() => console.debug('Break suggested')}
                 />
               </div>
             </div>
@@ -3953,7 +3953,7 @@ export default function TablePage({
           buyInProcessingRef.current = true;
           try {
             // DEBUG: Log all buy-in conditions
-            console.log('[BuyIn] onConfirm called:', {
+            console.debug('[BuyIn] onConfirm called:', {
               amount,
               autoRebuy,
               tableId,
@@ -3966,8 +3966,8 @@ export default function TablePage({
             // Demo mode bypass - skip wallet RPC for demo tables
             const isDemoTable = tableId === 'demo' || !tableId?.match(/^[0-9a-f-]{36}$/i);
 
-            console.log('[BuyIn] isDemoTable:', isDemoTable);
-            console.log(
+            console.debug('[BuyIn] isDemoTable:', isDemoTable);
+            console.debug(
               '[BuyIn] Will attempt real buy-in:',
               !isDemoTable && !!(userId && userId !== 'guest' && tableId && selectedSeat)
             );
@@ -3990,14 +3990,14 @@ export default function TablePage({
               }
             } else if (userId && userId !== 'guest' && tableId && selectedSeat) {
               try {
-                console.log('[BuyIn] Calling WalletService.lockForBuyIn:', {
+                console.debug('[BuyIn] Calling WalletService.lockForBuyIn:', {
                   userId,
                   tableId,
                   amount,
                 });
                 // Lock chips in escrow for table buy-in
                 await WalletService.lockForBuyIn(userId, tableId, amount);
-                console.log('[BuyIn] lockForBuyIn SUCCESS');
+                console.debug('[BuyIn] lockForBuyIn SUCCESS');
 
                 // ─── Clear any stale seat record, then INSERT into table_seats ───
                 // Stale records (left_at IS NOT NULL) can block due to unique constraint
@@ -4022,7 +4022,7 @@ export default function TablePage({
                   // NOTE: Do NOT refund here — the catch block handles refund
                   throw new Error('Failed to seat: ' + seatError.message);
                 }
-                console.log('[BuyIn] table_seats INSERT success, seat:', selectedSeat);
+                console.debug('[BuyIn] table_seats INSERT success, seat:', selectedSeat);
 
                 // Atomic current_players increment (prevents race with simultaneous buy-ins)
                 const { error: rpcErr } = await supabase.rpc('increment_table_players', {
@@ -4074,7 +4074,7 @@ export default function TablePage({
                 try {
                   await WalletService.unlockFromTable(userId, tableId, amount);
                   setAccountBalance((prev) => prev + amount);
-                  console.log('[BuyIn] Refunded chips after failed buy-in');
+                  console.debug('[BuyIn] Refunded chips after failed buy-in');
                 } catch (refundErr) {
                   console.error('[BuyIn] CRITICAL — refund also failed:', refundErr);
                 }

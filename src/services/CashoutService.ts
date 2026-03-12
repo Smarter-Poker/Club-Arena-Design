@@ -552,7 +552,7 @@ class CashoutServiceClass {
     }
 
     if (expiredRecords.length > 0) {
-      console.log(
+      console.debug(
         `[Cashout] Expired ${expiredRecords.length} stale cashouts, refunded ${playersRefunded.length} players`
       );
     }

@@ -89,7 +89,9 @@ export class HandPersistence {
       if (error) {
         // Silently ignore — this is best-effort cleanup
       } else if (count && count > 0) {
-        console.log(`[HandPersistence:${this.tableId}] Cleaned up ${count} orphaned active hands`);
+        console.debug(
+          `[HandPersistence:${this.tableId}] Cleaned up ${count} orphaned active hands`
+        );
       }
     } catch {
       // Silently ignore — cleanup is non-critical
