@@ -27,6 +27,9 @@ import { PageErrorBoundary } from './components/common/PageErrorBoundary';
 import OfflineQueueBadge from './components/common/OfflineQueueBadge';
 import NavigationProgress from './components/common/NavigationProgress';
 import ConnectionIndicator from './components/common/ConnectionIndicator';
+import ConnectionStatusBar from './components/ConnectionStatusBar';
+import BusToastBridge from './components/common/BusToastBridge';
+import { bootServices } from './services/ServiceBootstrap';
 
 // Auth Guards
 import { AuthGuard, GuestGuard } from './components/auth/AuthGuard';
@@ -265,6 +268,11 @@ export default function App() {
       });
     }
 
+    // Boot all engine services
+    bootServices().catch((err) => {
+      console.error('[App] Service bootstrap failed:', err);
+    });
+
     return () => {
       busEventLogger.stop();
     };
@@ -273,6 +281,8 @@ export default function App() {
   return (
     <ErrorBoundary>
       <ToastProvider>
+        <BusToastBridge />
+        <ConnectionStatusBar />
         {/* Accessibility: Skip to main content link */}
         <a href="#main-content" className="skip-link">
           Skip to main content
