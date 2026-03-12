@@ -339,19 +339,21 @@ export default function ProfilePage() {
 
   // ── Bus Listeners: cross-page profile reactivity ──
   useEffect(() => {
+    let isMounted = true;
+
     const unsubProfile = masterBus.subscribe('PROFILE_UPDATED', () => {
       // Re-load profile when updated from settings or other pages
       supabase.auth
         .getUser()
         .then(({ data: { user: authUser } }) => {
-          if (authUser) {
+          if (authUser && isMounted) {
             supabase
               .from('profiles')
               .select('*')
               .eq('id', authUser.id)
               .maybeSingle()
               .then(({ data: profile }) => {
-                if (profile) {
+                if (profile && isMounted) {
                   setUser({
                     id: profile.id,
                     username: profile.username || 'Player',
@@ -374,14 +376,14 @@ export default function ProfilePage() {
       supabase.auth
         .getUser()
         .then(({ data: { user: authUser } }) => {
-          if (authUser) {
+          if (authUser && isMounted) {
             supabase
               .from('profiles')
               .select('stats')
               .eq('id', authUser.id)
               .maybeSingle()
               .then(({ data: profile }) => {
-                if (profile?.stats) {
+                if (profile?.stats && isMounted) {
                   setStats({
                     totalHands: profile.stats.total_hands || 0,
                     vpip: profile.stats.vpip || 0,
@@ -410,14 +412,14 @@ export default function ProfilePage() {
         supabase.auth
           .getUser()
           .then(({ data: { user: authUser } }) => {
-            if (authUser) {
+            if (authUser && isMounted) {
               supabase
                 .from('diamond_wallets')
                 .select('balance')
                 .eq('user_id', authUser.id)
                 .maybeSingle()
                 .then(({ data: dw }) => {
-                  if (dw) setDiamonds(dw.balance || 0);
+                  if (dw && isMounted) setDiamonds(dw.balance || 0);
                 });
             }
           })
@@ -427,18 +429,19 @@ export default function ProfilePage() {
     );
     // Gamification bus listeners: refresh balance when rewards earned on other pages
     const unsubDailyReward = masterBus.subscribe('DAILY_REWARD_CLAIMED', (payload: any) => {
+      if (!isMounted) return;
       if (payload?.rewardType === 'diamonds') setShowDiamondRain(true);
       supabase.auth
         .getUser()
         .then(({ data: { user: authUser } }) => {
-          if (authUser) {
+          if (authUser && isMounted) {
             supabase
               .from('profiles')
               .select('diamonds, daily_streak')
               .eq('id', authUser.id)
               .maybeSingle()
               .then(({ data }) => {
-                if (data) {
+                if (data && isMounted) {
                   setDiamonds(data.diamonds || 0);
                   setDailyStreak(data.daily_streak || 0);
                 }
@@ -448,42 +451,46 @@ export default function ProfilePage() {
         .catch(() => {});
     });
     const unsubMissionClaim = masterBus.subscribe('MISSION_CLAIMED', (payload: any) => {
+      if (!isMounted) return;
       if (payload?.rewardType === 'diamonds') setShowDiamondRain(true);
       supabase.auth
         .getUser()
         .then(({ data: { user: authUser } }) => {
-          if (authUser) {
+          if (authUser && isMounted) {
             supabase
               .from('profiles')
               .select('diamonds')
               .eq('id', authUser.id)
               .maybeSingle()
               .then(({ data }) => {
-                if (data) setDiamonds(data.diamonds || 0);
+                if (data && isMounted) setDiamonds(data.diamonds || 0);
               });
           }
         })
         .catch(() => {});
     });
     const unsubWheelSpin = masterBus.subscribe('WHEEL_SPIN_RESULT', (payload: any) => {
+      if (!isMounted) return;
       if (payload?.type === 'diamonds') setShowDiamondRain(true);
       supabase.auth
         .getUser()
         .then(({ data: { user: authUser } }) => {
-          if (authUser) {
+          if (authUser && isMounted) {
             supabase
               .from('profiles')
               .select('diamonds')
               .eq('id', authUser.id)
               .maybeSingle()
               .then(({ data }) => {
-                if (data) setDiamonds(data.diamonds || 0);
+                if (data && isMounted) setDiamonds(data.diamonds || 0);
               });
           }
         })
         .catch(() => {});
     });
+
     return () => {
+      isMounted = false;
       unsubProfile();
       unsubHand();
       unsubBalance();

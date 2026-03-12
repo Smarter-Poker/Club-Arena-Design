@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
 import { useNavigate } from 'react-router-dom';
@@ -34,6 +34,17 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+  const isMounted = useRef(true);
+  const animationTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+      animationTimers.current.forEach(clearTimeout);
+      animationTimers.current = [];
+    };
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -77,18 +88,23 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (data) {
+      if (data && isMounted.current) {
         const mapped = data.map(mapNotification);
         setNotifications(mapped);
         setVisibleItems(new Set());
+        animationTimers.current.forEach(clearTimeout);
+        animationTimers.current = [];
         mapped.forEach((_, i) => {
-          setTimeout(() => setVisibleItems((prev) => new Set(prev).add(i)), i * 60);
+          const t = setTimeout(() => {
+            if (isMounted.current) setVisibleItems((prev) => new Set(prev).add(i));
+          }, i * 60);
+          animationTimers.current.push(t);
         });
       }
     } catch (error) {
       console.error('Failed to load notifications:', error);
     } finally {
-      setLoading(false);
+      if (isMounted.current) setLoading(false);
     }
   };
 
