@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { masterBus } from '../../core/MasterBus';
+import { soundService, haptic } from '../../services/SoundService';
 import './BombPotOverlay.css';
 
 interface BombPotOverlayProps {
@@ -27,6 +28,10 @@ export const BombPotOverlay: React.FC<BombPotOverlayProps> = ({ tableId }) => {
         setDoubleBoard(data.doubleBoard || false);
         setBBMultiplier(data.bbMultiplier || 0);
         setVisible(true);
+
+        // Enhancement #3: Dramatic sound + haptic on bomb pot trigger
+        soundService.playAllIn();
+        haptic.strong();
 
         // Clear any existing hide timer
         if (hideTimerRef.current) clearTimeout(hideTimerRef.current);

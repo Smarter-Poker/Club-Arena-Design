@@ -2376,6 +2376,39 @@ export default function TablePage({
             }
             return { ...prev, players: updatedPlayers };
           });
+
+          // Bridge: emit SHOWDOWN_START to activate HoleCardReveal component
+          {
+            const currentState = tableStateRef.current;
+            const suitMapBus: Record<string, string> = {
+              hearts: 'h',
+              diamonds: 'd',
+              clubs: 'c',
+              spades: 's',
+            };
+
+            // Determine winner(s): highest hand ranking
+            const bestRanking = Math.max(...event.results.map((r: any) => r.hand?.ranking || 0));
+
+            masterBus.emit('SHOWDOWN_START', {
+              tableId: tableId || '',
+              players: event.results.map((r: any) => {
+                const playerInState = currentState.players.find((p) => p?.id === r.userId);
+                return {
+                  userId: r.userId,
+                  seatNumber: r.seat,
+                  username: playerInState?.name || `Seat ${r.seat}`,
+                  cards: r.cards.map((c: any) => ({
+                    rank: c.rank,
+                    suit: suitMapBus[c.suit] || c.suit,
+                  })),
+                  handName: r.hand?.name || 'Unknown',
+                  handRank: r.hand?.ranking || 0,
+                  isWinner: (r.hand?.ranking || 0) === bestRanking,
+                };
+              }),
+            });
+          }
           break;
 
         case 'WINNERS':

@@ -4,8 +4,9 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { masterBus } from '../../core/MasterBus';
+import { haptic } from '../../services/SoundService';
 import './QuickChatPresets.css';
 
 interface QuickChatPresetsProps {
@@ -34,6 +35,14 @@ export const QuickChatPresets: React.FC<QuickChatPresetsProps> = ({
 }) => {
   const [showReactions, setShowReactions] = useState(false);
   const [cooldown, setCooldown] = useState<string | null>(null);
+  const cooldownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Enhancement #5: Cleanup cooldown timer on unmount
+  useEffect(() => {
+    return () => {
+      if (cooldownTimerRef.current) clearTimeout(cooldownTimerRef.current);
+    };
+  }, []);
 
   const sendMessage = useCallback(
     (text: string) => {
@@ -47,7 +56,9 @@ export const QuickChatPresets: React.FC<QuickChatPresetsProps> = ({
       });
       // 3-second cooldown to prevent spam
       setCooldown(text);
-      setTimeout(() => setCooldown(null), 3000);
+      if (cooldownTimerRef.current) clearTimeout(cooldownTimerRef.current);
+      cooldownTimerRef.current = setTimeout(() => setCooldown(null), 3000);
+      haptic.light(); // Tactile feedback on message send
     },
     [tableId, userId, playerName, cooldown]
   );
@@ -61,6 +72,7 @@ export const QuickChatPresets: React.FC<QuickChatPresetsProps> = ({
         emoji,
       });
       setShowReactions(false);
+      haptic.light(); // Tactile feedback on reaction
     },
     [tableId, userId, playerName]
   );

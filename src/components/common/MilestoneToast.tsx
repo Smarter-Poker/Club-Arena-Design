@@ -9,6 +9,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { masterBus } from '../../core/MasterBus';
+import { soundService, haptic } from '../../services/SoundService';
 import './MilestoneToast.css';
 
 interface MilestoneNotification {
@@ -46,6 +47,10 @@ export const MilestoneToast: React.FC = () => {
       };
 
       setNotifications((prev) => [...prev.slice(-4), notification]); // Max 5 at a time
+
+      // Enhancement #2: Play unlock chime + haptic on milestone
+      soundService.playTimeBankActivated();
+      haptic.medium();
 
       // Auto-dismiss after 5 seconds
       const timerId = setTimeout(() => {

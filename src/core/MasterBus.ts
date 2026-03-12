@@ -136,7 +136,20 @@ export type BusEventType =
   // Final table experience events
   | 'FINAL_TABLE_REACHED'
   | 'SHOWDOWN_START'
-  | 'HEADS_UP_SWITCH';
+  | 'HEADS_UP_SWITCH'
+  // Run It Twice events
+  | 'RIT_OFFERED'
+  | 'RIT_ACCEPTED'
+  | 'RIT_DECLINED'
+  | 'RIT_RESOLVED'
+  // Straddle events
+  | 'STRADDLE_POSTED'
+  | 'STRADDLE_TOGGLED'
+  // Table break events
+  | 'TABLE_BREAK_WARNING'
+  | 'TABLE_BREAK_STARTED'
+  | 'PLAYER_MOVED'
+  | 'TABLE_BREAK_COMPLETED';
 
 // #13: Type-safe payload map — compile-time enforcement of correct payloads
 export interface BusPayloadMap {
@@ -345,6 +358,61 @@ export interface BusPayloadMap {
     tournamentId: string;
     player1: { userId: string; username: string; chips: number };
     player2: { userId: string; username: string; chips: number };
+  };
+  // Run It Twice event payloads
+  RIT_OFFERED: {
+    tableId: string;
+    handId: string;
+    offeredBy: string;
+    offeredTo: string;
+    pot: number;
+  };
+  RIT_ACCEPTED: { tableId: string; handId: string };
+  RIT_DECLINED: { tableId: string; handId: string; declinedBy: string };
+  RIT_RESOLVED: {
+    tableId: string;
+    handId: string;
+    board1: string[];
+    board2: string[];
+    board1Winner: string;
+    board2Winner: string;
+    distribution: Record<string, number>;
+  };
+  // Straddle event payloads
+  STRADDLE_POSTED: {
+    tableId: string;
+    playerId: string;
+    seatNumber: number;
+    amount: number;
+    straddleNumber: number;
+  };
+  STRADDLE_TOGGLED: { tableId: string; playerId: string; enabled: boolean };
+  // Table break event payloads
+  TABLE_BREAK_WARNING: {
+    tableId: string;
+    tournamentId: string;
+    secondsRemaining: number;
+    playerCount: number;
+  };
+  TABLE_BREAK_STARTED: {
+    tableId: string;
+    tournamentId: string;
+    playerCount: number;
+  };
+  PLAYER_MOVED: {
+    tournamentId: string;
+    playerId: string;
+    fromTableId: string;
+    fromSeat: number;
+    toTableId: string;
+    toSeat: number;
+    stack: number;
+  };
+  TABLE_BREAK_COMPLETED: {
+    tableId: string;
+    tournamentId: string;
+    totalMoved: number;
+    remainingTableCount: number;
   };
 }
 

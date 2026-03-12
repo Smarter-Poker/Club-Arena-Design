@@ -31,11 +31,22 @@ export class TableErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error(
-      `[TableErrorBoundary] ${this.props.componentName || 'Component'} crashed:`,
-      error,
-      info.componentStack
-    );
+    const componentName = this.props.componentName || 'Component';
+    console.error(`[TableErrorBoundary] ${componentName} crashed:`, error, info.componentStack);
+
+    // Enhancement #6: Emit crash event for admin monitoring
+    try {
+      import('../../core/MasterBus').then(({ masterBus }) => {
+        masterBus.emit('COMPONENT_CRASH' as any, {
+          componentName,
+          error: error.message,
+          stack: info.componentStack?.slice(0, 500) || '',
+          timestamp: Date.now(),
+        });
+      });
+    } catch {
+      // Fail silently — crash reporting is best-effort
+    }
   }
 
   render() {

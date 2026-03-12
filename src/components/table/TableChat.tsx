@@ -35,6 +35,7 @@ export interface TableChatProps {
   messages: ChatMessage[];
   onSendMessage: (message: string) => void;
   myPlayerId?: string;
+  tableId?: string; // Enhancement #4: filter bus messages by table
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   maxMessages?: number;
@@ -138,6 +139,7 @@ export function TableChat({
   messages,
   onSendMessage,
   myPlayerId,
+  tableId,
   isCollapsed = false,
   onToggleCollapse,
   maxMessages = 100,
@@ -190,7 +192,13 @@ export function TableChat({
       const data = event?.payload;
       // QuickChatPresets emits { tableId, userId, message, type }
       // Guard: if myPlayerId is undefined, skip to prevent own-message duplication
-      if (data && myPlayerId && data.userId !== myPlayerId) {
+      // Enhancement #4: filter by tableId to prevent cross-table message leaks
+      if (
+        data &&
+        myPlayerId &&
+        data.userId !== myPlayerId &&
+        (!tableId || data.tableId === tableId)
+      ) {
         setBusMessages((prev) => {
           const newMsg: ChatMessage = {
             id: `bus-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -207,7 +215,12 @@ export function TableChat({
     const unsubReaction = masterBus.subscribe('TABLE_REACTION', (event: any) => {
       const data = event?.payload;
       // QuickChatPresets emits { tableId, userId, emoji }
-      if (data && myPlayerId && data.userId !== myPlayerId) {
+      if (
+        data &&
+        myPlayerId &&
+        data.userId !== myPlayerId &&
+        (!tableId || data.tableId === tableId)
+      ) {
         setBusMessages((prev) => {
           const reactionMsg: ChatMessage = {
             id: `react-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -225,7 +238,7 @@ export function TableChat({
       unsubChat();
       unsubReaction();
     };
-  }, [myPlayerId]);
+  }, [myPlayerId, tableId]);
 
   // Merge prop messages with bus-received messages, trim to max
   const allMessages = [...messages, ...busMessages].sort(

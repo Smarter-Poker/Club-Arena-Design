@@ -10,6 +10,7 @@ import {
   type ConnectionState,
 } from '../../services/DisconnectProtectionService';
 import { masterBus } from '../../core/MasterBus';
+import { haptic } from '../../services/SoundService';
 import './ConnectionHUD.css';
 
 interface ConnectionHUDProps {
@@ -39,6 +40,8 @@ export const ConnectionHUD: React.FC<ConnectionHUDProps> = ({ tableId, userId })
   const [showDisconnectWarning, setShowDisconnectWarning] = useState(false);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const [isReconnecting, setIsReconnecting] = useState(false);
+  /** Enhancement #1: Store the actual auto-action text from DISCONNECT_TIMEOUT */
+  const [autoActionText, setAutoActionText] = useState<string | null>(null);
   /** Prevents the polling interval from overwriting the DISCONNECT_TIMEOUT state */
   const hasTimedOutRef = useRef(false);
 
@@ -69,14 +72,18 @@ export const ConnectionHUD: React.FC<ConnectionHUDProps> = ({ tableId, userId })
       const data = event?.payload;
       if (data?.userId === userId && data?.tableId === tableId) {
         hasTimedOutRef.current = false; // Reset on new disconnect
+        setAutoActionText(null); // Reset action text
         setShowDisconnectWarning(true);
+        haptic.double(); // Haptic: disconnect warning
       }
     });
     const unsubRC = masterBus.subscribe('PLAYER_RECONNECTED', (event: any) => {
       const data = event?.payload;
       if (data?.userId === userId && data?.tableId === tableId) {
         hasTimedOutRef.current = false; // Reset on reconnect
+        setAutoActionText(null); // Reset action text
         setShowDisconnectWarning(false);
+        haptic.medium(); // Haptic: reconnected confirmation
       }
     });
     // Feature 2b: Listen for grace period expiry — display auto-action taken
@@ -85,9 +92,14 @@ export const ConnectionHUD: React.FC<ConnectionHUDProps> = ({ tableId, userId })
       if (data?.userId === userId && data?.tableId === tableId) {
         hasTimedOutRef.current = true; // Lock the countdown at 0
         setGraceCountdown(0); // Force countdown to 0 to show timeout message
-        console.log(
-          `[ConnectionHUD] Disconnect timeout — auto-action: ${data.action || 'check_fold'}`
-        );
+        // Enhancement #1: Store the actual action for display
+        const action = data.action || 'check_fold';
+        const actionLabel = action
+          .replace(/_/g, '/')
+          .replace(/\b\w/g, (c: string) => c.toUpperCase());
+        setAutoActionText(actionLabel);
+        haptic.strong(); // Haptic: timeout warning
+        console.log(`[ConnectionHUD] Disconnect timeout — auto-action: ${action}`);
       }
     });
 

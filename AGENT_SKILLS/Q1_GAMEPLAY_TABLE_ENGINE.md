@@ -37,13 +37,15 @@ This skill covers **everything that happens at the poker table** — the live ga
 
 ### Sensory Layer
 
-| Service              | Path                                      | Purpose                                |
-| :------------------- | :---------------------------------------- | :------------------------------------- |
-| `SoundService.ts`    | `src/services/SoundService.ts`            | 14 procedural sounds via Web Audio API |
-| `PremiumSFX.ts`      | `src/services/PremiumSFX.ts`              | Premium sound effects layer            |
-| `ChipAnimation.tsx`  | `src/components/table/ChipAnimation.tsx`  | Bezier-curve chip flights              |
-| `ConfettiCanvas.tsx` | `src/components/table/ConfettiCanvas.tsx` | Winner celebration canvas              |
-| `ThrowAnimation.tsx` | `src/components/table/ThrowAnimation.tsx` | Object throwables                      |
+| Service              | Path                                      | Purpose                                   |
+| :------------------- | :---------------------------------------- | :---------------------------------------- |
+| `SoundService.ts`    | `src/services/SoundService.ts`            | 14 procedural sounds via Web Audio API    |
+| `PremiumSFX.ts`      | `src/services/PremiumSFX.ts`              | Premium sound effects layer               |
+| `ChipAnimation.tsx`  | `src/components/table/ChipAnimation.tsx`  | Bezier-curve chip flights                 |
+| `ConfettiCanvas.tsx` | `src/components/table/ConfettiCanvas.tsx` | Winner celebration canvas                 |
+| `ParticleSystem.tsx` | `src/components/table/ParticleSystem.tsx` | Gold sparks, chip burst, confetti modes   |
+| `ScreenShake.ts`     | `src/utils/ScreenShake.ts`                | Screen shake utility (light/medium/heavy) |
+| `ThrowAnimation.tsx` | `src/components/table/ThrowAnimation.tsx` | Object throwables                         |
 
 ### Multiplayer & Sync
 
@@ -85,15 +87,16 @@ ActionPanel, SitOutModal, WaitListModal, TimeBank, CashierModal, BuyInModal, Str
 - [x] `CardBackSelector.tsx` — replaced text span with `<img>`, added 4 premium backs
 - [x] Build verified: zero TypeScript errors
 
-### 🔲 Phase 2: Visual Polish — Animations & Effects
+### ✅ Phase 2: Visual Polish — Animations & Effects — COMPLETE
 
-- [ ] Card deal arc trajectory animations (CommunityCards + SeatSlot)
-- [ ] 3D flip effect for turn/river reveals
-- [ ] Staggered flop dealing (80ms between cards)
-- [ ] ParticleSystem.tsx — winner gold spark bursts
-- [ ] Screen shake on big pot wins
-- [ ] Chip stack sprite rendering
-- [ ] Chip drop animation on bets
+- [x] Card deal arc trajectory — enhanced `cardDeal` CSS (slide from right with brightness flash)
+- [x] 3D flip for turn/river — already existed (`cardTurnReveal` / `cardRiverReveal`)
+- [x] Staggered flop dealing — already existed via `--card-index` \* 100ms
+- [x] ParticleSystem.tsx — gold sparks, casino chips, confetti (3 modes)
+- [x] ScreenShake.ts — light/medium/heavy with GPU translate3d
+- [x] Chip stack sprites — already existed (`ChipStack.tsx` with denomination colors)
+- [x] Chip drop animation — already existed (`chip-drop` keyframes)
+- [x] Bonus: Fixed ShareHand.tsx board preview Unicode → CardImage
 
 ### 🔲 Phase 3: Sensory & Immersion
 
