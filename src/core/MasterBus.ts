@@ -152,7 +152,22 @@ export type BusEventType =
   | 'TABLE_BREAK_WARNING'
   | 'TABLE_BREAK_STARTED'
   | 'PLAYER_MOVED'
-  | 'TABLE_BREAK_COMPLETED';
+  | 'TABLE_BREAK_COMPLETED'
+  // Spin-It lottery SNG events
+  | 'GAME_CREATED'
+  | 'PLAYER_JOINED'
+  | 'SPIN_RESULT'
+  | 'SPIN_GAME_STARTED'
+  | 'BLIND_LEVEL_UP'
+  | 'SPIN_HEADSUP'
+  | 'SPIN_FINISHED'
+  // Flash Pool (fast-fold) events
+  | 'FLASH_PLAYER_JOINED'
+  | 'FLASH_PLAYER_SEATED'
+  | 'FLASH_TRANSITION'
+  | 'FLASH_SIT_OUT'
+  | 'FLASH_SIT_BACK'
+  | 'FLASH_PLAYER_LEFT';
 
 // #13: Type-safe payload map — compile-time enforcement of correct payloads
 export interface BusPayloadMap {
@@ -424,6 +439,43 @@ export interface BusPayloadMap {
     totalMoved: number;
     remainingTableCount: number;
   };
+  // Spin-It event payloads
+  GAME_CREATED: { type: string; lobbyId?: string; poolId?: string; stakes?: string };
+  PLAYER_JOINED: { lobbyId: string; playerId: string; count: number };
+  SPIN_RESULT: {
+    lobbyId: string;
+    multiplier: number;
+    prizePool: number;
+    label: string;
+    color: string;
+  };
+  SPIN_GAME_STARTED: {
+    lobbyId: string;
+    players: string[];
+    multiplier: number | null;
+    prizePool: number;
+    blinds: { small: number; big: number; durationSeconds: number };
+  };
+  BLIND_LEVEL_UP: {
+    lobbyId: string;
+    level: number;
+    blinds: { small: number; big: number; durationSeconds: number };
+  };
+  SPIN_HEADSUP: { lobbyId: string; players: string[] };
+  SPIN_FINISHED: {
+    lobbyId: string;
+    winnerId: string;
+    prizePool: number;
+    multiplier: number | null;
+    payouts: Record<string, number>;
+  };
+  // Flash Pool event payloads
+  FLASH_PLAYER_JOINED: { poolId: string; playerId: string; poolSize: number };
+  FLASH_PLAYER_SEATED: { poolId: string; playerId: string; tableId: string; seatCount: number };
+  FLASH_TRANSITION: { poolId: string; playerId: string; fromTableId: string; direction: string };
+  FLASH_SIT_OUT: { poolId: string; playerId: string };
+  FLASH_SIT_BACK: { poolId: string; playerId: string };
+  FLASH_PLAYER_LEFT: { poolId: string; playerId: string; cashout: number; handsPlayed: number };
 }
 
 export interface BusEvent<T = unknown> {
