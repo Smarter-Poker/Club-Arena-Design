@@ -34,13 +34,13 @@ interface RateLimitEntry {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const RATE_LIMITS = {
-  BUY_IN: { maxPerWindow: 5, windowMs: 60_000 },         // 5 per minute
-  WITHDRAW: { maxPerWindow: 3, windowMs: 60_000 },        // 3 per minute
-  SEND_CHIPS: { maxPerWindow: 3, windowMs: 60_000 },      // 3 per minute
-  TABLE_JOIN: { maxPerWindow: 10, windowMs: 60_000 },      // 10 per minute
-  CHAT_MESSAGE: { maxPerWindow: 20, windowMs: 60_000 },    // 20 per minute
-  REPORT_PLAYER: { maxPerWindow: 3, windowMs: 300_000 },   // 3 per 5 minutes
-  CREDIT_REQUEST: { maxPerWindow: 5, windowMs: 300_000 },  // 5 per 5 minutes
+  BUY_IN: { maxPerWindow: 5, windowMs: 60_000 }, // 5 per minute
+  WITHDRAW: { maxPerWindow: 3, windowMs: 60_000 }, // 3 per minute
+  SEND_CHIPS: { maxPerWindow: 3, windowMs: 60_000 }, // 3 per minute
+  TABLE_JOIN: { maxPerWindow: 10, windowMs: 60_000 }, // 10 per minute
+  CHAT_MESSAGE: { maxPerWindow: 20, windowMs: 60_000 }, // 20 per minute
+  REPORT_PLAYER: { maxPerWindow: 3, windowMs: 300_000 }, // 3 per 5 minutes
+  CREDIT_REQUEST: { maxPerWindow: 5, windowMs: 300_000 }, // 5 per 5 minutes
 } as const;
 
 export type RateLimitAction = keyof typeof RATE_LIMITS;
@@ -61,12 +61,7 @@ export class RateLimiter {
   /**
    * Check if an action is allowed under rate limits
    */
-  check(
-    action: string,
-    userId: string,
-    maxPerWindow: number,
-    windowMs: number
-  ): RateLimitResult {
+  check(action: string, userId: string, maxPerWindow: number, windowMs: number): RateLimitResult {
     const key = `${action}:${userId}`;
     const now = Date.now();
     const entry = this.entries.get(key) || { timestamps: [] };
@@ -147,12 +142,17 @@ export class RateLimiter {
   private cleanup(): void {
     const now = Date.now();
     const maxAge = 600_000; // 10 minutes max
+    const keysToDelete: string[] = [];
 
     for (const [key, entry] of this.entries.entries()) {
       entry.timestamps = entry.timestamps.filter((t) => now - t < maxAge);
       if (entry.timestamps.length === 0) {
-        this.entries.delete(key);
+        keysToDelete.push(key);
       }
+    }
+
+    for (const key of keysToDelete) {
+      this.entries.delete(key);
     }
   }
 

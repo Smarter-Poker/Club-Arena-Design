@@ -20,6 +20,7 @@ import { profileService } from '../services/ProfileService';
 import { bonusService } from '../services/BonusService';
 import { masterBus } from '../core/MasterBus';
 import styles from './ProfilePage.module.css';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 // #5: Lazy-load Recharts (387KB) — only imported when History tab is opened
 const LazyProfitChart = lazy(() => import('../components/profile/ProfitChart'));
@@ -529,7 +530,12 @@ export default function ProfilePage() {
       <section className={styles.profileHeader}>
         <div className={styles.avatarContainer}>
           {user.avatarUrl ? (
-            <img src={user.avatarUrl} alt={user.displayName} className={styles.avatar} loading="lazy" />
+            <img
+              src={user.avatarUrl}
+              alt={user.displayName}
+              className={styles.avatar}
+              loading="lazy"
+            />
           ) : (
             <div className={styles.avatarDefault}>{user.displayName.charAt(0).toUpperCase()}</div>
           )}

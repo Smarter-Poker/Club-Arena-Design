@@ -17,6 +17,7 @@ import {
   ACHIEVEMENTS as SERVICE_ACHIEVEMENTS,
 } from '../services/AchievementService';
 import './AchievementsPage.css';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 type AchievementCategory = 'all' | 'poker' | 'social' | 'financial' | 'tournament';
 
@@ -209,6 +210,7 @@ const ACHIEVEMENTS: Omit<Achievement, 'progress' | 'unlocked' | 'unlockedAt'>[] 
 
 export default function AchievementsPage() {
   const navigate = useNavigate();
+  useVisibilityRefresh(() => loadAchievements());
   const { user } = useUserStore();
   const toast = useToast();
   const [category, setCategory] = useState<AchievementCategory>('all');

@@ -10,6 +10,7 @@ import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import { exportToCSV } from '../lib/export';
 import './TransactionHistoryPage.css';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 interface Transaction {
   id: string;
@@ -36,6 +37,7 @@ const PAGE_SIZE = 25;
 
 export default function TransactionHistoryPage() {
   const navigate = useNavigate();
+  useVisibilityRefresh(() => loadTransactions(1, true));
   const { user } = useUserStore();
   const toast = useToast();
 

@@ -10,6 +10,7 @@ import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import './RakebackPage.css';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 interface RakebackPeriod {
   id: string;
@@ -26,6 +27,7 @@ type ClaimStatus = 'idle' | 'claiming' | 'success' | 'error';
 
 export default function RakebackPage() {
   const navigate = useNavigate();
+  useVisibilityRefresh(() => loadRakebackData());
   const { user } = useUserStore();
   const toast = useToast();
 

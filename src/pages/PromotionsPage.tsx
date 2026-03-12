@@ -14,6 +14,7 @@ import { useToast } from '../components/common/Toast';
 import { promotionService } from '../services/PromotionService';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import './PromotionsPage.css';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 interface Promotion {
   id: string;
@@ -30,6 +31,7 @@ interface Promotion {
 
 export default function PromotionsPage() {
   const navigate = useNavigate();
+  useVisibilityRefresh(() => loadPromotions());
   const { clubId } = useParams();
   const { user } = useUserStore();
   const toast = useToast();

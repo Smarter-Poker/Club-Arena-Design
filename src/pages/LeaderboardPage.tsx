@@ -21,6 +21,7 @@ import { getUserMemberships } from '../services/ClubsService';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import './LeaderboardPage.css';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 const podiumAnimationStyle = {
   opacity: 0,
@@ -70,6 +71,7 @@ const PERIOD_OPTIONS: { value: LeaderboardPeriod; label: string }[] = [
 
 export default function LeaderboardPage() {
   const navigate = useNavigate();
+  useVisibilityRefresh(() => loadLeaderboard());
   const { user } = useUserStore();
   const toast = useToast();
   const [scope, setScope] = useState<LeaderboardScope>('my-clubs');

@@ -22,6 +22,7 @@ import styles from './UnionDetailPage.module.css';
 import { useToast } from '../components/common/Toast';
 import ConfirmModal from '../components/common/ConfirmModal';
 import CreateTournamentModal from '../components/club/CreateTournamentModal';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -52,6 +53,7 @@ interface FinancialSummary {
 
 export default function UnionDetailPage() {
   const { unionId } = useParams<{ unionId: string }>();
+  useVisibilityRefresh(() => loadData());
   const { user } = useUserStore();
   const toast = useToast();
 
@@ -903,7 +905,9 @@ export default function UnionDetailPage() {
                   <span className={`${styles.financialValue} ${styles.positive}`}>
                     {financialSummary.unionRevenue.toLocaleString()}
                   </span>
-                  <span className={styles.financialLabel}>Union Revenue ({union?.settings?.revenueSharePercent ?? 10}%)</span>
+                  <span className={styles.financialLabel}>
+                    Union Revenue ({union?.settings?.revenueSharePercent ?? 10}%)
+                  </span>
                 </div>
               </div>
               <div className={styles.financialCard}>
@@ -1080,7 +1084,11 @@ export default function UnionDetailPage() {
                   return true;
                 });
                 const statusOrder: Record<string, number> = {
-                  REGISTERING: 0, ANNOUNCED: 1, RUNNING: 2, COMPLETED: 3, CANCELLED: 4,
+                  REGISTERING: 0,
+                  ANNOUNCED: 1,
+                  RUNNING: 2,
+                  COMPLETED: 3,
+                  CANCELLED: 4,
                 };
                 deduped.sort((a: any, b: any) => {
                   const aO = statusOrder[a.status] ?? 5;

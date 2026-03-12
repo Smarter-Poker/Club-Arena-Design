@@ -18,48 +18,48 @@ import TableOperationsPanel from '../components/club/TableOperationsPanel';
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface ClubData {
-    id: string;
-    clubId: number;
-    name: string;
-    description: string;
-    avatarUrl: string;
-    isPublic: boolean;
-    requiresApproval: boolean;
-    memberCount: number;
-    tableCount: number;
-    activeTableCount: number;
-    createdAt: string;
-    settings: ClubSettings;
+  id: string;
+  clubId: number;
+  name: string;
+  description: string;
+  avatarUrl: string;
+  isPublic: boolean;
+  requiresApproval: boolean;
+  memberCount: number;
+  tableCount: number;
+  activeTableCount: number;
+  createdAt: string;
+  settings: ClubSettings;
 }
 
 interface ClubSettings {
-    defaultRakePercent: number;
-    rakeCap: number;
-    timeBankSeconds: number;
-    allowStraddle: boolean;
-    allowRunItTwice: boolean;
-    minBuyInBB: number;
-    maxBuyInBB: number;
+  defaultRakePercent: number;
+  rakeCap: number;
+  timeBankSeconds: number;
+  allowStraddle: boolean;
+  allowRunItTwice: boolean;
+  minBuyInBB: number;
+  maxBuyInBB: number;
 }
 
 interface ClubMember {
-    id: string;
-    username: string;
-    role: 'owner' | 'admin' | 'agent' | 'member';
-    chipBalance: number;
-    status: 'active' | 'pending' | 'suspended';
-    joinedAt: string;
-    lastActive?: string;
+  id: string;
+  username: string;
+  role: 'owner' | 'admin' | 'agent' | 'member';
+  chipBalance: number;
+  status: 'active' | 'pending' | 'suspended';
+  joinedAt: string;
+  lastActive?: string;
 }
 
 interface ClubTable {
-    id: string;
-    name: string;
-    gameVariant: string;
-    stakes: string;
-    currentPlayers: number;
-    maxPlayers: number;
-    status: 'waiting' | 'running' | 'paused';
+  id: string;
+  name: string;
+  gameVariant: string;
+  stakes: string;
+  currentPlayers: number;
+  maxPlayers: number;
+  status: 'waiting' | 'running' | 'paused';
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -67,81 +67,86 @@ interface ClubTable {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const TabButton = ({
-    active,
-    onClick,
-    icon,
-    label
+  active,
+  onClick,
+  icon,
+  label,
 }: {
-    active: boolean;
-    onClick: () => void;
-    icon: string;
-    label: string;
+  active: boolean;
+  onClick: () => void;
+  icon: string;
+  label: string;
 }) => (
-    <button
-        className={`${styles.tab} ${active ? styles.activeTab : ''}`}
-        onClick={onClick}
-    >
-        <span>{icon}</span>
-        <span>{label}</span>
-    </button>
+  <button className={`${styles.tab} ${active ? styles.activeTab : ''}`} onClick={onClick}>
+    <span>{icon}</span>
+    <span>{label}</span>
+  </button>
 );
 
-const StatCard = ({ value, label, icon }: { value: string | number; label: string; icon: string }) => (
-    <div className={styles.statCard}>
-        <span className={styles.statIcon}>{icon}</span>
-        <div className={styles.statInfo}>
-            <span className={styles.statValue}>{value}</span>
-            <span className={styles.statLabel}>{label}</span>
-        </div>
+const StatCard = ({
+  value,
+  label,
+  icon,
+}: {
+  value: string | number;
+  label: string;
+  icon: string;
+}) => (
+  <div className={styles.statCard}>
+    <span className={styles.statIcon}>{icon}</span>
+    <div className={styles.statInfo}>
+      <span className={styles.statValue}>{value}</span>
+      <span className={styles.statLabel}>{label}</span>
     </div>
+  </div>
 );
 
 const RoleBadge = ({ role }: { role: string }) => {
-    const colors: Record<string, string> = {
-        owner: '#f59e0b',
-        admin: '#3b82f6',
-        agent: '#8b5cf6',
-        member: '#6b7280',
-    };
-    return (
-        <span className={styles.roleBadge} style={{ backgroundColor: colors[role] || colors.member }}>
-            {role.toUpperCase()}
-        </span>
-    );
+  const colors: Record<string, string> = {
+    owner: '#f59e0b',
+    admin: '#3b82f6',
+    agent: '#8b5cf6',
+    member: '#6b7280',
+  };
+  return (
+    <span className={styles.roleBadge} style={{ backgroundColor: colors[role] || colors.member }}>
+      {role.toUpperCase()}
+    </span>
+  );
 };
 
 const StatusBadge = ({ status }: { status: string }) => {
-    const colors: Record<string, string> = {
-        active: '#10b981',
-        pending: '#f59e0b',
-        suspended: '#ef4444',
-        running: '#10b981',
-        waiting: '#6b7280',
-        paused: '#f59e0b',
-    };
-    return (
-        <span className={styles.statusBadge} style={{ backgroundColor: colors[status] || '#6b7280' }}>
-            {status}
-        </span>
-    );
+  const colors: Record<string, string> = {
+    active: '#10b981',
+    pending: '#f59e0b',
+    suspended: '#ef4444',
+    running: '#10b981',
+    waiting: '#6b7280',
+    paused: '#f59e0b',
+  };
+  return (
+    <span className={styles.statusBadge} style={{ backgroundColor: colors[status] || '#6b7280' }}>
+      {status}
+    </span>
+  );
 };
 
 // Premium counter hook
 function useCountAnimation(target: number, duration: number = 800) {
-    const [display, setDisplay] = useState(0);
-    useEffect(() => {
-        let startTime: number;
-        let animationFrame: number;
-        const animate = (time: number) => {
-            if (!startTime) startTime = time;
-            const progress = Math.min((time - startTime) / duration, 1);
-            setDisplay(Math.floor(target * progress));
-            if (progress < 1) animationFrame = requestAnimationFrame(animate);
-        };
-        animationFrame = requestAnimationFrame(animate);
-        return () => cancelAnimationFrame(animationFrame);
-    }, [target, duration]);
-    return display;
+  const [display, setDisplay] = useState(0);
+  useEffect(() => {
+    let startTime: number;
+    let animationFrame: number;
+    const animate = (time: number) => {
+      if (!startTime) startTime = time;
+      const progress = Math.min((time - startTime) / duration, 1);
+      setDisplay(Math.floor(target * progress));
+      if (progress < 1) animationFrame = requestAnimationFrame(animate);
+    };
+    animationFrame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [target, duration]);
+  return display;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -168,378 +173,416 @@ import { ClubsService } from '../services/ClubsService';
 import DailyChallengesWidget from '../components/rewards/DailyChallengesWidget';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import ConfirmModal from '../components/common/ConfirmModal';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 export default function ClubDetailPage() {
-    const { clubId } = useParams();
-    const navigate = useNavigate();
-    const toast = useToast();
-    const [activeTab, setActiveTabRaw] = useState<'overview' | 'tables' | 'members' | 'agents' | 'operations' | 'settings'>(() => getLocalStorage('ca_club_detail_tab', 'overview'));
-    const setActiveTab = (t: typeof activeTab) => { setActiveTabRaw(t); setLocalStorage('ca_club_detail_tab', t); };
-    const [club, setClub] = useState<ClubData | null>(null);
-    const [members, setMembers] = useState<ClubMember[]>([]);
-    const [filteredMembers, setFilteredMembers] = useState<ClubMember[]>([]);
-    const [memberSearch, setMemberSearch] = useState('');
-    const [tables, setTables] = useState<ClubTable[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [onlineCount, setOnlineCount] = useState(0);
-    const [deletingTableId, setDeletingTableId] = useState<string | null>(null);
-    const [agents, setAgents] = useState<Agent[]>([]);
-    const [agentsLoading, setAgentsLoading] = useState(false);
-    const [showAgentManager, setShowAgentManager] = useState(false);
-    const [savingSettings, setSavingSettings] = useState(false);
-    const [editedSettings, setEditedSettings] = useState<Partial<ClubSettings>>({});
-    const [showMemberMenu, setShowMemberMenu] = useState<string | null>(null);
-    const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
+  const { clubId } = useParams();
+  useVisibilityRefresh(() => loadClubData());
+  const navigate = useNavigate();
+  const toast = useToast();
+  const [activeTab, setActiveTabRaw] = useState<
+    'overview' | 'tables' | 'members' | 'agents' | 'operations' | 'settings'
+  >(() => getLocalStorage('ca_club_detail_tab', 'overview'));
+  const setActiveTab = (t: typeof activeTab) => {
+    setActiveTabRaw(t);
+    setLocalStorage('ca_club_detail_tab', t);
+  };
+  const [club, setClub] = useState<ClubData | null>(null);
+  const [members, setMembers] = useState<ClubMember[]>([]);
+  const [filteredMembers, setFilteredMembers] = useState<ClubMember[]>([]);
+  const [memberSearch, setMemberSearch] = useState('');
+  const [tables, setTables] = useState<ClubTable[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [onlineCount, setOnlineCount] = useState(0);
+  const [deletingTableId, setDeletingTableId] = useState<string | null>(null);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [agentsLoading, setAgentsLoading] = useState(false);
+  const [showAgentManager, setShowAgentManager] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [editedSettings, setEditedSettings] = useState<Partial<ClubSettings>>({});
+  const [showMemberMenu, setShowMemberMenu] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
 
-    // Controlled settings form state (replaces document.getElementById)
-    const [settingsForm, setSettingsForm] = useState({
-        name: '',
-        description: '',
-        isPublic: false,
-        requiresApproval: false,
-        defaultRakePercent: 5,
-        rakeCap: 3,
-        minBuyInBB: 40,
-        maxBuyInBB: 200,
-        timeBankSeconds: 30,
-        allowStraddle: false,
-        allowRunItTwice: true,
+  // Controlled settings form state (replaces document.getElementById)
+  const [settingsForm, setSettingsForm] = useState({
+    name: '',
+    description: '',
+    isPublic: false,
+    requiresApproval: false,
+    defaultRakePercent: 5,
+    rakeCap: 3,
+    minBuyInBB: 40,
+    maxBuyInBB: 200,
+    timeBankSeconds: 30,
+    allowStraddle: false,
+    allowRunItTwice: true,
+  });
+
+  // Confirm modal state for table deletion
+  const [deleteTableConfirm, setDeleteTableConfirm] = useState<{
+    show: boolean;
+    tableId: string | null;
+    tableName: string | null;
+  }>({ show: false, tableId: null, tableName: null });
+
+  // Animated stats
+  const animatedOnlineCount = useCountAnimation(onlineCount, 800);
+  const animatedMemberCount = useCountAnimation(club?.memberCount || 0, 800);
+  const animatedTableCount = useCountAnimation(club?.activeTableCount || 0, 800);
+
+  useEffect(() => {
+    loadClubData();
+  }, [clubId]);
+
+  // Sync settings form with loaded club data
+  useEffect(() => {
+    if (club) {
+      setSettingsForm({
+        name: club.name,
+        description: club.description,
+        isPublic: club.isPublic,
+        requiresApproval: club.requiresApproval,
+        defaultRakePercent: club.settings.defaultRakePercent,
+        rakeCap: club.settings.rakeCap,
+        minBuyInBB: club.settings.minBuyInBB,
+        maxBuyInBB: club.settings.maxBuyInBB,
+        timeBankSeconds: club.settings.timeBankSeconds,
+        allowStraddle: club.settings.allowStraddle,
+        allowRunItTwice: club.settings.allowRunItTwice,
+      });
+    }
+  }, [club?.name, club?.settings]);
+
+  // Filter members when search changes
+  useEffect(() => {
+    if (!memberSearch.trim()) {
+      setFilteredMembers(members);
+    } else {
+      const search = memberSearch.toLowerCase();
+      setFilteredMembers(members.filter((m) => m.username.toLowerCase().includes(search)));
+    }
+  }, [memberSearch, members]);
+
+  // Load agents when agents tab is selected
+  useEffect(() => {
+    if (activeTab === 'agents' && clubId && agents.length === 0 && !agentsLoading) {
+      setAgentsLoading(true);
+      AgentService.getAgents(clubId)
+        .then(setAgents)
+        .catch((err) => console.error('Failed to load agents:', err))
+        .finally(() => setAgentsLoading(false));
+    }
+  }, [activeTab, clubId]);
+
+  // Real-time presence tracking
+  useEffect(() => {
+    if (!clubId) return;
+
+    // Get current user ID from supabase auth
+    const setupPresence = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      await presenceService.joinClub(clubId, user.id, {
+        onSync: (state) => {
+          setOnlineCount(Object.keys(state).length);
+        },
+      });
+
+      // Set initial count
+      setOnlineCount(presenceService.getClubOnlineCount(clubId));
+    };
+
+    setupPresence();
+
+    return () => {
+      presenceService.leave(`club:${clubId}`);
+    };
+  }, [clubId]);
+
+  // Supabase Realtime subscriptions for auto-updates
+  useEffect(() => {
+    if (!clubId) return;
+
+    const channelKey = `club-detail-${clubId}`;
+    const channel = masterBus.getOrCreateChannel(channelKey);
+    channel
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'clubs',
+          filter: `id=eq.${clubId}`,
+        },
+        () => {
+          loadClubData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'club_members',
+          filter: `club_id=eq.${clubId}`,
+        },
+        () => {
+          loadClubData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tables',
+          filter: `club_id=eq.${clubId}`,
+        },
+        () => {
+          loadClubData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      masterBus.removeRegisteredChannel(channelKey);
+    };
+  }, [clubId]);
+
+  // ── Bus Listeners: cross-page event reactivity ──
+  useEffect(() => {
+    const unsubJoined = masterBus.subscribe('CLUB_JOINED', () => {
+      loadClubData();
     });
-
-    // Confirm modal state for table deletion
-    const [deleteTableConfirm, setDeleteTableConfirm] = useState<{ show: boolean; tableId: string | null; tableName: string | null }>({ show: false, tableId: null, tableName: null });
-
-    // Animated stats
-    const animatedOnlineCount = useCountAnimation(onlineCount, 800);
-    const animatedMemberCount = useCountAnimation(club?.memberCount || 0, 800);
-    const animatedTableCount = useCountAnimation(club?.activeTableCount || 0, 800);
-
-    useEffect(() => {
-        loadClubData();
-    }, [clubId]);
-
-    // Sync settings form with loaded club data
-    useEffect(() => {
-        if (club) {
-            setSettingsForm({
-                name: club.name,
-                description: club.description,
-                isPublic: club.isPublic,
-                requiresApproval: club.requiresApproval,
-                defaultRakePercent: club.settings.defaultRakePercent,
-                rakeCap: club.settings.rakeCap,
-                minBuyInBB: club.settings.minBuyInBB,
-                maxBuyInBB: club.settings.maxBuyInBB,
-                timeBankSeconds: club.settings.timeBankSeconds,
-                allowStraddle: club.settings.allowStraddle,
-                allowRunItTwice: club.settings.allowRunItTwice,
-            });
-        }
-    }, [club?.name, club?.settings]);
-
-    // Filter members when search changes
-    useEffect(() => {
-        if (!memberSearch.trim()) {
-            setFilteredMembers(members);
-        } else {
-            const search = memberSearch.toLowerCase();
-            setFilteredMembers(members.filter(m =>
-                m.username.toLowerCase().includes(search)
-            ));
-        }
-    }, [memberSearch, members]);
-
-    // Load agents when agents tab is selected
-    useEffect(() => {
-        if (activeTab === 'agents' && clubId && agents.length === 0 && !agentsLoading) {
-            setAgentsLoading(true);
-            AgentService.getAgents(clubId)
-                .then(setAgents)
-                .catch(err => console.error('Failed to load agents:', err))
-                .finally(() => setAgentsLoading(false));
-        }
-    }, [activeTab, clubId]);
-
-    // Real-time presence tracking
-    useEffect(() => {
-        if (!clubId) return;
-
-        // Get current user ID from supabase auth
-        const setupPresence = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            await presenceService.joinClub(clubId, user.id, {
-                onSync: (state) => {
-                    setOnlineCount(Object.keys(state).length);
-                }
-            });
-
-            // Set initial count
-            setOnlineCount(presenceService.getClubOnlineCount(clubId));
-        };
-
-        setupPresence();
-
-        return () => {
-            presenceService.leave(`club:${clubId}`);
-        };
-    }, [clubId]);
-
-    // Supabase Realtime subscriptions for auto-updates
-    useEffect(() => {
-        if (!clubId) return;
-
-        const channelKey = `club-detail-${clubId}`;
-        const channel = masterBus.getOrCreateChannel(channelKey);
-        channel
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'clubs',
-                    filter: `id=eq.${clubId}`,
-                },
-                () => {
-                    loadClubData();
-                }
-            )
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'club_members',
-                    filter: `club_id=eq.${clubId}`,
-                },
-                () => {
-                    loadClubData();
-                }
-            )
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'tables',
-                    filter: `club_id=eq.${clubId}`,
-                },
-                () => {
-                    loadClubData();
-                }
-            )
-            .subscribe();
-
-        return () => {
-            masterBus.removeRegisteredChannel(channelKey);
-        };
-    }, [clubId]);
-
-    // ── Bus Listeners: cross-page event reactivity ──
-    useEffect(() => {
-        const unsubJoined = masterBus.subscribe('CLUB_JOINED', () => { loadClubData(); });
-        const unsubLeft = masterBus.subscribe('CLUB_LEFT', () => { loadClubData(); });
-        const unsubSeated = masterBus.subscribe('TABLE_SEATED', () => { loadClubData(); });
-        const unsubTableLeft = masterBus.subscribe('TABLE_LEFT', () => { loadClubData(); });
-        const unsubClubUpdated = masterBus.subscribe('CLUB_UPDATED', () => { loadClubData(); });
-        const unsubAnnouncement = masterBus.subscribe('ANNOUNCEMENT_CHANGED', () => { loadClubData(); });
-        return () => { unsubJoined(); unsubLeft(); unsubSeated(); unsubTableLeft(); unsubClubUpdated(); unsubAnnouncement(); };
-    }, []);
-
-    const loadClubData = async () => {
-        if (!clubId) {
-            setLoading(false);
-            return;
-        }
-
-        setLoading(true);
-
-        try {
-            // Load club from Supabase
-            const { data: clubData, error: clubError } = await supabase
-                .from('clubs')
-                .select('*')
-                .eq('id', clubId)
-                .maybeSingle();
-
-            if (clubError || !clubData) {
-                console.error('[ClubDetailPage] Failed to load club:', clubError);
-                setLoading(false);
-                return;
-            }
-
-            // Map to our internal format
-            const mappedClub: ClubData = {
-                id: clubData.id,
-                clubId: clubData.club_id || 0,
-                name: clubData.name,
-                description: clubData.description || '',
-                avatarUrl: clubData.avatar_url || '',
-                isPublic: clubData.is_public ?? true,
-                requiresApproval: clubData.requires_approval ?? false,
-                memberCount: clubData.member_count || 0,
-                tableCount: clubData.table_count || 0,
-                activeTableCount: 0,
-                createdAt: clubData.created_at,
-                settings: {
-                    defaultRakePercent: clubData.default_rake_percent || 5,
-                    rakeCap: clubData.rake_cap || 3,
-                    timeBankSeconds: clubData.time_bank_seconds || 30,
-                    allowStraddle: clubData.allow_straddle ?? true,
-                    allowRunItTwice: clubData.allow_run_it_twice ?? true,
-                    minBuyInBB: clubData.min_buyin_bb || 40,
-                    maxBuyInBB: clubData.max_buyin_bb || 200,
-                },
-            };
-            setClub(mappedClub);
-
-            // Load members
-            const { data: memberData } = await supabase
-                .from('club_members')
-                .select('*, profiles(username, display_name)')
-                .eq('club_id', clubId)
-                .limit(50);
-
-            if (memberData) {
-                const mappedMembers: ClubMember[] = memberData.map((m: any) => ({
-                    id: m.user_id,
-                    username: m.profiles?.display_name || m.profiles?.username || 'Unknown',
-                    role: m.role || 'member',
-                    chipBalance: m.chip_balance || 0,
-                    status: m.status || 'active',
-                    joinedAt: m.created_at,
-                    lastActive: m.last_active,
-                }));
-                setMembers(mappedMembers);
-
-                // Update member count to reflect actual data (clubs.member_count may be stale)
-                setClub(prev => prev ? { ...prev, memberCount: mappedMembers.length } : null);
-
-                // Determine current user's role in this club
-                const { data: { user } } = await supabase.auth.getUser();
-                if (user) {
-                    const currentUserMember = memberData.find((m: any) => m.user_id === user.id);
-                    if (currentUserMember) {
-                        setUserRole(currentUserMember.role || 'member');
-                    }
-                }
-            }
-
-            // Load tables
-            const { data: tableData } = await supabase
-                .from('tables')
-                .select('*')
-                .eq('club_id', clubId)
-                .eq('is_deleted', false);
-
-            if (tableData) {
-                const mappedTables: ClubTable[] = tableData.map((t: any) => ({
-                    id: t.id,
-                    name: t.name || 'Table',
-                    gameVariant: t.game_type || 'NLH',
-                    stakes: t.stakes || '1/2',
-                    currentPlayers: t.current_players || 0,
-                    maxPlayers: t.max_players || 6,
-                    status: t.status || 'waiting',
-                }));
-                setTables(mappedTables);
-
-                // Count active tables
-                const activeCount = mappedTables.filter(t => t.status === 'running').length;
-                setClub(prev => prev ? { ...prev, activeTableCount: activeCount } : null);
-            }
-
-        } catch (error) {
-            console.error('[ClubDetailPage] Error loading data:', error);
-        } finally {
-            setLoading(false);
-        }
+    const unsubLeft = masterBus.subscribe('CLUB_LEFT', () => {
+      loadClubData();
+    });
+    const unsubSeated = masterBus.subscribe('TABLE_SEATED', () => {
+      loadClubData();
+    });
+    const unsubTableLeft = masterBus.subscribe('TABLE_LEFT', () => {
+      loadClubData();
+    });
+    const unsubClubUpdated = masterBus.subscribe('CLUB_UPDATED', () => {
+      loadClubData();
+    });
+    const unsubAnnouncement = masterBus.subscribe('ANNOUNCEMENT_CHANGED', () => {
+      loadClubData();
+    });
+    return () => {
+      unsubJoined();
+      unsubLeft();
+      unsubSeated();
+      unsubTableLeft();
+      unsubClubUpdated();
+      unsubAnnouncement();
     };
+  }, []);
 
-    // Save settings handler (uses controlled state instead of document.getElementById)
-    const handleSaveSettings = async () => {
-        if (!clubId || !club) return;
-        setSavingSettings(true);
-        try {
-            const safeNum = (val: number, fallback: number) => isNaN(val) ? fallback : val;
-            const updates = {
-                name: settingsForm.name || club.name,
-                description: settingsForm.description || club.description,
-                is_public: settingsForm.isPublic,
-                requires_approval: settingsForm.requiresApproval,
-                default_rake_percent: safeNum(settingsForm.defaultRakePercent, club.settings.defaultRakePercent),
-                rake_cap: safeNum(settingsForm.rakeCap, club.settings.rakeCap),
-                min_buyin_bb: safeNum(settingsForm.minBuyInBB, club.settings.minBuyInBB),
-                max_buyin_bb: safeNum(settingsForm.maxBuyInBB, club.settings.maxBuyInBB),
-                time_bank_seconds: safeNum(settingsForm.timeBankSeconds, club.settings.timeBankSeconds),
-                allow_straddle: settingsForm.allowStraddle,
-                allow_run_it_twice: settingsForm.allowRunItTwice,
-            };
-            await ClubsService.updateClub(clubId, updates);
-            toast.success('Settings saved successfully!');
-            masterBus.emit('CLUB_UPDATED', { clubId });
-            loadClubData(); // Reload to get fresh data
-        } catch (error) {
-            console.error('Failed to save settings:', error);
-            toast.error('Failed to save settings');
-        } finally {
-            setSavingSettings(false);
-        }
-    };
-
-    // Member action handlers
-    const handleMemberAction = async (memberId: string, action: 'promote' | 'demote' | 'suspend' | 'remove') => {
-        if (!clubId) return;
-        setShowMemberMenu(null);
-        try {
-            switch (action) {
-                case 'promote':
-                    await MembershipService.updateRole(memberId, 'admin' as any);
-                    toast.success('Member promoted to admin');
-                    break;
-                case 'demote':
-                    await MembershipService.updateRole(memberId, 'member' as any);
-                    toast.success('Member demoted');
-                    break;
-                case 'suspend':
-                    await MembershipService.updateStatus(memberId, 'suspended' as any);
-                    toast.success('Member suspended');
-                    break;
-                case 'remove':
-                    await MembershipService.removeMember(memberId);
-                    toast.success('Member removed');
-                    break;
-            }
-            loadClubData();
-        } catch (error) {
-            toast.error(`Failed to ${action} member`);
-        }
-    };
-
-    if (loading) {
-        return (
-            <div className={styles.loading}>
-                <div className={styles.spinner} />
-                <p>Loading club...</p>
-            </div>
-        );
+  const loadClubData = async () => {
+    if (!clubId) {
+      setLoading(false);
+      return;
     }
 
-    if (!club) {
-        return (
-            <div className={styles.error}>
-                <h2>Club Not Found</h2>
-                <p>The club you're looking for doesn't exist.</p>
-                <Link to="/clubs" className={styles.backLink}>← Back to Clubs</Link>
-            </div>
-        );
+    setLoading(true);
+
+    try {
+      // Load club from Supabase
+      const { data: clubData, error: clubError } = await supabase
+        .from('clubs')
+        .select('*')
+        .eq('id', clubId)
+        .maybeSingle();
+
+      if (clubError || !clubData) {
+        console.error('[ClubDetailPage] Failed to load club:', clubError);
+        setLoading(false);
+        return;
+      }
+
+      // Map to our internal format
+      const mappedClub: ClubData = {
+        id: clubData.id,
+        clubId: clubData.club_id || 0,
+        name: clubData.name,
+        description: clubData.description || '',
+        avatarUrl: clubData.avatar_url || '',
+        isPublic: clubData.is_public ?? true,
+        requiresApproval: clubData.requires_approval ?? false,
+        memberCount: clubData.member_count || 0,
+        tableCount: clubData.table_count || 0,
+        activeTableCount: 0,
+        createdAt: clubData.created_at,
+        settings: {
+          defaultRakePercent: clubData.default_rake_percent || 5,
+          rakeCap: clubData.rake_cap || 3,
+          timeBankSeconds: clubData.time_bank_seconds || 30,
+          allowStraddle: clubData.allow_straddle ?? true,
+          allowRunItTwice: clubData.allow_run_it_twice ?? true,
+          minBuyInBB: clubData.min_buyin_bb || 40,
+          maxBuyInBB: clubData.max_buyin_bb || 200,
+        },
+      };
+      setClub(mappedClub);
+
+      // Load members
+      const { data: memberData } = await supabase
+        .from('club_members')
+        .select('*, profiles(username, display_name)')
+        .eq('club_id', clubId)
+        .limit(50);
+
+      if (memberData) {
+        const mappedMembers: ClubMember[] = memberData.map((m: any) => ({
+          id: m.user_id,
+          username: m.profiles?.display_name || m.profiles?.username || 'Unknown',
+          role: m.role || 'member',
+          chipBalance: m.chip_balance || 0,
+          status: m.status || 'active',
+          joinedAt: m.created_at,
+          lastActive: m.last_active,
+        }));
+        setMembers(mappedMembers);
+
+        // Update member count to reflect actual data (clubs.member_count may be stale)
+        setClub((prev) => (prev ? { ...prev, memberCount: mappedMembers.length } : null));
+
+        // Determine current user's role in this club
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          const currentUserMember = memberData.find((m: any) => m.user_id === user.id);
+          if (currentUserMember) {
+            setUserRole(currentUserMember.role || 'member');
+          }
+        }
+      }
+
+      // Load tables
+      const { data: tableData } = await supabase
+        .from('tables')
+        .select('*')
+        .eq('club_id', clubId)
+        .eq('is_deleted', false);
+
+      if (tableData) {
+        const mappedTables: ClubTable[] = tableData.map((t: any) => ({
+          id: t.id,
+          name: t.name || 'Table',
+          gameVariant: t.game_type || 'NLH',
+          stakes: t.stakes || '1/2',
+          currentPlayers: t.current_players || 0,
+          maxPlayers: t.max_players || 6,
+          status: t.status || 'waiting',
+        }));
+        setTables(mappedTables);
+
+        // Count active tables
+        const activeCount = mappedTables.filter((t) => t.status === 'running').length;
+        setClub((prev) => (prev ? { ...prev, activeTableCount: activeCount } : null));
+      }
+    } catch (error) {
+      console.error('[ClubDetailPage] Error loading data:', error);
+    } finally {
+      setLoading(false);
     }
+  };
 
+  // Save settings handler (uses controlled state instead of document.getElementById)
+  const handleSaveSettings = async () => {
+    if (!clubId || !club) return;
+    setSavingSettings(true);
+    try {
+      const safeNum = (val: number, fallback: number) => (isNaN(val) ? fallback : val);
+      const updates = {
+        name: settingsForm.name || club.name,
+        description: settingsForm.description || club.description,
+        is_public: settingsForm.isPublic,
+        requires_approval: settingsForm.requiresApproval,
+        default_rake_percent: safeNum(
+          settingsForm.defaultRakePercent,
+          club.settings.defaultRakePercent
+        ),
+        rake_cap: safeNum(settingsForm.rakeCap, club.settings.rakeCap),
+        min_buyin_bb: safeNum(settingsForm.minBuyInBB, club.settings.minBuyInBB),
+        max_buyin_bb: safeNum(settingsForm.maxBuyInBB, club.settings.maxBuyInBB),
+        time_bank_seconds: safeNum(settingsForm.timeBankSeconds, club.settings.timeBankSeconds),
+        allow_straddle: settingsForm.allowStraddle,
+        allow_run_it_twice: settingsForm.allowRunItTwice,
+      };
+      await ClubsService.updateClub(clubId, updates);
+      toast.success('Settings saved successfully!');
+      masterBus.emit('CLUB_UPDATED', { clubId });
+      loadClubData(); // Reload to get fresh data
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      toast.error('Failed to save settings');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
 
+  // Member action handlers
+  const handleMemberAction = async (
+    memberId: string,
+    action: 'promote' | 'demote' | 'suspend' | 'remove'
+  ) => {
+    if (!clubId) return;
+    setShowMemberMenu(null);
+    try {
+      switch (action) {
+        case 'promote':
+          await MembershipService.updateRole(memberId, 'admin' as any);
+          toast.success('Member promoted to admin');
+          break;
+        case 'demote':
+          await MembershipService.updateRole(memberId, 'member' as any);
+          toast.success('Member demoted');
+          break;
+        case 'suspend':
+          await MembershipService.updateStatus(memberId, 'suspended' as any);
+          toast.success('Member suspended');
+          break;
+        case 'remove':
+          await MembershipService.removeMember(memberId);
+          toast.success('Member removed');
+          break;
+      }
+      loadClubData();
+    } catch (error) {
+      toast.error(`Failed to ${action} member`);
+    }
+  };
+
+  if (loading) {
     return (
-        <div className={styles.page}>
-            <style>{`
+      <div className={styles.loading}>
+        <div className={styles.spinner} />
+        <p>Loading club...</p>
+      </div>
+    );
+  }
+
+  if (!club) {
+    return (
+      <div className={styles.error}>
+        <h2>Club Not Found</h2>
+        <p>The club you're looking for doesn't exist.</p>
+        <Link to="/clubs" className={styles.backLink}>
+          ← Back to Clubs
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.page}>
+      <style>{`
                 @keyframes slideInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
                 .club-detail-stats { animation: slideInUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
                 .member-row-animated { animation: slideInUp 0.5s ease-out forwards; opacity: 0; }
@@ -547,391 +590,542 @@ export default function ClubDetailPage() {
                 @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
                 .club-detail-skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1)); background-size: 1000px 100%; animation: shimmer 2s infinite; }
             `}</style>
-            {/* Quick Stats */}
-            <section className={styles.statsRow} style={{ animation: `slideInUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)` }}>
-                <StatCard value={animatedOnlineCount} label="Online Now" icon="" />
-                <StatCard value={animatedMemberCount} label="Members" icon="" />
-                <StatCard value={animatedTableCount} label="Active Tables" icon="" />
-                <StatCard value={`${club.settings.defaultRakePercent}%`} label="Rake" icon="" />
-            </section>
+      {/* Quick Stats */}
+      <section
+        className={styles.statsRow}
+        style={{ animation: `slideInUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)` }}
+      >
+        <StatCard value={animatedOnlineCount} label="Online Now" icon="" />
+        <StatCard value={animatedMemberCount} label="Members" icon="" />
+        <StatCard value={animatedTableCount} label="Active Tables" icon="" />
+        <StatCard value={`${club.settings.defaultRakePercent}%`} label="Rake" icon="" />
+      </section>
 
-            {/* Tab Navigation */}
-            <nav className={styles.tabNav}>
-                <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon="" label="Overview" />
-                <TabButton active={activeTab === 'tables'} onClick={() => setActiveTab('tables')} icon="" label="Tables" />
-                <TabButton active={activeTab === 'members'} onClick={() => setActiveTab('members')} icon="" label="Members" />
-                <TabButton active={activeTab === 'agents'} onClick={() => setActiveTab('agents')} icon="" label="Agents" />
-                {(userRole === 'owner' || userRole === 'admin') && (
-                    <TabButton active={activeTab === 'operations'} onClick={() => setActiveTab('operations')} icon="" label="Ops" />
-                )}
-                <TabButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon="" label="Settings" />
-            </nav>
+      {/* Tab Navigation */}
+      <nav className={styles.tabNav}>
+        <TabButton
+          active={activeTab === 'overview'}
+          onClick={() => setActiveTab('overview')}
+          icon=""
+          label="Overview"
+        />
+        <TabButton
+          active={activeTab === 'tables'}
+          onClick={() => setActiveTab('tables')}
+          icon=""
+          label="Tables"
+        />
+        <TabButton
+          active={activeTab === 'members'}
+          onClick={() => setActiveTab('members')}
+          icon=""
+          label="Members"
+        />
+        <TabButton
+          active={activeTab === 'agents'}
+          onClick={() => setActiveTab('agents')}
+          icon=""
+          label="Agents"
+        />
+        {(userRole === 'owner' || userRole === 'admin') && (
+          <TabButton
+            active={activeTab === 'operations'}
+            onClick={() => setActiveTab('operations')}
+            icon=""
+            label="Ops"
+          />
+        )}
+        <TabButton
+          active={activeTab === 'settings'}
+          onClick={() => setActiveTab('settings')}
+          icon=""
+          label="Settings"
+        />
+      </nav>
 
-            {/* Tab Content */}
-            <section className={styles.tabContent}>
-                {/* Overview Tab */}
-                {activeTab === 'overview' && (
-                    <div className={styles.overviewGrid}>
-                        {/* Active Tables */}
-                        <div className={styles.card}>
-                            <h3> Active Tables</h3>
-                            {tables.filter(t => t.status === 'running').length === 0 ? (
-                                <p className={styles.emptyText}>No active tables</p>
-                            ) : (
-                                <div className={styles.tableList}>
-                                    {tables.filter(t => t.status === 'running').map(table => (
-                                        <Link key={table.id} to={`/table/${table.id}`} className={styles.tableRow}>
-                                            <span className={styles.tableName}>{table.name}</span>
-                                            <span className={styles.tableVariant}>{table.gameVariant}</span>
-                                            <span className={styles.tableStakes}>{table.stakes}</span>
-                                            <span className={styles.tablePlayers}>{table.currentPlayers}/{table.maxPlayers}</span>
-                                        </Link>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Recent Members */}
-                        <div className={styles.card}>
-                            <h3> Recent Members</h3>
-                            <div className={styles.memberList}>
-                                {members.slice(0, 5).map(member => (
-                                    <div key={member.id} className={styles.memberRow}>
-                                        <div className={styles.memberAvatar}>{member.username.charAt(0)}</div>
-                                        <span className={styles.memberName}>{member.username}</span>
-                                        <RoleBadge role={member.role} />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Club Rules */}
-                        <div className={styles.card}>
-                            <h3> Club Rules</h3>
-                            <ul className={styles.rulesList}>
-                                <li>Minimum buy-in: {club.settings.minBuyInBB} BB</li>
-                                <li>Maximum buy-in: {club.settings.maxBuyInBB} BB</li>
-                                <li>Rake: {club.settings.defaultRakePercent}% (capped at {club.settings.rakeCap} BB)</li>
-                                <li>Straddle: {club.settings.allowStraddle ? 'Allowed' : 'Not allowed'}</li>
-                                <li>Run it twice: {club.settings.allowRunItTwice ? 'Allowed' : 'Not allowed'}</li>
-                            </ul>
-                        </div>
-
-                        {/* Daily Challenges */}
-                        <div className={styles.card}>
-                            <DailyChallengesWidget />
-                        </div>
-
-                        {/* Club Activity Feed */}
-                        <div className={styles.card} style={{ gridColumn: '1 / -1' }}>
-                            <h3> Recent Activity</h3>
-                            {clubId && <ClubActivityFeed clubId={clubId} limit={10} />}
-                        </div>
-                    </div>
-                )}
-
-                {/* Tables Tab */}
-                {activeTab === 'tables' && (
-                    <div className={styles.tablesContainer}>
-                        <div className={styles.tablesHeader}>
-                            <h3>All Tables ({tables.length})</h3>
-                            <button className={styles.createButton} onClick={() => navigate(`/clubs/${clubId}/create-table`)}>+ Create Table</button>
-                        </div>
-                        <div className={styles.tablesGrid}>
-                            {tables.map((table, idx) => (
-                                <div key={table.id} className={styles.tableCard} style={{ animation: `slideInUp 0.5s ease-out ${idx * 0.06}s both` }}>
-                                    <div className={styles.tableCardHeader}>
-                                        <h4>{table.name}</h4>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <StatusBadge status={table.status} />
-                                            {(userRole === 'owner' || userRole === 'admin') && (
-                                                <button
-                                                    className={styles.deleteTableBtn}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setDeleteTableConfirm({ show: true, tableId: table.id, tableName: table.name });
-                                                    }}
-                                                    disabled={deletingTableId === table.id}
-                                                    title="Delete table"
-                                                >
-                                                    {deletingTableId === table.id ? '...' : '✕'}
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className={styles.tableCardBody}>
-                                        <div className={styles.tableInfo}>
-                                            <span>{table.gameVariant}</span>
-                                            <span>{table.stakes}</span>
-                                        </div>
-                                        <div className={styles.tableSeats}>
-                                            {table.currentPlayers}/{table.maxPlayers} players
-                                        </div>
-                                    </div>
-                                    <Link to={`/table/${table.id}`} className={styles.joinButton}>
-                                        {table.currentPlayers < table.maxPlayers ? 'Join' : 'Watch'}
-                                    </Link>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Members Tab */}
-                {activeTab === 'members' && (
-                    <div className={styles.membersContainer}>
-                        <div className={styles.membersHeader}>
-                            <h3>All Members ({filteredMembers.length})</h3>
-                            <input
-                                type="search"
-                                placeholder="Search members..."
-                                className={styles.searchInput}
-                                value={memberSearch}
-                                onChange={(e) => setMemberSearch(e.target.value)}
-                            />
-                        </div>
-                        <table className={styles.membersTable}>
-                            <thead>
-                                <tr>
-                                    <th>Player</th>
-                                    <th>Role</th>
-                                    <th>Balance</th>
-                                    <th>Status</th>
-                                    <th>Joined</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredMembers.map((member, idx) => (
-                                    <tr key={member.id} style={{ animation: `slideInUp 0.5s ease-out ${idx * 0.05}s both` }}>
-                                        <td>
-                                            <div className={styles.memberCell}>
-                                                <div className={styles.memberAvatarSmall}>{member.username.charAt(0)}</div>
-                                                {member.username}
-                                            </div>
-                                        </td>
-                                        <td><RoleBadge role={member.role} /></td>
-                                        <td className={styles.balanceCell}>{member.chipBalance.toLocaleString()}</td>
-                                        <td><StatusBadge status={member.status} /></td>
-                                        <td className={styles.dateCell}>{new Date(member.joinedAt).toLocaleDateString()}</td>
-                                        <td style={{ position: 'relative' }}>
-                                            <button
-                                                className={styles.actionBtn}
-                                                onClick={() => setShowMemberMenu(showMemberMenu === member.id ? null : member.id)}
-                                            >
-                                                ⋮
-                                            </button>
-                                            {showMemberMenu === member.id && (
-                                                <div className={styles.memberMenu}>
-                                                    {member.role !== 'admin' && member.role !== 'owner' && (
-                                                        <button onClick={() => handleMemberAction(member.id, 'promote')}> Promote</button>
-                                                    )}
-                                                    {member.role === 'admin' && (
-                                                        <button onClick={() => handleMemberAction(member.id, 'demote')}> Demote</button>
-                                                    )}
-                                                    {member.status === 'active' && member.role !== 'owner' && (
-                                                        <button onClick={() => handleMemberAction(member.id, 'suspend')}>Suspend</button>
-                                                    )}
-                                                    {member.role !== 'owner' && (
-                                                        <button onClick={() => handleMemberAction(member.id, 'remove')}>Remove</button>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-
-                {/* Agents Tab */}
-                {activeTab === 'agents' && (
-                    <div className={styles.agentsContainer}>
-                        <div className={styles.agentsHeader}>
-                            <h3>Club Agents</h3>
-                            <button className={styles.createButton} onClick={() => setShowAgentManager(true)}>
-                                + Manage Agents
-                            </button>
-                        </div>
-                        {agentsLoading ? (
-                            <div className={styles.emptyState}>
-                                <div className={styles.spinner} />
-                                <p>Loading agents...</p>
-                            </div>
-                        ) : agents.length === 0 ? (
-                            <div className={styles.emptyState}>
-                                <p>No agents assigned to this club yet.</p>
-                                <p className={styles.emptyHint}>Agents help recruit players and earn commission on rake.</p>
-                                <button className={styles.createButton} onClick={() => setShowAgentManager(true)}>
-                                    + Add First Agent
-                                </button>
-                            </div>
-                        ) : (
-                            <div className={styles.agentsList}>
-                                {agents.map((agent, idx) => (
-                                    <div key={agent.id} className={styles.agentCard} style={{ animation: `slideInUp 0.5s ease-out ${idx * 0.06}s both` }}>
-                                        <div className={styles.agentAvatar}>
-                                            {agent.displayName?.charAt(0) || '?'}
-                                        </div>
-                                        <div className={styles.agentInfo}>
-                                            <span className={styles.agentName}>{agent.displayName || 'Unknown'}</span>
-                                            <span className={styles.agentRole}>{agent.role}</span>
-                                        </div>
-                                        <div className={styles.agentStats}>
-                                            <div className={styles.agentStat}>
-                                                <span className={styles.statLabel}>Players</span>
-                                                <span className={styles.statValue}>{agent.totalPlayers}</span>
-                                            </div>
-                                            <div className={styles.agentStat}>
-                                                <span className={styles.statLabel}>Commission</span>
-                                                <span className={styles.statValue}>{agent.commissionRate}%</span>
-                                            </div>
-                                            <div className={styles.agentStat}>
-                                                <span className={styles.statLabel}>Lifetime</span>
-                                                <span className={styles.statValue}>{agent.lifetimeEarnings.toLocaleString()}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {/* Operations Tab — Admin Table Controls */}
-                {activeTab === 'operations' && clubId && (
-                    <TableOperationsPanel clubId={clubId} />
-                )}
-
-                {/* Settings Tab */}
-                {activeTab === 'settings' && (
-                    <div className={styles.settingsContainer}>
-                        <div className={styles.settingsSection}>
-                            <h3> General</h3>
-                            <div className={styles.settingRow}>
-                                <label>Club Name</label>
-                                <input type="text" value={settingsForm.name} onChange={e => setSettingsForm(f => ({ ...f, name: e.target.value }))} className={styles.textInput} />
-                            </div>
-                            <div className={styles.settingRow}>
-                                <label>Description</label>
-                                <textarea value={settingsForm.description} onChange={e => setSettingsForm(f => ({ ...f, description: e.target.value }))} className={styles.textArea} rows={3} />
-                            </div>
-                            <div className={styles.settingRow}>
-                                <label>Public Club</label>
-                                <input type="checkbox" checked={settingsForm.isPublic} onChange={e => setSettingsForm(f => ({ ...f, isPublic: e.target.checked }))} />
-                            </div>
-                            <div className={styles.settingRow}>
-                                <label>Require Approval</label>
-                                <input type="checkbox" checked={settingsForm.requiresApproval} onChange={e => setSettingsForm(f => ({ ...f, requiresApproval: e.target.checked }))} />
-                            </div>
-                        </div>
-
-                        <div className={styles.settingsSection}>
-                            <h3> Rake Settings</h3>
-                            <div className={styles.settingRow}>
-                                <label>Default Rake %</label>
-                                <input type="number" value={settingsForm.defaultRakePercent} onChange={e => setSettingsForm(f => ({ ...f, defaultRakePercent: Number(e.target.value) || 0 }))} min={0} max={10} className={styles.numberInput} />
-                            </div>
-                            <div className={styles.settingRow}>
-                                <label>Rake Cap (BB)</label>
-                                <input type="number" value={settingsForm.rakeCap} onChange={e => setSettingsForm(f => ({ ...f, rakeCap: Number(e.target.value) || 0 }))} min={0} max={10} className={styles.numberInput} />
-                            </div>
-                        </div>
-
-                        <div className={styles.settingsSection}>
-                            <h3> Table Defaults</h3>
-                            <div className={styles.settingRow}>
-                                <label>Min Buy-in (BB)</label>
-                                <input type="number" value={settingsForm.minBuyInBB} onChange={e => setSettingsForm(f => ({ ...f, minBuyInBB: Number(e.target.value) || 0 }))} className={styles.numberInput} />
-                            </div>
-                            <div className={styles.settingRow}>
-                                <label>Max Buy-in (BB)</label>
-                                <input type="number" value={settingsForm.maxBuyInBB} onChange={e => setSettingsForm(f => ({ ...f, maxBuyInBB: Number(e.target.value) || 0 }))} className={styles.numberInput} />
-                            </div>
-                            <div className={styles.settingRow}>
-                                <label>Time Bank (seconds)</label>
-                                <input type="number" value={settingsForm.timeBankSeconds} onChange={e => setSettingsForm(f => ({ ...f, timeBankSeconds: Number(e.target.value) || 0 }))} className={styles.numberInput} />
-                            </div>
-                            <div className={styles.settingRow}>
-                                <label>Allow Straddle</label>
-                                <input type="checkbox" checked={settingsForm.allowStraddle} onChange={e => setSettingsForm(f => ({ ...f, allowStraddle: e.target.checked }))} />
-                            </div>
-                            <div className={styles.settingRow}>
-                                <label>Allow Run It Twice</label>
-                                <input type="checkbox" checked={settingsForm.allowRunItTwice} onChange={e => setSettingsForm(f => ({ ...f, allowRunItTwice: e.target.checked }))} />
-                            </div>
-                        </div>
-
-                        <button
-                            className={styles.saveButton}
-                            onClick={handleSaveSettings}
-                            disabled={savingSettings}
-                        >
-                            {savingSettings ? 'Saving...' : 'Save Changes'}
-                        </button>
-                    </div>
-                )}
-            </section>
-
-            {/* Agent Manager - Navigate to dedicated page */}
-            {showAgentManager && clubId && (
-                <div className={styles.modalOverlay} onClick={() => setShowAgentManager(false)}>
-                    <div className={styles.modal} onClick={e => e.stopPropagation()}>
-                        <div className={styles.modalHeader}>
-                            <h3>Agent Management</h3>
-                            <button onClick={() => setShowAgentManager(false)}>×</button>
-                        </div>
-                        <div className={styles.modalContent}>
-                            <p>Manage your club's agent hierarchy, create new agents, and configure commission rates.</p>
-                            <Link
-                                to={`/clubs/${clubId}/agents`}
-                                className={styles.primaryButton}
-                                onClick={() => setShowAgentManager(false)}
-                            >
-                                Open Agent Management
-                            </Link>
-                        </div>
-                    </div>
+      {/* Tab Content */}
+      <section className={styles.tabContent}>
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+          <div className={styles.overviewGrid}>
+            {/* Active Tables */}
+            <div className={styles.card}>
+              <h3> Active Tables</h3>
+              {tables.filter((t) => t.status === 'running').length === 0 ? (
+                <p className={styles.emptyText}>No active tables</p>
+              ) : (
+                <div className={styles.tableList}>
+                  {tables
+                    .filter((t) => t.status === 'running')
+                    .map((table) => (
+                      <Link key={table.id} to={`/table/${table.id}`} className={styles.tableRow}>
+                        <span className={styles.tableName}>{table.name}</span>
+                        <span className={styles.tableVariant}>{table.gameVariant}</span>
+                        <span className={styles.tableStakes}>{table.stakes}</span>
+                        <span className={styles.tablePlayers}>
+                          {table.currentPlayers}/{table.maxPlayers}
+                        </span>
+                      </Link>
+                    ))}
                 </div>
-            )}
+              )}
+            </div>
 
-            {/* Fixed Bottom Navigation Bar */}
-            {clubId && (
-                <ClubBottomNav
-                    clubId={clubId}
-                    userRole={userRole}
-                    clubName={club?.name}
-                />
-            )}
+            {/* Recent Members */}
+            <div className={styles.card}>
+              <h3> Recent Members</h3>
+              <div className={styles.memberList}>
+                {members.slice(0, 5).map((member) => (
+                  <div key={member.id} className={styles.memberRow}>
+                    <div className={styles.memberAvatar}>{member.username.charAt(0)}</div>
+                    <span className={styles.memberName}>{member.username}</span>
+                    <RoleBadge role={member.role} />
+                  </div>
+                ))}
+              </div>
+            </div>
 
-            {/* Confirm Modal for Table Deletion */}
-            <ConfirmModal
-                isOpen={deleteTableConfirm.show}
-                title="Delete Table"
-                message={`Delete table "${deleteTableConfirm.tableName || ''}"? This cannot be undone.`}
-                variant="danger"
-                confirmText="Delete"
-                onConfirm={async () => {
-                    if (deleteTableConfirm.tableId) {
-                        const id = deleteTableConfirm.tableId;
-                        setDeleteTableConfirm({ show: false, tableId: null, tableName: null });
-                        setDeletingTableId(id);
-                        try {
-                            const { error } = await supabase.from('tables').update({ status: 'deleted', is_active: false }).eq('id', id);
-                            if (error) throw error;
-                            setTables(prev => prev.filter(t => t.id !== id));
-                            toast.success('Table deleted');
-                        } catch (err) {
-                            console.error('Failed to delete table:', err);
-                            toast.error('Failed to delete table');
-                        } finally {
-                            setDeletingTableId(null);
+            {/* Club Rules */}
+            <div className={styles.card}>
+              <h3> Club Rules</h3>
+              <ul className={styles.rulesList}>
+                <li>Minimum buy-in: {club.settings.minBuyInBB} BB</li>
+                <li>Maximum buy-in: {club.settings.maxBuyInBB} BB</li>
+                <li>
+                  Rake: {club.settings.defaultRakePercent}% (capped at {club.settings.rakeCap} BB)
+                </li>
+                <li>Straddle: {club.settings.allowStraddle ? 'Allowed' : 'Not allowed'}</li>
+                <li>Run it twice: {club.settings.allowRunItTwice ? 'Allowed' : 'Not allowed'}</li>
+              </ul>
+            </div>
+
+            {/* Daily Challenges */}
+            <div className={styles.card}>
+              <DailyChallengesWidget />
+            </div>
+
+            {/* Club Activity Feed */}
+            <div className={styles.card} style={{ gridColumn: '1 / -1' }}>
+              <h3> Recent Activity</h3>
+              {clubId && <ClubActivityFeed clubId={clubId} limit={10} />}
+            </div>
+          </div>
+        )}
+
+        {/* Tables Tab */}
+        {activeTab === 'tables' && (
+          <div className={styles.tablesContainer}>
+            <div className={styles.tablesHeader}>
+              <h3>All Tables ({tables.length})</h3>
+              <button
+                className={styles.createButton}
+                onClick={() => navigate(`/clubs/${clubId}/create-table`)}
+              >
+                + Create Table
+              </button>
+            </div>
+            <div className={styles.tablesGrid}>
+              {tables.map((table, idx) => (
+                <div
+                  key={table.id}
+                  className={styles.tableCard}
+                  style={{ animation: `slideInUp 0.5s ease-out ${idx * 0.06}s both` }}
+                >
+                  <div className={styles.tableCardHeader}>
+                    <h4>{table.name}</h4>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <StatusBadge status={table.status} />
+                      {(userRole === 'owner' || userRole === 'admin') && (
+                        <button
+                          className={styles.deleteTableBtn}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteTableConfirm({
+                              show: true,
+                              tableId: table.id,
+                              tableName: table.name,
+                            });
+                          }}
+                          disabled={deletingTableId === table.id}
+                          title="Delete table"
+                        >
+                          {deletingTableId === table.id ? '...' : '✕'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className={styles.tableCardBody}>
+                    <div className={styles.tableInfo}>
+                      <span>{table.gameVariant}</span>
+                      <span>{table.stakes}</span>
+                    </div>
+                    <div className={styles.tableSeats}>
+                      {table.currentPlayers}/{table.maxPlayers} players
+                    </div>
+                  </div>
+                  <Link to={`/table/${table.id}`} className={styles.joinButton}>
+                    {table.currentPlayers < table.maxPlayers ? 'Join' : 'Watch'}
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Members Tab */}
+        {activeTab === 'members' && (
+          <div className={styles.membersContainer}>
+            <div className={styles.membersHeader}>
+              <h3>All Members ({filteredMembers.length})</h3>
+              <input
+                type="search"
+                placeholder="Search members..."
+                className={styles.searchInput}
+                value={memberSearch}
+                onChange={(e) => setMemberSearch(e.target.value)}
+              />
+            </div>
+            <table className={styles.membersTable}>
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>Role</th>
+                  <th>Balance</th>
+                  <th>Status</th>
+                  <th>Joined</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredMembers.map((member, idx) => (
+                  <tr
+                    key={member.id}
+                    style={{ animation: `slideInUp 0.5s ease-out ${idx * 0.05}s both` }}
+                  >
+                    <td>
+                      <div className={styles.memberCell}>
+                        <div className={styles.memberAvatarSmall}>{member.username.charAt(0)}</div>
+                        {member.username}
+                      </div>
+                    </td>
+                    <td>
+                      <RoleBadge role={member.role} />
+                    </td>
+                    <td className={styles.balanceCell}>{member.chipBalance.toLocaleString()}</td>
+                    <td>
+                      <StatusBadge status={member.status} />
+                    </td>
+                    <td className={styles.dateCell}>
+                      {new Date(member.joinedAt).toLocaleDateString()}
+                    </td>
+                    <td style={{ position: 'relative' }}>
+                      <button
+                        className={styles.actionBtn}
+                        onClick={() =>
+                          setShowMemberMenu(showMemberMenu === member.id ? null : member.id)
                         }
-                    }
-                }}
-                onCancel={() => setDeleteTableConfirm({ show: false, tableId: null, tableName: null })}
-            />
+                      >
+                        ⋮
+                      </button>
+                      {showMemberMenu === member.id && (
+                        <div className={styles.memberMenu}>
+                          {member.role !== 'admin' && member.role !== 'owner' && (
+                            <button onClick={() => handleMemberAction(member.id, 'promote')}>
+                              {' '}
+                              Promote
+                            </button>
+                          )}
+                          {member.role === 'admin' && (
+                            <button onClick={() => handleMemberAction(member.id, 'demote')}>
+                              {' '}
+                              Demote
+                            </button>
+                          )}
+                          {member.status === 'active' && member.role !== 'owner' && (
+                            <button onClick={() => handleMemberAction(member.id, 'suspend')}>
+                              Suspend
+                            </button>
+                          )}
+                          {member.role !== 'owner' && (
+                            <button onClick={() => handleMemberAction(member.id, 'remove')}>
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Agents Tab */}
+        {activeTab === 'agents' && (
+          <div className={styles.agentsContainer}>
+            <div className={styles.agentsHeader}>
+              <h3>Club Agents</h3>
+              <button className={styles.createButton} onClick={() => setShowAgentManager(true)}>
+                + Manage Agents
+              </button>
+            </div>
+            {agentsLoading ? (
+              <div className={styles.emptyState}>
+                <div className={styles.spinner} />
+                <p>Loading agents...</p>
+              </div>
+            ) : agents.length === 0 ? (
+              <div className={styles.emptyState}>
+                <p>No agents assigned to this club yet.</p>
+                <p className={styles.emptyHint}>
+                  Agents help recruit players and earn commission on rake.
+                </p>
+                <button className={styles.createButton} onClick={() => setShowAgentManager(true)}>
+                  + Add First Agent
+                </button>
+              </div>
+            ) : (
+              <div className={styles.agentsList}>
+                {agents.map((agent, idx) => (
+                  <div
+                    key={agent.id}
+                    className={styles.agentCard}
+                    style={{ animation: `slideInUp 0.5s ease-out ${idx * 0.06}s both` }}
+                  >
+                    <div className={styles.agentAvatar}>{agent.displayName?.charAt(0) || '?'}</div>
+                    <div className={styles.agentInfo}>
+                      <span className={styles.agentName}>{agent.displayName || 'Unknown'}</span>
+                      <span className={styles.agentRole}>{agent.role}</span>
+                    </div>
+                    <div className={styles.agentStats}>
+                      <div className={styles.agentStat}>
+                        <span className={styles.statLabel}>Players</span>
+                        <span className={styles.statValue}>{agent.totalPlayers}</span>
+                      </div>
+                      <div className={styles.agentStat}>
+                        <span className={styles.statLabel}>Commission</span>
+                        <span className={styles.statValue}>{agent.commissionRate}%</span>
+                      </div>
+                      <div className={styles.agentStat}>
+                        <span className={styles.statLabel}>Lifetime</span>
+                        <span className={styles.statValue}>
+                          {agent.lifetimeEarnings.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Operations Tab — Admin Table Controls */}
+        {activeTab === 'operations' && clubId && <TableOperationsPanel clubId={clubId} />}
+
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <div className={styles.settingsContainer}>
+            <div className={styles.settingsSection}>
+              <h3> General</h3>
+              <div className={styles.settingRow}>
+                <label>Club Name</label>
+                <input
+                  type="text"
+                  value={settingsForm.name}
+                  onChange={(e) => setSettingsForm((f) => ({ ...f, name: e.target.value }))}
+                  className={styles.textInput}
+                />
+              </div>
+              <div className={styles.settingRow}>
+                <label>Description</label>
+                <textarea
+                  value={settingsForm.description}
+                  onChange={(e) => setSettingsForm((f) => ({ ...f, description: e.target.value }))}
+                  className={styles.textArea}
+                  rows={3}
+                />
+              </div>
+              <div className={styles.settingRow}>
+                <label>Public Club</label>
+                <input
+                  type="checkbox"
+                  checked={settingsForm.isPublic}
+                  onChange={(e) => setSettingsForm((f) => ({ ...f, isPublic: e.target.checked }))}
+                />
+              </div>
+              <div className={styles.settingRow}>
+                <label>Require Approval</label>
+                <input
+                  type="checkbox"
+                  checked={settingsForm.requiresApproval}
+                  onChange={(e) =>
+                    setSettingsForm((f) => ({ ...f, requiresApproval: e.target.checked }))
+                  }
+                />
+              </div>
+            </div>
+
+            <div className={styles.settingsSection}>
+              <h3> Rake Settings</h3>
+              <div className={styles.settingRow}>
+                <label>Default Rake %</label>
+                <input
+                  type="number"
+                  value={settingsForm.defaultRakePercent}
+                  onChange={(e) =>
+                    setSettingsForm((f) => ({
+                      ...f,
+                      defaultRakePercent: Number(e.target.value) || 0,
+                    }))
+                  }
+                  min={0}
+                  max={10}
+                  className={styles.numberInput}
+                />
+              </div>
+              <div className={styles.settingRow}>
+                <label>Rake Cap (BB)</label>
+                <input
+                  type="number"
+                  value={settingsForm.rakeCap}
+                  onChange={(e) =>
+                    setSettingsForm((f) => ({ ...f, rakeCap: Number(e.target.value) || 0 }))
+                  }
+                  min={0}
+                  max={10}
+                  className={styles.numberInput}
+                />
+              </div>
+            </div>
+
+            <div className={styles.settingsSection}>
+              <h3> Table Defaults</h3>
+              <div className={styles.settingRow}>
+                <label>Min Buy-in (BB)</label>
+                <input
+                  type="number"
+                  value={settingsForm.minBuyInBB}
+                  onChange={(e) =>
+                    setSettingsForm((f) => ({ ...f, minBuyInBB: Number(e.target.value) || 0 }))
+                  }
+                  className={styles.numberInput}
+                />
+              </div>
+              <div className={styles.settingRow}>
+                <label>Max Buy-in (BB)</label>
+                <input
+                  type="number"
+                  value={settingsForm.maxBuyInBB}
+                  onChange={(e) =>
+                    setSettingsForm((f) => ({ ...f, maxBuyInBB: Number(e.target.value) || 0 }))
+                  }
+                  className={styles.numberInput}
+                />
+              </div>
+              <div className={styles.settingRow}>
+                <label>Time Bank (seconds)</label>
+                <input
+                  type="number"
+                  value={settingsForm.timeBankSeconds}
+                  onChange={(e) =>
+                    setSettingsForm((f) => ({ ...f, timeBankSeconds: Number(e.target.value) || 0 }))
+                  }
+                  className={styles.numberInput}
+                />
+              </div>
+              <div className={styles.settingRow}>
+                <label>Allow Straddle</label>
+                <input
+                  type="checkbox"
+                  checked={settingsForm.allowStraddle}
+                  onChange={(e) =>
+                    setSettingsForm((f) => ({ ...f, allowStraddle: e.target.checked }))
+                  }
+                />
+              </div>
+              <div className={styles.settingRow}>
+                <label>Allow Run It Twice</label>
+                <input
+                  type="checkbox"
+                  checked={settingsForm.allowRunItTwice}
+                  onChange={(e) =>
+                    setSettingsForm((f) => ({ ...f, allowRunItTwice: e.target.checked }))
+                  }
+                />
+              </div>
+            </div>
+
+            <button
+              className={styles.saveButton}
+              onClick={handleSaveSettings}
+              disabled={savingSettings}
+            >
+              {savingSettings ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        )}
+      </section>
+
+      {/* Agent Manager - Navigate to dedicated page */}
+      {showAgentManager && clubId && (
+        <div className={styles.modalOverlay} onClick={() => setShowAgentManager(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>Agent Management</h3>
+              <button onClick={() => setShowAgentManager(false)}>×</button>
+            </div>
+            <div className={styles.modalContent}>
+              <p>
+                Manage your club's agent hierarchy, create new agents, and configure commission
+                rates.
+              </p>
+              <Link
+                to={`/clubs/${clubId}/agents`}
+                className={styles.primaryButton}
+                onClick={() => setShowAgentManager(false)}
+              >
+                Open Agent Management
+              </Link>
+            </div>
+          </div>
         </div>
-    );
+      )}
+
+      {/* Fixed Bottom Navigation Bar */}
+      {clubId && <ClubBottomNav clubId={clubId} userRole={userRole} clubName={club?.name} />}
+
+      {/* Confirm Modal for Table Deletion */}
+      <ConfirmModal
+        isOpen={deleteTableConfirm.show}
+        title="Delete Table"
+        message={`Delete table "${deleteTableConfirm.tableName || ''}"? This cannot be undone.`}
+        variant="danger"
+        confirmText="Delete"
+        onConfirm={async () => {
+          if (deleteTableConfirm.tableId) {
+            const id = deleteTableConfirm.tableId;
+            setDeleteTableConfirm({ show: false, tableId: null, tableName: null });
+            setDeletingTableId(id);
+            try {
+              const { error } = await supabase
+                .from('tables')
+                .update({ status: 'deleted', is_active: false })
+                .eq('id', id);
+              if (error) throw error;
+              setTables((prev) => prev.filter((t) => t.id !== id));
+              toast.success('Table deleted');
+            } catch (err) {
+              console.error('Failed to delete table:', err);
+              toast.error('Failed to delete table');
+            } finally {
+              setDeletingTableId(null);
+            }
+          }
+        }}
+        onCancel={() => setDeleteTableConfirm({ show: false, tableId: null, tableName: null })}
+      />
+    </div>
+  );
 }

@@ -10,6 +10,7 @@ import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import './BadBeatJackpotPage.css';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 interface JackpotInfo {
   id: string;
@@ -35,6 +36,7 @@ interface JackpotHistory {
 
 export default function BadBeatJackpotPage() {
   const navigate = useNavigate();
+  useVisibilityRefresh(() => loadJackpotData());
   const { clubId } = useParams();
   const { user } = useUserStore();
   const toast = useToast();

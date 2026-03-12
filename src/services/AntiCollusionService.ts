@@ -221,20 +221,37 @@ export const AntiCollusionService = {
   /**
    * Get suspicion report for a player pair
    */
-  async getReport(playerA: string, playerB: string): Promise<{
+  async getReport(
+    playerA: string,
+    playerB: string
+  ): Promise<{
     events: CollusionEvent[];
     totalScore: number;
   }> {
     const sorted = [playerA, playerB].sort();
 
-    const { data, error } = await supabase
+    // Query both directions of the player pair safely (no string interpolation)
+    const { data: dataAB } = await supabase
       .from('collusion_tracking')
       .select('*')
-      .or(`and(player_a.eq.${sorted[0]},player_b.eq.${sorted[1]}),and(player_a.eq.${sorted[1]},player_b.eq.${sorted[0]})`)
+      .eq('player_a', sorted[0])
+      .eq('player_b', sorted[1])
       .order('created_at', { ascending: false })
-      .limit(50);
+      .limit(25);
 
-    if (error || !data) return { events: [], totalScore: 0 };
+    const { data: dataBA } = await supabase
+      .from('collusion_tracking')
+      .select('*')
+      .eq('player_a', sorted[1])
+      .eq('player_b', sorted[0])
+      .order('created_at', { ascending: false })
+      .limit(25);
+
+    const data = [...(dataAB || []), ...(dataBA || [])]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 50);
+
+    if (data.length === 0) return { events: [], totalScore: 0 };
 
     const events = data.map((row: Record<string, unknown>) => ({
       playerA: row.player_a as string,

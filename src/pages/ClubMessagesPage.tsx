@@ -15,6 +15,7 @@ import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import MessageThread from '../components/messaging/MessageThread';
 import './ClubMessagesPage.css';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 interface ClubConversation {
   id: string;
@@ -29,6 +30,7 @@ interface ClubConversation {
 
 export default function ClubMessagesPage() {
   const navigate = useNavigate();
+  useVisibilityRefresh(() => loadClubConversations());
   const { conversationId, clubId: urlClubId } = useParams<{
     conversationId?: string;
     clubId?: string;
