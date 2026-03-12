@@ -18,7 +18,7 @@
   align-items: center;
   gap: var(--space-8);
   padding: var(--space-12) var(--space-8);
-  background: var(--gradient-card);
+  background: linear-gradient(135deg, rgba(0, 20, 40, 0.9), rgba(10, 30, 60, 0.95));
   border-radius: var(--radius-2xl);
   border: 1px solid var(--border-subtle);
   position: relative;
@@ -26,6 +26,17 @@
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  animation: heroGradientShift 8s ease-in-out infinite;
+}
+
+@keyframes heroGradientShift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
 }
 
 .hero::before {
@@ -37,6 +48,17 @@
   height: 200%;
   background: radial-gradient(circle, var(--club-blue-dim) 0%, transparent 70%);
   pointer-events: none;
+  animation: heroOrbFloat 6s ease-in-out infinite;
+}
+
+@keyframes heroOrbFloat {
+  0%,
+  100% {
+    transform: translateY(0) translateX(0);
+  }
+  50% {
+    transform: translateY(-20px) translateX(-10px);
+  }
 }
 
 .heroContent {

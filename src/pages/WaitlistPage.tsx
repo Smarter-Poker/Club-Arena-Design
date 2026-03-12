@@ -200,8 +200,14 @@ export default function WaitlistPage() {
 
       <div className="waitlist-content">
         {loading ? (
-          <div className="loading-state">
-            <div className="spinner" />
+          <div className="waitlist-skeleton-list">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="waitlist-skeleton-card">
+                <div className="wskel-line" style={{ width: '55%' }} />
+                <div className="wskel-line" style={{ width: '35%' }} />
+                <div className="wskel-bar" />
+              </div>
+            ))}
           </div>
         ) : entries.length === 0 ? (
           <div className="empty-state">
@@ -220,6 +226,7 @@ export default function WaitlistPage() {
                 style={waitlistCardAnimationStyle(idx)}
                 className={`waitlist-card ${entry.position === 1 ? 'next-up' : ''}`}
               >
+                {entry.position === 1 && <div className="next-up-celebration">🎉 You're Next!</div>}
                 <div className="waitlist-info">
                   <h4 className="table-name">{entry.table_name}</h4>
                   <span className="table-details">
@@ -248,39 +255,15 @@ export default function WaitlistPage() {
                   </button>
                 </div>
 
-                {/* Queue Visual — avatar dots showing position in line */}
-                <div className="queue-visual">
-                  {Array.from({ length: Math.min(entry.position, 6) }, (_, i) => (
-                    <div
-                      key={i}
-                      className={`queue-dot ${
-                        (entry.position <= 6 && i === entry.position - 1) ||
-                        (entry.position > 6 && i === Math.min(entry.position, 6) - 1)
-                          ? 'you'
-                          : ''
-                      }`}
-                      style={{
-                        animationDelay: `${i * 100}ms`,
-                      }}
-                    >
-                      {(entry.position <= 6 && i === entry.position - 1) ||
-                      (entry.position > 6 && i === Math.min(entry.position, 6) - 1) ? (
-                        <PlayerAvatar
-                          src={user?.avatar_url ?? undefined}
-                          name={user?.display_name || 'You'}
-                          size="xs"
-                          showPresence={false}
-                          showLevelBadge={false}
-                          showXpRing={false}
-                          showVipRing={false}
-                        />
-                      ) : (
-                        <span className="queue-placeholder" />
-                      )}
-                    </div>
-                  ))}
-                  <span className="queue-arrow">→</span>
-                  <span className="queue-table-icon">🎰</span>
+                {/* Queue Progress Bar — replaces dot visual */}
+                <div className="queue-progress-bar">
+                  <div
+                    className="queue-progress-fill"
+                    style={{ width: `${Math.max(10, 100 - (entry.position - 1) * 15)}%` }}
+                  />
+                  <span className="queue-progress-label">
+                    Position #{positionCounts[entry.id] || entry.position}
+                  </span>
                 </div>
               </div>
             ))}

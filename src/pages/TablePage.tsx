@@ -1293,9 +1293,11 @@ export default function TablePage({
     };
     fetchExistingHand();
 
+    const channelKey = `table-cards-secure-${tableId}-${userId}`;
     return () => {
-      // Component unmount cleanup
+      // Component unmount cleanup — remove from registry to prevent stale channel reuse
       channel.unsubscribe().catch(() => {});
+      masterBus.removeRegisteredChannel(channelKey);
     };
   }, [tableId, userId]);
 

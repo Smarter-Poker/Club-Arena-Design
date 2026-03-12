@@ -121,15 +121,15 @@ export default function PromotionsPage() {
   const getTypeIcon = (type: string): string => {
     switch (type) {
       case 'bonus':
-        return '◆';
+        return '🎁';
       case 'freeroll':
-        return 'T';
+        return '🏆';
       case 'leaderboard':
-        return '≡';
+        return '📊';
       case 'rakeback':
-        return '↺';
+        return '💰';
       default:
-        return '★';
+        return '⭐';
     }
   };
 
@@ -171,16 +171,16 @@ export default function PromotionsPage() {
     <div className="promotions-page">
       {/* Daily Bonus Button */}
       <div className="daily-bonus-banner" onClick={() => setShowBonusWheel(true)}>
-        <span className="bonus-icon">★</span>
+        <span className="bonus-icon">🎰</span>
         <span className="bonus-text">Claim Your Daily Bonus!</span>
-        <span className="bonus-arrow">→</span>
+        <span className="bonus-arrow">›</span>
       </div>
 
       {/* Referral Banner */}
       <div className="referral-banner" onClick={() => setShowReferral(true)}>
-        <span className="bonus-icon">★</span>
+        <span className="bonus-icon">🤝</span>
         <span className="bonus-text">Invite Friends & Earn 5% Rake!</span>
-        <span className="bonus-arrow">→</span>
+        <span className="bonus-arrow">›</span>
       </div>
 
       <div className="promo-filters">
@@ -193,8 +193,17 @@ export default function PromotionsPage() {
 
       <div className="promotions-list">
         {loading ? (
-          <div className="loading-state">
-            <div className="spinner" />
+          <div className="promo-skeleton-list">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="promo-skeleton-card">
+                <div className="promo-skel-icon" />
+                <div className="promo-skel-body">
+                  <div className="promo-skel-line" style={{ width: '60%' }} />
+                  <div className="promo-skel-line" style={{ width: '80%' }} />
+                  <div className="promo-skel-line" style={{ width: '45%' }} />
+                </div>
+              </div>
+            ))}
           </div>
         ) : filteredPromos.length === 0 ? (
           <div className="empty-state">
@@ -235,7 +244,12 @@ export default function PromotionsPage() {
                 </div>
 
                 {new Date(promo.end_date) > now && new Date(promo.start_date) <= now && (
-                  <span className="promo-countdown">{getTimeRemaining(promo.end_date)}</span>
+                  <div className="promo-countdown-row">
+                    <span className="promo-countdown">{getTimeRemaining(promo.end_date)}</span>
+                    {new Date(promo.end_date).getTime() - now.getTime() < 86400000 && (
+                      <span className="ending-soon-badge">⚠️ Ending Soon</span>
+                    )}
+                  </div>
                 )}
 
                 {/* Show LeaderboardCard for leaderboard promotions */}

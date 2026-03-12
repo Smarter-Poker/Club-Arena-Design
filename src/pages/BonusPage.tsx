@@ -9,6 +9,7 @@ import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import { bonusService } from '../services/BonusService';
 import { useToast } from '../components/common/Toast';
+import { haptic } from '../services/HapticService';
 import './BonusPage.css';
 import { retryAsync } from '../utils/retryAsync';
 
@@ -39,6 +40,7 @@ export default function BonusPage() {
   const [visibleDayCards, setVisibleDayCards] = useState(new Set<number>());
   const [visibleBonusCards, setVisibleBonusCards] = useState(new Set<number>());
   const toast = useToast();
+  const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
@@ -138,6 +140,9 @@ export default function BonusPage() {
         return;
       }
       toast.success('Daily bonus claimed!');
+      setShowConfetti(true);
+      haptic.medium();
+      setTimeout(() => setShowConfetti(false), 2500);
       loadBonuses();
     } catch (error) {
       console.error('Failed to claim bonus:', error);
@@ -187,15 +192,38 @@ export default function BonusPage() {
   if (loading) {
     return (
       <div className="bonus-page">
-        <div className="loading-state">
-          <div className="spinner" />
-        </div>
+        <section className="bonus-section">
+          <div className="bonus-skeleton-header" />
+          <div className="bonus-skeleton-calendar">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <div key={i} className="bonus-skeleton-day" />
+            ))}
+          </div>
+          <div className="bonus-skeleton-btn" />
+        </section>
       </div>
     );
   }
 
   return (
     <div className="bonus-page">
+      {/* Confetti Celebration (Initiative 7) */}
+      {showConfetti && (
+        <div className="bonus-confetti-container">
+          {Array.from({ length: 30 }).map((_, i) => (
+            <div
+              key={i}
+              className="confetti-piece"
+              style={{
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 0.5}s`,
+                animationDuration: `${1.5 + Math.random() * 1.5}s`,
+                backgroundColor: ['#FFD700', '#00d4ff', '#ff6b6b', '#10b981', '#a855f7'][i % 5],
+              }}
+            />
+          ))}
+        </div>
+      )}
       {/* Daily Login Calendar */}
       <section className="bonus-section">
         <h3>Daily Login Bonus</h3>

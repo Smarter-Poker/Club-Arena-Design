@@ -794,6 +794,17 @@ export class TournamentEngine {
       throw new Error(`Seating failed: ${error.message}`);
     }
 
+    // Update tournament_players.table_id for each seated player so the UI can show "Enter Table"
+    for (const player of activePlayers) {
+      if (player.tableId) {
+        await this.supabase
+          .from('tournament_players')
+          .update({ table_id: player.tableId })
+          .eq('tournament_id', this.tournamentId)
+          .eq('user_id', player.user_id);
+      }
+    }
+
     console.log(
       `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Seated ${activePlayers.length} players across ${this.tables.length} tables`
     );
@@ -1762,6 +1773,13 @@ export class TournamentEngine {
         player.tableId = move.toTableId;
         player.seatNumber = move.toSeat;
       }
+
+      // Update tournament_players.table_id so UI "Enter Table" button routes correctly
+      await this.supabase
+        .from('tournament_players')
+        .update({ table_id: move.toTableId })
+        .eq('tournament_id', this.tournamentId)
+        .eq('user_id', move.playerId);
     }
 
     // Clean up source table

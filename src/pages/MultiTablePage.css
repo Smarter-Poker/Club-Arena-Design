@@ -9,39 +9,41 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 .multi-table-page {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    background: #0A0C12;
-    overflow: hidden;
-    z-index: 1;
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #0a0c12;
+  overflow: hidden;
+  z-index: 1;
 }
 
 .multi-table-page--empty {
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 1rem;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1rem;
 }
 
 .multi-table-page--empty button {
-    padding: 12px 28px;
-    background: linear-gradient(180deg, #2563EB 0%, #1D4ED8 100%);
-    border: none;
-    border-radius: 12px;
-    color: #FFFFFF;
-    font-size: 0.9375rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: filter 0.15s ease;
+  padding: 12px 28px;
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+  border: none;
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s ease;
 }
 
 .multi-table-page--empty button:hover {
-    filter: brightness(1.1);
-    transform: translateY(-2px);
-    box-shadow: 0 0 20px rgba(37, 99, 235, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 20px rgba(37, 99, 235, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -49,14 +51,14 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 .multi-table-page__container {
-    flex: 1;
-    display: flex;
-    will-change: transform;
-    /* No transition by default — only during programmatic switches */
+  flex: 1;
+  display: flex;
+  will-change: transform;
+  /* No transition by default — only during programmatic switches */
 }
 
 .multi-table-page__container--transitioning {
-    transition: transform 300ms var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+  transition: transform 300ms var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -64,16 +66,16 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 .multi-table-page__table-slot {
-    flex: 0 0 100%;
-    width: 100vw;
-    height: 100%;
-    overflow: hidden;
-    position: relative;
+  flex: 0 0 100%;
+  width: 100vw;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
 }
 
 /* Slightly dim inactive tables for visual clarity */
 .multi-table-page__table-slot:not(.multi-table-page__table-slot--active) {
-    pointer-events: none;
+  pointer-events: none;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -81,25 +83,27 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 .multi-table-page__loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    background: #0A0C12;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: #0a0c12;
 }
 
 .multi-table-page__spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid rgba(255, 255, 255, 0.1);
-    border-top-color: #3B82F6;
-    border-radius: 50%;
-    animation: multiTableSpin 0.8s linear infinite;
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: multiTableSpin 0.8s linear infinite;
 }
 
 @keyframes multiTableSpin {
-    to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -107,10 +111,10 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 @media (max-width: 480px) {
-    /* On small screens, ensure tab bar doesn't eat too much space */
-    .multi-table-page {
-        /* Tab bar height is handled by the component itself */
-    }
+  /* On small screens, ensure tab bar doesn't eat too much space */
+  .multi-table-page {
+    /* Tab bar height is handled by the component itself */
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -118,16 +122,16 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 .multi-table-page__tab-bar-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    padding: 0;
-    background: rgba(0, 0, 0, 0.75);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    z-index: 99;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.75);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  z-index: 99;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -135,50 +139,50 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 .multi-table-grid {
-    flex: 1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    gap: 2px;
-    background: #000;
-    overflow: hidden;
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 2px;
+  background: #000;
+  overflow: hidden;
 }
 
 .multi-table-grid__cell {
-    position: relative;
-    overflow: hidden;
-    cursor: pointer;
-    transform: scale(1);
-    transition: box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transform: scale(1);
+  transition: box-shadow 0.2s ease;
 }
 
 .multi-table-grid__cell--active {
-    box-shadow: inset 0 0 0 2px #3b82f6;
+  box-shadow: inset 0 0 0 2px #3b82f6;
 }
 
 .multi-table-grid__cell:hover {
-    box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.5);
+  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.5);
 }
 
 /* Scale down content in tile view */
 .multi-table-grid__cell .table-page {
-    transform: scale(0.5);
-    transform-origin: top left;
-    width: 200%;
-    height: 200%;
-    pointer-events: none;
+  transform: scale(0.5);
+  transform-origin: top left;
+  width: 200%;
+  height: 200%;
+  pointer-events: none;
 }
 
 /* Loading state in tile view */
 .multi-table-loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    background: #0A0C12;
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: #0a0c12;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.875rem;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -186,24 +190,72 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 .tile-toggle-btn {
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    border: none;
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.6);
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-    flex-shrink: 0;
-    margin-right: 6px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  flex-shrink: 0;
+  margin-right: 6px;
 }
 
 .tile-toggle-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: rgba(255, 255, 255, 0.9);
-    transform: translateY(-1px);
-    box-shadow: 0 0 12px rgba(255, 255, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 12px rgba(255, 255, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   MY-TURN GLOW (Initiative 11)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Pulsing glow border on tile-view cell when it's user's turn */
+.multi-table-grid__cell[style*='box-shadow: 0 0 20px'] {
+  animation: myTurnPulse 1.5s infinite;
+}
+
+@keyframes myTurnPulse {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 0 2px #00d4ff,
+      0 0 20px rgba(0, 212, 255, 0.3);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 2px #00d4ff,
+      0 0 35px rgba(0, 212, 255, 0.5);
+  }
+}
+
+/* Smooth crossfade transition */
+.multi-table-page__container--transitioning {
+  transition: transform 300ms var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
+}
+
+/* Table name overlay in tile view */
+.multi-table-grid__cell::after {
+  content: attr(data-table-name);
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(0, 0, 0, 0.6);
+  padding: 2px 8px;
+  border-radius: 4px;
+  z-index: 5;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
 }
