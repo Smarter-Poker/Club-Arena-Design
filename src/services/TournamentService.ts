@@ -1127,6 +1127,7 @@ class TournamentService {
           min_buy_in: 0,
           max_buy_in: 0,
           max_players: playersPerTable,
+          current_players: 0,
           status: 'RUNNING',
           settings: { auto_muck: true, time_bank_seconds: 30 },
         })
@@ -1882,6 +1883,7 @@ class TournamentService {
           min_buy_in: 0,
           max_buy_in: 0,
           max_players: finalTableCapacity,
+          current_players: 0,
           status: 'RUNNING',
           settings: { auto_muck: true, time_bank_seconds: 45 },
         })

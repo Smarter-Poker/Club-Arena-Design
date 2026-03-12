@@ -706,6 +706,7 @@ export class TournamentEngine {
         big_blind: firstBlinds.bigBlind,
         ante: firstBlinds.ante || 0,
         max_players: capacity,
+        current_players: 0,
         status: 'RUNNING',
       };
 
