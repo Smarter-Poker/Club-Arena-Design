@@ -43,6 +43,26 @@ BEGIN
 END;
 $$;
 
+-- SECURITY DEFINER RPC to bypass RLS INSERT policy.
+-- HeadlessTableEngine runs client-side with the anon key, which is blocked
+-- by the WITH CHECK(false) INSERT policy. This RPC runs as the DB owner.
+CREATE OR REPLACE FUNCTION insert_hole_cards(
+    p_table_id UUID,
+    p_hand_number BIGINT,
+    p_cards JSONB
+) RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+    INSERT INTO public.table_hole_cards (table_id, hand_number, user_id, seat_number, cards)
+    SELECT p_table_id, p_hand_number,
+        (item->>'user_id')::UUID,
+        (item->>'seat_number')::INTEGER,
+        item->'cards'
+    FROM jsonb_array_elements(p_cards) AS item
+    ON CONFLICT (table_id, hand_number, user_id) DO UPDATE
+    SET cards = EXCLUDED.cards;
+END;
+$$;
+
 -- Schedule cleanup via pg_cron (runs every 6 hours)
 -- NOTE: pg_cron must be enabled in Supabase dashboard
 SELECT cron.schedule(
