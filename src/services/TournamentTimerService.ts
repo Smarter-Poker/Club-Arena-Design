@@ -165,7 +165,16 @@ class TournamentTimerServiceClass {
       timeRemainingSeconds: levelState.timeRemainingSeconds,
     });
 
-    // 3.5. Emit bus event for UI components (TournamentClock, etc.)
+    // 3.5. Emit specific bus event for TournamentClock and other listeners
+    masterBus.emit('BLIND_LEVEL_CHANGE', {
+      tournamentId: tournament.id,
+      level: newLevel,
+      smallBlind: currentLevel.smallBlind,
+      bigBlind: currentLevel.bigBlind,
+      ante: currentLevel.ante,
+    });
+
+    // 3.6. Also emit general tournament update for page-level refresh
     masterBus.emit('TOURNAMENT_UPDATED', {
       tournamentId: tournament.id,
       status: `blind_level_${newLevel}`,

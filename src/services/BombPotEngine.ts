@@ -79,25 +79,30 @@ class BombPotEngineClass {
 
     // Don't trigger before minimum hand count
     if (config.startAfterHand && handNumber < config.startAfterHand) {
+      // Still increment hand counter even when not eligible yet
+      state.handsSinceLastBombPot++;
       return { triggered: false, anteAmount: 0, doubleBoard: false };
     }
 
     let shouldTrigger = false;
 
-    // Check hand-frequency trigger
-    if (config.frequency > 0) {
-      state.handsSinceLastBombPot++;
-      if (state.handsSinceLastBombPot >= config.frequency) {
-        shouldTrigger = true;
-      }
-    }
-
-    // Check time-frequency trigger (takes priority)
+    // Check time-frequency trigger first (takes priority)
     if (config.frequencyMinutes > 0) {
       const elapsed = (Date.now() - state.timeSinceLastBombPot) / 60_000;
       if (elapsed >= config.frequencyMinutes) {
         shouldTrigger = true;
       }
+    }
+
+    // Check hand-frequency trigger (only if time didn't already trigger)
+    if (!shouldTrigger && config.frequency > 0) {
+      state.handsSinceLastBombPot++;
+      if (state.handsSinceLastBombPot >= config.frequency) {
+        shouldTrigger = true;
+      }
+    } else if (config.frequency > 0) {
+      // Still increment counter even when time-triggered, for accurate tracking
+      state.handsSinceLastBombPot++;
     }
 
     if (!shouldTrigger) {
@@ -107,7 +112,7 @@ class BombPotEngineClass {
     // Calculate ante amount
     const anteAmount = bigBlind * config.anteBBMultiplier;
 
-    // Reset tracking
+    // Reset all tracking counters
     state.handsSinceLastBombPot = 0;
     state.timeSinceLastBombPot = Date.now();
     state.isActive = true;

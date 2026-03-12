@@ -137,13 +137,27 @@ export const TournamentClock: React.FC<TournamentClockProps> = ({
 
   // ── Listen for tournament update bus events ──
   useEffect(() => {
-    const unsub = masterBus.subscribe('TOURNAMENT_UPDATED', (event: any) => {
+    const unsubTournament = masterBus.subscribe('TOURNAMENT_UPDATED', (event: any) => {
       if (event?.payload?.tournamentId === tournamentId) {
         refreshState();
       }
     });
+    // Instant blind-level update (no DB round-trip latency)
+    const unsubBlinds = masterBus.subscribe('BLIND_LEVEL_CHANGE', (event: any) => {
+      const data = event?.payload;
+      if (data?.tournamentId === tournamentId) {
+        setClock((prev) => ({
+          ...prev,
+          currentLevel: data.level,
+          smallBlind: data.smallBlind,
+          bigBlind: data.bigBlind,
+          ante: data.ante,
+        }));
+      }
+    });
     return () => {
-      if (typeof unsub === 'function') unsub();
+      if (typeof unsubTournament === 'function') unsubTournament();
+      if (typeof unsubBlinds === 'function') unsubBlinds();
     };
   }, [tournamentId, refreshState]);
 
