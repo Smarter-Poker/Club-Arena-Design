@@ -132,6 +132,12 @@ ActionPanel, SitOutModal, WaitListModal, TimeBank, CashierModal, BuyInModal, Str
 - [x] Card Back Store — 12 backs (4 free + 4 premium + 4 exclusive), purchase modal, `DIAMOND_SPENT` bus
 - [x] Avatar Gallery — 3-tab gallery (Free 25 / VIP 50 / Upload), photo upload, Supabase persistence
 
+### ✅ Phase 7: Hook Wiring & Store Integration — COMPLETE
+
+- [x] Wired `useTableChat`, `useTableTournament`, `useTableAnimations` into TablePage.tsx (−75 lines)
+- [x] Integrated AvatarGallery + CardBackSelector into SettingsPanel (new Customization section)
+- [x] Added `SETTINGS_CHANGED` listener in useTableSettings + `DIAMOND_SPENT` listener in MasterBus
+
 ---
 
 ## Competitive Benchmarks

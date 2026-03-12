@@ -8,6 +8,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import styles from './MessageInput.module.css';
 import { ImageUpload, ImagePreview } from './ImageMessage';
+import { haptic } from '../../services/HapticService';
 
 interface MessageInputProps {
   onSend: (text: string, imageUrl?: string) => void;

@@ -9,8 +9,32 @@ import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import { PremiumSFX } from '../services/PremiumSFX';
+import { haptic } from '../services/HapticService';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import './NotificationsPage.css';
+
+type NotifCategory = 'all' | 'games' | 'social' | 'achievements' | 'system';
+
+const NOTIF_CATEGORIES: { id: NotifCategory; label: string; icon: string }[] = [
+  { id: 'all', label: 'All', icon: '📋' },
+  { id: 'games', label: 'Games', icon: '🎰' },
+  { id: 'social', label: 'Social', icon: '👥' },
+  { id: 'achievements', label: 'Achievements', icon: '🏆' },
+  { id: 'system', label: 'System', icon: '⚙️' },
+];
+
+function categorizeNotification(notif: Notification): NotifCategory {
+  const title = (notif.title || '').toLowerCase();
+  const msg = (notif.message || '').toLowerCase();
+  const combined = title + ' ' + msg;
+
+  if (/table|hand|game|seat|tournament|tourney|mtt|sng|waitlist|blind/.test(combined))
+    return 'games';
+  if (/friend|message|chat|club|invite|joined|member/.test(combined)) return 'social';
+  if (/achievement|badge|unlock|level|xp|streak|bonus|reward|diamond/.test(combined))
+    return 'achievements';
+  return 'system';
+}
 
 interface Notification {
   id: string;
@@ -31,6 +55,7 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
   const [newNotifId, setNewNotifId] = useState<string | null>(null);
   const [visibleNotifications, setVisibleNotifications] = useState(new Set<number>());
+  const [activeCategory, setActiveCategory] = useState<NotifCategory>('all');
 
   useEffect(() => {
     if (user?.id) {
@@ -175,14 +200,38 @@ export default function NotificationsPage() {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  // Filter by category
+  const filteredNotifications = useMemo(() => {
+    if (activeCategory === 'all') return notifications;
+    return notifications.filter((n) => categorizeNotification(n) === activeCategory);
+  }, [notifications, activeCategory]);
+
+  // Category counts
+  const categoryCounts = useMemo(() => {
+    const counts: Record<NotifCategory, number> = {
+      all: 0,
+      games: 0,
+      social: 0,
+      achievements: 0,
+      system: 0,
+    };
+    notifications.forEach((n) => {
+      if (!n.read) {
+        counts.all++;
+        counts[categorizeNotification(n)]++;
+      }
+    });
+    return counts;
+  }, [notifications]);
+
   // Stagger notification rows
   useEffect(() => {
     setVisibleNotifications(new Set());
-    const timers = notifications.map((_, i) =>
+    const timers = filteredNotifications.map((_, i) =>
       setTimeout(() => setVisibleNotifications((prev) => new Set([...prev, i])), i * 40)
     );
     return () => timers.forEach((t) => clearTimeout(t));
-  }, [notifications.length]);
+  }, [filteredNotifications.length, activeCategory]);
 
   return (
     <div className="notifications-page">
@@ -190,6 +239,26 @@ export default function NotificationsPage() {
       <div className="realtime-indicator">
         <span className="live-dot"></span>
         <span>Live updates</span>
+      </div>
+
+      {/* Category Filter Tabs */}
+      <div className="notif-category-tabs">
+        {NOTIF_CATEGORIES.map((cat) => (
+          <button
+            key={cat.id}
+            className={`notif-category-tab ${activeCategory === cat.id ? 'active' : ''}`}
+            onClick={() => {
+              haptic.selection();
+              setActiveCategory(cat.id);
+            }}
+          >
+            <span className="cat-icon">{cat.icon}</span>
+            <span className="cat-label">{cat.label}</span>
+            {categoryCounts[cat.id] > 0 && cat.id !== 'all' && (
+              <span className="cat-badge">{categoryCounts[cat.id]}</span>
+            )}
+          </button>
+        ))}
       </div>
 
       {unreadCount > 0 && (
@@ -210,12 +279,20 @@ export default function NotificationsPage() {
             <span className="empty-icon">○</span>
             <p>No notifications yet</p>
           </div>
+        ) : filteredNotifications.length === 0 ? (
+          <div className="empty-state">
+            <span className="empty-icon">
+              {NOTIF_CATEGORIES.find((c) => c.id === activeCategory)?.icon || '○'}
+            </span>
+            <p>No {activeCategory} notifications</p>
+          </div>
         ) : (
-          notifications.map((notif, index) => (
+          filteredNotifications.map((notif, index) => (
             <div
               key={notif.id}
               className={`notification-item ${notif.read ? 'read' : 'unread'} ${newNotifId === notif.id ? 'new-highlight' : ''}`}
               onClick={() => {
+                haptic.light();
                 markAsRead(notif.id);
                 if (notif.action_url) navigate(notif.action_url);
               }}

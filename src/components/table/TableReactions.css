@@ -1,0 +1,114 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+ *  TableReactions.css — Floating Emoji Reactions
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Picker Overlay ── */
+.tr-picker-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 120px;
+}
+
+.tr-picker {
+  display: flex;
+  gap: 4px;
+  padding: 8px 10px;
+  background: rgba(22, 27, 34, 0.95);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  animation: trPickerIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes trPickerIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.tr-picker__btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tr-picker__btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: scale(1.15);
+}
+.tr-picker__btn:active {
+  transform: scale(0.9);
+}
+.tr-picker__emoji {
+  font-size: 1.6rem;
+}
+.tr-picker__label {
+  font-size: 0.55rem;
+  color: #6e7681;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* ── Floating Container ── */
+.tr-floating-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 100;
+}
+
+/* ── Float-Up Animation ── */
+.tr-float {
+  position: absolute;
+  left: calc(15% + var(--seat-index, 0) * 10%);
+  bottom: 40%;
+  animation: trFloatUp 2s ease-out forwards;
+}
+@keyframes trFloatUp {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) translateY(0);
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1.3) translateY(-20px);
+  }
+  30% {
+    transform: scale(1) translateY(-40px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.8) translateY(-160px);
+  }
+}
+
+.tr-float__emoji {
+  font-size: 2rem;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tr-picker,
+  .tr-float {
+    animation: none;
+  }
+  .tr-float {
+    display: none;
+  }
+}

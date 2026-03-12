@@ -2,7 +2,7 @@
  *  CLUB SETTINGS PAGE — Club Configuration
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
@@ -58,6 +58,28 @@ export default function ClubSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
+  const originalSettings = useRef<ClubSettings | null>(null);
+
+  // Live change detection — compute which fields have been modified
+  const changedFields = useMemo(() => {
+    if (!originalSettings.current) return [];
+    const changes: string[] = [];
+    const orig = originalSettings.current;
+    if (settings.name !== orig.name) changes.push('Name');
+    if (settings.description !== orig.description) changes.push('Description');
+    if (settings.is_public !== orig.is_public) changes.push('Public');
+    if (settings.requires_approval !== orig.requires_approval) changes.push('Approval');
+    if (settings.default_rake_percent !== orig.default_rake_percent) changes.push('Rake %');
+    if (settings.rake_cap !== orig.rake_cap) changes.push('Rake Cap');
+    if (settings.time_bank_seconds !== orig.time_bank_seconds) changes.push('Time Bank');
+    if (settings.allow_straddle !== orig.allow_straddle) changes.push('Straddle');
+    if (settings.allow_run_it_twice !== orig.allow_run_it_twice) changes.push('Run It Twice');
+    if (settings.allow_rabbit_hunt !== orig.allow_rabbit_hunt) changes.push('Rabbit Hunt');
+    if (settings.min_buyin_bb !== orig.min_buyin_bb) changes.push('Min Buy-in');
+    if (settings.max_buyin_bb !== orig.max_buyin_bb) changes.push('Max Buy-in');
+    return changes;
+  }, [settings]);
+  const hasUnsavedChanges = changedFields.length > 0;
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showStatsExport, setShowStatsExport] = useState(false);
@@ -144,6 +166,21 @@ export default function ClubSettingsPage() {
           min_buyin_bb: data.min_buyin_bb || 40,
           max_buyin_bb: data.max_buyin_bb || 200,
         });
+        // Capture original for live diff comparison
+        originalSettings.current = {
+          name: data.name || '',
+          description: data.description || '',
+          is_public: data.is_public ?? true,
+          requires_approval: data.requires_approval ?? false,
+          default_rake_percent: data.default_rake_percent || 5,
+          rake_cap: data.rake_cap || 3,
+          time_bank_seconds: data.time_bank_seconds || 30,
+          allow_straddle: data.allow_straddle ?? true,
+          allow_run_it_twice: data.allow_run_it_twice ?? true,
+          allow_rabbit_hunt: data.allow_rabbit_hunt ?? true,
+          min_buyin_bb: data.min_buyin_bb || 40,
+          max_buyin_bb: data.max_buyin_bb || 200,
+        };
         setIsOwner(data.owner_id === user?.id);
       }
     } catch (error) {
@@ -184,6 +221,8 @@ export default function ClubSettingsPage() {
         }
       );
       toast.success('Settings saved!');
+      // Update original baseline so diff resets
+      originalSettings.current = { ...settings };
       navigate(`/clubs/${clubId}`);
     } catch (error) {
       console.error('Failed to save settings:', error);
@@ -493,6 +532,83 @@ export default function ClubSettingsPage() {
         isOpen={showStatsExport}
         onClose={() => setShowStatsExport(false)}
       />
+
+      {/* Live Preview: Unsaved Changes Bar */}
+      {hasUnsavedChanges && isOwner && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: clubId ? 72 : 16,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+            padding: '0.75rem 1.5rem',
+            borderRadius: '16px',
+            background: 'linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(139, 92, 246, 0.1))',
+            border: '1px solid rgba(0, 212, 255, 0.3)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 212, 255, 0.2)',
+            animation: 'slideUpFade 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+            maxWidth: '90vw',
+          }}
+        >
+          <span
+            style={{ color: '#00d4ff', fontSize: '0.8rem', fontWeight: 600, whiteSpace: 'nowrap' }}
+          >
+            {changedFields.length} unsaved change{changedFields.length > 1 ? 's' : ''}
+          </span>
+          <span
+            style={{
+              color: '#6a7a8a',
+              fontSize: '0.7rem',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              maxWidth: '200px',
+            }}
+          >
+            {changedFields.join(', ')}
+          </span>
+          <button
+            onClick={() => {
+              if (originalSettings.current) setSettings({ ...originalSettings.current });
+            }}
+            style={{
+              padding: '0.4rem 0.8rem',
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '8px',
+              color: '#aaa',
+              fontSize: '0.75rem',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            Discard
+          </button>
+          <button
+            onClick={saveSettings}
+            disabled={saving}
+            style={{
+              padding: '0.4rem 1rem',
+              background: 'linear-gradient(135deg, #00d4ff, #0099cc)',
+              border: 'none',
+              borderRadius: '8px',
+              color: '#000',
+              fontWeight: 700,
+              fontSize: '0.75rem',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      )}
 
       {clubId && <ClubBottomNav clubId={clubId} userRole={userRole} />}
     </div>

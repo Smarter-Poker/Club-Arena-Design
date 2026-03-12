@@ -69,16 +69,7 @@ interface SessionData {
   cumulative: number;
 }
 
-type StatCategory =
-  | 'overview'
-  | 'preflop'
-  | 'postflop'
-  | 'results'
-  | 'charts'
-  | 'advanced'
-  | 'positions'
-  | 'sessions'
-  | 'bankroll';
+type StatCategory = 'overview' | 'performance' | 'positions' | 'analysis';
 
 const CHART_COLORS = ['#4169E1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
@@ -116,17 +107,7 @@ export default function PlayerStatsPage() {
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState<StatCategory>('overview');
   const statsSwipeHandlers = useSwipeTabs({
-    tabs: [
-      'overview',
-      'advanced',
-      'positions',
-      'sessions',
-      'bankroll',
-      'preflop',
-      'postflop',
-      'results',
-      'charts',
-    ] as StatCategory[],
+    tabs: ['overview', 'performance', 'positions', 'analysis'] as StatCategory[],
     activeTab: category,
     onTabChange: setCategory,
   });
@@ -380,37 +361,21 @@ export default function PlayerStatsPage() {
         </div>
       </div>
 
-      {/* Category Tabs */}
+      {/* Category Tabs — Consolidated 4-tab layout */}
       <div className="stats-tabs">
-        {(
-          [
-            'overview',
-            'advanced',
-            'positions',
-            'sessions',
-            'bankroll',
-            'preflop',
-            'postflop',
-            'results',
-            'charts',
-          ] as StatCategory[]
-        ).map((cat) => (
+        {(['overview', 'performance', 'positions', 'analysis'] as StatCategory[]).map((cat) => (
           <button
             key={cat}
             className={category === cat ? 'active' : ''}
             onClick={() => setCategory(cat)}
           >
-            {cat === 'charts'
-              ? 'Charts'
-              : cat === 'advanced'
-                ? 'Advanced'
+            {cat === 'overview'
+              ? '📊 Overview'
+              : cat === 'performance'
+                ? '🎯 Performance'
                 : cat === 'positions'
-                  ? 'Positions'
-                  : cat === 'sessions'
-                    ? 'Sessions'
-                    : cat === 'bankroll'
-                      ? 'Bankroll'
-                      : cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  ? '📍 Positions'
+                  : '📈 Analysis'}
           </button>
         ))}
       </div>
@@ -428,60 +393,103 @@ export default function PlayerStatsPage() {
           </div>
         )}
 
-        {category === 'preflop' && stats && (
-          <div className="stats-grid">
-            <StatRow label="VPIP" value={`${((stats.vpip || 0) * 100).toFixed(1)}%`} />
-            <StatRow label="PFR" value={`${((stats.pfr || 0) * 100).toFixed(1)}%`} />
-            <StatRow
-              label="3-Bet %"
-              value={`${((stats.three_bet_percent || 0) * 100).toFixed(1)}%`}
-            />
-            <StatRow
-              label="Fold to 3-Bet"
-              value={`${((stats.fold_to_three_bet || 0) * 100).toFixed(1)}%`}
-            />
+        {/* ── Performance Tab (merged: preflop + postflop + results) ── */}
+        {category === 'performance' && stats && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Preflop Section */}
+            <div>
+              <h3
+                style={{
+                  color: '#00d4ff',
+                  fontSize: '0.8rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                  marginBottom: '0.75rem',
+                  fontFamily: "'Orbitron', monospace",
+                }}
+              >
+                Preflop
+              </h3>
+              <div className="stats-grid">
+                <StatRow label="VPIP" value={`${((stats.vpip || 0) * 100).toFixed(1)}%`} />
+                <StatRow label="PFR" value={`${((stats.pfr || 0) * 100).toFixed(1)}%`} />
+                <StatRow
+                  label="3-Bet %"
+                  value={`${((stats.three_bet_percent || 0) * 100).toFixed(1)}%`}
+                />
+                <StatRow
+                  label="Fold to 3-Bet"
+                  value={`${((stats.fold_to_three_bet || 0) * 100).toFixed(1)}%`}
+                />
+              </div>
+            </div>
+            {/* Postflop Section */}
+            <div>
+              <h3
+                style={{
+                  color: '#8b5cf6',
+                  fontSize: '0.8rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                  marginBottom: '0.75rem',
+                  fontFamily: "'Orbitron', monospace",
+                }}
+              >
+                Postflop
+              </h3>
+              <div className="stats-grid">
+                <StatRow
+                  label="C-Bet Flop"
+                  value={`${((stats.cbet_flop || 0) * 100).toFixed(1)}%`}
+                />
+                <StatRow
+                  label="C-Bet Turn"
+                  value={`${((stats.cbet_turn || 0) * 100).toFixed(1)}%`}
+                />
+                <StatRow
+                  label="Aggression Factor"
+                  value={(stats.aggression_factor || 0).toFixed(2)}
+                />
+                <StatRow label="Showdown Win %" value={`${showdownWinRate}%`} />
+              </div>
+            </div>
+            {/* Results Section */}
+            <div>
+              <h3
+                style={{
+                  color: '#22c55e',
+                  fontSize: '0.8rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                  marginBottom: '0.75rem',
+                  fontFamily: "'Orbitron', monospace",
+                }}
+              >
+                Results
+              </h3>
+              <div className="stats-grid">
+                <StatRow
+                  label="Total Profit"
+                  value={`${stats.total_profit.toLocaleString()}`}
+                  highlight
+                />
+                <StatRow label="BB/100" value={(stats.bb_per_100 || 0).toFixed(2)} />
+                <StatRow
+                  label="Biggest Pot Won"
+                  value={`${stats.biggest_pot_won.toLocaleString()}`}
+                />
+                <StatRow
+                  label="Biggest Pot Lost"
+                  value={`${stats.biggest_pot_lost.toLocaleString()}`}
+                />
+                <StatRow label="Hands Won" value={stats.hands_won.toLocaleString()} />
+                <StatRow label="Hands Lost" value={stats.hands_lost.toLocaleString()} />
+              </div>
+            </div>
           </div>
         )}
 
-        {category === 'postflop' && stats && (
-          <div className="stats-grid">
-            <StatRow label="C-Bet Flop" value={`${((stats.cbet_flop || 0) * 100).toFixed(1)}%`} />
-            <StatRow label="C-Bet Turn" value={`${((stats.cbet_turn || 0) * 100).toFixed(1)}%`} />
-            <StatRow label="Aggression Factor" value={(stats.aggression_factor || 0).toFixed(2)} />
-            <StatRow label="Showdown Win %" value={`${showdownWinRate}%`} />
-          </div>
-        )}
-
-        {category === 'results' && stats && (
-          <div className="stats-grid">
-            <StatRow
-              label="Total Profit"
-              value={`${stats.total_profit.toLocaleString()}`}
-              highlight
-            />
-            <StatRow label="BB/100" value={(stats.bb_per_100 || 0).toFixed(2)} />
-            <StatRow label="Biggest Pot Won" value={`${stats.biggest_pot_won.toLocaleString()}`} />
-            <StatRow
-              label="Biggest Pot Lost"
-              value={`${stats.biggest_pot_lost.toLocaleString()}`}
-            />
-            <StatRow label="Hands Won" value={stats.hands_won.toLocaleString()} />
-            <StatRow label="Hands Lost" value={stats.hands_lost.toLocaleString()} />
-          </div>
-        )}
-
-        {category === 'advanced' && (
-          <div
-            style={{
-              opacity: 1,
-              transform: 'translateY(0)',
-              transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-            }}
-          >
-            <AdvancedStatsSummary />
-          </div>
-        )}
-
+        {/* ── Positions Tab (unchanged) ── */}
         {category === 'positions' && (
           <div
             style={{
@@ -494,144 +502,180 @@ export default function PlayerStatsPage() {
           </div>
         )}
 
-        {category === 'sessions' && (
-          <div
-            style={{
-              opacity: 1,
-              transform: 'translateY(0)',
-              transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-            }}
-          >
-            <SessionHistory />
-          </div>
-        )}
+        {/* ── Analysis Tab (merged: advanced + charts + sessions + bankroll) ── */}
+        {category === 'analysis' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Advanced Stats */}
+            <div>
+              <h3
+                style={{
+                  color: '#f59e0b',
+                  fontSize: '0.8rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                  marginBottom: '0.75rem',
+                  fontFamily: "'Orbitron', monospace",
+                }}
+              >
+                Advanced Stats
+              </h3>
+              <AdvancedStatsSummary />
+            </div>
 
-        {category === 'bankroll' && (
-          <div
-            style={{
-              opacity: 1,
-              transform: 'translateY(0)',
-              transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-            }}
-          >
-            <BankrollTracker />
-          </div>
-        )}
+            {/* Charts */}
+            <div className="charts-section">
+              <h3
+                style={{
+                  color: '#00d4ff',
+                  fontSize: '0.8rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                  marginBottom: '0.75rem',
+                  fontFamily: "'Orbitron', monospace",
+                }}
+              >
+                Charts
+              </h3>
+              {/* Profit Over Time Chart */}
+              <div className="chart-card">
+                <h3> Profit Over Time</h3>
+                <div className="chart-container">
+                  <ResponsiveContainer width="100%" height={250}>
+                    <AreaChart data={sessionHistory}>
+                      <defs>
+                        <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#4169E1" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#4169E1" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                      <XAxis dataKey="date" stroke="rgba(255,255,255,0.5)" fontSize={12} />
+                      <YAxis stroke="rgba(255,255,255,0.5)" fontSize={12} />
+                      <Tooltip
+                        contentStyle={{
+                          background: '#1e1e32',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: '8px',
+                        }}
+                        labelStyle={{ color: '#fff' }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="cumulative"
+                        stroke="#4169E1"
+                        fill="url(#profitGradient)"
+                        strokeWidth={2}
+                        name="Cumulative Profit"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
 
-        {category === 'charts' && (
-          <div
-            className="charts-section"
-            style={{
-              opacity: category === 'charts' ? 1 : 0,
-              transform: category === 'charts' ? 'translateY(0)' : 'translateY(12px)',
-              transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-            }}
-          >
-            {/* Profit Over Time Chart */}
-            <div className="chart-card">
-              <h3> Profit Over Time</h3>
-              <div className="chart-container">
-                <ResponsiveContainer width="100%" height={250}>
-                  <AreaChart data={sessionHistory}>
-                    <defs>
-                      <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#4169E1" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#4169E1" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                    <XAxis dataKey="date" stroke="rgba(255,255,255,0.5)" fontSize={12} />
-                    <YAxis stroke="rgba(255,255,255,0.5)" fontSize={12} />
-                    <Tooltip
-                      contentStyle={{
-                        background: '#1e1e32',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '8px',
-                      }}
-                      labelStyle={{ color: '#fff' }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="cumulative"
-                      stroke="#4169E1"
-                      fill="url(#profitGradient)"
-                      strokeWidth={2}
-                      name="Cumulative Profit"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+              {/* Session Results Bar Chart */}
+              <div className="chart-card">
+                <h3> Daily Results</h3>
+                <div className="chart-container">
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={sessionHistory}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                      <XAxis dataKey="date" stroke="rgba(255,255,255,0.5)" fontSize={12} />
+                      <YAxis stroke="rgba(255,255,255,0.5)" fontSize={12} />
+                      <Tooltip
+                        contentStyle={{
+                          background: '#1e1e32',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: '8px',
+                        }}
+                        labelStyle={{ color: '#fff' }}
+                      />
+                      <Bar dataKey="profit" name="Profit" radius={[4, 4, 0, 0]}>
+                        {sessionHistory.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.profit >= 0 ? '#22c55e' : '#ef4444'}
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Position Breakdown Pie Chart */}
+              <div className="chart-card">
+                <h3> Win % by Position</h3>
+                <div className="chart-container pie-chart">
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={positionData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={90}
+                        paddingAngle={2}
+                        dataKey="value"
+                        nameKey="name"
+                        label={({ name, value }) => `${name}: ${value}%`}
+                        labelLine={{ stroke: 'rgba(255,255,255,0.3)' }}
+                      >
+                        {positionData.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={CHART_COLORS[index % CHART_COLORS.length]}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          background: '#1e1e32',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          borderRadius: '8px',
+                        }}
+                        formatter={(value, name) => [
+                          `${value}%`,
+                          positionData.find((p) => p.name === name)?.fullName || name,
+                        ]}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
 
-            {/* Session Results Bar Chart */}
-            <div className="chart-card">
-              <h3> Daily Results</h3>
-              <div className="chart-container">
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={sessionHistory}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                    <XAxis dataKey="date" stroke="rgba(255,255,255,0.5)" fontSize={12} />
-                    <YAxis stroke="rgba(255,255,255,0.5)" fontSize={12} />
-                    <Tooltip
-                      contentStyle={{
-                        background: '#1e1e32',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '8px',
-                      }}
-                      labelStyle={{ color: '#fff' }}
-                    />
-                    <Bar dataKey="profit" name="Profit" radius={[4, 4, 0, 0]}>
-                      {sessionHistory.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={entry.profit >= 0 ? '#22c55e' : '#ef4444'}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+            {/* Sessions */}
+            <div>
+              <h3
+                style={{
+                  color: '#3b82f6',
+                  fontSize: '0.8rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                  marginBottom: '0.75rem',
+                  fontFamily: "'Orbitron', monospace",
+                }}
+              >
+                Session History
+              </h3>
+              <SessionHistory />
             </div>
 
-            {/* Position Breakdown Pie Chart */}
-            <div className="chart-card">
-              <h3> Win % by Position</h3>
-              <div className="chart-container pie-chart">
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={positionData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
-                      paddingAngle={2}
-                      dataKey="value"
-                      nameKey="name"
-                      label={({ name, value }) => `${name}: ${value}%`}
-                      labelLine={{ stroke: 'rgba(255,255,255,0.3)' }}
-                    >
-                      {positionData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={CHART_COLORS[index % CHART_COLORS.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        background: '#1e1e32',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '8px',
-                      }}
-                      formatter={(value, name) => [
-                        `${value}%`,
-                        positionData.find((p) => p.name === name)?.fullName || name,
-                      ]}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+            {/* Bankroll */}
+            <div>
+              <h3
+                style={{
+                  color: '#10b981',
+                  fontSize: '0.8rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                  marginBottom: '0.75rem',
+                  fontFamily: "'Orbitron', monospace",
+                }}
+              >
+                Bankroll Tracker
+              </h3>
+              <BankrollTracker />
             </div>
           </div>
         )}

@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
 import { PlayerAvatar } from '../avatars/PlayerAvatar';
+import { haptic } from '../../services/HapticService';
 import type { VipTier, PresenceStatus } from '../avatars/PlayerAvatar';
 import styles from './FriendListPanel.module.css';
 
@@ -271,7 +272,10 @@ export default function FriendListPanel({
                 showLevelBadge={true}
                 showXpRing={true}
                 showVipRing={true}
-                onClick={() => onProfileClick?.(friend.friendId)}
+                onClick={() => {
+                  haptic.selection();
+                  onProfileClick?.(friend.friendId);
+                }}
               />
 
               <div className={styles.info}>
@@ -284,13 +288,19 @@ export default function FriendListPanel({
               <div className={styles.actions}>
                 <button
                   className={styles.iconBtn}
-                  onClick={() => onMessageClick?.(friend.friendId, friend.displayName)}
+                  onClick={() => {
+                    haptic.light();
+                    onMessageClick?.(friend.friendId, friend.displayName);
+                  }}
                   title="Message"
                 ></button>
                 {friend.isOnline && onInviteClick && (
                   <button
                     className={styles.iconBtn}
-                    onClick={() => onInviteClick(friend.friendId)}
+                    onClick={() => {
+                      haptic.light();
+                      onInviteClick(friend.friendId);
+                    }}
                     title="Invite to table"
                   ></button>
                 )}

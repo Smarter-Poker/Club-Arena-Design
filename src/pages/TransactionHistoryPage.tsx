@@ -415,48 +415,51 @@ export default function TransactionHistoryPage() {
           </div>
         ) : (
           <>
-            {displayTransactions.map((tx, index) => (
-              <div
-                key={tx.id}
-                className="transaction-row"
-                style={{
-                  opacity: visibleTransactions.has(index) ? 1 : 0,
-                  transform: visibleTransactions.has(index) ? 'translateY(0)' : 'translateY(6px)',
-                  transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                }}
-              >
-                <span
-                  className="tx-icon"
+            {displayTransactions.map((tx, index) => {
+              const icon = getIcon(tx.type);
+              return (
+                <div
+                  key={tx.id}
+                  className="transaction-row"
                   style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: getIcon(tx.type).bg,
-                    color: getIcon(tx.type).color,
-                    fontSize: '1rem',
-                    fontWeight: 700,
-                    flexShrink: 0,
+                    opacity: visibleTransactions.has(index) ? 1 : 0,
+                    transform: visibleTransactions.has(index) ? 'translateY(0)' : 'translateY(6px)',
+                    transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                   }}
                 >
-                  {getIcon(tx.type).symbol}
-                </span>
-                <div className="tx-info">
-                  <span className="tx-desc">{tx.description || tx.type.replace('_', ' ')}</span>
-                  <span className="tx-meta">
-                    {tx.club_name && <span className="tx-club">{tx.club_name}</span>}
-                    {formatDate(tx.created_at)}
+                  <span
+                    className="tx-icon"
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: icon.bg,
+                      color: icon.color,
+                      fontSize: '1rem',
+                      fontWeight: 700,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {icon.symbol}
+                  </span>
+                  <div className="tx-info">
+                    <span className="tx-desc">{tx.description || tx.type.replace('_', ' ')}</span>
+                    <span className="tx-meta">
+                      {tx.club_name && <span className="tx-club">{tx.club_name}</span>}
+                      {formatDate(tx.created_at)}
+                    </span>
+                  </div>
+                  <span className={`tx-amount ${tx.amount >= 0 ? 'positive' : 'negative'}`}>
+                    {tx.amount >= 0 ? '+' : ''}
+                    {getCurrencySymbol(tx.currency)}
+                    {Math.abs(tx.amount).toLocaleString()}
                   </span>
                 </div>
-                <span className={`tx-amount ${tx.amount >= 0 ? 'positive' : 'negative'}`}>
-                  {tx.amount >= 0 ? '+' : ''}
-                  {getCurrencySymbol(tx.currency)}
-                  {Math.abs(tx.amount).toLocaleString()}
-                </span>
-              </div>
-            ))}
+              );
+            })}
 
             {/* Load More Button */}
             {hasMore && (

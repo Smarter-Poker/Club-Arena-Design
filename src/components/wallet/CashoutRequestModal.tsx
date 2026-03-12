@@ -5,7 +5,7 @@
  * Modal for players to request chip cashouts from their agent
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { cashoutService, CashoutRequest } from '../../services/CashoutService';
 import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
@@ -86,12 +86,18 @@ export default function CashoutRequestModal({
   const [pendingCashouts, setPendingCashouts] = useState<CashoutRequest[]>([]);
   const [loadingPending, setLoadingPending] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const autoCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => setMounted(true), 50);
     } else {
       setMounted(false);
+      // Clear auto-close timer if modal is closed externally
+      if (autoCloseTimer.current) {
+        clearTimeout(autoCloseTimer.current);
+        autoCloseTimer.current = null;
+      }
     }
   }, [isOpen]);
 
@@ -136,7 +142,7 @@ export default function CashoutRequestModal({
       supabase.removeChannel(channel);
       unsubBalance();
     };
-  }, [isOpen, playerId]);
+  }, [isOpen, playerId, clubId]);
 
   const loadPendingCashouts = async () => {
     setLoadingPending(true);
@@ -173,10 +179,11 @@ export default function CashoutRequestModal({
       loadPendingCashouts();
       onComplete?.();
 
-      // Auto-close after 2 seconds
-      setTimeout(() => {
+      // Auto-close after 2 seconds (with cleanup)
+      autoCloseTimer.current = setTimeout(() => {
         setSuccess(false);
         onClose();
+        autoCloseTimer.current = null;
       }, 2000);
     } catch (err: any) {
       setError(err.message || 'Failed to request cashout');

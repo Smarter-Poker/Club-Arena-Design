@@ -11,6 +11,8 @@ import styles from './ClubDetailPage.module.css';
 import { getLocalStorage, setLocalStorage } from '../lib/storage';
 import { useSwipeTabs } from '../hooks/useSwipeTabs';
 import ClubHome from '../components/club/ClubHome';
+import ActivityHeatmap from '../components/common/ActivityHeatmap';
+import CircularGauge from '../components/common/CircularGauge';
 import CurrencyStore from '../components/club/CurrencyStore';
 import TableOperationsPanel from '../components/club/TableOperationsPanel';
 
@@ -956,6 +958,68 @@ export default function ClubDetailPage() {
             {/* Daily Challenges */}
             <div className={styles.card}>
               <DailyChallengesWidget />
+            </div>
+
+            {/* Club Activity Heatmap */}
+            <div className={styles.card} style={{ gridColumn: '1 / -1' }}>
+              <ActivityHeatmap data={[]} label="Club Activity" colorScheme="cyan" weeks={12} />
+            </div>
+
+            {/* Performance Gauges */}
+            <div className={styles.card} style={{ gridColumn: '1 / -1' }}>
+              <h3
+                style={{
+                  color: '#00d4ff',
+                  fontSize: '0.8rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px',
+                  marginBottom: '1rem',
+                  fontFamily: "'Orbitron', monospace",
+                }}
+              >
+                Performance
+              </h3>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-around',
+                  flexWrap: 'wrap',
+                  gap: '1rem',
+                }}
+              >
+                <CircularGauge
+                  value={
+                    members.length > 0
+                      ? Math.min(100, Math.round((onlineCount / members.length) * 100))
+                      : 0
+                  }
+                  label="Activity Rate"
+                  sublabel={`${onlineCount} of ${members.length} online`}
+                  accent="#22c55e"
+                  size={100}
+                />
+                <CircularGauge
+                  value={
+                    tables.length > 0
+                      ? Math.round(
+                          (tables.filter((t) => t.status === 'running').length / tables.length) *
+                            100
+                        )
+                      : 0
+                  }
+                  label="Table Fill"
+                  sublabel={`${tables.filter((t) => t.status === 'running').length} of ${tables.length} active`}
+                  accent="#00d4ff"
+                  size={100}
+                />
+                <CircularGauge
+                  value={Math.min(100, members.length)}
+                  label="Growth"
+                  sublabel={`${members.length} total members`}
+                  accent="#8b5cf6"
+                  size={100}
+                />
+              </div>
             </div>
 
             {/* Club Activity Feed */}

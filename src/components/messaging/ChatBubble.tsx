@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { PlayerAvatar } from '../avatars/PlayerAvatar';
+import { haptic } from '../../services/HapticService';
 import styles from './ChatBubble.module.css';
 
 interface Message {
@@ -148,7 +149,10 @@ export default function ChatBubble({
                 <button
                   key={emoji}
                   className={`${styles.reactionBtn} ${message.myReaction === emoji ? styles.active : ''}`}
-                  onClick={() => handleReact(emoji)}
+                  onClick={() => {
+                    haptic.light();
+                    handleReact(emoji);
+                  }}
                 >
                   {emoji}
                 </button>
