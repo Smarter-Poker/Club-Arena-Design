@@ -103,6 +103,7 @@ import { HandController } from '../engine/HandController';
 import { RakeWaterfallEngine } from '../engines/financial/RakeWaterfallEngine';
 import { OFCPineappleEngine } from '../engine/OFCPineappleEngine';
 import { handPersistenceService } from '../services/HandPersistenceService';
+import { handHistoryService } from '../services/HandHistoryService';
 import { achievementTriggerService } from '../services/AchievementTriggerService';
 import SpectatorBadge from '../components/table/SpectatorBadge';
 import HandStrengthIndicator from '../components/table/HandStrengthIndicator';
@@ -2506,6 +2507,18 @@ export default function TablePage({
               potTotal: event.pot || currentState.pot, // Use HC's authoritative pot value
             };
             setHandHistory((prev) => [record, ...prev].slice(0, 50)); // Keep last 50 hands
+
+            // Persist to Supabase for cross-device access and admin review (fire-and-forget)
+            if (tableId) {
+              handHistoryService.saveHandToSupabase(tableId, {
+                handNumber: record.handNumber,
+                pot: record.potTotal,
+                communityCards: currentState.communityCards.map(c => ({ rank: c.rank, suit: c.suit })),
+                players: record.players as any,
+                actions: handActionsRef.current,
+                winners: record.winners.map(w => ({ playerId: w.playerId, amount: w.amount, hand: w.hand })),
+              }).catch(() => {}); // Fire-and-forget
+            }
 
             // ── Session Tracking: update refs for end-of-session summary ──
             handsPlayedRef.current += 1;

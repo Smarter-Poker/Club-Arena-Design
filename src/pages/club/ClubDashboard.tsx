@@ -187,10 +187,18 @@ export default function ClubDashboard() {
     const unsubSeated = masterBus.subscribeDebounced('TABLE_SEATED', () => {
       loadDashboardData();
     }, 500);
+    const unsubChipsAdded = masterBus.subscribeDebounced('CHIPS_ADDED', () => {
+      loadDashboardData();
+    }, 500);
+    const unsubChipsWithdrawn = masterBus.subscribeDebounced('CHIPS_WITHDRAWN', () => {
+      loadDashboardData();
+    }, 500);
     return () => {
       unsubClub();
       unsubBalance();
       unsubSeated();
+      unsubChipsAdded();
+      unsubChipsWithdrawn();
     };
   }, []);
 
