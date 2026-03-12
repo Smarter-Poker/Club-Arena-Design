@@ -133,4 +133,21 @@ export const FinancialAlertService = {
       .update({ resolved: true, resolved_at: new Date().toISOString() })
       .eq('id', alertId);
   },
+
+  /**
+   * Convenience: raise an alert with severity routing.
+   * Maps to logCritical/logWarning based on severity parameter.
+   */
+  async raise(
+    severity: AlertSeverity,
+    message: string,
+    source: string,
+    context: Record<string, unknown> = {}
+  ): Promise<void> {
+    if (severity === 'critical') {
+      await this.logCritical(source, message, context);
+    } else {
+      await this.logWarning(source, message, context);
+    }
+  },
 };

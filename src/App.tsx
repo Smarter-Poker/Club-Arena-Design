@@ -161,8 +161,11 @@ export default function App() {
         return;
 
       if (event.data?.type === 'SMARTER_AUTH_TOKEN' && event.data.token) {
-        // Send ACK immediately to halt World Hub retry loop
-        window.parent.postMessage({ type: 'SMARTER_AUTH_ACK' }, '*');
+        // Send ACK immediately to halt World Hub retry loop.
+        // Use the sender's origin (captured synchronously before any async gap)
+        // instead of '*' to prevent unauthorized parents from intercepting the ACK.
+        const parentOrigin = event.origin;
+        window.parent.postMessage({ type: 'SMARTER_AUTH_ACK' }, parentOrigin);
 
         try {
           await supabase.auth.setSession({

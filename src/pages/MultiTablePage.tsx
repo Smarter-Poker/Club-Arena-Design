@@ -48,6 +48,14 @@ export default function MultiTablePage() {
 
   // ─── State ───────────────────────────────────────────────────────────
   const [tables, setTables] = useState<TableInstance[]>(() => {
+    // Try to restore from session storage first (survive page refresh)
+    const savedSession = sessionStorage.getItem('multi_table_session');
+    if (savedSession) {
+      try {
+        const parsed = JSON.parse(savedSession) as TableInstance[];
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch { /* fall through */ }
+    }
     // Initialize with the table from URL
     if (routeTableId) {
       return [
@@ -62,6 +70,15 @@ export default function MultiTablePage() {
     }
     return [];
   });
+
+  // Persist tables to sessionStorage on change
+  useEffect(() => {
+    if (tables.length > 0) {
+      sessionStorage.setItem('multi_table_session', JSON.stringify(tables));
+    } else {
+      sessionStorage.removeItem('multi_table_session');
+    }
+  }, [tables]);
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [swipeOffset, setSwipeOffset] = useState(0);

@@ -83,12 +83,18 @@ export type BusEventType =
   // Cashier events
   | 'CHIPS_ADDED'
   | 'CHIPS_WITHDRAWN'
+  // Settlement cron lifecycle
+  | 'SETTLEMENT_CYCLE_STARTED'
+  | 'SETTLEMENT_CYCLE_COMPLETED'
   // Resilience & Connection Events
   | 'OFFLINE_QUEUE_REPLAYED'
   | 'WS_CONNECTION_FAILED'
   | 'WS_CONNECTED'
   | 'WS_RECONNECTING'
-  | 'WS_DISCONNECTED';
+  | 'WS_DISCONNECTED'
+  // Security & Anti-Cheat Events
+  | 'COLLUSION_DETECTED'
+  | 'VALIDATION_MISMATCH';
 
 // #13: Type-safe payload map — compile-time enforcement of correct payloads
 export interface BusPayloadMap {
@@ -168,12 +174,18 @@ export interface BusPayloadMap {
   // Cashier events
   CHIPS_ADDED: { tableId: string; userId: string; amount: number; newStack: number };
   CHIPS_WITHDRAWN: { tableId: string; userId: string; amount: number; newStack: number };
+  // Settlement cron lifecycle
+  SETTLEMENT_CYCLE_STARTED: { periodId: string; startedAt: string };
+  SETTLEMENT_CYCLE_COMPLETED: { periodId: string; status: string; canary?: { passed: boolean; totalCredits: number; totalDebits: number; difference: number }; agentsPaid?: number; playersWithRakeback?: number; totalDisbursed?: number };
   // Resilience & Connection Events
   OFFLINE_QUEUE_REPLAYED: { replayed: number; failed: number };
   WS_CONNECTION_FAILED: { url: string; retries: number };
   WS_CONNECTED: { url: string };
   WS_RECONNECTING: { url: string; attempt: number };
   WS_DISCONNECTED: { url: string };
+  // Security & Anti-Cheat Events
+  COLLUSION_DETECTED: { playerA: string; playerB: string; patternType: string; score: number };
+  VALIDATION_MISMATCH: { handId: string; tableId: string; discrepancies: { type: string; expected: string; actual: string; severity: string }[] };
 }
 
 export interface BusEvent<T = unknown> {
