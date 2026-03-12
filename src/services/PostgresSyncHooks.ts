@@ -90,11 +90,16 @@ class PostgresSyncHooksService {
         { event: '*', schema: 'public', table: 'club_members', filter: `user_id=eq.${userId}` },
         (payload) => {
           console.debug('[PostgresSync] External Membership mutation detected:', payload);
-          // Only trigger if role or status changes heavily affecting access
           if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
-            masterBus.emit('CLUB_UPDATED', { clubId: payload.new.club_id });
+            const clubId = (payload.new as any)?.club_id;
+            if (clubId) {
+              masterBus.emit('CLUB_UPDATED', { clubId });
+            }
           } else if (payload.eventType === 'DELETE') {
-            masterBus.emit('CLUB_LEFT', { clubId: payload.old.club_id });
+            // With default replica identity, payload.old only has the PK (id),
+            // not club_id. We emit with what we have — most consumers just reload all data.
+            const clubId = (payload.old as any)?.club_id || 'unknown';
+            masterBus.emit('CLUB_LEFT', { clubId });
           }
         }
       )
