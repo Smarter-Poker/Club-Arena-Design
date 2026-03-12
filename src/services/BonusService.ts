@@ -160,6 +160,35 @@ class BonusServiceClass {
   }
 
   /**
+   * Spin Lucky Draw Wheel (Atomic + Server RNG)
+   */
+  async spinLuckyWheel(userId: string): Promise<{ segmentId: string; rewardType: string; amount: number }> {
+    const { data, error } = await retryAsync(
+      () =>
+        supabase.rpc('claim_lucky_wheel_spin', {
+          p_user_id: userId,
+        }),
+      3
+    );
+
+    if (error) {
+      console.error('[Bonus] Failed to spin lucky wheel:', error);
+      if (error.message.includes('Already spun today')) {
+        throw new Error('You have already spun the wheel today!');
+      }
+      throw new Error(`Failed to spin wheel: ${error.message}`);
+    }
+
+    if (data?.rewardType === 'chips') {
+      masterBus.emit('BALANCE_UPDATED', { source: 'lucky_wheel_chips', userId });
+    } else if (data?.rewardType === 'diamonds') {
+      masterBus.emit('BALANCE_UPDATED', { source: 'lucky_wheel_diamonds', userId });
+    }
+
+    return data;
+  }
+
+  /**
    * Claim special bonus
    */
   async claimSpecialBonus(userId: string, bonusId: string): Promise<boolean> {
@@ -231,24 +260,21 @@ class BonusServiceClass {
     let error;
     switch (type) {
       case 'chips':
-        // Use proper wallet system with audit trail
+        // Use proper wallet system with ATOMIC audit trail
         ({ error } = await retryAsync(
           () =>
-            supabase.rpc('credit_player_wallet', {
+            supabase.rpc('atomic_credit_wallet_and_log', {
               p_user_id: userId,
               p_amount: amt,
+              p_category: 'bonus',
+              p_description: `Bonus chip reward`,
+              p_table_id: null,
+              p_hand_id: null,
+              p_related_entity_id: null
             }),
           3
         ));
         if (!error) {
-          await WalletService.logTransaction(
-            userId,
-            'PLAYER',
-            amt,
-            'credit',
-            'bonus',
-            `Bonus chip reward`
-          );
           masterBus.emit('BALANCE_UPDATED', { source: 'bonus_chips', userId });
         }
         break;

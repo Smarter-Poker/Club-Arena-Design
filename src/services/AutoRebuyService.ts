@@ -403,12 +403,17 @@ class AutoRebuyServiceCore {
         return true;
       }
 
-      // Credit wallet via RPC
+      // Atomic credit and log via RPC
       const { data: creditResult, error: creditError } = await retryAsync(
         () =>
-          supabase.rpc('credit_player_wallet', {
+          supabase.rpc('atomic_credit_wallet_and_log', {
             p_user_id: horseId,
             p_amount: topupAmount,
+            p_category: 'topup',
+            p_description: 'Auto-rebuy: wallet topup ' + topupAmount + ' credits',
+            p_table_id: null,
+            p_hand_id: null,
+            p_related_entity_id: null
           }),
         3
       );
@@ -437,19 +442,10 @@ class AutoRebuyServiceCore {
         return false;
       }
 
-      // Log transaction via centralized WalletService RPC
-      await WalletService.logTransaction(
-        horseId,
-        'PLAYER',
-        topupAmount,
-        'credit',
-        'topup',
-        'Auto-rebuy: wallet topup ' + topupAmount + ' credits'
-      );
       masterBus.emit('BALANCE_UPDATED', { source: 'auto_rebuy_topup', userId: horseId });
 
       console.debug(
-        '[AutoRebuy] Topped up horse ' + horseId + ' wallet with ' + topupAmount + ' credits'
+        '[AutoRebuy] Topped up horse ' + horseId + ' wallet with ' + topupAmount + ' credits (atomically logged)'
       );
       return true;
     } catch (err) {

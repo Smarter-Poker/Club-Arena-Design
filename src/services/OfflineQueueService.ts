@@ -200,7 +200,7 @@ export const OfflineQueueService = {
 
     switch (mutation.action) {
       case 'ADD_CHIPS': {
-        const { userId, amount, clubId, walletType } = mutation.payload as {
+        const { userId, amount, clubId } = mutation.payload as {
           userId: string;
           amount: number;
           clubId: string;
@@ -208,11 +208,14 @@ export const OfflineQueueService = {
         };
         const { error } = await retryAsync(
           () =>
-            supabase.rpc('credit_player_wallet', {
+            supabase.rpc('atomic_credit_wallet_and_log', {
               p_user_id: userId,
               p_amount: amount,
-              p_club_id: clubId,
-              p_wallet_type: walletType,
+              p_category: 'transfer',
+              p_description: 'Offline queue replay: Add chips',
+              p_table_id: null,
+              p_hand_id: null,
+              p_related_entity_id: clubId
             }),
           3
         );
@@ -226,10 +229,14 @@ export const OfflineQueueService = {
         };
         const { data } = await retryAsync(
           () =>
-            supabase.rpc('deduct_player_wallet', {
+            supabase.rpc('atomic_deduct_wallet_and_log', {
               p_user_id: userId,
               p_amount: amount,
-              p_club_id: clubId,
+              p_category: 'transfer',
+              p_description: 'Offline queue replay: Withdraw chips',
+              p_table_id: null,
+              p_hand_id: null,
+              p_related_entity_id: clubId
             }),
           3
         );

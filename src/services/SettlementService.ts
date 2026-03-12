@@ -529,77 +529,27 @@ export const SettlementService = {
       const rakeBack = Math.trunc(clubRake * 0.9 * 100) / 100;
 
       if (rakeBack > 0 && club.owner_id) {
-        // Deduct from union owner
-        const { data: deductResult } = await retryAsync(
+        // Atomic Settlement Transfer
+        const { data: transferResult, error: transferError } = await retryAsync(
           () =>
-            supabase.rpc('deduct_player_wallet', {
-              p_user_id: union.owner_id,
+            supabase.rpc('atomic_wallet_transfer', {
+              p_from_user_id: union.owner_id,
+              p_to_user_id: club.owner_id,
               p_amount: rakeBack,
+              p_category: 'settlement',
+              p_debit_description: `Weekly rake back to ${club.name}: 90% of ${clubRake}`,
+              p_credit_description: `Weekly rake back from ${union.name}: 90% of ${clubRake} collected`,
+              p_related_entity_id: club.id
             }),
           3
         );
 
-        if (deductResult === false) {
+        if (transferError || transferResult === false) {
           console.error(
-            `[Settlement] Union owner insufficient balance for rake back to ${club.name}`
+            `[Settlement] Transfer failed from Union owner to ${club.name} (insufficient balance or RPC error)`
           );
           continue;
         }
-
-        // Credit to club owner — rollback union debit on failure
-        const { error: creditError } = await retryAsync(
-          () =>
-            supabase.rpc('credit_player_wallet', {
-              p_user_id: club.owner_id,
-              p_amount: rakeBack,
-            }),
-          3
-        );
-
-        if (creditError) {
-          console.error(
-            `[Settlement] CRITICAL: Credit to club owner failed, rolling back union debit:`,
-            creditError
-          );
-          const { error: rollbackErr } = await retryAsync(
-            () =>
-              supabase.rpc('credit_player_wallet', {
-                p_user_id: union.owner_id,
-                p_amount: rakeBack,
-              }),
-            3
-          );
-          if (rollbackErr)
-            console.error(
-              `[Settlement] CRITICAL: Rollback also failed — ${rakeBack} chips lost: ${rollbackErr.message}`
-            );
-          continue;
-        }
-
-        // Log both sides
-        await WalletService.logTransaction(
-          union.owner_id,
-          'PLAYER',
-          rakeBack,
-          'debit',
-          'settlement',
-          `Weekly rake back to ${club.name}: 90% of ${clubRake}`,
-          undefined,
-          undefined,
-          club.id
-        );
-
-        await WalletService.logTransaction(
-          club.owner_id,
-          'PLAYER',
-          rakeBack,
-          'credit',
-          'settlement',
-          `Weekly rake back from ${union.name}: 90% of ${clubRake} collected`,
-          undefined,
-          undefined,
-          unionId
-        );
 
         // Emit bus event so UI updates immediately
         masterBus.emit('BALANCE_UPDATED', {

@@ -272,26 +272,19 @@ export const ChipFlowService = {
 
     const { error } = await retryAsync(
       () =>
-        supabase.rpc('credit_player_wallet', {
+        supabase.rpc('atomic_credit_wallet_and_log', {
           p_user_id: unionOwnerId,
           p_amount: amt,
+          p_category: 'mint',
+          p_description: reason,
+          p_table_id: null,
+          p_hand_id: null,
+          p_related_entity_id: unionId
         }),
       3
     );
 
     if (error) throw new Error(`Mint failed: ${error.message}`);
-
-    await WalletService.logTransaction(
-      unionOwnerId,
-      'PLAYER',
-      amt,
-      'credit',
-      'mint',
-      reason,
-      undefined,
-      undefined,
-      unionId
-    );
 
     // Return new balance
     const { data: wallet } = await supabase

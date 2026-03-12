@@ -248,31 +248,41 @@ export default function AchievementsPage() {
         .on(
           'postgres_changes',
           {
-            event: 'INSERT',
+            event: '*',
             schema: 'public',
             table: 'user_achievements',
             filter: `user_id=eq.${user.id}`,
           },
           async (payload) => {
+            const newRow = payload.new as any;
+            if (!newRow || !newRow.achievement_id) return;
+
+            // Always reload the list so progress bars visually increment immediately
+            if (loadAchievementsRef.current) {
+              await loadAchievementsRef.current();
+            }
+
+            // Celebration Logic: Only trigger if the row has an unlocked_at date
+            if (!newRow.unlocked_at) return;
+
+            // If we have old row data, ensure we don't celebrate twice for the same achievement
+            const oldRow = payload.old as any;
+            if (payload.eventType === 'UPDATE' && oldRow && oldRow.unlocked_at) return;
+
             // New achievement unlocked!
-            const achievementId = (payload.new as any).achievement_id;
+            const achievementId = newRow.achievement_id;
             const achievement = ACHIEVEMENTS.find((a) => a.id === achievementId);
             if (achievement) {
               setNewUnlock({
                 ...achievement,
                 progress: 100,
                 unlocked: true,
-                unlockedAt: new Date().toISOString(),
+                unlockedAt: newRow.unlocked_at,
               });
 
               // Auto-hide after 5 seconds (clear previous timer)
               if (unlockTimerRef.current) clearTimeout(unlockTimerRef.current);
               unlockTimerRef.current = setTimeout(() => setNewUnlock(null), 5000);
-
-              // Reload achievements
-              if (loadAchievementsRef.current) {
-                await loadAchievementsRef.current();
-              }
             }
           }
         )

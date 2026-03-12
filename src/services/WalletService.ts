@@ -393,17 +393,22 @@ export const WalletService = {
       );
     }
 
-    // 2. Atomically deduct from Player Wallet using SECURITY DEFINER RPC
+    // 2. Atomically deduct from Player Wallet AND LOG using SECURITY DEFINER RPC
     const { data: deductResult, error: deductError } = await retryAsync(async () => {
-      const res = await supabase.rpc('deduct_player_wallet', {
+      const res = await supabase.rpc('atomic_deduct_wallet_and_log', {
         p_user_id: userId,
         p_amount: amount,
+        p_category: 'buyin',
+        p_description: 'Cash game buy-in at table',
+        p_table_id: tableId,
+        p_hand_id: null,
+        p_related_entity_id: null
       });
       return res;
     });
 
     if (deductError) {
-      console.error('[WalletService] deduct_player_wallet RPC failed:', deductError.message);
+      console.error('[WalletService] atomic_deduct_wallet_and_log RPC failed:', deductError.message);
       throw new Error(`Buy-in failed: ${deductError.message}`);
     }
 
@@ -411,22 +416,11 @@ export const WalletService = {
       throw new Error('Insufficient chips in Player Wallet for buy-in');
     }
 
-    // 3. Log the transaction
-    await this.logTransaction(
-      userId,
-      'PLAYER',
-      amount,
-      'debit',
-      'buyin',
-      `Cash game buy-in at table`,
-      tableId
-    );
-
     // Emit bus event so CashierPage/PlayerWalletPage refresh balances
     masterBus.emit('BALANCE_UPDATED', { source: 'buyin', userId, tableId });
 
     console.debug(
-      `[WalletService] Buy-in: ${amount} chips deducted from Player Wallet for user ${userId}`
+      `[WalletService] Buy-in: ${amount} chips deducted from Player Wallet for user ${userId} and logged`
     );
     return true;
   },
@@ -436,36 +430,30 @@ export const WalletService = {
    * Credits to Player Wallet (wallets table) using atomic RPC
    */
   async unlockFromTable(userId: string, tableId: string, amount: number): Promise<boolean> {
-    // Credit to Player Wallet using SECURITY DEFINER RPC
+    // Credit to Player Wallet AND LOG using SECURITY DEFINER RPC
     const { error: creditError } = await retryAsync(async () => {
-      const res = await supabase.rpc('credit_player_wallet', {
+      const res = await supabase.rpc('atomic_credit_wallet_and_log', {
         p_user_id: userId,
         p_amount: amount,
+        p_category: 'cashout',
+        p_description: 'Cash game cash-out from table',
+        p_table_id: tableId,
+        p_hand_id: null,
+        p_related_entity_id: null
       });
       return res;
     });
 
     if (creditError) {
-      console.error('[WalletService] credit_player_wallet RPC failed:', creditError.message);
+      console.error('[WalletService] atomic_credit_wallet_and_log RPC failed:', creditError.message);
       throw new Error(`Cash-out failed: ${creditError.message}`);
     }
-
-    // Log the transaction
-    await this.logTransaction(
-      userId,
-      'PLAYER',
-      amount,
-      'credit',
-      'cashout',
-      `Cash game cash-out from table`,
-      tableId
-    );
 
     // Emit bus event so CashierPage/PlayerWalletPage refresh balances
     masterBus.emit('BALANCE_UPDATED', { source: 'cashout', userId, tableId });
 
     console.debug(
-      `[WalletService] Cash-out: ${amount} chips credited to Player Wallet for user ${userId}`
+      `[WalletService] Cash-out: ${amount} chips credited to Player Wallet for user ${userId} and logged`
     );
     return true;
   },

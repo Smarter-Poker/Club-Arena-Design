@@ -184,20 +184,29 @@ export default function LeaderboardPage() {
     };
   }, []);
 
-  // Fetch when filters or club change
+  // Fetch Rankings Data
   useEffect(() => {
     if (selectedClubId) {
       if (activeTab === 'rankings') {
         loadLeaderboard();
-      } else {
-        loadTournamentStats();
       }
     } else {
       setEntries([]);
-      setTournamentStats([]);
       setLoading(false);
     }
   }, [scope, period, metric, selectedClubId, activeTab]);
+
+  // Fetch Tournament Stats Data
+  useEffect(() => {
+    if (selectedClubId) {
+      if (activeTab === 'tournaments') {
+        loadTournamentStats();
+      }
+    } else {
+      setTournamentStats([]);
+      setTournamentsLoading(false);
+    }
+  }, [selectedClubId, activeTab]);
 
   const loadUserClubs = async () => {
     setClubsLoading(true);

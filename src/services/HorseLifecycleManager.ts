@@ -380,19 +380,24 @@ class HorseLifecycleManagerCore {
    */
   async processWinnings(horseId: string, amount: number, tournamentId: string): Promise<boolean> {
     try {
-      // Credit wallet via RPC
+      // Credit wallet and log ATOMICALLY via RPC
       const { error: creditError } = await retryAsync(
         () =>
-          supabase.rpc('credit_player_wallet', {
+          supabase.rpc('atomic_credit_wallet_and_log', {
             p_user_id: horseId,
             p_amount: amount,
+            p_category: 'prize',
+            p_description: 'Tournament winnings: ' + amount + ' credits',
+            p_table_id: null,
+            p_hand_id: null,
+            p_related_entity_id: tournamentId
           }),
         3
       );
 
       if (creditError) {
         console.error(
-          '[LifecycleManager] Failed to credit winnings to horse ' + horseId + ':',
+          '[LifecycleManager] Failed to atomically credit winnings to horse ' + horseId + ':',
           creditError
         );
         horseBugReporter.report({
@@ -409,19 +414,6 @@ class HorseLifecycleManagerCore {
         });
         return false;
       }
-
-      // Log transaction via centralized WalletService RPC
-      await WalletService.logTransaction(
-        horseId,
-        'PLAYER',
-        amount,
-        'credit',
-        'prize',
-        'Tournament winnings: ' + amount + ' credits',
-        undefined,
-        undefined,
-        tournamentId
-      );
       masterBus.emit('BALANCE_UPDATED', { source: 'horse_tournament_winnings', userId: horseId });
 
       console.debug(
@@ -532,29 +524,22 @@ class HorseLifecycleManagerCore {
               if (buyInAmount > 0) {
                 const { error: refundErr } = await retryAsync(
                   () =>
-                    supabase.rpc('credit_player_wallet', {
+                    supabase.rpc('atomic_credit_wallet_and_log', {
                       p_user_id: player.user_id,
                       p_amount: buyInAmount,
+                      p_category: 'refund',
+                      p_description: 'SNG cancelled refund: ' + buyInAmount + ' chips',
+                      p_table_id: null,
+                      p_hand_id: null,
+                      p_related_entity_id: sng.id
                     }),
                   3
                 );
                 if (refundErr)
                   console.error(
-                    `[HorseLifecycle] SNG cancel refund FAILED for ${player.user_id.slice(0, 8)}: ${refundErr.message}`
+                    `[HorseLifecycle] SNG cancel atomic refund FAILED for ${player.user_id.slice(0, 8)}: ${refundErr.message}`
                   );
 
-                // Log refund via centralized WalletService RPC
-                await WalletService.logTransaction(
-                  player.user_id,
-                  'PLAYER',
-                  buyInAmount,
-                  'credit',
-                  'refund',
-                  'SNG cancelled refund: ' + buyInAmount + ' chips',
-                  undefined,
-                  undefined,
-                  sng.id
-                );
                 masterBus.emit('BALANCE_UPDATED', {
                   source: 'horse_sng_refund',
                   userId: player.user_id,

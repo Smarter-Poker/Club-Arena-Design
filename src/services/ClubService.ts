@@ -257,25 +257,22 @@ class ClubServiceClass {
     if (!member) return false;
 
     if (amount > 0) {
-      // Credit via atomic wallet RPC
+      // Credit via atomic wallet RPC + log
       const { error } = await retryAsync(
         () =>
-          supabase.rpc('credit_player_wallet', {
+          supabase.rpc('atomic_credit_wallet_and_log', {
             p_user_id: member.user_id,
             p_amount: Math.trunc(amount * 100) / 100,
+            p_category: 'transfer',
+            p_description: 'Club balance adjustment (credit)',
+            p_table_id: null,
+            p_hand_id: null,
+            p_related_entity_id: null
           }),
         3
       );
       if (error) return false;
 
-      await WalletService.logTransaction(
-        member.user_id,
-        'PLAYER',
-        Math.trunc(amount * 100) / 100,
-        'credit',
-        'transfer',
-        'Club balance adjustment (credit)'
-      );
       masterBus.emit('BALANCE_UPDATED', {
         source: 'club_adjustment_credit',
         userId: member.user_id,
@@ -284,22 +281,19 @@ class ClubServiceClass {
       const absAmt = Math.trunc(Math.abs(amount) * 100) / 100;
       const { data: result, error } = await retryAsync(
         () =>
-          supabase.rpc('deduct_player_wallet', {
+          supabase.rpc('atomic_deduct_wallet_and_log', {
             p_user_id: member.user_id,
             p_amount: absAmt,
+            p_category: 'transfer',
+            p_description: 'Club balance adjustment (debit)',
+            p_table_id: null,
+            p_hand_id: null,
+            p_related_entity_id: null
           }),
         3
       );
       if (error || result === false) return false;
 
-      await WalletService.logTransaction(
-        member.user_id,
-        'PLAYER',
-        absAmt,
-        'debit',
-        'transfer',
-        'Club balance adjustment (debit)'
-      );
       masterBus.emit('BALANCE_UPDATED', {
         source: 'club_adjustment_debit',
         userId: member.user_id,

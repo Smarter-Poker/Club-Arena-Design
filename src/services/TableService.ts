@@ -470,13 +470,18 @@ class TableService {
 
     if (!seat) return false;
 
-    // Return chips to player wallet
+    // Return chips to player wallet ATOMICALLY with log
     if (seat.stack > 0) {
       const { error: walletErr } = await retryAsync(
         () =>
-          supabase.rpc('credit_player_wallet', {
+          supabase.rpc('atomic_credit_wallet_and_log', {
             p_user_id: userId,
             p_amount: seat.stack,
+            p_category: 'cashout',
+            p_description: `Kicked from table: ${seat.stack} chips returned${reason ? ` (${reason})` : ''}`,
+            p_table_id: tableId,
+            p_hand_id: null,
+            p_related_entity_id: null
           }),
         3
       );
@@ -485,16 +490,6 @@ class TableService {
         return false;
       }
 
-      // Log the forced cash-out via centralized WalletService RPC
-      await WalletService.logTransaction(
-        userId,
-        'PLAYER',
-        seat.stack,
-        'credit',
-        'cashout',
-        `Kicked from table: ${seat.stack} chips returned${reason ? ` (${reason})` : ''}`,
-        tableId
-      );
       masterBus.emit('BALANCE_UPDATED', { source: 'table_kick_cashout', userId });
     }
 

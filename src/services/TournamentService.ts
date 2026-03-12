@@ -1248,36 +1248,29 @@ class TournamentService {
 
     // Credit prize to Player Wallet
     if (prize > 0) {
-      // Credit prize to Player Wallet (not club_members — wallets are separate)
+      // Credit prize to Player Wallet ATOMICALLY with log
       const { error: prizeError } = await retryAsync(
         () =>
-          supabase.rpc('credit_player_wallet', {
+          supabase.rpc('atomic_credit_wallet_and_log', {
             p_user_id: userId,
             p_amount: prize,
+            p_category: 'prize',
+            p_description: `Tournament prize: ${ordinal(position)} place — ${tournament.name}`,
+            p_table_id: null,
+            p_hand_id: null,
+            p_related_entity_id: tournamentId
           }),
         3
       );
 
       if (prizeError) {
         console.error(
-          `[TournamentService] CRITICAL: Prize credit to Player Wallet failed:`,
+          `[TournamentService] CRITICAL: Prize atomic credit to Player Wallet failed:`,
           prizeError
         );
         throw new Error(`Failed to credit ${ordinal(position)} place prize of ${prize}`);
       }
 
-      // Log prize payout transaction
-      await WalletService.logTransaction(
-        userId,
-        'PLAYER',
-        prize,
-        'credit',
-        'prize',
-        `Tournament prize: ${ordinal(position)} place — ${tournament.name}`,
-        undefined,
-        undefined,
-        tournamentId
-      );
       masterBus.emit('BALANCE_UPDATED', { source: 'tournament_prize', userId });
     }
 

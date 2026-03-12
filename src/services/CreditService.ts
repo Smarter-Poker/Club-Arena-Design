@@ -360,9 +360,14 @@ export const CreditService = {
       const amt = Math.trunc(amount * 100) / 100;
       const { data: deductResult, error: deductError } = await retryAsync(
         () =>
-          supabase.rpc('deduct_player_wallet', {
+          supabase.rpc('atomic_deduct_wallet_and_log', {
             p_user_id: agentData.user_id,
             p_amount: amt,
+            p_category: 'settlement',
+            p_description: `Credit invoice payment: ${invoiceId}`,
+            p_table_id: null,
+            p_hand_id: null,
+            p_related_entity_id: null
           }),
         3
       );
@@ -372,16 +377,6 @@ export const CreditService = {
       if (!deductResult) {
         throw new Error('Insufficient wallet balance for payment');
       }
-
-      // Log transaction for audit trail
-      await WalletService.logTransaction(
-        agentData.user_id,
-        'PLAYER',
-        amt,
-        'debit',
-        'settlement',
-        `Credit invoice payment: ${invoiceId}`
-      );
 
       // Emit bus event so UI (header balances, cashier) updates immediately
       masterBus.emit('BALANCE_UPDATED', {
@@ -405,7 +400,7 @@ export const CreditService = {
       .eq('id', invoiceId);
 
     if (updateError) {
-      // Rollback wallet deduction if invoice update failed — use the correct inverse RPC
+      // Rollback wallet deduction if invoice update failed — MUST BE LOGGED atomically
       if (method === 'wallet') {
         try {
           const { data: agentForRollback } = await supabase
@@ -417,9 +412,14 @@ export const CreditService = {
           if (agentForRollback?.user_id) {
             const { error: rollbackErr2 } = await retryAsync(
               () =>
-                supabase.rpc('credit_player_wallet', {
+                supabase.rpc('atomic_credit_wallet_and_log', {
                   p_user_id: agentForRollback.user_id,
                   p_amount: amount,
+                  p_category: 'refund',
+                  p_description: `Refund: Credit invoice update failed for ${invoiceId}`,
+                  p_table_id: null,
+                  p_hand_id: null,
+                  p_related_entity_id: null
                 }),
               3
             );
@@ -437,6 +437,11 @@ export const CreditService = {
                   rollbackError: rollbackErr2.message,
                 }
               );
+            } else {
+              masterBus.emit('BALANCE_UPDATED', {
+                source: 'credit_payment_rollback',
+                userId: agentForRollback.user_id,
+              });
             }
           }
         } catch (rollbackErr) {

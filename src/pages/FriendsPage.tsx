@@ -55,9 +55,9 @@ export default function FriendsPage() {
 
   // Real-time presence tracking for friends
   useEffect(() => {
-    if (!user?.id || friends.length === 0) return;
+    if (!user?.id) return;
 
-    const presenceKey = `online-friends-${user.id}`;
+    const presenceKey = 'global-presence'; // Shared global channel so users actually intersect
     const channel = masterBus.getOrCreateChannel(presenceKey);
 
     // Track online status
@@ -79,7 +79,7 @@ export default function FriendsPage() {
     return () => {
       masterBus.removeRegisteredChannel(presenceKey);
     };
-  }, [user?.id, friends.length]);
+  }, [user?.id]);
 
   // Real-time friend request notifications
   useEffect(() => {
@@ -146,7 +146,9 @@ export default function FriendsPage() {
                 `
         )
         .eq('user_id', user?.id)
-        .eq('status', 'accepted');
+        .eq('status', 'accepted')
+        .order('created_at', { ascending: false })
+        .limit(200);
 
       // Load accepted friendships (where user received)
       const { data: receivedFriendships } = await supabase
@@ -163,7 +165,9 @@ export default function FriendsPage() {
                 `
         )
         .eq('friend_id', user?.id)
-        .eq('status', 'accepted');
+        .eq('status', 'accepted')
+        .order('created_at', { ascending: false })
+        .limit(200);
 
       const allFriendships = [...(sentFriendships || []), ...(receivedFriendships || [])];
 
@@ -199,7 +203,9 @@ export default function FriendsPage() {
                 `
         )
         .eq('friend_id', user?.id)
-        .eq('status', 'pending');
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(100);
 
       if (pending) {
         setPendingRequests(

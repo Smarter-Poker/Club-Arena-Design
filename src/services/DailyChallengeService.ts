@@ -245,8 +245,6 @@ class DailyChallengeServiceClass {
         .eq('id', uc.id);
 
       if (isComplete) {
-        // Award rewards
-        await this.awardRewards(userId, challenge);
         completed.push({
           id: uc.id,
           challengeId: uc.challenge_id,
@@ -263,34 +261,61 @@ class DailyChallengeServiceClass {
   }
 
   /**
+   * Claim standard chip reward directly from UI
+   */
+  async claimChallenge(userId: string, challengeRowId: string, rewardAmount: number): Promise<boolean> {
+    const { error } = await retryAsync(
+      () =>
+        supabase.rpc('claim_daily_challenge', {
+          p_user_id: userId,
+          p_challenge_row_id: challengeRowId,
+          p_reward_amount: rewardAmount,
+        }),
+      3
+    );
+
+    if (error) {
+      console.error('[DailyChallenge] Failed to claim:', error);
+      throw new Error(error.message);
+    }
+
+    WalletService.logTransaction(
+      userId,
+      'PLAYER',
+      rewardAmount,
+      'credit',
+      'bonus',
+      `Manual Claim: Daily Challenge Reward`
+    );
+    masterBus.emit('BALANCE_UPDATED', { source: 'daily_challenge_claim', userId });
+    return true;
+  }
+
+  /**
    * Award rewards for completing a challenge
    */
   private async awardRewards(userId: string, challenge: DailyChallenge): Promise<void> {
-    // Award chips via proper wallet system with audit trail
+    // Award chips via proper wallet system with ATOMIC audit trail
     if (challenge.chipReward > 0) {
       const amt = Math.trunc(challenge.chipReward * 100) / 100;
       const { error: chipError } = await retryAsync(
         () =>
-          supabase.rpc('credit_player_wallet', {
+          supabase.rpc('atomic_credit_wallet_and_log', {
             p_user_id: userId,
             p_amount: amt,
+            p_category: 'bonus',
+            p_description: `Daily challenge reward: ${challenge.name}`,
+            p_table_id: null,
+            p_hand_id: null,
+            p_related_entity_id: null
           }),
         3
       );
       if (chipError) {
-        console.error('[DailyChallenge] Failed to award chips:', chipError);
+        console.error('[DailyChallenge] Failed to atomic award chips:', chipError);
         return;
       }
 
-      // Log transaction for audit trail
-      await WalletService.logTransaction(
-        userId,
-        'PLAYER',
-        amt,
-        'credit',
-        'bonus',
-        `Daily challenge reward: ${challenge.name}`
-      );
       masterBus.emit('BALANCE_UPDATED', { source: 'daily_challenge_reward', userId });
     }
   }
