@@ -145,6 +145,13 @@ ActionPanel, SitOutModal, WaitListModal, TimeBank, CashierModal, BuyInModal, Str
 - [x] `TableReactions.tsx` — 6 animated float-up emoji reactions (👏😂😱🔥💀🍀), 3s rate limit, room broadcast
 - [x] `useTableKeyboard.ts` — Keyboard shortcuts (F/C/R/A actions, 1-4 bet presets, M/H/S toggles, Escape close)
 
+### ✅ Phase 9: Premium Table Rendering & Performance — COMPLETE
+
+- [x] `ChipPhysics.tsx` — 7-tier denomination chip sprites with splash/slide-in/collect animations
+- [x] `PremiumPot.tsx` — Animated counting (rAF), 4-tier glow (normal→monster gold pulse), side pots
+- [x] `TablePerfMonitor.tsx` — Dev-only FPS/frame-time/renders/heap overlay (`?perf=1` or `P` key)
+- [x] `MiniTable.tsx` — Enhanced with hero hole cards, animated pot counter, stakes label, timer arc
+
 ---
 
 ## Competitive Benchmarks
