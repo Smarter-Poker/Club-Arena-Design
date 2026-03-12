@@ -125,8 +125,9 @@ export default function CashoutRequestModal({
   const autoCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
     if (isOpen) {
-      setTimeout(() => setMounted(true), 50);
+      timer = setTimeout(() => setMounted(true), 50);
     } else {
       setMounted(false);
       // Clear auto-close timer if modal is closed externally
@@ -135,6 +136,9 @@ export default function CashoutRequestModal({
         autoCloseTimer.current = null;
       }
     }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, [isOpen]);
 
   // Load pending cashouts

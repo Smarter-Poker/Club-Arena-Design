@@ -60,11 +60,16 @@ export default function ClubFinancialsPage() {
   useEffect(() => {
     if (transactions.length === 0) return;
     setVisibleTransactions(new Set());
-    transactions.forEach((tx, index) => {
-      setTimeout(() => {
+    
+    const timers = transactions.map((tx, index) => {
+      return setTimeout(() => {
         setVisibleTransactions((prev) => new Set(prev).add(tx.id));
       }, index * 60);
     });
+
+    return () => {
+      timers.forEach(clearTimeout);
+    };
   }, [transactions]);
 
   // ── Realtime subscription: live financial data updates ──

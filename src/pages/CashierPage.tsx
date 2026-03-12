@@ -25,6 +25,7 @@ import { useWalletStore } from '../stores/useWalletStore';
 import { useUserStore } from '../stores/useUserStore';
 import { WalletService } from '../services/WalletService';
 import { ChipFlowService } from '../services/ChipFlowService';
+import { cashoutService } from '../services/CashoutService';
 import { supabase } from '../lib/supabase';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import ConfirmModal from '../components/common/ConfirmModal';
@@ -708,25 +709,10 @@ export default function CashierPage() {
             return;
           }
 
-          const token = (await supabase.auth.getSession())?.data?.session?.access_token;
-          if (!token) {
-            setMessage({ type: 'error', text: 'Authentication error. Please refresh.' });
-            setIsProcessing(false);
-            return;
-          }
-
-          const cashoutRes = await fetch('/api/club-arena/request-cashout', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-              'X-Idempotency-Key': crypto.randomUUID(),
-            },
-            body: JSON.stringify({ clubId, amount: value }),
-          });
-          const cashoutData = await cashoutRes.json();
-
-          if (cashoutData.success) {
+          // Call CashoutService directly for unified audit logging, notifications, and DB RPC logic
+          try {
+            if (!clubId) throw new Error('Club ID is missing');
+            await cashoutService.requestCashout(user.id, clubId!, value);
             setMessage({
               type: 'success',
               text: `Cashout request submitted! ${value.toLocaleString()} chips are now held in escrow. Your agent will review shortly.`,
@@ -734,8 +720,8 @@ export default function CashierPage() {
             loadBalances(user.id);
             loadPendingCashouts();
             notifyWalletChange(user.id, value);
-          } else {
-            setMessage({ type: 'error', text: cashoutData.error || 'Cashout request failed.' });
+          } catch (err: any) {
+            setMessage({ type: 'error', text: err.message || 'Cashout request failed.' });
           }
         }
       }

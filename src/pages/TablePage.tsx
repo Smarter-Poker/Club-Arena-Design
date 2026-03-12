@@ -888,6 +888,10 @@ export default function TablePage({
 
   // User settings with persistence
   const { settings: userSettings, updateSetting } = useTableSettings();
+  const userSettingsRef = useRef(userSettings);
+  useEffect(() => {
+    userSettingsRef.current = userSettings;
+  }, [userSettings]);
 
   // Hand history state — load from localStorage for session continuity
   const [handHistory, setHandHistory] = useState<HandRecord[]>(() => {
@@ -2325,12 +2329,18 @@ export default function TablePage({
           // BUG-01 FIX: use soundService.isEnabled() not stale closure
           if (soundService.isEnabled()) soundService.playShowdown();
 
+          // Determine winner(s): highest hand ranking
+          const maxRanking = Math.max(0, ...event.results.map((r: any) => r.hand?.ranking || 0));
+
           // Reveal all cards for showdown
           setTableState((prev) => {
             const updatedPlayers = [...prev.players];
             for (const result of event.results) {
               const playerIdx = updatedPlayers.findIndex((p) => p?.id === result.userId);
               if (playerIdx >= 0 && updatedPlayers[playerIdx]) {
+                const isWinner = (result.hand?.ranking || 0) >= maxRanking;
+                const shouldMuck = !isWinner && userSettingsRef.current.autoMuck;
+
                 // Convert card format and show cards
                 const suitMapShowdown: Record<string, 'h' | 'd' | 'c' | 's'> = {
                   hearts: 'h',
@@ -2338,14 +2348,14 @@ export default function TablePage({
                   clubs: 'c',
                   spades: 's',
                 };
-                const showdownCards = result.cards.map((c) => ({
+                const showdownCards = result.cards.map((c: any) => ({
                   rank: c.rank as Card['rank'],
                   suit: (suitMapShowdown[c.suit] || c.suit) as 'h' | 'd' | 'c' | 's',
                 }));
                 updatedPlayers[playerIdx] = {
                   ...updatedPlayers[playerIdx]!,
                   holeCards: showdownCards,
-                  showCards: true, // Reveal all cards at showdown
+                  showCards: !shouldMuck, // Reveal all cards at showdown unless auto-mucked
                 };
               }
             }
@@ -3423,6 +3433,7 @@ export default function TablePage({
                     stage={tableState.boardStage}
                     highlightedIndices={winnerInfo.cardIndices}
                     winningHandName={winnerInfo.handName}
+                    deckStyle={userSettings.fourColorDeck ? '4color' : '2color'}
                   />
                 </div>
 
@@ -3541,6 +3552,7 @@ export default function TablePage({
                   }
                   hudStats={player && !player.isHero ? getPlayerHUDStats(player.id) : null}
                   showHUD={userSettings.showHUD && !!player && !player.isHero}
+                  deckStyle={userSettings.fourColorDeck ? '4color' : '2color'}
                   playerStyle={
                     userSettings.showHUD && player && !player.isHero
                       ? (() => {

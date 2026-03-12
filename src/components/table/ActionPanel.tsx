@@ -21,6 +21,7 @@ interface ActionPanelProps {
     bigBlind: number;
     onAction: (action: 'fold' | 'check' | 'call' | 'raise' | 'allin', amount?: number) => void;
     isMyTurn?: boolean;
+    showPotOdds?: boolean;
 }
 
 function formatChips(amount: number): string {
@@ -43,6 +44,7 @@ export default function ActionPanel({
     bigBlind,
     onAction,
     isMyTurn = true,
+    showPotOdds = false,
 }: ActionPanelProps) {
     const [isRaiseMode, setIsRaiseMode] = useState(false);
     const [raiseAmount, setRaiseAmount] = useState(minRaise);
@@ -268,6 +270,11 @@ export default function ActionPanel({
                     >
                         <span className="action-btn__label">Call</span>
                         <span className="action-btn__amount">{formatChips(callAmount)}</span>
+                        {showPotOdds && pot > 0 && callAmount > 0 && (
+                            <span className="action-btn__odds" style={{ fontSize: '11px', opacity: 0.7, marginTop: '2px' }}>
+                                {Math.round((callAmount / (pot + callAmount)) * 100)}%
+                            </span>
+                        )}
                         {isDesktop && <span className="action-btn__shortcut">C</span>}
                     </button>
                 ) : (

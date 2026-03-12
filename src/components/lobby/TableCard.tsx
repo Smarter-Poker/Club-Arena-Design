@@ -80,6 +80,8 @@ export default function TableCard({ table }: TableCardProps) {
   );
 
   useEffect(() => {
+    let isMounted = true;
+
     // Fetch waitlist count
     supabase
       .from('table_waitlists')
@@ -87,7 +89,7 @@ export default function TableCard({ table }: TableCardProps) {
       .eq('table_id', table.id)
       .eq('status', 'waiting')
       .then(({ count }) => {
-        if (count !== null) setWaiting(count);
+        if (isMounted && count !== null) setWaiting(count);
       });
 
     // Fetch average pot from last 20 completed hands
@@ -100,7 +102,7 @@ export default function TableCard({ table }: TableCardProps) {
       .order('ended_at', { ascending: false })
       .limit(20)
       .then(({ data }) => {
-        if (data && data.length > 0) {
+        if (isMounted && data && data.length > 0) {
           const avg = data.reduce((sum, h) => sum + (h.pot || 0), 0) / data.length;
           setAvgPot(Math.trunc(avg * 100) / 100);
         }
@@ -114,7 +116,7 @@ export default function TableCard({ table }: TableCardProps) {
       .eq('status', 'active')
       .limit(6)
       .then(({ data }) => {
-        if (data && data.length > 0) {
+        if (isMounted && data && data.length > 0) {
           setPlayerAvatars(
             data.map((p: any) => ({
               id: p.user_id,
@@ -124,6 +126,10 @@ export default function TableCard({ table }: TableCardProps) {
           );
         }
       });
+
+    return () => {
+      isMounted = false;
+    };
   }, [table.id]);
 
   const handleJoin = async () => {

@@ -65,6 +65,7 @@ export interface SeatSlotProps {
   hudStats?: MiniHUDStats | null; // Opponent VPIP/PFR stats
   showHUD?: boolean; // Whether to show the HUD overlay
   playerStyle?: PlayerStyleResult | null; // Auto-classified player archetype
+  deckStyle?: '4color' | '2color';
   onSit?: () => void;
   onAction?: () => void;
   onAvatarClick?: () => void;
@@ -130,12 +131,14 @@ function HoleCard({
   index,
   isHero = false,
   isWinner = false,
+  deckStyle = '4color',
 }: {
   card?: Card;
   hidden?: boolean;
   index: number;
   isHero?: boolean;
   isWinner?: boolean;
+  deckStyle?: '4color' | '2color';
 }) {
   // PokerBros-style: hero cards have wider fan tilt, opponents tighter
   const rotation = isHero ? (index === 0 ? -12 : 12) : index === 0 ? -8 : 8;
@@ -153,7 +156,7 @@ function HoleCard({
       className={`seat__card seat__card--face${isWinner ? ' seat__card--winner' : ''}`}
       style={{ transform: `rotate(${rotation}deg)` }}
     >
-      <CardImage card={card} deckStyle="4color" size={size} isHighlighted={isWinner} />
+      <CardImage card={card} deckStyle={deckStyle} size={size} isHighlighted={isWinner} />
     </div>
   );
 }
@@ -211,6 +214,7 @@ export const SeatSlot = memo(
       hudStats,
       showHUD = false,
       playerStyle,
+      deckStyle = '4color',
       onSit,
       onAction,
       onAvatarClick,
@@ -354,6 +358,7 @@ export const SeatSlot = memo(
                 hidden={!player.showCards}
                 index={i}
                 isWinner={isWinner}
+                deckStyle={deckStyle}
               />
             ))}
           </div>
@@ -462,6 +467,7 @@ export const SeatSlot = memo(
                 index={i}
                 isHero={true}
                 isWinner={isWinner}
+                deckStyle={deckStyle}
               />
             ))}
           </div>
@@ -522,6 +528,7 @@ export const SeatSlot = memo(
     const prevStyle = prev.playerStyle?.style || 'unknown';
     const nextStyle = next.playerStyle?.style || 'unknown';
     if (prevStyle !== nextStyle) return false;
+    if (prev.deckStyle !== next.deckStyle) return false;
 
     const pp = prev.player;
     const np = next.player;

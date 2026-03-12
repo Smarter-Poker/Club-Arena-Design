@@ -122,6 +122,19 @@ class CashoutServiceClass {
       }
     }
 
+    // Log the wallet transaction for audit trail
+    await WalletService.logTransaction(
+      playerId,
+      'PLAYER',
+      amount,
+      'debit',
+      'cashout',
+      `Cashout requested — chips locked in escrow`,
+      undefined,
+      undefined,
+      cashout?.id
+    );
+
     // Emit balance change so Cashier/Wallet pages refresh instantly
     masterBus.emit('BALANCE_UPDATED', {
       source: 'cashout_request',
@@ -148,6 +161,24 @@ class CashoutServiceClass {
     if (error) {
       console.error('[Cashout] Failed to cancel cashout:', error);
       throw new Error(error.message || 'Failed to cancel cashout');
+    }
+
+    // Get cashout details to log the transaction amount
+    const cashout = await this.getCashout(cashoutId);
+
+    // Log wallet transaction for audit trail if we found the cashout
+    if (cashout) {
+      await WalletService.logTransaction(
+        playerId,
+        'PLAYER',
+        cashout.amount,
+        'credit',
+        'refund',
+        `Cashout cancelled by user — chips returned from escrow`,
+        undefined,
+        undefined,
+        cashoutId
+      );
     }
 
     // Emit balance change — chips returned from escrow
@@ -212,7 +243,21 @@ class CashoutServiceClass {
           .select('user_id')
           .eq('id', agentId)
           .maybeSingle();
+        
         if (agentData?.user_id) {
+          // Log the wallet transaction for the agent receiving the chips
+          await WalletService.logTransaction(
+            agentData.user_id,
+            'PLAYER',
+            cashout.amount,
+            'credit',
+            'transfer',
+            `Processed cashout for ${cashout.playerName || 'player'} — chips received from escrow`,
+            undefined,
+            undefined,
+            cashoutId
+          );
+
           masterBus.emit('BALANCE_UPDATED', {
             source: 'cashout_complete',
             userId: agentData.user_id,
@@ -227,9 +272,6 @@ class CashoutServiceClass {
     return data === true;
   }
 
-  /**
-   * Agent: Reject a cashout request (returns chips to player)
-   */
   async rejectCashout(cashoutId: string, agentId: string, reason?: string): Promise<boolean> {
     // Get cashout details first
     const cashout = await this.getCashout(cashoutId);
@@ -237,35 +279,23 @@ class CashoutServiceClass {
       throw new Error('Cashout not found or not rejectable');
     }
 
-    // STEP 1: Return chips to Player Wallet FIRST — must succeed before changing any state
-    const { error: balanceError } = await retryAsync(
+    // Delegate entirely to the atomic Supabase RPC to prevent race conditions
+    const { data, error } = await retryAsync(
       () =>
-        supabase.rpc('credit_player_wallet', {
-          p_user_id: cashout.playerId,
-          p_amount: cashout.amount,
+        supabase.rpc('fn_reject_cashout', {
+          p_cashout_id: cashoutId,
+          p_agent_id: agentId,
+          p_note: reason || null,
         }),
       3
     );
 
-    if (balanceError) {
-      console.error(
-        '[Cashout] CRITICAL: Failed to return chips to Player Wallet — aborting rejection:',
-        balanceError
-      );
-      FinancialAlertService.logCritical(
-        'CashoutService',
-        'Failed to return chips during cashout rejection',
-        {
-          cashoutId,
-          playerId: cashout.playerId,
-          amount: cashout.amount,
-          error: balanceError.message,
-        }
-      );
-      throw new Error('Cannot reject: chip return failed. Cashout remains pending.');
+    if (error) {
+      console.error('[Cashout] CRITICAL: Failed to reject cashout:', error);
+      throw new Error(error.message || 'Cannot reject cashout.');
     }
 
-    // Log wallet transaction for audit trail
+    // Call WalletService for the unified audit trail (the RPC only writes to chip_transactions)
     await WalletService.logTransaction(
       cashout.playerId,
       'PLAYER',
@@ -277,33 +307,6 @@ class CashoutServiceClass {
       undefined,
       cashoutId
     );
-
-    // STEP 2: Update status to rejected (chips already returned)
-    const { error: updateError } = await supabase
-      .from('cashout_requests')
-      .update({
-        status: 'rejected',
-        agent_note: reason,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', cashoutId);
-
-    if (updateError) {
-      console.error('[Cashout] Status update failed after chip return:', updateError);
-    }
-
-    // STEP 3: Release escrow
-    const { error: escrowError } = await supabase
-      .from('chip_escrow')
-      .update({
-        released_at: new Date().toISOString(),
-        release_type: 'rejected',
-      })
-      .eq('cashout_request_id', cashoutId);
-
-    if (escrowError) {
-      console.error('[Cashout] Failed to release escrow:', escrowError);
-    }
 
     // Emit balance change — chips returned to player from rejected cashout
     masterBus.emit('BALANCE_UPDATED', {

@@ -32,6 +32,7 @@ export interface CommunityCardsProps {
   highlightedIndices?: number[];
   isDealing?: boolean;
   winningHandName?: string; // e.g. "Straight" — shown as overlay at showdown
+  deckStyle?: '4color' | '2color';
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -64,9 +65,10 @@ interface CardFaceProps {
   isHighlighted: boolean;
   isDealing: boolean;
   stage: BoardStage;
+  deckStyle?: '4color' | '2color';
 }
 
-function CardFace({ card, index, isHighlighted, isDealing, stage }: CardFaceProps) {
+function CardFace({ card, index, isHighlighted, isDealing, stage, deckStyle = '4color' }: CardFaceProps) {
   // Apply turn/river emphasis animations to the newly dealt card
   const isTurnCard = stage === 'turn' && index === 3;
   const isRiverCard = (stage === 'river' || stage === 'showdown') && index === 4;
@@ -84,7 +86,7 @@ function CardFace({ card, index, isHighlighted, isDealing, stage }: CardFaceProp
         .join(' ')}
       style={{ animationDelay: `${index * 100}ms`, '--card-index': index } as React.CSSProperties}
     >
-      <CardImage card={card} deckStyle="4color" size="lg" isHighlighted={isHighlighted} />
+      <CardImage card={card} deckStyle={deckStyle} size="lg" isHighlighted={isHighlighted} />
       {/* Highlight Glow */}
       {isHighlighted && <div className="community-cards__highlight-glow" />}
     </div>
@@ -113,6 +115,7 @@ function CommunityCardsComponent({
   highlightedIndices = [],
   isDealing = false,
   winningHandName,
+  deckStyle = '4color',
 }: CommunityCardsProps) {
   const visibleCount = useMemo(() => getVisibleCardCount(stage), [stage]);
   const prevStageRef = useRef(stage);
@@ -208,6 +211,7 @@ function CommunityCardsComponent({
               isHighlighted={slot.isHighlighted}
               isDealing={isDealing && i === visibleCount - 1}
               stage={stage}
+              deckStyle={deckStyle}
             />
           ) : (
             <PlaceholderCard key={`placeholder-${i}`} index={i} />
@@ -247,6 +251,7 @@ export const CommunityCards = memo(CommunityCardsComponent, (prev, next) => {
   if (prev.stage !== next.stage) return false;
   if (prev.isDealing !== next.isDealing) return false;
   if (prev.winningHandName !== next.winningHandName) return false;
+  if (prev.deckStyle !== next.deckStyle) return false;
   if (JSON.stringify(prev.cards) !== JSON.stringify(next.cards)) return false;
   if (JSON.stringify(prev.highlightedIndices) !== JSON.stringify(next.highlightedIndices))
     return false;
