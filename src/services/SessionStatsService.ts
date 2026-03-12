@@ -271,12 +271,21 @@ class SessionStatsServiceClass {
 
   /**
    * Enhancement #8: Queue failed session to localStorage for later retry
+   * Features Sweep #10 bugfix: Added retry_count to prevent poison-pill infinite DB failures.
    */
   private queueOfflineSession(payload: Record<string, unknown>): void {
     try {
+      const retryCount = (payload.retry_count as number) || 0;
+      if (retryCount >= 3) {
+        console.warn(
+          `[SessionStats] Offline session dropped after ${retryCount} failures to prevent poison pill loop.`
+        );
+        return;
+      }
+
       const existing = localStorage.getItem(this.OFFLINE_QUEUE_KEY);
       const queue = existing ? JSON.parse(existing) : [];
-      queue.push({ ...payload, queued_at: new Date().toISOString() });
+      queue.push({ ...payload, queued_at: new Date().toISOString(), retry_count: retryCount + 1 });
       localStorage.setItem(this.OFFLINE_QUEUE_KEY, JSON.stringify(queue.slice(-20))); // Max 20 queued
       console.log(`[SessionStats] Session queued offline (${queue.length} total)`);
     } catch {
@@ -298,16 +307,16 @@ class SessionStatsServiceClass {
       console.log(`[SessionStats] Flushing ${queue.length} offline session(s)`);
 
       queue.forEach((payload) => {
-        // Remove the queued_at field before inserting
-        const { queued_at: _queued_at, ...insertData } = payload;
+        // Remove tracking fields before inserting
+        const { queued_at: _queued_at, retry_count: _retry_count, ...insertData } = payload;
         supabase
           .from('session_history')
           .insert(insertData)
           .then(({ error }) => {
             if (error) {
               console.warn('[SessionStats] Offline flush failed:', error.message);
-              // Re-queue if still failing
-              this.queueOfflineSession(insertData);
+              // Re-queue if still failing (tracks retry_count natively)
+              this.queueOfflineSession(payload);
             } else {
               console.log('[SessionStats] Offline session flushed to DB ✅');
             }
