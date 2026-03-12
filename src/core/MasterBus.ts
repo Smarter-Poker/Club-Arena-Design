@@ -392,6 +392,18 @@ class MasterBusCore {
   private onEventCallbacks: Set<OnEventCallback> = new Set();
   private static MAX_EVENT_LOG = 200;
 
+  // Phase 15: Event deduplication — fingerprint cache prevents duplicate subscriber reactions
+  private recentEventFingerprints = new Map<string, number>();
+  private static readonly DEDUP_WINDOW_MS = 500;
+  // Events that must NEVER be deduplicated (financial, errors, auth)
+  private static readonly DEDUP_BYPASS: BusEventType[] = [
+    'BALANCE_UPDATED',
+    'WALLET_REFRESHED',
+    'SYSTEM_ERROR',
+    'AUTH_STATE_CHANGED',
+    'DIAMOND_BALANCE_CHANGED',
+  ];
+
   // #4b Channel factory registry for auto-recovery
   private channelFactoryRegistry: Map<string, () => void> = new Map();
 
@@ -529,6 +541,28 @@ class MasterBusCore {
       payload,
       timestamp: new Date().toISOString(),
     };
+
+    // Phase 15: Event deduplication — suppress duplicate events within 500ms window
+    if (!MasterBusCore.DEDUP_BYPASS.includes(type)) {
+      try {
+        const fingerprint = `${type}:${JSON.stringify(payload)}`;
+        const now = Date.now();
+        const lastSeen = this.recentEventFingerprints.get(fingerprint);
+        if (lastSeen && now - lastSeen < MasterBusCore.DEDUP_WINDOW_MS) {
+          // Duplicate within window — suppress subscriber dispatch, still log
+          console.debug(`[MasterBus] Dedup suppressed: ${type} (${now - lastSeen}ms since last)`);
+          return;
+        }
+        this.recentEventFingerprints.set(fingerprint, now);
+        // Auto-clean fingerprint after window expires
+        setTimeout(
+          () => this.recentEventFingerprints.delete(fingerprint),
+          MasterBusCore.DEDUP_WINDOW_MS
+        );
+      } catch {
+        // JSON.stringify failure on circular ref — skip dedup, let event through
+      }
+    }
 
     // Phase 7: Cross-tab synchronization
     if (!fromBroadcast && this.broadcastChannel) {

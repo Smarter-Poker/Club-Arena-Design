@@ -162,19 +162,31 @@ class PostgresSyncHooksService {
         }
       )
       // Phase 11: Health monitoring with reconnect logging
+      // Phase 15: Emit bus events so ConnectionHUD and other UI elements can react
       .subscribe((status, err) => {
+        const channelName = `global_db_sync:${userId}`;
         switch (status) {
           case 'SUBSCRIBED':
             console.info(`[PostgresSync] ✅ Realtime Hook Active for user ${userId}.`);
+            masterBus.emit('REALTIME_CONNECTED', { channelName });
             break;
           case 'CHANNEL_ERROR':
             console.error(`[PostgresSync] ❌ Channel error:`, err?.message || err);
+            masterBus.emit('REALTIME_DISCONNECTED', {
+              channelName,
+              reason: `Channel error: ${err?.message || 'unknown'}`,
+            });
             break;
           case 'TIMED_OUT':
             console.warn(`[PostgresSync] ⏱️ Channel timed out — will auto-reconnect.`);
+            masterBus.emit('REALTIME_DISCONNECTED', {
+              channelName,
+              reason: 'Connection timed out',
+            });
             break;
           case 'CLOSED':
             console.info(`[PostgresSync] Channel closed for user ${userId}.`);
+            masterBus.emit('REALTIME_DISCONNECTED', { channelName, reason: 'Channel closed' });
             break;
         }
       });

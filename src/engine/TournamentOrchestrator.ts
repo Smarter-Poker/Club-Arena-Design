@@ -124,6 +124,9 @@ export class TournamentOrchestrator {
           this.activeEngines.delete(tournamentId);
         }
       }
+
+      // 3. Check for upcoming tournament notification windows (24h / 1h)
+      await this.checkNotificationHooks();
     } catch (err) {
       console.error('[TournamentOrchestrator] Error syncing active tournaments:', err);
     }

@@ -2165,11 +2165,16 @@ class HorseOrchestrator {
 
   startAllocationLoop(): void {
     if (this.allocationInterval) return;
-    console.debug('[Orchestrator] Starting proactive 4-table allocation loop (60s interval)');
+    console.debug('[Orchestrator] Starting proactive allocation loop (60s interval)');
     // Run immediately, then every 60 seconds
-    this.ensureHorsesAt4Tables();
+    const runAllocationCycle = async () => {
+      await this.ensureHorsesAt4Tables();
+      await this.enforceMinimumPlayers();
+      await this.dynamicPersonaRotation();
+    };
+    runAllocationCycle();
     this.allocationInterval = setInterval(() => {
-      this.ensureHorsesAt4Tables();
+      runAllocationCycle();
     }, 60_000);
   }
 
