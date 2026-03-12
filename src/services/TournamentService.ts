@@ -296,6 +296,29 @@ function ordinal(n: number): string {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class TournamentService {
+  /**
+   * Determine table capacity for a tournament based on its type/variant.
+   * Mirrors TournamentEngine.getTableCapacity() to keep both code paths in sync.
+   */
+  private static getTableCapacityForTournament(tournament: {
+    tournament_type?: string | null;
+    variant?: string | null;
+    max_players?: number | null;
+  }): number {
+    const type = (tournament.tournament_type || '').toUpperCase();
+    const variant = (tournament.variant || '').toLowerCase();
+
+    // Explicit 2-max / Heads Up
+    if (variant === 'hu') return 2;
+    // Explicit 3-max / Spin & Go
+    if (type === 'SPIN' || variant === 'spin') return 3;
+    // SNG 6-max logic
+    if (type === 'SNG' && tournament.max_players === 6) return 6;
+
+    // Standard 9-max
+    return 9;
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   // Tournament CRUD
   // ─────────────────────────────────────────────────────────────────────────────
@@ -1101,8 +1124,8 @@ class TournamentService {
       );
     }
 
-    // 2. Create Tables
-    const playersPerTable = 9;
+    // 2. Create Tables (dynamic capacity based on tournament variant)
+    const playersPerTable = TournamentService.getTableCapacityForTournament(tournament);
     const numTables = Math.ceil(players.length / playersPerTable);
     const createdTables: any[] = [];
 
@@ -1120,7 +1143,7 @@ class TournamentService {
           big_blind: tournament.blind_structure[0].bigBlind,
           min_buy_in: 0,
           max_buy_in: 0,
-          max_players: 9,
+          max_players: playersPerTable,
           status: 'RUNNING',
           settings: { auto_muck: true, time_bank_seconds: 30 },
         })
@@ -1776,6 +1799,7 @@ class TournamentService {
    * Merge tables when player count drops
    */
   async checkTableMerge(tournamentId: string): Promise<{ tableMerged: boolean }> {
+    const tournament = await this.getTournament(tournamentId);
     const { data: tables } = await supabase
       .from('tables')
       .select('id, current_players')
@@ -1787,7 +1811,9 @@ class TournamentService {
 
     // Get total remaining players
     const totalPlayers = tables.reduce((sum, t) => sum + t.current_players, 0);
-    const playersPerTable = 9;
+    const playersPerTable = tournament
+      ? TournamentService.getTableCapacityForTournament(tournament)
+      : 9;
     const neededTables = Math.ceil(totalPlayers / playersPerTable);
 
     if (tables.length > neededTables) {
@@ -1807,7 +1833,7 @@ class TournamentService {
   }
 
   /**
-   * Create final table (consolidate to 1 table when 9 or fewer players remain)
+   * Create final table (consolidate to 1 table when remaining players fit a single table)
    */
   async createFinalTable(tournamentId: string): Promise<{ finalTableId: string | null }> {
     const { count } = await supabase
@@ -1832,6 +1858,7 @@ class TournamentService {
       const tournament = await this.getTournament(tournamentId);
       if (!tournament) return { finalTableId: null };
 
+      const finalTableCapacity = TournamentService.getTableCapacityForTournament(tournament);
       const { data: newTable } = await supabase
         .from('tables')
         .insert({
@@ -1845,7 +1872,7 @@ class TournamentService {
           big_blind: tournament.blind_structure[0].bigBlind,
           min_buy_in: 0,
           max_buy_in: 0,
-          max_players: 9,
+          max_players: finalTableCapacity,
           status: 'RUNNING',
           settings: { auto_muck: true, time_bank_seconds: 45 },
         })

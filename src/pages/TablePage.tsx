@@ -4067,6 +4067,7 @@ export default function TablePage({
         timeRemaining={sitOutTimeRemaining}
         maxSitOutTime={300}
         tableName={tableState.tableName}
+        autoPostBlinds={userSettings.autoPostBlinds}
       />
 
       {/* Wait List Modal */}
@@ -4478,7 +4479,7 @@ export default function TablePage({
           autoMuckWinners: userSettings.autoMuckWinners,
           autoPostBlinds: userSettings.autoPostBlinds,
           soundEnabled: isSoundEnabled,
-          soundVolume: 70,
+          soundVolume: userSettings.soundVolume,
           showHandStrength: userSettings.showHUD,
           showPotOdds: userSettings.showPotOdds,
           animationSpeed:
@@ -4489,7 +4490,7 @@ export default function TablePage({
                 : 'normal',
           fourColorDeck: userSettings.fourColorDeck,
           showStackInBB: userSettings.showStackInBB,
-          showBetSizePresets: true,
+          showBetSizePresets: userSettings.showBetSizePresets,
           confirmAllIn: userSettings.confirmAllIn,
           sitOutNextHand: sitOutNextHand,
         }}
@@ -4530,6 +4531,12 @@ export default function TablePage({
           }
           if (settingsUpdate.autoPostBlinds !== undefined) {
             updateSetting('autoPostBlinds', settingsUpdate.autoPostBlinds);
+          }
+          if (settingsUpdate.soundVolume !== undefined) {
+            updateSetting('soundVolume', settingsUpdate.soundVolume);
+          }
+          if (settingsUpdate.showBetSizePresets !== undefined) {
+            updateSetting('showBetSizePresets', settingsUpdate.showBetSizePresets);
           }
         }}
       />

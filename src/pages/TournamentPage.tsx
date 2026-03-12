@@ -3,7 +3,7 @@
  * Register and view upcoming tournaments
  */
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   tournamentService,
@@ -532,10 +532,57 @@ export default function TournamentPage() {
     });
   }, [tournaments, filter]);
 
+  // ─── Countdown Timer Hook (Initiative 2) ───────────────────────────
+  const [countdownStr, setCountdownStr] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const times: Record<string, string> = {};
+      tournaments.forEach((t) => {
+        if (t.status === 'REGISTERING' && t.start_time) {
+          const diff = new Date(t.start_time).getTime() - now;
+          if (diff > 0) {
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            times[t.id] =
+              `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+          } else {
+            times[t.id] = 'Starting...';
+          }
+        }
+      });
+      setCountdownStr(times);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [tournaments]);
+
   if (isLoading) {
     return (
       <div className="tournament-page">
-        <div className="loading">Loading tournaments...</div>
+        <div className="tournament-header">
+          <div className="header-left">
+            <Link to={`/clubs/${clubId}`} className="back-link">
+              ← Back to Club
+            </Link>
+            <h1> Tournaments</h1>
+          </div>
+        </div>
+        <div className="tournament-content">
+          <div className="tournament-list">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="tournament-skeleton-card">
+                <div className="skel-header" />
+                <div className="skel-body">
+                  <div className="skel-line" style={{ width: '60%' }} />
+                  <div className="skel-line" style={{ width: '40%' }} />
+                  <div className="skel-line" style={{ width: '75%' }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -569,24 +616,22 @@ export default function TournamentPage() {
             }}
           >
             <h2 style={{ margin: 0 }}>Upcoming</h2>
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value as TournFilter)}
-              style={{
-                padding: '4px 8px',
-                borderRadius: '4px',
-                background: 'rgba(0,0,0,0.5)',
-                color: '#fff',
-                border: '1px solid #444',
-                outline: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              <option value="all">All Stakes</option>
-              <option value="freeroll">Freerolls</option>
-              <option value="micro">Micro (≤ 1K)</option>
-              <option value="highroller">High Roller (10K+)</option>
-            </select>
+            <div className="tourn-filter-chips">
+              {[
+                { value: 'all', label: 'All Stakes' },
+                { value: 'freeroll', label: 'Freerolls' },
+                { value: 'micro', label: 'Micro' },
+                { value: 'highroller', label: 'High Roller' },
+              ].map((f) => (
+                <button
+                  key={f.value}
+                  className={`tourn-filter-chip ${filter === f.value ? 'active' : ''}`}
+                  onClick={() => setFilter(f.value as TournFilter)}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
           {filteredTournaments.length === 0 ? (
             <div className="empty-state">
@@ -651,8 +696,27 @@ export default function TournamentPage() {
                     {' '}
                     {tourn.current_players}/{tourn.max_players}
                   </span>
-                  <span> {tourn.prize_pool}</span>
+                  <span> {tourn.prize_pool?.toLocaleString?.() || tourn.prize_pool}</span>
                 </div>
+                {/* Registration Progress Bar (Initiative 2) */}
+                {(tourn.max_players ?? 0) > 0 && (
+                  <div className="tourn-progress-bar">
+                    <div
+                      className="tourn-progress-fill"
+                      style={{
+                        width: `${Math.min(100, (tourn.current_players / (tourn.max_players ?? 1)) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                )}
+                {/* Countdown Timer (Initiative 2) */}
+                {countdownStr[tourn.id] && (
+                  <div
+                    className={`tourn-countdown ${countdownStr[tourn.id] === 'Starting...' ? 'starting' : ''}`}
+                  >
+                    ⏱ {countdownStr[tourn.id]}
+                  </div>
+                )}
               </div>
             ))
           )}

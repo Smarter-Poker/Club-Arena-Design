@@ -560,9 +560,10 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   MOBILE RESPONSIVE
+   MOBILE RESPONSIVE — Portrait-First Financial UX
    ───────────────────────────────────────────────────────────────────────────── */
 
+/* Horizontal scroll-snap for wallet card stack on mobile */
 @media (max-width: 480px) {
   .wallet-hero {
     margin: 0.75rem;
@@ -579,21 +580,55 @@
   }
 
   .hero-btn {
-    padding: 12px 14px;
-    font-size: 0.82rem;
+    padding: 14px 14px;
+    min-height: 48px;
+    font-size: 0.85rem;
     border-radius: 12px;
   }
 
+  .wallet-tabs {
+    margin: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .wallet-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
   .wallet-tabs button {
-    padding: 12px 8px;
+    padding: 14px 12px;
+    min-height: 48px;
     font-size: 0.8rem;
+    white-space: nowrap;
   }
 
   .wallet-content {
     padding: 0.75rem;
   }
 
+  /* Card-stack: horizontal scroll-snap for triple wallet cards */
+  .wallet-cards-stack {
+    flex-direction: row;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    gap: 12px;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .wallet-cards-stack::-webkit-scrollbar {
+    display: none;
+  }
+
   .wallet-card-premium {
+    min-width: 85vw;
+    scroll-snap-align: center;
+    flex-shrink: 0;
     padding: 1rem;
     border-radius: 14px;
   }
@@ -611,6 +646,17 @@
   .transfer-section {
     padding: 1rem;
   }
+
+  .transfer-btn {
+    min-height: 52px;
+  }
+
+  /* Scroll indicator dots */
+  .wallet-cards-stack::after {
+    content: '';
+    min-width: 1px;
+    flex-shrink: 0;
+  }
 }
 
 @media (max-width: 380px) {
@@ -625,6 +671,10 @@
 
   .hero-actions {
     grid-template-columns: 1fr;
+  }
+
+  .wallet-card-premium {
+    min-width: 88vw;
   }
 
   .wc-balances {

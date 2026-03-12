@@ -219,7 +219,6 @@ export default function LobbyPage() {
           </h1>
           <p className={styles.heroSubtitle}>Private poker clubs, better than ever.</p>
           <div className={styles.liveStats}>
-            <span className={styles.liveDot}></span>
             <span>{onlinePlayers} online</span>
             <span className={styles.divider}>•</span>
             <span>{totalPlaying} playing</span>
@@ -275,9 +274,21 @@ export default function LobbyPage() {
         </div>
 
         {loading ? (
-          <div className={styles.emptyState}>
-            <span className={styles.emptyIcon}></span>
-            <h3>Loading tables...</h3>
+          <div className={styles.tablesGrid}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className={styles.skeletonCard}>
+                <div className={styles.skeletonHeader} />
+                <div className={styles.skeletonBody}>
+                  <div className={styles.skeletonLine} style={{ width: '70%' }} />
+                  <div className={styles.skeletonLine} style={{ width: '50%' }} />
+                  <div className={styles.skeletonLine} style={{ width: '85%' }} />
+                </div>
+                <div className={styles.skeletonFooter}>
+                  <div className={styles.skeletonDot} />
+                  <div className={styles.skeletonLine} style={{ width: '40%' }} />
+                </div>
+              </div>
+            ))}
           </div>
         ) : filteredTables.length > 0 ? (
           <div className={styles.tablesGrid}>

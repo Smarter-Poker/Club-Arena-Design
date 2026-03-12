@@ -1255,7 +1255,7 @@ export class TournamentEngine {
     for (const player of waitlist) {
       if (!this.running) break;
 
-      // Find an open table (assumes max 9 players per tournament table)
+      // Find an open table using dynamic capacity for this tournament variant
       const openTable = this.tables.find((t) => t.playerCount < capacity);
       if (!openTable) break; // All tables are full again, must wait for next elimination.
 

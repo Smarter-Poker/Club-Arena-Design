@@ -18,11 +18,13 @@ import { masterBus } from '../core/MasterBus';
 
 export interface TableUserSettings {
   isSoundEnabled: boolean;
+  soundVolume: number; // 0-100
   animationSpeed: number; // 0.5, 1, 1.5, 2
   theme: string; // 'green', 'blue', 'red', 'purple', etc.
   fourColorDeck: boolean;
   showHUD: boolean;
   showPotOdds: boolean;
+  showBetSizePresets: boolean;
   confirmAllIn: boolean;
   autoMuck: boolean;
   autoMuckWinners: boolean;
@@ -33,11 +35,13 @@ export interface TableUserSettings {
 
 const DEFAULT_SETTINGS: TableUserSettings = {
   isSoundEnabled: true,
+  soundVolume: 70,
   animationSpeed: 1,
   theme: 'green',
   fourColorDeck: false,
   showHUD: true,
   showPotOdds: false,
+  showBetSizePresets: true,
   confirmAllIn: true,
   autoMuck: false,
   autoMuckWinners: false,
