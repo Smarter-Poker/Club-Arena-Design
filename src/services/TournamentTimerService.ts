@@ -218,12 +218,12 @@ class TournamentTimerServiceClass {
   async checkTableSize(tournamentId: string): Promise<void> {
     try {
       const { data: entries } = await supabase
-        .from('tournament_entries')
+        .from('tournament_players')
         .select(
-          'user_id, username:profiles(display_name), chips, avatar_url:profiles(avatar_url), vpip_count, pfr_count, hands_played, aggressive_actions, passive_actions'
+          'user_id, username, chips'
         )
         .eq('tournament_id', tournamentId)
-        .in('status', ['playing', 'active']);
+        .eq('status', 'playing');
 
       if (!entries || entries.length === 0) return;
 
@@ -254,19 +254,8 @@ class TournamentTimerServiceClass {
           prizePool: tournament.prize_pool || 0,
           players: entries.map((e: any) => ({
             userId: e.user_id,
-            username: e.username?.display_name || e.user_id?.substring(0, 8) || 'Player',
+            username: e.username || e.user_id?.substring(0, 8) || 'Player',
             chips: e.chips || 0,
-            avatar: e.avatar_url?.avatar_url || undefined,
-            stats:
-              (e.hands_played || 0) > 0
-                ? {
-                    handsPlayed: e.hands_played || 0,
-                    vpipCount: e.vpip_count || 0,
-                    pfrCount: e.pfr_count || 0,
-                    aggressiveActions: e.aggressive_actions || 0,
-                    passiveActions: e.passive_actions || 0,
-                  }
-                : undefined,
           })),
         });
       }
@@ -279,12 +268,12 @@ class TournamentTimerServiceClass {
           tournamentId,
           player1: {
             userId: p1.user_id,
-            username: p1.username?.display_name || 'Player 1',
+            username: p1.username || 'Player 1',
             chips: p1.chips || 0,
           },
           player2: {
             userId: p2.user_id,
-            username: p2.username?.display_name || 'Player 2',
+            username: p2.username || 'Player 2',
             chips: p2.chips || 0,
           },
         });
