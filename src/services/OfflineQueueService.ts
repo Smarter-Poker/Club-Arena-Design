@@ -36,6 +36,7 @@ const MAX_QUEUE_SIZE = 50;
 export const OfflineQueueService = {
   db: null as IDBDatabase | null,
   _onlineHandler: null as (() => void) | null,
+  _isReplaying: false,
 
   /**
    * Initialize IndexedDB and set up online listener
@@ -119,46 +120,61 @@ export const OfflineQueueService = {
 
   /**
    * Replay all queued mutations
+   * Guarded against concurrent execution to prevent double financial mutations.
    */
   async replayQueue(): Promise<{ replayed: number; failed: number }> {
     if (!this.db) return { replayed: 0, failed: 0 };
 
-    const mutations = await this.getAll();
-    if (mutations.length === 0) return { replayed: 0, failed: 0 };
+    // Concurrency guard — prevent double-execution from rapid 'online' events
+    if (this._isReplaying) {
+      console.warn('[OfflineQueue] Replay already in progress — skipping');
+      return { replayed: 0, failed: 0 };
+    }
+    this._isReplaying = true;
 
-    console.debug(`[OfflineQueue] Replaying ${mutations.length} queued mutations`);
-
-    let replayed = 0;
-    let failed = 0;
-
-    for (const mutation of mutations) {
-      try {
-        const success = await this.executeMutation(mutation);
-        if (success) {
-          await this.remove(mutation.id);
-          replayed++;
-        } else {
-          mutation.retries++;
-          if (mutation.retries >= 3) {
-            console.error(`[OfflineQueue] Mutation ${mutation.id} failed 3 times — dropping`);
-            await this.remove(mutation.id);
-            failed++;
-          } else {
-            await this.update(mutation);
-            failed++;
-          }
-        }
-      } catch (err) {
-        console.error(`[OfflineQueue] Error replaying ${mutation.id}:`, err);
-        failed++;
+    try {
+      const mutations = await this.getAll();
+      if (mutations.length === 0) {
+        this._isReplaying = false;
+        return { replayed: 0, failed: 0 };
       }
-    }
 
-    if (replayed > 0) {
-      masterBus.emit('OFFLINE_QUEUE_REPLAYED', { replayed, failed });
-    }
+      console.debug(`[OfflineQueue] Replaying ${mutations.length} queued mutations`);
 
-    return { replayed, failed };
+      let replayed = 0;
+      let failed = 0;
+
+      for (const mutation of mutations) {
+        try {
+          const success = await this.executeMutation(mutation);
+          if (success) {
+            await this.remove(mutation.id);
+            replayed++;
+          } else {
+            mutation.retries++;
+            if (mutation.retries >= 3) {
+              console.error(`[OfflineQueue] Mutation ${mutation.id} failed 3 times — dropping`);
+              await this.remove(mutation.id);
+              failed++;
+            } else {
+              await this.update(mutation);
+              failed++;
+            }
+          }
+        } catch (err) {
+          console.error(`[OfflineQueue] Error replaying ${mutation.id}:`, err);
+          failed++;
+        }
+      }
+
+      if (replayed > 0) {
+        masterBus.emit('OFFLINE_QUEUE_REPLAYED', { replayed, failed });
+      }
+
+      return { replayed, failed };
+    } finally {
+      this._isReplaying = false;
+    }
   },
 
   /**

@@ -6,8 +6,8 @@
  * Root application with routing, auth guards, and global providers
  */
 
-import { Routes, Route } from 'react-router-dom';
-import { Suspense, lazy, useState, useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import { supabase } from './lib/supabase';
 import { realtimeChannelService } from './services/RealtimeChannelService';
 import { replayOfflineQueue } from './utils/offlineQueue';
@@ -151,6 +151,8 @@ export default function App() {
   // When embedded in an iframe at smarter.poker, the parent sends
   // the Supabase auth token so the SPA can authenticate without
   // requiring a separate login flow.
+  const lastAuthTokenRef = useRef<string | null>(null);
+
   useEffect(() => {
     const isInIframe = window.parent !== window;
     if (!isInIframe) return;
@@ -162,10 +164,12 @@ export default function App() {
 
       if (event.data?.type === 'SMARTER_AUTH_TOKEN' && event.data.token) {
         // Send ACK immediately to halt World Hub retry loop.
-        // Use the sender's origin (captured synchronously before any async gap)
-        // instead of '*' to prevent unauthorized parents from intercepting the ACK.
         const parentOrigin = event.origin;
         window.parent.postMessage({ type: 'SMARTER_AUTH_ACK' }, parentOrigin);
+
+        // Improvement #4: Skip redundant setSession if token hasn't changed
+        if (lastAuthTokenRef.current === event.data.token) return;
+        lastAuthTokenRef.current = event.data.token;
 
         try {
           await supabase.auth.setSession({
@@ -180,6 +184,45 @@ export default function App() {
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  // ── URL Sync: Notify parent of route changes for address bar sync ──
+  const location = useLocation();
+  useEffect(() => {
+    const isInIframe = window.parent !== window;
+    if (!isInIframe) return;
+
+    // Strip the basename prefix that React Router adds internally
+    const route = location.pathname.replace(/^\//, '');
+    try {
+      window.parent.postMessage({ type: 'CLUB_ARENA_ROUTE_CHANGE', route }, '*');
+    } catch (_) {
+      /* best effort */
+    }
+  }, [location.pathname]);
+
+  // ── Heartbeat: Periodically tell the parent we're still alive ──
+  useEffect(() => {
+    const isInIframe = window.parent !== window;
+    if (!isInIframe) return;
+
+    const HEARTBEAT_INTERVAL = 30_000; // 30 seconds
+    const heartbeatId = setInterval(() => {
+      try {
+        window.parent.postMessage({ type: 'CLUB_ARENA_HEARTBEAT' }, '*');
+      } catch (_) {
+        /* best effort */
+      }
+    }, HEARTBEAT_INTERVAL);
+
+    // Send one immediately on mount
+    try {
+      window.parent.postMessage({ type: 'CLUB_ARENA_HEARTBEAT' }, '*');
+    } catch (_) {
+      /* best effort — ignore postMessage errors from detached frames */
+    }
+
+    return () => clearInterval(heartbeatId);
   }, []);
 
   // ── Clean up realtime subscriptions on page unload ──
@@ -217,8 +260,8 @@ export default function App() {
 
     // Register SW for background notifications
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw-bus.js').catch(() => {
-        /* SW not supported or blocked */
+      navigator.serviceWorker.register('/sw-bus.js').catch((_err) => {
+        void 0; /* SW not supported or blocked */
       });
     }
 
