@@ -7,7 +7,7 @@
  * with richer animations.
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { triggerHaptic } from '../../services/HapticService';
 import { masterBus } from '../../core/MasterBus';
 import './LuckyDrawWheel.css';
@@ -50,6 +50,16 @@ export default function LuckyDrawWheel({
   const [result, setResult] = useState<WheelSegment | null>(null);
   const [rotation, setRotation] = useState(0);
   const wheelRef = useRef<HTMLDivElement>(null);
+  const spinTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMounted = useRef(true);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+      if (spinTimerRef.current) clearTimeout(spinTimerRef.current);
+    };
+  }, []);
 
   const segAngle = 360 / segments.length;
 
@@ -59,8 +69,19 @@ export default function LuckyDrawWheel({
     setResult(null);
     triggerHaptic('medium');
 
-    // Get winning segment from server
-    const winnerId = await onSpin();
+    let winnerId: string;
+    try {
+      // Get winning segment from server
+      winnerId = await onSpin();
+    } catch (err) {
+      // Error recovery: reset spinning state so user can retry
+      console.error('[LuckyDrawWheel] onSpin failed:', err);
+      if (isMounted.current) setSpinning(false);
+      return;
+    }
+
+    if (!isMounted.current) return;
+
     const winIndex = segments.findIndex((s) => s.id === winnerId);
     const winSegment = segments[winIndex >= 0 ? winIndex : 0];
 
@@ -74,7 +95,8 @@ export default function LuckyDrawWheel({
     setRotation(targetRotation);
 
     // Wait for spin to complete (matches CSS transition duration)
-    setTimeout(() => {
+    spinTimerRef.current = setTimeout(() => {
+      if (!isMounted.current) return;
       triggerHaptic('success');
       masterBus.emit('WHEEL_SPIN_RESULT', {
         segmentId: winSegment.id,

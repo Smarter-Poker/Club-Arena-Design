@@ -6,7 +6,7 @@
  * Usage: <DiamondRainEffect active={showRain} onComplete={() => setShowRain(false)} />
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import './DiamondRainEffect.css';
 
 interface DiamondRainEffectProps {
@@ -36,6 +36,16 @@ export default function DiamondRainEffect({
   duration = 2500,
 }: DiamondRainEffectProps) {
   const [particles, setParticles] = useState<Particle[]>([]);
+  // Stabilize onComplete to prevent re-trigger loop when parent passes inline callback
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!active) {
@@ -56,12 +66,13 @@ export default function DiamondRainEffect({
     setParticles(newParticles);
 
     const timer = setTimeout(() => {
+      if (!isMounted.current) return;
       setParticles([]);
-      onComplete?.();
+      onCompleteRef.current?.();
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [active, count, duration, onComplete]);
+  }, [active, count, duration]);
 
   if (particles.length === 0) return null;
 

@@ -6,7 +6,7 @@
  * "Claim" button with haptic + particle burst.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { triggerHaptic } from '../../services/HapticService';
 import { masterBus } from '../../core/MasterBus';
 import './DailyLoginReward.css';
@@ -33,6 +33,15 @@ export default function DailyLoginReward({
 }: DailyLoginRewardProps) {
   const [revealed, setRevealed] = useState(false);
   const [claimed, setClaimed] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    };
+  }, []);
 
   const handleReveal = useCallback(() => {
     triggerHaptic('medium');
@@ -44,8 +53,10 @@ export default function DailyLoginReward({
     setClaimed(true);
     masterBus.emit('DAILY_REWARD_CLAIMED', { amount, rewardType, streakDay });
     onClaim();
-    // Auto-close after celebration
-    setTimeout(onClose, 1800);
+    // Auto-close after celebration — guarded against unmount
+    closeTimerRef.current = setTimeout(() => {
+      if (isMounted.current) onClose();
+    }, 1800);
   }, [onClaim, onClose, amount, rewardType, streakDay]);
 
   const icon = rewardType === 'diamonds' ? '💎' : '🪙';
