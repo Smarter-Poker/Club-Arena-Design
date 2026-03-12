@@ -92,13 +92,7 @@ import TimerBar from '../components/table/TimerBar';
 import PremiumCard from '../components/table/PremiumCard';
 import RealTimeResults from '../components/table/RealTimeResults';
 import PlayerCard from '../components/table/PlayerCard';
-import {
-  Deck,
-  evaluateHand,
-  compareHands,
-  calculatePots,
-  determineWinners,
-} from '../engine/PokerEngine';
+import { Deck, compareHands, calculatePots, determineWinners } from '../engine/PokerEngine';
 import { HandController } from '../engine/HandController';
 import { RakeWaterfallEngine } from '../engines/financial/RakeWaterfallEngine';
 import { OFCPineappleEngine } from '../engine/OFCPineappleEngine';

@@ -523,6 +523,42 @@ class CashoutServiceClass {
       cancelledAt: data.cancelled_at as string,
     };
   }
+
+  /**
+   * Auto-expire stale pending cashouts — returns escrowed chips to players.
+   * Call via cron/edge function on a schedule (e.g. every 6 hours).
+   */
+  async expireStale(maxHours = 72): Promise<{ expired: number; playersRefunded: string[] }> {
+    const { data, error } = await supabase.rpc('fn_expire_stale_cashouts', {
+      p_max_hours: maxHours,
+    });
+
+    if (error) {
+      console.error('[Cashout] Failed to expire stale cashouts:', error);
+      return { expired: 0, playersRefunded: [] };
+    }
+
+    const expiredRecords = data || [];
+    const playersRefunded: string[] = [];
+
+    // Emit BALANCE_UPDATED for each player whose chips were returned
+    for (const rec of expiredRecords) {
+      masterBus.emit('BALANCE_UPDATED', {
+        source: 'cashout_expired',
+        userId: rec.player_id,
+        amount: rec.amount,
+      });
+      playersRefunded.push(rec.player_id);
+    }
+
+    if (expiredRecords.length > 0) {
+      console.log(
+        `[Cashout] Expired ${expiredRecords.length} stale cashouts, refunded ${playersRefunded.length} players`
+      );
+    }
+
+    return { expired: expiredRecords.length, playersRefunded };
+  }
 }
 
 // Export singleton

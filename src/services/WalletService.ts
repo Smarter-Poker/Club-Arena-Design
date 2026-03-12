@@ -15,6 +15,7 @@
 import { supabase } from '../lib/supabase';
 import { retryAsync } from '../utils/retryAsync';
 import { masterBus } from '../core/MasterBus';
+import { FinancialAlertService } from './FinancialAlertService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -481,10 +482,21 @@ export const WalletService = {
       });
       if (error) {
         console.error('[WalletService] Transaction log RPC failed:', error.message);
-        // Non-fatal — financial op succeeded, log for reconciliation
+        // PARTIAL FAILURE RECOVERY: financial op succeeded but audit trail failed
+        // Fire a critical alert so ops can manually reconcile
+        FinancialAlertService.logCritical(
+          'WalletService.logTransaction',
+          'Transaction log failed after successful financial operation — audit trail gap',
+          { userId, walletType, amount, type, category, description, rpcError: error.message }
+        );
       }
     } catch (err) {
       console.error('[WalletService] Transaction log error:', err);
+      FinancialAlertService.logCritical(
+        'WalletService.logTransaction',
+        'Transaction log threw exception — audit trail gap',
+        { userId, walletType, amount, type, category, error: String(err) }
+      );
     }
   },
 

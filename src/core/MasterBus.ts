@@ -129,7 +129,15 @@ export interface BusPayloadMap {
   ANNOUNCEMENT_CHANGED: { clubId: string; action: 'created' | 'deleted' };
   // Financial events
   COMMISSION_PAID: { agentId: string; amount: number };
-  SETTLEMENT_COMPLETED: { clubId: string; periodId: string };
+  SETTLEMENT_COMPLETED: {
+    periodId: string;
+    agentsPaid: number;
+    playersWithRakeback: number;
+    totalDisbursed: number;
+    successRate?: number;
+    status: string;
+    clubId?: string;
+  };
   FINANCIAL_ALERT: {
     severity: 'critical' | 'warning' | 'info';
     source: string;

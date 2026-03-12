@@ -20,6 +20,7 @@
 import { supabase } from '../lib/supabase';
 import { WalletService } from './WalletService';
 import { masterBus } from '../core/MasterBus';
+import { FinancialAlertService } from './FinancialAlertService';
 
 // Exact cent precision — never round
 const exact = (v: number): number => Math.trunc(v * 100) / 100;
@@ -51,6 +52,30 @@ export const ChipFlowService = {
   ): Promise<ChipTransferResult> {
     const amt = exact(amount);
     if (amt <= 0) throw new Error('Transfer amount must be positive');
+
+    // RATE LIMIT: Max 10 transfers per user per 60 seconds
+    const { data: recentTransfers } = await supabase
+      .from('wallet_transactions')
+      .select('id')
+      .eq('user_id', fromUserId)
+      .eq('category', 'transfer')
+      .gte('created_at', new Date(Date.now() - 60_000).toISOString())
+      .limit(11);
+
+    if (recentTransfers && recentTransfers.length >= 10) {
+      throw new Error(
+        'Transfer rate limit exceeded — max 10 transfers per minute. Please wait and try again.'
+      );
+    }
+
+    // LARGE TRANSACTION ALERT: Log warning for transfers ≥ 50,000 chips
+    if (amt >= 50_000) {
+      FinancialAlertService.logWarning(
+        'ChipFlowService',
+        `Large transfer: ${amt.toLocaleString()} chips from ${fromUserId.slice(0, 8)} to ${toUserId.slice(0, 8)}`,
+        { fromUserId, toUserId, amount: amt, category, description }
+      );
+    }
 
     // 1. Deduct from sender's PLAYER wallet
     const { data: deductResult, error: deductErr } = await supabase.rpc('deduct_player_wallet', {
@@ -401,6 +426,38 @@ export const ChipFlowService = {
       difference,
       isBalanced: Math.abs(difference) < 0.01,
     };
+  },
+
+  /**
+   * Run ledger reconciliation — verifies total minted equals total in circulation.
+   * If imbalanced, fires a CRITICAL financial alert for ops investigation.
+   * Designed to be called from a cron/edge function on a daily schedule.
+   */
+  async runReconciliation(): Promise<{
+    isBalanced: boolean;
+    difference: number;
+  }> {
+    const result = await this.verifyLedger();
+
+    if (!result.isBalanced) {
+      await FinancialAlertService.logCritical(
+        'ChipFlowService.reconciliation',
+        `Ledger imbalance detected: ${result.difference.toFixed(2)} chips unaccounted for`,
+        {
+          totalMinted: result.totalMinted,
+          totalInWallets: result.totalInWallets,
+          totalInLockedBalance: result.totalInLockedBalance,
+          difference: result.difference,
+        }
+      );
+    } else {
+      console.log(
+        `[Reconciliation] ✅ Ledger balanced: ${result.totalMinted.toLocaleString()} minted, ` +
+          `${result.totalInWallets.toLocaleString()} in wallets, ${result.totalInLockedBalance.toLocaleString()} locked`
+      );
+    }
+
+    return { isBalanced: result.isBalanced, difference: result.difference };
   },
 };
 

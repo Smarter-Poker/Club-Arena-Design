@@ -342,7 +342,15 @@ export default function SettlementPage() {
           `Payouts complete: ${result.agentsPaid} agents, ${result.playersWithRakeback} players, ${result.totalDisbursed.toLocaleString()} disbursed`
         );
         // Notify other pages (ClubFinancialsPage) that settlement completed
-        masterBus.emit('SETTLEMENT_COMPLETED', { clubId: clubId || '', periodId: period.id });
+        masterBus.emit('SETTLEMENT_COMPLETED', {
+          clubId: clubId || '',
+          periodId: period.id,
+          agentsPaid: result.agentsPaid,
+          playersWithRakeback: result.playersWithRakeback,
+          totalDisbursed: result.totalDisbursed,
+          successRate: 100,
+          status: 'settled',
+        });
       }
     } catch (error) {
       console.error('[SettlementPage] Payout failed:', error);
