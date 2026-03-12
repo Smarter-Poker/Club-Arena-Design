@@ -166,6 +166,10 @@ export default function App() {
             access_token: event.data.token,
             refresh_token: event.data.refreshToken || '',
           });
+          // Send ACK back to the parent window indicating auth succeeded
+          if (event.source) {
+            (event.source as Window).postMessage({ type: 'SMARTER_AUTH_ACK' }, event.origin);
+          }
         } catch (e) {
           console.error('[App] Failed to set session from parent:', e);
         }
