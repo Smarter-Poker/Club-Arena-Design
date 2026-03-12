@@ -1,11 +1,11 @@
 -- ============================================================
--- V17 Audit Fix: Atomic Cancel Tournament Refund Bug
+-- V18 Audit Fix: Atomic Cancel Tournament Refund Bug
 -- 
 -- Description:
 -- Fixes a bug where atomic_cancel_tournament was attempting
--- to refund players into the deprecated `player_wallets` table 
--- instead of the unified `wallets` table (via credit_player_wallet).
--- This resulted in swallowed refunds on tournament cancellation.
+-- to insert into wallet_transactions with incorrect columns.
+-- Now properly utilizes the centralized PERFORM log_wallet_transaction()
+-- and explicitly credits the unified PLAYER wallet.
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION atomic_cancel_tournament(
@@ -14,6 +14,7 @@ CREATE OR REPLACE FUNCTION atomic_cancel_tournament(
 ) RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
     v_tournament RECORD;
@@ -32,7 +33,7 @@ BEGIN
         RAISE EXCEPTION 'Tournament not found';
     END IF;
 
-    IF v_tournament.status IN ('completed', 'canceled') THEN
+    IF v_tournament.status IN ('completed', 'canceled', 'CANCELLED') THEN
         RAISE EXCEPTION 'Tournament is already %', v_tournament.status;
     END IF;
 
@@ -41,7 +42,8 @@ BEGIN
 
     -- 2. Mark tournament as canceled FIRST to prevent new registrations
     UPDATE tournaments
-    SET status = 'canceled',
+    SET status = 'CANCELLED',
+        canceled_at = NOW(),
         updated_at = NOW()
     WHERE id = p_tournament_id;
 
@@ -50,17 +52,21 @@ BEGIN
         FOR v_player IN (SELECT user_id, id FROM tournament_players WHERE tournament_id = p_tournament_id)
         LOOP
             -- Refund the player's unified global wallet
-            PERFORM credit_player_wallet(v_player.user_id, v_refund_amount);
+            UPDATE wallets
+            SET balance = balance + v_refund_amount,
+                updated_at = NOW()
+            WHERE user_id = v_player.user_id AND wallet_type = 'PLAYER';
 
-            -- Log the transaction
-            INSERT INTO wallet_transactions (
-                user_id, club_id, amount, type, description, related_entity_id
-            ) VALUES (
+            -- Log the transaction safely using the master logging function
+            PERFORM log_wallet_transaction(
                 v_player.user_id,
-                v_tournament.club_id,
+                'PLAYER',
                 v_refund_amount,
+                'credit',
                 'refund',
-                'Tournament cancellation refund: ' || v_tournament.name,
+                'Tournament cancellation refund: ' || COALESCE(v_tournament.name, 'Unknown'),
+                NULL,
+                NULL,
                 p_tournament_id
             );
 
@@ -69,7 +75,7 @@ BEGIN
         END LOOP;
     END IF;
     
-    -- 4. Delete the player registrations (or mark them canceled)
+    -- 4. Delete the player registrations
     DELETE FROM tournament_players WHERE tournament_id = p_tournament_id;
     
     -- 5. Close any active child tables
@@ -84,3 +90,5 @@ BEGIN
     );
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION atomic_cancel_tournament(UUID, UUID) TO anon, authenticated;

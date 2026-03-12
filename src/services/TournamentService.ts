@@ -935,68 +935,30 @@ class TournamentService {
       throw new Error('Cannot unregister: You have already been seated at an active table.');
     }
 
-    // Delete registration FIRST as an atomic Compare-And-Swap to prevent double-refund
-    // or race conditions with TournamentEngine.seatAlternates()
-    const { data: deletedRows, error: deleteError } = await supabase
-      .from('tournament_players')
-      .delete()
-      .eq('tournament_id', tournamentId)
-      .eq('user_id', userId)
-      .eq('status', 'registered') // Lock constraint
-      .select('id');
-
-    if (deleteError) {
-      console.error('[TournamentService] Failed to delete registration:', deleteError);
-      throw new Error('Failed to unregister — please try again');
-    }
-
-    if (!deletedRows || deletedRows.length === 0) {
-      // The row is either gone or has changed status (e.g. to 'playing')
-      throw new Error('Unregister failed: You may have just been seated at a table.');
-    }
-
-    // Calculate refund amount (buy-in + fee — exact penny values from DB, NO rounding)
     const buyInAmount = tournament.buy_in_amount || 0;
     const refundAmount = buyInAmount + (tournament.buy_in_fee || 0);
 
-    // Refund to Player Wallet — only AFTER successful deletion
-    const { error: refundError } = await retryAsync(
+    // Call atomic RPC to safely unregister AND refund in one step
+    const { data: unregistered, error: unregError } = await retryAsync(
       () =>
-        supabase.rpc('credit_player_wallet', {
+        supabase.rpc('atomic_tournament_unregister', {
+          p_tournament_id: tournamentId,
           p_user_id: userId,
-          p_amount: refundAmount,
+          p_refund_amount: refundAmount,
         }),
       3
     );
 
-    if (refundError) {
-      console.error('[TournamentService] Refund to Player Wallet failed:', refundError);
-      // Re-register the player since refund failed (rollback)
-      const { error: rollbackErr } = await supabase.from('tournament_players').insert({
-        tournament_id: tournamentId,
-        user_id: userId,
-        username: existingReg?.username || 'Unknown',
-        status: 'registered',
-        chips: 0,
-      });
-      if (rollbackErr) {
-        console.error('[TournamentService] CRITICAL: Rollback re-insert ALSO failed:', rollbackErr);
-      }
-      throw new Error('Refund failed — registration restored');
+    if (unregError || !unregistered) {
+      console.error(
+        '[TournamentService] Atomic unregister failed:',
+        unregError?.message || 'Player already playing'
+      );
+      throw new Error(
+        unregError?.message || 'Unregister failed: You may have just been seated at a table.'
+      );
     }
 
-    // Log refund transaction
-    await WalletService.logTransaction(
-      userId,
-      'PLAYER',
-      refundAmount,
-      'credit',
-      'refund',
-      `Tournament unregister refund: ${tournament.name}`,
-      undefined,
-      undefined,
-      tournamentId
-    );
     masterBus.emit('BALANCE_UPDATED', { source: 'tournament_unregister_refund', userId });
 
     // Re-read fresh tournament data to avoid stale read-then-write race condition
@@ -1050,6 +1012,13 @@ class TournamentService {
       throw new Error('Cannot cancel — tournament has 3 or more players registered');
     }
 
+    // Fetch the players BEFORE cancellation so we can emit balance updates
+    // (the RPC will delete these rows)
+    const { data: players } = await supabase
+      .from('tournament_players')
+      .select('user_id')
+      .eq('tournament_id', tournamentId);
+
     // Execute atomic cancellation and refund (prevents partial refunds on server crash)
     const { data: cancelResult, error: cancelError } = await retryAsync(
       () =>
@@ -1069,12 +1038,7 @@ class TournamentService {
     const refunded = cancelResult?.total_refunded || 0;
     const playersRefunded = cancelResult?.refunded_count || 0;
 
-    // Fetch the players to emit balance updates (RPC already refunded DB)
-    const { data: players } = await supabase
-      .from('tournament_players')
-      .select('user_id')
-      .eq('tournament_id', tournamentId);
-
+    // Emit balance updates to the players we fetched earlier
     if (players && players.length > 0) {
       players.forEach((p) => {
         masterBus.emit('BALANCE_UPDATED', {
@@ -1083,14 +1047,6 @@ class TournamentService {
         });
       });
     }
-    await supabase
-      .from('tournaments')
-      .update({
-        status: 'CANCELLED',
-        cancelled_at: new Date().toISOString(),
-        prize_pool: 0,
-      })
-      .eq('id', tournamentId);
 
     console.debug(
       `[TournamentService] Cancelled tournament ${tournament.name}: refunded ${playersRefunded} players, ${refunded} chips`
@@ -1878,7 +1834,10 @@ class TournamentService {
       await this.balanceTables(tournamentId);
 
       // Close the broken table
-      await supabase.from('tables').update({ status: 'closed', current_players: 0 }).eq('id', tableToBreak.id);
+      await supabase
+        .from('tables')
+        .update({ status: 'closed', current_players: 0 })
+        .eq('id', tableToBreak.id);
 
       return { tableMerged: true };
     }
