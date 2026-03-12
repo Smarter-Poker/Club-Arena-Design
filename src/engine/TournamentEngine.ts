@@ -1588,19 +1588,24 @@ export class TournamentEngine {
 
     const clubId = this.tournamentInfo.club_id;
 
-    // Credit prize to Player Wallet via SECURITY DEFINER RPC
+    // Credit prize to Player Wallet ATOMICALLY via SECURITY DEFINER RPC
     const { data: creditResult, error: creditError } = await retryAsync(
       () =>
-        this.supabase.rpc('credit_player_wallet', {
+        this.supabase.rpc('atomic_credit_wallet_and_log', {
           p_user_id: userId,
           p_amount: amount,
+          p_category: 'prize',
+          p_description: `Tournament prize — ${this.tournamentInfo?.name}`,
+          p_table_id: null,
+          p_hand_id: null,
+          p_related_entity_id: this.tournamentId,
         }),
       3
     );
 
     if (creditError) {
       console.error(
-        `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to credit Player Wallet for ${userId.slice(0, 8)} — prize ${amount.toFixed(2)}:`,
+        `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to atomically credit Player Wallet for ${userId.slice(0, 8)} — prize ${amount.toFixed(2)}:`,
         creditError
       );
       return;
@@ -1608,19 +1613,6 @@ export class TournamentEngine {
 
     console.log(
       `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Credited ${amount} chips to Player Wallet for ${userId.slice(0, 8)}`
-    );
-
-    // Log prize in wallet_transactions via centralized RPC
-    await WalletService.logTransaction(
-      userId,
-      'PLAYER',
-      amount,
-      'credit',
-      'prize',
-      `Tournament prize — ${this.tournamentInfo.name}`,
-      undefined,
-      undefined,
-      this.tournamentId
     );
 
     // Log in chip_transactions for club accounting
@@ -1824,7 +1816,10 @@ export class TournamentEngine {
       .eq('table_id', sourceTable.tableId)
       .is('left_at', null);
 
-    await this.supabase.from('tables').update({ status: 'closed', current_players: 0 }).eq('id', sourceTable.tableId);
+    await this.supabase
+      .from('tables')
+      .update({ status: 'closed', current_players: 0 })
+      .eq('id', sourceTable.tableId);
 
     console.log(
       `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Merge complete. Moved ${result.totalMoved} players via TableBreakEngine.`
@@ -1895,7 +1890,10 @@ export class TournamentEngine {
         .eq('table_id', table.tableId)
         .is('left_at', null);
 
-      await this.supabase.from('tables').update({ status: 'closed', current_players: 0 }).eq('id', table.tableId);
+      await this.supabase
+        .from('tables')
+        .update({ status: 'closed', current_players: 0 })
+        .eq('id', table.tableId);
     }
 
     // Clear intervals

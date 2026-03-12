@@ -41,6 +41,7 @@ export interface UserDailyChallenge {
   userId: string;
   progress: number;
   completed: boolean;
+  claimed: boolean;
   completedAt?: string;
   challenge: DailyChallenge;
 }
@@ -202,6 +203,7 @@ class DailyChallengeServiceClass {
       userId,
       progress: 0,
       completed: false,
+      claimed: false,
       challenge: c,
     }));
   }
@@ -251,6 +253,7 @@ class DailyChallengeServiceClass {
           userId,
           progress: newProgress,
           completed: true,
+          claimed: false,
           completedAt: new Date().toISOString(),
           challenge,
         });
@@ -263,7 +266,11 @@ class DailyChallengeServiceClass {
   /**
    * Claim standard chip reward directly from UI
    */
-  async claimChallenge(userId: string, challengeRowId: string, rewardAmount: number): Promise<boolean> {
+  async claimChallenge(
+    userId: string,
+    challengeRowId: string,
+    rewardAmount: number
+  ): Promise<boolean> {
     const { error } = await retryAsync(
       () =>
         supabase.rpc('claim_daily_challenge', {
@@ -307,7 +314,7 @@ class DailyChallengeServiceClass {
             p_description: `Daily challenge reward: ${challenge.name}`,
             p_table_id: null,
             p_hand_id: null,
-            p_related_entity_id: null
+            p_related_entity_id: null,
           }),
         3
       );
@@ -427,6 +434,7 @@ class DailyChallengeServiceClass {
       userId: row.user_id,
       progress: row.progress,
       completed: row.completed,
+      claimed: row.claimed || false,
       completedAt: row.completed_at,
       challenge,
     };

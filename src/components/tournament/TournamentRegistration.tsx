@@ -126,9 +126,14 @@ export function TournamentRegistration({
         if (refundAmount > 0) {
           const { error: refundErr } = await retryAsync(
             () =>
-              supabase.rpc('credit_player_wallet', {
+              supabase.rpc('atomic_credit_wallet_and_log', {
                 p_user_id: playerId,
                 p_amount: refundAmount,
+                p_category: 'refund',
+                p_description: `Admin removed from tournament — refund`,
+                p_table_id: null,
+                p_hand_id: null,
+                p_related_entity_id: tournamentId,
               }),
             3
           );
@@ -154,23 +159,6 @@ export function TournamentRegistration({
             }
             return;
           }
-
-          // Log the refund transaction
-          await retryAsync(
-            () =>
-              supabase.rpc('log_wallet_transaction', {
-                p_user_id: playerId,
-                p_wallet_type: 'PLAYER',
-                p_amount: refundAmount,
-                p_type: 'credit',
-                p_category: 'refund',
-                p_description: `Admin removed from tournament — refund`,
-                p_table_id: null,
-                p_hand_id: null,
-                p_related_entity_id: tournamentId,
-              }),
-            3
-          );
         }
 
         // Decrement current_players
