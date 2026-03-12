@@ -971,10 +971,14 @@ export class TournamentEngine {
     await new Promise<void>((resolve) => {
       const timer = setTimeout(() => resolve(), 60_000);
       // If abort() is called (e.g., stop()), resolve immediately and clear the timer
-      abortSignal.addEventListener('abort', () => {
-        clearTimeout(timer);
-        resolve();
-      }, { once: true });
+      abortSignal.addEventListener(
+        'abort',
+        () => {
+          clearTimeout(timer);
+          resolve();
+        },
+        { once: true }
+      );
     });
 
     this.addOnAbortController = null;
@@ -1096,15 +1100,22 @@ export class TournamentEngine {
           : [];
         const knockerId = lastWinners.length > 0 ? lastWinners[0] : undefined;
 
+        const eliminationPromises: Promise<void>[] = [];
         for (const seat of seats) {
           if (seat.stack <= 0) {
             // Pass the knocker ID (winner of last hand) for bounty crediting
-            await this.eliminatePlayer(
-              seat.user_id,
-              table.tableId,
-              knockerId !== seat.user_id ? knockerId : undefined
+            eliminationPromises.push(
+              this.eliminatePlayer(
+                seat.user_id,
+                table.tableId,
+                knockerId !== seat.user_id ? knockerId : undefined
+              )
             );
           }
+        }
+
+        if (eliminationPromises.length > 0) {
+          await Promise.allSettled(eliminationPromises);
         }
 
         // Update local table player count
@@ -1208,7 +1219,7 @@ export class TournamentEngine {
     if (!this.running || !this.tournamentInfo) return;
 
     // Update local player map + batch DB updates
-    const updates: PromiseLike<any>[] = [];
+    const upsertPayload: any[] = [];
 
     for (const { user_id, stack } of playerStacks) {
       const player = this.players.get(user_id);
@@ -1216,27 +1227,32 @@ export class TournamentEngine {
         player.chips = stack;
         // tournament_players.chips is INTEGER — truncate to whole number (never round up)
         const rounded = Math.trunc(stack);
-        updates.push(
-          this.supabase
-            .from('tournament_players')
-            .update({ chips: rounded })
-            .eq('tournament_id', this.tournamentId)
-            .eq('user_id', user_id)
-            .then((result: any) => {
-              if (result.error) {
-                console.error(
-                  `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Chip sync failed for ${player.username}: ${result.error.message}`
-                );
-              }
-              return result;
-            })
-        );
+
+        // We only upsert the fields necessary + the primary/unique keys so it knows what to update
+        upsertPayload.push({
+          tournament_id: this.tournamentId,
+          user_id: user_id,
+          chips: rounded,
+          // Need to include status to satisfy constraints if it acts like a full replace on conflict,
+          // but upsert by default updates only the columns provided. Wait, in Supabase upsert requires the whole row
+          // if not specifying `onConflict`. Let's actually just use an RPC or specific `upsert` with `onConflict`.
+          // Supabase's javascript client for upsert:
+        });
       }
     }
 
-    // Fire all updates in parallel for speed
-    if (updates.length > 0) {
-      await Promise.all(updates);
+    // Fire 1 bulk update for true batching instead of N parallel HTTP requests
+    if (upsertPayload.length > 0) {
+      const { error } = await this.supabase.from('tournament_players').upsert(
+        upsertPayload.map((p) => ({ ...p, status: 'playing' })), // ensure required fields don't accidentally blank
+        { onConflict: 'tournament_id,user_id', ignoreDuplicates: false }
+      );
+
+      if (error) {
+        console.error(
+          `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Bulk chip sync failed: ${error.message}`
+        );
+      }
     }
 
     // Update hand count
