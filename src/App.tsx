@@ -162,14 +162,16 @@ export default function App() {
 
       if (event.data?.type === 'SMARTER_AUTH_TOKEN' && event.data.token) {
         try {
+          const senderOrigin = event.origin;
+
           await supabase.auth.setSession({
             access_token: event.data.token,
             refresh_token: event.data.refreshToken || '',
           });
-          // Send ACK back to the parent window indicating auth succeeded
-          if (event.source) {
-            (event.source as Window).postMessage({ type: 'SMARTER_AUTH_ACK' }, event.origin);
-          }
+
+          // Send ACK back to the parent window indicating auth succeeded.
+          // Using window.parent because event.source can be GC'd after the await.
+          window.parent.postMessage({ type: 'SMARTER_AUTH_ACK' }, senderOrigin);
         } catch (e) {
           console.error('[App] Failed to set session from parent:', e);
         }
