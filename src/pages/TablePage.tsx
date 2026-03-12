@@ -407,12 +407,6 @@ export default function TablePage({
   const [actionTimeRemaining, setActionTimeRemaining] = useState(15);
   const [preAction, setPreAction] = useState<'fold' | 'check' | 'callAny' | null>(null);
 
-  // Pot display mode — toggle between chip amounts and BB count
-  type PotDisplayMode = 'chips' | 'bb';
-  const [potDisplayMode, setPotDisplayMode] = useState<PotDisplayMode>('chips');
-  const handleTogglePotDisplay = useCallback(() => {
-    setPotDisplayMode((prev) => (prev === 'chips' ? 'bb' : 'chips'));
-  }, []);
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
   const [showBuyInModal, setShowBuyInModal] = useState(false);
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
@@ -3412,8 +3406,10 @@ export default function TablePage({
                     mainPot={tableState.pot}
                     sidePots={tableState.sidePots}
                     bigBlind={parseFloat(tableState.blinds.split('/')[1]) || 0}
-                    displayMode={potDisplayMode}
-                    onToggleDisplayMode={handleTogglePotDisplay}
+                    displayMode={userSettings.showStackInBB ? 'bb' : 'chips'}
+                    onToggleDisplayMode={() =>
+                      updateSetting('showStackInBB', !userSettings.showStackInBB)
+                    }
                   />
                   {/* Premium Pot — animated counter + tier glow overlay */}
                   <PremiumPot
@@ -3554,6 +3550,7 @@ export default function TablePage({
                   hudStats={player && !player.isHero ? getPlayerHUDStats(player.id) : null}
                   showHUD={userSettings.showHUD && !!player && !player.isHero}
                   deckStyle={userSettings.fourColorDeck ? '4color' : '2color'}
+                  showStackInBB={userSettings.showStackInBB}
                   playerStyle={
                     userSettings.showHUD && player && !player.isHero
                       ? (() => {
@@ -4169,6 +4166,13 @@ export default function TablePage({
                   showCards: false,
                 };
                 setTableState((prev) => ({ ...prev, players: newPlayers, heroSeat: selectedSeat }));
+                roomService.joinRoom(
+                  tableId || 'demo',
+                  userId || 'demo-player',
+                  username || 'You',
+                  selectedSeat,
+                  amount
+                );
               }
             } else if (userId && userId !== 'guest' && tableId && selectedSeat) {
               try {
@@ -4252,6 +4256,9 @@ export default function TablePage({
                   stack: amount,
                   autoRebuy,
                 });
+
+                // Update RoomService presence state so the user is globally seen as seated
+                roomService.joinRoom(tableId, userId, username || 'Player', selectedSeat, amount);
 
                 // Player seated successfully
               } catch (error) {
@@ -4383,7 +4390,7 @@ export default function TablePage({
                 ? 'fast'
                 : 'normal',
           fourColorDeck: userSettings.fourColorDeck,
-          showStackInBB: false,
+          showStackInBB: userSettings.showStackInBB,
           showBetSizePresets: true,
           confirmAllIn: userSettings.confirmAllIn,
           sitOutNextHand: false,
@@ -4413,6 +4420,9 @@ export default function TablePage({
                   ? 1.5
                   : 1
             );
+          }
+          if (settingsUpdate.showStackInBB !== undefined) {
+            updateSetting('showStackInBB', settingsUpdate.showStackInBB);
           }
         }}
       />

@@ -6,7 +6,7 @@
  * Real Supabase integration — no demo data
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styles from './AgentManagementPage.module.css';
 import ConfirmModal from '@/components/common/ConfirmModal';
@@ -103,6 +103,14 @@ export default function AgentManagementPage() {
   // Animation state
   const [visibleAgents, setVisibleAgents] = useState<Set<string>>(new Set());
 
+  // Stagger animation for agents list
+  const isMounted = useRef(true);
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   // Load agents from Supabase
   useEffect(() => {
     if (!clubId) return;
@@ -111,9 +119,15 @@ export default function AgentManagementPage() {
     setError(null);
 
     AgentService.getAgents(clubId)
-      .then(setAgents)
-      .catch((err) => setError(err.message))
-      .finally(() => setIsLoading(false));
+      .then((data) => {
+        if (isMounted.current) setAgents(data);
+      })
+      .catch((err) => {
+        if (isMounted.current) setError(err.message);
+      })
+      .finally(() => {
+        if (isMounted.current) setIsLoading(false);
+      });
   }, [clubId]);
 
   // Stagger animation for agents list
@@ -134,14 +148,16 @@ export default function AgentManagementPage() {
     setIsLoadingMembers(true);
     MembershipService.getEligibleForPromotion(clubId)
       .then((members) => {
-        setAvailableMembers(members);
+        if (isMounted.current) setAvailableMembers(members);
       })
       .catch((err) => {
         console.error('Failed to load eligible members:', err);
         toast.error('Failed to load eligible members');
-        setAvailableMembers([]);
+        if (isMounted.current) setAvailableMembers([]);
       })
-      .finally(() => setIsLoadingMembers(false));
+      .finally(() => {
+        if (isMounted.current) setIsLoadingMembers(false);
+      });
   }, [showAddModal, clubId]);
 
   // Realtime subscription: auto-update on club_members and wallet_transactions changes
@@ -152,14 +168,16 @@ export default function AgentManagementPage() {
       setIsLoading(true);
       try {
         const data = await AgentService.getAgents(clubId);
+        if (!isMounted.current) return;
         setAgents(data);
         setError(null);
       } catch (err) {
+        if (!isMounted.current) return;
         console.error('Failed to reload agents:', err);
         toast.error('Failed to load agents');
         setError(err instanceof Error ? err.message : 'Failed to reload agents');
       } finally {
-        setIsLoading(false);
+        if (isMounted.current) setIsLoading(false);
       }
     };
 

@@ -419,20 +419,60 @@ export const ChipFlowService = {
     difference: number;
     isBalanced: boolean;
   }> {
-    // Get total minted (all 'mint' category credits)
-    const { data: mints } = await supabase
-      .from('wallet_transactions')
-      .select('amount')
-      .eq('type', 'credit')
-      .eq('category', 'mint');
+    // 1. First try the hardened RPC for massive tables
+    const { data: rpcData, error: rpcError } = await supabase.rpc('verify_ledger_totals');
 
-    const totalMinted = (mints || []).reduce((s, t) => s + Number(t.amount), 0);
+    if (!rpcError && rpcData) {
+      const difference = exact(
+        rpcData.total_minted - rpcData.total_in_wallets - rpcData.total_locked
+      );
+      return {
+        totalMinted: exact(rpcData.total_minted),
+        totalInWallets: exact(rpcData.total_in_wallets),
+        totalInLockedBalance: exact(rpcData.total_locked),
+        difference,
+        isBalanced: Math.abs(difference) < 0.01,
+      };
+    }
 
-    // Get total in all wallets
-    const { data: wallets } = await supabase.from('wallets').select('balance, locked_balance');
+    // 2. Fallback to paginated client-side aggregation if RPC is missing
+    let totalMinted = 0;
+    let hasMoreMints = true;
+    let offsetMints = 0;
 
-    const totalInWallets = (wallets || []).reduce((s, w) => s + Number(w.balance), 0);
-    const totalInLockedBalance = (wallets || []).reduce((s, w) => s + Number(w.locked_balance), 0);
+    while (hasMoreMints) {
+      const { data: mints, error } = await supabase
+        .from('wallet_transactions')
+        .select('amount')
+        .eq('type', 'credit')
+        .eq('category', 'mint')
+        .range(offsetMints, offsetMints + 999);
+
+      if (error || !mints) break;
+      totalMinted += mints.reduce((s, t) => s + Number(t.amount), 0);
+
+      if (mints.length < 1000) hasMoreMints = false;
+      else offsetMints += 1000;
+    }
+
+    let totalInWallets = 0;
+    let totalInLockedBalance = 0;
+    let hasMoreWallets = true;
+    let offsetWallets = 0;
+
+    while (hasMoreWallets) {
+      const { data: wallets, error } = await supabase
+        .from('wallets')
+        .select('balance, locked_balance')
+        .range(offsetWallets, offsetWallets + 999);
+
+      if (error || !wallets) break;
+      totalInWallets += wallets.reduce((s, w) => s + Number(w.balance || 0), 0);
+      totalInLockedBalance += wallets.reduce((s, w) => s + Number(w.locked_balance || 0), 0);
+
+      if (wallets.length < 1000) hasMoreWallets = false;
+      else offsetWallets += 1000;
+    }
 
     const difference = exact(totalMinted - totalInWallets - totalInLockedBalance);
 

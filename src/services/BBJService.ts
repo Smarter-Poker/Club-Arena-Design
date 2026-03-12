@@ -459,6 +459,7 @@ export const BBJService = {
           p_payout_winner_pct: PAYOUT_SHARES.WINNER * 100,
           p_payout_loser_pct: PAYOUT_SHARES.LOSER * 100,
           p_payout_table_pct: PAYOUT_SHARES.TABLE * 100,
+          p_dealt_in_player_ids: params.dealtInPlayerIds,
         }),
       3
     );

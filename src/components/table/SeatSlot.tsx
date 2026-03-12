@@ -66,6 +66,7 @@ export interface SeatSlotProps {
   showHUD?: boolean; // Whether to show the HUD overlay
   playerStyle?: PlayerStyleResult | null; // Auto-classified player archetype
   deckStyle?: '4color' | '2color';
+  showStackInBB?: boolean;
   onSit?: () => void;
   onAction?: () => void;
   onAvatarClick?: () => void;
@@ -215,6 +216,7 @@ export const SeatSlot = memo(
       showHUD = false,
       playerStyle,
       deckStyle = '4color',
+      showStackInBB = false,
       onSit,
       onAction,
       onAvatarClick,
@@ -421,9 +423,9 @@ export const SeatSlot = memo(
           {/* Neon border overlay (rendered via CSS ::before when --active) */}
           <span className="seat__name">{player.name}</span>
           <span
-            className={`seat__stack${stackDelta > 0 ? ' seat__stack--up' : stackDelta < 0 ? ' seat__stack--down' : ''} ${!isTournament ? getStackDepthClass(player.stack, bigBlind) : ''}`}
+            className={`seat__stack${stackDelta > 0 ? ' seat__stack--up' : stackDelta < 0 ? ' seat__stack--down' : ''} ${showStackInBB || !isTournament ? getStackDepthClass(player.stack, bigBlind) : ''}`}
           >
-            {isTournament ? formatStack(player.stack) : formatStackAsBB(player.stack, bigBlind)}
+            {showStackInBB ? formatStackAsBB(player.stack, bigBlind) : formatStack(player.stack)}
           </span>
 
           {/* Stack Change Delta */}
@@ -432,7 +434,7 @@ export const SeatSlot = memo(
               className={`seat__stack-delta ${stackDelta > 0 ? 'seat__stack-delta--win' : 'seat__stack-delta--loss'}`}
             >
               {stackDelta > 0 ? '+' : ''}
-              {formatStack(stackDelta)}
+              {showStackInBB ? formatStackAsBB(stackDelta, bigBlind) : formatStack(stackDelta)}
             </span>
           )}
         </div>
@@ -546,6 +548,7 @@ export const SeatSlot = memo(
     if (pp.isHero !== np.isHero) return false;
     if (pp.showCards !== np.showCards) return false;
     if (pp.avatar !== np.avatar) return false;
+    if (prev.showStackInBB !== next.showStackInBB) return false;
     if (JSON.stringify(pp.holeCards) !== JSON.stringify(np.holeCards)) return false;
 
     return true;

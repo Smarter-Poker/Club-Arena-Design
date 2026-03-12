@@ -26,6 +26,7 @@ export interface TableUserSettings {
   confirmAllIn: boolean;
   autoMuck: boolean;
   cardBack: string; // Card back design ID
+  showStackInBB: boolean;
 }
 
 const DEFAULT_SETTINGS: TableUserSettings = {
@@ -38,6 +39,7 @@ const DEFAULT_SETTINGS: TableUserSettings = {
   confirmAllIn: true,
   autoMuck: false,
   cardBack: 'black',
+  showStackInBB: false,
 };
 
 const STORAGE_KEY = 'club-arena-table-settings';

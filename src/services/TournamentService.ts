@@ -1651,7 +1651,24 @@ class TournamentService {
       3
     );
 
-    if (error) throw error;
+    if (error) {
+      console.error('[TournamentService] Rebuy process failed, rolling back wallet:', error);
+      const { error: refundErr } = await retryAsync(
+        () =>
+          supabase.rpc('credit_player_wallet', {
+            p_user_id: userId,
+            p_amount: rebuyCost,
+          }),
+        3
+      );
+      if (refundErr) {
+        console.error('[TournamentService] CRITICAL: Rebuy refund failed:', refundErr.message);
+      } else {
+        // Reverse the UI balance optimistic update
+        masterBus.emit('BALANCE_UPDATED', { source: 'tournament_rebuy_rollback', userId });
+      }
+      throw error;
+    }
 
     // Recalculate prize pool: rebuy cost goes to pool
     await this.recalculatePrizePool(tournamentId);
@@ -1782,7 +1799,23 @@ class TournamentService {
       3
     );
 
-    if (error) throw error;
+    if (error) {
+      console.error('[TournamentService] Add-on process failed, rolling back wallet:', error);
+      const { error: refundErr } = await retryAsync(
+        () =>
+          supabase.rpc('credit_player_wallet', {
+            p_user_id: userId,
+            p_amount: addonCost,
+          }),
+        3
+      );
+      if (refundErr) {
+        console.error('[TournamentService] CRITICAL: Add-on refund failed:', refundErr.message);
+      } else {
+        masterBus.emit('BALANCE_UPDATED', { source: 'tournament_addon_rollback', userId });
+      }
+      throw error;
+    }
 
     // Recalculate prize pool: add-on cost goes to pool
     await this.recalculatePrizePool(tournamentId);

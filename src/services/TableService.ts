@@ -187,12 +187,21 @@ class TableService {
 
   /**
    * Close a table
+   * Uses force_close_table_and_refund RPC to gracefully return all chips
+   * in the table_seats stack directly back to player_wallets before closing.
    */
   async closeTable(tableId: string): Promise<void> {
-    const { error } = await supabase.from('tables').update({ status: 'closed' }).eq('id', tableId);
+    const { data: result, error } = await retryAsync(
+      () => supabase.rpc('force_close_table_and_refund', { p_table_id: tableId }),
+      3
+    );
 
     if (error) {
-      console.error('[TableService] Error closing table:', error);
+      console.error('[TableService] Error closing table and refunding chips:', error);
+      // Fallback: manually flag it as closed if the RPC somehow fails
+      await supabase.from('tables').update({ status: 'closed' }).eq('id', tableId);
+    } else {
+      console.debug(`[TableService] Table closed successfully. Result:`, result);
     }
   }
 

@@ -2,7 +2,7 @@
  *  CLUB FINANCIALS PAGE — Club Financial Overview
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
@@ -52,6 +52,13 @@ export default function ClubFinancialsPage() {
   useVisibilityRefresh(() => loadFinancials());
   const [visibleTransactions, setVisibleTransactions] = useState<Set<string>>(new Set());
 
+  const isMounted = useRef(true);
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   useEffect(() => {
     if (clubId) loadFinancials();
   }, [clubId, period]);
@@ -60,7 +67,7 @@ export default function ClubFinancialsPage() {
   useEffect(() => {
     if (transactions.length === 0) return;
     setVisibleTransactions(new Set());
-    
+
     const timers = transactions.map((tx, index) => {
       return setTimeout(() => {
         setVisibleTransactions((prev) => new Set(prev).add(tx.id));
@@ -207,6 +214,8 @@ export default function ClubFinancialsPage() {
       const estimatedCommissions = totalRake * 0.05;
       const netRevenue = totalRake - estimatedRakeback - estimatedCommissions;
 
+      if (!isMounted.current) return;
+
       setSummary({
         period,
         rake_collected: totalRake,
@@ -259,10 +268,11 @@ export default function ClubFinancialsPage() {
         );
       }
     } catch (error) {
+      if (!isMounted.current) return;
       console.error('Failed to load financials:', error);
       toast.error('Failed to load financial data');
     }
-    setLoading(false);
+    if (isMounted.current) setLoading(false);
   };
 
   const formatDate = (dateStr: string): string => {

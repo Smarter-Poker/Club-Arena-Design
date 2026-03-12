@@ -149,6 +149,13 @@ export default function CashierPage() {
     value: 0,
   });
 
+  const isMounted = useRef(true);
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   // Rate limiting: 3s cooldown after each action
   const startCooldown = useCallback(() => {
     setCooldown(3);
@@ -241,7 +248,9 @@ export default function CashierPage() {
         .eq('player_id', user.id)
         .in('status', ['pending', 'processing'])
         .order('created_at', { ascending: false });
-      setPendingCashouts(data || []);
+      if (isMounted.current) {
+        setPendingCashouts(data || []);
+      }
     } catch {
       /* silent */
     }
@@ -257,6 +266,7 @@ export default function CashierPage() {
         .eq('club_id', clubId)
         .eq('user_id', user.id)
         .maybeSingle();
+      if (!isMounted.current) return;
       const role = memberData?.role || 'member';
       setUserRole(role);
 
@@ -266,6 +276,7 @@ export default function CashierPage() {
         .select('name')
         .eq('id', clubId)
         .maybeSingle();
+      if (!isMounted.current) return;
       setClubName(clubData?.name || '');
 
       // Check if club is in a union
@@ -275,6 +286,7 @@ export default function CashierPage() {
         .eq('club_id', clubId)
         .maybeSingle();
 
+      if (!isMounted.current) return;
       if (unionClub) {
         setIsInUnion(true);
         setIsUnionOwner((unionClub as any).unions?.owner_id === user.id);
@@ -359,11 +371,13 @@ export default function CashierPage() {
           return (order[a.role] || 3) - (order[b.role] || 3);
         });
 
-      setRecipients(list);
+      if (isMounted.current) {
+        setRecipients(list);
+      }
     } catch (err) {
       console.error('Failed to load recipients:', err);
     }
-    setLoadingRecipients(false);
+    if (isMounted.current) setLoadingRecipients(false);
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -381,11 +395,13 @@ export default function CashierPage() {
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (!error && data) setTransactions(data);
+      if (!error && data && isMounted.current) {
+        setTransactions(data);
+      }
     } catch {
       /* silent */
     }
-    setLoadingTx(false);
+    if (isMounted.current) setLoadingTx(false);
   }, [user?.id]);
 
   useEffect(() => {
