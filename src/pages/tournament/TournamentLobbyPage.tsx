@@ -72,7 +72,9 @@ export default function TournamentLobbyPage() {
           .limit(1)
           .maybeSingle();
         if (data) setIsInUnion(true);
-      } catch { /* fail-open */ }
+      } catch {
+        /* fail-open */
+      }
     })();
   }, [clubId]);
 
@@ -139,8 +141,27 @@ export default function TournamentLobbyPage() {
       )
       .subscribe();
 
+    // ── Bus event subscriptions for faster local updates ──
+    const unsubElim = masterBus.subscribe('PLAYER_ELIMINATED', (event) => {
+      // Decrement player count for the specific tournament
+      setTournaments((prev) =>
+        prev.map((t) =>
+          t.id === event.payload.tournamentId
+            ? { ...t, currentPlayers: Math.max(0, t.currentPlayers - 1) }
+            : t
+        )
+      );
+    });
+
+    const unsubMerge = masterBus.subscribe('TABLE_MERGED', () => {
+      // Refresh tournament list to reflect table changes
+      loadTournamentsRef.current();
+    });
+
     return () => {
       masterBus.removeRegisteredChannel(channelKey);
+      unsubElim();
+      unsubMerge();
     };
   }, [clubId]);
 

@@ -20,6 +20,7 @@
 
 import { supabase } from '../lib/supabase';
 import { WalletService } from './WalletService';
+import { FinancialAlertService } from './FinancialAlertService';
 import { SettlementService } from './SettlementService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -408,10 +409,21 @@ export const CreditService = {
               p_user_id: agentForRollback.user_id,
               p_amount: amount,
             });
-            if (rollbackErr2)
+            if (rollbackErr2) {
               console.error(
                 `[CreditService] CRITICAL: Wallet rollback failed for agent ${invoice.agent_id}: ${rollbackErr2.message}`
               );
+              FinancialAlertService.logCritical(
+                'CreditService',
+                'Wallet rollback failed after invoice update failure',
+                {
+                  invoiceId,
+                  agentId: invoice.agent_id,
+                  amount,
+                  rollbackError: rollbackErr2.message,
+                }
+              );
+            }
           }
         } catch (rollbackErr) {
           console.error('[CreditService] Rollback failed:', rollbackErr);

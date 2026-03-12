@@ -76,10 +76,11 @@ export type BusEventType =
   // Financial events
   | 'COMMISSION_PAID'
   | 'SETTLEMENT_COMPLETED'
+  | 'FINANCIAL_ALERT'
   // Tournament lifecycle events
   | 'PLAYER_ELIMINATED'
   | 'TABLE_MERGED'
-  // Cashier events (cross-page chip sync)
+  // Cashier events
   | 'CHIPS_ADDED'
   | 'CHIPS_WITHDRAWN';
 
@@ -129,6 +130,13 @@ export interface BusPayloadMap {
   // Financial events
   COMMISSION_PAID: { agentId: string; amount: number };
   SETTLEMENT_COMPLETED: { clubId: string; periodId: string };
+  FINANCIAL_ALERT: {
+    severity: 'critical' | 'warning' | 'info';
+    source: string;
+    message: string;
+    context: Record<string, unknown>;
+    timestamp: string;
+  };
   // Tournament lifecycle events
   PLAYER_ELIMINATED: {
     tournamentId: string;
@@ -213,6 +221,7 @@ const CRITICAL_EVENTS: BusEventType[] = [
   'CLUB_LEFT',
   'TABLE_SEATED',
   'TABLE_LEFT',
+  'FINANCIAL_ALERT',
 ];
 
 class MasterBusCore {
