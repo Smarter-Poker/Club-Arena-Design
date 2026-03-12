@@ -280,19 +280,23 @@ export default function ClubDetailPage() {
 
     // Get current user ID from supabase auth
     const setupPresence = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
 
-      await presenceService.joinClub(clubId, user.id, {
-        onSync: (state) => {
-          setOnlineCount(Object.keys(state).length);
-        },
-      });
+        await presenceService.joinClub(clubId, user.id, {
+          onSync: (state) => {
+            setOnlineCount(Object.keys(state).length);
+          },
+        });
 
-      // Set initial count
-      setOnlineCount(presenceService.getClubOnlineCount(clubId));
+        // Set initial count
+        setOnlineCount(presenceService.getClubOnlineCount(clubId));
+      } catch (e) {
+        console.error('[ClubDetailPage] setupPresence error:', e);
+      }
     };
 
     setupPresence();

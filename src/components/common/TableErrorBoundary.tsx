@@ -37,7 +37,7 @@ export class TableErrorBoundary extends Component<Props, State> {
     // Enhancement #6: Emit crash event for admin monitoring
     try {
       import('../../core/MasterBus').then(({ masterBus }) => {
-        masterBus.emit('COMPONENT_CRASH' as any, {
+        masterBus.emit('COMPONENT_CRASH', {
           componentName,
           error: error.message,
           stack: info.componentStack?.slice(0, 500) || '',

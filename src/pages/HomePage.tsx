@@ -851,7 +851,7 @@ function HomePageInner() {
   useEffect(() => {
     fetchUserData();
 
-    // Real-time subscription via MasterBus channel registry (deduplicated)
+    let channel: any = null;
     const setupRealtimeSubscription = async () => {
       const {
         data: { user: authUser },
@@ -859,7 +859,7 @@ function HomePageInner() {
       if (!authUser?.id) return;
 
       const channelKey = `home-clubs-${authUser.id}`;
-      const channel = masterBus.getOrCreateChannel(channelKey);
+      channel = masterBus.getOrCreateChannel(channelKey);
       channel
         .on(
           'postgres_changes',
@@ -924,6 +924,9 @@ function HomePageInner() {
     });
 
     return () => {
+      if (channel) {
+        channel.unsubscribe();
+      }
       supabase.auth.getUser().then(({ data: { user: authUser } }) => {
         if (authUser?.id) {
           masterBus.removeRegisteredChannel(`home-clubs-${authUser.id}`);

@@ -257,9 +257,10 @@ export default function AnalyticsDashboard() {
     const unsubVip = masterBus.subscribe('MILESTONE_UNLOCKED', refreshAll);
 
     // Admin listeners
-    const unsubCrash = masterBus.subscribe('COMPONENT_CRASH', (eventData: any) => {
-      if (eventData && eventData.componentName) {
-        toast.error(`Crash: ${eventData.componentName}`);
+    const unsubCrash = masterBus.subscribe('COMPONENT_CRASH', (event) => {
+      const data = event.payload;
+      if (data && data.componentName) {
+        toast.error(`Crash: ${data.componentName}`);
       }
     });
     const unsubStats = masterBus.subscribe('SESSION_STATS_UPDATE', debouncedRefresh);

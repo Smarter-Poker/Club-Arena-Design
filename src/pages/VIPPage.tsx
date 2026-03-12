@@ -44,6 +44,7 @@ export default function VIPPage() {
   });
 
   const [recentActivities, setRecentActivities] = useState<VIPActivity[]>([]);
+  const [daysSinceReview, setDaysSinceReview] = useState(0);
 
   // VIP entrance animation
   useEffect(() => {
@@ -103,6 +104,21 @@ export default function VIPPage() {
     return unsubDiamond;
   }, [user?.id]);
 
+  // Bus listener: update VIP points when awarded locally (e.g. per hand played)
+  useEffect(() => {
+    if (!user?.id) return;
+    const unsubVIP = masterBus.subscribe('VIP_POINTS_UPDATED', (event: any) => {
+      if (event?.payload?.added && event.payload.userId === user.id) {
+        setVipPoints((prev) => ({
+          ...prev,
+          current: prev.current + event.payload.added,
+          lifetime: prev.lifetime + event.payload.added,
+        }));
+      }
+    });
+    return unsubVIP;
+  }, [user?.id]);
+
   const loadVIPStatus = async () => {
     if (!user?.id) {
       setLoading(false);
@@ -118,7 +134,7 @@ export default function VIPPage() {
       // Load diamond balance & vip points aggregate
       const { data: profData } = await supabase
         .from('profiles')
-        .select('diamonds, vip_points')
+        .select('diamonds, vip_points, created_at')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -130,6 +146,13 @@ export default function VIPPage() {
         current: currentPts,
         lifetime: currentPts, // Will refine with real ledger if needed
       }));
+
+      // Dynamically calculate days since last 30-day VIP review period
+      if (profData?.created_at) {
+        const joinDate = new Date(profData.created_at).getTime();
+        const daysSinceJoined = Math.floor((Date.now() - joinDate) / (1000 * 60 * 60 * 24));
+        setDaysSinceReview(daysSinceJoined % 30);
+      }
 
       // Load VIP Ledger (Activity History)
       const { data: ledgerData } = await supabase
@@ -191,8 +214,6 @@ export default function VIPPage() {
       </div>
     );
   }
-
-  const daysSinceReview = 0; // TODO: Load from real VIP review data
 
   return (
     <div className="vip-page">

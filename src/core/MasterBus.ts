@@ -38,6 +38,7 @@ export type BusEventType =
   | 'TABLE_SEATED'
   | 'TABLE_LEFT'
   | 'BALANCE_UPDATED'
+  | 'VIP_POINTS_UPDATED'
   | 'WALLET_REFRESHED'
   | 'REALTIME_CONNECTED'
   | 'REALTIME_DISCONNECTED'
@@ -162,6 +163,7 @@ export interface BusPayloadMap {
   TABLE_SEATED: TableEventPayload;
   TABLE_LEFT: TableEventPayload;
   BALANCE_UPDATED: { source: string; [key: string]: unknown };
+  VIP_POINTS_UPDATED: { userId: string; added: number; source: string; [key: string]: unknown };
   WALLET_REFRESHED: BalancePayload;
   REALTIME_CONNECTED: { channelName: string };
   REALTIME_DISCONNECTED: { channelName: string; reason?: string };
@@ -257,6 +259,12 @@ export interface BusPayloadMap {
   };
   // Service lifecycle
   SERVICES_READY: { services: Record<string, boolean>; timestamp: string };
+  COMPONENT_CRASH: {
+    componentName: string;
+    error: string;
+    stack: string;
+    timestamp: number;
+  };
   SHOW_TOAST: {
     severity: 'critical' | 'warning' | 'info';
     message: string;
@@ -479,6 +487,7 @@ let _eventLogIdCounter = 0;
 // Critical events that trigger SW notification + Supabase log
 const CRITICAL_EVENTS: BusEventType[] = [
   'BALANCE_UPDATED',
+  'VIP_POINTS_UPDATED',
   'CLUB_JOINED',
   'CLUB_LEFT',
   'TABLE_SEATED',
@@ -514,6 +523,7 @@ class MasterBusCore {
   // Events that must NEVER be deduplicated (financial, errors, auth)
   private static readonly DEDUP_BYPASS: BusEventType[] = [
     'BALANCE_UPDATED',
+    'VIP_POINTS_UPDATED',
     'WALLET_REFRESHED',
     'SYSTEM_ERROR',
     'AUTH_STATE_CHANGED',
@@ -777,6 +787,14 @@ class MasterBusCore {
         useClubStore.getState().reset();
         useWalletStore.getState().reset();
         useArenaStore.getState().reset();
+      }
+    });
+
+    // When balance updates, immediately sync the WalletStore globally
+    this.subscribe('BALANCE_UPDATED', () => {
+      const user = useUserStore.getState().user;
+      if (user) {
+        useWalletStore.getState().refreshAll(user.id);
       }
     });
 

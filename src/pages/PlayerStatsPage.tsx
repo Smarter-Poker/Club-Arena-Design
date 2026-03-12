@@ -111,6 +111,7 @@ export default function PlayerStatsPage() {
   const targetUserId = userId || user?.id;
   const [stats, setStats] = useState<DetailedStats | null>(null);
   const [sessionHistory, setSessionHistory] = useState<SessionData[]>([]);
+  const [positionData, setPositionData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState<StatCategory>('overview');
   const [visibleSummaryCards, setVisibleSummaryCards] = useState(new Set<number>());
@@ -229,6 +230,34 @@ export default function PlayerStatsPage() {
           avg_session_length: 0,
         });
       }
+
+      // Fetch literal DB data for the position pie chart instead of mock data #SWEEP-8
+      const { data: posData, error: posError } = await supabase
+        .from('player_position_stats')
+        .select('position, hands_won')
+        .eq('user_id', targetUserId);
+
+      if (!posError && posData && posData.length > 0) {
+        const fullNames: Record<string, string> = {
+          UTG: 'Under The Gun',
+          'UTG+1': 'UTG+1',
+          MP: 'Middle Position',
+          CO: 'Cutoff',
+          BTN: 'Button',
+          SB: 'Small Blind',
+          BB: 'Big Blind',
+        };
+        const mapped = posData
+          .map((p) => ({
+            name: p.position,
+            value: p.hands_won || 0,
+            fullName: fullNames[p.position] || p.position,
+          }))
+          .filter((p) => p.value > 0); // Only chart positions with actual wins
+        setPositionData(mapped.length > 0 ? mapped : []);
+      } else {
+        setPositionData([]);
+      }
     } catch (error) {
       console.error('Failed to load stats:', error);
       toast.error('Failed to load player stats');
@@ -283,43 +312,6 @@ export default function PlayerStatsPage() {
   const winRateDec = winRate.split('.')[1] || '';
   const countedWinRate = useCountUpNumber(winRateInt, 400);
   const displayedWinRate = winRateDec ? `${countedWinRate}.${winRateDec}` : `${countedWinRate}`;
-
-  // Position breakdown — populated from real DB data when available
-  // TODO: wire to player_position_stats table when available
-  const positionData = stats
-    ? [
-        {
-          name: 'BTN',
-          value: Math.round((stats.hands_won / Math.max(stats.total_hands, 1)) * 100),
-          fullName: 'Button',
-        },
-        {
-          name: 'CO',
-          value: Math.round((stats.hands_won / Math.max(stats.total_hands, 1)) * 80),
-          fullName: 'Cutoff',
-        },
-        {
-          name: 'MP',
-          value: Math.round((stats.hands_won / Math.max(stats.total_hands, 1)) * 70),
-          fullName: 'Middle Position',
-        },
-        {
-          name: 'EP',
-          value: Math.round((stats.hands_won / Math.max(stats.total_hands, 1)) * 60),
-          fullName: 'Early Position',
-        },
-        {
-          name: 'SB',
-          value: Math.round((stats.hands_won / Math.max(stats.total_hands, 1)) * 65),
-          fullName: 'Small Blind',
-        },
-        {
-          name: 'BB',
-          value: Math.round((stats.hands_won / Math.max(stats.total_hands, 1)) * 55),
-          fullName: 'Big Blind',
-        },
-      ]
-    : [];
 
   if (loading) {
     return (

@@ -35,23 +35,24 @@
 export const haptic = {
   /** Light tap — button press */
   light() {
-    if ('vibrate' in navigator) navigator.vibrate(8);
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate(8);
   },
   /** Medium pulse — your turn, win */
   medium() {
-    if ('vibrate' in navigator) navigator.vibrate(40);
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate(40);
   },
   /** Strong pulse — all-in, timer urgent */
   strong() {
-    if ('vibrate' in navigator) navigator.vibrate(80);
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate(80);
   },
   /** Double pulse — timer warning */
   double() {
-    if ('vibrate' in navigator) navigator.vibrate([25, 40, 25]);
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate([25, 40, 25]);
   },
   /** Triple pulse — big win */
   triple() {
-    if ('vibrate' in navigator) navigator.vibrate([30, 30, 30, 30, 30]);
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator)
+      navigator.vibrate([30, 30, 30, 30, 30]);
   },
 };
 

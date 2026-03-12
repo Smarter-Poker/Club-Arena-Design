@@ -34,7 +34,7 @@ class TournamentTimerServiceClass {
 
   constructor() {
     // Listen for player eliminations to trigger final table / heads-up detection
-    masterBus.subscribe('PLAYER_ELIMINATED', (event: any) => {
+    masterBus.subscribe('PLAYER_ELIMINATED', (event) => {
       const tournamentId = event.payload?.tournamentId;
       if (tournamentId && this.activeTimers.has(tournamentId)) {
         // Debounce: small delay to let DB state settle after elimination

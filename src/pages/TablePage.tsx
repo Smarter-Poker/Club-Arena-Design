@@ -117,6 +117,7 @@ import { FinalTableOverlay } from '../components/tournament/FinalTableOverlay';
 import { HeadsUpOverlay } from '../components/tournament/HeadsUpOverlay';
 import { HoleCardReveal } from '../components/tournament/HoleCardReveal';
 import { playerStyleClassifier } from '../services/PlayerStyleClassifier';
+import { playerPositionStatsService } from '../services/PlayerPositionStatsService';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // RAKE CONFIG HELPER — Derives HandController rake from official chart
@@ -1452,23 +1453,27 @@ export default function TablePage({
                 const addonData = data.payload || {};
                 // Fetch fresh wallet balance
                 (async () => {
-                  let walBal = 0;
-                  if (userId && userId !== 'guest') {
-                    const { data: w } = await supabase
-                      .from('wallets')
-                      .select('balance')
-                      .eq('user_id', userId)
-                      .eq('wallet_type', 'PLAYER')
-                      .maybeSingle();
-                    walBal = w?.balance || 0;
+                  try {
+                    let walBal = 0;
+                    if (userId && userId !== 'guest') {
+                      const { data: w } = await supabase
+                        .from('wallets')
+                        .select('balance')
+                        .eq('user_id', userId)
+                        .eq('wallet_type', 'PLAYER')
+                        .maybeSingle();
+                      walBal = w?.balance || 0;
+                    }
+                    setAddOnPeriod({
+                      active: true,
+                      addOnCost: addonData.addOnCost || 0,
+                      addOnChips: addonData.addOnChips || 0,
+                      walletBalance: walBal,
+                      timeRemaining: 60,
+                    });
+                  } catch (e) {
+                    console.error('[TablePage] Addon period wallet fetch error:', e);
                   }
-                  setAddOnPeriod({
-                    active: true,
-                    addOnCost: addonData.addOnCost || 0,
-                    addOnChips: addonData.addOnChips || 0,
-                    walletBalance: walBal,
-                    timeRemaining: 60,
-                  });
                 })();
               } else if (data?.type === 'ADDON_PERIOD_END') {
                 setAddOnPeriod((prev) => ({ ...prev, active: false }));
@@ -2546,15 +2551,21 @@ export default function TablePage({
               blinds: currentState.blinds,
               players: currentState.players
                 .filter((p): p is NonNullable<typeof p> => !!p)
-                .map((p, i) => ({
-                  id: p.id,
-                  name: p.name,
-                  seat: i + 1,
-                  stack: handStartStacksRef.current[i + 1] || p.stack,
-                  position: (currentState.positions[i] ||
-                    posLabels[Math.min(i, posLabels.length - 1)] ||
-                    '') as string,
-                })),
+                .map((p, i) => {
+                  const startStack = handStartStacksRef.current[i + 1] || p.stack;
+                  const endStack = p.stack;
+                  return {
+                    id: p.id,
+                    name: p.name,
+                    seat: i + 1,
+                    stack: startStack,
+                    position: (currentState.positions[i] ||
+                      posLabels[Math.min(i, posLabels.length - 1)] ||
+                      '') as string,
+                    isWinner: winnerInfo.playerIds.includes(p.id),
+                    result: endStack - startStack,
+                  };
+                }),
               streets,
               // BUG-05 FIX: Use actual winner amounts from winnerInfo.amounts
               winners: winnerInfo.playerIds.map((pid) => {
@@ -2574,23 +2585,26 @@ export default function TablePage({
 
             // Persist to Supabase for cross-device access and admin review (fire-and-forget)
             if (tableId) {
-              handHistoryService
-                .saveHandToSupabase(tableId, {
-                  handNumber: record.handNumber,
-                  pot: record.potTotal,
-                  communityCards: currentState.communityCards.map((c) => ({
-                    rank: c.rank,
-                    suit: c.suit,
-                  })),
-                  players: record.players as any,
-                  actions: handActionsRef.current,
-                  winners: record.winners.map((w) => ({
-                    playerId: w.playerId,
-                    amount: w.amount,
-                    hand: w.hand,
-                  })),
-                })
-                .catch(() => {}); // Fire-and-forget
+              const payload = {
+                handNumber: record.handNumber,
+                pot: record.potTotal,
+                communityCards: currentState.communityCards.map((c) => ({
+                  rank: c.rank,
+                  suit: c.suit,
+                })),
+                players: record.players as any,
+                actions: handActionsRef.current,
+                winners: record.winners.map((w) => ({
+                  playerId: w.playerId,
+                  amount: w.amount,
+                  hand: w.hand,
+                })),
+              };
+
+              handHistoryService.saveHandToSupabase(tableId, payload).catch(() => {}); // Fire-and-forget
+
+              // Feature 12: Calculate and persist positional VPIP/PFR stats for AnalyticsDashboard
+              playerPositionStatsService.processHand(payload).catch(() => {}); // Fire-and-forget
             }
 
             // ── Session Tracking: update refs for end-of-session summary ──
