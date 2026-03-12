@@ -1658,7 +1658,7 @@ export class TournamentEngine {
     const totalPlayers = remainingTables.reduce((s, t) => s + t.playerCount, 0);
     const minTablesNeeded = Math.ceil(totalPlayers / capacity);
 
-    if (remainingTables.length > minTablesNeeded || remainingTables[0].playerCount < 3) {
+    if (remainingTables.length > minTablesNeeded) {
       // Lock to prevent overlapping table breaks
       this.tableBreakInProgress = true;
       try {
