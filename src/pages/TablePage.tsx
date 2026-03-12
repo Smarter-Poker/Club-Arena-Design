@@ -4064,6 +4064,7 @@ export default function TablePage({
         onClose={() => setShowSitOut(false)}
         onReturn={() => setShowSitOut(false)}
         onLeaveTable={() => navigate('/')}
+        onAutoPostChange={(enabled) => updateSetting('autoPostBlinds', enabled)}
         timeRemaining={sitOutTimeRemaining}
         maxSitOutTime={300}
         tableName={tableState.tableName}
