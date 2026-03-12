@@ -502,6 +502,11 @@ export const SeatSlot = memo(
         return false;
     }
 
+    // Player style badge — compare style name (cheapest check)
+    const prevStyle = prev.playerStyle?.style || 'unknown';
+    const nextStyle = next.playerStyle?.style || 'unknown';
+    if (prevStyle !== nextStyle) return false;
+
     const pp = prev.player;
     const np = next.player;
 

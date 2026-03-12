@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
 import './AnalyticsDashboard.css';
@@ -31,7 +31,10 @@ interface ClubAggregate {
   totalRake: number;
   activePlayers: number;
   totalVipPointsIssued: number;
+  livePlayersNow: number; // Enhancement #9: real-time count
 }
+
+type TimeRange = '24h' | '7d' | '30d' | 'all';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // POSITION COLORS (consistent across the chart)
@@ -49,6 +52,26 @@ const POSITION_COLORS: Record<string, string> = {
 
 const ALL_POSITIONS = ['BTN', 'CO', 'HJ', 'MP', 'UTG', 'SB', 'BB'];
 
+const TIME_RANGE_OPTIONS: { value: TimeRange; label: string }[] = [
+  { value: '24h', label: '24 Hours' },
+  { value: '7d', label: '7 Days' },
+  { value: '30d', label: '30 Days' },
+  { value: 'all', label: 'All Time' },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function getTimeRangeCutoff(range: TimeRange): string | null {
+  if (range === 'all') return null;
+  const now = new Date();
+  if (range === '24h') now.setHours(now.getHours() - 24);
+  else if (range === '7d') now.setDate(now.getDate() - 7);
+  else if (range === '30d') now.setDate(now.getDate() - 30);
+  return now.toISOString();
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -61,21 +84,38 @@ export default function AnalyticsDashboard() {
     totalRake: 0,
     activePlayers: 0,
     totalVipPointsIssued: 0,
+    livePlayersNow: 0,
   });
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [timeRange, setTimeRange] = useState<TimeRange>('all'); // Enhancement #1
+  const [isLoading, setIsLoading] = useState(true); // Enhancement #7
+  const mountedRef = useRef(true);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // ── Data loaders ────────────────────────────────────────────────────────
 
   const loadPositionStats = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('player_position_stats')
         .select('position, hands_played, hands_won, total_profit, vpip_count, pfr_count')
         .order('hands_played', { ascending: false })
-        .limit(50);
+        .limit(200);
 
-      if (!error && data) {
-        // Aggregate by position across all users
+      const cutoff = getTimeRangeCutoff(timeRange);
+      if (cutoff) {
+        query = query.gte('updated_at', cutoff);
+      }
+
+      const { data, error } = await query;
+
+      if (!error && data && mountedRef.current) {
         const byPosition = new Map<string, PositionStat>();
         for (const row of data) {
           const existing = byPosition.get(row.position);
@@ -108,44 +148,53 @@ export default function AnalyticsDashboard() {
     } catch (err) {
       console.error('[AnalyticsDashboard] Error loading position stats:', err);
     }
-  }, []);
+  }, [timeRange]);
 
   const loadVipLedger = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('vip_points_ledger')
         .select('id, user_id, amount, transaction_type, description, created_at')
         .order('created_at', { ascending: false })
         .limit(20);
 
-      if (!error && data) {
+      const cutoff = getTimeRangeCutoff(timeRange);
+      if (cutoff) {
+        query = query.gte('created_at', cutoff);
+      }
+
+      const { data, error } = await query;
+
+      if (!error && data && mountedRef.current) {
         setVipLedger(data);
       }
     } catch (err) {
       console.error('[AnalyticsDashboard] Error loading VIP ledger:', err);
     }
-  }, []);
+  }, [timeRange]);
 
   const loadAggregates = useCallback(async () => {
     try {
-      // Total hands from position stats
-      const { data: handData } = await supabase
-        .from('player_position_stats')
-        .select('hands_played');
+      let handQuery = supabase.from('player_position_stats').select('hands_played');
+      let vipQuery = supabase.from('vip_points_ledger').select('amount').gt('amount', 0);
+      let playerQuery = supabase.from('player_position_stats').select('user_id');
+
+      const cutoff = getTimeRangeCutoff(timeRange);
+      if (cutoff) {
+        handQuery = handQuery.gte('updated_at', cutoff);
+        vipQuery = vipQuery.gte('created_at', cutoff);
+        playerQuery = playerQuery.gte('updated_at', cutoff);
+      }
+
+      const { data: handData } = await handQuery;
       const totalHands = (handData || []).reduce((acc, r) => acc + (r.hands_played || 0), 0);
 
-      // Total VIP points issued
-      const { data: vipData } = await supabase
-        .from('vip_points_ledger')
-        .select('amount')
-        .gt('amount', 0);
+      const { data: vipData } = await vipQuery;
       const totalVip = (vipData || []).reduce((acc, r) => acc + (r.amount || 0), 0);
 
-      // Active players (players with any position stats)
-      const { data: playerData } = await supabase.from('player_position_stats').select('user_id');
+      const { data: playerData } = await playerQuery;
       const uniquePlayers = new Set((playerData || []).map((r) => r.user_id));
 
-      // Total rake from position stats total_profit (negative profit = rake)
       const totalRake = Math.abs(
         (handData || []).reduce(
           (acc, r) => acc + Math.min(0, r.hands_played ? -0.05 * r.hands_played : 0),
@@ -153,22 +202,34 @@ export default function AnalyticsDashboard() {
         )
       );
 
-      setAggregate({
-        totalHands,
-        totalRake: Math.round(totalRake * 100) / 100,
-        activePlayers: uniquePlayers.size,
-        totalVipPointsIssued: totalVip,
-      });
+      // Enhancement #9: Live active player count from table_players
+      const { count: liveCount } = await supabase
+        .from('table_players')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'active')
+        .eq('is_horse', false);
+
+      if (mountedRef.current) {
+        setAggregate({
+          totalHands,
+          totalRake: Math.round(totalRake * 100) / 100,
+          activePlayers: uniquePlayers.size,
+          totalVipPointsIssued: totalVip,
+          livePlayersNow: liveCount || 0,
+        });
+      }
     } catch (err) {
       console.error('[AnalyticsDashboard] Error loading aggregates:', err);
     }
-  }, []);
+  }, [timeRange]);
 
-  const refreshAll = useCallback(() => {
-    loadPositionStats();
-    loadVipLedger();
-    loadAggregates();
-    setLastRefresh(new Date());
+  const refreshAll = useCallback(async () => {
+    setIsLoading(true);
+    await Promise.all([loadPositionStats(), loadVipLedger(), loadAggregates()]);
+    if (mountedRef.current) {
+      setLastRefresh(new Date());
+      setIsLoading(false);
+    }
   }, [loadPositionStats, loadVipLedger, loadAggregates]);
 
   // ── Mount & Bus listeners ───────────────────────────────────────────────
@@ -178,18 +239,15 @@ export default function AnalyticsDashboard() {
   }, [refreshAll]);
 
   useEffect(() => {
-    // Auto-refresh every 30 seconds
     const interval = setInterval(refreshAll, 30_000);
     return () => clearInterval(interval);
   }, [refreshAll]);
 
   useEffect(() => {
-    // Debounce bus events — HAND_COMPLETED can fire very rapidly across many tables.
-    // Without debounce, 30+ tables dealing simultaneously = 90+ queries/sec.
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const debouncedRefresh = () => {
       if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(refreshAll, 5000); // 5s debounce
+      debounceTimer = setTimeout(refreshAll, 5000);
     };
 
     const unsubHand = masterBus.subscribe('HAND_COMPLETED', debouncedRefresh);
@@ -202,6 +260,44 @@ export default function AnalyticsDashboard() {
       if (debounceTimer) clearTimeout(debounceTimer);
     };
   }, [refreshAll]);
+
+  // ── Enhancement #5: CSV Export ─────────────────────────────────────────
+
+  const handleExportCSV = useCallback(() => {
+    // Position Stats CSV
+    const posHeader = 'Position,Hands Played,Hands Won,Total Profit,VPIP %,PFR Count\n';
+    const posRows = positionStats
+      .map(
+        (s) =>
+          `${s.position},${s.hands_played},${s.hands_won},${s.total_profit},${s.vpip_pct},${s.pfr_count}`
+      )
+      .join('\n');
+
+    // VIP Ledger CSV
+    const vipHeader = '\n\nVIP Ledger\nTime,Type,Amount,Description\n';
+    const vipRows = vipLedger
+      .map(
+        (e) =>
+          `${new Date(e.created_at).toLocaleString()},${e.transaction_type},${e.amount},"${e.description || ''}"`
+      )
+      .join('\n');
+
+    const csvContent =
+      'Club Analytics Export — ' +
+      new Date().toLocaleString() +
+      '\n\nPosition Stats\n' +
+      posHeader +
+      posRows +
+      vipHeader +
+      vipRows;
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `club-analytics-${timeRange}-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }, [positionStats, vipLedger, timeRange]);
 
   // ── Computed values ─────────────────────────────────────────────────────
 
@@ -220,26 +316,82 @@ export default function AnalyticsDashboard() {
             Live — updated {lastRefresh.toLocaleTimeString()}
           </span>
         </p>
+
+        {/* Enhancement #1: Time Range Selector */}
+        <div className="analytics-controls">
+          <div className="time-range-selector">
+            {TIME_RANGE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                className={`range-btn ${timeRange === opt.value ? 'active' : ''}`}
+                onClick={() => setTimeRange(opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Enhancement #5: CSV Export */}
+          <button
+            className="export-btn"
+            onClick={handleExportCSV}
+            disabled={positionStats.length === 0 && vipLedger.length === 0}
+          >
+            📥 Export CSV
+          </button>
+        </div>
       </header>
 
       {/* ── Summary Cards ───────────────────────────────────────────────── */}
       <div className="analytics-summary">
-        <div className="summary-card">
-          <div className="label">Total Hands Tracked</div>
-          <div className="value text-blue">{aggregate.totalHands.toLocaleString()}</div>
-        </div>
-        <div className="summary-card">
-          <div className="label">Active Players</div>
-          <div className="value text-green">{aggregate.activePlayers.toLocaleString()}</div>
-        </div>
-        <div className="summary-card">
-          <div className="label">Est. Total Rake</div>
-          <div className="value text-amber">${aggregate.totalRake.toLocaleString()}</div>
-        </div>
-        <div className="summary-card">
-          <div className="label">VIP Points Issued</div>
-          <div className="value text-purple">{aggregate.totalVipPointsIssued.toLocaleString()}</div>
-        </div>
+        {isLoading ? (
+          <>
+            <div className="summary-card skeleton-card">
+              <div className="skeleton-pulse" />
+            </div>
+            <div className="summary-card skeleton-card">
+              <div className="skeleton-pulse" />
+            </div>
+            <div className="summary-card skeleton-card">
+              <div className="skeleton-pulse" />
+            </div>
+            <div className="summary-card skeleton-card">
+              <div className="skeleton-pulse" />
+            </div>
+            <div className="summary-card skeleton-card">
+              <div className="skeleton-pulse" />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="summary-card">
+              <div className="label">Total Hands Tracked</div>
+              <div className="value text-blue">{aggregate.totalHands.toLocaleString()}</div>
+            </div>
+            <div className="summary-card">
+              <div className="label">Active Players</div>
+              <div className="value text-green">{aggregate.activePlayers.toLocaleString()}</div>
+            </div>
+            <div className="summary-card">
+              <div className="label">Est. Total Rake</div>
+              <div className="value text-amber">${aggregate.totalRake.toLocaleString()}</div>
+            </div>
+            <div className="summary-card">
+              <div className="label">VIP Points Issued</div>
+              <div className="value text-purple">
+                {aggregate.totalVipPointsIssued.toLocaleString()}
+              </div>
+            </div>
+            {/* Enhancement #9: Live Players Now */}
+            <div className="summary-card live-card">
+              <div className="label">Live Players Now</div>
+              <div className="value text-cyan">
+                <span className="live-dot" />
+                {aggregate.livePlayersNow}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── Charts Grid ─────────────────────────────────────────────────── */}
@@ -247,7 +399,15 @@ export default function AnalyticsDashboard() {
         {/* Position Win Rate Chart */}
         <div className="chart-card">
           <h3>Win Rate by Position</h3>
-          {positionStats.length > 0 ? (
+          {isLoading ? (
+            <div className="skeleton-bars">
+              {ALL_POSITIONS.map((p) => (
+                <div key={p} className="skeleton-bar">
+                  <div className="skeleton-pulse" />
+                </div>
+              ))}
+            </div>
+          ) : positionStats.length > 0 ? (
             <div className="position-bars">
               {ALL_POSITIONS.map((pos) => {
                 const stat = positionStats.find((s) => s.position === pos);
@@ -285,7 +445,15 @@ export default function AnalyticsDashboard() {
         {/* VPIP by Position */}
         <div className="chart-card">
           <h3>VPIP % by Position</h3>
-          {positionStats.length > 0 ? (
+          {isLoading ? (
+            <div className="skeleton-bars">
+              {ALL_POSITIONS.map((p) => (
+                <div key={p} className="skeleton-bar">
+                  <div className="skeleton-pulse" />
+                </div>
+              ))}
+            </div>
+          ) : positionStats.length > 0 ? (
             <div className="position-bars">
               {ALL_POSITIONS.map((pos) => {
                 const stat = positionStats.find((s) => s.position === pos);
@@ -320,7 +488,17 @@ export default function AnalyticsDashboard() {
 
       {/* ── VIP Points Ledger ───────────────────────────────────────────── */}
       <h2 className="section-header">Recent VIP Points Activity</h2>
-      {vipLedger.length > 0 ? (
+      {isLoading ? (
+        <div className="chart-card">
+          <div className="skeleton-table">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="skeleton-row">
+                <div className="skeleton-pulse" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : vipLedger.length > 0 ? (
         <div className="chart-card">
           <table className="vip-table">
             <thead>

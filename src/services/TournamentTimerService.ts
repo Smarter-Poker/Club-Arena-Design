@@ -30,6 +30,7 @@ class TournamentTimerServiceClass {
   private activeTimers: Map<string, TournamentTimerState> = new Map();
   private readonly TICK_INTERVAL_MS = 1000; // Check every second
   private breakIntervals: Map<string, number> = new Map(); // configurable break every N levels
+  private headsUpTriggered: Set<string> = new Set(); // Guard against duplicate HEADS_UP_SWITCH emissions
 
   constructor() {
     // Listen for player eliminations to trigger final table / heads-up detection
@@ -259,7 +260,8 @@ class TournamentTimerServiceClass {
       }
 
       // ── Heads-Up Detection (exactly 2 players) ──
-      if (playersRemaining === 2) {
+      if (playersRemaining === 2 && !this.headsUpTriggered.has(tournamentId)) {
+        this.headsUpTriggered.add(tournamentId);
         const [p1, p2] = entries as any[];
         masterBus.emit('HEADS_UP_SWITCH', {
           tournamentId,
