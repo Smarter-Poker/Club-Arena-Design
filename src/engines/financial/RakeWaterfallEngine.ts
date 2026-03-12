@@ -2,21 +2,22 @@ import { supabase } from '../../lib/supabase';
 import { WalletService } from '../../services/WalletService';
 import { CommissionService } from '../../services/CommissionService';
 import { RakeService } from '../../services/RakeService';
+import { retryAsync } from '../../utils/retryAsync';
 
 export interface HandContext {
-    tableId: string;
-    handId: string;
-    clubId: string;
-    totalPot: number;
-    smallBlind?: number;
-    bigBlind: number; // For scaling caps
-    players: any[]; // Dealt-in players
+  tableId: string;
+  handId: string;
+  clubId: string;
+  totalPot: number;
+  smallBlind?: number;
+  bigBlind: number; // For scaling caps
+  players: any[]; // Dealt-in players
 }
 
 /**
  * 🌊 RAKE WATERFALL ENGINE
  * Orchestrates the flow of money after every hand.
- * 
+ *
  * FLOW:
  * 1. Calculate Gross Rake (Cap Check).
  * 2. Calculate BBJ Drop.
@@ -25,108 +26,114 @@ export interface HandContext {
  * 5. Trigger Commission Payouts (Async).
  */
 export class RakeWaterfallEngine {
+  /**
+   * PROCESS HAND END
+   * The single entry point for financial settlement of a hand.
+   */
+  static async processHand(ctx: HandContext) {
+    // 1. CALCULATE RAKE & BBJ using RakeService (Single Source of Truth)
+    // LAW: 10% Rate | Tier-based Cap | BBJ from chart (LOCKED)
 
-    /**
-     * PROCESS HAND END
-     * The single entry point for financial settlement of a hand.
-     */
-    static async processHand(ctx: HandContext) {
+    const sb = ctx.smallBlind ?? ctx.bigBlind / 2;
+    const rakeResult = RakeService.calculateRake(ctx.totalPot, ctx.bigBlind, true, sb);
 
-        // 1. CALCULATE RAKE & BBJ using RakeService (Single Source of Truth)
-        // LAW: 10% Rate | Tier-based Cap | BBJ from chart (LOCKED)
+    const rakePercent = rakeResult.rakePercent;
+    const rakeCap = rakeResult.rakeCap;
+    const grossRake = rakeResult.cappedRake;
 
-        const sb = ctx.smallBlind ?? ctx.bigBlind / 2;
-        const rakeResult = RakeService.calculateRake(ctx.totalPot, ctx.bigBlind, true, sb);
+    // 2. BBJ DROP from RakeService
+    const bbjDrop = rakeResult.bbjDrop;
 
-        const rakePercent = rakeResult.rakePercent;
-        const rakeCap = rakeResult.rakeCap;
-        const grossRake = rakeResult.cappedRake;
+    // 3. EXECUTE POT DEDUCTION (Move Chips to Union/Club/BBJ Wallets)
+    // This is the "Physical" movement of chips from the table
+    await this.executePotDeductions(ctx, grossRake, bbjDrop);
 
-        // 2. BBJ DROP from RakeService
-        const bbjDrop = rakeResult.bbjDrop;
+    // 4. ATTRIBUTE RAKE (The "Generated" Credit)
+    // This splits the grossRake among players for commission purposes
+    const attribution = await RakeService.distributeHandRake(
+      ctx.tableId,
+      ctx.handId,
+      grossRake,
+      ctx.players
+    );
 
-        // 3. EXECUTE POT DEDUCTION (Move Chips to Union/Club/BBJ Wallets)
-        // This is the "Physical" movement of chips from the table
-        await this.executePotDeductions(ctx, grossRake, bbjDrop);
+    // 5. TRIGGER COMMISSION CALCULATIONS
+    // Based on the attribution, calculate what agents earned
+    if (attribution) {
+      this.triggerCommissionWaterfall(ctx.clubId, attribution);
+    }
 
-        // 4. ATTRIBUTE RAKE (The "Generated" Credit)
-        // This splits the grossRake among players for commission purposes
-        const attribution = await RakeService.distributeHandRake(
-            ctx.tableId,
-            ctx.handId,
-            grossRake,
-            ctx.players
+    return {
+      grossRake,
+      bbjDrop,
+      attribution,
+    };
+  }
+
+  // INTERNAL: Move the actual chips in DB
+  private static async executePotDeductions(ctx: HandContext, rake: number, bbj: number) {
+    // 1. Move Rake to Club's Pending Rake Wallet (held by Union)
+    // 2. Move BBJ to Union BBJ Pool
+
+    // Using RPC for atomicity
+    const { error } = await retryAsync(
+      () =>
+        supabase.rpc('execute_pot_drops', {
+          p_hand_id: ctx.handId,
+          p_club_id: ctx.clubId,
+          p_rake_amount: rake,
+          p_bbj_amount: bbj,
+        }),
+      3
+    );
+
+    if (error) {
+      console.error('[RakeWaterfall] CRITICAL pot deduction failure:', error);
+      throw new Error(`Failed to execute pot drops for hand ${ctx.handId}: ${error.message}`);
+    }
+
+    // Log rake + BBJ deductions to wallet_transactions for audit trail
+    // Rake goes to union/club owner depending on union membership
+    const { data: club } = await supabase
+      .from('clubs')
+      .select('owner_id, union_id')
+      .eq('id', ctx.clubId)
+      .maybeSingle();
+
+    if (club) {
+      let rakeRecipientId = club.owner_id;
+      if (club.union_id) {
+        const { data: union } = await supabase
+          .from('unions')
+          .select('owner_id')
+          .eq('id', club.union_id)
+          .maybeSingle();
+        if (union?.owner_id) rakeRecipientId = union.owner_id;
+      }
+
+      if (rakeRecipientId && rake > 0) {
+        await WalletService.logTransaction(
+          rakeRecipientId,
+          'PLAYER',
+          Math.trunc(rake * 100) / 100,
+          'credit',
+          'rake',
+          `Hand rake collected`,
+          ctx.tableId,
+          ctx.handId
         );
-
-        // 5. TRIGGER COMMISSION CALCULATIONS
-        // Based on the attribution, calculate what agents earned
-        if (attribution) {
-            this.triggerCommissionWaterfall(ctx.clubId, attribution);
-        }
-
-        return {
-            grossRake,
-            bbjDrop,
-            attribution
-        };
+      }
     }
+  }
 
-    // INTERNAL: Move the actual chips in DB
-    private static async executePotDeductions(ctx: HandContext, rake: number, bbj: number) {
-        // 1. Move Rake to Club's Pending Rake Wallet (held by Union)
-        // 2. Move BBJ to Union BBJ Pool
-
-        // Using RPC for atomicity
-        const { error } = await supabase.rpc('execute_pot_drops', {
-            p_hand_id: ctx.handId,
-            p_club_id: ctx.clubId,
-            p_rake_amount: rake,
-            p_bbj_amount: bbj
-        });
-
-        if (error) {
-            console.error('[RakeWaterfall] CRITICAL pot deduction failure:', error);
-            throw new Error(`Failed to execute pot drops for hand ${ctx.handId}: ${error.message}`);
-        }
-
-        // Log rake + BBJ deductions to wallet_transactions for audit trail
-        // Rake goes to union/club owner depending on union membership
-        const { data: club } = await supabase
-            .from('clubs')
-            .select('owner_id, union_id')
-            .eq('id', ctx.clubId)
-            .maybeSingle();
-
-        if (club) {
-            let rakeRecipientId = club.owner_id;
-            if (club.union_id) {
-                const { data: union } = await supabase
-                    .from('unions')
-                    .select('owner_id')
-                    .eq('id', club.union_id)
-                    .maybeSingle();
-                if (union?.owner_id) rakeRecipientId = union.owner_id;
-            }
-
-            if (rakeRecipientId && rake > 0) {
-                await WalletService.logTransaction(
-                    rakeRecipientId, 'PLAYER', Math.trunc(rake * 100) / 100, 'credit', 'rake',
-                    `Hand rake collected`, ctx.tableId, ctx.handId
-                );
-            }
-        }
-    }
-
-    // INTERNAL: Calculate and Queue Commissions
-    private static async triggerCommissionWaterfall(clubId: string, attribution: any) {
-        // attribution.attributedTo = [userId1, userId2...]
-        // attribution.creditPerPlayer = 0.50
-
-        // For each player, find their agent chain and credit commissions
-        // This is heavy, so typically sent to a background worker
-        // Simulation:
-
-        /*
+  // INTERNAL: Calculate and Queue Commissions
+  private static async triggerCommissionWaterfall(clubId: string, attribution: any) {
+    // attribution.attributedTo = [userId1, userId2...]
+    // attribution.creditPerPlayer = 0.50
+    // For each player, find their agent chain and credit commissions
+    // This is heavy, so typically sent to a background worker
+    // Simulation:
+    /*
           Player A (Generated 0.50)
             -> Agent 1 (50% Com) -> Earns 0.25
                -> Sub-Agent 1.1 (30% Com) -> Earns 0.15 (from Agent 1's share? No, usually hierarchical spread)
@@ -143,9 +150,7 @@ export class RakeWaterfallEngine {
           Player: 0.10
           Club: Rake (0.50) - Agent Tree (0.35) = 0.15
         */
-
-        // We record these "Earnings" in the settlements table for Weekly Payout
-        // We DO NOT pay them instantly to wallets (that's the Monday Payout)
-
-    }
+    // We record these "Earnings" in the settlements table for Weekly Payout
+    // We DO NOT pay them instantly to wallets (that's the Monday Payout)
+  }
 }

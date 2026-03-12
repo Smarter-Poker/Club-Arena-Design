@@ -71,6 +71,7 @@ export interface TableLiquidityStatus {
 
 // HorseDecision is defined in HorseLogic.ts — use that canonical version
 import type { HorseDecision } from '../engine/HorseLogic';
+import { retryAsync } from '../utils/retryAsync';
 export type { HorseDecision } from '../engine/HorseLogic';
 
 export interface HandContext {
@@ -443,12 +444,13 @@ export const HydraService = {
     const clubId = tableClubData?.club_id;
     if (clubId) {
       // Deduct from Player Wallet via SECURITY DEFINER RPC
-      const { data: deductResult, error: deductError } = await supabase.rpc(
-        'deduct_player_wallet',
-        {
-          p_user_id: horseId,
-          p_amount: stack,
-        }
+      const { data: deductResult, error: deductError } = await retryAsync(
+        () =>
+          supabase.rpc('deduct_player_wallet', {
+            p_user_id: horseId,
+            p_amount: stack,
+          }),
+        3
       );
 
       if (deductError) {
@@ -497,10 +499,14 @@ export const HydraService = {
     if (error) {
       console.error('HydraService.seatHorse insert error:', error);
       // Refund Player Wallet if seat insert fails
-      const { error: refundError } = await supabase.rpc('credit_player_wallet', {
-        p_user_id: horseId,
-        p_amount: stack,
-      });
+      const { error: refundError } = await retryAsync(
+        () =>
+          supabase.rpc('credit_player_wallet', {
+            p_user_id: horseId,
+            p_amount: stack,
+          }),
+        3
+      );
       if (!refundError) {
         await WalletService.logTransaction(
           horseId,
@@ -610,12 +616,13 @@ export const HydraService = {
       const clubId = tableClubData?.club_id;
       if (clubId) {
         // Credit to Player Wallet via SECURITY DEFINER RPC
-        const { data: creditResult, error: creditError } = await supabase.rpc(
-          'credit_player_wallet',
-          {
-            p_user_id: horseId,
-            p_amount: remainingStack,
-          }
+        const { data: creditResult, error: creditError } = await retryAsync(
+          () =>
+            supabase.rpc('credit_player_wallet', {
+              p_user_id: horseId,
+              p_amount: remainingStack,
+            }),
+          3
         );
 
         if (creditError) {

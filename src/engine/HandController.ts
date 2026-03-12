@@ -36,6 +36,8 @@ export interface HandConfig {
   bombPot?: {
     anteMultiplier: number; // Each player antes this many BBs
   };
+  straddles?: { seat: number; amount: number }[]; // Injected by StraddleEngine
+  ritEnabled?: boolean; // If enabled, intercepts all-in runouts
 }
 
 export interface GameState {
@@ -70,6 +72,13 @@ export type HandEvent =
   | { type: 'PLAYER_ACTION'; seat: number; action: ActionType; amount: number }
   | { type: 'POT_UPDATE'; pot: number; pots: Pot[] }
   | { type: 'TURN_CHANGE'; seat: number; availableActions: ActionType[] }
+  | {
+      type: 'ALL_IN_RUNOUT_PENDING';
+      remainingDeck: Card[];
+      existingBoard: Card[];
+      pot: number;
+      activePlayers: SeatPlayer[];
+    }
   | { type: 'SHOWDOWN'; results: ShowdownResult[] }
   | { type: 'WINNERS'; winners: Winner[] }
   | { type: 'HAND_COMPLETE'; handNumber: number; rake: number; pot: number };
@@ -116,6 +125,9 @@ export class HandController {
       sawFlop: false,
     };
   }
+
+  // To prevent double RIT triggering
+  private isWaitingForRIT = false;
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Event System
@@ -217,6 +229,26 @@ export class HandController {
         player.totalInvested += anteAmount;
         player.stack -= anteAmount;
         this.state.pot += anteAmount;
+      }
+    }
+
+    // Post straddles if configured
+    if (this.config.straddles && this.config.straddles.length > 0) {
+      for (const straddle of this.config.straddles) {
+        const player = this.state.players.find((p) => p.seat === straddle.seat);
+        if (player && player.stack > 0) {
+          const actualAmount = Math.min(straddle.amount, player.stack);
+          // Set their bet and adjust stack
+          player.bet = actualAmount;
+          player.totalInvested += actualAmount;
+          player.stack -= actualAmount;
+          this.state.pot += actualAmount;
+          // Update game constraints
+          if (actualAmount > this.state.currentBet) {
+            this.state.lastRaise = actualAmount - this.state.currentBet;
+            this.state.currentBet = actualAmount;
+          }
+        }
       }
     }
 
@@ -537,6 +569,28 @@ export class HandController {
   }
 
   private runOutCommunityCards(): void {
+    const activePlayersWithCards = this.state.players.filter(
+      (p) => !p.is_folded && !p.is_sitting_out
+    );
+
+    // Check if we should pause for Run It Twice
+    if (
+      this.config.ritEnabled &&
+      activePlayersWithCards.length >= 2 &&
+      this.state.communityCards.length < 5 &&
+      !this.isWaitingForRIT
+    ) {
+      this.isWaitingForRIT = true;
+      this.emit({
+        type: 'ALL_IN_RUNOUT_PENDING',
+        remainingDeck: this.state.deck.getCards(),
+        existingBoard: [...this.state.communityCards],
+        pot: this.state.pot,
+        activePlayers: activePlayersWithCards,
+      });
+      return; // Stop the synchronous runout. Engine will call resume() or resolveRIT()
+    }
+
     while (this.state.communityCards.length < 5) {
       const stage =
         this.state.communityCards.length < 3
@@ -547,10 +601,71 @@ export class HandController {
       const count = stage === 'flop' ? 3 - this.state.communityCards.length : 1;
       const cards = this.state.deck.deal(count);
       this.state.communityCards.push(...cards);
+      if (stage === 'flop') this.state.sawFlop = true;
       this.emit({ type: 'COMMUNITY_CARDS', stage, cards });
     }
     this.state.stage = 'showdown';
     this.completeHand();
+  }
+
+  /**
+   * Called by HeadlessTableEngine if RIT is declined or times out
+   */
+  resumeRunout(): void {
+    if (!this.isWaitingForRIT) return;
+    this.isWaitingForRIT = false;
+    this.runOutCommunityCards();
+  }
+
+  /**
+   * Called by HeadlessTableEngine if RIT is accepted and completed manually
+   */
+  resolveRunItTwice(
+    board1: Card[],
+    board2: Card[],
+    customDistributions: { userId: string; amount: number }[]
+  ): void {
+    if (!this.isWaitingForRIT) return;
+    this.isWaitingForRIT = false;
+    this.state.stage = 'showdown';
+
+    // Rake applies once to the entire pot
+    const rake = calculateRake(
+      this.state.pot,
+      this.state.sawFlop || board1.length >= 3,
+      this.config.rakeConfig
+    );
+    const totalWinnings = this.state.pot - rake;
+
+    // Adjust distribution amounts based on raked pot
+    const totalDistribution = customDistributions.reduce((s, d) => s + d.amount, 0);
+    const adjustedWinners: Winner[] = customDistributions.map((d) => ({
+      userId: d.userId,
+      amount: totalDistribution > 0 ? (d.amount / totalDistribution) * totalWinnings : 0,
+    }));
+
+    // Integer-cent truncation logic to prevent floating point mismatch
+    const totalCents = Math.trunc(totalWinnings * 100);
+    const winCents = adjustedWinners.map((w) => Math.trunc(w.amount * 100));
+    let remainder = totalCents - winCents.reduce((s, c) => s + c, 0);
+    for (let i = 0; i < winCents.length && remainder > 0; i++) {
+      winCents[i]++;
+      remainder--;
+    }
+    adjustedWinners.forEach((w, i) => {
+      w.amount = winCents[i] / 100;
+      // Add to stacks
+      const player = this.state.players.find((p) => p.user_id === w.userId);
+      if (player) player.stack += w.amount;
+    });
+
+    this.emit({ type: 'WINNERS', winners: adjustedWinners });
+    this.emit({
+      type: 'HAND_COMPLETE',
+      handNumber: this.config.handNumber,
+      rake,
+      pot: this.state.pot,
+    });
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

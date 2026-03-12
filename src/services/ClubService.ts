@@ -11,6 +11,7 @@ import { WalletService } from './WalletService';
 import { masterBus } from '../core/MasterBus';
 import { BBJService } from './BBJService';
 import type { Club, ClubMember, ClubSettings, MemberRole } from '../types/database.types';
+import { retryAsync } from '../utils/retryAsync';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SERVICE
@@ -257,10 +258,14 @@ class ClubServiceClass {
 
     if (amount > 0) {
       // Credit via atomic wallet RPC
-      const { error } = await supabase.rpc('credit_player_wallet', {
-        p_user_id: member.user_id,
-        p_amount: Math.trunc(amount * 100) / 100,
-      });
+      const { error } = await retryAsync(
+        () =>
+          supabase.rpc('credit_player_wallet', {
+            p_user_id: member.user_id,
+            p_amount: Math.trunc(amount * 100) / 100,
+          }),
+        3
+      );
       if (error) return false;
 
       await WalletService.logTransaction(
@@ -277,10 +282,14 @@ class ClubServiceClass {
       });
     } else if (amount < 0) {
       const absAmt = Math.trunc(Math.abs(amount) * 100) / 100;
-      const { data: result, error } = await supabase.rpc('deduct_player_wallet', {
-        p_user_id: member.user_id,
-        p_amount: absAmt,
-      });
+      const { data: result, error } = await retryAsync(
+        () =>
+          supabase.rpc('deduct_player_wallet', {
+            p_user_id: member.user_id,
+            p_amount: absAmt,
+          }),
+        3
+      );
       if (error || result === false) return false;
 
       await WalletService.logTransaction(

@@ -8,6 +8,7 @@
 import { supabase } from '../lib/supabase';
 import { WalletService } from './WalletService';
 import { masterBus } from '../core/MasterBus';
+import { retryAsync } from '../utils/retryAsync';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -323,9 +324,13 @@ class PromotionServiceClass {
     );
 
     // Recalculate ranks
-    const { error: rankErr } = await supabase.rpc('recalculate_leaderboard_ranks', {
-      p_promotion_id: promotionId,
-    });
+    const { error: rankErr } = await retryAsync(
+      () =>
+        supabase.rpc('recalculate_leaderboard_ranks', {
+          p_promotion_id: promotionId,
+        }),
+      3
+    );
     if (rankErr)
       console.error('[PromotionService] Leaderboard rank recalc failed:', rankErr.message);
   }
@@ -362,11 +367,15 @@ class PromotionServiceClass {
     await this.claimPromotion(promo.id, userId);
 
     // Add bonus to promo wallet with audit trail
-    const { error: bonusErr } = await supabase.rpc('add_to_promo_wallet', {
-      p_user_id: userId,
-      p_amount: finalBonus,
-      p_description: `Deposit bonus: ${promo.title}`,
-    });
+    const { error: bonusErr } = await retryAsync(
+      () =>
+        supabase.rpc('add_to_promo_wallet', {
+          p_user_id: userId,
+          p_amount: finalBonus,
+          p_description: `Deposit bonus: ${promo.title}`,
+        }),
+      3
+    );
     if (bonusErr) {
       console.error('[PromotionService] Deposit bonus credit failed:', bonusErr.message);
       return 0;
@@ -414,11 +423,15 @@ class PromotionServiceClass {
 
     // Award referrer bonus
     const referralBonus = Math.trunc((promo.prizePool || 10) * 100) / 100;
-    const { error: refErr } = await supabase.rpc('add_to_promo_wallet', {
-      p_user_id: referrer.id,
-      p_amount: referralBonus,
-      p_description: 'Referral bonus',
-    });
+    const { error: refErr } = await retryAsync(
+      () =>
+        supabase.rpc('add_to_promo_wallet', {
+          p_user_id: referrer.id,
+          p_amount: referralBonus,
+          p_description: 'Referral bonus',
+        }),
+      3
+    );
     if (refErr) {
       console.error('[PromotionService] Referral bonus credit failed:', refErr.message);
       return;

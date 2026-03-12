@@ -8,6 +8,7 @@
 
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
+import { retryAsync } from '../utils/retryAsync';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -120,9 +121,13 @@ class PlayerPositionStatsServiceClass {
 
       // Upsert positional statistics
       if (statsPayload.length > 0) {
-        const { error } = await supabase.rpc('bulk_update_position_stats', {
-          payload: statsPayload,
-        });
+        const { error } = await retryAsync(
+          () =>
+            supabase.rpc('bulk_update_position_stats', {
+              payload: statsPayload,
+            }),
+          3
+        );
         if (error) {
           console.error('[PositionStats] Failed to upsert stats:', error.message);
         } else {
@@ -132,9 +137,13 @@ class PlayerPositionStatsServiceClass {
 
       // Bulk Add VIP points and broadcast globally
       if (vipPayload.length > 0) {
-        const { error: vipError } = await supabase.rpc('bulk_add_vip_points', {
-          payload: vipPayload,
-        });
+        const { error: vipError } = await retryAsync(
+          () =>
+            supabase.rpc('bulk_add_vip_points', {
+              payload: vipPayload,
+            }),
+          3
+        );
         if (!vipError) {
           vipPayload.forEach((v) => {
             masterBus.emit('VIP_POINTS_UPDATED', {

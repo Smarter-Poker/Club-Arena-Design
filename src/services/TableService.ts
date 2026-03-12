@@ -7,6 +7,7 @@ import { supabase, subscribeToTable, subscribeToHandState } from '../lib/supabas
 import type { PokerTable, TableSettings, GameVariant, HandState } from '../types/database.types';
 import { WalletService } from './WalletService';
 import { masterBus } from '../core/MasterBus';
+import { retryAsync } from '../utils/retryAsync';
 
 class TableService {
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -253,12 +254,13 @@ class TableService {
 
       // Return chips to Player Wallet via credit_player_wallet RPC
       if (chipsToReturn > 0) {
-        const { data: creditResult, error: creditError } = await supabase.rpc(
-          'credit_player_wallet',
-          {
-            p_user_id: userId,
-            p_amount: chipsToReturn,
-          }
+        const { data: creditResult, error: creditError } = await retryAsync(
+          () =>
+            supabase.rpc('credit_player_wallet', {
+              p_user_id: userId,
+              p_amount: chipsToReturn,
+            }),
+          3
         );
 
         if (creditError) {
@@ -476,10 +478,14 @@ class TableService {
 
     // Return chips to player wallet
     if (seat.stack > 0) {
-      const { error: walletErr } = await supabase.rpc('credit_player_wallet', {
-        p_user_id: userId,
-        p_amount: seat.stack,
-      });
+      const { error: walletErr } = await retryAsync(
+        () =>
+          supabase.rpc('credit_player_wallet', {
+            p_user_id: userId,
+            p_amount: seat.stack,
+          }),
+        3
+      );
       if (walletErr) {
         console.error('[TableService] Error crediting wallet on kick:', walletErr);
         return false;

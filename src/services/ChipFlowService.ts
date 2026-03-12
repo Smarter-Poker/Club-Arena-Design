@@ -21,6 +21,7 @@ import { supabase } from '../lib/supabase';
 import { WalletService } from './WalletService';
 import { masterBus } from '../core/MasterBus';
 import { FinancialAlertService } from './FinancialAlertService';
+import { retryAsync } from '../utils/retryAsync';
 
 // Exact cent precision — never round
 const exact = (v: number): number => Math.trunc(v * 100) / 100;
@@ -78,26 +79,38 @@ export const ChipFlowService = {
     }
 
     // 1. Deduct from sender's PLAYER wallet
-    const { data: deductResult, error: deductErr } = await supabase.rpc('deduct_player_wallet', {
-      p_user_id: fromUserId,
-      p_amount: amt,
-    });
+    const { data: deductResult, error: deductErr } = await retryAsync(
+      () =>
+        supabase.rpc('deduct_player_wallet', {
+          p_user_id: fromUserId,
+          p_amount: amt,
+        }),
+      3
+    );
 
     if (deductErr) throw new Error(`Deduct failed: ${deductErr.message}`);
     if (deductResult === false) throw new Error('Insufficient balance for transfer');
 
     // 2. Credit to receiver's PLAYER wallet (BEFORE logging — keep audit trail clean on rollback)
-    const { error: creditErr } = await supabase.rpc('credit_player_wallet', {
-      p_user_id: toUserId,
-      p_amount: amt,
-    });
+    const { error: creditErr } = await retryAsync(
+      () =>
+        supabase.rpc('credit_player_wallet', {
+          p_user_id: toUserId,
+          p_amount: amt,
+        }),
+      3
+    );
 
     if (creditErr) {
       // Rollback: re-credit sender — no audit trail was written yet, so rollback is clean
-      const { error: rollbackErr } = await supabase.rpc('credit_player_wallet', {
-        p_user_id: fromUserId,
-        p_amount: amt,
-      });
+      const { error: rollbackErr } = await retryAsync(
+        () =>
+          supabase.rpc('credit_player_wallet', {
+            p_user_id: fromUserId,
+            p_amount: amt,
+          }),
+        3
+      );
       if (rollbackErr)
         console.error(
           `[ChipFlowService] CRITICAL: Rollback failed for ${fromUserId.slice(0, 8)} — ${amt} chips lost: ${rollbackErr.message}`
@@ -303,10 +316,14 @@ export const ChipFlowService = {
   ): Promise<number> {
     const amt = exact(amount);
 
-    const { error } = await supabase.rpc('credit_player_wallet', {
-      p_user_id: unionOwnerId,
-      p_amount: amt,
-    });
+    const { error } = await retryAsync(
+      () =>
+        supabase.rpc('credit_player_wallet', {
+          p_user_id: unionOwnerId,
+          p_amount: amt,
+        }),
+      3
+    );
 
     if (error) throw new Error(`Mint failed: ${error.message}`);
 

@@ -18,6 +18,7 @@ import { CommissionService } from './CommissionService';
 import { WalletService } from './WalletService';
 import { pushNotificationService } from './PushNotificationService';
 import { masterBus } from '../core/MasterBus';
+import { retryAsync } from '../utils/retryAsync';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -106,7 +107,10 @@ export const SettlementService = {
    * Get or create the current settlement period
    */
   async getCurrentPeriod(): Promise<SettlementPeriod> {
-    const { data, error } = await supabase.rpc('get_current_settlement_period');
+    const { data, error } = await retryAsync(
+      () => supabase.rpc('get_current_settlement_period'),
+      3
+    );
     if (error) throw error;
 
     // RPC returns table - use first row or create default period
@@ -201,9 +205,13 @@ export const SettlementService = {
    * Generate all settlements for a period
    */
   async generateSettlements(periodId: string): Promise<SettlementSummary> {
-    const { data, error } = await supabase.rpc('generate_period_settlements', {
-      p_period_id: periodId,
-    });
+    const { data, error } = await retryAsync(
+      () =>
+        supabase.rpc('generate_period_settlements', {
+          p_period_id: periodId,
+        }),
+      3
+    );
 
     if (error) throw error;
     return data;
@@ -215,22 +223,27 @@ export const SettlementService = {
   async calculateAgentSettlement(periodId: string, agentId: string): Promise<AgentSettlement> {
     try {
       // Try calculate_agent_settlement first
-      const { data, error } = await supabase.rpc('calculate_agent_settlement', {
-        p_period_id: periodId,
-        p_agent_id: agentId,
-      });
+      const { data, error } = await retryAsync(
+        () =>
+          supabase.rpc('calculate_agent_settlement', {
+            p_period_id: periodId,
+            p_agent_id: agentId,
+          }),
+        3
+      );
 
       if (error) {
         console.warn(
           '[Settlement] calculate_agent_settlement not available, trying calculate_agent_spread'
         );
         // Fall back to calculate_agent_spread if available
-        const { data: spreadData, error: spreadError } = await supabase.rpc(
-          'calculate_agent_spread',
-          {
-            p_period_id: periodId,
-            p_agent_id: agentId,
-          }
+        const { data: spreadData, error: spreadError } = await retryAsync(
+          () =>
+            supabase.rpc('calculate_agent_spread', {
+              p_period_id: periodId,
+              p_agent_id: agentId,
+            }),
+          3
         );
 
         if (!spreadError && spreadData) {
@@ -496,10 +509,14 @@ export const SettlementService = {
 
       if (rakeBack > 0 && club.owner_id) {
         // Deduct from union owner
-        const { data: deductResult } = await supabase.rpc('deduct_player_wallet', {
-          p_user_id: union.owner_id,
-          p_amount: rakeBack,
-        });
+        const { data: deductResult } = await retryAsync(
+          () =>
+            supabase.rpc('deduct_player_wallet', {
+              p_user_id: union.owner_id,
+              p_amount: rakeBack,
+            }),
+          3
+        );
 
         if (deductResult === false) {
           console.error(
@@ -509,20 +526,28 @@ export const SettlementService = {
         }
 
         // Credit to club owner — rollback union debit on failure
-        const { error: creditError } = await supabase.rpc('credit_player_wallet', {
-          p_user_id: club.owner_id,
-          p_amount: rakeBack,
-        });
+        const { error: creditError } = await retryAsync(
+          () =>
+            supabase.rpc('credit_player_wallet', {
+              p_user_id: club.owner_id,
+              p_amount: rakeBack,
+            }),
+          3
+        );
 
         if (creditError) {
           console.error(
             `[Settlement] CRITICAL: Credit to club owner failed, rolling back union debit:`,
             creditError
           );
-          const { error: rollbackErr } = await supabase.rpc('credit_player_wallet', {
-            p_user_id: union.owner_id,
-            p_amount: rakeBack,
-          });
+          const { error: rollbackErr } = await retryAsync(
+            () =>
+              supabase.rpc('credit_player_wallet', {
+                p_user_id: union.owner_id,
+                p_amount: rakeBack,
+              }),
+            3
+          );
           if (rollbackErr)
             console.error(
               `[Settlement] CRITICAL: Rollback also failed — ${rakeBack} chips lost: ${rollbackErr.message}`

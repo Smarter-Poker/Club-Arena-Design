@@ -19,44 +19,44 @@ import { supabase } from '../lib/supabase';
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export type GameEventType =
-    | 'PLAYER_JOIN'
-    | 'PLAYER_LEAVE'
-    | 'PLAYER_SIT'
-    | 'PLAYER_STAND'
-    | 'GAME_START'
-    | 'DEAL_CARDS'
-    | 'PLAYER_ACTION'
-    | 'BETTING_ROUND'
-    | 'SHOWDOWN'
-    | 'POT_WIN'
-    | 'HAND_COMPLETE'
-    | 'CHAT_MESSAGE'
-    | 'TABLE_SETTINGS'
-    | 'TIMER_UPDATE';
+  | 'PLAYER_JOIN'
+  | 'PLAYER_LEAVE'
+  | 'PLAYER_SIT'
+  | 'PLAYER_STAND'
+  | 'GAME_START'
+  | 'DEAL_CARDS'
+  | 'PLAYER_ACTION'
+  | 'BETTING_ROUND'
+  | 'SHOWDOWN'
+  | 'POT_WIN'
+  | 'HAND_COMPLETE'
+  | 'CHAT_MESSAGE'
+  | 'TABLE_SETTINGS'
+  | 'TIMER_UPDATE';
 
 export interface GameEvent {
-    type: GameEventType;
-    tableId: string;
-    handId?: string;
-    playerId?: string;
-    data: Record<string, unknown>;
-    timestamp: number;
-    sequence: number;
+  type: GameEventType;
+  tableId: string;
+  handId?: string;
+  playerId?: string;
+  data: Record<string, unknown>;
+  timestamp: number;
+  sequence: number;
 }
 
 export interface PlayerPresence {
-    userId: string;
-    username: string;
-    avatar?: string;
-    seatNumber?: number;
-    status: 'watching' | 'sitting' | 'away';
-    joinedAt: number;
+  userId: string;
+  username: string;
+  avatar?: string;
+  seatNumber?: number;
+  status: 'watching' | 'sitting' | 'away';
+  joinedAt: number;
 }
 
 export interface TablePresenceState {
-    players: PlayerPresence[];
-    observers: PlayerPresence[];
-    dealerPosition: number;
+  players: PlayerPresence[];
+  observers: PlayerPresence[];
+  dealerPosition: number;
 }
 
 export type EventHandler = (event: GameEvent) => void;
@@ -75,371 +75,380 @@ const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000, 30000]; // Exponential 
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export class TableWebSocket {
-    private supabase = supabase;
+  private supabase = supabase;
 
-    private channel: RealtimeChannel | null = null;
-    private tableId: string;
-    private userId: string;
-    private username: string;
+  private channel: RealtimeChannel | null = null;
+  private tableId: string;
+  private userId: string;
+  private username: string;
 
-    private eventHandlers: Set<EventHandler> = new Set();
-    private presenceHandlers: Set<PresenceHandler> = new Set();
-    private connectionHandlers: Set<ConnectionHandler> = new Set();
+  private eventHandlers: Set<EventHandler> = new Set();
+  private presenceHandlers: Set<PresenceHandler> = new Set();
+  private connectionHandlers: Set<ConnectionHandler> = new Set();
 
-    private isConnected = false;
-    private reconnectAttempt = 0;
-    private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private isConnected = false;
+  private reconnectAttempt = 0;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
-    private lastSequence = -1;
-    private pendingEvents: GameEvent[] = [];
+  private lastSequence = -1;
+  private pendingEvents: GameEvent[] = [];
 
-    constructor(tableId: string, userId: string, username: string) {
-        this.tableId = tableId;
-        this.userId = userId;
-        this.username = username;
+  constructor(tableId: string, userId: string, username: string) {
+    this.tableId = tableId;
+    this.userId = userId;
+    this.username = username;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CONNECTION MANAGEMENT
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async connect(): Promise<boolean> {
+    if (!this.supabase) {
+      console.warn('[TableWS] Supabase not configured, running in offline mode');
+      return false;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // CONNECTION MANAGEMENT
-    // ─────────────────────────────────────────────────────────────────────────────
+    try {
+      // Ensure auth session is ready before subscribing to channel
+      const {
+        data: { session },
+      } = await this.supabase.auth.getSession();
+      if (!session) {
+        console.warn('[TableWS] No auth session, scheduling reconnect...');
+        this.scheduleReconnect();
+        return false;
+      }
 
-    async connect(): Promise<boolean> {
-        if (!this.supabase) {
-            console.warn('[TableWS] Supabase not configured, running in offline mode');
-            return false;
-        }
+      // Create channel for this table
+      this.channel = this.supabase.channel(`table:${this.tableId}`, {
+        config: {
+          presence: { key: this.userId },
+          broadcast: { self: false },
+        },
+      });
 
-        try {
-            // Ensure auth session is ready before subscribing to channel
-            const { data: { session } } = await this.supabase.auth.getSession();
-            if (!session) {
-                console.warn('[TableWS] No auth session, scheduling reconnect...');
-                this.scheduleReconnect();
-                return false;
-            }
+      // Set up event listeners
+      this.channel
+        .on('broadcast', { event: 'game_event' }, ({ payload }) => {
+          this.handleGameEvent(payload as GameEvent);
+        })
+        .on('presence', { event: 'sync' }, () => {
+          this.handlePresenceSync();
+        })
+        .on('presence', { event: 'join' }, ({ newPresences }) => {})
+        .on('presence', { event: 'leave' }, ({ leftPresences }) => {});
 
-            // Create channel for this table
-            this.channel = this.supabase.channel(`table:${this.tableId}`, {
-                config: {
-                    presence: { key: this.userId },
-                    broadcast: { self: false },
-                },
-            });
+      // Subscribe to channel - returns the channel, callback receives status
+      await new Promise<void>((resolve, reject) => {
+        this.channel!.subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            this.isConnected = true;
+            this.reconnectAttempt = 0;
+            this.notifyConnection(true);
 
-            // Set up event listeners
-            this.channel
-                .on('broadcast', { event: 'game_event' }, ({ payload }) => {
-                    this.handleGameEvent(payload as GameEvent);
-                })
-                .on('presence', { event: 'sync' }, () => {
-                    this.handlePresenceSync();
-                })
-                .on('presence', { event: 'join' }, ({ newPresences }) => {
-                })
-                .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-                });
+            // Track presence
+            await this.channel?.track({
+              userId: this.userId,
+              username: this.username,
+              status: 'watching',
+              joinedAt: Date.now(),
+            } as PlayerPresence);
 
-            // Subscribe to channel - returns the channel, callback receives status
-            await new Promise<void>((resolve, reject) => {
-                this.channel!.subscribe(async (status) => {
-                    if (status === 'SUBSCRIBED') {
-                        this.isConnected = true;
-                        this.reconnectAttempt = 0;
-                        this.notifyConnection(true);
-
-                        // Track presence
-                        await this.channel?.track({
-                            userId: this.userId,
-                            username: this.username,
-                            status: 'watching',
-                            joinedAt: Date.now(),
-                        } as PlayerPresence);
-
-                        resolve();
-                    } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-                        console.warn(`[TableWS] Channel ${status}, will retry...`);
-                        resolve(); // Don't reject — let reconnect handle it gracefully
-                    }
-                });
-            });
-
-            if (!this.isConnected) {
-                this.scheduleReconnect();
-            }
-            return this.isConnected;
-        } catch (error) {
-            console.warn('[TableWS] Connection attempt failed, scheduling reconnect...');
-            this.scheduleReconnect();
-            return false;
-        }
-    }
-
-    async disconnect(): Promise<void> {
-        if (this.reconnectTimer) {
-            clearTimeout(this.reconnectTimer);
-            this.reconnectTimer = null;
-        }
-
-        if (this.channel) {
-            await this.channel.unsubscribe();
-            this.channel = null;
-        }
-
-        this.isConnected = false;
-        this.notifyConnection(false);
-    }
-
-    private scheduleReconnect(): void {
-        if (this.reconnectTimer) return;
-
-        const delay = RECONNECT_DELAYS[Math.min(this.reconnectAttempt, RECONNECT_DELAYS.length - 1)];
-        this.reconnectAttempt++;
-
-
-        this.reconnectTimer = setTimeout(async () => {
-            this.reconnectTimer = null;
-            await this.connect();
-        }, delay);
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // EVENT HANDLING
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    private handleGameEvent(event: GameEvent): void {
-        // Chat events don't need sequence ordering
-        if (event.type === 'CHAT_MESSAGE') {
-            this.dispatchEvent(event);
-            return;
-        }
-
-        // Check sequence for ordering
-        if (event.sequence <= this.lastSequence) {
-            console.warn('[TableWS] Ignoring out-of-order event:', event.sequence);
-            return;
-        }
-
-        // Handle missing events (gap in sequence) — queue and request resync
-        if (event.sequence > this.lastSequence + 1) {
-            console.warn('[TableWS] Missing events (expected:', this.lastSequence + 1, 'got:', event.sequence, ')');
-            this.pendingEvents.push(event);
-            this.requestResync();
-            return; // Don't process until resync fills the gap
-        }
-
-        this.lastSequence = event.sequence;
-        this.dispatchEvent(event);
-
-        // Process any queued events that are now in sequence
-        this.processPendingEvents();
-    }
-
-    private dispatchEvent(event: GameEvent): void {
-        this.eventHandlers.forEach((handler) => {
-            try {
-                handler(event);
-            } catch (error) {
-                console.error('[TableWS] Event handler error:', error);
-            }
+            resolve();
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.warn(`[TableWS] Channel ${status}, will retry...`);
+            resolve(); // Don't reject — let reconnect handle it gracefully
+          }
         });
+      });
+
+      if (!this.isConnected) {
+        this.scheduleReconnect();
+      }
+      return this.isConnected;
+    } catch (error) {
+      console.warn('[TableWS] Connection attempt failed, scheduling reconnect...');
+      this.scheduleReconnect();
+      return false;
+    }
+  }
+
+  async disconnect(): Promise<void> {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
     }
 
-    private processPendingEvents(): void {
-        // Sort pending by sequence
-        this.pendingEvents.sort((a, b) => a.sequence - b.sequence);
+    if (this.channel) {
+      await this.channel.unsubscribe();
+      this.channel = null;
+    }
 
-        while (this.pendingEvents.length > 0) {
-            const next = this.pendingEvents[0];
-            if (next.sequence === this.lastSequence + 1) {
-                this.pendingEvents.shift();
-                this.lastSequence = next.sequence;
-                this.dispatchEvent(next);
-            } else {
-                break; // Still have a gap
-            }
+    this.isConnected = false;
+    this.notifyConnection(false);
+  }
+
+  private scheduleReconnect(): void {
+    if (this.reconnectTimer) return;
+
+    const delay = RECONNECT_DELAYS[Math.min(this.reconnectAttempt, RECONNECT_DELAYS.length - 1)];
+    this.reconnectAttempt++;
+
+    this.reconnectTimer = setTimeout(async () => {
+      this.reconnectTimer = null;
+      await this.connect();
+    }, delay);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // EVENT HANDLING
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  private handleGameEvent(event: GameEvent): void {
+    // Chat events don't need sequence ordering
+    if (event.type === 'CHAT_MESSAGE') {
+      this.dispatchEvent(event);
+      return;
+    }
+
+    // Check sequence for ordering
+    if (event.sequence <= this.lastSequence) {
+      console.warn('[TableWS] Ignoring out-of-order event:', event.sequence);
+      return;
+    }
+
+    // Handle missing events (gap in sequence) — queue and request resync
+    if (event.sequence > this.lastSequence + 1) {
+      console.warn(
+        '[TableWS] Missing events (expected:',
+        this.lastSequence + 1,
+        'got:',
+        event.sequence,
+        ')'
+      );
+      this.pendingEvents.push(event);
+      this.requestResync();
+      return; // Don't process until resync fills the gap
+    }
+
+    this.lastSequence = event.sequence;
+    this.dispatchEvent(event);
+
+    // Process any queued events that are now in sequence
+    this.processPendingEvents();
+  }
+
+  private dispatchEvent(event: GameEvent): void {
+    this.eventHandlers.forEach((handler) => {
+      try {
+        handler(event);
+      } catch (error) {
+        console.error('[TableWS] Event handler error:', error);
+      }
+    });
+  }
+
+  private processPendingEvents(): void {
+    // Sort pending by sequence
+    this.pendingEvents.sort((a, b) => a.sequence - b.sequence);
+
+    while (this.pendingEvents.length > 0) {
+      const next = this.pendingEvents[0];
+      if (next.sequence === this.lastSequence + 1) {
+        this.pendingEvents.shift();
+        this.lastSequence = next.sequence;
+        this.dispatchEvent(next);
+      } else {
+        break; // Still have a gap
+      }
+    }
+  }
+
+  private handlePresenceSync(): void {
+    if (!this.channel) return;
+
+    const presenceState = this.channel.presenceState<PlayerPresence>();
+    const state = this.transformPresenceState(presenceState);
+
+    this.presenceHandlers.forEach((handler) => {
+      try {
+        handler(state);
+      } catch (error) {
+        console.error('[TableWS] Presence handler error:', error);
+      }
+    });
+  }
+
+  private transformPresenceState(raw: RealtimePresenceState<PlayerPresence>): TablePresenceState {
+    const players: PlayerPresence[] = [];
+    const observers: PlayerPresence[] = [];
+
+    Object.values(raw).forEach((presences) => {
+      presences.forEach((p) => {
+        if (p.seatNumber !== undefined) {
+          players.push(p);
+        } else {
+          observers.push(p);
         }
+      });
+    });
+
+    return {
+      players: players.sort((a, b) => (a.seatNumber || 0) - (b.seatNumber || 0)),
+      observers,
+      dealerPosition: 0, // This would come from game state
+    };
+  }
+
+  private notifyConnection(connected: boolean): void {
+    this.connectionHandlers.forEach((handler) => {
+      try {
+        handler(connected);
+      } catch (error) {
+        console.error('[TableWS] Connection handler error:', error);
+      }
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // PUBLIC API: SENDING
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async sendAction(action: string, data: Record<string, unknown>): Promise<boolean> {
+    if (!this.channel || !this.isConnected) {
+      console.warn('[TableWS] Cannot send: not connected');
+      return false;
     }
 
-    private handlePresenceSync(): void {
-        if (!this.channel) return;
+    const event: GameEvent = {
+      type: 'PLAYER_ACTION',
+      tableId: this.tableId,
+      playerId: this.userId,
+      data: { action, ...data },
+      timestamp: Date.now(),
+      sequence: this.lastSequence + 1, // Optimistic
+    };
 
-        const presenceState = this.channel.presenceState<PlayerPresence>();
-        const state = this.transformPresenceState(presenceState);
+    try {
+      await this.channel.send({
+        type: 'broadcast',
+        event: 'game_event',
+        payload: event,
+      });
+      return true;
+    } catch (error) {
+      console.error('[TableWS] Send error:', error);
+      return false;
+    }
+  }
 
-        this.presenceHandlers.forEach((handler) => {
-            try {
-                handler(state);
-            } catch (error) {
-                console.error('[TableWS] Presence handler error:', error);
-            }
-        });
+  async sendChat(message: string): Promise<boolean> {
+    if (!this.channel || !this.isConnected) return false;
+
+    const event: GameEvent = {
+      type: 'CHAT_MESSAGE',
+      tableId: this.tableId,
+      playerId: this.userId,
+      data: { message, username: this.username },
+      timestamp: Date.now(),
+      sequence: 0, // Chat doesn't need ordering
+    };
+
+    try {
+      await this.channel.send({
+        type: 'broadcast',
+        event: 'game_event',
+        payload: event,
+      });
+      return true;
+    } catch (error) {
+      console.error('[TableWS] Chat error:', error);
+      return false;
+    }
+  }
+
+  async updatePresence(updates: Partial<PlayerPresence>): Promise<void> {
+    if (!this.channel) return;
+
+    await this.channel.track({
+      userId: this.userId,
+      username: this.username,
+      ...updates,
+      joinedAt: Date.now(),
+    } as PlayerPresence);
+  }
+
+  private async requestResync(): Promise<void> {
+    // Request full state from server via Supabase RPC
+
+    if (!this.supabase) {
+      console.warn('[TableWS] Cannot resync: Supabase not configured');
+      return;
     }
 
-    private transformPresenceState(raw: RealtimePresenceState<PlayerPresence>): TablePresenceState {
-        const players: PlayerPresence[] = [];
-        const observers: PlayerPresence[] = [];
+    try {
+      // Call Supabase RPC to get current game state
+      const { data, error } = await retryAsync(
+        () =>
+          this.supabase.rpc('get_table_state', {
+            p_table_id: this.tableId,
+          }),
+        3
+      );
 
-        Object.values(raw).forEach((presences) => {
-            presences.forEach((p) => {
-                if (p.seatNumber !== undefined) {
-                    players.push(p);
-                } else {
-                    observers.push(p);
-                }
-            });
-        });
+      if (error) {
+        console.error('[TableWS] Resync RPC error:', error);
+        return;
+      }
 
-        return {
-            players: players.sort((a, b) => (a.seatNumber || 0) - (b.seatNumber || 0)),
-            observers,
-            dealerPosition: 0, // This would come from game state
+      if (data) {
+        // Broadcast the synced state to all handlers
+        const syncEvent: GameEvent = {
+          type: 'GAME_START', // Use as full state sync
+          tableId: this.tableId,
+          data: data,
+          timestamp: Date.now(),
+          sequence: data.sequence || this.lastSequence + 1,
         };
+        this.lastSequence = syncEvent.sequence;
+        this.handleGameEvent(syncEvent);
+      }
+    } catch (err) {
+      console.error('[TableWS] Resync failed:', err);
     }
+  }
 
-    private notifyConnection(connected: boolean): void {
-        this.connectionHandlers.forEach((handler) => {
-            try {
-                handler(connected);
-            } catch (error) {
-                console.error('[TableWS] Connection handler error:', error);
-            }
-        });
-    }
+  // ─────────────────────────────────────────────────────────────────────────────
+  // PUBLIC API: SUBSCRIPTIONS
+  // ─────────────────────────────────────────────────────────────────────────────
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // PUBLIC API: SENDING
-    // ─────────────────────────────────────────────────────────────────────────────
+  onEvent(handler: EventHandler): () => void {
+    this.eventHandlers.add(handler);
+    return () => this.eventHandlers.delete(handler);
+  }
 
-    async sendAction(action: string, data: Record<string, unknown>): Promise<boolean> {
-        if (!this.channel || !this.isConnected) {
-            console.warn('[TableWS] Cannot send: not connected');
-            return false;
-        }
+  onPresence(handler: PresenceHandler): () => void {
+    this.presenceHandlers.add(handler);
+    return () => this.presenceHandlers.delete(handler);
+  }
 
-        const event: GameEvent = {
-            type: 'PLAYER_ACTION',
-            tableId: this.tableId,
-            playerId: this.userId,
-            data: { action, ...data },
-            timestamp: Date.now(),
-            sequence: this.lastSequence + 1, // Optimistic
-        };
+  onConnection(handler: ConnectionHandler): () => void {
+    this.connectionHandlers.add(handler);
+    return () => this.connectionHandlers.delete(handler);
+  }
 
-        try {
-            await this.channel.send({
-                type: 'broadcast',
-                event: 'game_event',
-                payload: event,
-            });
-            return true;
-        } catch (error) {
-            console.error('[TableWS] Send error:', error);
-            return false;
-        }
-    }
+  // ─────────────────────────────────────────────────────────────────────────────
+  // GETTERS
+  // ─────────────────────────────────────────────────────────────────────────────
 
-    async sendChat(message: string): Promise<boolean> {
-        if (!this.channel || !this.isConnected) return false;
+  get connected(): boolean {
+    return this.isConnected;
+  }
 
-        const event: GameEvent = {
-            type: 'CHAT_MESSAGE',
-            tableId: this.tableId,
-            playerId: this.userId,
-            data: { message, username: this.username },
-            timestamp: Date.now(),
-            sequence: 0, // Chat doesn't need ordering
-        };
-
-        try {
-            await this.channel.send({
-                type: 'broadcast',
-                event: 'game_event',
-                payload: event,
-            });
-            return true;
-        } catch (error) {
-            console.error('[TableWS] Chat error:', error);
-            return false;
-        }
-    }
-
-    async updatePresence(updates: Partial<PlayerPresence>): Promise<void> {
-        if (!this.channel) return;
-
-        await this.channel.track({
-            userId: this.userId,
-            username: this.username,
-            ...updates,
-            joinedAt: Date.now(),
-        } as PlayerPresence);
-    }
-
-    private async requestResync(): Promise<void> {
-        // Request full state from server via Supabase RPC
-
-        if (!this.supabase) {
-            console.warn('[TableWS] Cannot resync: Supabase not configured');
-            return;
-        }
-
-        try {
-            // Call Supabase RPC to get current game state
-            const { data, error } = await this.supabase.rpc('get_table_state', {
-                p_table_id: this.tableId
-            });
-
-            if (error) {
-                console.error('[TableWS] Resync RPC error:', error);
-                return;
-            }
-
-            if (data) {
-                // Broadcast the synced state to all handlers
-                const syncEvent: GameEvent = {
-                    type: 'GAME_START', // Use as full state sync
-                    tableId: this.tableId,
-                    data: data,
-                    timestamp: Date.now(),
-                    sequence: data.sequence || this.lastSequence + 1,
-                };
-                this.lastSequence = syncEvent.sequence;
-                this.handleGameEvent(syncEvent);
-            }
-        } catch (err) {
-            console.error('[TableWS] Resync failed:', err);
-        }
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // PUBLIC API: SUBSCRIPTIONS
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    onEvent(handler: EventHandler): () => void {
-        this.eventHandlers.add(handler);
-        return () => this.eventHandlers.delete(handler);
-    }
-
-    onPresence(handler: PresenceHandler): () => void {
-        this.presenceHandlers.add(handler);
-        return () => this.presenceHandlers.delete(handler);
-    }
-
-    onConnection(handler: ConnectionHandler): () => void {
-        this.connectionHandlers.add(handler);
-        return () => this.connectionHandlers.delete(handler);
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // GETTERS
-    // ─────────────────────────────────────────────────────────────────────────────
-
-    get connected(): boolean {
-        return this.isConnected;
-    }
-
-    get table(): string {
-        return this.tableId;
-    }
+  get table(): string {
+    return this.tableId;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -447,76 +456,71 @@ export class TableWebSocket {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { retryAsync } from '../utils/retryAsync';
 
 export interface UseTableWebSocketResult {
-    isConnected: boolean;
-    presence: TablePresenceState | null;
-    lastEvent: GameEvent | null;
-    sendAction: (action: string, data: Record<string, unknown>) => Promise<boolean>;
-    sendChat: (message: string) => Promise<boolean>;
-    updateSeat: (seatNumber: number | undefined) => Promise<void>;
+  isConnected: boolean;
+  presence: TablePresenceState | null;
+  lastEvent: GameEvent | null;
+  sendAction: (action: string, data: Record<string, unknown>) => Promise<boolean>;
+  sendChat: (message: string) => Promise<boolean>;
+  updateSeat: (seatNumber: number | undefined) => Promise<void>;
 }
 
 export function useTableWebSocket(
-    tableId: string,
-    userId: string,
-    username: string
+  tableId: string,
+  userId: string,
+  username: string
 ): UseTableWebSocketResult {
-    const wsRef = useRef<TableWebSocket | null>(null);
-    const [isConnected, setIsConnected] = useState(false);
-    const [presence, setPresence] = useState<TablePresenceState | null>(null);
-    const [lastEvent, setLastEvent] = useState<GameEvent | null>(null);
+  const wsRef = useRef<TableWebSocket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [presence, setPresence] = useState<TablePresenceState | null>(null);
+  const [lastEvent, setLastEvent] = useState<GameEvent | null>(null);
 
-    useEffect(() => {
-        const ws = new TableWebSocket(tableId, userId, username);
-        wsRef.current = ws;
+  useEffect(() => {
+    const ws = new TableWebSocket(tableId, userId, username);
+    wsRef.current = ws;
 
-        // Set up handlers
-        const unsubEvent = ws.onEvent(setLastEvent);
-        const unsubPresence = ws.onPresence(setPresence);
-        const unsubConnection = ws.onConnection(setIsConnected);
+    // Set up handlers
+    const unsubEvent = ws.onEvent(setLastEvent);
+    const unsubPresence = ws.onPresence(setPresence);
+    const unsubConnection = ws.onConnection(setIsConnected);
 
-        // Connect
-        ws.connect();
+    // Connect
+    ws.connect();
 
-        // Cleanup
-        return () => {
-            unsubEvent();
-            unsubPresence();
-            unsubConnection();
-            ws.disconnect();
-        };
-    }, [tableId, userId, username]);
-
-    const sendAction = useCallback(
-        (action: string, data: Record<string, unknown>) => {
-            return wsRef.current?.sendAction(action, data) ?? Promise.resolve(false);
-        },
-        []
-    );
-
-    const sendChat = useCallback((message: string) => {
-        return wsRef.current?.sendChat(message) ?? Promise.resolve(false);
-    }, []);
-
-    const updateSeat = useCallback(
-        async (seatNumber: number | undefined) => {
-            await wsRef.current?.updatePresence({
-                seatNumber,
-                status: seatNumber !== undefined ? 'sitting' : 'watching',
-            });
-        },
-        []
-    );
-
-    return {
-        isConnected,
-        presence,
-        lastEvent,
-        sendAction,
-        sendChat,
-        updateSeat,
+    // Cleanup
+    return () => {
+      unsubEvent();
+      unsubPresence();
+      unsubConnection();
+      ws.disconnect();
     };
+  }, [tableId, userId, username]);
+
+  const sendAction = useCallback((action: string, data: Record<string, unknown>) => {
+    return wsRef.current?.sendAction(action, data) ?? Promise.resolve(false);
+  }, []);
+
+  const sendChat = useCallback((message: string) => {
+    return wsRef.current?.sendChat(message) ?? Promise.resolve(false);
+  }, []);
+
+  const updateSeat = useCallback(async (seatNumber: number | undefined) => {
+    await wsRef.current?.updatePresence({
+      seatNumber,
+      status: seatNumber !== undefined ? 'sitting' : 'watching',
+    });
+  }, []);
+
+  return {
+    isConnected,
+    presence,
+    lastEvent,
+    sendAction,
+    sendChat,
+    updateSeat,
+  };
 }
 
 export default TableWebSocket;

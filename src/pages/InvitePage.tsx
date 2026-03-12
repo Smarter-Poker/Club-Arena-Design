@@ -11,6 +11,7 @@ import { MembershipService } from '../services/MembershipService';
 import { useToast } from '../components/common/Toast';
 import { masterBus } from '../core/MasterBus';
 import './InvitePage.css';
+import { retryAsync } from '../utils/retryAsync';
 
 const inviteStepAnimationStyle = {
   opacity: 0,
@@ -173,9 +174,13 @@ export default function InvitePage() {
       if (joinError) throw joinError;
 
       // Update member count
-      const { error: countErr } = await supabase.rpc('increment_member_count', {
-        club_id: club.id,
-      });
+      const { error: countErr } = await retryAsync(
+        () =>
+          supabase.rpc('increment_member_count', {
+            club_id: club.id,
+          }),
+        3
+      );
       if (countErr) console.error('[InvitePage] increment_member_count failed:', countErr.message);
 
       masterBus.emit('CLUB_JOINED', { clubId: club.id } as any);

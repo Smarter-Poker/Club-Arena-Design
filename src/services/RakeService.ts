@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { BBJService } from './BBJService';
+import { retryAsync } from '../utils/retryAsync';
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
@@ -442,10 +443,14 @@ export const RakeService = {
         // Try atomic increment RPC first (safe for concurrent hands)
         let updated = false;
         try {
-          const { error: rpcError } = await supabase.rpc('increment_union_rake', {
-            p_union_id: unionId,
-            p_amount: calculation.cappedRake,
-          });
+          const { error: rpcError } = await retryAsync(
+            () =>
+              supabase.rpc('increment_union_rake', {
+                p_union_id: unionId,
+                p_amount: calculation.cappedRake,
+              }),
+            3
+          );
           updated = !rpcError;
         } catch {
           /* RPC may not exist */
@@ -567,11 +572,15 @@ export const RakeService = {
           // Attempt atomic increment via RPC (safest for multi-table horses)
           let updated = false;
           try {
-            const { error: rpcError } = await supabase.rpc('increment_rake_generated', {
-              p_club_id: clubId,
-              p_user_id: attr.userId,
-              p_amount: attr.rakeCredit,
-            });
+            const { error: rpcError } = await retryAsync(
+              () =>
+                supabase.rpc('increment_rake_generated', {
+                  p_club_id: clubId,
+                  p_user_id: attr.userId,
+                  p_amount: attr.rakeCredit,
+                }),
+              3
+            );
             updated = !rpcError;
           } catch {
             /* RPC may not exist */
@@ -653,10 +662,14 @@ export const RakeService = {
       for (const [agentId, rakeCredit] of byAgent) {
         try {
           // Try atomic RPC first
-          const { error: rpcError } = await supabase.rpc('increment_agent_rake', {
-            p_agent_id: agentId,
-            p_amount: rakeCredit,
-          });
+          const { error: rpcError } = await retryAsync(
+            () =>
+              supabase.rpc('increment_agent_rake', {
+                p_agent_id: agentId,
+                p_amount: rakeCredit,
+              }),
+            3
+          );
 
           if (rpcError) {
             // Fallback: read-modify-write

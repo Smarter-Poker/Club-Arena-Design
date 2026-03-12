@@ -9,6 +9,7 @@
 
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
+import { retryAsync } from '../utils/retryAsync';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -130,11 +131,15 @@ export const DiamondService = {
 
     const totalDiamonds = pkg.diamonds + pkg.bonusDiamonds;
 
-    const { data, error } = await supabase.rpc('fn_add_diamonds', {
-      p_user_id: userId,
-      p_amount: totalDiamonds,
-      p_reason: `Purchased ${pkg.name} (${pkg.diamonds}+${pkg.bonusDiamonds} bonus)`,
-    });
+    const { data, error } = await retryAsync(
+      () =>
+        supabase.rpc('fn_add_diamonds', {
+          p_user_id: userId,
+          p_amount: totalDiamonds,
+          p_reason: `Purchased ${pkg.name} (${pkg.diamonds}+${pkg.bonusDiamonds} bonus)`,
+        }),
+      3
+    );
 
     if (error) {
       console.error('DiamondService.purchaseDiamonds error:', error);

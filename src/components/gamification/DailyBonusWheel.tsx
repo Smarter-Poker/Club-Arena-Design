@@ -9,174 +9,178 @@ import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
 import { useToast } from '../common/Toast';
 import './DailyBonusWheel.css';
+import { retryAsync } from '../../utils/retryAsync';
 
 interface DailyBonusWheelProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onReward?: (reward: WheelReward) => void;
+  isOpen: boolean;
+  onClose: () => void;
+  onReward?: (reward: WheelReward) => void;
 }
 
 interface WheelReward {
-    type: 'chips' | 'diamonds' | 'vip_time';
-    amount: number;
-    label: string;
-    color: string;
+  type: 'chips' | 'diamonds' | 'vip_time';
+  amount: number;
+  label: string;
+  color: string;
 }
 
 const WHEEL_PRIZES: WheelReward[] = [
-    { type: 'chips', amount: 100, label: '100 ', color: '#22c55e' },
-    { type: 'chips', amount: 200, label: '200 🪙', color: '#22c55e' },
-    { type: 'chips', amount: 250, label: '250 ', color: '#22c55e' },
-    { type: 'diamonds', amount: 5, label: '5 ', color: '#a855f7' },
-    { type: 'chips', amount: 500, label: '500 ', color: '#22c55e' },
-    { type: 'chips', amount: 750, label: '750 🪙', color: '#22c55e' },
-    { type: 'chips', amount: 1000, label: '1K ', color: '#fbbf24' },
-    { type: 'diamonds', amount: 25, label: '25 ', color: '#a855f7' },
+  { type: 'chips', amount: 100, label: '100 ', color: '#22c55e' },
+  { type: 'chips', amount: 200, label: '200 🪙', color: '#22c55e' },
+  { type: 'chips', amount: 250, label: '250 ', color: '#22c55e' },
+  { type: 'diamonds', amount: 5, label: '5 ', color: '#a855f7' },
+  { type: 'chips', amount: 500, label: '500 ', color: '#22c55e' },
+  { type: 'chips', amount: 750, label: '750 🪙', color: '#22c55e' },
+  { type: 'chips', amount: 1000, label: '1K ', color: '#fbbf24' },
+  { type: 'diamonds', amount: 25, label: '25 ', color: '#a855f7' },
 ];
 
 export function DailyBonusWheel({ isOpen, onClose, onReward }: DailyBonusWheelProps) {
-    const { user } = useUserStore();
-    const toast = useToast();
-    const wheelRef = useRef<HTMLDivElement>(null);
+  const { user } = useUserStore();
+  const toast = useToast();
+  const wheelRef = useRef<HTMLDivElement>(null);
 
-    const [canSpin, setCanSpin] = useState(true);
-    const [spinning, setSpinning] = useState(false);
-    const [result, setResult] = useState<WheelReward | null>(null);
-    const [rotation, setRotation] = useState(0);
+  const [canSpin, setCanSpin] = useState(true);
+  const [spinning, setSpinning] = useState(false);
+  const [result, setResult] = useState<WheelReward | null>(null);
+  const [rotation, setRotation] = useState(0);
 
-    useEffect(() => {
-        if (isOpen && user?.id) {
-            checkSpinAvailability();
-        }
-    }, [isOpen, user?.id]);
+  useEffect(() => {
+    if (isOpen && user?.id) {
+      checkSpinAvailability();
+    }
+  }, [isOpen, user?.id]);
 
-    const checkSpinAvailability = async () => {
-        if (!user?.id) return;
+  const checkSpinAvailability = async () => {
+    if (!user?.id) return;
 
-        try {
-            const { data } = await supabase
-                .from('daily_spins')
-                .select('created_at')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
+    try {
+      const { data } = await supabase
+        .from('daily_spins')
+        .select('created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-            if (data) {
-                const lastSpin = new Date(data.created_at);
-                const now = new Date();
-                const hoursSince = (now.getTime() - lastSpin.getTime()) / (1000 * 60 * 60);
-                setCanSpin(hoursSince >= 24);
-            } else {
-                setCanSpin(true);
-            }
-        } catch {
-            setCanSpin(true);
-        }
-    };
+      if (data) {
+        const lastSpin = new Date(data.created_at);
+        const now = new Date();
+        const hoursSince = (now.getTime() - lastSpin.getTime()) / (1000 * 60 * 60);
+        setCanSpin(hoursSince >= 24);
+      } else {
+        setCanSpin(true);
+      }
+    } catch {
+      setCanSpin(true);
+    }
+  };
 
-    const spin = async () => {
-        if (!user?.id || !canSpin || spinning) return;
+  const spin = async () => {
+    if (!user?.id || !canSpin || spinning) return;
 
-        setSpinning(true);
-        setResult(null);
+    setSpinning(true);
+    setResult(null);
 
-        // Determine prize (weighted random)
-        const prizeIndex = Math.floor(Math.random() * WHEEL_PRIZES.length);
-        const prize = WHEEL_PRIZES[prizeIndex];
+    // Determine prize (weighted random)
+    const prizeIndex = Math.floor(Math.random() * WHEEL_PRIZES.length);
+    const prize = WHEEL_PRIZES[prizeIndex];
 
-        // Calculate rotation
-        const segmentAngle = 360 / WHEEL_PRIZES.length;
-        const targetAngle = prizeIndex * segmentAngle;
-        const spins = 5 + Math.random() * 3;
-        const finalRotation = rotation + (spins * 360) + (360 - targetAngle);
+    // Calculate rotation
+    const segmentAngle = 360 / WHEEL_PRIZES.length;
+    const targetAngle = prizeIndex * segmentAngle;
+    const spins = 5 + Math.random() * 3;
+    const finalRotation = rotation + spins * 360 + (360 - targetAngle);
 
-        setRotation(finalRotation);
+    setRotation(finalRotation);
 
-        // Wait for animation
-        setTimeout(async () => {
-            setResult(prize);
-            setSpinning(false);
-            setCanSpin(false);
+    // Wait for animation
+    setTimeout(async () => {
+      setResult(prize);
+      setSpinning(false);
+      setCanSpin(false);
 
-            // Record spin and grant reward
-            try {
-                await supabase.from('daily_spins').insert({
-                    user_id: user.id,
-                    reward_type: prize.type,
-                    reward_amount: prize.amount
-                });
+      // Record spin and grant reward
+      try {
+        await supabase.from('daily_spins').insert({
+          user_id: user.id,
+          reward_type: prize.type,
+          reward_amount: prize.amount,
+        });
 
-                // Grant reward
-                const { error: rewardErr } = await supabase.rpc('fn_grant_daily_reward', {
-                    p_user_id: user.id,
-                    p_reward_type: prize.type,
-                    p_reward_amount: prize.amount
-                });
-                if (rewardErr) console.error('[DailyBonusWheel] fn_grant_daily_reward failed:', rewardErr.message);
+        // Grant reward
+        const { error: rewardErr } = await retryAsync(
+          () =>
+            supabase.rpc('fn_grant_daily_reward', {
+              p_user_id: user.id,
+              p_reward_type: prize.type,
+              p_reward_amount: prize.amount,
+            }),
+          3
+        );
+        if (rewardErr)
+          console.error('[DailyBonusWheel] fn_grant_daily_reward failed:', rewardErr.message);
 
-                toast.success(` You won ${prize.label}!`);
-                onReward?.(prize);
-            } catch (error) {
-                console.error('Failed to record spin:', error);
-            }
-        }, 4000);
-    };
+        toast.success(` You won ${prize.label}!`);
+        onReward?.(prize);
+      } catch (error) {
+        console.error('Failed to record spin:', error);
+      }
+    }, 4000);
+  };
 
-    if (!isOpen) return null;
+  if (!isOpen) return null;
 
-    return (
-        <div className="bonus-wheel-overlay" onClick={onClose}>
-            <div className="bonus-wheel" onClick={e => e.stopPropagation()}>
-                <div className="bonus-wheel__header">
-                    <h3> Daily Bonus</h3>
-                    <button className="close-btn" onClick={onClose}>×</button>
-                </div>
-
-                <div className="bonus-wheel__container">
-                    <div className="wheel-pointer">▼</div>
-                    <div
-                        ref={wheelRef}
-                        className="wheel"
-                        style={{
-                            transform: `rotate(${rotation}deg)`,
-                            transition: spinning ? 'transform 4s cubic-bezier(0.2, 0.8, 0.3, 1)' : 'none'
-                        }}
-                    >
-                        {WHEEL_PRIZES.map((prize, idx) => {
-                            const angle = (idx * 360) / WHEEL_PRIZES.length;
-                            return (
-                                <div
-                                    key={idx}
-                                    className="wheel-segment"
-                                    style={{
-                                        transform: `rotate(${angle}deg)`,
-                                        backgroundColor: prize.color
-                                    }}
-                                >
-                                    <span className="prize-label">{prize.label}</span>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {result && (
-                    <div className="bonus-wheel__result">
-                        You won <strong>{result.label}</strong>!
-                    </div>
-                )}
-
-                <button
-                    className="bonus-wheel__spin"
-                    onClick={spin}
-                    disabled={!canSpin || spinning}
-                >
-                    {spinning ? 'Spinning...' : canSpin ? 'SPIN!' : 'Come back tomorrow!'}
-                </button>
-            </div>
+  return (
+    <div className="bonus-wheel-overlay" onClick={onClose}>
+      <div className="bonus-wheel" onClick={(e) => e.stopPropagation()}>
+        <div className="bonus-wheel__header">
+          <h3> Daily Bonus</h3>
+          <button className="close-btn" onClick={onClose}>
+            ×
+          </button>
         </div>
-    );
+
+        <div className="bonus-wheel__container">
+          <div className="wheel-pointer">▼</div>
+          <div
+            ref={wheelRef}
+            className="wheel"
+            style={{
+              transform: `rotate(${rotation}deg)`,
+              transition: spinning ? 'transform 4s cubic-bezier(0.2, 0.8, 0.3, 1)' : 'none',
+            }}
+          >
+            {WHEEL_PRIZES.map((prize, idx) => {
+              const angle = (idx * 360) / WHEEL_PRIZES.length;
+              return (
+                <div
+                  key={idx}
+                  className="wheel-segment"
+                  style={{
+                    transform: `rotate(${angle}deg)`,
+                    backgroundColor: prize.color,
+                  }}
+                >
+                  <span className="prize-label">{prize.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {result && (
+          <div className="bonus-wheel__result">
+            You won <strong>{result.label}</strong>!
+          </div>
+        )}
+
+        <button className="bonus-wheel__spin" onClick={spin} disabled={!canSpin || spinning}>
+          {spinning ? 'Spinning...' : canSpin ? 'SPIN!' : 'Come back tomorrow!'}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export default DailyBonusWheel;

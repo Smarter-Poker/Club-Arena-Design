@@ -11,6 +11,7 @@
 
 import { supabase } from '../lib/supabase';
 import { VIP_GOLD_LIMITS } from './VIPService';
+import { retryAsync } from '../utils/retryAsync';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -286,14 +287,18 @@ export const LeaderboardService = {
     result: HandResultForStats & { clubId?: string; clubName?: string }
   ): Promise<void> {
     // Use upsert to atomically update stat counters
-    const { error } = await supabase.rpc('update_player_hand_stats', {
-      p_user_id: result.userId,
-      p_profit: result.profit,
-      p_is_voluntary: result.isVoluntary,
-      p_is_preflop_raise: result.isPreflopRaise,
-      p_went_to_showdown: result.wentToShowdown,
-      p_won_at_showdown: result.wonAtShowdown,
-    });
+    const { error } = await retryAsync(
+      () =>
+        supabase.rpc('update_player_hand_stats', {
+          p_user_id: result.userId,
+          p_profit: result.profit,
+          p_is_voluntary: result.isVoluntary,
+          p_is_preflop_raise: result.isPreflopRaise,
+          p_went_to_showdown: result.wentToShowdown,
+          p_won_at_showdown: result.wonAtShowdown,
+        }),
+      3
+    );
 
     if (error) {
       console.error('LeaderboardService.updateHandStats error:', error);

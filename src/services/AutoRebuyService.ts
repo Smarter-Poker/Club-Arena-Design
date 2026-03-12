@@ -19,6 +19,7 @@ import { HydraService } from './HydraService';
 import { horseBugReporter } from './HorseBugReporter';
 import { WalletService } from './WalletService';
 import { masterBus } from '../core/MasterBus';
+import { retryAsync } from '../utils/retryAsync';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -191,12 +192,13 @@ class AutoRebuyServiceCore {
     this.rebuyInProgress.add(rebuyKey);
     try {
       // Step 1: Deduct from wallet
-      const { data: deductResult, error: deductError } = await supabase.rpc(
-        'deduct_player_wallet',
-        {
-          p_user_id: horseId,
-          p_amount: amount,
-        }
+      const { data: deductResult, error: deductError } = await retryAsync(
+        () =>
+          supabase.rpc('deduct_player_wallet', {
+            p_user_id: horseId,
+            p_amount: amount,
+          }),
+        3
       );
 
       if (deductError) {
@@ -436,12 +438,13 @@ class AutoRebuyServiceCore {
       }
 
       // Credit wallet via RPC
-      const { data: creditResult, error: creditError } = await supabase.rpc(
-        'credit_player_wallet',
-        {
-          p_user_id: horseId,
-          p_amount: topupAmount,
-        }
+      const { data: creditResult, error: creditError } = await retryAsync(
+        () =>
+          supabase.rpc('credit_player_wallet', {
+            p_user_id: horseId,
+            p_amount: topupAmount,
+          }),
+        3
       );
 
       if (creditError) {

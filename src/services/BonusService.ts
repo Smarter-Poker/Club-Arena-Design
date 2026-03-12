@@ -8,6 +8,7 @@
 import { supabase } from '../lib/supabase';
 import { WalletService } from './WalletService';
 import { masterBus } from '../core/MasterBus';
+import { retryAsync } from '../utils/retryAsync';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -127,9 +128,13 @@ class BonusServiceClass {
   ): Promise<{ success: boolean; reward: number; rewardType: string }> {
     // Atomic claim: RPC checks last_daily_claim < today AND increments streak in one operation
     // This prevents TOCTOU double-claims from concurrent requests
-    const { data: claimResult, error } = await supabase.rpc('claim_daily_bonus', {
-      p_user_id: userId,
-    });
+    const { data: claimResult, error } = await retryAsync(
+      () =>
+        supabase.rpc('claim_daily_bonus', {
+          p_user_id: userId,
+        }),
+      3
+    );
 
     if (error) {
       console.error('[Bonus] Failed to claim:', error);
@@ -196,11 +201,15 @@ class BonusServiceClass {
   async updateProgress(userId: string, bonusId: string, amount: number = 1): Promise<number> {
     // Use atomic RPC to prevent read-modify-write race on concurrent progress updates
     try {
-      const { data, error } = await supabase.rpc('increment_bonus_progress', {
-        p_bonus_id: bonusId,
-        p_user_id: userId,
-        p_amount: amount,
-      });
+      const { data, error } = await retryAsync(
+        () =>
+          supabase.rpc('increment_bonus_progress', {
+            p_bonus_id: bonusId,
+            p_user_id: userId,
+            p_amount: amount,
+          }),
+        3
+      );
 
       if (error) {
         console.warn('[Bonus] increment_bonus_progress RPC not available - returning silently');
@@ -223,10 +232,14 @@ class BonusServiceClass {
     switch (type) {
       case 'chips':
         // Use proper wallet system with audit trail
-        ({ error } = await supabase.rpc('credit_player_wallet', {
-          p_user_id: userId,
-          p_amount: amt,
-        }));
+        ({ error } = await retryAsync(
+          () =>
+            supabase.rpc('credit_player_wallet', {
+              p_user_id: userId,
+              p_amount: amt,
+            }),
+          3
+        ));
         if (!error) {
           await WalletService.logTransaction(
             userId,
@@ -241,7 +254,10 @@ class BonusServiceClass {
         break;
 
       case 'vip_points':
-        ({ error } = await supabase.rpc('add_vip_points', { p_user_id: userId, p_amount: amt }));
+        ({ error } = await retryAsync(
+          () => supabase.rpc('add_vip_points', { p_user_id: userId, p_amount: amt }),
+          3
+        ));
         if (!error) {
           masterBus.emit('BALANCE_UPDATED', { source: 'bonus_vip_points', userId });
         }

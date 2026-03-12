@@ -177,10 +177,14 @@ export const CommissionService = {
    * Shows gross, payouts, and net margin
    */
   async calculateSpread(agentId: string, periodId?: string): Promise<CommissionSpread> {
-    const { data, error } = await supabase.rpc('calculate_agent_spread', {
-      p_agent_id: agentId,
-      p_period_id: periodId || null,
-    });
+    const { data, error } = await retryAsync(
+      () =>
+        supabase.rpc('calculate_agent_spread', {
+          p_agent_id: agentId,
+          p_period_id: periodId || null,
+        }),
+      3
+    );
 
     if (error) throw error;
     if (!data) throw new Error('Commission spread calculation failed: no data returned');
@@ -213,10 +217,14 @@ export const CommissionService = {
    * Get player's total rake contribution
    */
   async getPlayerRakeTotal(playerId: string, periodId?: string): Promise<number> {
-    const { data, error } = await supabase.rpc('get_player_rake_total', {
-      p_player_id: playerId,
-      p_period_id: periodId || null,
-    });
+    const { data, error } = await retryAsync(
+      () =>
+        supabase.rpc('get_player_rake_total', {
+          p_player_id: playerId,
+          p_period_id: periodId || null,
+        }),
+      3
+    );
 
     if (error) throw error;
     return data;

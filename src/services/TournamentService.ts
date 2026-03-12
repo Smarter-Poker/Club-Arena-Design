@@ -564,10 +564,14 @@ class TournamentService {
     }
 
     // Atomically deduct from Player Wallet via RPC (SECURITY DEFINER bypasses RLS)
-    const { data: deductResult, error: deductError } = await supabase.rpc('deduct_player_wallet', {
-      p_user_id: userId,
-      p_amount: totalCost,
-    });
+    const { data: deductResult, error: deductError } = await retryAsync(
+      () =>
+        supabase.rpc('deduct_player_wallet', {
+          p_user_id: userId,
+          p_amount: totalCost,
+        }),
+      3
+    );
 
     if (deductError) {
       throw new Error(`Failed to deduct tournament buy-in: ${deductError.message}`);
@@ -711,10 +715,14 @@ class TournamentService {
       // Check for race condition: duplicate registration (unique constraint violation)
       if ((error as any).code === '23505') {
         // Refund immediately on race condition
-        const { error: refundErr } = await supabase.rpc('credit_player_wallet', {
-          p_user_id: userId,
-          p_amount: totalCost,
-        });
+        const { error: refundErr } = await retryAsync(
+          () =>
+            supabase.rpc('credit_player_wallet', {
+              p_user_id: userId,
+              p_amount: totalCost,
+            }),
+          3
+        );
         if (refundErr) {
           console.error(
             '[TournamentService] CRITICAL: Refund on duplicate registration failed:',
@@ -726,10 +734,14 @@ class TournamentService {
 
       // Refund to Player Wallet on other failures
       console.error('[TournamentService] Registration failed, refunding buy-in:', error);
-      const { error: refundErr } = await supabase.rpc('credit_player_wallet', {
-        p_user_id: userId,
-        p_amount: totalCost,
-      });
+      const { error: refundErr } = await retryAsync(
+        () =>
+          supabase.rpc('credit_player_wallet', {
+            p_user_id: userId,
+            p_amount: totalCost,
+          }),
+        3
+      );
       if (refundErr) {
         console.error('[TournamentService] CRITICAL: Refund also failed:', refundErr.message);
       }
@@ -842,10 +854,14 @@ class TournamentService {
             console.error(`[TournamentService] Late reg seat insert failed: ${seatErr.message}`);
             // Refund the player since seating failed — they paid but can't play
             try {
-              await supabase.rpc('credit_player_wallet', {
-                p_user_id: userId,
-                p_amount: totalCost,
-              });
+              await retryAsync(
+                () =>
+                  supabase.rpc('credit_player_wallet', {
+                    p_user_id: userId,
+                    p_amount: totalCost,
+                  }),
+                3
+              );
               await WalletService.logTransaction(
                 userId,
                 'PLAYER',
@@ -924,7 +940,11 @@ class TournamentService {
           );
           // No table available — refund the player
           try {
-            await supabase.rpc('credit_player_wallet', { p_user_id: userId, p_amount: totalCost });
+            await retryAsync(
+              () =>
+                supabase.rpc('credit_player_wallet', { p_user_id: userId, p_amount: totalCost }),
+              3
+            );
             await WalletService.logTransaction(
               userId,
               'PLAYER',
@@ -1016,10 +1036,14 @@ class TournamentService {
     const refundAmount = buyInAmount + (tournament.buy_in_fee || 0);
 
     // Refund to Player Wallet — only AFTER successful deletion
-    const { error: refundError } = await supabase.rpc('credit_player_wallet', {
-      p_user_id: userId,
-      p_amount: refundAmount,
-    });
+    const { error: refundError } = await retryAsync(
+      () =>
+        supabase.rpc('credit_player_wallet', {
+          p_user_id: userId,
+          p_amount: refundAmount,
+        }),
+      3
+    );
 
     if (refundError) {
       console.error('[TournamentService] Refund to Player Wallet failed:', refundError);
@@ -1116,10 +1140,14 @@ class TournamentService {
     if (players && players.length > 0 && refundAmount > 0) {
       for (const player of players) {
         try {
-          const { error: refundError } = await supabase.rpc('credit_player_wallet', {
-            p_user_id: player.user_id,
-            p_amount: refundAmount,
-          });
+          const { error: refundError } = await retryAsync(
+            () =>
+              supabase.rpc('credit_player_wallet', {
+                p_user_id: player.user_id,
+                p_amount: refundAmount,
+              }),
+            3
+          );
 
           if (refundError) {
             console.error(`[TournamentService] Failed to refund ${player.user_id}:`, refundError);
@@ -1343,10 +1371,14 @@ class TournamentService {
     // Credit prize to Player Wallet
     if (prize > 0) {
       // Credit prize to Player Wallet (not club_members — wallets are separate)
-      const { error: prizeError } = await supabase.rpc('credit_player_wallet', {
-        p_user_id: userId,
-        p_amount: prize,
-      });
+      const { error: prizeError } = await retryAsync(
+        () =>
+          supabase.rpc('credit_player_wallet', {
+            p_user_id: userId,
+            p_amount: prize,
+          }),
+        3
+      );
 
       if (prizeError) {
         console.error(
@@ -1581,10 +1613,14 @@ class TournamentService {
     }
 
     // Atomically deduct wallet for rebuy cost
-    const { data: deductResult, error: walletError } = await supabase.rpc('deduct_player_wallet', {
-      p_user_id: userId,
-      p_amount: rebuyCost,
-    });
+    const { data: deductResult, error: walletError } = await retryAsync(
+      () =>
+        supabase.rpc('deduct_player_wallet', {
+          p_user_id: userId,
+          p_amount: rebuyCost,
+        }),
+      3
+    );
     if (walletError || deductResult === false) throw new Error('Insufficient balance for rebuy');
 
     // Log transaction for audit trail
@@ -1602,14 +1638,18 @@ class TournamentService {
     masterBus.emit('BALANCE_UPDATED', { source: 'tournament_rebuy', userId });
 
     // Process rebuy via RPC
-    const { data, error } = await supabase.rpc('process_tournament_rebuy', {
-      p_tournament_id: tournamentId,
-      p_player_id: userId,
-      p_rebuy_type: tournament.is_reentry && !tournament.is_rebuy ? 'reentry' : 'rebuy',
-      p_cost: rebuyCost,
-      p_chips: rebuyChips,
-      p_current_level: this.getCurrentLevelState(tournament).levelIndex,
-    });
+    const { data, error } = await retryAsync(
+      () =>
+        supabase.rpc('process_tournament_rebuy', {
+          p_tournament_id: tournamentId,
+          p_player_id: userId,
+          p_rebuy_type: tournament.is_reentry && !tournament.is_rebuy ? 'reentry' : 'rebuy',
+          p_cost: rebuyCost,
+          p_chips: rebuyChips,
+          p_current_level: this.getCurrentLevelState(tournament).levelIndex,
+        }),
+      3
+    );
 
     if (error) throw error;
 
@@ -1704,12 +1744,13 @@ class TournamentService {
     }
 
     // Atomically deduct wallet for add-on cost
-    const { data: addonDeductResult, error: walletError } = await supabase.rpc(
-      'deduct_player_wallet',
-      {
-        p_user_id: userId,
-        p_amount: addonCost,
-      }
+    const { data: addonDeductResult, error: walletError } = await retryAsync(
+      () =>
+        supabase.rpc('deduct_player_wallet', {
+          p_user_id: userId,
+          p_amount: addonCost,
+        }),
+      3
     );
     if (walletError || addonDeductResult === false)
       throw new Error('Insufficient balance for add-on');
@@ -1728,14 +1769,18 @@ class TournamentService {
     );
     masterBus.emit('BALANCE_UPDATED', { source: 'tournament_addon', userId });
 
-    const { data, error } = await supabase.rpc('process_tournament_rebuy', {
-      p_tournament_id: tournamentId,
-      p_player_id: userId,
-      p_rebuy_type: 'addon',
-      p_cost: addonCost,
-      p_chips: addonChips,
-      p_current_level: this.getCurrentLevelState(tournament).levelIndex,
-    });
+    const { data, error } = await retryAsync(
+      () =>
+        supabase.rpc('process_tournament_rebuy', {
+          p_tournament_id: tournamentId,
+          p_player_id: userId,
+          p_rebuy_type: 'addon',
+          p_cost: addonCost,
+          p_chips: addonChips,
+          p_current_level: this.getCurrentLevelState(tournament).levelIndex,
+        }),
+      3
+    );
 
     if (error) throw error;
 

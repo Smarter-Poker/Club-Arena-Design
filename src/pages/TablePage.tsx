@@ -4157,9 +4157,13 @@ export default function TablePage({
                 console.debug('[BuyIn] table_seats INSERT success, seat:', selectedSeat);
 
                 // Atomic current_players increment (prevents race with simultaneous buy-ins)
-                const { error: rpcErr } = await supabase.rpc('increment_table_players', {
-                  p_table_id: tableId,
-                });
+                const { error: rpcErr } = await retryAsync(
+                  () =>
+                    supabase.rpc('increment_table_players', {
+                      p_table_id: tableId,
+                    }),
+                  3
+                );
                 if (rpcErr) {
                   // Fallback: non-atomic increment if RPC doesn't exist
                   const { data: td } = await supabase

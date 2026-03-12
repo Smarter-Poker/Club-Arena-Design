@@ -13,6 +13,7 @@ import PageSkeleton from '../components/common/PageSkeleton';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import './ClubMembersPage.css';
+import { retryAsync } from '../utils/retryAsync';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    TYPES
@@ -188,12 +189,16 @@ function PlayerActionModal({
       if (!currentUser?.id) throw new Error('Not authenticated');
 
       // Try RPC first (atomic with audit logging), fall back to direct updates
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('promote_member', {
-        p_club_id: clubId,
-        p_target_user_id: member.user_id,
-        p_new_role: newRole,
-        p_promoted_by: currentUser.id,
-      });
+      const { data: rpcResult, error: rpcError } = await retryAsync(
+        () =>
+          supabase.rpc('promote_member', {
+            p_club_id: clubId,
+            p_target_user_id: member.user_id,
+            p_new_role: newRole,
+            p_promoted_by: currentUser.id,
+          }),
+        3
+      );
 
       if (rpcError) {
         // RPC not available yet — fall back to direct table update

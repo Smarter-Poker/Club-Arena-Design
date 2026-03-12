@@ -14,6 +14,7 @@ import { supabase } from '../lib/supabase';
 import { WalletService } from './WalletService';
 import { ChipFlowService } from './ChipFlowService';
 import { masterBus } from '../core/MasterBus';
+import { retryAsync } from '../utils/retryAsync';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -764,12 +765,16 @@ class AgentServiceClass {
     if (fromWallet === toWallet) throw new Error('Cannot transfer to the same wallet');
 
     // Use RPC for atomic wallet-to-wallet transfer to prevent race conditions
-    const { error } = await supabase.rpc('wallet_internal_transfer', {
-      p_agent_id: agentId,
-      p_amount: amount,
-      p_from_wallet: fromWallet,
-      p_to_wallet: toWallet,
-    });
+    const { error } = await retryAsync(
+      () =>
+        supabase.rpc('wallet_internal_transfer', {
+          p_agent_id: agentId,
+          p_amount: amount,
+          p_from_wallet: fromWallet,
+          p_to_wallet: toWallet,
+        }),
+      3
+    );
 
     if (error) {
       console.error('[AgentService] selfTransfer failed:', error);

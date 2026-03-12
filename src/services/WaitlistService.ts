@@ -8,6 +8,7 @@
 import { supabase } from '../lib/supabase';
 import { notificationService } from './NotificationService';
 import { masterBus } from '../core/MasterBus';
+import { retryAsync } from '../utils/retryAsync';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -46,10 +47,14 @@ class WaitlistServiceClass {
     }
 
     // Call RPC to join (handles position assignment)
-    const { data, error } = await supabase.rpc('join_waitlist', {
-      p_table_id: tableId,
-      p_user_id: userId,
-    });
+    const { data, error } = await retryAsync(
+      () =>
+        supabase.rpc('join_waitlist', {
+          p_table_id: tableId,
+          p_user_id: userId,
+        }),
+      3
+    );
 
     if (error) {
       console.error('[Waitlist] Failed to join:', error);
@@ -105,10 +110,14 @@ class WaitlistServiceClass {
    * Get user's position on a table's waitlist
    */
   async getPosition(tableId: string, userId: string): Promise<WaitlistStats | null> {
-    const { data, error } = await supabase.rpc('get_waitlist_position', {
-      p_table_id: tableId,
-      p_user_id: userId,
-    });
+    const { data, error } = await retryAsync(
+      () =>
+        supabase.rpc('get_waitlist_position', {
+          p_table_id: tableId,
+          p_user_id: userId,
+        }),
+      3
+    );
 
     if (error || data === null) {
       return null;

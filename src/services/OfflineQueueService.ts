@@ -195,6 +195,7 @@ export const OfflineQueueService = {
    */
   async executeMutation(mutation: QueuedMutation): Promise<boolean> {
     // Lazy import to avoid circular dependency
+    import { retryAsync } from '../utils/retryAsync';
     const { supabase } = await import('../lib/supabase');
 
     switch (mutation.action) {
@@ -205,12 +206,16 @@ export const OfflineQueueService = {
           clubId: string;
           walletType: string;
         };
-        const { error } = await supabase.rpc('credit_player_wallet', {
-          p_user_id: userId,
-          p_amount: amount,
-          p_club_id: clubId,
-          p_wallet_type: walletType,
-        });
+        const { error } = await retryAsync(
+          () =>
+            supabase.rpc('credit_player_wallet', {
+              p_user_id: userId,
+              p_amount: amount,
+              p_club_id: clubId,
+              p_wallet_type: walletType,
+            }),
+          3
+        );
         return !error;
       }
       case 'WITHDRAW_CHIPS': {
@@ -219,11 +224,15 @@ export const OfflineQueueService = {
           amount: number;
           clubId: string;
         };
-        const { data } = await supabase.rpc('deduct_player_wallet', {
-          p_user_id: userId,
-          p_amount: amount,
-          p_club_id: clubId,
-        });
+        const { data } = await retryAsync(
+          () =>
+            supabase.rpc('deduct_player_wallet', {
+              p_user_id: userId,
+              p_amount: amount,
+              p_club_id: clubId,
+            }),
+          3
+        );
         return data !== false;
       }
       case 'CREDIT_COMMISSION': {
@@ -233,12 +242,16 @@ export const OfflineQueueService = {
           periodId: string;
           clubId: string;
         };
-        const { error } = await supabase.rpc('credit_agent_commission', {
-          p_agent_id: agentId,
-          p_amount: amount,
-          p_period_id: periodId,
-          p_club_id: clubId,
-        });
+        const { error } = await retryAsync(
+          () =>
+            supabase.rpc('credit_agent_commission', {
+              p_agent_id: agentId,
+              p_amount: amount,
+              p_period_id: periodId,
+              p_club_id: clubId,
+            }),
+          3
+        );
         return !error;
       }
       case 'CREDIT_RAKEBACK': {
@@ -248,12 +261,16 @@ export const OfflineQueueService = {
           periodId: string;
           clubId: string;
         };
-        const { error } = await supabase.rpc('credit_player_rakeback', {
-          p_user_id: userId,
-          p_amount: amount,
-          p_period_id: periodId,
-          p_club_id: clubId,
-        });
+        const { error } = await retryAsync(
+          () =>
+            supabase.rpc('credit_player_rakeback', {
+              p_user_id: userId,
+              p_amount: amount,
+              p_period_id: periodId,
+              p_club_id: clubId,
+            }),
+          3
+        );
         return !error;
       }
       default:

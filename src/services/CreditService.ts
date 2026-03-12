@@ -23,6 +23,7 @@ import { WalletService } from './WalletService';
 import { FinancialAlertService } from './FinancialAlertService';
 import { SettlementService } from './SettlementService';
 import { masterBus } from '../core/MasterBus';
+import { retryAsync } from '../utils/retryAsync';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -357,12 +358,13 @@ export const CreditService = {
       }
 
       const amt = Math.trunc(amount * 100) / 100;
-      const { data: deductResult, error: deductError } = await supabase.rpc(
-        'deduct_player_wallet',
-        {
-          p_user_id: agentData.user_id,
-          p_amount: amt,
-        }
+      const { data: deductResult, error: deductError } = await retryAsync(
+        () =>
+          supabase.rpc('deduct_player_wallet', {
+            p_user_id: agentData.user_id,
+            p_amount: amt,
+          }),
+        3
       );
       if (deductError) {
         throw new Error(`Wallet deduction failed: ${deductError.message}`);
@@ -413,10 +415,14 @@ export const CreditService = {
             .maybeSingle();
 
           if (agentForRollback?.user_id) {
-            const { error: rollbackErr2 } = await supabase.rpc('credit_player_wallet', {
-              p_user_id: agentForRollback.user_id,
-              p_amount: amount,
-            });
+            const { error: rollbackErr2 } = await retryAsync(
+              () =>
+                supabase.rpc('credit_player_wallet', {
+                  p_user_id: agentForRollback.user_id,
+                  p_amount: amount,
+                }),
+              3
+            );
             if (rollbackErr2) {
               console.error(
                 `[CreditService] CRITICAL: Wallet rollback failed for agent ${invoice.agent_id}: ${rollbackErr2.message}`

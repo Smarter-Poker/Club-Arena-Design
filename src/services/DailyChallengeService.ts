@@ -10,6 +10,7 @@
 import { supabase } from '../lib/supabase';
 import { WalletService } from './WalletService';
 import { masterBus } from '../core/MasterBus';
+import { retryAsync } from '../utils/retryAsync';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -268,10 +269,14 @@ class DailyChallengeServiceClass {
     // Award chips via proper wallet system with audit trail
     if (challenge.chipReward > 0) {
       const amt = Math.trunc(challenge.chipReward * 100) / 100;
-      const { error: chipError } = await supabase.rpc('credit_player_wallet', {
-        p_user_id: userId,
-        p_amount: amt,
-      });
+      const { error: chipError } = await retryAsync(
+        () =>
+          supabase.rpc('credit_player_wallet', {
+            p_user_id: userId,
+            p_amount: amt,
+          }),
+        3
+      );
       if (chipError) {
         console.error('[DailyChallenge] Failed to award chips:', chipError);
         return;

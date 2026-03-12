@@ -798,6 +798,14 @@ class MasterBusCore {
       }
     });
 
+    // Phase 14 Fix: Ensure global diamond balances sync properly across all headers
+    this.subscribe('DIAMOND_BALANCE_CHANGED', () => {
+      const user = useUserStore.getState().user;
+      if (user) {
+        useWalletStore.getState().loadDiamonds(user.id);
+      }
+    });
+
     // When joining a club, subscribe to realtime channel
     this.subscribe('CLUB_JOINED', (event) => {
       const { clubId } = event.payload;

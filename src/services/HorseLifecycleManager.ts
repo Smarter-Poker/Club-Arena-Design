@@ -15,6 +15,7 @@ import { supabase } from '../lib/supabase';
 import { horseBugReporter } from './HorseBugReporter';
 import { WalletService } from './WalletService';
 import { masterBus } from '../core/MasterBus';
+import { retryAsync } from '../utils/retryAsync';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -380,10 +381,14 @@ class HorseLifecycleManagerCore {
   async processWinnings(horseId: string, amount: number, tournamentId: string): Promise<boolean> {
     try {
       // Credit wallet via RPC
-      const { error: creditError } = await supabase.rpc('credit_player_wallet', {
-        p_user_id: horseId,
-        p_amount: amount,
-      });
+      const { error: creditError } = await retryAsync(
+        () =>
+          supabase.rpc('credit_player_wallet', {
+            p_user_id: horseId,
+            p_amount: amount,
+          }),
+        3
+      );
 
       if (creditError) {
         console.error(
@@ -525,10 +530,14 @@ class HorseLifecycleManagerCore {
             // Refund each player
             for (const player of players) {
               if (buyInAmount > 0) {
-                const { error: refundErr } = await supabase.rpc('credit_player_wallet', {
-                  p_user_id: player.user_id,
-                  p_amount: buyInAmount,
-                });
+                const { error: refundErr } = await retryAsync(
+                  () =>
+                    supabase.rpc('credit_player_wallet', {
+                      p_user_id: player.user_id,
+                      p_amount: buyInAmount,
+                    }),
+                  3
+                );
                 if (refundErr)
                   console.error(
                     `[HorseLifecycle] SNG cancel refund FAILED for ${player.user_id.slice(0, 8)}: ${refundErr.message}`

@@ -17,6 +17,7 @@ import { supabase } from '../lib/supabase';
 import { WalletService } from './WalletService';
 import { masterBus } from '../core/MasterBus';
 import type { EvaluatedHand } from '../engine/PokerEngine';
+import { retryAsync } from '../utils/retryAsync';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -307,17 +308,21 @@ export const BBJService = {
 
     // Call RPC to atomically update pool and record contribution
     // add_bbj_contribution now supports triple-bank allocation (MAIN/BACKUP/PROMO)
-    const { data, error } = await supabase.rpc('add_bbj_contribution', {
-      p_table_id: params.tableId,
-      p_club_id: clubId,
-      p_amount: contribution,
-      p_big_blind: params.bigBlind,
-      p_hand_number: params.handNumber || 0,
-      p_stakes_tier: stakesTier,
-      p_main_portion: mainPortion,
-      p_backup_portion: backupPortion,
-      p_promo_portion: promoPortion,
-    });
+    const { data, error } = await retryAsync(
+      () =>
+        supabase.rpc('add_bbj_contribution', {
+          p_table_id: params.tableId,
+          p_club_id: clubId,
+          p_amount: contribution,
+          p_big_blind: params.bigBlind,
+          p_hand_number: params.handNumber || 0,
+          p_stakes_tier: stakesTier,
+          p_main_portion: mainPortion,
+          p_backup_portion: backupPortion,
+          p_promo_portion: promoPortion,
+        }),
+      3
+    );
 
     if (error) {
       console.error('BBJService.recordContribution error:', error);
@@ -433,26 +438,30 @@ export const BBJService = {
 
     // Call RPC to atomically execute the BBJ payout with real parameters
     // Using the existing award_bbj function
-    const { data, error } = await supabase.rpc('award_bbj', {
-      p_club_id: params.clubId,
-      p_table_id: params.tableId,
-      p_hand_number: params.handNumber,
-      p_big_blind: params.bigBlind,
-      p_stakes_tier: params.stakesTier,
-      p_game_variant: params.gameVariant,
-      p_winner_user_id: params.winnerUserId,
-      p_winner_hand: params.winnerHand,
-      p_winner_cards: params.winnerCards,
-      p_winner_display_name: params.winnerDisplayName,
-      p_loser_user_id: params.loserUserId,
-      p_loser_hand: params.loserHand,
-      p_loser_cards: params.loserCards,
-      p_loser_display_name: params.loserDisplayName,
-      p_payout_total_pct: 100,
-      p_payout_winner_pct: PAYOUT_SHARES.WINNER * 100,
-      p_payout_loser_pct: PAYOUT_SHARES.LOSER * 100,
-      p_payout_table_pct: PAYOUT_SHARES.TABLE * 100,
-    });
+    const { data, error } = await retryAsync(
+      () =>
+        supabase.rpc('award_bbj', {
+          p_club_id: params.clubId,
+          p_table_id: params.tableId,
+          p_hand_number: params.handNumber,
+          p_big_blind: params.bigBlind,
+          p_stakes_tier: params.stakesTier,
+          p_game_variant: params.gameVariant,
+          p_winner_user_id: params.winnerUserId,
+          p_winner_hand: params.winnerHand,
+          p_winner_cards: params.winnerCards,
+          p_winner_display_name: params.winnerDisplayName,
+          p_loser_user_id: params.loserUserId,
+          p_loser_hand: params.loserHand,
+          p_loser_cards: params.loserCards,
+          p_loser_display_name: params.loserDisplayName,
+          p_payout_total_pct: 100,
+          p_payout_winner_pct: PAYOUT_SHARES.WINNER * 100,
+          p_payout_loser_pct: PAYOUT_SHARES.LOSER * 100,
+          p_payout_table_pct: PAYOUT_SHARES.TABLE * 100,
+        }),
+      3
+    );
 
     if (error) {
       console.error('BBJService.executePayout error:', error);
@@ -506,10 +515,14 @@ export const BBJService = {
       const userId = params.recipientUserIds[i];
       // Give remainder cents to first players (1 cent each)
       const perPlayer = (baseCents + (i < remainderCents ? 1 : 0)) / 100;
-      const { error: payoutError } = await supabase.rpc('add_to_promo_wallet', {
-        p_user_id: userId,
-        p_amount: perPlayer,
-      });
+      const { error: payoutError } = await retryAsync(
+        () =>
+          supabase.rpc('add_to_promo_wallet', {
+            p_user_id: userId,
+            p_amount: perPlayer,
+          }),
+        3
+      );
       if (payoutError) {
         console.error(`BBJService.executePromoPayout: Failed for ${userId}:`, payoutError);
         lastError = payoutError;

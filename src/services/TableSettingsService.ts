@@ -6,6 +6,7 @@
 
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
+import { retryAsync } from '../utils/retryAsync';
 
 export interface TableSettingsData {
   showStackInBB: boolean;
@@ -38,7 +39,10 @@ class TableSettingsServiceClass {
     const cached = this.cache.get(userId);
     if (cached) return cached;
 
-    const { data, error } = await supabase.rpc('fn_get_table_settings', { p_user_id: userId });
+    const { data, error } = await retryAsync(
+      () => supabase.rpc('fn_get_table_settings', { p_user_id: userId }),
+      3
+    );
 
     if (error || !data || data.length === 0) {
       return DEFAULT_SETTINGS;
@@ -63,16 +67,20 @@ class TableSettingsServiceClass {
    * Update user's table settings
    */
   async updateSettings(userId: string, updates: Partial<TableSettingsData>): Promise<void> {
-    await supabase.rpc('fn_update_table_settings', {
-      p_user_id: userId,
-      p_show_stack_in_bb: updates.showStackInBB,
-      p_offline_protection: updates.offlineProtection,
-      p_auto_time_bank: updates.autoTimeBank,
-      p_four_color_deck: updates.fourColorDeck,
-      p_auto_muck: updates.autoMuck,
-      p_show_chat: updates.showChat,
-      p_sound_enabled: updates.soundEnabled,
-    });
+    await retryAsync(
+      () =>
+        supabase.rpc('fn_update_table_settings', {
+          p_user_id: userId,
+          p_show_stack_in_bb: updates.showStackInBB,
+          p_offline_protection: updates.offlineProtection,
+          p_auto_time_bank: updates.autoTimeBank,
+          p_four_color_deck: updates.fourColorDeck,
+          p_auto_muck: updates.autoMuck,
+          p_show_chat: updates.showChat,
+          p_sound_enabled: updates.soundEnabled,
+        }),
+      3
+    );
 
     // Update cache
     const current = this.cache.get(userId) || DEFAULT_SETTINGS;

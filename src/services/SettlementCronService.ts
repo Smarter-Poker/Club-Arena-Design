@@ -14,6 +14,7 @@
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import { SettlementService } from './SettlementService';
+import { retryAsync } from '../utils/retryAsync';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -231,7 +232,7 @@ export const SettlementCronService = {
    */
   async runCanaryCheck(): Promise<CanaryResult> {
     try {
-      const { data, error } = await supabase.rpc('get_wallet_balance_totals');
+      const { data, error } = await retryAsync(() => supabase.rpc('get_wallet_balance_totals'), 3);
 
       if (error || !data) {
         // If RPC doesn't exist, pass canary (non-blocking)

@@ -17,9 +17,11 @@
 
 import { SupabaseClient } from '@supabase/supabase-js';
 import { HeadlessTableEngine } from './HeadlessTableEngine';
+import { tableBreakEngine, type TableSnapshot } from './TableBreakEngine';
 import { BLIND_STRUCTURES, PAYOUT_STRUCTURES } from '../services/TournamentService';
 import { WalletService } from '../services/WalletService';
 import { masterBus } from '../core/MasterBus';
+import { retryAsync } from '../utils/retryAsync';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -163,6 +165,7 @@ export class TournamentEngine {
   private addOnPeriodTriggered = false;
   private addOnPeriodActive = false;
   private addOnAbortController: AbortController | null = null;
+  private tableBreakInProgress = false;
 
   constructor(tournamentId: string, supabase: SupabaseClient) {
     this.tournamentId = tournamentId;
@@ -1421,12 +1424,13 @@ export class TournamentEngine {
     const clubId = this.tournamentInfo.club_id;
 
     // Credit prize to Player Wallet via SECURITY DEFINER RPC
-    const { data: creditResult, error: creditError } = await this.supabase.rpc(
-      'credit_player_wallet',
-      {
-        p_user_id: userId,
-        p_amount: amount,
-      }
+    const { data: creditResult, error: creditError } = await retryAsync(
+      () =>
+        this.supabase.rpc('credit_player_wallet', {
+          p_user_id: userId,
+          p_amount: amount,
+        }),
+      3
     );
 
     if (creditError) {
@@ -1474,7 +1478,7 @@ export class TournamentEngine {
   // ═══════════════════════════════════════════════════════════════════════════
 
   private async checkTableBalance(): Promise<void> {
-    if (this.tables.length <= 1) return;
+    if (this.tables.length <= 1 || this.tableBreakInProgress) return;
 
     // Find tables with active players
     const activeTables = this.tables.filter((t) => t.playerCount > 0);
@@ -1504,8 +1508,13 @@ export class TournamentEngine {
     const minTablesNeeded = Math.ceil(totalPlayers / 9);
 
     if (remainingTables.length > minTablesNeeded || remainingTables[0].playerCount < 3) {
-      // Merge the smallest table
-      await this.mergeTable(remainingTables[0]);
+      // Lock to prevent overlapping table breaks
+      this.tableBreakInProgress = true;
+      try {
+        await this.mergeTable(remainingTables[0]);
+      } finally {
+        this.tableBreakInProgress = false;
+      }
     }
   }
 
@@ -1514,18 +1523,38 @@ export class TournamentEngine {
       `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Merging table ${sourceTable.tableId.slice(0, 8)} (${sourceTable.playerCount} players)`
     );
 
-    // Stop the source table engine
+    // Stop the source table engine immediately to prevent new hands
     sourceTable.engine.stop();
 
-    // Get remaining players at the source table
-    const { data: seats } = await this.supabase
-      .from('table_seats')
-      .select('user_id, stack')
-      .eq('table_id', sourceTable.tableId)
-      .is('left_at', null);
+    // Build TableSnapshots for the break engine
+    const snapshots: TableSnapshot[] = [];
+    const activeTables = this.tables.filter((t) => t.playerCount > 0);
 
-    if (!seats || seats.length === 0) {
-      // Close the empty table in DB and remove from engine tracking
+    for (const t of activeTables) {
+      const { data: seats } = await this.supabase
+        .from('table_seats')
+        .select('user_id, stack, seat_number')
+        .eq('table_id', t.tableId)
+        .is('left_at', null);
+
+      snapshots.push({
+        tableId: t.tableId,
+        playerCount: seats?.length || 0,
+        maxPlayers: 9,
+        occupiedSeats: seats?.map((s) => s.seat_number) || [],
+        players:
+          seats?.map((s) => ({
+            playerId: s.user_id,
+            seat: s.seat_number,
+            stack: s.stack,
+          })) || [],
+      });
+    }
+
+    const brokenSnapshot = snapshots.find((s) => s.tableId === sourceTable.tableId);
+    const remainingSnapshots = snapshots.filter((s) => s.tableId !== sourceTable.tableId);
+
+    if (!brokenSnapshot || brokenSnapshot.players.length === 0) {
       await this.supabase
         .from('tables')
         .update({ status: 'closed', current_players: 0 })
@@ -1534,104 +1563,68 @@ export class TournamentEngine {
       return;
     }
 
-    // Find the target table with the most room
-    const otherTables = this.tables.filter(
-      (t) => t.tableId !== sourceTable.tableId && t.playerCount > 0
+    if (remainingSnapshots.length === 0) return;
+
+    // Initiate Break using Phase 4 Engine (handles 30s countdown and balanced redistribution)
+    const result = await tableBreakEngine.initiateBreak(
+      brokenSnapshot,
+      remainingSnapshots,
+      this.tournamentId
     );
-    if (otherTables.length === 0) return;
 
-    // Select target table with most available room (fewest players = most seats open)
-    const target = otherTables.reduce((a, b) => {
-      const aRoom = 9 - a.playerCount;
-      const bRoom = 9 - b.playerCount;
-      return aRoom > bRoom ? a : b;
-    });
-
-    // Move each player
-    for (const seat of seats) {
+    // Apply the returned movements
+    for (const move of result.movements) {
       // Mark old seat as left
       await this.supabase
         .from('table_seats')
         .update({ left_at: new Date().toISOString() })
-        .eq('table_id', sourceTable.tableId)
-        .eq('user_id', seat.user_id)
+        .eq('table_id', move.fromTableId)
+        .eq('user_id', move.playerId)
         .is('left_at', null);
 
-      // Find next available seat number at target
-      const { data: targetSeats } = await this.supabase
-        .from('table_seats')
-        .select('seat_number')
-        .eq('table_id', target.tableId)
-        .is('left_at', null);
-
-      const usedSeats = new Set((targetSeats || []).map((s) => s.seat_number));
-      let newSeat = 1;
-      while (usedSeats.has(newSeat) && newSeat <= 9) newSeat++;
-
-      // Guard: if all 9 seats are full, skip this move
-      if (newSeat > 9) {
-        console.error(
-          `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Cannot move player — target table ${target.tableId.slice(0, 8)} is full (9/9)`
-        );
-        continue;
-      }
-
-      // First clear any existing record at this seat (left-over from previous occupant)
+      // Clear target seat if occupied
       await this.supabase
         .from('table_seats')
         .update({ left_at: new Date().toISOString(), status: 'left' })
-        .eq('table_id', target.tableId)
-        .eq('seat_number', newSeat)
+        .eq('table_id', move.toTableId)
+        .eq('seat_number', move.toSeat)
         .is('left_at', null);
 
       // Insert at target table
       const { error: insertErr } = await this.supabase.from('table_seats').insert({
-        table_id: target.tableId,
-        seat_number: newSeat,
-        user_id: seat.user_id,
-        stack: seat.stack,
+        table_id: move.toTableId,
+        seat_number: move.toSeat,
+        user_id: move.playerId,
+        stack: move.stack,
         is_sitting_out: false,
       });
 
       if (insertErr) {
         console.error(
-          `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to insert merged seat for ${seat.user_id.slice(0, 8)}:`,
+          `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Failed to insert merged seat for ${move.playerId.slice(0, 8)}:`,
           insertErr.message
         );
         continue;
       }
 
-      target.playerCount++;
+      // Update local state
+      const targetTable = this.tables.find((t) => t.tableId === move.toTableId);
+      if (targetTable) targetTable.playerCount++;
 
-      // Update local player record
-      const player = this.players.get(seat.user_id);
+      const player = this.players.get(move.playerId);
       if (player) {
-        player.tableId = target.tableId;
-        player.seatNumber = newSeat;
+        player.tableId = move.toTableId;
+        player.seatNumber = move.toSeat;
       }
     }
 
-    // Remove source table
+    // Clean up source table
     this.removeTable(sourceTable);
-
-    // Mark source table as closed
     await this.supabase.from('tables').update({ status: 'closed' }).eq('id', sourceTable.tableId);
 
     console.log(
-      `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Merged into table ${target.tableId.slice(0, 8)}`
+      `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Merge complete. Moved ${result.totalMoved} players via TableBreakEngine.`
     );
-
-    // Emit bus event for immediate cross-page table merge notification
-    try {
-      masterBus.emit('TABLE_MERGED', {
-        tournamentId: this.tournamentId,
-        sourceTableId: sourceTable.tableId,
-        targetTableId: target.tableId,
-        playersMoved: seats.length,
-      });
-    } catch {
-      /* bus not initialized yet */
-    }
   }
 
   private removeTable(table: TournamentTable): void {

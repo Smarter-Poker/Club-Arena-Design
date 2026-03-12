@@ -330,11 +330,15 @@ export const WalletService = {
   async distributePromo(agentId: string, playerId: string, amount: number): Promise<boolean> {
     if (amount <= 0) throw new Error('Amount must be positive');
 
-    const { error } = await supabase.rpc('distribute_promo_chips', {
-      p_agent_id: agentId,
-      p_player_id: playerId,
-      p_amount: amount,
-    });
+    const { error } = await retryAsync(
+      () =>
+        supabase.rpc('distribute_promo_chips', {
+          p_agent_id: agentId,
+          p_player_id: playerId,
+          p_amount: amount,
+        }),
+      3
+    );
 
     if (error) throw error;
 
@@ -483,17 +487,21 @@ export const WalletService = {
   ): Promise<void> {
     try {
       // Use SECURITY DEFINER RPC to bypass RLS on wallet_transactions
-      const { error } = await supabase.rpc('log_wallet_transaction', {
-        p_user_id: userId,
-        p_wallet_type: walletType,
-        p_amount: amount,
-        p_type: type,
-        p_category: category,
-        p_description: description,
-        p_table_id: tableId || null,
-        p_hand_id: handId || null,
-        p_related_entity_id: relatedEntityId || null,
-      });
+      const { error } = await retryAsync(
+        () =>
+          supabase.rpc('log_wallet_transaction', {
+            p_user_id: userId,
+            p_wallet_type: walletType,
+            p_amount: amount,
+            p_type: type,
+            p_category: category,
+            p_description: description,
+            p_table_id: tableId || null,
+            p_hand_id: handId || null,
+            p_related_entity_id: relatedEntityId || null,
+          }),
+        3
+      );
       if (error) {
         console.error('[WalletService] Transaction log RPC failed:', error.message);
         // PARTIAL FAILURE RECOVERY: financial op succeeded but audit trail failed
@@ -571,11 +579,15 @@ export const WalletService = {
    * Credit commission to agent's business wallet
    */
   async creditCommission(agentId: string, amount: number, periodId: string): Promise<boolean> {
-    const { error } = await supabase.rpc('credit_agent_commission', {
-      p_agent_id: agentId,
-      p_amount: amount,
-      p_period_id: periodId,
-    });
+    const { error } = await retryAsync(
+      () =>
+        supabase.rpc('credit_agent_commission', {
+          p_agent_id: agentId,
+          p_amount: amount,
+          p_period_id: periodId,
+        }),
+      3
+    );
 
     if (error) throw error;
     masterBus.emit('BALANCE_UPDATED', { source: 'commission', userId: agentId, amount });
@@ -586,11 +598,15 @@ export const WalletService = {
    * Process rakeback to player's wallet
    */
   async creditRakeback(playerId: string, amount: number, periodId: string): Promise<boolean> {
-    const { error } = await supabase.rpc('credit_player_rakeback', {
-      p_player_id: playerId,
-      p_amount: amount,
-      p_period_id: periodId,
-    });
+    const { error } = await retryAsync(
+      () =>
+        supabase.rpc('credit_player_rakeback', {
+          p_player_id: playerId,
+          p_amount: amount,
+          p_period_id: periodId,
+        }),
+      3
+    );
 
     if (error) throw error;
     masterBus.emit('BALANCE_UPDATED', { source: 'rakeback', userId: playerId, amount });
@@ -604,11 +620,15 @@ export const WalletService = {
     if (amount <= 0) throw new Error('Tip amount must be positive');
 
     // Attempt atomic RPC first: UPDATE ... SET amount = amount - $1 WHERE amount >= $1
-    const { error: rpcError } = await supabase.rpc('deduct_table_chip_lock', {
-      p_user_id: userId,
-      p_table_id: tableId,
-      p_amount: amount,
-    });
+    const { error: rpcError } = await retryAsync(
+      () =>
+        supabase.rpc('deduct_table_chip_lock', {
+          p_user_id: userId,
+          p_table_id: tableId,
+          p_amount: amount,
+        }),
+      3
+    );
 
     if (rpcError) {
       // Fallback: legacy read-then-update (until RPC is deployed to Supabase)
@@ -663,11 +683,15 @@ export const WalletService = {
     if (premium <= 0) throw new Error('Insurance premium must be positive');
 
     // Atomic conditional update — deducts only if sufficient balance exists.
-    const { error } = await supabase.rpc('deduct_table_chip_lock', {
-      p_user_id: userId,
-      p_table_id: tableId,
-      p_amount: premium,
-    });
+    const { error } = await retryAsync(
+      () =>
+        supabase.rpc('deduct_table_chip_lock', {
+          p_user_id: userId,
+          p_table_id: tableId,
+          p_amount: premium,
+        }),
+      3
+    );
 
     if (error) {
       // Fallback: legacy read-then-update (kept for backwards compat until RPC is deployed)

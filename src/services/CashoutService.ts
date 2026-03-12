@@ -17,6 +17,7 @@ import { WalletService } from './WalletService';
 import { ChipFlowService } from './ChipFlowService';
 import { FinancialAlertService } from './FinancialAlertService';
 import { masterBus } from '../core/MasterBus';
+import { retryAsync } from '../utils/retryAsync';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -86,12 +87,16 @@ class CashoutServiceClass {
       );
     }
 
-    const { data, error } = await supabase.rpc('fn_request_cashout', {
-      p_player_id: playerId,
-      p_club_id: clubId,
-      p_amount: amount,
-      p_note: note || null,
-    });
+    const { data, error } = await retryAsync(
+      () =>
+        supabase.rpc('fn_request_cashout', {
+          p_player_id: playerId,
+          p_club_id: clubId,
+          p_amount: amount,
+          p_note: note || null,
+        }),
+      3
+    );
 
     if (error) {
       console.error('[Cashout] Failed to request cashout:', error);
@@ -131,10 +136,14 @@ class CashoutServiceClass {
    * Player: Cancel a pending cashout (returns chips from escrow)
    */
   async cancelCashout(cashoutId: string, playerId: string): Promise<boolean> {
-    const { data, error } = await supabase.rpc('fn_cancel_cashout', {
-      p_cashout_id: cashoutId,
-      p_player_id: playerId,
-    });
+    const { data, error } = await retryAsync(
+      () =>
+        supabase.rpc('fn_cancel_cashout', {
+          p_cashout_id: cashoutId,
+          p_player_id: playerId,
+        }),
+      3
+    );
 
     if (error) {
       console.error('[Cashout] Failed to cancel cashout:', error);
@@ -151,11 +160,15 @@ class CashoutServiceClass {
    * Agent: Approve a cashout request
    */
   async approveCashout(cashoutId: string, agentId: string, note?: string): Promise<boolean> {
-    const { data, error } = await supabase.rpc('fn_agent_approve_cashout', {
-      p_cashout_id: cashoutId,
-      p_agent_id: agentId,
-      p_note: note || null,
-    });
+    const { data, error } = await retryAsync(
+      () =>
+        supabase.rpc('fn_agent_approve_cashout', {
+          p_cashout_id: cashoutId,
+          p_agent_id: agentId,
+          p_note: note || null,
+        }),
+      3
+    );
 
     if (error) {
       console.error('[Cashout] Failed to approve cashout:', error);
@@ -169,10 +182,14 @@ class CashoutServiceClass {
    * Agent: Complete a cashout (removes chips from escrow)
    */
   async completeCashout(cashoutId: string, agentId: string): Promise<boolean> {
-    const { data, error } = await supabase.rpc('fn_complete_cashout', {
-      p_cashout_id: cashoutId,
-      p_agent_id: agentId,
-    });
+    const { data, error } = await retryAsync(
+      () =>
+        supabase.rpc('fn_complete_cashout', {
+          p_cashout_id: cashoutId,
+          p_agent_id: agentId,
+        }),
+      3
+    );
 
     if (error) {
       console.error('[Cashout] Failed to complete cashout:', error);
@@ -221,10 +238,14 @@ class CashoutServiceClass {
     }
 
     // STEP 1: Return chips to Player Wallet FIRST — must succeed before changing any state
-    const { error: balanceError } = await supabase.rpc('credit_player_wallet', {
-      p_user_id: cashout.playerId,
-      p_amount: cashout.amount,
-    });
+    const { error: balanceError } = await retryAsync(
+      () =>
+        supabase.rpc('credit_player_wallet', {
+          p_user_id: cashout.playerId,
+          p_amount: cashout.amount,
+        }),
+      3
+    );
 
     if (balanceError) {
       console.error(
@@ -385,12 +406,16 @@ class CashoutServiceClass {
     clubId: string,
     amount: number
   ): Promise<boolean> {
-    const { data, error } = await supabase.rpc('fn_can_agent_remove_chips', {
-      p_agent_id: agentId,
-      p_player_id: playerId,
-      p_club_id: clubId,
-      p_amount: amount,
-    });
+    const { data, error } = await retryAsync(
+      () =>
+        supabase.rpc('fn_can_agent_remove_chips', {
+          p_agent_id: agentId,
+          p_player_id: playerId,
+          p_club_id: clubId,
+          p_amount: amount,
+        }),
+      3
+    );
 
     if (error) {
       console.error('[Cashout] Failed to check remove permission:', error);
@@ -529,9 +554,13 @@ class CashoutServiceClass {
    * Call via cron/edge function on a schedule (e.g. every 6 hours).
    */
   async expireStale(maxHours = 72): Promise<{ expired: number; playersRefunded: string[] }> {
-    const { data, error } = await supabase.rpc('fn_expire_stale_cashouts', {
-      p_max_hours: maxHours,
-    });
+    const { data, error } = await retryAsync(
+      () =>
+        supabase.rpc('fn_expire_stale_cashouts', {
+          p_max_hours: maxHours,
+        }),
+      3
+    );
 
     if (error) {
       console.error('[Cashout] Failed to expire stale cashouts:', error);
