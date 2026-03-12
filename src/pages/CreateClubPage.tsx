@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import ClubPromotionRulesModal from '../components/modals/ClubPromotionRulesModal';
 import { ClubService } from '../services/ClubService';
+import { masterBus } from '../core/MasterBus';
 import { sanitizeInput } from '../utils/sanitizeInput';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -632,6 +633,10 @@ export default function CreateClubPage() {
         );
         await supabase.from('clubs').delete().eq('id', data.id);
         throw new Error('Failed to set up club ownership. Please try again.');
+      }
+
+      if (user?.id) {
+        masterBus.emit('CLUB_JOINED', { clubId: data.id });
       }
 
       navigate(`/clubs/${data.id}`);

@@ -156,6 +156,7 @@ class ClubServiceClass {
       .maybeSingle();
 
     if (error) throw error;
+    masterBus.emit('CLUB_UPDATED', { clubId });
     return data;
   }
 
@@ -219,6 +220,7 @@ class ClubServiceClass {
       .maybeSingle();
 
     if (error) throw error;
+    masterBus.emit('CLUB_UPDATED', { clubId });
     return data;
   }
 
@@ -226,8 +228,16 @@ class ClubServiceClass {
    * Update member role
    */
   async updateMemberRole(memberId: string, role: MemberRole): Promise<boolean> {
+    const { data: member } = await supabase
+      .from('club_members')
+      .select('club_id')
+      .eq('id', memberId)
+      .maybeSingle();
     const { error } = await supabase.from('club_members').update({ role }).eq('id', memberId);
 
+    if (!error && member) {
+      masterBus.emit('CLUB_UPDATED', { clubId: member.club_id });
+    }
     return !error;
   }
 
@@ -304,10 +314,18 @@ class ClubServiceClass {
    * Approve or reject a membership request
    */
   async handleMembershipRequest(memberId: string, approved: boolean): Promise<void> {
+    const { data: member } = await supabase
+      .from('club_members')
+      .select('club_id')
+      .eq('id', memberId)
+      .maybeSingle();
     if (approved) {
       await supabase.from('club_members').update({ status: 'active' }).eq('id', memberId);
     } else {
       await supabase.from('club_members').delete().eq('id', memberId);
+    }
+    if (member) {
+      masterBus.emit('CLUB_UPDATED', { clubId: member.club_id });
     }
   }
 
@@ -315,8 +333,16 @@ class ClubServiceClass {
    * Remove a member from club
    */
   async removeMember(memberId: string): Promise<boolean> {
+    const { data: member } = await supabase
+      .from('club_members')
+      .select('club_id')
+      .eq('id', memberId)
+      .maybeSingle();
     const { error } = await supabase.from('club_members').delete().eq('id', memberId);
 
+    if (!error && member) {
+      masterBus.emit('CLUB_UPDATED', { clubId: member.club_id });
+    }
     return !error;
   }
 

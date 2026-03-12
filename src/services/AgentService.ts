@@ -13,6 +13,7 @@
 import { supabase } from '../lib/supabase';
 import { WalletService } from './WalletService';
 import { ChipFlowService } from './ChipFlowService';
+import { masterBus } from '../core/MasterBus';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -524,6 +525,9 @@ class AgentServiceClass {
     console.debug(
       `[AgentService] Linked player ${playerId} under agent ${agentProfile.username} via referral code ${referralCode}`
     );
+
+    masterBus.emit('CLUB_UPDATED', { clubId });
+
     return { success: true, agentName: agentProfile.username };
   }
 
@@ -570,6 +574,8 @@ class AgentServiceClass {
       })
       .eq('id', agentRecord.id);
 
+    masterBus.emit('CLUB_UPDATED', { clubId });
+
     return true;
   }
 
@@ -591,7 +597,7 @@ class AgentServiceClass {
     // Get current limit and parent info for logging + validation
     const { data: agent } = await supabase
       .from('agents')
-      .select('credit_limit, parent_agent_id')
+      .select('credit_limit, parent_agent_id, club_id')
       .eq('id', agentId)
       .maybeSingle();
 
@@ -628,6 +634,11 @@ class AgentServiceClass {
       reason,
     });
 
+    // Notify UI of club config changes
+    if (agent.club_id) {
+      masterBus.emit('CLUB_UPDATED', { clubId: agent.club_id });
+    }
+
     return true;
   }
 
@@ -653,7 +664,16 @@ class AgentServiceClass {
 
     if (Object.keys(updates).length === 0) return true;
 
-    const { error } = await supabase.from('agents').update(updates).eq('id', agentId);
+    const { data: agent, error } = await supabase
+      .from('agents')
+      .update(updates)
+      .eq('id', agentId)
+      .select('club_id')
+      .maybeSingle();
+
+    if (!error && agent) {
+      masterBus.emit('CLUB_UPDATED', { clubId: agent.club_id });
+    }
 
     return !error;
   }
@@ -710,10 +730,19 @@ class AgentServiceClass {
    * Assign a player to an agent
    */
   async assignPlayer(memberId: string, agentMembershipId: string): Promise<boolean> {
+    const { data: member } = await supabase
+      .from('club_members')
+      .select('club_id')
+      .eq('id', memberId)
+      .maybeSingle();
     const { error } = await supabase
       .from('club_members')
       .update({ agent_id: agentMembershipId })
       .eq('id', memberId);
+
+    if (!error && member) {
+      masterBus.emit('CLUB_UPDATED', { clubId: member.club_id });
+    }
 
     return !error;
   }

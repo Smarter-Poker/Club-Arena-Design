@@ -72,6 +72,7 @@ export type BusEventType =
   | 'SETTINGS_UPDATED'
   // Club data mutations (cross-page sync)
   | 'CLUB_UPDATED'
+  | 'UNION_UPDATED'
   | 'ANNOUNCEMENT_CHANGED'
   // Financial events
   | 'COMMISSION_PAID'
@@ -143,6 +144,7 @@ export interface BusPayloadMap {
   SETTINGS_UPDATED: { settings: Record<string, unknown> };
   // Club data mutations (cross-page sync)
   CLUB_UPDATED: { clubId: string };
+  UNION_UPDATED: { unionId: string };
   ANNOUNCEMENT_CHANGED: { clubId: string; action: 'created' | 'deleted' };
   // Financial events
   COMMISSION_PAID: { agentId: string; amount: number };

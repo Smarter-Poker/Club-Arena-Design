@@ -178,6 +178,8 @@ export default function InvitePage() {
       });
       if (countErr) console.error('[InvitePage] increment_member_count failed:', countErr.message);
 
+      masterBus.emit('CLUB_JOINED', { clubId: club.id } as any);
+
       toast.success(`Welcome to ${club.name}!`);
       navigate(`/clubs/${club.id}`);
     } catch (err: any) {

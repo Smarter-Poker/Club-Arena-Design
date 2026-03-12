@@ -11,6 +11,7 @@ import styles from './CreateUnionPage.module.css';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
+import { masterBus } from '../core/MasterBus';
 import { sanitizeInput } from '../utils/sanitizeInput';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -165,6 +166,8 @@ export default function CreateUnionPage() {
 
       if (insertError) throw insertError;
       if (!data) throw new Error('Union creation returned no data');
+
+      masterBus.emit('UNION_UPDATED', { unionId: data.id });
       navigate(`/unions/${data.id}`);
     } catch (err: any) {
       console.error('Failed to create union:', err);
