@@ -159,6 +159,12 @@ export function TournamentRegistration({
             }
             return;
           }
+
+          // Emit balance update to sync Global Headers across pages
+          masterBus.emit('BALANCE_UPDATED', {
+            source: 'tournament_admin_refund',
+            userId: playerId,
+          });
         }
 
         // Decrement current_players
