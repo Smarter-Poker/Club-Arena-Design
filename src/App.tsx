@@ -29,7 +29,7 @@ import NavigationProgress from './components/common/NavigationProgress';
 import ConnectionIndicator from './components/common/ConnectionIndicator';
 import ConnectionStatusBar from './components/ConnectionStatusBar';
 import BusToastBridge from './components/common/BusToastBridge';
-import { bootServices } from './services/ServiceBootstrap';
+import { bootServices, shutdownServices } from './services/ServiceBootstrap';
 
 // Auth Guards
 import { AuthGuard, GuestGuard } from './components/auth/AuthGuard';
@@ -275,6 +275,8 @@ export default function App() {
 
     return () => {
       busEventLogger.stop();
+      // Tear down engine services (online listener, cron timer, IndexedDB)
+      shutdownServices();
     };
   }, []);
 
