@@ -151,6 +151,7 @@ export function TableChat({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const previousMessagesLengthRef = useRef(0);
+  const animationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Auto-scroll to bottom on new messages and track which are new
   useEffect(() => {
@@ -160,11 +161,24 @@ export function TableChat({
       newMessages.forEach((msg) => newIds.add(msg.id));
       setNewMessageIds(newIds);
 
+      // Clear previous animation timer if still running
+      if (animationTimerRef.current) clearTimeout(animationTimerRef.current);
+
       // Clear animation after 600ms
-      setTimeout(() => setNewMessageIds(new Set()), 600);
+      animationTimerRef.current = setTimeout(() => {
+        animationTimerRef.current = null;
+        setNewMessageIds(new Set());
+      }, 600);
     }
     previousMessagesLengthRef.current = messages.length;
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+
+    return () => {
+      if (animationTimerRef.current) {
+        clearTimeout(animationTimerRef.current);
+        animationTimerRef.current = null;
+      }
+    };
   }, [messages.length]);
 
   // ── Internal state for bus-received messages from other players ──

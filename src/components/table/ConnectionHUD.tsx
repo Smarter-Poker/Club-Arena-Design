@@ -99,7 +99,10 @@ export const ConnectionHUD: React.FC<ConnectionHUDProps> = ({ tableId, userId })
     }
 
     let timeout: ReturnType<typeof setTimeout>;
+    let cancelled = false; // Prevents ghost timeout chain after unmount
+
     const attemptReconnect = async (attempt: number) => {
+      if (cancelled) return; // Stop if effect was cleaned up
       setIsReconnecting(true);
       setReconnectAttempts(attempt);
       try {
@@ -114,6 +117,7 @@ export const ConnectionHUD: React.FC<ConnectionHUDProps> = ({ tableId, userId })
           throw new Error('Still disconnected');
         }
       } catch {
+        if (cancelled) return; // Don't schedule if cleaned up during await
         // Exponential backoff: 1s, 2s, 4s, 8s, max 16s
         const delay = Math.min(1000 * Math.pow(2, attempt), 16_000);
         timeout = setTimeout(() => attemptReconnect(attempt + 1), delay);
@@ -122,7 +126,10 @@ export const ConnectionHUD: React.FC<ConnectionHUDProps> = ({ tableId, userId })
 
     // Start first reconnect attempt after 1s
     timeout = setTimeout(() => attemptReconnect(0), 1000);
-    return () => clearTimeout(timeout);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
   }, [showDisconnectWarning, tableId, userId]);
 
   if (!conn) return null;

@@ -112,6 +112,7 @@ import { SessionHUD } from '../components/table/SessionHUD';
 import { BombPotOverlay } from '../components/table/BombPotOverlay';
 import { ConnectionHUD } from '../components/table/ConnectionHUD';
 import { QuickChatPresets } from '../components/table/QuickChatPresets';
+import { TableErrorBoundary } from '../components/common/TableErrorBoundary';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // RAKE CONFIG HELPER — Derives HandController rake from official chart
@@ -3422,17 +3423,21 @@ export default function TablePage({
 
                 {/* Session Stats HUD (cash games) */}
                 {!tableState.isTournament && tableId && userId !== 'guest' && (
-                  <SessionHUD
-                    tableId={tableId}
-                    userId={userId}
-                    initialStack={tableState.players[tableState.heroSeat - 1]?.stack || 0}
-                    bigBlind={Number(tableState.blinds.split('/')[1]) || 2}
-                  />
+                  <TableErrorBoundary componentName="SessionHUD">
+                    <SessionHUD
+                      tableId={tableId}
+                      userId={userId}
+                      initialStack={tableState.players[tableState.heroSeat - 1]?.stack || 0}
+                      bigBlind={Number(tableState.blinds.split('/')[1]) || 2}
+                    />
+                  </TableErrorBoundary>
                 )}
 
                 {/* Connection Quality HUD */}
                 {tableId && userId !== 'guest' && (
-                  <ConnectionHUD tableId={tableId} userId={userId} />
+                  <TableErrorBoundary componentName="ConnectionHUD">
+                    <ConnectionHUD tableId={tableId} userId={userId} />
+                  </TableErrorBoundary>
                 )}
               </div>
             </div>
@@ -3854,7 +3859,11 @@ export default function TablePage({
       <BadBeatJackpot amount={bbjAmount} qualifyingHand="Quad 8s or better" isHit={showBBJ} />
 
       {/* Bomb Pot Overlay (dramatic announcement) */}
-      {tableId && <BombPotOverlay tableId={tableId} />}
+      {tableId && (
+        <TableErrorBoundary componentName="BombPotOverlay">
+          <BombPotOverlay tableId={tableId} />
+        </TableErrorBoundary>
+      )}
 
       {/* Quick Chat Presets (one-tap messages) */}
       {tableId && userId !== 'guest' && <QuickChatPresets tableId={tableId} userId={userId} />}
