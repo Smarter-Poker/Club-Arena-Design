@@ -11,6 +11,7 @@ import './QuickChatPresets.css';
 interface QuickChatPresetsProps {
   tableId: string;
   userId: string;
+  playerName?: string;
 }
 
 const PRESETS = [
@@ -26,7 +27,11 @@ const PRESETS = [
 
 const REACTIONS = ['👍', '😂', '😮', '😢', '🤬', '🎉', '💀', '🤑'];
 
-export const QuickChatPresets: React.FC<QuickChatPresetsProps> = ({ tableId, userId }) => {
+export const QuickChatPresets: React.FC<QuickChatPresetsProps> = ({
+  tableId,
+  userId,
+  playerName,
+}) => {
   const [showReactions, setShowReactions] = useState(false);
   const [cooldown, setCooldown] = useState<string | null>(null);
 
@@ -36,6 +41,7 @@ export const QuickChatPresets: React.FC<QuickChatPresetsProps> = ({ tableId, use
       masterBus.emit('TABLE_CHAT_MESSAGE', {
         tableId,
         userId,
+        playerName: playerName || 'Player',
         message: text,
         type: 'preset',
       });
@@ -51,6 +57,7 @@ export const QuickChatPresets: React.FC<QuickChatPresetsProps> = ({ tableId, use
       masterBus.emit('TABLE_REACTION', {
         tableId,
         userId,
+        playerName: playerName || 'Player',
         emoji,
       });
       setShowReactions(false);

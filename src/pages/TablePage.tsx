@@ -115,6 +115,7 @@ import { QuickChatPresets } from '../components/table/QuickChatPresets';
 import { TableErrorBoundary } from '../components/common/TableErrorBoundary';
 import { FinalTableOverlay } from '../components/tournament/FinalTableOverlay';
 import { HoleCardReveal } from '../components/tournament/HoleCardReveal';
+import { playerStyleClassifier } from '../services/PlayerStyleClassifier';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // RAKE CONFIG HELPER — Derives HandController rake from official chart
@@ -3485,6 +3486,19 @@ export default function TablePage({
                   }
                   hudStats={player && !player.isHero ? getPlayerHUDStats(player.id) : null}
                   showHUD={userSettings.showHUD && !!player && !player.isHero}
+                  playerStyle={
+                    userSettings.showHUD && player && !player.isHero
+                      ? (() => {
+                          const stats = getPlayerHUDStats(player.id);
+                          if (!stats) return null;
+                          return playerStyleClassifier.classify({
+                            handsPlayed: stats.handsPlayed,
+                            vpipCount: stats.vpipCount,
+                            pfrCount: stats.pfrCount,
+                          });
+                        })()
+                      : null
+                  }
                   onSit={() => handleSeatClick(seatNumber)}
                   onAvatarClick={() => {
                     // Open throwable selector targeting this seat
@@ -3879,7 +3893,9 @@ export default function TablePage({
       {tableId && <HoleCardReveal tableId={tableId} revealDelayMs={600} />}
 
       {/* Quick Chat Presets (one-tap messages) */}
-      {tableId && userId !== 'guest' && <QuickChatPresets tableId={tableId} userId={userId} />}
+      {tableId && userId !== 'guest' && (
+        <QuickChatPresets tableId={tableId} userId={userId} playerName={username} />
+      )}
 
       {/* Throwable Selector */}
       {showThrowableSelector && userId && (

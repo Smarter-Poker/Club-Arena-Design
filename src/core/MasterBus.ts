@@ -272,8 +272,14 @@ export interface BusPayloadMap {
   PLAYER_RECONNECTED: { tableId: string; userId: string };
   DISCONNECT_TIMEOUT: { tableId: string; userId: string; action?: string };
   // Table chat events
-  TABLE_CHAT_MESSAGE: { tableId: string; userId: string; message: string; type?: string };
-  TABLE_REACTION: { tableId: string; userId: string; emoji: string };
+  TABLE_CHAT_MESSAGE: {
+    tableId: string;
+    userId: string;
+    playerName?: string;
+    message: string;
+    type?: string;
+  };
+  TABLE_REACTION: { tableId: string; userId: string; playerName?: string; emoji: string };
   // Gamification events
   MILESTONE_UNLOCKED: {
     milestoneId: string;
