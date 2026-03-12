@@ -22,6 +22,7 @@ import { supabase } from '../lib/supabase';
 import { WalletService } from './WalletService';
 import { FinancialAlertService } from './FinancialAlertService';
 import { SettlementService } from './SettlementService';
+import { masterBus } from '../core/MasterBus';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -379,6 +380,13 @@ export const CreditService = {
         'settlement',
         `Credit invoice payment: ${invoiceId}`
       );
+
+      // Emit bus event so UI (header balances, cashier) updates immediately
+      masterBus.emit('BALANCE_UPDATED', {
+        source: 'credit_payment',
+        userId: agentData.user_id,
+        amount: -amt,
+      });
     }
 
     // STEP 2: Atomically update invoice amounts using ALREADY-FETCHED invoice data (no re-fetch TOCTOU)

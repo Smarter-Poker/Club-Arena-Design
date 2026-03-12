@@ -18,6 +18,7 @@ import { supabase } from '../lib/supabase';
 import { HydraService } from './HydraService';
 import { horseBugReporter } from './HorseBugReporter';
 import { WalletService } from './WalletService';
+import { masterBus } from '../core/MasterBus';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -258,6 +259,7 @@ class AutoRebuyServiceCore {
         'Auto-rebuy: topup ' + amount + ' chips',
         tableId
       );
+      masterBus.emit('BALANCE_UPDATED', { source: 'auto_rebuy_horse', userId: horseId });
 
       horseBugReporter.report({
         horseName: 'AutoRebuy',
@@ -475,6 +477,7 @@ class AutoRebuyServiceCore {
         'topup',
         'Auto-rebuy: wallet topup ' + topupAmount + ' credits'
       );
+      masterBus.emit('BALANCE_UPDATED', { source: 'auto_rebuy_topup', userId: horseId });
 
       console.debug(
         '[AutoRebuy] Topped up horse ' + horseId + ' wallet with ' + topupAmount + ' credits'

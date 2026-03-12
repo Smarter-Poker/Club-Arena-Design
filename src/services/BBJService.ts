@@ -15,6 +15,7 @@
 
 import { supabase } from '../lib/supabase';
 import { WalletService } from './WalletService';
+import { masterBus } from '../core/MasterBus';
 import type { EvaluatedHand } from '../engine/PokerEngine';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -522,6 +523,7 @@ export const BBJService = {
           'promotion',
           'BBJ promo pool payout'
         );
+        masterBus.emit('BALANCE_UPDATED', { source: 'bbj_promo_payout', userId });
       }
     }
 

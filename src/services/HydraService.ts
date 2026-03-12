@@ -25,6 +25,7 @@
 
 import { supabase } from '../lib/supabase';
 import { WalletService } from './WalletService';
+import { masterBus } from '../core/MasterBus';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -470,6 +471,7 @@ export const HydraService = {
         `Horse buy-in ${stack} chips at ${bigBlind}BB table`,
         tableId
       );
+      masterBus.emit('BALANCE_UPDATED', { source: 'hydra_seat_horse', userId: horseId });
 
       // Log in chip_transactions for club accounting
       await supabase.from('chip_transactions').insert({
@@ -509,6 +511,7 @@ export const HydraService = {
           `Refund buy-in — seat insert failed at table ${tableId}`,
           tableId
         );
+        masterBus.emit('BALANCE_UPDATED', { source: 'hydra_seat_refund', userId: horseId });
         console.debug(
           `[HydraService] Refunded ${stack} to horse ${horseId} Player Wallet after seat insert failure`
         );
@@ -637,6 +640,7 @@ export const HydraService = {
           `Horse cash-out ${remainingStack} chips from table`,
           tableId
         );
+        masterBus.emit('BALANCE_UPDATED', { source: 'hydra_remove_horse', userId: horseId });
 
         // Log in chip_transactions for club accounting
         await supabase.from('chip_transactions').insert({

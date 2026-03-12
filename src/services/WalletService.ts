@@ -246,6 +246,9 @@ export const WalletService = {
     );
     await this.logTransaction(userId, request.toWallet, request.amount, 'credit', 'transfer', desc);
 
+    // Emit bus event so UI (header balances, cashier) updates immediately
+    masterBus.emit('BALANCE_UPDATED', { source: 'internal_transfer', userId });
+
     return true;
   },
 
@@ -310,6 +313,10 @@ export const WalletService = {
       fromUserId
     );
 
+    // Emit bus events for both users so their UIs update immediately
+    masterBus.emit('BALANCE_UPDATED', { source: 'transfer_sent', userId: fromUserId });
+    masterBus.emit('BALANCE_UPDATED', { source: 'transfer_received', userId: toUserId });
+
     return true;
   },
 
@@ -330,6 +337,9 @@ export const WalletService = {
     });
 
     if (error) throw error;
+
+    masterBus.emit('BALANCE_UPDATED', { source: 'promo', userId: playerId });
+
     return true;
   },
 

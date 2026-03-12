@@ -555,6 +555,16 @@ export const SettlementService = {
           unionId
         );
 
+        // Emit bus event so UI updates immediately
+        masterBus.emit('BALANCE_UPDATED', {
+          source: 'union_rakeback_deduct',
+          userId: union.owner_id,
+        });
+        masterBus.emit('BALANCE_UPDATED', {
+          source: 'union_rakeback_credit',
+          userId: club.owner_id,
+        });
+
         clubsPaid++;
         totalRakeBack += rakeBack;
       }

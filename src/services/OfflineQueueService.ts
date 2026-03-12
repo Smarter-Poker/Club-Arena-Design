@@ -170,6 +170,7 @@ export const OfflineQueueService = {
 
       if (replayed > 0) {
         masterBus.emit('OFFLINE_QUEUE_REPLAYED', { replayed, failed });
+        masterBus.emit('BALANCE_UPDATED', { source: 'offline_queue_replay' });
       }
 
       // Emit replay metrics

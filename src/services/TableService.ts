@@ -6,6 +6,7 @@
 import { supabase, subscribeToTable, subscribeToHandState } from '../lib/supabase';
 import type { PokerTable, TableSettings, GameVariant, HandState } from '../types/database.types';
 import { WalletService } from './WalletService';
+import { masterBus } from '../core/MasterBus';
 
 class TableService {
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -280,6 +281,7 @@ class TableService {
           `Cash-out from table`,
           tableId
         );
+        masterBus.emit('BALANCE_UPDATED', { source: 'table_leave_cashout', userId });
       }
 
       // Soft-delete the seat — MUST succeed since chips were already returned
@@ -493,6 +495,7 @@ class TableService {
         `Kicked from table: ${seat.stack} chips returned${reason ? ` (${reason})` : ''}`,
         tableId
       );
+      masterBus.emit('BALANCE_UPDATED', { source: 'table_kick_cashout', userId });
     }
 
     // Mark seat as left

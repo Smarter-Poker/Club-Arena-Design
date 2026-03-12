@@ -5,6 +5,7 @@
 
 import { supabase } from '../lib/supabase';
 import { WalletService } from './WalletService';
+import { masterBus } from '../core/MasterBus';
 import { retryAsync } from '../utils/retryAsync';
 import type { Tournament, TournamentPlayer } from '../types/database.types';
 
@@ -585,10 +586,11 @@ class TournamentService {
         'buyin',
         `Tournament buy-in: ${tournament.name}`,
         undefined,
-        undefined,
         tournamentId
       );
     }
+
+    masterBus.emit('BALANCE_UPDATED', { source: 'tournament_buyin', userId });
 
     // Log rake/fee separately for clean audit trail
     if (rake > 0) {
@@ -855,6 +857,7 @@ class TournamentService {
                 undefined,
                 tournamentId
               );
+              masterBus.emit('BALANCE_UPDATED', { source: 'tournament_refund_seat_fail', userId });
               // Remove the tournament_players entry since they can't play
               await supabase
                 .from('tournament_players')
@@ -933,6 +936,7 @@ class TournamentService {
               undefined,
               tournamentId
             );
+            masterBus.emit('BALANCE_UPDATED', { source: 'tournament_refund_no_table', userId });
             await supabase
               .from('tournament_players')
               .delete()
@@ -1045,6 +1049,7 @@ class TournamentService {
       undefined,
       tournamentId
     );
+    masterBus.emit('BALANCE_UPDATED', { source: 'tournament_unregister_refund', userId });
 
     // Re-read fresh tournament data to avoid stale read-then-write race condition
     const { data: freshTourney } = await supabase
@@ -1133,6 +1138,10 @@ class TournamentService {
             undefined,
             tournamentId
           );
+          masterBus.emit('BALANCE_UPDATED', {
+            source: 'tournament_cancel_refund',
+            userId: player.user_id,
+          });
 
           totalRefunded += refundAmount;
           playersRefunded++;
@@ -1359,6 +1368,7 @@ class TournamentService {
         undefined,
         tournamentId
       );
+      masterBus.emit('BALANCE_UPDATED', { source: 'tournament_prize', userId });
     }
 
     // Trigger tournament achievement
@@ -1589,6 +1599,7 @@ class TournamentService {
       undefined,
       tournamentId
     );
+    masterBus.emit('BALANCE_UPDATED', { source: 'tournament_rebuy', userId });
 
     // Process rebuy via RPC
     const { data, error } = await supabase.rpc('process_tournament_rebuy', {
@@ -1715,6 +1726,7 @@ class TournamentService {
       undefined,
       tournamentId
     );
+    masterBus.emit('BALANCE_UPDATED', { source: 'tournament_addon', userId });
 
     const { data, error } = await supabase.rpc('process_tournament_rebuy', {
       p_tournament_id: tournamentId,

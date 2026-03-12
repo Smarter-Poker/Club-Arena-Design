@@ -14,6 +14,7 @@
 import { supabase } from '../lib/supabase';
 import { horseBugReporter } from './HorseBugReporter';
 import { WalletService } from './WalletService';
+import { masterBus } from '../core/MasterBus';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -416,6 +417,7 @@ class HorseLifecycleManagerCore {
         undefined,
         tournamentId
       );
+      masterBus.emit('BALANCE_UPDATED', { source: 'horse_tournament_winnings', userId: horseId });
 
       console.debug(
         '[LifecycleManager] Credited ' + amount + ' tournament winnings to horse ' + horseId
@@ -544,6 +546,10 @@ class HorseLifecycleManagerCore {
                   undefined,
                   sng.id
                 );
+                masterBus.emit('BALANCE_UPDATED', {
+                  source: 'horse_sng_refund',
+                  userId: player.user_id,
+                });
               }
             }
           }
