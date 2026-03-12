@@ -654,6 +654,22 @@ export class TournamentEngine {
     );
   }
 
+  private getTableCapacity(): number {
+    if (!this.tournamentInfo) return 9;
+    const type = this.tournamentInfo.tournament_type?.toUpperCase();
+    const variant = this.tournamentInfo.variant?.toLowerCase();
+
+    // Explicit 2-max / Heads Up
+    if (variant === 'hu') return 2;
+    // Explicit 3-max / Spin & Go
+    if (type === 'SPIN' || variant === 'spin') return 3;
+    // SNG 6-max logic
+    if (type === 'SNG' && this.tournamentInfo.max_players === 6) return 6;
+
+    // Otherwise standard 9-max table
+    return 9;
+  }
+
   // ═══════════════════════════════════════════════════════════════════════════
   // STEP 3: CREATE TOURNAMENT TABLES
   // ═══════════════════════════════════════════════════════════════════════════
@@ -661,8 +677,9 @@ export class TournamentEngine {
   private async createTournamentTables(): Promise<void> {
     if (!this.tournamentInfo) return;
 
+    const capacity = this.getTableCapacity();
     const activePlayers = Array.from(this.players.values()).filter((p) => p.status === 'playing');
-    const numTables = Math.max(1, Math.ceil(activePlayers.length / 9));
+    const numTables = Math.max(1, Math.ceil(activePlayers.length / capacity));
     const firstBlinds = this.tournamentInfo.blind_structure[0] || {
       smallBlind: 10,
       bigBlind: 20,
@@ -687,7 +704,7 @@ export class TournamentEngine {
         small_blind: firstBlinds.smallBlind,
         big_blind: firstBlinds.bigBlind,
         ante: firstBlinds.ante || 0,
-        max_players: 9,
+        max_players: capacity,
         status: 'running',
       };
 
@@ -1221,6 +1238,8 @@ export class TournamentEngine {
   private async seatAlternates(): Promise<void> {
     if (!this.running || !this.tournamentInfo || this.tables.length === 0) return;
 
+    const capacity = this.getTableCapacity();
+
     // Fetch players waiting on the alternate list (status = 'registered')
     // Oldest first to be fair
     const { data: waitlist } = await this.supabase
@@ -1237,7 +1256,7 @@ export class TournamentEngine {
       if (!this.running) break;
 
       // Find an open table (assumes max 9 players per tournament table)
-      const openTable = this.tables.find((t) => t.playerCount < 9);
+      const openTable = this.tables.find((t) => t.playerCount < capacity);
       if (!openTable) break; // All tables are full again, must wait for next elimination.
 
       try {
@@ -1250,11 +1269,32 @@ export class TournamentEngine {
 
         const takenSeats = new Set((existingSeats || []).map((s) => s.seat_number));
         let seatNumber = 1;
-        while (takenSeats.has(seatNumber) && seatNumber <= 9) seatNumber++;
+        while (takenSeats.has(seatNumber) && seatNumber <= capacity) seatNumber++;
 
         // Guard: Mismatch between local playerCount and db state
-        if (seatNumber > 9) {
-          openTable.playerCount = 9; // Corect local cache
+        if (seatNumber > capacity) {
+          openTable.playerCount = capacity; // Corect local cache
+          continue;
+        }
+
+        // 1. ATOMIC CAS CLAIM: Secure the player before physically seating them
+        // This Compare-And-Swap prevents a race condition where the player unregisters simultaneously
+        const { data: claimedRows, error: claimErr } = await this.supabase
+          .from('tournament_players')
+          .update({
+            status: 'playing',
+            chips: this.tournamentInfo.starting_chips,
+            table_id: openTable.tableId,
+          })
+          .eq('tournament_id', this.tournamentId)
+          .eq('user_id', player.user_id)
+          .eq('status', 'registered') // CRITICAL: Only claim if they are STILL registered
+          .select('id');
+
+        if (claimErr || !claimedRows || claimedRows.length === 0) {
+          console.warn(
+            `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Alternate ${player.username} unregister race condition prevented. Skipping seating.`
+          );
           continue;
         }
 
@@ -1262,7 +1302,7 @@ export class TournamentEngine {
           `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Seating alternate ${player.username} at table ${openTable.tableId.slice(0, 8)} (Seat ${seatNumber})`
         );
 
-        // Insert seat
+        // 2. Safely Insert seat now that we own the state transition
         const { error: seatErr } = await this.supabase.from('table_seats').insert({
           table_id: openTable.tableId,
           user_id: player.user_id,
@@ -1270,18 +1310,19 @@ export class TournamentEngine {
           stack: this.tournamentInfo.starting_chips,
         });
 
-        if (!seatErr) {
-          // Update status to playing
+        if (seatErr) {
+          console.error(
+            `[TournamentEngine] Failed to insert seat for alternate ${player.username}:`,
+            seatErr
+          );
+
+          // Rollback claim if physical seat insert failed
           await this.supabase
             .from('tournament_players')
-            .update({
-              status: 'playing',
-              chips: this.tournamentInfo.starting_chips,
-              table_id: openTable.tableId,
-            })
+            .update({ status: 'registered', chips: 0, table_id: null })
             .eq('tournament_id', this.tournamentId)
             .eq('user_id', player.user_id);
-
+        } else {
           // Update local maps
           openTable.playerCount++;
           this.players.set(player.user_id, {
@@ -1601,8 +1642,9 @@ export class TournamentEngine {
 
     // Merge tables that are too small (< 3 players) into larger ones
     // Also merge if total remaining players can fit at fewer tables
+    const capacity = this.getTableCapacity();
     const totalPlayers = remainingTables.reduce((s, t) => s + t.playerCount, 0);
-    const minTablesNeeded = Math.ceil(totalPlayers / 9);
+    const minTablesNeeded = Math.ceil(totalPlayers / capacity);
 
     if (remainingTables.length > minTablesNeeded || remainingTables[0].playerCount < 3) {
       // Lock to prevent overlapping table breaks
@@ -1637,7 +1679,7 @@ export class TournamentEngine {
       snapshots.push({
         tableId: t.tableId,
         playerCount: seats?.length || 0,
-        maxPlayers: 9,
+        maxPlayers: this.getTableCapacity(),
         occupiedSeats: seats?.map((s) => s.seat_number) || [],
         players:
           seats?.map((s) => ({

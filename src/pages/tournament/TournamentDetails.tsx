@@ -41,6 +41,7 @@ interface TournamentEntry {
   position?: number;
   chips?: number;
   status: 'registered' | 'playing' | 'eliminated' | 'finished' | 'winner';
+  table_id?: string | null;
 }
 
 interface TournamentTable {
@@ -181,6 +182,7 @@ export default function TournamentDetails() {
               chips?: number;
               status: string;
               position?: number | null;
+              table_id?: string | null;
             };
             setEntries((prev) => [
               ...prev,
@@ -192,6 +194,7 @@ export default function TournamentDetails() {
                 chips: newPlayer.chips || tournament?.starting_chips || 0,
                 position: newPlayer.position || undefined,
                 status: newPlayer.status as TournamentEntry['status'],
+                table_id: newPlayer.table_id || null,
               },
             ]);
           } else if (payload.eventType === 'UPDATE' && payload.new) {
@@ -203,6 +206,7 @@ export default function TournamentDetails() {
               chips?: number;
               status: string;
               position?: number | null;
+              table_id?: string | null;
             };
             setEntries((prev) =>
               prev.map((e) =>
@@ -212,6 +216,8 @@ export default function TournamentDetails() {
                       chips: updatedPlayer.chips,
                       status: updatedPlayer.status as TournamentEntry['status'],
                       position: updatedPlayer.position || undefined,
+                      table_id:
+                        updatedPlayer.table_id !== undefined ? updatedPlayer.table_id : e.table_id,
                     }
                   : e
               )
@@ -333,7 +339,7 @@ export default function TournamentDetails() {
         // Fetch tournament entries from supabase
         const { data: playersData, error } = await supabase
           .from('tournament_players')
-          .select('id, user_id, username, chips, status, position, club_id')
+          .select('id, user_id, username, chips, status, position, club_id, table_id')
           .eq('tournament_id', data.id)
           .order('registered_at', { ascending: true });
 
@@ -348,6 +354,7 @@ export default function TournamentDetails() {
                 status: string;
                 position?: number | null;
                 club_id?: string | null;
+                table_id?: string | null;
               }) => ({
                 id: e.id,
                 user_id: e.user_id,
@@ -357,6 +364,7 @@ export default function TournamentDetails() {
                 position: e.position || undefined,
                 status: e.status as TournamentEntry['status'],
                 club_id: e.club_id || undefined,
+                table_id: e.table_id || null,
               })
             )
           );
@@ -1363,29 +1371,80 @@ export default function TournamentDetails() {
         {/* Footer Actions */}
         <div className="details-footer">
           <button className="btn btn-share">Share</button>
-          {tournament.status === 'RUNNING' && !isRegistered && lateRegCountdown ? (
-            <button className="btn btn-register late-reg" onClick={() => setShowSignUpModal(true)}>
-              Late Register ({lateRegCountdown})
-            </button>
-          ) : tournament.status === 'RUNNING' ? (
-            <span className="tournament-status-badge running">In Progress</span>
-          ) : tournament.status === 'COMPLETED' ? (
-            <span className="tournament-status-badge completed">Completed</span>
-          ) : tournament.status === 'CANCELLED' ? (
-            <span className="tournament-status-badge cancelled">Cancelled</span>
-          ) : isRegistered ? (
-            <button
-              className="btn btn-unregister"
-              onClick={handleUnregister}
-              disabled={isProcessing}
-            >
-              {isProcessing ? 'Processing...' : 'Unregister'}
-            </button>
-          ) : (
-            <button className="btn btn-register" onClick={() => setShowSignUpModal(true)}>
-              Register
-            </button>
-          )}
+          {(() => {
+            const myEntry = entries.find((e) => e.user_id === user?.id);
+
+            if (tournament.status === 'RUNNING') {
+              if (myEntry?.status === 'playing' && myEntry.table_id) {
+                return (
+                  <Link
+                    to={`/table/${myEntry.table_id}`}
+                    className="btn btn-primary"
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#10b981',
+                      textDecoration: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 700,
+                    }}
+                  >
+                    ENTER TABLE
+                  </Link>
+                );
+              }
+              if (myEntry?.status === 'registered') {
+                return (
+                  <span
+                    className="tournament-status-badge running"
+                    style={{ color: '#fbbf24', borderColor: '#fbbf24' }}
+                  >
+                    WAITING FOR SEAT...
+                  </span>
+                );
+              }
+              if (myEntry?.status === 'eliminated') {
+                return <span className="tournament-status-badge cancelled">ELIMINATED</span>;
+              }
+              if (!isRegistered && lateRegCountdown) {
+                return (
+                  <button
+                    className="btn btn-register late-reg"
+                    onClick={() => setShowSignUpModal(true)}
+                  >
+                    Late Register ({lateRegCountdown})
+                  </button>
+                );
+              }
+              return <span className="tournament-status-badge running">In Progress</span>;
+            }
+
+            if (tournament.status === 'COMPLETED') {
+              return <span className="tournament-status-badge completed">Completed</span>;
+            }
+            if (tournament.status === 'CANCELLED') {
+              return <span className="tournament-status-badge cancelled">Cancelled</span>;
+            }
+
+            if (isRegistered) {
+              return (
+                <button
+                  className="btn btn-unregister"
+                  onClick={handleUnregister}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? 'Processing...' : 'Unregister'}
+                </button>
+              );
+            }
+
+            return (
+              <button className="btn btn-register" onClick={() => setShowSignUpModal(true)}>
+                Register
+              </button>
+            );
+          })()}
         </div>
 
         {/* Sign Up Modal */}

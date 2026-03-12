@@ -933,7 +933,7 @@ class TournamentService {
     // CRITICAL: Verify player is actually registered BEFORE issuing any refund
     const { data: existingReg } = await supabase
       .from('tournament_players')
-      .select('id, username')
+      .select('id, username, status')
       .eq('tournament_id', tournamentId)
       .eq('user_id', userId)
       .maybeSingle();
@@ -942,16 +942,28 @@ class TournamentService {
       throw new Error('Player is not registered for this tournament');
     }
 
-    // Delete registration FIRST to prevent double-refund exploit
-    const { error: deleteError } = await supabase
+    if (existingReg.status !== 'registered') {
+      throw new Error('Cannot unregister: You have already been seated at an active table.');
+    }
+
+    // Delete registration FIRST as an atomic Compare-And-Swap to prevent double-refund
+    // or race conditions with TournamentEngine.seatAlternates()
+    const { data: deletedRows, error: deleteError } = await supabase
       .from('tournament_players')
       .delete()
       .eq('tournament_id', tournamentId)
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .eq('status', 'registered') // Lock constraint
+      .select('id');
 
     if (deleteError) {
       console.error('[TournamentService] Failed to delete registration:', deleteError);
       throw new Error('Failed to unregister — please try again');
+    }
+
+    if (!deletedRows || deletedRows.length === 0) {
+      // The row is either gone or has changed status (e.g. to 'playing')
+      throw new Error('Unregister failed: You may have just been seated at a table.');
     }
 
     // Calculate refund amount (buy-in + fee — exact penny values from DB, NO rounding)

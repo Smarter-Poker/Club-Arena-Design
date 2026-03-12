@@ -78,70 +78,24 @@ export const ChipFlowService = {
       );
     }
 
-    // 1. Deduct from sender's PLAYER wallet
-    const { data: deductResult, error: deductErr } = await retryAsync(
+    // 1. Execute atomic transfer & logging in a single Postgres transaction
+    const { error: transferErr } = await retryAsync(
       () =>
-        supabase.rpc('deduct_player_wallet', {
-          p_user_id: fromUserId,
+        supabase.rpc('atomic_chip_transfer', {
+          p_from_user_id: fromUserId,
+          p_to_user_id: toUserId,
           p_amount: amt,
+          p_category: category,
+          p_description: description,
+          p_related_entity_id: relatedEntityId || null,
         }),
       3
     );
 
-    if (deductErr) throw new Error(`Deduct failed: ${deductErr.message}`);
-    if (deductResult === false) throw new Error('Insufficient balance for transfer');
-
-    // 2. Credit to receiver's PLAYER wallet (BEFORE logging — keep audit trail clean on rollback)
-    const { error: creditErr } = await retryAsync(
-      () =>
-        supabase.rpc('credit_player_wallet', {
-          p_user_id: toUserId,
-          p_amount: amt,
-        }),
-      3
-    );
-
-    if (creditErr) {
-      // Rollback: re-credit sender — no audit trail was written yet, so rollback is clean
-      const { error: rollbackErr } = await retryAsync(
-        () =>
-          supabase.rpc('credit_player_wallet', {
-            p_user_id: fromUserId,
-            p_amount: amt,
-          }),
-        3
-      );
-      if (rollbackErr)
-        console.error(
-          `[ChipFlowService] CRITICAL: Rollback failed for ${fromUserId.slice(0, 8)} — ${amt} chips lost: ${rollbackErr.message}`
-        );
-      throw new Error(`Credit failed (rolled back): ${creditErr.message}`);
+    if (transferErr) {
+      console.error(`[ChipFlowService] Transfer failed:`, transferErr.message);
+      throw new Error(`Transfer failed: ${transferErr.message}`);
     }
-
-    // 3. Both wallet ops succeeded — NOW log the audit trail
-    await WalletService.logTransaction(
-      fromUserId,
-      'PLAYER',
-      amt,
-      'debit',
-      category,
-      description,
-      undefined,
-      undefined,
-      relatedEntityId || toUserId
-    );
-
-    await WalletService.logTransaction(
-      toUserId,
-      'PLAYER',
-      amt,
-      'credit',
-      category,
-      description,
-      undefined,
-      undefined,
-      relatedEntityId || fromUserId
-    );
 
     // 4. Emit bus events so CashierPage/PlayerWallet pages refresh for BOTH parties
     masterBus.emit('BALANCE_UPDATED', {

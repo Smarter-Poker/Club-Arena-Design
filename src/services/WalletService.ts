@@ -631,30 +631,8 @@ export const WalletService = {
     );
 
     if (rpcError) {
-      // Fallback: legacy read-then-update (until RPC is deployed to Supabase)
-      const { data: lockData, error: lockError } = await supabase
-        .from('table_chip_locks')
-        .select('amount')
-        .eq('user_id', userId)
-        .eq('table_id', tableId)
-        .maybeSingle();
-
-      if (lockError || !lockData) {
-        throw new Error('No chips locked at this table');
-      }
-      if (lockData.amount < amount) {
-        throw new Error('Insufficient chips for dealer tip');
-      }
-
-      const { error: updateErr } = await supabase
-        .from('table_chip_locks')
-        .update({ amount: lockData.amount - amount })
-        .eq('user_id', userId)
-        .eq('table_id', tableId);
-
-      if (updateErr) {
-        throw new Error('Failed to deduct dealer tip');
-      }
+      console.error('[WalletService] deduct_table_chip_lock RPC failed:', rpcError.message);
+      throw new Error(`Failed to deduct dealer tip: ${rpcError.message}`);
     }
 
     // Record tip transaction
@@ -694,30 +672,8 @@ export const WalletService = {
     );
 
     if (error) {
-      // Fallback: legacy read-then-update (kept for backwards compat until RPC is deployed)
-      const { data: chipLock, error: chipLockError } = await supabase
-        .from('table_chip_locks')
-        .select('amount')
-        .eq('user_id', userId)
-        .eq('table_id', tableId)
-        .maybeSingle();
-
-      if (chipLockError || !chipLock) {
-        throw new Error('No chips locked at this table');
-      }
-      if (chipLock.amount < premium) {
-        throw new Error('Insufficient chips for insurance premium');
-      }
-
-      const { error: deductError } = await supabase
-        .from('table_chip_locks')
-        .update({ amount: chipLock.amount - premium })
-        .eq('user_id', userId)
-        .eq('table_id', tableId);
-
-      if (deductError) {
-        throw new Error('Failed to deduct insurance premium');
-      }
+      console.error('[WalletService] deduct_table_chip_lock RPC failed:', error.message);
+      throw new Error(`Failed to deduct insurance premium: ${error.message}`);
     }
 
     // Record insurance transaction
