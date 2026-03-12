@@ -8,7 +8,7 @@
  * and reaction message parsing for TableReactions.
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { roomService } from '../services/RoomService';
 import type { ChatMessage } from '../components/table/TableChat';
 
@@ -47,6 +47,15 @@ export function useTableChat(
   const [isChatMuted, setIsChatMuted] = useState(false);
   const [activeReactions, setActiveReactions] = useState<ReactionEvent[]>([]);
   const reactionIdRef = useRef(0);
+  const pendingTimersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+
+  // Cleanup all pending reaction timers on unmount
+  useEffect(() => {
+    return () => {
+      pendingTimersRef.current.forEach(clearTimeout);
+      pendingTimersRef.current.clear();
+    };
+  }, []);
 
   // Parse incoming messages — returns true if message was a special command (reaction/throw)
   const parseIncomingMessage = useCallback((content: string, _senderId: string): boolean => {
@@ -62,10 +71,12 @@ export function useTableChat(
         { id: reactionId, emoji, seatIndex, timestamp: Date.now() },
       ]);
 
-      // Auto-remove after lifetime
-      setTimeout(() => {
+      // Auto-remove after lifetime (tracked for cleanup)
+      const timerId = setTimeout(() => {
         setActiveReactions((prev) => prev.filter((r) => r.id !== reactionId));
+        pendingTimersRef.current.delete(timerId);
       }, REACTION_LIFETIME_MS);
+      pendingTimersRef.current.add(timerId);
 
       return true; // Don't add to chat
     }

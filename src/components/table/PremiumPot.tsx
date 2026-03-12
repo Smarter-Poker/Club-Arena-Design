@@ -45,13 +45,16 @@ function getPotTier(amount: number): PotTier {
 function useAnimatedCounter(target: number, duration = 400): number {
   const [display, setDisplay] = useState(target);
   const startRef = useRef(target);
+  const currentRef = useRef(target); // Tracks actual displayed value
   const rafRef = useRef<number>(0);
 
   useEffect(() => {
-    const start = startRef.current;
+    // Start from the CURRENT displayed value, not the initial one
+    const start = currentRef.current;
     const diff = target - start;
     if (diff === 0) return;
 
+    startRef.current = start;
     const startTime = performance.now();
 
     const animate = (now: number) => {
@@ -61,15 +64,15 @@ function useAnimatedCounter(target: number, duration = 400): number {
       const eased = 1 - Math.pow(1 - progress, 3);
       const current = Math.round(start + diff * eased);
 
+      currentRef.current = current;
       setDisplay(current);
 
       if (progress < 1) {
         rafRef.current = requestAnimationFrame(animate);
-      } else {
-        startRef.current = target;
       }
     };
 
+    cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(rafRef.current);
   }, [target, duration]);

@@ -8,6 +8,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import styles from './MessageInput.module.css';
 import { ImageUpload, ImagePreview } from './ImageMessage';
+import { GifPicker } from './GifPicker';
+import { VoiceRecorder } from './VoiceRecorder';
 import { haptic } from '../../services/HapticService';
 
 interface MessageInputProps {
@@ -31,6 +33,8 @@ export default function MessageInput({
 }: MessageInputProps) {
   const [text, setText] = useState(initialDraft);
   const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
+  const [showGifPicker, setShowGifPicker] = useState(false);
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingState = useRef(false);
@@ -131,6 +135,27 @@ export default function MessageInput({
         {/* Image Upload Button */}
         <ImageUpload onPreview={setAttachmentPreview} maxSizeMB={5} />
 
+        {/* GIF/Sticker Picker Toggle */}
+        <button
+          className={styles.toolbarBtn}
+          onClick={() => {
+            haptic.light();
+            setShowGifPicker(!showGifPicker);
+            setShowVoiceRecorder(false);
+          }}
+          title="GIFs & Stickers"
+          style={{
+            fontSize: '1.1rem',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: showGifPicker ? '#3b82f6' : 'rgba(255,255,255,0.4)',
+            padding: '4px 6px',
+          }}
+        >
+          😀
+        </button>
+
         {/* Text Input */}
         <textarea
           ref={textareaRef}
@@ -143,6 +168,29 @@ export default function MessageInput({
           rows={1}
         />
 
+        {/* Voice Message Toggle */}
+        {!text.trim() && !attachmentPreview && (
+          <button
+            className={styles.toolbarBtn}
+            onClick={() => {
+              haptic.light();
+              setShowVoiceRecorder(true);
+              setShowGifPicker(false);
+            }}
+            title="Voice Message"
+            style={{
+              fontSize: '1.1rem',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: showVoiceRecorder ? '#ef4444' : 'rgba(255,255,255,0.4)',
+              padding: '4px 6px',
+            }}
+          >
+            🎤
+          </button>
+        )}
+
         {/* Send Button */}
         <button
           className={`${styles.sendBtn} ${text.trim() || attachmentPreview ? styles.active : ''}`}
@@ -152,6 +200,28 @@ export default function MessageInput({
           {disabled ? '' : '➤'}
         </button>
       </div>
+
+      {/* GIF/Sticker Picker Panel */}
+      <GifPicker
+        isOpen={showGifPicker}
+        onSelect={(emoji) => {
+          onSend(emoji);
+          setShowGifPicker(false);
+        }}
+        onClose={() => setShowGifPicker(false)}
+      />
+
+      {/* Voice Recorder */}
+      {showVoiceRecorder && (
+        <VoiceRecorder
+          onSend={(blob, durationMs) => {
+            // For now, send as text indicator until storage is integrated
+            onSend(`🎤 Voice message (${Math.ceil(durationMs / 1000)}s)`);
+            setShowVoiceRecorder(false);
+          }}
+          onCancel={() => setShowVoiceRecorder(false)}
+        />
+      )}
     </div>
   );
 }

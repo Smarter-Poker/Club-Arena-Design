@@ -11,14 +11,11 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { roomService } from '../../services/RoomService';
 import { haptic } from '../../services/SoundService';
+import type { ReactionEvent } from '../../hooks/useTableChat';
 import './TableReactions.css';
 
-export interface ReactionEvent {
-  id: string;
-  emoji: string;
-  seatIndex: number;
-  timestamp: number;
-}
+// Re-export for convenience
+export type { ReactionEvent };
 
 interface Reaction {
   emoji: string;

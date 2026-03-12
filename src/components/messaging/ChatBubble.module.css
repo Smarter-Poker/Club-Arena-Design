@@ -333,3 +333,15 @@
   border-color: rgba(139, 92, 246, 0.5);
   color: #c4b5fd;
 }
+
+/* ── Swipe-to-Reply Indicator ─────────────────────────────────────────────── */
+.swipeReplyIndicator {
+  position: absolute;
+  left: -28px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2rem;
+  color: rgba(59, 130, 246, 0.7);
+  pointer-events: none;
+  transition: opacity 0.1s ease;
+}

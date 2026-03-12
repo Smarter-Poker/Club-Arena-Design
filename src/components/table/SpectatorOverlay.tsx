@@ -8,7 +8,7 @@
  * a full spectator HUD.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { haptic } from '../../services/SoundService';
 import './SpectatorOverlay.css';
 
@@ -36,12 +36,16 @@ export function SpectatorOverlay({
 }: SpectatorOverlayProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [pulseCount, setPulseCount] = useState(false);
+  const prevCountRef = useRef(spectators.length);
 
-  // Pulse animation when spectator count changes
+  // Pulse animation when spectator count changes (skip initial mount)
   useEffect(() => {
-    setPulseCount(true);
-    const timer = setTimeout(() => setPulseCount(false), 600);
-    return () => clearTimeout(timer);
+    if (prevCountRef.current !== spectators.length) {
+      prevCountRef.current = spectators.length;
+      setPulseCount(true);
+      const timer = setTimeout(() => setPulseCount(false), 600);
+      return () => clearTimeout(timer);
+    }
   }, [spectators.length]);
 
   const handleToggleExpand = useCallback(() => {

@@ -5,7 +5,7 @@
  * Features: Sent/received styling, reactions, timestamp, long-press actions
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PlayerAvatar } from '../avatars/PlayerAvatar';
 import { haptic } from '../../services/HapticService';
 import styles from './ChatBubble.module.css';
@@ -28,6 +28,7 @@ interface ChatBubbleProps {
   showAvatar?: boolean;
   onReact?: (messageId: string, emoji: string) => void;
   onDelete?: (messageId: string) => void;
+  onReply?: (message: any) => void;
 }
 
 const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '😡'];
@@ -38,10 +39,13 @@ export default function ChatBubble({
   showAvatar = true,
   onReact,
   onDelete,
+  onReply,
 }: ChatBubbleProps) {
   const [showReactions, setShowReactions] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [swipeX, setSwipeX] = useState(0);
+  const swipeRef = useRef({ startX: 0, startY: 0, swiping: false });
 
   useEffect(() => {
     setTimeout(() => setMounted(true), 50);
@@ -73,15 +77,56 @@ export default function ChatBubble({
     setShowMenu(false);
   };
 
+  // ── Swipe-to-Reply touch gesture ──
+  const handleTouchStart = (e: React.TouchEvent) => {
+    swipeRef.current.startX = e.touches[0].clientX;
+    swipeRef.current.startY = e.touches[0].clientY;
+    swipeRef.current.swiping = false;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const dx = e.touches[0].clientX - swipeRef.current.startX;
+    const dy = e.touches[0].clientY - swipeRef.current.startY;
+    // Only start swiping if horizontal movement > vertical
+    if (!swipeRef.current.swiping && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {
+      swipeRef.current.swiping = true;
+    }
+    if (swipeRef.current.swiping) {
+      // Only allow right swipe (for reply)
+      const clampedDx = Math.max(0, Math.min(dx, 100));
+      setSwipeX(clampedDx);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (swipeX > 60 && onReply) {
+      haptic.selection();
+      onReply(message);
+    }
+    setSwipeX(0);
+    swipeRef.current.swiping = false;
+  };
+
   return (
     <div
       className={`${styles.container} ${isCurrentUser ? styles.sent : styles.received}`}
       style={{
         opacity: mounted ? 1 : 0,
-        transform: mounted ? 'translateY(0)' : 'translateY(8px)',
-        transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+        transform: mounted ? `translateY(0) translateX(${swipeX}px)` : 'translateY(8px)',
+        transition: swipeRef.current.swiping
+          ? 'opacity 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+          : 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
       }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
+      {/* Swipe reply indicator */}
+      {swipeX > 10 && (
+        <span className={styles.swipeReplyIndicator} style={{ opacity: Math.min(swipeX / 60, 1) }}>
+          ↩
+        </span>
+      )}
       {/* Avatar (for received messages) */}
       {!isCurrentUser && showAvatar && (
         <PlayerAvatar

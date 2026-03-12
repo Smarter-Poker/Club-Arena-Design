@@ -103,7 +103,7 @@ function MondayPayoutCountdown() {
               fontFamily: 'monospace',
               color: '#00C853',
               textShadow: '0 0 16px rgba(0,200,83,0.6)',
-              animation: 'stepPulse 1.5s ease-in-out infinite',
+              animation: 'payoutPulse 1.5s ease-in-out infinite',
             }}
           >
             🎉 PAYOUT IN PROGRESS!

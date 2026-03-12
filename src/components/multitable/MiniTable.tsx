@@ -27,10 +27,10 @@ interface MiniTableProps {
 function useAnimatedValue(target: number): number {
   const [val, setVal] = useState(target);
   const rafRef = useRef<number>(0);
-  const startRef = useRef(target);
+  const currentRef = useRef(target); // Tracks actual displayed value
 
   useEffect(() => {
-    const start = startRef.current;
+    const start = currentRef.current;
     const diff = target - start;
     if (diff === 0) return;
     const startTime = performance.now();
@@ -39,11 +39,13 @@ function useAnimatedValue(target: number): number {
     const tick = (now: number) => {
       const t = Math.min((now - startTime) / duration, 1);
       const eased = 1 - Math.pow(1 - t, 3);
-      setVal(Math.round(start + diff * eased));
+      const current = Math.round(start + diff * eased);
+      currentRef.current = current;
+      setVal(current);
       if (t < 1) rafRef.current = requestAnimationFrame(tick);
-      else startRef.current = target;
     };
 
+    cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
   }, [target]);

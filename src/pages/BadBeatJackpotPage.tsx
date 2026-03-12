@@ -48,6 +48,7 @@ export default function BadBeatJackpotPage() {
   const [visibleHistoryRows, setVisibleHistoryRows] = useState(new Set<number>());
   const [playerContribution, setPlayerContribution] = useState(0);
   const prevAmountRef = useRef<number>(0);
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (clubId) {
@@ -71,7 +72,11 @@ export default function BadBeatJackpotPage() {
             const newData = payload.new as JackpotInfo;
             if (newData.pool_amount > prevAmountRef.current) {
               setJustUpdated(true);
-              setTimeout(() => setJustUpdated(false), 2000);
+              if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+              flashTimerRef.current = setTimeout(() => {
+                setJustUpdated(false);
+                flashTimerRef.current = null;
+              }, 2000);
             }
             prevAmountRef.current = newData.pool_amount;
             setJackpot(newData);
@@ -95,6 +100,10 @@ export default function BadBeatJackpotPage() {
 
       return () => {
         masterBus.removeRegisteredChannel(channelKey);
+        if (flashTimerRef.current) {
+          clearTimeout(flashTimerRef.current);
+          flashTimerRef.current = null;
+        }
       };
     }
   }, [clubId]);

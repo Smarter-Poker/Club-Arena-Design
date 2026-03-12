@@ -5,214 +5,265 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { waitlistService, type WaitlistEntry as ServiceEntry } from '../services/WaitlistService';
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
+import { PlayerAvatar } from '../components/avatars/PlayerAvatar';
+import { haptic } from '../services/HapticService';
 import './WaitlistPage.css';
 
 const waitlistCardAnimationStyle = (index: number) => ({
-    opacity: 0,
-    transform: 'translateY(8px)',
-    animation: `fadeInUp 0.5s ease-out ${index * 60}ms forwards`,
+  opacity: 0,
+  transform: 'translateY(8px)',
+  animation: `fadeInUp 0.5s ease-out ${index * 60}ms forwards`,
 });
 
 interface WaitlistEntry {
-    id: string;
-    table_id: string;
-    table_name: string;
-    stakes: string;
-    game_type: string;
-    position: number;
-    joined_at: string;
-    estimated_wait: number; // minutes
+  id: string;
+  table_id: string;
+  table_name: string;
+  stakes: string;
+  game_type: string;
+  position: number;
+  joined_at: string;
+  estimated_wait: number; // minutes
 }
 
 export default function WaitlistPage() {
-    const navigate = useNavigate();
-    const { user } = useUserStore();
-    const toast = useToast();
+  const navigate = useNavigate();
+  const { user } = useUserStore();
+  const toast = useToast();
 
-    const [entries, setEntries] = useState<WaitlistEntry[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [leavingId, setLeavingId] = useState<string | null>(null);
-    const [positionCounts, setPositionCounts] = useState<Record<string, number>>({});
-    const positionCountsRef = useRef<Record<string, number>>({});
+  const [entries, setEntries] = useState<WaitlistEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [leavingId, setLeavingId] = useState<string | null>(null);
+  const [positionCounts, setPositionCounts] = useState<Record<string, number>>({});
+  const positionCountsRef = useRef<Record<string, number>>({});
 
-    useEffect(() => {
-        if (user?.id) {
+  useEffect(() => {
+    if (user?.id) {
+      loadWaitlist();
+
+      // Subscribe to real-time waitlist changes
+      const channelKey = 'user-waitlist';
+
+      const channel = masterBus.getOrCreateChannel(channelKey);
+      channel
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'table_waitlists',
+          },
+          (payload) => {
+            // Refresh waitlist on any change
+            // Position recalculation happens server-side
             loadWaitlist();
+          }
+        )
+        .subscribe();
 
-            // Subscribe to real-time waitlist changes
-            const channelKey = 'user-waitlist';
+      return () => {
+        masterBus.removeRegisteredChannel(channelKey);
+      };
+    }
+  }, [user?.id]);
 
-            const channel = masterBus.getOrCreateChannel(channelKey);
-                channel
-                .on(
-                    'postgres_changes',
-                    {
-                        event: '*',
-                        schema: 'public',
-                        table: 'table_waitlists',
-                    },
-                    (payload) => {
-                        // Refresh waitlist on any change
-                        // Position recalculation happens server-side
-                        loadWaitlist();
-                    }
-                )
-                .subscribe();
-
-            return () => {
-                masterBus.removeRegisteredChannel(channelKey);
-            };
-        }
-    }, [user?.id]);
-
-    // ── Bus Listeners: cross-page waitlist event reactivity ──
-    useEffect(() => {
-        const unsubPos = masterBus.subscribe('WAITLIST_POSITION_CHANGED', () => { loadWaitlist(); });
-        const unsubSeated = masterBus.subscribe('TABLE_SEATED', () => { loadWaitlist(); });
-        return () => { unsubPos(); unsubSeated(); };
-    }, []);
-
-    const loadWaitlist = async () => {
-        if (!user?.id) return;
-        setLoading(true);
-        try {
-            const waitlists = await waitlistService.getUserWaitlists(user.id);
-            setEntries(waitlists.map((e: ServiceEntry) => ({
-                id: e.id,
-                table_id: e.tableId,
-                table_name: e.tableName,
-                stakes: '', // Will be loaded from table data
-                game_type: 'NLH',
-                position: e.position,
-                joined_at: e.joinedAt,
-                estimated_wait: e.position * 5, // rough estimate
-            })));
-        } catch (error) {
-            console.error('Failed to load waitlist:', error);
-        }
-        setLoading(false);
+  // ── Bus Listeners: cross-page waitlist event reactivity ──
+  useEffect(() => {
+    const unsubPos = masterBus.subscribe('WAITLIST_POSITION_CHANGED', () => {
+      loadWaitlist();
+    });
+    const unsubSeated = masterBus.subscribe('TABLE_SEATED', () => {
+      loadWaitlist();
+    });
+    return () => {
+      unsubPos();
+      unsubSeated();
     };
+  }, []);
 
-    const leaveWaitlist = async (tableId: string, entryId: string) => {
-        if (!user?.id) return;
-        setLeavingId(entryId);
-        try {
-            const success = await waitlistService.leave(tableId, user.id);
-            if (success) {
-                setEntries(prev => prev.filter(e => e.id !== entryId));
-            }
-        } catch (error) {
-            console.error('Failed to leave waitlist:', error);
-        }
-        setLeavingId(null);
-    };
+  const loadWaitlist = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+      const waitlists = await waitlistService.getUserWaitlists(user.id);
+      setEntries(
+        waitlists.map((e: ServiceEntry) => ({
+          id: e.id,
+          table_id: e.tableId,
+          table_name: e.tableName,
+          stakes: '', // Will be loaded from table data
+          game_type: 'NLH',
+          position: e.position,
+          joined_at: e.joinedAt,
+          estimated_wait: e.position * 5, // rough estimate
+        }))
+      );
+    } catch (error) {
+      console.error('Failed to load waitlist:', error);
+    }
+    setLoading(false);
+  };
 
-    // Animate position number changes
-    useEffect(() => {
-        entries.forEach(entry => {
-            const current = positionCountsRef.current[entry.id] ?? entry.position;
-            if (current !== entry.position) {
-                const start = current;
-                const target = entry.position;
-                const duration = 500;
-                const startTime = performance.now();
+  const leaveWaitlist = async (tableId: string, entryId: string) => {
+    if (!user?.id) return;
+    setLeavingId(entryId);
+    try {
+      const success = await waitlistService.leave(tableId, user.id);
+      if (success) {
+        setEntries((prev) => prev.filter((e) => e.id !== entryId));
+      }
+    } catch (error) {
+      console.error('Failed to leave waitlist:', error);
+    }
+    setLeavingId(null);
+  };
 
-                const animate = (currentTime: number) => {
-                    const elapsed = currentTime - startTime;
-                    const progress = Math.min(elapsed / duration, 1);
-                    const animatedPos = Math.ceil(start + (target - start) * progress);
-                    positionCountsRef.current[entry.id] = animatedPos;
-                    setPositionCounts(prev => ({ ...prev, [entry.id]: animatedPos }));
+  // Animate position number changes
+  useEffect(() => {
+    entries.forEach((entry) => {
+      const current = positionCountsRef.current[entry.id] ?? entry.position;
+      if (current !== entry.position) {
+        const start = current;
+        const target = entry.position;
+        const duration = 500;
+        const startTime = performance.now();
 
-                    if (progress < 1) {
-                        requestAnimationFrame(animate);
-                    }
-                };
+        const animate = (currentTime: number) => {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const animatedPos = Math.ceil(start + (target - start) * progress);
+          positionCountsRef.current[entry.id] = animatedPos;
+          setPositionCounts((prev) => ({ ...prev, [entry.id]: animatedPos }));
 
-                requestAnimationFrame(animate);
-            } else {
-                positionCountsRef.current[entry.id] = entry.position;
-                setPositionCounts(prev => ({ ...prev, [entry.id]: entry.position }));
-            }
-        });
-    }, [entries]);
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          }
+        };
 
-    const getGameTypeLabel = (type: string): string => {
-        switch (type.toLowerCase()) {
-            case 'nlh': return "No Limit Hold'em";
-            case 'plo': return 'Pot Limit Omaha';
-            case 'plo5': return 'PLO 5-Card';
-            default: return type.toUpperCase();
-        }
-    };
+        requestAnimationFrame(animate);
+      } else {
+        positionCountsRef.current[entry.id] = entry.position;
+        setPositionCounts((prev) => ({ ...prev, [entry.id]: entry.position }));
+      }
+    });
+  }, [entries]);
 
-    const formatWaitTime = (minutes: number): string => {
-        if (minutes < 1) return 'Next up!';
-        if (minutes >= 60) return `~${Math.round(minutes / 60)}h`;
-        return `~${minutes} min`;
-    };
+  const getGameTypeLabel = (type: string): string => {
+    switch (type.toLowerCase()) {
+      case 'nlh':
+        return "No Limit Hold'em";
+      case 'plo':
+        return 'Pot Limit Omaha';
+      case 'plo5':
+        return 'PLO 5-Card';
+      default:
+        return type.toUpperCase();
+    }
+  };
 
-    return (
-        <div className="waitlist-page">
+  const formatWaitTime = (minutes: number): string => {
+    if (minutes < 1) return 'Next up!';
+    if (minutes >= 60) return `~${Math.round(minutes / 60)}h`;
+    return `~${minutes} min`;
+  };
 
-            {/* Real-time indicator */}
-            {entries.length > 0 && (
-                <div className="realtime-indicator">
-                    <span className="live-dot"></span>
-                    <span>Live updates enabled</span>
-                </div>
-            )}
-
-            <div className="waitlist-content">
-                {loading ? (
-                    <div className="loading-state"><div className="spinner" /></div>
-                ) : entries.length === 0 ? (
-                    <div className="empty-state">
-                        <span className="empty-icon">☰</span>
-                        <h3>No Active Waitlists</h3>
-                        <p>You're not on any table waitlists</p>
-                        <button className="btn btn-primary" onClick={() => navigate('/lobby')}>
-                            Browse Tables
-                        </button>
-                    </div>
-                ) : (
-                    <div className="waitlist-entries">
-                        {entries.map((entry, idx) => (
-                            <div key={entry.id} style={waitlistCardAnimationStyle(idx)} className={`waitlist-card ${entry.position === 1 ? 'next-up' : ''}`}>
-                                <div className="waitlist-info">
-                                    <h4 className="table-name">{entry.table_name}</h4>
-                                    <span className="table-details">
-                                        {getGameTypeLabel(entry.game_type)} • {entry.stakes}
-                                    </span>
-                                </div>
-                                <div className="waitlist-position">
-                                    <span className={`position-number ${entry.position === 1 ? 'highlight' : ''}`}>
-                                        #{positionCounts[entry.id] || entry.position}
-                                    </span>
-                                    <span className="position-label">
-                                        {entry.position === 1 ? 'next up!' : 'in line'}
-                                    </span>
-                                </div>
-                                <div className="waitlist-actions">
-                                    <span className="wait-time">{formatWaitTime(entry.estimated_wait)}</span>
-                                    <button
-                                        className={`btn btn-ghost btn-sm leave-btn ${leavingId === entry.id ? 'loading' : ''}`}
-                                        onClick={() => leaveWaitlist(entry.table_id, entry.id)}
-                                        disabled={leavingId === entry.id}
-                                    >
-                                        {leavingId === entry.id ? 'Leaving...' : 'Leave'}
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
+  return (
+    <div className="waitlist-page">
+      {/* Real-time indicator */}
+      {entries.length > 0 && (
+        <div className="realtime-indicator">
+          <span className="live-dot"></span>
+          <span>Live updates enabled</span>
         </div>
-    );
-}
+      )}
 
+      <div className="waitlist-content">
+        {loading ? (
+          <div className="loading-state">
+            <div className="spinner" />
+          </div>
+        ) : entries.length === 0 ? (
+          <div className="empty-state">
+            <span className="empty-icon">☰</span>
+            <h3>No Active Waitlists</h3>
+            <p>You're not on any table waitlists</p>
+            <button className="btn btn-primary" onClick={() => navigate('/lobby')}>
+              Browse Tables
+            </button>
+          </div>
+        ) : (
+          <div className="waitlist-entries">
+            {entries.map((entry, idx) => (
+              <div
+                key={entry.id}
+                style={waitlistCardAnimationStyle(idx)}
+                className={`waitlist-card ${entry.position === 1 ? 'next-up' : ''}`}
+              >
+                <div className="waitlist-info">
+                  <h4 className="table-name">{entry.table_name}</h4>
+                  <span className="table-details">
+                    {getGameTypeLabel(entry.game_type)} • {entry.stakes}
+                  </span>
+                </div>
+                <div className="waitlist-position">
+                  <span className={`position-number ${entry.position === 1 ? 'highlight' : ''}`}>
+                    #{positionCounts[entry.id] || entry.position}
+                  </span>
+                  <span className="position-label">
+                    {entry.position === 1 ? 'next up!' : 'in line'}
+                  </span>
+                </div>
+                <div className="waitlist-actions">
+                  <span className="wait-time">{formatWaitTime(entry.estimated_wait)}</span>
+                  <button
+                    className={`btn btn-ghost btn-sm leave-btn ${leavingId === entry.id ? 'loading' : ''}`}
+                    onClick={() => {
+                      haptic.medium();
+                      leaveWaitlist(entry.table_id, entry.id);
+                    }}
+                    disabled={leavingId === entry.id}
+                  >
+                    {leavingId === entry.id ? 'Leaving...' : 'Leave'}
+                  </button>
+                </div>
+
+                {/* Queue Visual — avatar dots showing position in line */}
+                <div className="queue-visual">
+                  {Array.from({ length: Math.min(entry.position, 6) }, (_, i) => (
+                    <div
+                      key={i}
+                      className={`queue-dot ${i === entry.position - 1 ? 'you' : ''}`}
+                      style={{
+                        animationDelay: `${i * 100}ms`,
+                      }}
+                    >
+                      {i === entry.position - 1 ? (
+                        <PlayerAvatar
+                          src={user?.avatar_url ?? undefined}
+                          name={user?.display_name || 'You'}
+                          size="xs"
+                          showPresence={false}
+                          showLevelBadge={false}
+                          showXpRing={false}
+                          showVipRing={false}
+                        />
+                      ) : (
+                        <span className="queue-placeholder" />
+                      )}
+                    </div>
+                  ))}
+                  <span className="queue-arrow">→</span>
+                  <span className="queue-table-icon">🎰</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
