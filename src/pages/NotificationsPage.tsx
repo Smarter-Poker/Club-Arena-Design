@@ -9,6 +9,7 @@ import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import { PremiumSFX } from '../services/PremiumSFX';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import './NotificationsPage.css';
 
 interface Notification {

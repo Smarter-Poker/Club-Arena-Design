@@ -31,6 +31,7 @@ import ConfirmModal from '../components/common/ConfirmModal';
 import { MetalFrame, MetalButton, MetalInput, MetalCard } from '../components/metal-ui';
 import { useVIPStatus } from '../hooks/useVIP';
 import { useToast } from '../components/common/Toast';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import './CashierPage.css';
 
 type CashierAction = 'send' | 'buyin' | 'cashout' | 'mint' | 'history';

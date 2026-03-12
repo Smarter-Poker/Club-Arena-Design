@@ -14,6 +14,7 @@ import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import CreditRequestWidget from '../components/agent/CreditRequestWidget';
 import PageSkeleton from '../components/common/PageSkeleton';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import './SuperAgentDashboard.css';
 
 type DashboardTab = 'overview' | 'agents' | 'players' | 'commissions' | 'transfers';

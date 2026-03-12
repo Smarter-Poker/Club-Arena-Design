@@ -11,6 +11,7 @@ import ClubBottomNav from '../components/club/ClubBottomNav';
 import { useToast } from '../components/common/Toast';
 import { sanitizeInput } from '../utils/sanitizeInput';
 import ConfirmModal from '../components/common/ConfirmModal';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import './ClubAnnouncementsPage.css';
 
 const announcementAnimationStyle = (index: number) => ({

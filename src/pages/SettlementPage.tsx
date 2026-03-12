@@ -15,6 +15,7 @@ import styles from './SettlementPage.module.css';
 import '../components/common/ButtonSpinner.css';
 import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -621,7 +622,13 @@ export default function SettlementPage() {
                   onClick={handleExecutePayouts}
                   disabled={isProcessing}
                 >
-                  {isProcessing ? <><span className="btn-spinner" /> Processing...</> : '⚡ Execute Settlement'}
+                  {isProcessing ? (
+                    <>
+                      <span className="btn-spinner" /> Processing...
+                    </>
+                  ) : (
+                    '⚡ Execute Settlement'
+                  )}
                 </button>
                 <p className={styles.actionNote}>
                   This will finalize all wires and process agent payouts

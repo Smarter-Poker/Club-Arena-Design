@@ -30,6 +30,7 @@ import SessionHistory from '../components/stats/SessionHistory';
 import BankrollTracker from '../components/stats/BankrollTracker';
 import AdvancedStatsSummary from '../components/stats/AdvancedStatsSummary';
 import PageSkeleton from '../components/common/PageSkeleton';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import './PlayerStatsPage.css';
 
 interface DetailedStats {
