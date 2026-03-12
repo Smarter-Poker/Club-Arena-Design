@@ -307,13 +307,14 @@ class TournamentService {
   }): number {
     const type = (tournament.tournament_type || '').toUpperCase();
     const variant = (tournament.variant || '').toLowerCase();
+    const mp = tournament.max_players;
 
-    // Explicit 2-max / Heads Up
-    if (variant === 'hu') return 2;
+    // Explicit 2-max / Heads Up (variant='hu' OR max_players=2)
+    if (variant === 'hu' || mp === 2) return 2;
     // Explicit 3-max / Spin & Go
     if (type === 'SPIN' || variant === 'spin') return 3;
-    // SNG 6-max logic
-    if (type === 'SNG' && tournament.max_players === 6) return 6;
+    // SNG: use max_players directly as table capacity (2, 3, 6, or 9)
+    if (type === 'SNG' && mp && mp >= 2 && mp <= 9) return mp;
 
     // Standard 9-max
     return 9;
