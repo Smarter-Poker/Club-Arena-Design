@@ -107,7 +107,28 @@ class PostgresSyncHooksService {
         const unionId = payload.new.id;
         this.debouncedEmit(`union_${unionId}`, 'UNION_UPDATED', { unionId });
       })
-      // 5. User Settings — debounced (settings toggle spam protection)
+      // 5. Tables — DEBOUNCED (global listener for external table creation/modification)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tables' }, (payload) => {
+        const tableId = (payload.new as any)?.id || (payload.old as any)?.id;
+        if (tableId) {
+          console.debug('[PostgresSync] External Table mutation detected:', payload);
+          const status = payload.eventType === 'DELETE' ? 'deleted' : (payload.new as any)?.status;
+          this.debouncedEmit(`table_${tableId}`, 'TABLE_UPDATED', { tableId, status });
+        }
+      })
+      // 6. Tournaments — DEBOUNCED (global listener for external tournament mutations)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tournaments' }, (payload) => {
+        const tournamentId = (payload.new as any)?.id || (payload.old as any)?.id;
+        if (tournamentId) {
+          console.debug('[PostgresSync] External Tournament mutation detected:', payload);
+          const status = (payload.new as any)?.status;
+          this.debouncedEmit(`tournament_${tournamentId}`, 'TOURNAMENT_UPDATED', {
+            tournamentId,
+            status,
+          });
+        }
+      })
+      // 7. User Settings — debounced (settings toggle spam protection)
       .on(
         'postgres_changes',
         {
@@ -121,7 +142,7 @@ class PostgresSyncHooksService {
           this.debouncedEmit('settings', 'SETTINGS_UPDATED', { settings: payload.new });
         }
       )
-      // 6. Club Memberships — DEBOUNCED (bulk operations protection)
+      // 8. Club Memberships — DEBOUNCED (bulk operations protection)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'club_members', filter: `user_id=eq.${userId}` },

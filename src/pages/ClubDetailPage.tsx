@@ -1109,17 +1109,37 @@ export default function ClubDetailPage() {
             setDeleteTableConfirm({ show: false, tableId: null, tableName: null });
             setDeletingTableId(id);
             try {
-              const { error } = await supabase
-                .from('tables')
-                .update({ status: 'deleted', is_active: false })
-                .eq('id', id);
-              if (error) throw error;
-              setTables((prev) => prev.filter((t) => t.id !== id));
-              masterBus.emit('TABLE_UPDATED', { tableId: id, status: 'deleted' });
+              // Phase 13: Optimistic delete — instantly remove from UI, then confirm with server
+              const deletedTable = tables.find((t) => t.id === id);
+              await masterBus.executeOptimistic(
+                'TABLE_UPDATED',
+                { tableId: id, status: 'deleted' },
+                async () => {
+                  setTables((prev) => prev.filter((t) => t.id !== id));
+                  const { error } = await supabase
+                    .from('tables')
+                    .update({ status: 'deleted', is_active: false })
+                    .eq('id', id);
+                  if (error) throw error;
+                },
+                // Rollback payload: restore the table on failure
+                deletedTable ? { tableId: id, status: deletedTable.status || 'active' } : undefined
+              );
               toast.success('Table deleted');
             } catch (err) {
+              // Rollback: re-add the table to the list
               console.error('Failed to delete table:', err);
               toast.error('Failed to delete table');
+              // Force reload to restore accurate state
+              if (clubId) {
+                const { data } = await supabase
+                  .from('tables')
+                  .select('*')
+                  .eq('club_id', clubId)
+                  .eq('is_deleted', false)
+                  .order('created_at', { ascending: false });
+                if (data) setTables(data);
+              }
             } finally {
               setDeletingTableId(null);
             }

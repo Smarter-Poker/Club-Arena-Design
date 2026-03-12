@@ -157,32 +157,34 @@ export default function ClubSettingsPage() {
     if (!isOwner) return;
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('clubs')
-        .update({
-          name: sanitizeInput(settings.name),
-          description: sanitizeInput(settings.description),
-          is_public: settings.is_public,
-          requires_approval: settings.requires_approval,
-          default_rake_percent: settings.default_rake_percent,
-          rake_cap: settings.rake_cap,
-          time_bank_seconds: settings.time_bank_seconds,
-          allow_straddle: settings.allow_straddle,
-          allow_run_it_twice: settings.allow_run_it_twice,
-          allow_rabbit_hunt: settings.allow_rabbit_hunt,
-          min_buyin_bb: settings.min_buyin_bb,
-          max_buyin_bb: settings.max_buyin_bb,
-        })
-        .eq('id', clubId);
-
-      if (!error) {
-        toast.success('Settings saved!');
-        masterBus.emit('SETTINGS_UPDATED', { settings: { clubId, ...settings } });
-        if (clubId) masterBus.emit('CLUB_UPDATED', { clubId });
-        navigate(`/clubs/${clubId}`);
-      } else {
-        toast.error('Failed to save settings: ' + error.message);
-      }
+      // Phase 13: Optimistic save — emit events instantly, then confirm with server
+      await masterBus.executeOptimistic(
+        'SETTINGS_UPDATED',
+        { settings: { clubId, ...settings } },
+        async () => {
+          if (clubId) masterBus.emit('CLUB_UPDATED', { clubId });
+          const { error } = await supabase
+            .from('clubs')
+            .update({
+              name: sanitizeInput(settings.name),
+              description: sanitizeInput(settings.description),
+              is_public: settings.is_public,
+              requires_approval: settings.requires_approval,
+              default_rake_percent: settings.default_rake_percent,
+              rake_cap: settings.rake_cap,
+              time_bank_seconds: settings.time_bank_seconds,
+              allow_straddle: settings.allow_straddle,
+              allow_run_it_twice: settings.allow_run_it_twice,
+              allow_rabbit_hunt: settings.allow_rabbit_hunt,
+              min_buyin_bb: settings.min_buyin_bb,
+              max_buyin_bb: settings.max_buyin_bb,
+            })
+            .eq('id', clubId);
+          if (error) throw error;
+        }
+      );
+      toast.success('Settings saved!');
+      navigate(`/clubs/${clubId}`);
     } catch (error) {
       console.error('Failed to save settings:', error);
       toast.error('Failed to save settings');
@@ -433,7 +435,13 @@ export default function ClubSettingsPage() {
 
         {isOwner && (
           <button className="btn btn-primary save-btn" onClick={saveSettings} disabled={saving}>
-            {saving ? <><span className="btn-spinner" /> Saving...</> : 'Save Changes'}
+            {saving ? (
+              <>
+                <span className="btn-spinner" /> Saving...
+              </>
+            ) : (
+              'Save Changes'
+            )}
           </button>
         )}
       </div>
