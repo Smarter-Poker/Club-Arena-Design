@@ -43,7 +43,7 @@ export function FlashTransition({
   onComplete,
 }: FlashTransitionProps) {
   const [phase, setPhase] = useState<'idle' | 'entering' | 'leaving'>('idle');
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (active) {
