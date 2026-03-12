@@ -43,10 +43,9 @@ export const RebuyModal: React.FC<RebuyModalProps> = ({
     try {
       const result = await tournamentService.processRebuy(tournamentId, userId);
       if (result.success) {
-        masterBus.emit('TOURNAMENT_REBUY', {
+        masterBus.emit('TOURNAMENT_UPDATED', {
           tournamentId,
-          userId,
-          newStack: result.newStack,
+          status: 'rebuy',
         });
         onSuccess(result.newStack || rebuyChips);
       }

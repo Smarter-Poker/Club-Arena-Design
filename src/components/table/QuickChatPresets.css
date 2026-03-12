@@ -1,0 +1,111 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  QUICK CHAT PRESETS — Styles
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+.quick-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+
+.qc-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.qc-preset-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.qc-preset-btn:hover {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #fff;
+}
+
+.qc-cooldown {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.qc-emoji {
+  font-size: 14px;
+}
+.qc-text {
+  font-weight: 500;
+}
+
+/* ── Reactions ── */
+.qc-reaction-section {
+  position: relative;
+}
+
+.qc-reaction-toggle {
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.qc-reaction-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.qc-reaction-strip {
+  display: flex;
+  gap: 4px;
+  padding: 6px 8px;
+  background: rgba(10, 10, 25, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  margin-top: 4px;
+  animation: qc-pop-in 0.2s ease-out;
+}
+
+@keyframes qc-pop-in {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.qc-reaction-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all 0.15s;
+}
+
+.qc-reaction-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.2);
+}

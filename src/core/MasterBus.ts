@@ -103,7 +103,25 @@ export type BusEventType =
   | 'OFFLINE_QUEUE_METRICS'
   // Engine orchestration events
   | 'TABLE_UPDATED'
-  | 'TOURNAMENT_UPDATED';
+  | 'TOURNAMENT_UPDATED'
+  // Session tracking
+  | 'SESSION_STATS_UPDATE'
+  // Bomb pot events
+  | 'BOMB_POT_TRIGGERED'
+  | 'BOMB_POT_COMPLETED'
+  // Disconnect protection events
+  | 'PLAYER_DISCONNECTED'
+  | 'PLAYER_RECONNECTED'
+  | 'DISCONNECT_TIMEOUT'
+  // Table chat events
+  | 'TABLE_CHAT_MESSAGE'
+  | 'TABLE_REACTION'
+  // Gamification events
+  | 'MILESTONE_UNLOCKED'
+  // Tournament timer & rebuy events
+  | 'BLIND_LEVEL_CHANGE'
+  | 'TOURNAMENT_REBUY'
+  | 'TOURNAMENT_ADDON';
 
 // #13: Type-safe payload map — compile-time enforcement of correct payloads
 export interface BusPayloadMap {
@@ -224,6 +242,42 @@ export interface BusPayloadMap {
   // Engine orchestration events
   TABLE_UPDATED: { tableId: string; status?: string };
   TOURNAMENT_UPDATED: { tournamentId: string; status?: string };
+  // Session tracking
+  SESSION_STATS_UPDATE: { tableId: string; stats: Record<string, unknown> };
+  // Bomb pot events
+  BOMB_POT_TRIGGERED: {
+    tableId: string;
+    anteAmount: number;
+    doubleBoard: boolean;
+    bbMultiplier: number;
+  };
+  BOMB_POT_COMPLETED: { tableId: string };
+  // Disconnect protection events
+  PLAYER_DISCONNECTED: { tableId: string; userId: string; graceSeconds?: number };
+  PLAYER_RECONNECTED: { tableId: string; userId: string };
+  DISCONNECT_TIMEOUT: { tableId: string; userId: string; action?: string };
+  // Table chat events
+  TABLE_CHAT_MESSAGE: { tableId: string; userId: string; message: string; type?: string };
+  TABLE_REACTION: { tableId: string; userId: string; emoji: string };
+  // Gamification events
+  MILESTONE_UNLOCKED: {
+    milestoneId: string;
+    userId: string;
+    milestoneName?: string;
+    icon?: string;
+    rewardDiamonds?: number;
+    reward?: Record<string, unknown>;
+  };
+  // Tournament timer & rebuy event payloads
+  BLIND_LEVEL_CHANGE: {
+    tournamentId: string;
+    level: number;
+    smallBlind: number;
+    bigBlind: number;
+    ante: number;
+  };
+  TOURNAMENT_REBUY: { tournamentId: string; userId: string; newStack?: number };
+  TOURNAMENT_ADDON: { tournamentId: string; userId: string; newStack?: number };
 }
 
 export interface BusEvent<T = unknown> {

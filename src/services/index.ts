@@ -23,11 +23,20 @@ export { tournamentService, BLIND_STRUCTURES, PAYOUT_STRUCTURES } from './Tourna
 
 // Promotions & Campaigns
 export { promotionService } from './PromotionService';
-export type { Promotion, PromotionClaim, LeaderboardEntry as PromotionLeaderboardEntry } from './PromotionService';
+export type {
+  Promotion,
+  PromotionClaim,
+  LeaderboardEntry as PromotionLeaderboardEntry,
+} from './PromotionService';
 
 // Achievements & Gamification
 export { achievementService, ACHIEVEMENTS } from './AchievementService';
-export type { Achievement, UserAchievement, AchievementCategory, AchievementRarity } from './AchievementService';
+export type {
+  Achievement,
+  UserAchievement,
+  AchievementCategory,
+  AchievementRarity,
+} from './AchievementService';
 
 // Agent & Financial Services
 export * from './AgentService';
@@ -35,7 +44,12 @@ export * from './WalletService';
 
 // Rake & Commissions
 export { RakeService } from './RakeService';
-export type { RakeCalculation, RakeAttribution, WaterfallResult, DealtInPlayer } from './RakeService';
+export type {
+  RakeCalculation,
+  RakeAttribution,
+  WaterfallResult,
+  DealtInPlayer,
+} from './RakeService';
 export * from './CommissionService';
 export * from './SettlementService';
 export * from './CreditService';
@@ -46,11 +60,23 @@ export type { BBJPool, BBJContribution, BBJPayout, BBJTriggerResult } from './BB
 
 // Leaderboards & Stats
 export { LeaderboardService } from './LeaderboardService';
-export type { LeaderboardEntry, PlayerStats, LeaderboardPeriod, LeaderboardMetric } from './LeaderboardService';
+export type {
+  LeaderboardEntry,
+  PlayerStats,
+  LeaderboardPeriod,
+  LeaderboardMetric,
+} from './LeaderboardService';
 
 // Horse Liquidity (Hydra)
 export { HydraService } from './HydraService';
-export type { HorsePlayer, HydraConfig, HorseProfile, TableLiquidityStatus, HorseDecision, HandContext } from './HydraService';
+export type {
+  HorsePlayer,
+  HydraConfig,
+  HorseProfile,
+  TableLiquidityStatus,
+  HorseDecision,
+  HandContext,
+} from './HydraService';
 
 // Arena & Training
 export * from './ArenaLobbyEngine';
@@ -66,21 +92,21 @@ export type { AdminLevel, Permission, UserPermissions, PermissionCheck } from '.
 // WebSocket / Real-Time
 export { TableWebSocket, useTableWebSocket } from './TableWebSocket';
 export type {
-    GameEventType,
-    GameEvent,
-    PlayerPresence,
-    TablePresenceState,
-    UseTableWebSocketResult,
+  GameEventType,
+  GameEvent,
+  PlayerPresence,
+  TablePresenceState,
+  UseTableWebSocketResult,
 } from './TableWebSocket';
 
 // Real-Time Channels (Club, Tournament, Hand)
 export { realtimeChannelService, RealtimeChannelService } from './RealtimeChannelService';
 export type {
-    ChannelType,
-    ClubPresence,
-    ClubEvent,
-    TournamentEvent,
-    HandEvent
+  ChannelType,
+  ClubPresence,
+  ClubEvent,
+  TournamentEvent,
+  HandEvent,
 } from './RealtimeChannelService';
 
 // Hand History
@@ -151,3 +177,37 @@ export { tournamentTimerService } from './TournamentTimerService';
 
 // Achievement Triggers
 export { achievementTriggerService } from './AchievementTriggerService';
+
+// Payout Engine (ICM, dynamic templates, overlay detection)
+export { payoutEngine } from './PayoutEngine';
+export type { PayoutEntry, PayoutTemplate, ICMResult, OverlayStatus } from './PayoutEngine';
+
+// Bomb Pot Engine (scheduling, double board, pot distribution)
+export { bombPotEngine } from './BombPotEngine';
+export type { BombPotConfig, BombPotState, BombPotResult } from './BombPotEngine';
+
+// Session Stats (real-time P&L, VPIP/PFR, trajectory)
+export { sessionStatsService } from './SessionStatsService';
+export type { SessionStats } from './SessionStatsService';
+
+// Disconnect Protection (heartbeat, grace period, offline queue)
+export { disconnectProtectionService } from './DisconnectProtectionService';
+export type { ConnectionState, DisconnectConfig, DCAction } from './DisconnectProtectionService';
+
+// Grind Rewards (rake race, tournament points, milestones)
+export { grindRewardsService, MILESTONES } from './GrindRewardsService';
+export type {
+  RakeRaceEntry,
+  TournamentPointEntry,
+  GrindMilestone,
+  GrindPeriod,
+} from './GrindRewardsService';
+
+// Snapshot Service (hand state capture, replay, export)
+export { snapshotService } from './SnapshotService';
+export type {
+  HandSnapshot,
+  StreetSnapshot,
+  ActionSnapshot,
+  PlayerSnapshot,
+} from './SnapshotService';

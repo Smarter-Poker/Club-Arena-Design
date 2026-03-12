@@ -1,0 +1,210 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  SESSION HUD — Styles
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+.session-hud {
+  position: fixed;
+  top: 80px;
+  right: 16px;
+  width: 180px;
+  background: rgba(10, 10, 25, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px;
+  z-index: 500;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  cursor: default;
+  user-select: none;
+}
+
+/* ── Minimized ── */
+.sh-minimized {
+  width: auto;
+  padding: 6px 12px;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sh-minimized:hover {
+  background: rgba(10, 10, 25, 0.96);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.sh-mini-pl {
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.sh-mini-hands {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* ── Header ── */
+.sh-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sh-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.sh-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.sh-toggle,
+.sh-minimize {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 10px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.sh-toggle:hover,
+.sh-minimize:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ── P&L ── */
+.sh-pl-section {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  justify-content: center;
+}
+
+.sh-pl-value {
+  font-size: 22px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.sh-pl-bb {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.sh-positive {
+  color: #22c55e;
+}
+.sh-negative {
+  color: #ef4444;
+}
+
+/* ── Sparkline ── */
+.sh-sparkline-wrapper {
+  height: 32px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.sh-sparkline {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Quick Stats ── */
+.sh-quick-stats {
+  display: flex;
+  justify-content: space-between;
+}
+
+.sh-qstat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.sh-qstat-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f0f0f5;
+}
+
+.sh-qstat-label {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* ── Advanced Stats ── */
+.sh-advanced {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sh-adv-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sh-adv-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+  width: 32px;
+}
+
+.sh-adv-bar {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.sh-adv-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.sh-vpip-fill {
+  background: #60a5fa;
+}
+.sh-pfr-fill {
+  background: #f97316;
+}
+
+.sh-adv-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  width: 32px;
+  text-align: right;
+}
