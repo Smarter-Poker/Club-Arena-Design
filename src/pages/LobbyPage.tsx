@@ -229,6 +229,16 @@ export default function LobbyPage() {
         <QuickActions />
       </section>
 
+      {/* Session Performance Widget (Initiative 14) */}
+      <div className={styles.sessionWidget}>
+        <span className={styles.sessionLive}>● LIVE</span>
+        <span className={styles.sessionStat}>{tables.length} tables open</span>
+        <span className={styles.sessionDivider}>|</span>
+        <span className={styles.sessionStat}>{onlinePlayers} players online</span>
+        <span className={styles.sessionDivider}>|</span>
+        <span className={styles.sessionStat}>{totalPlaying} now playing</span>
+      </div>
+
       {/* Promotional Banner Carousel */}
       <LobbyHeroBanner />
 

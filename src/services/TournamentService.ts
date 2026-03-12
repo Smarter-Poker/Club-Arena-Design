@@ -1171,6 +1171,14 @@ class TournamentService {
         user_id: player.user_id,
         stack: tournament.starting_chips,
       });
+
+      // Write table_id to tournament_players so TournamentDetails "Enter Table" button works
+      await supabase
+        .from('tournament_players')
+        .update({ table_id: tableAssign.tableId })
+        .eq('tournament_id', tournamentId)
+        .eq('user_id', player.user_id);
+
       tableAssign.nextSeat++;
     }
 

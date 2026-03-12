@@ -972,6 +972,40 @@ export default function TournamentPage() {
                     </button>
                   )}
               </div>
+
+              {/* Tournament Results Overlay (Initiative 13) */}
+              {selectedTournament.status === 'COMPLETED' && (
+                <div className="tourn-results-overlay">
+                  <div className="results-header">🏆 Final Standings</div>
+                  <div className="results-podium">
+                    {(Array.isArray(selectedTournament.payout_structure)
+                      ? selectedTournament.payout_structure
+                      : (() => {
+                          try {
+                            return typeof selectedTournament.payout_structure === 'string'
+                              ? JSON.parse(selectedTournament.payout_structure)
+                              : [];
+                          } catch {
+                            return [];
+                          }
+                        })()
+                    )
+                      .slice(0, 3)
+                      .map((p: any, i: number) => (
+                        <div key={i} className={`podium-place podium-${i + 1}`}>
+                          <div className="podium-icon">
+                            {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}
+                          </div>
+                          <div className="podium-payout">
+                            {Math.trunc(
+                              ((selectedTournament.prize_pool * (p.percentage || 0)) / 100) * 100
+                            ) / 100}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <div className="empty-detail">

@@ -1243,9 +1243,20 @@ export default function TablePage({
       )
       .subscribe();
 
-    // Fallback: Check active hand if page reloads mid-hand and misses the INSERT event
-    const fetchExistingHand = async () => {
+    // Fallback: If page reloads mid-hand and misses the INSERT event,
+    // fetch the most recent hand's cards after a brief hydration delay.
+    // We delay because isHandInProgress is false on initial mount and only
+    // becomes true after the hand_state broadcast is received.
+    const fallbackTimer = setTimeout(async () => {
+      // After hydration, check if a hand is in progress
       if (!tableStateRef.current.isHandInProgress) return;
+
+      // Check if hero already has cards (delivered via postgres_changes)
+      const heroHasCards = tableStateRef.current.players.some(
+        (p) => p && p.id === userId && p.holeCards && p.holeCards.length > 0
+      );
+      if (heroHasCards) return;
+
       const { data } = await supabase
         .from('table_hole_cards')
         .select('cards')
@@ -1290,12 +1301,12 @@ export default function TablePage({
           return { ...prev, players: updatedPlayers };
         });
       }
-    };
-    fetchExistingHand();
+    }, 1500); // Wait 1.5s for hand_state broadcast to arrive and hydrate isHandInProgress
 
     const channelKey = `table-cards-secure-${tableId}-${userId}`;
     return () => {
       // Component unmount cleanup — remove from registry to prevent stale channel reuse
+      clearTimeout(fallbackTimer);
       channel.unsubscribe().catch(() => {});
       masterBus.removeRegisteredChannel(channelKey);
     };

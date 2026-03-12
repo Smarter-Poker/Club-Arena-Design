@@ -122,6 +122,54 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
+   SESSION PERFORMANCE WIDGET (Initiative 14)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.sessionWidget {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.04), rgba(16, 185, 129, 0.04));
+  border: 1px solid rgba(0, 212, 255, 0.1);
+  border-radius: var(--radius-xl);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.sessionLive {
+  color: #22c55e;
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+  animation: sessionPulse 2s infinite;
+}
+
+@keyframes sessionPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.sessionStat {
+  font-family: 'Orbitron', monospace;
+  color: #00d4ff;
+  font-weight: 600;
+  font-size: 0.7rem;
+}
+
+.sessionDivider {
+  opacity: 0.2;
+  color: #8a9aaa;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
    FILTER SECTION
    ═══════════════════════════════════════════════════════════════════════════════ */
 

@@ -1010,3 +1010,87 @@
     box-shadow: 0 0 16px rgba(255, 107, 107, 0.4);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TOURNAMENT RESULTS OVERLAY (Initiative 13)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.tourn-results-overlay {
+  margin-top: var(--space-6);
+  padding: var(--space-5);
+  background: linear-gradient(145deg, rgba(255, 215, 0, 0.06), rgba(0, 212, 255, 0.04));
+  border: 2px solid rgba(255, 215, 0, 0.2);
+  border-radius: 16px;
+  text-align: center;
+  animation: resultsSlideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes resultsSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.results-header {
+  font-size: 1.125rem;
+  font-weight: 700;
+  font-family: 'Orbitron', 'Rajdhani', sans-serif;
+  color: #ffd700;
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+  margin-bottom: var(--space-4);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.results-podium {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: var(--space-4);
+}
+
+.podium-place {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.1));
+  border: 1px solid #3a4a5a;
+  border-radius: 12px;
+  min-width: 80px;
+  transition: all 0.3s;
+}
+
+.podium-1 {
+  border-color: #ffd700;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+  transform: scale(1.1);
+}
+
+.podium-2 {
+  border-color: #c0c0c0;
+  box-shadow: 0 0 12px rgba(192, 192, 192, 0.15);
+}
+
+.podium-3 {
+  border-color: #cd7f32;
+  box-shadow: 0 0 10px rgba(205, 127, 50, 0.15);
+}
+
+.podium-icon {
+  font-size: 1.5rem;
+}
+
+.podium-payout {
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: 'Orbitron', monospace;
+  color: #ffd700;
+  text-shadow: 0 0 6px rgba(255, 215, 0, 0.3);
+}
