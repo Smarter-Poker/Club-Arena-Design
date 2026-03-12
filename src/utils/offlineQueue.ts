@@ -95,7 +95,7 @@ export async function replayOfflineQueue(): Promise<void> {
     while (attempts < 3 && !success) {
       try {
         // Dynamic import to avoid circular deps
-        import { retryAsync } from '../utils/retryAsync';
+        const { retryAsync } = await import('../utils/retryAsync');
         const { supabase } = await import('../lib/supabase');
 
         if (item.mutation === 'INSERT' && item.variables?.table) {
@@ -108,7 +108,7 @@ export async function replayOfflineQueue(): Promise<void> {
         } else if (item.mutation === 'DELETE' && item.variables?.table && item.variables?.id) {
           await supabase.from(item.variables.table).delete().eq('id', item.variables.id);
         } else if (item.mutation === 'RPC' && item.variables?.fn) {
-          await retryAsync(() => supabase.rpc(item.variables.fn, item.variables.args || {}), 3);
+          await retryAsync(() => supabase.rpc(item.variables!.fn, item.variables!.args || {}), 3);
         }
         success = true;
       } catch (e) {

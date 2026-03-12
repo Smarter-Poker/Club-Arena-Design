@@ -195,7 +195,7 @@ export const OfflineQueueService = {
    */
   async executeMutation(mutation: QueuedMutation): Promise<boolean> {
     // Lazy import to avoid circular dependency
-    import { retryAsync } from '../utils/retryAsync';
+    const { retryAsync } = await import('../utils/retryAsync');
     const { supabase } = await import('../lib/supabase');
 
     switch (mutation.action) {

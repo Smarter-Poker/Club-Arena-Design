@@ -829,6 +829,13 @@ export class HandController {
 
     // First to act preflop: UTG (after BB), or dealer/SB in heads-up
     if (this.state.stage === 'preflop' && this.state.actionHistory.length === 0) {
+      if (this.config.straddles && this.config.straddles.length > 0) {
+        // If there are straddles, action starts with the player AFTER the last straddle
+        const lastStraddleSeat = this.config.straddles[this.config.straddles.length - 1].seat;
+        this.state.currentPlayerSeat = this.getNextActiveSeat(lastStraddleSeat);
+        return;
+      }
+
       if (isHeadsUp) {
         // Heads-up: dealer/SB acts first preflop
         this.state.currentPlayerSeat = this.state.dealerSeat;

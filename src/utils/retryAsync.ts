@@ -8,22 +8,22 @@
 
 /** Errors that are safe to retry (transient network issues) */
 function isRetryableError(error: unknown): boolean {
-    if (error instanceof Error) {
-        const msg = error.message.toLowerCase();
-        return (
-            msg.includes('fetch') ||
-            msg.includes('network') ||
-            msg.includes('timeout') ||
-            msg.includes('econnrefused') ||
-            msg.includes('econnreset') ||
-            msg.includes('socket') ||
-            msg.includes('aborted') ||
-            msg.includes('503') ||
-            msg.includes('502') ||
-            msg.includes('429')
-        );
-    }
-    return false;
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    return (
+      msg.includes('fetch') ||
+      msg.includes('network') ||
+      msg.includes('timeout') ||
+      msg.includes('econnrefused') ||
+      msg.includes('econnreset') ||
+      msg.includes('socket') ||
+      msg.includes('aborted') ||
+      msg.includes('503') ||
+      msg.includes('502') ||
+      msg.includes('429')
+    );
+  }
+  return false;
 }
 
 /**
@@ -38,31 +38,31 @@ function isRetryableError(error: unknown): boolean {
  * const result = await retryAsync(() => supabase.from('tables').insert(data).select().maybeSingle());
  */
 export async function retryAsync<T>(
-    fn: () => Promise<T>,
-    maxRetries: number = 2,
-    baseDelayMs: number = 500
+  fn: () => PromiseLike<T> | Promise<T>,
+  maxRetries: number = 2,
+  baseDelayMs: number = 500
 ): Promise<T> {
-    let lastError: unknown;
+  let lastError: unknown;
 
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        try {
-            return await fn();
-        } catch (error) {
-            lastError = error;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
 
-            // Don't retry non-transient errors
-            if (!isRetryableError(error)) {
-                throw error;
-            }
+      // Don't retry non-transient errors
+      if (!isRetryableError(error)) {
+        throw error;
+      }
 
-            // Don't wait after the last attempt
-            if (attempt < maxRetries) {
-                const delay = baseDelayMs * Math.pow(2, attempt);
-                console.warn(`[retryAsync] Attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
-                await new Promise(resolve => setTimeout(resolve, delay));
-            }
-        }
+      // Don't wait after the last attempt
+      if (attempt < maxRetries) {
+        const delay = baseDelayMs * Math.pow(2, attempt);
+        console.warn(`[retryAsync] Attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
     }
+  }
 
-    throw lastError;
+  throw lastError;
 }

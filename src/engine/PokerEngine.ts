@@ -93,6 +93,11 @@ export class Deck {
     this.cards = this.cards.filter((c) => RANK_VALUES[c.rank] >= minValue);
     this.shuffle();
   }
+
+  // Used by Run It Twice to peek at remaining cards
+  getCards(): Card[] {
+    return [...this.cards];
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
