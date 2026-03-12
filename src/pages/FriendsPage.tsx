@@ -226,7 +226,8 @@ export default function FriendsPage() {
       const { error } = await supabase
         .from('friendships')
         .update({ status: 'accepted' })
-        .eq('id', friendshipId);
+        .eq('id', friendshipId)
+        .eq('friend_id', user?.id); // Only recipient can accept
       if (error) throw error;
       masterBus.emit('FRIEND_REQUEST_ACCEPTED', { friendshipId });
       loadFriends();
@@ -239,7 +240,11 @@ export default function FriendsPage() {
 
   const declineRequest = async (friendshipId: string) => {
     try {
-      const { error } = await supabase.from('friendships').delete().eq('id', friendshipId);
+      const { error } = await supabase
+        .from('friendships')
+        .delete()
+        .eq('id', friendshipId)
+        .eq('friend_id', user?.id); // Only recipient can decline
       if (error) throw error;
       loadFriends();
       toast.success('Friend request declined');
@@ -251,7 +256,11 @@ export default function FriendsPage() {
 
   const removeFriend = async (friendshipId: string) => {
     try {
-      const { error } = await supabase.from('friendships').delete().eq('id', friendshipId);
+      const { error } = await supabase
+        .from('friendships')
+        .delete()
+        .eq('id', friendshipId)
+        .or(`user_id.eq.${user?.id},friend_id.eq.${user?.id}`); // Either user can remove
       if (error) throw error;
       loadFriends();
       toast.success('Friend removed');

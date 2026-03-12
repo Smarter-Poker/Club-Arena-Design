@@ -139,7 +139,11 @@ export default function NotificationsPage() {
 
   const markAsRead = async (id: string) => {
     try {
-      const { error } = await supabase.from('notifications').update({ read: true }).eq('id', id);
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', id)
+        .eq('user_id', user?.id);
       if (error) throw error;
 
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
@@ -168,7 +172,11 @@ export default function NotificationsPage() {
 
   const deleteNotification = async (id: string) => {
     try {
-      const { error } = await supabase.from('notifications').delete().eq('id', id);
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user?.id);
       if (error) throw error;
       setNotifications((prev) => prev.filter((n) => n.id !== id));
     } catch (err) {
