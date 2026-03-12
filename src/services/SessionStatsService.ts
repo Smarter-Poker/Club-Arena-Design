@@ -133,6 +133,12 @@ class SessionStatsServiceClass {
     session.bigBlindsWon =
       session.bigBlind > 0 ? Math.round((session.profitLoss / session.bigBlind) * 100) / 100 : 0;
     session.trajectory.push([Date.now(), session.currentStack]);
+
+    // Emit update so SessionHUD reflects the rebuy immediately
+    masterBus.emit('SESSION_STATS_UPDATE', {
+      tableId,
+      stats: { ...session, trajectory: [...session.trajectory] },
+    });
   }
 
   /**

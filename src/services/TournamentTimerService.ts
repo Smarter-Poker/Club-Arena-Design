@@ -22,6 +22,7 @@ interface TournamentTimerState {
   intervalId: ReturnType<typeof setInterval>;
   isPaused: boolean;
   lastTick: number;
+  isTickInProgress: boolean; // Guard against async overlap
   breakTimeoutId?: ReturnType<typeof setTimeout>;
 }
 
@@ -48,6 +49,7 @@ class TournamentTimerServiceClass {
       currentLevel: 0,
       intervalId,
       isPaused: false,
+      isTickInProgress: false,
       lastTick: Date.now(),
     });
 
@@ -103,6 +105,10 @@ class TournamentTimerServiceClass {
     const timer = this.activeTimers.get(tournamentId);
     if (!timer || timer.isPaused) return;
 
+    // Guard: skip if previous tick is still in-flight (prevents async overlap)
+    if (timer.isTickInProgress) return;
+    timer.isTickInProgress = true;
+
     try {
       // Fetch current tournament state
       const tournament = await tournamentService.getTournament(tournamentId);
@@ -124,6 +130,10 @@ class TournamentTimerServiceClass {
       timer.lastTick = Date.now();
     } catch (error) {
       console.error(`[TournamentTimer] Error in tick for ${tournamentId}:`, error);
+    } finally {
+      // Always release the lock, even on error
+      const t = this.activeTimers.get(tournamentId);
+      if (t) t.isTickInProgress = false;
     }
   }
 
