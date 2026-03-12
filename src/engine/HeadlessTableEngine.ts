@@ -677,8 +677,9 @@ export class HeadlessTableEngine {
         stack: p.stack,
         bet: p.bet ?? 0,
         // 🔒 SECURE HOLE CARD SCRUBBER 🔒
-        // Never transmit private cards over public WebSocket during active betting rounds.
-        cards: state.stage === 'showdown' ? (p.cards ?? null) : null,
+        // Never transmit private cards during active betting rounds.
+        // At showdown, only reveal non-folded players' cards.
+        cards: state.stage === 'showdown' && !p.is_folded ? (p.cards ?? null) : null,
         is_folded: p.is_folded ?? false,
         is_all_in: p.is_all_in ?? false,
         is_sitting_out: p.is_sitting_out ?? false,
