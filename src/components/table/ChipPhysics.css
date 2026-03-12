@@ -1,0 +1,158 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+ *  ChipPhysics.css — Realistic Chip Sprite Styles
+ * ═══════════════════════════════════════════════════════════════════════════════ */
+
+.chip-physics {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.cp--visible {
+  opacity: 1;
+}
+
+/* ── Stack Container ── */
+.cp-stacks {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+}
+
+.cp-stack {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  animation: cpStackIn 0.3s ease calc(var(--group-idx, 0) * 80ms) both;
+}
+@keyframes cpStackIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Individual Chip ── */
+.cp-chip {
+  width: 18px;
+  height: 5px;
+  margin-top: -2px; /* overlap for stacking illusion */
+  position: relative;
+  border-radius: 50%;
+  background: var(--chip-color, #e0e0e0);
+  border: 1px solid var(--chip-accent, #999);
+  box-shadow:
+    0 1px 0 var(--chip-accent),
+    inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  transition: transform 0.2s;
+}
+.cp-chip:first-child {
+  margin-top: 0;
+}
+
+/* Top chip shows face label */
+.cp-chip__face {
+  display: none;
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+}
+.cp-chip:last-child .cp-chip__face {
+  display: flex;
+}
+.cp-chip__label {
+  font-size: 0.35rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+  line-height: 1;
+}
+
+/* ── Amount Display ── */
+.cp-amount {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #e4e6eb;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+/* ── Animation: Splash ── */
+.cp--splash .cp-chip {
+  animation: cpChipSplash 0.5s ease calc(var(--chip-idx, 0) * 40ms) both;
+}
+@keyframes cpChipSplash {
+  0% {
+    transform: translateY(-20px) translateX(calc((var(--chip-idx) - 2) * 10px)) scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: translateY(3px) translateX(calc((var(--chip-idx) - 2) * 4px)) scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* ── Animation: Slide-In ── */
+.cp--slide-in .cp-stacks {
+  animation: cpSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes cpSlideIn {
+  from {
+    transform: translateX(-20px) scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* ── Animation: Collect (to pot) ── */
+.cp--collect .cp-stacks {
+  animation: cpCollect 0.5s ease forwards;
+}
+@keyframes cpCollect {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.3) translateY(-30px);
+    opacity: 0;
+  }
+}
+
+/* ── Compact Mode ── */
+.cp--compact {
+  gap: 3px;
+}
+.cp--compact .cp-chip {
+  width: 14px;
+  height: 4px;
+}
+.cp--compact .cp-amount {
+  font-size: 0.6rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-stack,
+  .cp--splash .cp-chip,
+  .cp--slide-in .cp-stacks,
+  .cp--collect .cp-stacks {
+    animation: none;
+  }
+  .chip-physics {
+    opacity: 1;
+  }
+}

@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { masterBus } from '../../core/MasterBus';
 import { useUserStore } from '../../stores/useUserStore';
 import { PlayerAvatar } from '../avatars/PlayerAvatar';
 import { haptic } from '../../services/HapticService';
@@ -53,6 +54,28 @@ export default function FriendListPanel({
       loadFriends();
     }
   }, [user?.id]);
+
+  // ── Bus Listeners: cross-page friend list reactivity ──
+  useEffect(() => {
+    const unsubAccepted = masterBus.subscribe('FRIEND_REQUEST_ACCEPTED', () => {
+      loadFriends();
+    });
+    const unsubSent = masterBus.subscribe('FRIEND_REQUEST_SENT', () => {
+      loadFriends();
+    });
+    const unsubSeated = masterBus.subscribe('TABLE_SEATED', () => {
+      loadFriends(); // Refresh to pick up "playing" status
+    });
+    const unsubLeft = masterBus.subscribe('TABLE_LEFT', () => {
+      loadFriends();
+    });
+    return () => {
+      unsubAccepted();
+      unsubSent();
+      unsubSeated();
+      unsubLeft();
+    };
+  }, []);
 
   const loadFriends = async () => {
     if (!user?.id) return;

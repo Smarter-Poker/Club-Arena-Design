@@ -11,6 +11,8 @@ import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
 import './CashoutRequestModal.css';
 
+const REVERSAL_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+
 // ═══════════════════════════════════════════════════════════════════
 // CASHOUT STEP PROGRESS TRACKER — Shows cashout lifecycle stage
 // ═══════════════════════════════════════════════════════════════════
@@ -23,7 +25,7 @@ const CASHOUT_STEPS = [
   { key: 'complete', label: 'Complete', icon: '✅' },
 ];
 
-function CashoutStepTracker({ status }: { status: string }) {
+function CashoutStepTracker({ status, createdAt }: { status: string; createdAt?: string }) {
   // Map CashoutRequest.status → step index
   const stepMap: Record<string, number> = {
     pending: 1, // escrowed/waiting
@@ -34,30 +36,64 @@ function CashoutStepTracker({ status }: { status: string }) {
   const currentStep = stepMap[status] ?? 0;
   const isRejected = status === 'rejected';
 
+  // 10-minute reversal countdown
+  const [remainingMs, setRemainingMs] = useState<number | null>(null);
+  useEffect(() => {
+    if (status !== 'pending' || !createdAt) {
+      setRemainingMs(null);
+      return;
+    }
+    const tick = () => {
+      const elapsed = Date.now() - new Date(createdAt).getTime();
+      const remaining = REVERSAL_WINDOW_MS - elapsed;
+      setRemainingMs(remaining > 0 ? remaining : null);
+    };
+    tick();
+    const t = setInterval(tick, 1000);
+    return () => clearInterval(t);
+  }, [status, createdAt]);
+
   return (
-    <div className="cashout-step-tracker">
-      {CASHOUT_STEPS.map((step, i) => {
-        const isComplete = i < currentStep;
-        const isCurrent = i === currentStep;
-        return (
-          <div key={step.key} className="cashout-step">
-            <div
-              className={`step-dot ${isComplete ? 'complete' : ''} ${isCurrent ? 'active' : ''} ${isRejected ? 'rejected' : ''}`}
-            >
-              {isComplete ? '✓' : i + 1}
+    <>
+      <div className="cashout-step-tracker">
+        {CASHOUT_STEPS.map((step, i) => {
+          const isComplete = i < currentStep;
+          const isCurrent = i === currentStep;
+          return (
+            <div key={step.key} className="cashout-step">
+              <div
+                className={`step-dot ${isComplete ? 'complete' : ''} ${isCurrent ? 'active' : ''} ${isRejected ? 'rejected' : ''}`}
+              >
+                {isComplete ? '✓' : i + 1}
+              </div>
+              <span
+                className={`step-label ${isComplete ? 'complete' : ''} ${isCurrent ? 'active' : ''}`}
+              >
+                {step.label}
+              </span>
+              {i < CASHOUT_STEPS.length - 1 && (
+                <div className={`step-line ${isComplete ? 'complete' : ''}`} />
+              )}
             </div>
-            <span
-              className={`step-label ${isComplete ? 'complete' : ''} ${isCurrent ? 'active' : ''}`}
-            >
-              {step.label}
-            </span>
-            {i < CASHOUT_STEPS.length - 1 && (
-              <div className={`step-line ${isComplete ? 'complete' : ''}`} />
-            )}
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+      {remainingMs !== null && remainingMs > 0 && (
+        <div
+          style={{
+            textAlign: 'center',
+            fontSize: '0.7rem',
+            color: '#ffa726',
+            padding: '4px 0 2px',
+            fontWeight: 600,
+            letterSpacing: '0.3px',
+          }}
+        >
+          ⏱ Cancel window: {Math.floor(remainingMs / 60000)}m{' '}
+          {Math.floor((remainingMs % 60000) / 1000)}s remaining
+        </div>
+      )}
+    </>
   );
 }
 
@@ -246,7 +282,7 @@ export default function CashoutRequestModal({
                       </span>
                       <span className="pending-time">{formatTime(cashout.createdAt)}</span>
                     </div>
-                    <CashoutStepTracker status={cashout.status} />
+                    <CashoutStepTracker status={cashout.status} createdAt={cashout.createdAt} />
                     <button className="cancel-btn" onClick={() => handleCancel(cashout.id)}>
                       Cancel
                     </button>

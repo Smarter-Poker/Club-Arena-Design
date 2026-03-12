@@ -95,20 +95,37 @@ function MondayPayoutCountdown() {
         >
           ⏱ Next Payout (Monday 4AM PST)
         </span>
-        <span
-          style={{
-            fontSize: '1.1rem',
-            fontWeight: 800,
-            fontFamily: 'monospace',
-            color: '#fff',
-            textShadow:
-              countdown.days === 0 && countdown.hours < 4 ? '0 0 12px rgba(0,200,83,0.5)' : 'none',
-          }}
-        >
-          {countdown.days}d {String(countdown.hours).padStart(2, '0')}h{' '}
-          {String(countdown.minutes).padStart(2, '0')}m {String(countdown.seconds).padStart(2, '0')}
-          s
-        </span>
+        {countdown.progress >= 99.9 ? (
+          <span
+            style={{
+              fontSize: '1rem',
+              fontWeight: 800,
+              fontFamily: 'monospace',
+              color: '#00C853',
+              textShadow: '0 0 16px rgba(0,200,83,0.6)',
+              animation: 'stepPulse 1.5s ease-in-out infinite',
+            }}
+          >
+            🎉 PAYOUT IN PROGRESS!
+          </span>
+        ) : (
+          <span
+            style={{
+              fontSize: '1.1rem',
+              fontWeight: 800,
+              fontFamily: 'monospace',
+              color: '#fff',
+              textShadow:
+                countdown.days === 0 && countdown.hours < 4
+                  ? '0 0 12px rgba(0,200,83,0.5)'
+                  : 'none',
+            }}
+          >
+            {countdown.days}d {String(countdown.hours).padStart(2, '0')}h{' '}
+            {String(countdown.minutes).padStart(2, '0')}m{' '}
+            {String(countdown.seconds).padStart(2, '0')}s
+          </span>
+        )}
       </div>
       <div
         style={{
@@ -122,10 +139,16 @@ function MondayPayoutCountdown() {
           style={{
             height: '100%',
             width: `${countdown.progress}%`,
-            background: 'linear-gradient(90deg, #0088ff, #00C853)',
+            background:
+              countdown.progress >= 99.9
+                ? 'linear-gradient(90deg, #00C853, #4CAF50)'
+                : 'linear-gradient(90deg, #0088ff, #00C853)',
             borderRadius: '3px',
             transition: 'width 1s linear',
-            boxShadow: '0 0 8px rgba(0, 200, 83, 0.3)',
+            boxShadow:
+              countdown.progress >= 99.9
+                ? '0 0 14px rgba(0, 200, 83, 0.6)'
+                : '0 0 8px rgba(0, 200, 83, 0.3)',
           }}
         />
       </div>
