@@ -219,7 +219,9 @@ class TournamentTimerServiceClass {
     try {
       const { data: entries } = await supabase
         .from('tournament_entries')
-        .select('user_id, username:profiles(display_name), chips, avatar_url:profiles(avatar_url)')
+        .select(
+          'user_id, username:profiles(display_name), chips, avatar_url:profiles(avatar_url), vpip_count, pfr_count, hands_played, aggressive_actions, passive_actions'
+        )
         .eq('tournament_id', tournamentId)
         .in('status', ['playing', 'active']);
 
@@ -255,6 +257,16 @@ class TournamentTimerServiceClass {
             username: e.username?.display_name || e.user_id?.substring(0, 8) || 'Player',
             chips: e.chips || 0,
             avatar: e.avatar_url?.avatar_url || undefined,
+            stats:
+              (e.hands_played || 0) > 0
+                ? {
+                    handsPlayed: e.hands_played || 0,
+                    vpipCount: e.vpip_count || 0,
+                    pfrCount: e.pfr_count || 0,
+                    aggressiveActions: e.aggressive_actions || 0,
+                    passiveActions: e.passive_actions || 0,
+                  }
+                : undefined,
           })),
         });
       }

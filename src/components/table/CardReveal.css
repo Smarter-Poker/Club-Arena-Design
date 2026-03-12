@@ -51,7 +51,8 @@
 }
 
 .card-reveal .card-back {
-  /* Card back is shown first (no rotation needed) */
+  /* Card back contains the CardBack component — initial visible side */
+  overflow: hidden;
 }
 
 /* Override CardBack internal sizing to fill the container */
