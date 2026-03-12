@@ -1112,7 +1112,13 @@ class TournamentService {
     if (!players || players.length === 0) throw new Error('No players registered');
 
     // Auto-cancel if fewer than the minimum players required for this variant
-    const minPlayers = Math.max(2, TournamentService.getTableCapacityForTournament(tournament));
+    // SNG/Spin: need a full table to start (table capacity = min)
+    // MTT/Bounty: use tournament's configured min_players (defaults to 2 absolute floor)
+    const type = (tournament.tournament_type || '').toUpperCase();
+    const isSngOrSpin = type === 'SNG' || type === 'SPIN';
+    const minPlayers = isSngOrSpin
+      ? TournamentService.getTableCapacityForTournament(tournament)
+      : Math.max(2, tournament.min_players || 2);
     if (players.length < minPlayers) {
       console.debug(
         `[TournamentService] Auto-cancelling tournament ${tournament.name}: only ${players.length} players (minimum ${minPlayers} required for this variant)`
