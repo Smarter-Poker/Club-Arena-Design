@@ -1380,16 +1380,7 @@ export class HeadlessTableEngine {
         // Update local stack so the engine knows right away
         horse.stack = rebuyAmount;
 
-        // 4. Log transaction via centralized WalletService RPC
-        WalletService.logTransaction(
-          horse.user_id,
-          'PLAYER',
-          rebuyAmount,
-          'debit',
-          'buyin',
-          `Auto-rebuy ${rebuyAmount} chips at ${this.tableInfo?.small_blind}/${this.tableInfo?.big_blind}`,
-          this.tableId
-        ).catch(() => {}); // Non-fatal — rebuy already succeeded
+        // Transaction logging is handled inside atomic_table_rebuy RPC via log_wallet_transaction
 
         // 5. Also log in chip_transactions for club-level accounting
         this.supabaseClient

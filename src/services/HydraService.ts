@@ -459,16 +459,7 @@ export const HydraService = {
       `[HydraService] atomic_table_buyin SUCCESS for horse ${horseId} at seat ${availableSeat}`
     );
 
-    // Log buy-in transaction via centralized WalletService RPC
-    await WalletService.logTransaction(
-      horseId,
-      'PLAYER',
-      stack,
-      'debit',
-      'buyin',
-      `Horse buy-in ${stack} chips at ${bigBlind}BB table`,
-      tableId
-    );
+    // Transaction logging is handled inside atomic_table_buyin RPC via log_wallet_transaction
     masterBus.emit('BALANCE_UPDATED', { source: 'hydra_seat_horse', userId: horseId });
 
     // Try to log in chip_transactions for club accounting (non-blocking)
@@ -569,21 +560,12 @@ export const HydraService = {
 
     const returnedChips = rpcAmount || 0;
 
-    // Log cash-out transaction via centralized WalletService RPC if there were chips returned
+    // Log cash-out: handled inside atomic_table_cashout RPC via log_wallet_transaction
     if (returnedChips > 0) {
       console.debug(
         `[HydraService] Credited ${returnedChips} chips to horse ${horseId} Player Wallet`
       );
 
-      await WalletService.logTransaction(
-        horseId,
-        'PLAYER',
-        returnedChips,
-        'credit',
-        'cashout',
-        `Horse cash-out ${returnedChips} chips from table`,
-        tableId
-      );
       masterBus.emit('BALANCE_UPDATED', { source: 'hydra_remove_horse', userId: horseId });
 
       // Try to log in chip_transactions for club accounting

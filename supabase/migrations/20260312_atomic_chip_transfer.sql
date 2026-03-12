@@ -22,6 +22,7 @@ CREATE OR REPLACE FUNCTION atomic_chip_transfer(
     p_related_entity_id UUID DEFAULT NULL
 ) RETURNS VOID
 LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
 AS $$
 BEGIN
     -- 1. Deduct from sender's PLAYER wallet
@@ -40,17 +41,15 @@ BEGIN
     DO UPDATE SET balance = wallets.balance + p_amount, updated_at = NOW();
     
     -- 3. Log audit trail for SENDER (debit)
-    INSERT INTO wallet_transactions (
-        user_id, type, amount, category, description, related_entity_id
-    ) VALUES (
-        p_from_user_id, 'debit', -p_amount, p_category, p_description, p_related_entity_id
+    PERFORM log_wallet_transaction(
+        p_from_user_id, 'PLAYER', -p_amount, 'debit', p_category,
+        p_description, NULL, NULL, p_related_entity_id
     );
 
     -- 4. Log audit trail for RECEIVER (credit)
-    INSERT INTO wallet_transactions (
-        user_id, type, amount, category, description, related_entity_id
-    ) VALUES (
-        p_to_user_id, 'credit', p_amount, p_category, p_description, p_related_entity_id
+    PERFORM log_wallet_transaction(
+        p_to_user_id, 'PLAYER', p_amount, 'credit', p_category,
+        p_description, NULL, NULL, p_related_entity_id
     );
 
 END;
