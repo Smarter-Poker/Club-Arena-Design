@@ -598,6 +598,36 @@ export class HeadlessTableEngine {
       // Start hand
       try {
         this.handController!.start();
+
+        // 🛡️ SECURE HOLE CARD PROVISIONING (ANTI-GOD-MODE) 🛡️
+        // Prevent God Mode WebSocket leak by pushing private hole cards to an
+        // RLS-protected table instead of the public `hand_state` broadcast channel.
+        const state = this.handController!.getState();
+        const humans = state.players.filter(
+          (p) => !p.is_sitting_out && !players.find((sp) => sp.user_id === p.user_id)?.is_horse
+        );
+
+        if (humans.length > 0) {
+          const cardInserts = humans.map((p) => ({
+            table_id: this.tableId,
+            hand_number: handNumber,
+            user_id: p.user_id,
+            seat_number: p.seat,
+            cards: JSON.parse(JSON.stringify(p.cards || [])), // Ensure clean JSON
+          }));
+
+          // Push the final hand cards independently            // Fire-and-forget secure payload insertion
+          this.supabaseClient
+            .from('table_hole_cards')
+            .insert(cardInserts)
+            .then(({ error }) => {
+              if (error)
+                console.error(
+                  `[HeadlessTableEngine:${this.tableId}] Failed to push secure hole cards:`,
+                  error.message
+                );
+            });
+        }
       } catch (err) {
         console.error(`[HeadlessTableEngine:${this.tableId}] Failed to start hand:`, err);
         clearTimeout(handCompleteTimeout);
@@ -634,7 +664,9 @@ export class HeadlessTableEngine {
         username: p.username,
         stack: p.stack,
         bet: p.bet ?? 0,
-        cards: p.cards ?? [],
+        // 🔒 SECURE HOLE CARD SCRUBBER 🔒
+        // Never transmit private cards over public WebSocket during active betting rounds.
+        cards: state.stage === 'showdown' ? (p.cards ?? null) : null,
         is_folded: p.is_folded ?? false,
         is_all_in: p.is_all_in ?? false,
         is_sitting_out: p.is_sitting_out ?? false,

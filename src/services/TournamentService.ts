@@ -852,52 +852,11 @@ class TournamentService {
 
           if (seatErr) {
             console.error(`[TournamentService] Late reg seat insert failed: ${seatErr.message}`);
-            // Refund the player since seating failed — they paid but can't play
-            try {
-              await retryAsync(
-                () =>
-                  supabase.rpc('credit_player_wallet', {
-                    p_user_id: userId,
-                    p_amount: totalCost,
-                  }),
-                3
-              );
-              await WalletService.logTransaction(
-                userId,
-                'PLAYER',
-                totalCost,
-                'credit',
-                'refund',
-                `Late registration refund (seating failed): ${tournament.name}`,
-                undefined,
-                undefined,
-                tournamentId
-              );
-              masterBus.emit('BALANCE_UPDATED', { source: 'tournament_refund_seat_fail', userId });
-              // Remove the tournament_players entry since they can't play
-              await supabase
-                .from('tournament_players')
-                .delete()
-                .eq('tournament_id', tournamentId)
-                .eq('user_id', userId);
-              // Decrement current_players
-              await supabase
-                .from('tournaments')
-                .update({
-                  current_players: Math.max((tournament.current_players || 1) - 1, 0),
-                })
-                .eq('id', tournamentId);
-              console.debug(`[TournamentService] Late reg refund issued for ${userId.slice(0, 8)}`);
-            } catch (refundErr) {
-              console.error(
-                `[TournamentService] CRITICAL: Late reg refund failed for ${userId.slice(0, 8)}:`,
-                refundErr
-              );
-              throw new Error(
-                `Late registration seating failed and refund could not be processed. Please contact support.`
-              );
-            }
-            throw new Error(`Late registration seating failed. Your buy-in has been refunded.`);
+            console.debug(
+              `[TournamentService] Player ${userId.slice(0, 8)} added to alternate list due to seat insert failure.`
+            );
+            // No refund — player remains as 'registered' on the alternate list
+            // and will be seated by the TournamentEngine when a seat opens.
           } else {
             // Update tournament_players to playing status with starting chips
             const { error: tpErr } = await supabase
@@ -936,46 +895,10 @@ class TournamentService {
           }
         } else {
           console.warn(
-            `[TournamentService] Late reg: no open table found for ${tournamentId.slice(0, 8)} — refunding`
+            `[TournamentService] Late reg: no open table found for ${tournamentId.slice(0, 8)} — adding to alternate list`
           );
-          // No table available — refund the player
-          try {
-            await retryAsync(
-              () =>
-                supabase.rpc('credit_player_wallet', { p_user_id: userId, p_amount: totalCost }),
-              3
-            );
-            await WalletService.logTransaction(
-              userId,
-              'PLAYER',
-              totalCost,
-              'credit',
-              'refund',
-              `Late registration refund (no open table): ${tournament.name}`,
-              undefined,
-              undefined,
-              tournamentId
-            );
-            masterBus.emit('BALANCE_UPDATED', { source: 'tournament_refund_no_table', userId });
-            await supabase
-              .from('tournament_players')
-              .delete()
-              .eq('tournament_id', tournamentId)
-              .eq('user_id', userId);
-            await supabase
-              .from('tournaments')
-              .update({
-                current_players: Math.max((tournament.current_players || 1) - 1, 0),
-              })
-              .eq('id', tournamentId);
-          } catch (refundErr) {
-            console.error(
-              `[TournamentService] CRITICAL: Late reg refund (no table) failed:`,
-              refundErr
-            );
-          }
-          // Notify the caller that registration failed (refund was issued)
-          throw new Error('All tables are currently full — your entry has been refunded');
+          // No table available — DO NOT refund. Player enters the alternate waitlist.
+          // They remain 'registered' in tournament_players and TournamentEngine will seat them.
         }
       } catch (lateRegErr) {
         console.error('[TournamentService] Late reg seating failed:', lateRegErr);
@@ -1588,32 +1511,10 @@ class TournamentService {
       );
     }
 
-    // Atomically deduct wallet for rebuy cost
-    const { data: deductResult, error: walletError } = await retryAsync(
-      () =>
-        supabase.rpc('deduct_player_wallet', {
-          p_user_id: userId,
-          p_amount: rebuyCost,
-        }),
-      3
-    );
-    if (walletError || deductResult === false) throw new Error('Insufficient balance for rebuy');
-
-    // Log transaction for audit trail
-    await WalletService.logTransaction(
-      userId,
-      'PLAYER',
-      -rebuyCost,
-      'debit',
-      'rebuy',
-      `Tournament rebuy: ${tournament.name}`,
-      undefined,
-      undefined,
-      tournamentId
-    );
     masterBus.emit('BALANCE_UPDATED', { source: 'tournament_rebuy', userId });
 
-    // Process rebuy via RPC
+    // Process rebuy via ATOMIC RPC
+    // (This RPC handles the wallet deduction and logging natively. It rolls back automatically on failure.)
     const { data, error } = await retryAsync(
       () =>
         supabase.rpc('process_tournament_rebuy', {
@@ -1628,21 +1529,9 @@ class TournamentService {
     );
 
     if (error) {
-      console.error('[TournamentService] Rebuy process failed, rolling back wallet:', error);
-      const { error: refundErr } = await retryAsync(
-        () =>
-          supabase.rpc('credit_player_wallet', {
-            p_user_id: userId,
-            p_amount: rebuyCost,
-          }),
-        3
-      );
-      if (refundErr) {
-        console.error('[TournamentService] CRITICAL: Rebuy refund failed:', refundErr.message);
-      } else {
-        // Reverse the UI balance optimistic update
-        masterBus.emit('BALANCE_UPDATED', { source: 'tournament_rebuy_rollback', userId });
-      }
+      console.error('[TournamentService] Rebuy RPC failed. No chips were deducted:', error);
+      // Reverse the UI balance optimistic update
+      masterBus.emit('BALANCE_UPDATED', { source: 'tournament_rebuy_rollback', userId });
       throw error;
     }
 
@@ -1736,32 +1625,10 @@ class TournamentService {
       );
     }
 
-    // Atomically deduct wallet for add-on cost
-    const { data: addonDeductResult, error: walletError } = await retryAsync(
-      () =>
-        supabase.rpc('deduct_player_wallet', {
-          p_user_id: userId,
-          p_amount: addonCost,
-        }),
-      3
-    );
-    if (walletError || addonDeductResult === false)
-      throw new Error('Insufficient balance for add-on');
-
-    // Log transaction for audit trail
-    await WalletService.logTransaction(
-      userId,
-      'PLAYER',
-      -addonCost,
-      'debit',
-      'addon',
-      `Tournament add-on: ${tournament.name}`,
-      undefined,
-      undefined,
-      tournamentId
-    );
     masterBus.emit('BALANCE_UPDATED', { source: 'tournament_addon', userId });
 
+    // Process addon via ATOMIC RPC
+    // (This handles wallet deduction, logging, and rollback natively)
     const { data, error } = await retryAsync(
       () =>
         supabase.rpc('process_tournament_rebuy', {
@@ -1776,20 +1643,9 @@ class TournamentService {
     );
 
     if (error) {
-      console.error('[TournamentService] Add-on process failed, rolling back wallet:', error);
-      const { error: refundErr } = await retryAsync(
-        () =>
-          supabase.rpc('credit_player_wallet', {
-            p_user_id: userId,
-            p_amount: addonCost,
-          }),
-        3
-      );
-      if (refundErr) {
-        console.error('[TournamentService] CRITICAL: Add-on refund failed:', refundErr.message);
-      } else {
-        masterBus.emit('BALANCE_UPDATED', { source: 'tournament_addon_rollback', userId });
-      }
+      console.error('[TournamentService] Add-on process failed. No chips were deducted:', error);
+      // Reverse the UI balance optimistic update
+      masterBus.emit('BALANCE_UPDATED', { source: 'tournament_addon_rollback', userId });
       throw error;
     }
 

@@ -412,9 +412,10 @@ class AutoRebuyServiceCore {
     try {
       // Get current wallet balance
       const { data: walletData, error: walletError } = await supabase
-        .from('player_wallets')
-        .select('available_balance')
+        .from('wallets')
+        .select('balance')
         .eq('user_id', horseId)
+        .eq('wallet_type', 'PLAYER')
         .maybeSingle();
 
       if (walletError) {
@@ -422,7 +423,7 @@ class AutoRebuyServiceCore {
         return false;
       }
 
-      const currentBalance = walletData?.available_balance || 0;
+      const currentBalance = walletData?.balance || 0;
 
       // If balance is sufficient, no topup needed
       if (currentBalance >= this.minWalletBalance && currentBalance >= requiredAmount) {

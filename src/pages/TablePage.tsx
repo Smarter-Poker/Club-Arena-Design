@@ -1184,6 +1184,121 @@ export default function TablePage({
     return () => unsubscribe();
   }, [tableId]);
 
+  // 🛡️ SECURE HOLE CARD PROVISIONING RECEIVER (ANTI-GOD-MODE) 🛡️
+  // Subscribes directly to Postgres RLS-protected table to bypass public WebSocket leak
+  useEffect(() => {
+    if (!tableId || !userId) return;
+
+    // Direct channel bypassing the public 'hand_state'
+    const channel = masterBus.getOrCreateChannel(`table-cards-secure-${tableId}-${userId}`);
+    channel
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'table_hole_cards',
+          filter: `table_id=eq.${tableId}`,
+        },
+        (payload) => {
+          const row = payload.new;
+          if (row && row.user_id === userId && row.cards) {
+            // Play deal sound if enabled
+            if (soundService.isEnabled()) soundService.playDeal();
+
+            setTableState((prev) => {
+              const updatedPlayers = [...prev.players];
+              const heroIdx = updatedPlayers.findIndex((p) => p && p.id === userId);
+
+              if (heroIdx >= 0 && updatedPlayers[heroIdx]) {
+                const suitMapDeal: Record<string, 'h' | 'd' | 'c' | 's'> = {
+                  hearts: 'h',
+                  diamonds: 'd',
+                  clubs: 'c',
+                  spades: 's',
+                };
+
+                let rawCards = [];
+                try {
+                  rawCards = typeof row.cards === 'string' ? JSON.parse(row.cards) : row.cards;
+                } catch (e) {
+                  rawCards = row.cards as any;
+                }
+
+                const formattedCards = (rawCards || []).map((c: any) => ({
+                  rank: c.rank,
+                  suit: suitMapDeal[c.suit] || (c.suit as 'h' | 'd' | 'c' | 's'),
+                }));
+
+                updatedPlayers[heroIdx] = {
+                  ...updatedPlayers[heroIdx]!,
+                  holeCards: formattedCards,
+                  showCards: true,
+                };
+              }
+              return { ...prev, players: updatedPlayers };
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    // Fallback: Check active hand if page reloads mid-hand and misses the INSERT event
+    const fetchExistingHand = async () => {
+      if (!tableStateRef.current.isHandInProgress) return;
+      const { data } = await supabase
+        .from('table_hole_cards')
+        .select('cards')
+        .eq('table_id', tableId)
+        .eq('user_id', userId)
+        .order('hand_number', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (data && data.cards) {
+        setTableState((prev) => {
+          const updatedPlayers = [...prev.players];
+          const heroIdx = updatedPlayers.findIndex((p) => p && p.id === userId);
+
+          if (
+            heroIdx >= 0 &&
+            updatedPlayers[heroIdx] &&
+            (!updatedPlayers[heroIdx]!.holeCards ||
+              updatedPlayers[heroIdx]!.holeCards!.length === 0)
+          ) {
+            const suitMapDeal: Record<string, 'h' | 'd' | 'c' | 's'> = {
+              hearts: 'h',
+              diamonds: 'd',
+              clubs: 'c',
+              spades: 's',
+            };
+            let rawCards = [];
+            try {
+              rawCards = typeof data.cards === 'string' ? JSON.parse(data.cards) : data.cards;
+            } catch (e) {
+              rawCards = data.cards as any;
+            }
+            updatedPlayers[heroIdx] = {
+              ...updatedPlayers[heroIdx]!,
+              holeCards: (rawCards || []).map((c: any) => ({
+                rank: c.rank,
+                suit: suitMapDeal[c.suit] || (c.suit as any),
+              })),
+              showCards: true,
+            };
+          }
+          return { ...prev, players: updatedPlayers };
+        });
+      }
+    };
+    fetchExistingHand();
+
+    return () => {
+      // Component unmount cleanup
+      channel.unsubscribe().catch(() => {});
+    };
+  }, [tableId, userId]);
+
   // Subscribe to server-side hand state broadcast (ServerTableEngine deals on the server)
   useEffect(() => {
     if (!tableId) return;

@@ -1126,6 +1126,9 @@ export class TournamentEngine {
         table.playerCount = activeSeats.length;
       }
 
+      // Automatically seat alternates if tables have room
+      await this.seatAlternates();
+
       // Update hand count
       this.handsDealt = this.tables.reduce((sum, t) => sum + t.engine.getHandCount(), 0);
 
@@ -1208,6 +1211,91 @@ export class TournamentEngine {
       }
     } finally {
       this.eliminationCheckRunning = false;
+    }
+  }
+
+  /**
+   * Automatically scoops up any 'registered' players from the Alternate List
+   * and drops them into open table seats when full tables free up space.
+   */
+  private async seatAlternates(): Promise<void> {
+    if (!this.running || !this.tournamentInfo || this.tables.length === 0) return;
+
+    // Fetch players waiting on the alternate list (status = 'registered')
+    // Oldest first to be fair
+    const { data: waitlist } = await this.supabase
+      .from('tournament_players')
+      .select('user_id, username')
+      .eq('tournament_id', this.tournamentId)
+      .eq('status', 'registered')
+      .order('created_at', { ascending: true });
+
+    if (!waitlist || waitlist.length === 0) return;
+
+    // We have players waiting. Find open seats at active tables.
+    for (const player of waitlist) {
+      if (!this.running) break;
+
+      // Find an open table (assumes max 9 players per tournament table)
+      const openTable = this.tables.find((t) => t.playerCount < 9);
+      if (!openTable) break; // All tables are full again, must wait for next elimination.
+
+      try {
+        // Find an empty seat number
+        const { data: existingSeats } = await this.supabase
+          .from('table_seats')
+          .select('seat_number')
+          .eq('table_id', openTable.tableId)
+          .is('left_at', null);
+
+        const takenSeats = new Set((existingSeats || []).map((s) => s.seat_number));
+        let seatNumber = 1;
+        while (takenSeats.has(seatNumber) && seatNumber <= 9) seatNumber++;
+
+        // Guard: Mismatch between local playerCount and db state
+        if (seatNumber > 9) {
+          openTable.playerCount = 9; // Corect local cache
+          continue;
+        }
+
+        console.log(
+          `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Seating alternate ${player.username} at table ${openTable.tableId.slice(0, 8)} (Seat ${seatNumber})`
+        );
+
+        // Insert seat
+        const { error: seatErr } = await this.supabase.from('table_seats').insert({
+          table_id: openTable.tableId,
+          user_id: player.user_id,
+          seat_number: seatNumber,
+          stack: this.tournamentInfo.starting_chips,
+        });
+
+        if (!seatErr) {
+          // Update status to playing
+          await this.supabase
+            .from('tournament_players')
+            .update({
+              status: 'playing',
+              chips: this.tournamentInfo.starting_chips,
+              table_id: openTable.tableId,
+            })
+            .eq('tournament_id', this.tournamentId)
+            .eq('user_id', player.user_id);
+
+          // Update local maps
+          openTable.playerCount++;
+          this.players.set(player.user_id, {
+            user_id: player.user_id,
+            username: player.username || player.user_id.slice(0, 8),
+            chips: this.tournamentInfo.starting_chips,
+            status: 'playing',
+            tableId: openTable.tableId,
+            seatNumber,
+          });
+        }
+      } catch (err) {
+        console.error(`[TournamentEngine] Failed to seat alternate ${player.user_id}:`, err);
+      }
     }
   }
 
