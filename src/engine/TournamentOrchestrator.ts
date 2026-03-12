@@ -11,6 +11,8 @@ export class TournamentOrchestrator {
   private activeEngines: Map<string, TournamentEngine> = new Map();
   private isRunning: boolean = false;
   private pollInterval: any = null;
+  // Enhancement #3: Dedup notification emissions
+  private notifiedTournaments: Set<string> = new Set();
 
   // Singleton instance
   private static instance: TournamentOrchestrator;
@@ -314,7 +316,13 @@ export class TournamentOrchestrator {
         const diff = startTime - now;
 
         // 24h notification window (between 24h and 23h before start)
-        if (diff > 23 * 60 * 60 * 1000 && diff <= 24 * 60 * 60 * 1000) {
+        const key24 = `${t.id}_24h`;
+        if (
+          diff > 23 * 60 * 60 * 1000 &&
+          diff <= 24 * 60 * 60 * 1000 &&
+          !this.notifiedTournaments.has(key24)
+        ) {
+          this.notifiedTournaments.add(key24);
           masterBus.emit('TOURNAMENT_STARTING_24H', {
             tournamentId: t.id,
             name: t.name,
@@ -323,7 +331,13 @@ export class TournamentOrchestrator {
         }
 
         // 1h notification window (between 1h and 55m before start)
-        if (diff > 55 * 60 * 1000 && diff <= 60 * 60 * 1000) {
+        const key1h = `${t.id}_1h`;
+        if (
+          diff > 55 * 60 * 1000 &&
+          diff <= 60 * 60 * 1000 &&
+          !this.notifiedTournaments.has(key1h)
+        ) {
+          this.notifiedTournaments.add(key1h);
           masterBus.emit('TOURNAMENT_STARTING_1H', {
             tournamentId: t.id,
             name: t.name,

@@ -106,11 +106,18 @@ export const ConnectionHUD: React.FC<ConnectionHUDProps> = ({ tableId, userId })
       return;
     }
 
+    const MAX_RECONNECT_ATTEMPTS = 10; // Enhancement #6: stop after 10 attempts
     let timeout: ReturnType<typeof setTimeout>;
     let cancelled = false; // Prevents ghost timeout chain after unmount
 
     const attemptReconnect = async (attempt: number) => {
       if (cancelled) return; // Stop if effect was cleaned up
+      if (attempt >= MAX_RECONNECT_ATTEMPTS) {
+        // Enhancement #6: Give up after max attempts
+        setIsReconnecting(false);
+        setReconnectAttempts(attempt);
+        return;
+      }
       setIsReconnecting(true);
       setReconnectAttempts(attempt);
       try {
@@ -175,7 +182,12 @@ export const ConnectionHUD: React.FC<ConnectionHUDProps> = ({ tableId, userId })
               <span className="conn-dc-timeout">Auto-action applied: check/fold</span>
             )}
             {isReconnecting && reconnectAttempts > 0 && (
-              <span className="conn-dc-retry">Retry attempt {reconnectAttempts}...</span>
+              <span className="conn-dc-retry">Retry attempt {reconnectAttempts}/10...</span>
+            )}
+            {!isReconnecting && reconnectAttempts >= 10 && (
+              <span className="conn-dc-retry" style={{ color: '#ef4444' }}>
+                Reconnection failed. Please refresh the page.
+              </span>
             )}
           </div>
         </div>

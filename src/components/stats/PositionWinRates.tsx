@@ -118,6 +118,8 @@ const PositionWinRates: React.FC = () => {
             vpip: hp > 0 ? (live.vpip_count / hp) * 100 : 0,
             pfr: hp > 0 ? (live.pfr_count / hp) * 100 : 0,
             threeBet: hp > 0 ? ((live.three_bet_count || 0) / hp) * 100 : 0,
+            winRate: hp > 0 ? ((live.hands_won || 0) / hp) * 100 : 0,
+            totalProfit: live.total_profit || 0,
           };
         }
         return defPos;

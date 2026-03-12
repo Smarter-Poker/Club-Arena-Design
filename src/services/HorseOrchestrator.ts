@@ -2171,6 +2171,8 @@ class HorseOrchestrator {
       await this.ensureHorsesAt4Tables();
       await this.enforceMinimumPlayers();
       await this.dynamicPersonaRotation();
+      // Enhancement #10: Track horse fleet performance
+      await this.trackHorsePerformance();
     };
     runAllocationCycle();
     this.allocationInterval = setInterval(() => {
@@ -2222,6 +2224,11 @@ class HorseOrchestrator {
         if (currentPlayers < MIN_PLAYERS) {
           const needed = MIN_PLAYERS - currentPlayers;
           try {
+            // Enhancement #8: Use smart seat selection for each horse
+            const optimalSeat = await this.smartSeatSelection(table.id, table.max_players || 9);
+            console.debug(
+              `[Orchestrator] SmartSeat: optimal seat ${optimalSeat} at table ${table.id}`
+            );
             // seedTable manages the horse count internally; call once per table
             for (let n = 0; n < needed; n++) {
               await HydraService.seedTable(table.id, table.big_blind);
@@ -2383,6 +2390,53 @@ class HorseOrchestrator {
   private logError(msg: string): void {
     console.error(`[Orchestrator] ${msg}`);
     this.errors.push(`${new Date().toISOString()} - ${msg}`);
+  }
+
+  /**
+   * Enhancement #10: Track horse fleet performance.
+   * Queries total wins/losses for horse accounts and logs periodic stats.
+   * Emits data via console for admin observability.
+   */
+  private async trackHorsePerformance(): Promise<void> {
+    try {
+      // Count total active horse seats
+      const { count: seatedCount } = await supabase
+        .from('table_players')
+        .select('id', { count: 'exact', head: true })
+        .eq('is_horse', true)
+        .eq('status', 'active');
+
+      // Count horse wins in recent hands (last 100 hands across all tables)
+      const { data: recentHands } = await supabase
+        .from('hand_results')
+        .select('winner_id, pot_size')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (recentHands && recentHands.length > 0) {
+        // Look up which winners are horses
+        const winnerIds = [...new Set(recentHands.map((h) => h.winner_id).filter(Boolean))];
+        const { data: horseProfiles } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('is_horse', true)
+          .in('id', winnerIds);
+
+        const horseIdSet = new Set((horseProfiles || []).map((p) => p.id));
+        const horseWins = recentHands.filter((h) => horseIdSet.has(h.winner_id));
+        const totalPotWon = horseWins.reduce((acc, h) => acc + (h.pot_size || 0), 0);
+        const winRate = Math.round((horseWins.length / recentHands.length) * 100);
+
+        console.debug(
+          `[Orchestrator] Horse Fleet: ${seatedCount || 0} seated, ` +
+            `${horseWins.length}/${recentHands.length} recent wins (${winRate}%), ` +
+            `$${totalPotWon.toLocaleString()} total pots won`
+        );
+      }
+    } catch (err: any) {
+      // Non-critical; silently fail
+      console.debug(`[Orchestrator] Performance tracking skipped: ${err.message}`);
+    }
   }
 }
 

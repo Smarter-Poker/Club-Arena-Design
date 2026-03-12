@@ -1,55 +1,64 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- *  CARD REVEAL — Animated Hole Card Reveal
+ *  CARD REVEAL — Animated Hole Card Reveal (Custom PNG Deck)
  * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * Uses the custom PNG deck for card faces and custom card back images.
+ * Features a 3D flip animation via CSS rotateY + backface-visibility.
  */
 
 import React from 'react';
+import { CardImage, CardBack } from './CardImage';
+import type { Card } from './CardImage';
 import './CardReveal.css';
 
 interface CardRevealProps {
-    cards: string[];
-    isRevealed: boolean;
-    isWinner?: boolean;
-    handName?: string;
+  cards: string[];
+  isRevealed: boolean;
+  isWinner?: boolean;
+  handName?: string;
+}
+
+/**
+ * Parse a string card format ("Ah", "Ts", "2d") into our Card type.
+ * Handles both single-char ranks (2-9, T, J, Q, K, A) and "10" format.
+ */
+function parseCard(cardStr: string): Card {
+  const suit = cardStr.slice(-1) as Card['suit'];
+  let rank = cardStr.slice(0, -1);
+  // Normalize "10" to "T"
+  if (rank === '10') rank = 'T';
+  return { rank: rank as Card['rank'], suit };
 }
 
 export function CardReveal({ cards, isRevealed, isWinner, handName }: CardRevealProps) {
-    const formatCard = (card: string) => {
-        const suit = card.slice(-1);
-        const suitChar = suit === 'h' ? '♥' : suit === 'd' ? '♦' : suit === 'c' ? '♣' : '♠';
-        const isRed = suit === 'h' || suit === 'd';
-        return { rank: card.slice(0, -1), suit: suitChar, isRed };
-    };
-
-    return (
-        <div className={`card-reveal ${isRevealed ? 'revealed' : ''} ${isWinner ? 'winner' : ''}`}>
-            <div className="cards">
-                {cards.map((card, idx) => {
-                    const { rank, suit, isRed } = formatCard(card);
-                    return (
-                        <div
-                            key={idx}
-                            className={`card ${isRevealed ? 'flipped' : ''}`}
-                            style={{ animationDelay: `${idx * 0.1}s` }}
-                        >
-                            <div className="card-inner">
-                                <div className="card-back">♠</div>
-                                <div className={`card-front ${isRed ? 'red' : 'black'}`}>
-                                    <span className="rank">{rank}</span>
-                                    <span className="suit">{suit}</span>
-                                </div>
-                            </div>
-                        </div>
-                    );
-                })}
+  return (
+    <div className={`card-reveal ${isRevealed ? 'revealed' : ''} ${isWinner ? 'winner' : ''}`}>
+      <div className="cards">
+        {cards.map((cardStr, idx) => {
+          const card = parseCard(cardStr);
+          return (
+            <div
+              key={idx}
+              className={`card ${isRevealed ? 'flipped' : ''}`}
+              style={{ animationDelay: `${idx * 0.1}s` }}
+            >
+              <div className="card-inner">
+                <div className="card-back">
+                  <CardBack style="classic" size="md" />
+                </div>
+                <div className="card-front">
+                  <CardImage card={card} deckStyle="4color" size="md" isHighlighted={isWinner} />
+                </div>
+              </div>
             </div>
+          );
+        })}
+      </div>
 
-            {handName && isRevealed && (
-                <div className="hand-name">{handName}</div>
-            )}
-        </div>
-    );
+      {handName && isRevealed && <div className="hand-name">{handName}</div>}
+    </div>
+  );
 }
 
 export default CardReveal;

@@ -59,6 +59,30 @@ export function SettlementCronStatus() {
     };
   }, [refresh]);
 
+  // Enhancement #2: Visual urgency based on time remaining
+  const getUrgencyColor = (countdown: string, type: 'snapshot' | 'payout'): string => {
+    // Parse hours from countdown string (format: "Xd Xh" or "Xh Xm")
+    const dayMatch = countdown.match(/(\d+)d/);
+    const hourMatch = countdown.match(/(\d+)h/);
+    const days = dayMatch ? parseInt(dayMatch[1]) : 0;
+    const hours = days * 24 + (hourMatch ? parseInt(hourMatch[1]) : 0);
+
+    if (type === 'snapshot') {
+      if (hours <= 4) return '#ef4444'; // RED — critical
+      if (hours <= 24) return '#f59e0b'; // AMBER — approaching
+      return '#f59e0b'; // Default amber
+    } else {
+      if (hours <= 2) return '#ef4444'; // RED — imminent
+      if (hours <= 12) return '#f59e0b'; // AMBER — approaching
+      return '#22c55e'; // Green — comfortable
+    }
+  };
+
+  const snapshotColor = getUrgencyColor(status.snapshotCountdown, 'snapshot');
+  const payoutColor = getUrgencyColor(status.payoutCountdown, 'payout');
+  const snapshotUrgent = snapshotColor === '#ef4444';
+  const payoutUrgent = payoutColor === '#ef4444';
+
   return (
     <div
       style={{
@@ -92,8 +116,24 @@ export function SettlementCronStatus() {
           {status.checksPerformed > 0 && ` · Checks: ${status.checksPerformed}`}
         </div>
         <div style={{ display: 'flex', gap: 16, marginTop: 6, fontSize: 11 }}>
-          <span style={{ color: '#f59e0b' }}>📸 Snapshot: {status.snapshotCountdown}</span>
-          <span style={{ color: '#22c55e' }}>💰 Payout: {status.payoutCountdown}</span>
+          <span
+            style={{
+              color: snapshotColor,
+              fontWeight: snapshotUrgent ? 700 : 400,
+              animation: snapshotUrgent ? 'pulse-dot 1s infinite' : 'none',
+            }}
+          >
+            📸 Snapshot: {status.snapshotCountdown}
+          </span>
+          <span
+            style={{
+              color: payoutColor,
+              fontWeight: payoutUrgent ? 700 : 400,
+              animation: payoutUrgent ? 'pulse-dot 1s infinite' : 'none',
+            }}
+          >
+            💰 Payout: {status.payoutCountdown}
+          </span>
         </div>
       </div>
     </div>

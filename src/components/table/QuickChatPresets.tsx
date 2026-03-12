@@ -49,7 +49,7 @@ export const QuickChatPresets: React.FC<QuickChatPresetsProps> = ({
       setCooldown(text);
       setTimeout(() => setCooldown(null), 3000);
     },
-    [tableId, userId, cooldown]
+    [tableId, userId, playerName, cooldown]
   );
 
   const sendReaction = useCallback(
@@ -62,7 +62,7 @@ export const QuickChatPresets: React.FC<QuickChatPresetsProps> = ({
       });
       setShowReactions(false);
     },
-    [tableId, userId]
+    [tableId, userId, playerName]
   );
 
   return (
