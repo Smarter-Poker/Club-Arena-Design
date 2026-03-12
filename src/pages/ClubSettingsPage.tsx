@@ -89,7 +89,11 @@ export default function ClubSettingsPage() {
   const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (clubId) loadClubSettings();
+    let isMounted = true;
+    if (clubId) loadClubSettings(() => isMounted);
+    return () => {
+      isMounted = false;
+    };
   }, [clubId]);
 
   // Section entrance animation
@@ -107,6 +111,7 @@ export default function ClubSettingsPage() {
   // ── Realtime: live club settings changes ──
   useEffect(() => {
     if (!clubId) return;
+    let isMounted = true;
     const channelKey = `club-settings-${clubId}`;
     const channel = masterBus.getOrCreateChannel(channelKey);
     channel
@@ -119,31 +124,34 @@ export default function ClubSettingsPage() {
           filter: `id=eq.${clubId}`,
         },
         () => {
-          loadClubSettings();
+          if (isMounted) loadClubSettings(() => isMounted);
         }
       )
       .subscribe();
     return () => {
+      isMounted = false;
       masterBus.removeRegisteredChannel(channelKey);
     };
   }, [clubId]);
 
   // ── Bus Listeners: cross-page event reactivity ──
   useEffect(() => {
+    let isMounted = true;
     const unsubJoined = masterBus.subscribe('CLUB_JOINED', () => {
-      loadClubSettings();
+      if (isMounted) loadClubSettings(() => isMounted);
     });
     const unsubLeft = masterBus.subscribe('CLUB_LEFT', () => {
-      loadClubSettings();
+      if (isMounted) loadClubSettings(() => isMounted);
     });
     return () => {
+      isMounted = false;
       unsubJoined();
       unsubLeft();
     };
   }, []);
 
-  const loadClubSettings = async () => {
-    setLoading(true);
+  const loadClubSettings = async (getIsMounted?: () => boolean) => {
+    if (!getIsMounted || getIsMounted()) setLoading(true);
     try {
       const { data, error } = await supabase
         .from('clubs')
@@ -151,6 +159,7 @@ export default function ClubSettingsPage() {
         .eq('id', clubId)
         .maybeSingle();
 
+      if (getIsMounted && !getIsMounted()) return;
       if (!error && data) {
         setSettings({
           name: data.name || '',
@@ -185,9 +194,9 @@ export default function ClubSettingsPage() {
       }
     } catch (error) {
       console.error('Failed to load club settings:', error);
-      toast.error('Failed to load club settings');
+      if (!getIsMounted || getIsMounted()) toast.error('Failed to load club settings');
     }
-    setLoading(false);
+    if (!getIsMounted || getIsMounted()) setLoading(false);
   };
 
   const saveSettings = async () => {

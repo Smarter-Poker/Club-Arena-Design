@@ -155,13 +155,21 @@ export default function ClubHomePage() {
 
   // Load user profile on mount
   useEffect(() => {
-    loadUserProfile();
+    let isMounted = true;
+    loadUserProfile(() => isMounted);
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
     if (clubId) {
       clubIdRef.current = clubId;
-      loadClubData();
+      let isMounted = true;
+      loadClubData(() => isMounted);
+      return () => {
+        isMounted = false;
+      };
     }
   }, [clubId]);
 
@@ -249,12 +257,13 @@ export default function ClubHomePage() {
 
   // ── Bus Listeners: cross-page event reactivity (consolidated + debounced) ──
   useEffect(() => {
+    let isMounted = true;
     // Debounce: if multiple events fire within 300ms, only one reload fires
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const debouncedReload = () => {
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
-        loadClubData();
+        if (isMounted) loadClubData(() => isMounted);
       }, 300);
     };
 
@@ -277,12 +286,13 @@ export default function ClubHomePage() {
       }),
     ];
     return () => {
+      isMounted = false;
       if (debounceTimer) clearTimeout(debounceTimer);
       unsubs.forEach((u) => u());
     };
   }, []);
 
-  const loadUserProfile = async () => {
+  const loadUserProfile = async (getIsMounted?: () => boolean) => {
     try {
       const {
         data: { user: authUser },
@@ -295,11 +305,9 @@ export default function ClubHomePage() {
         .eq('id', authUser.id)
         .maybeSingle();
 
+      if (getIsMounted && !getIsMounted()) return;
       if (profileData) {
         setUserProfile(profileData as UserProfileData);
-        // Format player number WITHOUT leading zeros
-        // Use a deterministic hash of user ID as fallback if player_number is not set,
-        // so the same user always sees the same number (not random on each render)
         const pNum =
           (profileData as any).player_number ||
           Math.abs(
@@ -312,9 +320,9 @@ export default function ClubHomePage() {
     }
   };
 
-  const loadClubData = async () => {
+  const loadClubData = async (getIsMounted?: () => boolean) => {
     if (!clubId) return;
-    setLoading(true);
+    if (!getIsMounted || getIsMounted()) setLoading(true);
 
     try {
       // Load club info
@@ -326,10 +334,11 @@ export default function ClubHomePage() {
 
       if (clubError || !clubData) {
         console.error('Failed to load club:', clubError);
-        setLoading(false);
+        if (!getIsMounted || getIsMounted()) setLoading(false);
         return;
       }
 
+      if (getIsMounted && !getIsMounted()) return;
       setClub(clubData);
 
       // Check if current user is owner
@@ -337,6 +346,7 @@ export default function ClubHomePage() {
         data: { user: authUser },
       } = await supabase.auth.getUser();
       if (authUser) {
+        if (getIsMounted && !getIsMounted()) return;
         setIsOwner(clubData.owner_id === authUser.id);
 
         // Load user's wallet and role for this club
@@ -357,6 +367,7 @@ export default function ClubHomePage() {
             .maybeSingle();
           if (diamondData) diamondBal = diamondData.balance || 0;
 
+          if (getIsMounted && !getIsMounted()) return;
           setWallet({
             gold: memberData.chip_balance || 0,
             diamonds: diamondBal,
@@ -430,6 +441,7 @@ export default function ClubHomePage() {
         .order('created_at', { ascending: false });
 
       if (tableData) {
+        if (getIsMounted && !getIsMounted()) return;
         setTables(tableData);
       }
 
@@ -469,6 +481,7 @@ export default function ClubHomePage() {
         }
       }
 
+      if (getIsMounted && !getIsMounted()) return;
       setTournaments(allTournaments);
 
       // Calculate Club Level from live metrics
@@ -489,6 +502,7 @@ export default function ClubHomePage() {
         isInUnion: !!unionId,
         clubAgeDays,
       });
+      if (getIsMounted && !getIsMounted()) return;
       setClubLevel(levelInfo);
 
       // Load BBJ amount (bbj_pools table may not exist yet — graceful fallback)
@@ -508,7 +522,7 @@ export default function ClubHomePage() {
     } catch (error) {
       console.error('Error loading club data:', error);
     } finally {
-      setLoading(false);
+      if (!getIsMounted || getIsMounted()) setLoading(false);
     }
   };
 

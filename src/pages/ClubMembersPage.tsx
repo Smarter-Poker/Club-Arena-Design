@@ -414,14 +414,15 @@ export default function ClubMembersPage() {
   const [visibleMembers, setVisibleMembers] = useState<Set<string>>(new Set());
   const [selectedMember, setSelectedMember] = useState<ClubMember | null>(null);
 
-  const loadMembers = useCallback(async () => {
-    if (!clubId) return;
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('club_members')
-        .select(
-          `
+  const loadMembers = useCallback(
+    async (getIsMounted?: () => boolean) => {
+      if (!clubId) return;
+      if (!getIsMounted || getIsMounted()) setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('club_members')
+          .select(
+            `
                     user_id,
                     role,
                     chip_balance,
@@ -433,63 +434,69 @@ export default function ClubMembersPage() {
                         is_horse
                     )
                 `
-        )
-        .eq('club_id', clubId)
-        .eq('profiles.is_horse', false)
-        .not('status', 'in', '("banned","suspended")');
+          )
+          .eq('club_id', clubId)
+          .eq('profiles.is_horse', false)
+          .not('status', 'in', '("banned","suspended")');
 
-      if (!error && data) {
-        setMembers(
-          data.map((m: any) => ({
-            id: m.user_id,
-            user_id: m.user_id,
-            username: m.profiles?.username || 'Unknown',
-            avatar_url: m.profiles?.avatar_url,
-            role: m.role || 'member',
-            chip_balance: m.chip_balance || 0,
-            joined_at: m.joined_at,
-            is_online: onlineUserIds.has(m.user_id),
-            last_active: undefined,
-            parent_agent_id: m.parent_agent_id,
-          }))
-        );
+        if (getIsMounted && !getIsMounted()) return;
+        if (!error && data) {
+          setMembers(
+            data.map((m: any) => ({
+              id: m.user_id,
+              user_id: m.user_id,
+              username: m.profiles?.username || 'Unknown',
+              avatar_url: m.profiles?.avatar_url,
+              role: m.role || 'member',
+              chip_balance: m.chip_balance || 0,
+              joined_at: m.joined_at,
+              is_online: onlineUserIds.has(m.user_id),
+              last_active: undefined,
+              parent_agent_id: m.parent_agent_id,
+            }))
+          );
 
-        // Fetch current user's role
-        if (user?.id) {
-          const { data: memberData } = await supabase
-            .from('club_members')
-            .select('role')
-            .eq('club_id', clubId)
-            .eq('user_id', user.id)
-            .maybeSingle();
+          // Fetch current user's role
+          if (user?.id) {
+            const { data: memberData } = await supabase
+              .from('club_members')
+              .select('role')
+              .eq('club_id', clubId)
+              .eq('user_id', user.id)
+              .maybeSingle();
 
-          if (memberData) {
-            setUserRole(memberData.role || 'member');
+            if (getIsMounted && !getIsMounted()) return;
+            if (memberData) {
+              setUserRole(memberData.role || 'member');
+            }
           }
         }
+      } catch (error) {
+        console.error('Failed to load members:', error);
+        toast.error('Failed to load members');
       }
-    } catch (error) {
-      console.error('Failed to load members:', error);
-      toast.error('Failed to load members');
-    }
-    setLoading(false);
-  }, [clubId, user?.id, onlineUserIds]);
+      if (!getIsMounted || getIsMounted()) setLoading(false);
+    },
+    [clubId, user?.id, onlineUserIds]
+  );
 
   useEffect(() => {
-    if (clubId) loadMembers();
+    let isMounted = true;
+    if (clubId) loadMembers(() => isMounted);
 
     // Subscribe to bus-level CLUB_UPDATED for cross-component sync (role changes, kicks, approvals)
     const unsubClub = masterBus.subscribeDebounced(
       'CLUB_UPDATED',
       (event) => {
         if (!clubId || event.payload?.clubId === clubId) {
-          loadMembers();
+          if (isMounted) loadMembers(() => isMounted);
         }
       },
       500
     );
 
     return () => {
+      isMounted = false;
       unsubClub();
     };
   }, [clubId]);
@@ -508,6 +515,7 @@ export default function ClubMembersPage() {
   // Real-time club members table updates
   useEffect(() => {
     if (!clubId) return;
+    let isMounted = true;
 
     const channelKey = `club-members-sync-${clubId}`;
     const channel = masterBus.getOrCreateChannel(channelKey);
@@ -521,12 +529,13 @@ export default function ClubMembersPage() {
           filter: `club_id=eq.${clubId}`,
         },
         () => {
-          loadMembers();
+          if (isMounted) loadMembers(() => isMounted);
         }
       )
       .subscribe();
 
     return () => {
+      isMounted = false;
       masterBus.removeRegisteredChannel(channelKey);
     };
   }, [clubId]);

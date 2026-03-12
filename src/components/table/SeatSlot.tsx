@@ -66,6 +66,7 @@ export interface SeatSlotProps {
   showHUD?: boolean; // Whether to show the HUD overlay
   playerStyle?: PlayerStyleResult | null; // Auto-classified player archetype
   deckStyle?: '4color' | '2color';
+  cardBack?: string; // Card back design ID (e.g. 'classic_red', 'black', 'clubs_gold')
   showStackInBB?: boolean;
   onSit?: () => void;
   onAction?: () => void;
@@ -133,6 +134,7 @@ function HoleCard({
   isHero = false,
   isWinner = false,
   deckStyle = '4color',
+  cardBack = 'classic_blue',
 }: {
   card?: Card;
   hidden?: boolean;
@@ -140,6 +142,7 @@ function HoleCard({
   isHero?: boolean;
   isWinner?: boolean;
   deckStyle?: '4color' | '2color';
+  cardBack?: string;
 }) {
   // PokerBros-style: hero cards have wider fan tilt, opponents tighter
   const rotation = isHero ? (index === 0 ? -12 : 12) : index === 0 ? -8 : 8;
@@ -148,7 +151,7 @@ function HoleCard({
   if (hidden || !card) {
     return (
       <div className="seat__card seat__card--back" style={{ transform: `rotate(${rotation}deg)` }}>
-        <CardBack size={size} style="classic_blue" />
+        <CardBack size={size} style={cardBack} />
       </div>
     );
   }
@@ -216,6 +219,7 @@ export const SeatSlot = memo(
       showHUD = false,
       playerStyle,
       deckStyle = '4color',
+      cardBack = 'classic_blue',
       showStackInBB = false,
       onSit,
       onAction,
@@ -231,6 +235,7 @@ export const SeatSlot = memo(
       if (diff !== 0 && prevStackRef.current > 0) {
         setStackDelta(diff);
         const t = setTimeout(() => setStackDelta(0), 2000);
+        prevStackRef.current = player.stack; // Update ref BEFORE returning cleanup
         return () => clearTimeout(t);
       }
       prevStackRef.current = player.stack;
@@ -361,6 +366,7 @@ export const SeatSlot = memo(
                 index={i}
                 isWinner={isWinner}
                 deckStyle={deckStyle}
+                cardBack={cardBack}
               />
             ))}
           </div>
@@ -470,6 +476,7 @@ export const SeatSlot = memo(
                 isHero={true}
                 isWinner={isWinner}
                 deckStyle={deckStyle}
+                cardBack={cardBack}
               />
             ))}
           </div>

@@ -862,7 +862,7 @@ export default function TablePage({
   >([]);
 
   // Sound settings state — initialize from persisted settings
-  const [isSoundEnabled, setIsSoundEnabled] = useState(() => {
+  const [isSoundEnabled, setIsSoundEnabled] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem('club-arena-table-settings');
       if (saved) {
@@ -3321,7 +3321,7 @@ export default function TablePage({
     onCallCheck: handleCall,
     onRaise: handleRaise,
     onAllIn: handleAllIn,
-    onToggleSound: () => setIsSoundEnabled((prev: boolean) => !prev),
+    onToggleSound: () => setIsSoundEnabled((prev) => !prev),
     onClosePanel: () => {
       setIsChatCollapsed(true);
       setShowSettings(false);
@@ -3770,6 +3770,7 @@ export default function TablePage({
                   hudStats={player && !player.isHero ? getPlayerHUDStats(player.id) : null}
                   showHUD={userSettings.showHUD && !!player && !player.isHero}
                   deckStyle={userSettings.fourColorDeck ? '4color' : '2color'}
+                  cardBack={userSettings.cardBack || 'classic_blue'}
                   showStackInBB={userSettings.showStackInBB}
                   playerStyle={
                     userSettings.showHUD && player && !player.isHero
@@ -3865,8 +3866,8 @@ export default function TablePage({
               isHandStrengthVisible={userSettings.showHUD}
               isStatsVisible={userSettings.showHUD}
               isAutoRebuyEnabled={false}
-              onToggleSound={() => setIsSoundEnabled((prev: boolean) => !prev)}
-              onToggleChat={() => setIsChatCollapsed((prev: boolean) => !prev)}
+              onToggleSound={() => setIsSoundEnabled((prev) => !prev)}
+              onToggleChat={() => setIsChatCollapsed((prev) => !prev)}
               onToggleHandStrength={() => updateSetting('showHUD', !userSettings.showHUD)}
               onToggleStats={() => updateSetting('showHUD', !userSettings.showHUD)}
               onToggleAutoRebuy={() => {}}
