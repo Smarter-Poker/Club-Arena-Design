@@ -1,37 +1,54 @@
-const { Pool } = require('pg');
+// Push SQL to Supabase via the PostgREST rpc endpoint
+// Uses the service role key to bypass RLS
 const fs = require('fs');
+const https = require('https');
+const url = require('url');
 
-const sql = fs.readFileSync('/Users/smarter.poker/Documents/club-arena/supabase/migrations/20260312005_lucky_wheel_and_missions.sql', 'utf8');
+const SQL = fs.readFileSync('/Users/smarter.poker/Documents/club-arena/supabase/migrations/20260312005_lucky_wheel_and_missions.sql', 'utf8');
+const SUPABASE_URL = 'https://kuklfnapbkmacvwxktbh.supabase.co';
+const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1a2xmbmFwYmttYWN2d3hrdGJoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzczMDg0NCwiZXhwIjoyMDgzMzA2ODQ0fQ.bbDqj-me78PID99npWCZ5qUuINSC1-eCBb1BVhgiSRs';
 
-const passwords = ['215SlalomCt!', 'Bek454545!!', 'gbpAM0n7jNBzY4Co'];
-
-async function run() {
-  for (const pw of passwords) {
-    const cs = `postgresql://postgres.kuklfnapbkmacvwxktbh:${encodeURIComponent(pw)}@aws-0-us-west-2.pooler.supabase.com:5432/postgres`;
-    let pool;
-    try {
-      pool = new Pool({ connectionString: cs, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 15000 });
-      const client = await pool.connect();
-      const start = Date.now();
-      await client.query('BEGIN');
-      const res = await client.query(sql);
-      await client.query('COMMIT');
-      const ms = Date.now() - start;
-      console.log(JSON.stringify({ success: true, ms, command: Array.isArray(res) ? res.map(r => r.command).join(', ') : res.command }, null, 2));
-      client.release();
-      await pool.end();
-      process.exit(0);
-    } catch (e) {
-      if (pool) try { await pool.end(); } catch (_) {}
-      if (e.message.includes('authentication') || e.message.includes('password')) {
-        console.error(`Auth failed for pw ending ...${pw.slice(-3)}, trying next...`);
-        continue;
+// Split SQL into individual statements and execute each via rpc
+// Using the pg_net extension or direct SQL execution endpoint
+async function executeSQL() {
+  const endpoint = `${SUPABASE_URL}/rest/v1/rpc/`;
+  
+  // Try using the Supabase Management API instead 
+  // POST to /pg/query endpoint
+  const parsed = url.parse(`${SUPABASE_URL}/pg/query`);
+  
+  const body = JSON.stringify({ query: SQL });
+  
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: parsed.hostname,
+      path: parsed.path,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+        'apikey': SERVICE_ROLE_KEY,
+        'Content-Length': Buffer.byteLength(body)
       }
-      console.error(JSON.stringify({ success: false, error: e.message, code: e.code, detail: e.detail }));
-      process.exit(1);
-    }
-  }
-  console.error('All passwords failed');
-  process.exit(1);
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        console.log(`Status: ${res.statusCode}`);
+        console.log(`Response: ${data.substring(0, 1000)}`);
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve(data);
+        } else {
+          reject(new Error(`HTTP ${res.statusCode}: ${data}`));
+        }
+      });
+    });
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
 }
-run();
+
+executeSQL()
+  .then(() => { console.log('SQL executed successfully'); process.exit(0); })
+  .catch(e => { console.error('Failed:', e.message); process.exit(1); });
