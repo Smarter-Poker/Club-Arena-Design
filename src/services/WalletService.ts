@@ -196,7 +196,11 @@ export const WalletService = {
     }
 
     // Emit bus event so other pages (CashierPage, ClubFinancials) refresh instantly
-    masterBus.emit('BALANCE_UPDATED', { source: 'mint', userId: mintRecipientId || clubId, amount: chipAmount });
+    masterBus.emit('BALANCE_UPDATED', {
+      source: 'mint',
+      userId: mintRecipientId || clubId,
+      amount: chipAmount,
+    });
 
     return {
       success: true,
