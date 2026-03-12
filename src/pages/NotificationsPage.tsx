@@ -26,6 +26,7 @@ export default function NotificationsPage() {
   const navigate = useNavigate();
   const { user } = useUserStore();
   const toast = useToast();
+  useVisibilityRefresh(() => loadNotifications());
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [newNotifId, setNewNotifId] = useState<string | null>(null);

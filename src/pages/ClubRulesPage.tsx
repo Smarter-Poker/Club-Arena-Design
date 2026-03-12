@@ -12,6 +12,7 @@ import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
+import { sanitizeInput } from '../utils/sanitizeInput';
 import './ClubRulesPage.css';
 
 const rulesLineAnimationStyle = (index: number) => ({

@@ -34,6 +34,7 @@ export default function ClubAnnouncementsPage() {
   const { clubId } = useParams();
   const { user } = useUserStore();
   const toast = useToast();
+  useVisibilityRefresh(() => loadAnnouncements());
 
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);

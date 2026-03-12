@@ -116,6 +116,7 @@ export default function PlayerStatsPage() {
   const [visibleSummaryCards, setVisibleSummaryCards] = useState(new Set<number>());
   const [visibleSessionRows, setVisibleSessionRows] = useState(new Set<number>());
   const toast = useToast();
+  useVisibilityRefresh(() => loadStats());
 
   // Stagger summary cards on mount
   useEffect(() => {

@@ -130,6 +130,7 @@ export default function CashierPage() {
   const vipInfo = useVIPStatus();
   const { balances, diamonds, mintChips, loadBalances } = useWalletStore();
   const toast = useToast();
+  useVisibilityRefresh(() => loadPendingCashouts());
 
   const [action, setAction] = useState<CashierAction>('send');
   const [amount, setAmount] = useState('');

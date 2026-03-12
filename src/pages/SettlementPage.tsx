@@ -69,6 +69,7 @@ export default function SettlementPage() {
   const { unionId, clubId } = useParams<{ unionId?: string; clubId?: string }>();
   const navigate = useNavigate();
   const toast = useToast();
+  useVisibilityRefresh(() => loadSettlementData());
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isLoading, setIsLoading] = useState(true);
 

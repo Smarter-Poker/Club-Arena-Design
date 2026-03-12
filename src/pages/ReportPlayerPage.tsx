@@ -6,158 +6,163 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
+import { sanitizeInput } from '../utils/sanitizeInput';
 import './ReportPlayerPage.css';
 
 const reportSectionAnimationStyle = (index: number) => ({
-    opacity: 0,
-    transform: 'translateY(8px)',
-    animation: `fadeInUp 0.5s ease-out ${index * 70}ms forwards`,
+  opacity: 0,
+  transform: 'translateY(8px)',
+  animation: `fadeInUp 0.5s ease-out ${index * 70}ms forwards`,
 });
 
 type ReportReason = 'collusion' | 'abuse' | 'cheating' | 'harassment' | 'other';
 
 interface ReportForm {
-    reason: ReportReason;
-    description: string;
-    hand_id?: string;
-    include_chat_logs: boolean;
+  reason: ReportReason;
+  description: string;
+  hand_id?: string;
+  include_chat_logs: boolean;
 }
 
 export default function ReportPlayerPage() {
-    const navigate = useNavigate();
-    const { playerId } = useParams();
-    const { user } = useUserStore();
+  const navigate = useNavigate();
+  const { playerId } = useParams();
+  const { user } = useUserStore();
 
-    const [form, setForm] = useState<ReportForm>({
-        reason: 'abuse',
-        description: '',
-        include_chat_logs: false,
-    });
-    const [submitting, setSubmitting] = useState(false);
-    const [submitted, setSubmitted] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState<ReportForm>({
+    reason: 'abuse',
+    description: '',
+    include_chat_logs: false,
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    const handleSubmit = async () => {
-        if (!form.description.trim()) {
-            setError('Please describe the issue');
-            return;
-        }
-        if (!playerId || !user?.id) return;
-
-        setSubmitting(true);
-        setError(null);
-        try {
-            const { error: submitError } = await supabase
-                .from('player_reports')
-                .insert({
-                    reporter_id: user.id,
-                    reported_player_id: playerId,
-                    reason: form.reason,
-                    description: form.description,
-                    hand_id: form.hand_id || null,
-                    include_chat_logs: form.include_chat_logs,
-                    status: 'pending',
-                });
-
-            if (submitError) throw submitError;
-            setSubmitted(true);
-        } catch (err: any) {
-            console.error('Failed to submit report:', err);
-            setError(err.message || 'Failed to submit report');
-        }
-        setSubmitting(false);
-    };
-
-    const reasonOptions: { value: ReportReason; label: string; icon: string }[] = [
-        { value: 'collusion', label: 'Collusion', icon: '' },
-        { value: 'cheating', label: 'Cheating', icon: '' },
-        { value: 'abuse', label: 'Abusive Behavior', icon: '😤' },
-        { value: 'harassment', label: 'Harassment', icon: '' },
-        { value: 'other', label: 'Other', icon: '' },
-    ];
-
-    if (submitted) {
-        return (
-            <div className="report-page">
-                <div className="success-state">
-                    <span className="success-icon"></span>
-                    <h2>Report Submitted</h2>
-                    <p>Thank you for helping keep our community safe. Our team will review your report within 24 hours.</p>
-                    <button className="btn btn-primary" onClick={() => navigate(-1)}>
-                        Go Back
-                    </button>
-                </div>
-            </div>
-        );
+  const handleSubmit = async () => {
+    if (!form.description.trim()) {
+      setError('Please describe the issue');
+      return;
     }
+    if (!playerId || !user?.id) return;
 
+    setSubmitting(true);
+    setError(null);
+    try {
+      const { error: submitError } = await supabase.from('player_reports').insert({
+        reporter_id: user.id,
+        reported_player_id: playerId,
+        reason: form.reason,
+        description: form.description,
+        hand_id: form.hand_id || null,
+        include_chat_logs: form.include_chat_logs,
+        status: 'pending',
+      });
+
+      if (submitError) throw submitError;
+      setSubmitted(true);
+    } catch (err: any) {
+      console.error('Failed to submit report:', err);
+      setError(err.message || 'Failed to submit report');
+    }
+    setSubmitting(false);
+  };
+
+  const reasonOptions: { value: ReportReason; label: string; icon: string }[] = [
+    { value: 'collusion', label: 'Collusion', icon: '' },
+    { value: 'cheating', label: 'Cheating', icon: '' },
+    { value: 'abuse', label: 'Abusive Behavior', icon: '😤' },
+    { value: 'harassment', label: 'Harassment', icon: '' },
+    { value: 'other', label: 'Other', icon: '' },
+  ];
+
+  if (submitted) {
     return (
-        <div className="report-page">
-
-            <div className="report-content">
-                {error && <div className="error-message">{error}</div>}
-
-                <div className="report-warning" style={reportSectionAnimationStyle(0)}>
-                    <span className="warning-icon"></span>
-                    <p>False reports may result in account suspension. Please only report genuine violations.</p>
-                </div>
-
-                <section className="report-section" style={reportSectionAnimationStyle(1)}>
-                    <h3>Reason for Report</h3>
-                    <div className="reason-options">
-                        {reasonOptions.map(opt => (
-                            <button
-                                key={opt.value}
-                                className={`reason-btn ${form.reason === opt.value ? 'active' : ''}`}
-                                onClick={() => setForm(prev => ({ ...prev, reason: opt.value }))}
-                            >
-                                <span className="reason-icon">{opt.icon}</span>
-                                <span className="reason-label">{opt.label}</span>
-                            </button>
-                        ))}
-                    </div>
-                </section>
-
-                <section className="report-section" style={reportSectionAnimationStyle(2)}>
-                    <h3>Description</h3>
-                    <textarea
-                        placeholder="Please describe what happened in detail..."
-                        value={form.description}
-                        onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
-                        rows={5}
-                    />
-                </section>
-
-                <section className="report-section" style={reportSectionAnimationStyle(3)}>
-                    <h3>Hand ID (Optional)</h3>
-                    <input
-                        type="text"
-                        placeholder="Enter hand ID if applicable..."
-                        value={form.hand_id || ''}
-                        onChange={(e) => setForm(prev => ({ ...prev, hand_id: e.target.value }))}
-                    />
-                </section>
-
-                <section className="report-section" style={reportSectionAnimationStyle(4)}>
-                    <div className="checkbox-row">
-                        <input
-                            type="checkbox"
-                            id="include-chat"
-                            checked={form.include_chat_logs}
-                            onChange={(e) => setForm(prev => ({ ...prev, include_chat_logs: e.target.checked }))}
-                        />
-                        <label htmlFor="include-chat">Include recent chat logs with this player</label>
-                    </div>
-                </section>
-
-                <button
-                    className="btn btn-danger submit-btn"
-                    onClick={handleSubmit}
-                    disabled={submitting || !form.description.trim()}
-                >
-                    {submitting ? 'Submitting...' : 'Submit Report'}
-                </button>
-            </div>
+      <div className="report-page">
+        <div className="success-state">
+          <span className="success-icon"></span>
+          <h2>Report Submitted</h2>
+          <p>
+            Thank you for helping keep our community safe. Our team will review your report within
+            24 hours.
+          </p>
+          <button className="btn btn-primary" onClick={() => navigate(-1)}>
+            Go Back
+          </button>
         </div>
+      </div>
     );
+  }
+
+  return (
+    <div className="report-page">
+      <div className="report-content">
+        {error && <div className="error-message">{error}</div>}
+
+        <div className="report-warning" style={reportSectionAnimationStyle(0)}>
+          <span className="warning-icon"></span>
+          <p>
+            False reports may result in account suspension. Please only report genuine violations.
+          </p>
+        </div>
+
+        <section className="report-section" style={reportSectionAnimationStyle(1)}>
+          <h3>Reason for Report</h3>
+          <div className="reason-options">
+            {reasonOptions.map((opt) => (
+              <button
+                key={opt.value}
+                className={`reason-btn ${form.reason === opt.value ? 'active' : ''}`}
+                onClick={() => setForm((prev) => ({ ...prev, reason: opt.value }))}
+              >
+                <span className="reason-icon">{opt.icon}</span>
+                <span className="reason-label">{opt.label}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="report-section" style={reportSectionAnimationStyle(2)}>
+          <h3>Description</h3>
+          <textarea
+            placeholder="Please describe what happened in detail..."
+            value={form.description}
+            onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+            rows={5}
+          />
+        </section>
+
+        <section className="report-section" style={reportSectionAnimationStyle(3)}>
+          <h3>Hand ID (Optional)</h3>
+          <input
+            type="text"
+            placeholder="Enter hand ID if applicable..."
+            value={form.hand_id || ''}
+            onChange={(e) => setForm((prev) => ({ ...prev, hand_id: e.target.value }))}
+          />
+        </section>
+
+        <section className="report-section" style={reportSectionAnimationStyle(4)}>
+          <div className="checkbox-row">
+            <input
+              type="checkbox"
+              id="include-chat"
+              checked={form.include_chat_logs}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, include_chat_logs: e.target.checked }))
+              }
+            />
+            <label htmlFor="include-chat">Include recent chat logs with this player</label>
+          </div>
+        </section>
+
+        <button
+          className="btn btn-danger submit-btn"
+          onClick={handleSubmit}
+          disabled={submitting || !form.description.trim()}
+        >
+          {submitting ? 'Submitting...' : 'Submit Report'}
+        </button>
+      </div>
+    </div>
+  );
 }

@@ -29,6 +29,7 @@ export default function HandHistoryPage() {
   const navigate = useNavigate();
   const { user } = useUserStore();
   const toast = useToast();
+  useVisibilityRefresh(() => loadHands(true));
   const [hands, setHands] = useState<HandRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
