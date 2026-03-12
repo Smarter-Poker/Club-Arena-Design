@@ -132,7 +132,11 @@ export type BusEventType =
   | 'VIP_POINTS_AWARDED'
   // Horse fleet events
   | 'HORSE_SEATED'
-  | 'HORSE_REMOVED';
+  | 'HORSE_REMOVED'
+  // Final table experience events
+  | 'FINAL_TABLE_REACHED'
+  | 'SHOWDOWN_START'
+  | 'HEADS_UP_SWITCH';
 
 // #13: Type-safe payload map — compile-time enforcement of correct payloads
 export interface BusPayloadMap {
@@ -300,6 +304,42 @@ export interface BusPayloadMap {
   // Horse fleet events
   HORSE_SEATED: { tableId: string; horseId: string; horseName: string };
   HORSE_REMOVED: { tableId: string; horseId: string; reason: string };
+  // Final table experience event payloads
+  FINAL_TABLE_REACHED: {
+    tournamentId: string;
+    tournamentName: string;
+    prizePool: number;
+    players: Array<{
+      userId: string;
+      username: string;
+      chips: number;
+      avatar?: string;
+      stats?: {
+        handsPlayed: number;
+        vpipCount: number;
+        pfrCount: number;
+        aggressiveActions?: number;
+        passiveActions?: number;
+      };
+    }>;
+  };
+  SHOWDOWN_START: {
+    tableId: string;
+    players: Array<{
+      userId: string;
+      seatNumber: number;
+      username: string;
+      cards: Array<{ rank: string; suit: string }>;
+      handName: string;
+      handRank: number;
+      isWinner: boolean;
+    }>;
+  };
+  HEADS_UP_SWITCH: {
+    tournamentId: string;
+    player1: { userId: string; username: string; chips: number };
+    player2: { userId: string; username: string; chips: number };
+  };
 }
 
 export interface BusEvent<T = unknown> {

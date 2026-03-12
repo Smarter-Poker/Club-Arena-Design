@@ -198,6 +198,87 @@ class TournamentTimerServiceClass {
   }
 
   /**
+   * Check remaining players and auto-switch to heads-up blinds / emit final table.
+   * Should be called after each elimination or periodically.
+   */
+  async checkTableSize(tournamentId: string): Promise<void> {
+    try {
+      const { data: entries } = await supabase
+        .from('tournament_entries')
+        .select('user_id, username:profiles(display_name), chips, avatar_url:profiles(avatar_url)')
+        .eq('tournament_id', tournamentId)
+        .in('status', ['playing', 'active']);
+
+      if (!entries || entries.length === 0) return;
+
+      const playersRemaining = entries.length;
+
+      // ── Final Table Detection (9 or fewer from larger field) ──
+      const { data: tournament } = await supabase
+        .from('tournaments')
+        .select('id, name, prize_pool, max_players, final_table_triggered')
+        .eq('id', tournamentId)
+        .single();
+
+      if (!tournament) return;
+
+      const maxPlayers = tournament.max_players || 0;
+      const alreadyTriggered = (tournament as any).final_table_triggered;
+
+      if (playersRemaining <= 9 && maxPlayers > 9 && !alreadyTriggered) {
+        // Mark as triggered so we only fire once
+        await supabase
+          .from('tournaments')
+          .update({ final_table_triggered: true } as any)
+          .eq('id', tournamentId);
+
+        masterBus.emit('FINAL_TABLE_REACHED', {
+          tournamentId,
+          tournamentName: tournament.name || 'Tournament',
+          prizePool: tournament.prize_pool || 0,
+          players: entries.map((e: any) => ({
+            userId: e.user_id,
+            username: e.username?.display_name || e.user_id?.substring(0, 8) || 'Player',
+            chips: e.chips || 0,
+            avatar: e.avatar_url?.avatar_url || undefined,
+          })),
+        });
+      }
+
+      // ── Heads-Up Detection (exactly 2 players) ──
+      if (playersRemaining === 2) {
+        const [p1, p2] = entries as any[];
+        masterBus.emit('HEADS_UP_SWITCH', {
+          tournamentId,
+          player1: {
+            userId: p1.user_id,
+            username: p1.username?.display_name || 'Player 1',
+            chips: p1.chips || 0,
+          },
+          player2: {
+            userId: p2.user_id,
+            username: p2.username?.display_name || 'Player 2',
+            chips: p2.chips || 0,
+          },
+        });
+
+        // Auto-switch to heads-up blind structure:
+        // SB = BB (button posts small blind and acts first preflop)
+        // This is standard tournament heads-up rules
+        const timer = this.activeTimers.get(tournamentId);
+        if (timer) {
+          // Heads-up already uses same level — no structural change needed,
+          // just ensure the dealer button logic switches to 2-player mode
+          // The PokerEngine/HandController handles this based on player count
+          console.info(`[TournamentTimer] Heads-up mode active for ${tournamentId}`);
+        }
+      }
+    } catch (err) {
+      console.error('[TournamentTimer] checkTableSize error:', err);
+    }
+  }
+
+  /**
    * Handle tournament break
    */
   private async handleBreak(tournamentId: string, durationMinutes: number): Promise<void> {

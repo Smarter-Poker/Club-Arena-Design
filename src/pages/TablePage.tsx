@@ -113,6 +113,8 @@ import { BombPotOverlay } from '../components/table/BombPotOverlay';
 import { ConnectionHUD } from '../components/table/ConnectionHUD';
 import { QuickChatPresets } from '../components/table/QuickChatPresets';
 import { TableErrorBoundary } from '../components/common/TableErrorBoundary';
+import { FinalTableOverlay } from '../components/tournament/FinalTableOverlay';
+import { HoleCardReveal } from '../components/tournament/HoleCardReveal';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // RAKE CONFIG HELPER — Derives HandController rake from official chart
@@ -3864,6 +3866,17 @@ export default function TablePage({
           <BombPotOverlay tableId={tableId} />
         </TableErrorBoundary>
       )}
+
+      {/* Final Table Overlay (tournament only) */}
+      {tableId && tableState.isTournament && tableState.tournamentId && (
+        <FinalTableOverlay
+          tournamentId={tableState.tournamentId}
+          tournamentName={tableState.tableName || 'Tournament'}
+        />
+      )}
+
+      {/* Hole Card Reveal (staggered showdown flip) */}
+      {tableId && <HoleCardReveal tableId={tableId} revealDelayMs={600} />}
 
       {/* Quick Chat Presets (one-tap messages) */}
       {tableId && userId !== 'guest' && <QuickChatPresets tableId={tableId} userId={userId} />}

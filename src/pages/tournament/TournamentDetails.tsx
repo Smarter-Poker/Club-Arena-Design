@@ -20,6 +20,7 @@ import { useToast } from '../../components/common/Toast';
 import PageErrorBoundary from '../../components/common/PageErrorBoundary';
 import { TournamentClock } from '../../components/tournament/TournamentClock';
 import { HandForHandBanner } from '../../components/tournament/HandForHandBanner';
+import { FinalTableOverlay } from '../../components/tournament/FinalTableOverlay';
 
 type TabId =
   | 'detail'
@@ -1466,6 +1467,15 @@ export default function TournamentDetails() {
           </div>
         )}
       </div>
+
+      {/* Final Table Overlay */}
+      {tournament.status === 'RUNNING' && tournamentId && (
+        <FinalTableOverlay
+          tournamentId={tournamentId}
+          tournamentName={tournament.name || 'Tournament'}
+          prizePool={tournament.prize_pool || 0}
+        />
+      )}
     </PageErrorBoundary>
   );
 }
