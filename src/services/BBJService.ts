@@ -469,6 +469,17 @@ export const BBJService = {
       return null;
     }
 
+    // Emit BALANCE_UPDATED for all affected players (winner, loser, and dealt-in)
+    // The award_bbj RPC atomically credits all of them
+    const allAffectedUsers = new Set([
+      params.winnerUserId,
+      params.loserUserId,
+      ...params.dealtInPlayerIds,
+    ]);
+    for (const userId of allAffectedUsers) {
+      masterBus.emit('BALANCE_UPDATED', { source: 'bbj_payout', userId });
+    }
+
     return data;
   },
 

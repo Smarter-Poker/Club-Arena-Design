@@ -10,7 +10,7 @@
  * - Each card: Club avatar, ID, name, level, member count
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
@@ -85,6 +85,13 @@ export default function ClubCarouselPage() {
     setShowIntro(false);
   };
 
+  const isMounted = useRef(true);
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   useEffect(() => {
     loadUserData();
   }, []);
@@ -94,12 +101,12 @@ export default function ClubCarouselPage() {
     const channelKey = 'club-carousel-live';
     const channel = masterBus.getOrCreateChannel(channelKey);
     channel
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'club_members' }, () =>
-        loadUserData()
-      )
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'clubs' }, () =>
-        loadUserData()
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'club_members' }, () => {
+        if (isMounted.current) loadUserData();
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'clubs' }, () => {
+        if (isMounted.current) loadUserData();
+      })
       .subscribe();
     return () => {
       masterBus.removeRegisteredChannel(channelKey);
@@ -109,10 +116,10 @@ export default function ClubCarouselPage() {
   // ── Bus Listeners: cross-page event reactivity ──
   useEffect(() => {
     const unsubJoined = masterBus.subscribe('CLUB_JOINED', () => {
-      loadUserData();
+      if (isMounted.current) loadUserData();
     });
     const unsubLeft = masterBus.subscribe('CLUB_LEFT', () => {
-      loadUserData();
+      if (isMounted.current) loadUserData();
     });
     return () => {
       unsubJoined();
@@ -137,6 +144,7 @@ export default function ClubCarouselPage() {
       const {
         data: { user: authUser },
       } = await supabase.auth.getUser();
+      if (!isMounted.current) return;
       if (!authUser) {
         navigate('/auth');
         return;
@@ -150,6 +158,7 @@ export default function ClubCarouselPage() {
           .eq('id', authUser.id)
           .maybeSingle();
 
+        if (!isMounted.current) return;
         if (profileError) {
           console.warn('[ClubCarousel] Profile query error:', profileError.message);
         } else if (profileData) {
@@ -166,6 +175,8 @@ export default function ClubCarouselPage() {
       } catch (err) {
         console.warn('[ClubCarousel] Error loading profile:', err);
       }
+
+      if (!isMounted.current) return;
 
       // Load user's clubs (where they are a member)
       try {
@@ -187,6 +198,7 @@ export default function ClubCarouselPage() {
           )
           .eq('user_id', authUser.id);
 
+        if (!isMounted.current) return;
         if (memberError) {
           console.warn('[ClubCarousel] Memberships query error:', memberError.message);
         } else if (memberData) {
@@ -214,10 +226,11 @@ export default function ClubCarouselPage() {
         console.warn('[ClubCarousel] Error loading memberships:', err);
       }
     } catch (error) {
+      if (!isMounted.current) return;
       console.error('Error loading user data:', error);
       toast.error('Failed to load club data');
     } finally {
-      setLoading(false);
+      if (isMounted.current) setLoading(false);
     }
   };
 

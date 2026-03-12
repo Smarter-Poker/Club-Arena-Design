@@ -60,6 +60,13 @@ export default function TournamentLobbyPage() {
   const [visibleTournaments, setVisibleTournaments] = useState<Set<string>>(new Set());
   const [isInUnion, setIsInUnion] = useState(false);
 
+  const isMounted = useRef(true);
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   // Check if club is in a union (clubs in unions cannot create tournaments)
   useEffect(() => {
     if (!clubId) return;
@@ -71,7 +78,7 @@ export default function TournamentLobbyPage() {
           .eq('club_id', clubId)
           .limit(1)
           .maybeSingle();
-        if (data) setIsInUnion(true);
+        if (isMounted.current && data) setIsInUnion(true);
       } catch {
         /* fail-open */
       }
@@ -418,6 +425,8 @@ export default function TournamentLobbyPage() {
           registrations = regData?.map((r) => r.tournament_id) || [];
         }
 
+        if (!isMounted.current) return;
+
         const mapped: Tournament[] = data.map((t: any) => ({
           id: t.id,
           name: t.name,
@@ -472,9 +481,10 @@ export default function TournamentLobbyPage() {
         setTournaments(mapped);
       }
     } catch (error) {
+      if (!isMounted.current) return;
       console.error('Failed to load tournaments:', error);
     }
-    setLoading(false);
+    if (isMounted.current) setLoading(false);
   };
 
   const handleRegister = async (tournamentId: string) => {

@@ -74,6 +74,12 @@ export default function TournamentResultsPage() {
   const loadTournamentsRef = useRef<() => void>(() => {});
   const loadResultsRef = useRef<() => void>(() => {});
   const loadHandHistoryRef = useRef<() => void>(() => {});
+  const isMounted = useRef(true);
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   // Load completed tournaments
   const loadTournaments = async () => {
@@ -95,6 +101,7 @@ export default function TournamentResultsPage() {
       }
 
       const { data } = await query;
+      if (!isMounted.current) return;
       let completedList = (data || []) as CompletedTournament[];
 
       // If "mine" filter, only show tournaments user participated in
@@ -104,16 +111,18 @@ export default function TournamentResultsPage() {
           .select('tournament_id')
           .eq('user_id', user.id);
 
+        if (!isMounted.current) return;
         const myTournamentIds = new Set((myEntries || []).map((e) => e.tournament_id));
         completedList = completedList.filter((t) => myTournamentIds.has(t.id));
       }
 
       setTournaments(completedList);
     } catch (err) {
+      if (!isMounted.current) return;
       console.error('Failed to load tournament results:', err);
       toast?.error('Failed to load tournament results');
     }
-    setIsLoading(false);
+    if (isMounted.current) setIsLoading(false);
   };
 
   useEffect(() => {
@@ -147,7 +156,7 @@ export default function TournamentResultsPage() {
           .select('*')
           .eq('id', tournamentId)
           .maybeSingle();
-        if (data) {
+        if (isMounted.current && data) {
           setSelectedTournament(data as CompletedTournament);
           deepLinkedRef.current = true;
         }
@@ -168,7 +177,7 @@ export default function TournamentResultsPage() {
       .eq('tournament_id', selectedTournament!.id)
       .order('position', { ascending: true, nullsFirst: false });
 
-    setResults((data || []) as TournamentResult[]);
+    if (isMounted.current) setResults((data || []) as TournamentResult[]);
   };
 
   // Load hand history for selected tournament
@@ -187,7 +196,7 @@ export default function TournamentResultsPage() {
       .order('hand_number', { ascending: false })
       .limit(100);
 
-    setHandHistory((data || []) as HandHistoryRecord[]);
+    if (isMounted.current) setHandHistory((data || []) as HandHistoryRecord[]);
   };
 
   useEffect(() => {
