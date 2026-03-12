@@ -318,21 +318,23 @@ export default function SettlementPage() {
   useEffect(() => {
     if (clubWires.length === 0) return;
     setVisibleWires(new Set());
-    clubWires.forEach((wire, index) => {
+    const timers = clubWires.map((wire, index) =>
       setTimeout(() => {
         setVisibleWires((prev) => new Set(prev).add(wire.id));
-      }, index * 60);
-    });
+      }, index * 60)
+    );
+    return () => timers.forEach(clearTimeout);
   }, [clubWires]);
 
   useEffect(() => {
     if (agentPayouts.length === 0) return;
     setVisiblePayouts(new Set());
-    agentPayouts.forEach((payout, index) => {
+    const timers = agentPayouts.map((payout, index) =>
       setTimeout(() => {
         setVisiblePayouts((prev) => new Set(prev).add(payout.id));
-      }, index * 60);
-    });
+      }, index * 60)
+    );
+    return () => timers.forEach(clearTimeout);
   }, [agentPayouts]);
 
   // Real-time settlement period updates

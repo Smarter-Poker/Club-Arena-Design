@@ -38,6 +38,13 @@ export default function RakebackPage() {
   const [claimStatus, setClaimStatus] = useState<ClaimStatus>('idle');
   const [claimMessage, setClaimMessage] = useState('');
   const [visiblePeriodRows, setVisiblePeriodRows] = useState(new Set<number>());
+  const claimTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (claimTimerRef.current) clearTimeout(claimTimerRef.current);
+    };
+  }, []);
 
   // Refs to avoid stale closures
   const loadRakebackDataRef = useRef<() => void>(() => {});
@@ -213,9 +220,11 @@ export default function RakebackPage() {
         loadRakebackData();
         // Notify other pages that wallet balance changed
         masterBus.emit('WALLET_REFRESHED', { walletType: 'PLAYER', available: 0, total: 0 });
-        setTimeout(() => {
+        if (claimTimerRef.current) clearTimeout(claimTimerRef.current);
+        claimTimerRef.current = setTimeout(() => {
           setClaimStatus('idle');
           setClaimMessage('');
+          claimTimerRef.current = null;
         }, 3000);
       } else {
         setClaimStatus('error');
