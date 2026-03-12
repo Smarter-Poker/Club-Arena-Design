@@ -52,10 +52,38 @@ export type RateLimitAction = keyof typeof RATE_LIMITS;
 export class RateLimiter {
   private entries: Map<string, RateLimitEntry> = new Map();
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
+  private storagePrefix = 'rl:';
 
   constructor() {
+    // Hydrate from sessionStorage (survives page refresh)
+    this.hydrate();
     // Periodic cleanup of expired entries every 60s
     this.cleanupTimer = setInterval(() => this.cleanup(), 60_000);
+  }
+
+  private hydrate(): void {
+    if (typeof sessionStorage === 'undefined') return;
+    try {
+      const raw = sessionStorage.getItem(`${this.storagePrefix}entries`);
+      if (raw) {
+        const parsed: [string, RateLimitEntry][] = JSON.parse(raw);
+        for (const [key, entry] of parsed) {
+          this.entries.set(key, entry);
+        }
+      }
+    } catch {
+      /* ignore corrupt storage */
+    }
+  }
+
+  private persist(): void {
+    if (typeof sessionStorage === 'undefined') return;
+    try {
+      const serialized = JSON.stringify(Array.from(this.entries.entries()));
+      sessionStorage.setItem(`${this.storagePrefix}entries`, serialized);
+    } catch {
+      /* quota exceeded — non-fatal */
+    }
   }
 
   /**
@@ -85,6 +113,7 @@ export class RateLimiter {
     // Allowed — record this request
     entry.timestamps.push(now);
     this.entries.set(key, entry);
+    this.persist(); // persist to sessionStorage
 
     return {
       allowed: true,

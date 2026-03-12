@@ -43,6 +43,7 @@ export const SettlementCronService = {
   timer: null as ReturnType<typeof setInterval> | null,
   isRunning: false,
   lastCheckAt: 0,
+  checksPerformed: 0,
   config: {
     checkIntervalMs: 60 * 60 * 1000, // 1 hour
     autoExecutePayouts: false,
@@ -86,6 +87,26 @@ export const SettlementCronService = {
   },
 
   /**
+   * Get current cron status for admin dashboard / health widget
+   */
+  getStatus(): {
+    isRunning: boolean;
+    lastCheckAt: number | null;
+    nextCheckMs: number | null;
+    checksPerformed: number;
+  } {
+    return {
+      isRunning: !!this.timer,
+      lastCheckAt: this.lastCheckAt,
+      nextCheckMs:
+        this.lastCheckAt && this.config.checkIntervalMs
+          ? Math.max(0, this.config.checkIntervalMs - (Date.now() - this.lastCheckAt))
+          : null,
+      checksPerformed: this.checksPerformed ?? 0,
+    };
+  },
+
+  /**
    * Check if settlement cycle should be triggered
    */
   async check(): Promise<void> {
@@ -96,6 +117,7 @@ export const SettlementCronService = {
 
     this.isRunning = true;
     this.lastCheckAt = Date.now();
+    this.checksPerformed++;
 
     try {
       const period = await SettlementService.getCurrentPeriod();
@@ -137,6 +159,25 @@ export const SettlementCronService = {
             );
           } catch {
             /* best effort */
+          }
+
+          // Automated push/email alert via Supabase edge function
+          try {
+            const { supabase } = await import('../lib/supabase');
+            await supabase.functions.invoke('send-canary-alert', {
+              body: {
+                type: 'canary_failed',
+                totalCredits: canary.totalCredits,
+                totalDebits: canary.totalDebits,
+                difference: canary.difference,
+                periodId: period.id,
+                timestamp: new Date().toISOString(),
+              },
+            });
+          } catch {
+            console.warn(
+              '[SettlementCron] Edge function send-canary-alert unavailable — relying on DB alert'
+            );
           }
 
           masterBus.emit('SETTLEMENT_CYCLE_COMPLETED', {
@@ -207,17 +248,6 @@ export const SettlementCronService = {
       console.warn('[SettlementCron] Canary check error — passing by default:', err);
       return { passed: true, totalCredits: 0, totalDebits: 0, difference: 0 };
     }
-  },
-
-  /**
-   * Get cron status
-   */
-  getStatus(): { running: boolean; lastCheckAt: number; isExecuting: boolean } {
-    return {
-      running: this.timer !== null,
-      lastCheckAt: this.lastCheckAt,
-      isExecuting: this.isRunning,
-    };
   },
 };
 

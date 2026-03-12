@@ -23,7 +23,7 @@ describe('DeltaSyncService', () => {
   let sync: DeltaSyncService<{ pot: number; players: string[]; meta: { level: number } }>;
 
   beforeEach(() => {
-    sync = new DeltaSyncService({ pot: 0, players: [], meta: { level: 1 } });
+    sync = new DeltaSyncService({ pot: 0, players: [] as string[], meta: { level: 1 } });
   });
 
   describe('processMessage — SNAPSHOT', () => {
@@ -42,7 +42,11 @@ describe('DeltaSyncService', () => {
 
   describe('processMessage — DELTA', () => {
     it('applies delta update to existing state', () => {
-      sync.processMessage({ type: 'SNAPSHOT', version: 1, data: { pot: 50, players: ['A'], meta: { level: 1 } } });
+      sync.processMessage({
+        type: 'SNAPSHOT',
+        version: 1,
+        data: { pot: 50, players: ['A'], meta: { level: 1 } },
+      });
       const result = sync.processMessage({ type: 'DELTA', version: 2, data: { pot: 100 } });
       expect(result.applied).toBe(true);
       expect(result.changedKeys).toEqual(['pot']);
@@ -52,7 +56,11 @@ describe('DeltaSyncService', () => {
     });
 
     it('deep merges nested objects', () => {
-      sync.processMessage({ type: 'SNAPSHOT', version: 1, data: { pot: 50, players: [], meta: { level: 1 } } });
+      sync.processMessage({
+        type: 'SNAPSHOT',
+        version: 1,
+        data: { pot: 50, players: [], meta: { level: 1 } },
+      });
       const result = sync.processMessage({
         type: 'DELTA',
         version: 2,
@@ -63,7 +71,11 @@ describe('DeltaSyncService', () => {
     });
 
     it('rejects stale/duplicate deltas', () => {
-      sync.processMessage({ type: 'SNAPSHOT', version: 3, data: { pot: 50, players: [], meta: { level: 1 } } });
+      sync.processMessage({
+        type: 'SNAPSHOT',
+        version: 3,
+        data: { pot: 50, players: [], meta: { level: 1 } },
+      });
       const result = sync.processMessage({ type: 'DELTA', version: 2, data: { pot: 999 } });
       expect(result.applied).toBe(false);
       expect(sync.getState().pot).toBe(50); // unchanged
@@ -72,14 +84,22 @@ describe('DeltaSyncService', () => {
     it('requests snapshot on version gap', () => {
       const snapshotFn = vi.fn();
       sync.onSnapshotRequest(snapshotFn);
-      sync.processMessage({ type: 'SNAPSHOT', version: 1, data: { pot: 10, players: [], meta: { level: 1 } } });
+      sync.processMessage({
+        type: 'SNAPSHOT',
+        version: 1,
+        data: { pot: 10, players: [], meta: { level: 1 } },
+      });
       const result = sync.processMessage({ type: 'DELTA', version: 5, data: { pot: 999 } }); // gap: 1 -> 5
       expect(result.applied).toBe(false);
       expect(snapshotFn).toHaveBeenCalledTimes(1);
     });
 
     it('processes consecutive version correctly', () => {
-      sync.processMessage({ type: 'SNAPSHOT', version: 1, data: { pot: 10, players: [], meta: { level: 1 } } });
+      sync.processMessage({
+        type: 'SNAPSHOT',
+        version: 1,
+        data: { pot: 10, players: [], meta: { level: 1 } },
+      });
       const result = sync.processMessage({ type: 'DELTA', version: 2, data: { pot: 20 } });
       expect(result.applied).toBe(true);
       expect(sync.getVersion()).toBe(2);
@@ -90,19 +110,28 @@ describe('DeltaSyncService', () => {
     it('notifies listeners on state change', () => {
       const listener = vi.fn();
       sync.onChange(listener);
-      sync.processMessage({ type: 'SNAPSHOT', version: 1, data: { pot: 100, players: [], meta: { level: 1 } } });
+      sync.processMessage({
+        type: 'SNAPSHOT',
+        version: 1,
+        data: { pot: 100, players: [], meta: { level: 1 } },
+      });
       expect(listener).toHaveBeenCalledTimes(1);
-      expect(listener).toHaveBeenCalledWith(
-        expect.objectContaining({ pot: 100 }),
-        ['pot', 'players', 'meta']
-      );
+      expect(listener).toHaveBeenCalledWith(expect.objectContaining({ pot: 100 }), [
+        'pot',
+        'players',
+        'meta',
+      ]);
     });
 
     it('returns unsubscribe function', () => {
       const listener = vi.fn();
       const unsub = sync.onChange(listener);
       unsub();
-      sync.processMessage({ type: 'SNAPSHOT', version: 1, data: { pot: 100, players: [], meta: { level: 1 } } });
+      sync.processMessage({
+        type: 'SNAPSHOT',
+        version: 1,
+        data: { pot: 100, players: [], meta: { level: 1 } },
+      });
       expect(listener).not.toHaveBeenCalled();
     });
   });
@@ -127,7 +156,11 @@ describe('DeltaSyncService', () => {
 
   describe('getTimeSinceSync', () => {
     it('returns time since last sync', () => {
-      sync.processMessage({ type: 'SNAPSHOT', version: 1, data: { pot: 0, players: [], meta: { level: 1 } } });
+      sync.processMessage({
+        type: 'SNAPSHOT',
+        version: 1,
+        data: { pot: 0, players: [], meta: { level: 1 } },
+      });
       const elapsed = sync.getTimeSinceSync();
       expect(elapsed).toBeGreaterThanOrEqual(0);
       expect(elapsed).toBeLessThan(100); // should be nearly instant
@@ -234,7 +267,10 @@ describe('RateLimiter', () => {
 // 3. HAND VALIDATION SERVICE (pure logic)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { HandValidationService, type HandValidationInput } from '../../src/services/HandValidationService';
+import {
+  HandValidationService,
+  type HandValidationInput,
+} from '../../src/services/HandValidationService';
 
 describe('HandValidationService', () => {
   const validInput: HandValidationInput = {
@@ -325,7 +361,8 @@ import { AntiCollusionService, type CollusionEvent } from '../../src/services/An
 describe('AntiCollusionService — calculateScore', () => {
   it('calculates base score for FOLD_TO_PLAYER', () => {
     const event: CollusionEvent = {
-      playerA: 'a', playerB: 'b',
+      playerA: 'a',
+      playerB: 'b',
       patternType: 'FOLD_TO_PLAYER',
       evidence: {},
       timestamp: Date.now(),
@@ -336,7 +373,8 @@ describe('AntiCollusionService — calculateScore', () => {
 
   it('calculates higher score for CHIP_DUMP', () => {
     const event: CollusionEvent = {
-      playerA: 'a', playerB: 'b',
+      playerA: 'a',
+      playerB: 'b',
       patternType: 'CHIP_DUMP',
       evidence: {},
       timestamp: Date.now(),
@@ -345,20 +383,24 @@ describe('AntiCollusionService — calculateScore', () => {
     expect(score).toBe(40); // base CHIP_DUMP score
   });
 
-  it('amplifies score based on fold rate evidence', () => {
+  it('amplifies score based on fold rate + pot size evidence', () => {
     const event: CollusionEvent = {
-      playerA: 'a', playerB: 'b',
+      playerA: 'a',
+      playerB: 'b',
       patternType: 'FOLD_TO_PLAYER',
-      evidence: { foldRate: 90 },
+      evidence: { foldRate: 90, potSize: 200 },
       timestamp: Date.now(),
     };
     const score = AntiCollusionService.calculateScore(event);
-    expect(score).toBeGreaterThan(25); // amplified by 0.9 multiplier
+    // foldRate 90/100=0.9, potSize 200/100=2.0 capped→2.0, multiplier=0.9*2.0=1.8
+    // 25 * 1.8 = 45
+    expect(score).toBe(45);
   });
 
   it('amplifies score based on pot size evidence', () => {
     const event: CollusionEvent = {
-      playerA: 'a', playerB: 'b',
+      playerA: 'a',
+      playerB: 'b',
       patternType: 'CHIP_DUMP',
       evidence: { potSize: 200 },
       timestamp: Date.now(),
@@ -369,7 +411,8 @@ describe('AntiCollusionService — calculateScore', () => {
 
   it('caps score at 100', () => {
     const event: CollusionEvent = {
-      playerA: 'a', playerB: 'b',
+      playerA: 'a',
+      playerB: 'b',
       patternType: 'CHIP_DUMP',
       evidence: { potSize: 1000, foldRate: 100 },
       timestamp: Date.now(),
@@ -380,7 +423,8 @@ describe('AntiCollusionService — calculateScore', () => {
 
   it('handles COORDINATED_SEATING with lower base', () => {
     const event: CollusionEvent = {
-      playerA: 'a', playerB: 'b',
+      playerA: 'a',
+      playerB: 'b',
       patternType: 'COORDINATED_SEATING',
       evidence: {},
       timestamp: Date.now(),

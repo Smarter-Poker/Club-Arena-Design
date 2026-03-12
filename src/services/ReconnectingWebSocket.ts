@@ -54,6 +54,10 @@ export class ReconnectingWebSocket {
   private intentionalClose = false;
   private messageHandlers: ((msg: WSMessage) => void)[] = [];
   private statusHandlers: ((status: ConnectionStatus) => void)[] = [];
+  private pendingMessages: WSMessage[] = []; // Queue for offline messages
+  private reconnectStartTime = 0; // For metrics
+  private totalReconnects = 0;
+  private static MAX_PENDING = 100;
 
   constructor(url: string, options: ReconnectingWSOptions = {}) {
     this.url = url;
@@ -85,7 +89,13 @@ export class ReconnectingWebSocket {
       this.ws.send(JSON.stringify(message));
       return true;
     }
-    console.warn('[ReconnectingWS] Cannot send — not connected');
+    // Queue message for later delivery instead of dropping
+    if (this.pendingMessages.length < ReconnectingWebSocket.MAX_PENDING) {
+      this.pendingMessages.push(message);
+      console.debug(`[ReconnectingWS] Queued message (${this.pendingMessages.length} pending)`);
+      return true;
+    }
+    console.warn('[ReconnectingWS] Pending queue full — dropping message');
     return false;
   }
 
@@ -124,10 +134,38 @@ export class ReconnectingWebSocket {
         this.setStatus('connected');
         this.startHeartbeat();
 
+        // Emit metrics on reconnect
+        if (wasReconnect && this.reconnectStartTime > 0) {
+          this.totalReconnects++;
+          const durationMs = Date.now() - this.reconnectStartTime;
+          try {
+            masterBus.emit('WS_METRICS', {
+              reconnectDurationMs: durationMs,
+              totalReconnects: this.totalReconnects,
+              url: this.url,
+            });
+          } catch {
+            /* non-fatal */
+          }
+          this.reconnectStartTime = 0;
+        }
+
         // Send RESYNC if this is a reconnection
         if (wasReconnect) {
           const resyncPayload = this.options.resyncPayload();
           this.send({ type: 'RESYNC', payload: resyncPayload });
+        }
+
+        // Flush pending messages queued during disconnect
+        if (this.pendingMessages.length > 0) {
+          console.debug(
+            `[ReconnectingWS] Flushing ${this.pendingMessages.length} pending messages`
+          );
+          const pending = [...this.pendingMessages];
+          this.pendingMessages = [];
+          for (const msg of pending) {
+            this.ws!.send(JSON.stringify(msg));
+          }
         }
       };
 
@@ -183,6 +221,9 @@ export class ReconnectingWebSocket {
     }
 
     this.retryCount++;
+    if (this.retryCount === 1) {
+      this.reconnectStartTime = Date.now(); // Start metrics timer on first retry
+    }
     this.setStatus('reconnecting');
 
     // Exponential backoff with jitter

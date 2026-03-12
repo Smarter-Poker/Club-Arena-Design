@@ -94,7 +94,12 @@ export type BusEventType =
   | 'WS_DISCONNECTED'
   // Security & Anti-Cheat Events
   | 'COLLUSION_DETECTED'
-  | 'VALIDATION_MISMATCH';
+  | 'VALIDATION_MISMATCH'
+  // Service lifecycle
+  | 'SERVICES_READY'
+  | 'SHOW_TOAST'
+  | 'WS_METRICS'
+  | 'OFFLINE_QUEUE_METRICS';
 
 // #13: Type-safe payload map — compile-time enforcement of correct payloads
 export interface BusPayloadMap {
@@ -176,7 +181,14 @@ export interface BusPayloadMap {
   CHIPS_WITHDRAWN: { tableId: string; userId: string; amount: number; newStack: number };
   // Settlement cron lifecycle
   SETTLEMENT_CYCLE_STARTED: { periodId: string; startedAt: string };
-  SETTLEMENT_CYCLE_COMPLETED: { periodId: string; status: string; canary?: { passed: boolean; totalCredits: number; totalDebits: number; difference: number }; agentsPaid?: number; playersWithRakeback?: number; totalDisbursed?: number };
+  SETTLEMENT_CYCLE_COMPLETED: {
+    periodId: string;
+    status: string;
+    canary?: { passed: boolean; totalCredits: number; totalDebits: number; difference: number };
+    agentsPaid?: number;
+    playersWithRakeback?: number;
+    totalDisbursed?: number;
+  };
   // Resilience & Connection Events
   OFFLINE_QUEUE_REPLAYED: { replayed: number; failed: number };
   WS_CONNECTION_FAILED: { url: string; retries: number };
@@ -185,7 +197,25 @@ export interface BusPayloadMap {
   WS_DISCONNECTED: { url: string };
   // Security & Anti-Cheat Events
   COLLUSION_DETECTED: { playerA: string; playerB: string; patternType: string; score: number };
-  VALIDATION_MISMATCH: { handId: string; tableId: string; discrepancies: { type: string; expected: string; actual: string; severity: string }[] };
+  VALIDATION_MISMATCH: {
+    handId: string;
+    tableId: string;
+    discrepancies: { type: string; expected: string; actual: string; severity: string }[];
+  };
+  // Service lifecycle
+  SERVICES_READY: { services: Record<string, boolean>; timestamp: string };
+  SHOW_TOAST: {
+    severity: 'critical' | 'warning' | 'info';
+    message: string;
+    source?: string;
+    durationMs?: number;
+  };
+  WS_METRICS: { reconnectDurationMs: number; totalReconnects: number; url: string };
+  OFFLINE_QUEUE_METRICS: {
+    replayDurationMs: number;
+    mutationsReplayed: number;
+    mutationsFailed: number;
+  };
 }
 
 export interface BusEvent<T = unknown> {

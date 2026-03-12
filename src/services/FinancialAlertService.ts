@@ -18,7 +18,7 @@ export type AlertSeverity = 'critical' | 'warning' | 'info';
 export interface FinancialAlert {
   id?: string;
   severity: AlertSeverity;
-  source: string;        // e.g. 'CreditService', 'CashoutService'
+  source: string; // e.g. 'CreditService', 'CashoutService'
   message: string;
   context: Record<string, unknown>;
   resolved: boolean;
@@ -26,7 +26,6 @@ export interface FinancialAlert {
 }
 
 export const FinancialAlertService = {
-
   /**
    * Log a critical financial error — persists to DB and emits bus event.
    * For operations where money may be in an inconsistent state.
@@ -81,7 +80,11 @@ export const FinancialAlertService = {
       });
     } catch (err) {
       // If the table doesn't exist yet, log to console as fallback
-      console.error(`[FinancialAlert] DB insert failed — ${severity.toUpperCase()}: ${source}: ${message}`, context, err);
+      console.error(
+        `[FinancialAlert] DB insert failed — ${severity.toUpperCase()}: ${source}: ${message}`,
+        context,
+        err
+      );
     }
 
     // 2. Emit bus event for real-time dashboard
@@ -98,8 +101,21 @@ export const FinancialAlertService = {
     }
 
     // 3. Always log to console for server-side visibility
-    const prefix = severity === 'critical' ? '🔴 CRITICAL' : severity === 'warning' ? '🟡 WARNING' : 'ℹ️ INFO';
+    const prefix =
+      severity === 'critical' ? '🔴 CRITICAL' : severity === 'warning' ? '🟡 WARNING' : 'ℹ️ INFO';
     console.error(`[FinancialAlert] ${prefix}: ${source}: ${message}`, context);
+
+    // 4. Emit toast notification for user-facing display
+    try {
+      masterBus.emit('SHOW_TOAST', {
+        severity,
+        message: `${prefix}: ${message}`,
+        source,
+        durationMs: severity === 'critical' ? 10000 : 5000,
+      });
+    } catch {
+      /* non-fatal */
+    }
   },
 
   /**

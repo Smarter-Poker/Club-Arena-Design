@@ -52,6 +52,37 @@ const SCORE_DECAY_RATE = 0.95; // Score decays 5% per day
 
 // In-memory tracking for current session
 const sessionTracking: Map<string, { folds: number; encounters: number }> = new Map();
+const SESSION_STORAGE_KEY = 'ac:session_tracking';
+
+// Hydrate session tracking from sessionStorage
+function hydrateSession(): void {
+  if (typeof sessionStorage === 'undefined') return;
+  try {
+    const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (raw) {
+      const parsed: [string, { folds: number; encounters: number }][] = JSON.parse(raw);
+      for (const [key, value] of parsed) {
+        sessionTracking.set(key, value);
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+function persistSession(): void {
+  if (typeof sessionStorage === 'undefined') return;
+  try {
+    sessionStorage.setItem(
+      SESSION_STORAGE_KEY,
+      JSON.stringify(Array.from(sessionTracking.entries()))
+    );
+  } catch {
+    /* quota exceeded — non-fatal */
+  }
+}
+
+hydrateSession();
 
 export const AntiCollusionService = {
   /**
@@ -107,6 +138,8 @@ export const AntiCollusionService = {
         timestamp: Date.now(),
       });
     }
+    // Persist to sessionStorage
+    persistSession();
   },
 
   /**
@@ -139,6 +172,8 @@ export const AntiCollusionService = {
         }
       }
     }
+    // Persist to sessionStorage
+    persistSession();
   },
 
   /**

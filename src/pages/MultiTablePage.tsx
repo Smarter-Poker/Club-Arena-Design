@@ -102,17 +102,34 @@ export default function MultiTablePage() {
 
   // Listen for table seating events from other pages
   useEffect(() => {
+    // Type-safe bus handler types (extended beyond base BusPayloadMap)
+    interface SeatedPayload {
+      tableId: string;
+      tableName?: string;
+      seat?: number;
+    }
+    interface LeftPayload {
+      tableId: string;
+    }
+    interface HandPayload {
+      handId: string;
+      tableId: string;
+      pot?: number;
+    }
+
     const unsubSeated = masterBus.subscribe('TABLE_SEATED', (event) => {
-      const tableId = (event as any)?.tableId;
-      if (!tableId) return;
+      const e =
+        (event as unknown as { payload: SeatedPayload }).payload ??
+        (event as unknown as SeatedPayload);
+      if (!e.tableId) return;
       // Functional updater handles dedup check via prev.find — no closure dep needed
       setTables((prev) => {
-        if (prev.length >= MAX_TABLES || prev.find((t) => t.id === tableId)) return prev;
+        if (prev.length >= MAX_TABLES || prev.find((t) => t.id === e.tableId)) return prev;
         return [
           ...prev,
           {
-            id: tableId,
-            name: (event as any)?.tableName || `Table ${prev.length + 1}`,
+            id: e.tableId,
+            name: e.tableName || `Table ${prev.length + 1}`,
             stakes: '',
             isMyTurn: false,
             pot: 0,
@@ -121,18 +138,20 @@ export default function MultiTablePage() {
       });
     });
     const unsubLeft = masterBus.subscribe('TABLE_LEFT', (event) => {
-      const tableId = (event as any)?.tableId;
-      if (tableId) {
-        setTables((prev) => prev.filter((t) => t.id !== tableId));
+      const e =
+        (event as unknown as { payload: LeftPayload }).payload ?? (event as unknown as LeftPayload);
+      if (e.tableId) {
+        setTables((prev) => prev.filter((t) => t.id !== e.tableId));
       }
     });
     const unsubHandComplete = masterBus.subscribeDebounced(
       'HAND_COMPLETED',
       (event) => {
-        const tableId = (event as any)?.tableId;
-        const pot = (event as any)?.pot;
-        if (tableId && typeof pot === 'number') {
-          setTables((prev) => prev.map((t) => (t.id === tableId ? { ...t, pot } : t)));
+        const e =
+          (event as unknown as { payload: HandPayload }).payload ??
+          (event as unknown as HandPayload);
+        if (e.tableId && typeof e.pot === 'number') {
+          setTables((prev) => prev.map((t) => (t.id === e.tableId ? { ...t, pot: e.pot! } : t)));
         }
       },
       300
@@ -151,7 +170,6 @@ export default function MultiTablePage() {
       unsubWsDisconnected();
       unsubWsReconnecting();
     };
-     
   }, []);
 
   // ─── Derived state ───────────────────────────────────────────────────

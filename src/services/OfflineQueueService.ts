@@ -133,6 +133,7 @@ export const OfflineQueueService = {
     this._isReplaying = true;
 
     try {
+      const replayStart = Date.now();
       const mutations = await this.getAll();
       if (mutations.length === 0) {
         this._isReplaying = false;
@@ -169,6 +170,17 @@ export const OfflineQueueService = {
 
       if (replayed > 0) {
         masterBus.emit('OFFLINE_QUEUE_REPLAYED', { replayed, failed });
+      }
+
+      // Emit replay metrics
+      try {
+        masterBus.emit('OFFLINE_QUEUE_METRICS', {
+          replayDurationMs: Date.now() - replayStart,
+          mutationsReplayed: replayed,
+          mutationsFailed: failed,
+        });
+      } catch {
+        /* non-fatal */
       }
 
       return { replayed, failed };
@@ -253,13 +265,27 @@ export const OfflineQueueService = {
 
   openDB(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, 1);
+      const request = indexedDB.open(DB_NAME, 2); // v2: added status index
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
-        if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const oldVersion = event.oldVersion;
+
+        // v1: Create initial store with operationId and createdAt indexes
+        if (oldVersion < 1) {
           const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
           store.createIndex('operationId', 'operationId', { unique: true });
           store.createIndex('createdAt', 'createdAt');
+        }
+
+        // v2: Add status index for filtering pending/replayed/failed
+        if (oldVersion < 2) {
+          if (db.objectStoreNames.contains(STORE_NAME)) {
+            const tx = (event.target as IDBOpenDBRequest).transaction!;
+            const store = tx.objectStore(STORE_NAME);
+            if (!store.indexNames.contains('status')) {
+              store.createIndex('status', 'status');
+            }
+          }
         }
       };
       request.onsuccess = () => resolve(request.result);

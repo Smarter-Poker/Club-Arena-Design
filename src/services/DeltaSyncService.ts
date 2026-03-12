@@ -80,11 +80,13 @@ export class DeltaSyncService<T extends Record<string, unknown>> {
 
       for (const key of changedKeys) {
         const value = message.data[key];
-        if (value !== undefined) {
+        if (value === null) {
+          // Convention: null means "delete this key"
+          delete (newData as Record<string, unknown>)[key];
+        } else if (value !== undefined) {
           // Deep merge for nested objects, shallow for primitives/arrays
           if (
             typeof value === 'object' &&
-            value !== null &&
             !Array.isArray(value) &&
             typeof (newData as Record<string, unknown>)[key] === 'object' &&
             (newData as Record<string, unknown>)[key] !== null
@@ -164,6 +166,14 @@ export class DeltaSyncService<T extends Record<string, unknown>> {
     for (const key of Object.keys(newState)) {
       if (JSON.stringify(oldState[key]) !== JSON.stringify(newState[key])) {
         changedKeys[key] = newState[key];
+        hasChanges = true;
+      }
+    }
+
+    // Detect removed keys (in oldState but not in newState)
+    for (const key of Object.keys(oldState)) {
+      if (!(key in newState)) {
+        changedKeys[key] = null; // null sentinel = delete
         hasChanges = true;
       }
     }
