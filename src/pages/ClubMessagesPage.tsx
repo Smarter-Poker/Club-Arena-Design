@@ -50,77 +50,78 @@ export default function ClubMessagesPage() {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   // Load club conversations
-  const loadClubConversations = useCallback(async () => {
-    if (!user?.id) return;
+  const loadClubConversations = useCallback(
+    async (getIsMounted?: () => boolean) => {
+      if (!user?.id) return;
 
-    setLoading(true);
-    try {
-      // Query conversations where user is a participant and category is 'club'
-      const { data: clubConvs, error: convError } = await supabase
-        .from('conversations')
-        .select(
-          `
+      if (!getIsMounted || getIsMounted()) setLoading(true);
+      try {
+        const { data: clubConvs, error: convError } = await supabase
+          .from('conversations')
+          .select(
+            `
                     id,
                     club_id,
                     updated_at,
                     clubs(id, name, logo_url)
                 `
-        )
-        .contains('participant_ids', [user.id])
-        .eq('category', 'club')
-        .order('updated_at', { ascending: false });
+          )
+          .contains('participant_ids', [user.id])
+          .eq('category', 'club')
+          .order('updated_at', { ascending: false });
 
-      if (convError || !clubConvs) {
-        console.error('Failed to load club conversations:', convError);
-        setLoading(false);
-        return;
+        if (getIsMounted && !getIsMounted()) return;
+        if (convError || !clubConvs) {
+          console.error('Failed to load club conversations:', convError);
+          if (!getIsMounted || getIsMounted()) setLoading(false);
+          return;
+        }
+
+        const mapped: ClubConversation[] = await Promise.all(
+          clubConvs.map(async (conv: any) => {
+            const { data: lastMsg } = await supabase
+              .from('messages')
+              .select('content, created_at')
+              .eq('conversation_id', conv.id)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            const { count: unreadCount } = await supabase
+              .from('messages')
+              .select('*', { count: 'exact', head: true })
+              .eq('conversation_id', conv.id)
+              .eq('receiver_id', user.id)
+              .eq('is_read', false);
+
+            return {
+              id: conv.id,
+              clubId: conv.club_id,
+              clubName: conv.clubs?.name || 'Unknown Club',
+              clubLogo: conv.clubs?.logo_url || '/default-club.png',
+              lastMessage: lastMsg?.content || '',
+              lastMessageTime: lastMsg?.created_at || conv.updated_at,
+              unreadCount: unreadCount || 0,
+              participantCount: 0,
+            };
+          })
+        );
+
+        if (getIsMounted && !getIsMounted()) return;
+        setConversations(mapped);
+      } catch (error) {
+        console.error('Failed to load club conversations:', error);
+        if (!getIsMounted || getIsMounted()) toast.error('Failed to load club conversations');
       }
-
-      // For each conversation, get last message and unread count
-      const mapped: ClubConversation[] = await Promise.all(
-        clubConvs.map(async (conv: any) => {
-          // Get last message
-          const { data: lastMsg } = await supabase
-            .from('messages')
-            .select('content, created_at')
-            .eq('conversation_id', conv.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          // Get unread count
-          const { count: unreadCount } = await supabase
-            .from('messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('conversation_id', conv.id)
-            .eq('receiver_id', user.id)
-            .eq('is_read', false);
-
-          return {
-            id: conv.id,
-            clubId: conv.club_id,
-            clubName: conv.clubs?.name || 'Unknown Club',
-            clubLogo: conv.clubs?.logo_url || '/default-club.png',
-            lastMessage: lastMsg?.content || '',
-            lastMessageTime: lastMsg?.created_at || conv.updated_at,
-            unreadCount: unreadCount || 0,
-            participantCount: 0,
-          };
-        })
-      );
-
-      setConversations(mapped);
-    } catch (error) {
-      console.error('Failed to load club conversations:', error);
-      toast.error('Failed to load club conversations');
-    }
-    setLoading(false);
-  }, [user?.id]);
+      if (!getIsMounted || getIsMounted()) setLoading(false);
+    },
+    [user?.id]
+  );
 
   useEffect(() => {
-    loadClubConversations();
+    let isMounted = true;
+    loadClubConversations(() => isMounted);
 
-    // Real-time subscription
     const channelKey = 'club-messages-updates';
     const channel = masterBus.getOrCreateChannel(channelKey);
     channel
@@ -132,12 +133,14 @@ export default function ClubMessagesPage() {
           table: 'messages',
         },
         () => {
-          loadClubConversations();
+          if (!isMounted) return;
+          loadClubConversations(() => isMounted);
         }
       )
       .subscribe();
 
     return () => {
+      isMounted = false;
       masterBus.removeRegisteredChannel(channelKey);
     };
   }, [loadClubConversations]);

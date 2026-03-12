@@ -46,20 +46,22 @@ export default function InvitePage() {
   const toast = useToast();
 
   useEffect(() => {
-    loadClubInfo();
+    let isMounted = true;
+    loadClubInfo(() => isMounted);
 
-    // Refresh when membership changes (another user joins via invite)
-    const unsubJoined = masterBus.subscribe('CLUB_JOINED', () => loadClubInfo());
+    const unsubJoined = masterBus.subscribe('CLUB_JOINED', () => loadClubInfo(() => isMounted));
     return () => {
+      isMounted = false;
       unsubJoined();
     };
   }, [clubId, inviteCode]);
 
-  const loadClubInfo = async () => {
-    setLoading(true);
-    setError(null);
+  const loadClubInfo = async (getIsMounted?: () => boolean) => {
+    if (!getIsMounted || getIsMounted()) {
+      setLoading(true);
+      setError(null);
+    }
     try {
-      // Find club by ID or invite code
       let clubQuery = supabase.from('clubs').select('*');
 
       if (inviteCode) {
@@ -67,13 +69,16 @@ export default function InvitePage() {
       } else if (clubId) {
         clubQuery = clubQuery.eq('id', clubId);
       } else {
-        setError('Invalid invitation link');
-        setLoading(false);
+        if (!getIsMounted || getIsMounted()) {
+          setError('Invalid invitation link');
+          setLoading(false);
+        }
         return;
       }
 
       const { data: clubData, error: clubError } = await clubQuery.maybeSingle();
 
+      if (getIsMounted && !getIsMounted()) return;
       if (clubError || !clubData) {
         setError('Club not found or invitation expired');
         setLoading(false);
@@ -89,7 +94,6 @@ export default function InvitePage() {
         is_public: clubData.is_public,
       });
 
-      // Check if already a member
       if (user?.id) {
         const { data: membership } = await supabase
           .from('club_members')
@@ -98,14 +102,17 @@ export default function InvitePage() {
           .eq('user_id', user.id)
           .maybeSingle();
 
+        if (getIsMounted && !getIsMounted()) return;
         setAlreadyMember(!!membership);
       }
     } catch (err) {
       console.error('Failed to load club:', err);
-      toast.error('Failed to load club information');
-      setError('Failed to load club information');
+      if (!getIsMounted || getIsMounted()) {
+        toast.error('Failed to load club information');
+        setError('Failed to load club information');
+      }
     }
-    setLoading(false);
+    if (!getIsMounted || getIsMounted()) setLoading(false);
   };
 
   // Generate invite URL and simple QR code when club loads

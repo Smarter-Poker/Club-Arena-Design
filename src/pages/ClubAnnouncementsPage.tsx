@@ -48,9 +48,9 @@ export default function ClubAnnouncementsPage() {
 
   useEffect(() => {
     if (clubId) {
-      loadAnnouncements();
+      let isMounted = true;
+      loadAnnouncements(() => isMounted);
 
-      // Real-time announcements - subscribe to INSERT, UPDATE, DELETE
       const channelKey = `announcements-${clubId}`;
       const channel = masterBus.getOrCreateChannel(channelKey);
       channel
@@ -63,6 +63,7 @@ export default function ClubAnnouncementsPage() {
             filter: `club_id=eq.${clubId}`,
           },
           (payload) => {
+            if (!isMounted) return;
             if (payload.eventType === 'INSERT') {
               toast.info(' New announcement posted!');
             } else if (payload.eventType === 'UPDATE') {
@@ -70,12 +71,13 @@ export default function ClubAnnouncementsPage() {
             } else if (payload.eventType === 'DELETE') {
               toast.info(' Announcement removed!');
             }
-            loadAnnouncements();
+            loadAnnouncements(() => isMounted);
           }
         )
         .subscribe();
 
       return () => {
+        isMounted = false;
         masterBus.removeRegisteredChannel(channelKey);
       };
     }
@@ -91,11 +93,10 @@ export default function ClubAnnouncementsPage() {
     };
   }, []);
 
-  const loadAnnouncements = async () => {
+  const loadAnnouncements = async (getIsMounted?: () => boolean) => {
     if (!clubId) return;
-    setLoading(true);
+    if (!getIsMounted || getIsMounted()) setLoading(true);
     try {
-      // Load announcements
       const { data, error } = await supabase
         .from('club_announcements')
         .select(
@@ -114,6 +115,7 @@ export default function ClubAnnouncementsPage() {
         .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false });
 
+      if (getIsMounted && !getIsMounted()) return;
       if (!error && data) {
         setAnnouncements(
           data.map((a: any) => ({
@@ -127,7 +129,6 @@ export default function ClubAnnouncementsPage() {
         );
       }
 
-      // Check if user is admin
       if (user?.id) {
         const { data: membership } = await supabase
           .from('club_members')
@@ -136,13 +137,14 @@ export default function ClubAnnouncementsPage() {
           .eq('user_id', user.id)
           .maybeSingle();
 
+        if (getIsMounted && !getIsMounted()) return;
         setIsAdmin(['owner', 'admin'].includes(membership?.role || ''));
       }
     } catch (error) {
       console.error('Failed to load announcements:', error);
-      toast.error('Failed to load announcements');
+      if (!getIsMounted || getIsMounted()) toast.error('Failed to load announcements');
     }
-    setLoading(false);
+    if (!getIsMounted || getIsMounted()) setLoading(false);
   };
 
   const handlePost = async () => {
