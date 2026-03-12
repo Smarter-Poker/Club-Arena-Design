@@ -179,6 +179,34 @@ class CashoutServiceClass {
       throw new Error(error.message || 'Failed to complete cashout');
     }
 
+    // Emit balance change — agent received chips from escrow
+    // Get the cashout to know the agent's user_id and player_id
+    try {
+      const cashout = await this.getCashout(cashoutId);
+      if (cashout) {
+        masterBus.emit('BALANCE_UPDATED', {
+          source: 'cashout_complete',
+          userId: cashout.playerId,
+          amount: -cashout.amount,
+        });
+        // Agent balance updated — resolve their user_id from the agents table
+        const { data: agentData } = await supabase
+          .from('agents')
+          .select('user_id')
+          .eq('id', agentId)
+          .maybeSingle();
+        if (agentData?.user_id) {
+          masterBus.emit('BALANCE_UPDATED', {
+            source: 'cashout_complete',
+            userId: agentData.user_id,
+            amount: cashout.amount,
+          });
+        }
+      }
+    } catch {
+      // Non-fatal: cashout succeeded, bus emission is best-effort
+    }
+
     return data === true;
   }
 

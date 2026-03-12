@@ -135,11 +135,27 @@ export default function ClubFinancialsPage() {
       },
       500
     );
+    const unsubChipsAdded = masterBus.subscribeDebounced(
+      'CHIPS_ADDED',
+      () => {
+        loadFinancials();
+      },
+      500
+    );
+    const unsubChipsWithdrawn = masterBus.subscribeDebounced(
+      'CHIPS_WITHDRAWN',
+      () => {
+        loadFinancials();
+      },
+      500
+    );
     return () => {
       unsubBalance();
       unsubWallet();
       unsubCommission();
       unsubSettlement();
+      unsubChipsAdded();
+      unsubChipsWithdrawn();
     };
   }, []);
 

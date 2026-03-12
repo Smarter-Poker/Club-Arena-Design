@@ -110,9 +110,25 @@ export default function TransactionHistoryPage() {
       },
       500
     );
+    const unsubChipsAdded = masterBus.subscribeDebounced(
+      'CHIPS_ADDED',
+      () => {
+        loadTransactions(0, true);
+      },
+      500
+    );
+    const unsubChipsWithdrawn = masterBus.subscribeDebounced(
+      'CHIPS_WITHDRAWN',
+      () => {
+        loadTransactions(0, true);
+      },
+      500
+    );
     return () => {
       unsubWallet();
       unsubBalance();
+      unsubChipsAdded();
+      unsubChipsWithdrawn();
     };
   }, [user?.id]);
 

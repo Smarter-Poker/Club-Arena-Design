@@ -481,10 +481,26 @@ export default function CashierPage() {
       },
       1000
     );
+    const unsubChipsAdded = masterBus.subscribeDebounced(
+      'CHIPS_ADDED',
+      () => {
+        loadBalances(user.id);
+      },
+      500
+    );
+    const unsubChipsWithdrawn = masterBus.subscribeDebounced(
+      'CHIPS_WITHDRAWN',
+      () => {
+        loadBalances(user.id);
+      },
+      500
+    );
     return () => {
       unsubBalance();
       unsubWallet();
       unsubHand();
+      unsubChipsAdded();
+      unsubChipsWithdrawn();
     };
   }, [user?.id, loadBalances, loadTransactions]);
 
