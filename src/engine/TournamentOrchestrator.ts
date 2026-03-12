@@ -167,7 +167,7 @@ export class TournamentOrchestrator {
         .from('tournament_players')
         .select('user_id, chips')
         .eq('tournament_id', tournamentId)
-        .eq('status', 'ACTIVE');
+        .eq('status', 'playing');
 
       if (error) throw error;
 
@@ -249,7 +249,7 @@ export class TournamentOrchestrator {
       for (const flight of flights) {
         await supabase
           .from('tournament_players')
-          .update({ chips: flight.bagged_chips, status: 'ACTIVE' })
+          .update({ chips: flight.bagged_chips, status: 'playing' })
           .eq('tournament_id', tournamentId)
           .eq('user_id', flight.user_id);
       }
