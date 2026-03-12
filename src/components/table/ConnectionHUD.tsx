@@ -191,7 +191,9 @@ export const ConnectionHUD: React.FC<ConnectionHUDProps> = ({ tableId, userId })
               </div>
             )}
             {graceCountdown === 0 && (
-              <span className="conn-dc-timeout">Auto-action applied: check/fold</span>
+              <span className="conn-dc-timeout">
+                Auto-action applied: {autoActionText || 'check/fold'}
+              </span>
             )}
             {isReconnecting && reconnectAttempts > 0 && (
               <span className="conn-dc-retry">Retry attempt {reconnectAttempts}/10...</span>
