@@ -3321,7 +3321,7 @@ export default function TablePage({
     onCallCheck: handleCall,
     onRaise: handleRaise,
     onAllIn: handleAllIn,
-    onToggleSound: () => setIsSoundEnabled((prev) => !prev),
+    onToggleSound: () => setIsSoundEnabled((prev: boolean) => !prev),
     onClosePanel: () => {
       setIsChatCollapsed(true);
       setShowSettings(false);
@@ -3865,8 +3865,8 @@ export default function TablePage({
               isHandStrengthVisible={userSettings.showHUD}
               isStatsVisible={userSettings.showHUD}
               isAutoRebuyEnabled={false}
-              onToggleSound={() => setIsSoundEnabled((prev) => !prev)}
-              onToggleChat={() => setIsChatCollapsed((prev) => !prev)}
+              onToggleSound={() => setIsSoundEnabled((prev: boolean) => !prev)}
+              onToggleChat={() => setIsChatCollapsed((prev: boolean) => !prev)}
               onToggleHandStrength={() => updateSetting('showHUD', !userSettings.showHUD)}
               onToggleStats={() => updateSetting('showHUD', !userSettings.showHUD)}
               onToggleAutoRebuy={() => {}}

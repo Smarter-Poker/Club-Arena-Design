@@ -5,7 +5,7 @@
  * Weekly settlement management for clubs and unions
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
@@ -226,6 +226,14 @@ export default function SettlementPage() {
   const [togglingAutoSettle, setTogglingAutoSettle] = useState(false);
   const [visibleWires, setVisibleWires] = useState<Set<string>>(new Set());
   const [visiblePayouts, setVisiblePayouts] = useState<Set<string>>(new Set());
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   // Load data from SettlementService
   const loadSettlementData = useCallback(async () => {
@@ -265,8 +273,10 @@ export default function SettlementPage() {
         })),
       ];
 
-      setPeriods(mappedPeriods);
-      setSelectedPeriod(mappedPeriods[0]);
+      if (isMounted.current) {
+        setPeriods(mappedPeriods);
+        setSelectedPeriod(mappedPeriods[0]);
+      }
 
       // Generate settlements for current period (skip if no real period)
       if (currentPeriod.id && currentPeriod.id !== 'default') {
@@ -300,16 +310,19 @@ export default function SettlementPage() {
             netPayout: a.netSettlement,
             status: a.status as 'pending' | 'approved' | 'paid',
           }));
-          setAgentPayouts(payouts);
+          if (isMounted.current) {
+            setClubWires(wires);
+            setAgentPayouts(payouts);
+          }
         } catch (settleErr) {
           console.warn('[SettlementPage] No settlements to generate for current period');
         }
       }
     } catch (error) {
       console.error('[SettlementPage] Failed to load data:', error);
-      toast.error('Failed to load settlement data');
+      if (isMounted.current) toast.error('Failed to load settlement data');
     } finally {
-      setIsLoading(false);
+      if (isMounted.current) setIsLoading(false);
     }
   }, []);
 
@@ -368,7 +381,7 @@ export default function SettlementPage() {
                 totalHands: cp.totalHandsDealt,
                 totalPlayers: 0,
               };
-              setSelectedPeriod(mapped);
+              if (isMounted.current) setSelectedPeriod(mapped);
             })
             .catch(() => {});
         }
@@ -382,7 +395,7 @@ export default function SettlementPage() {
         },
         (payload) => {
           // Update club wires state directly for faster UI updates
-          if (payload.eventType === 'UPDATE' && payload.new) {
+          if (payload.eventType === 'UPDATE' && payload.new && isMounted.current) {
             setClubWires((prev) =>
               prev.map((wire) =>
                 wire.clubId === (payload.new as any).club_id
@@ -406,7 +419,7 @@ export default function SettlementPage() {
         },
         (payload) => {
           // Update agent payouts state directly for faster UI updates
-          if (payload.eventType === 'UPDATE' && payload.new) {
+          if (payload.eventType === 'UPDATE' && payload.new && isMounted.current) {
             setAgentPayouts((prev) =>
               prev.map((payout) =>
                 payout.agentId === (payload.new as any).agent_id

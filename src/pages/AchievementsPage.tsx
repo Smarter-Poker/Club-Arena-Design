@@ -227,6 +227,14 @@ export default function AchievementsPage() {
   const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
   const unlockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadAchievementsRef = useRef<(() => Promise<void>) | null>(null);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (user?.id) {
@@ -305,12 +313,12 @@ export default function AchievementsPage() {
         };
       });
 
-      setAchievements(merged);
+      if (isMounted.current) setAchievements(merged);
     } catch (error) {
       console.error('Failed to load achievements:', error);
-      toast?.error('Failed to load achievements');
+      if (isMounted.current) toast?.error('Failed to load achievements');
     }
-    setLoading(false);
+    if (isMounted.current) setLoading(false);
   };
 
   // Store loadAchievements in ref for use in realtime callbacks

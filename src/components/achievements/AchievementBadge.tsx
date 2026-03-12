@@ -39,7 +39,8 @@ export default function AchievementBadge({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setTimeout(() => setMounted(true), 50);
+    const timer = setTimeout(() => setMounted(true), 50);
+    return () => clearTimeout(timer);
   }, []);
 
   const rarityColor = RARITY_COLORS[rarity];
