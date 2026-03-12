@@ -17,7 +17,7 @@ import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import type { PokerTable } from '../types/database.types';
 import DailyLoginReward from '../components/gamification/DailyLoginReward';
-import LuckyDrawWheel, { DEFAULT_SEGMENTS } from '../components/gamification/LuckyDrawWheel';
+import LuckyDrawWheel from '../components/gamification/LuckyDrawWheel';
 import { bonusService } from '../services/BonusService';
 
 type GameFilter = 'all' | 'nlh' | 'plo' | 'ofc' | 'tournaments' | 'favorites';
@@ -488,10 +488,9 @@ export default function LobbyPage() {
       {showLuckyWheel && (
         <LuckyDrawWheel
           onSpin={async () => {
-            // Random segment selection from defaults — server integration future-ready
-            const segments = DEFAULT_SEGMENTS;
-            const randomIndex = Math.floor(Math.random() * segments.length);
-            return segments[randomIndex].id;
+            if (!user?.id) throw new Error('User not loaded');
+            const result = await bonusService.spinLuckyWheel(user.id);
+            return result.segmentId;
           }}
           onClose={() => setShowLuckyWheel(false)}
         />

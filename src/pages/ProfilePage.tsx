@@ -24,6 +24,8 @@ import StreakMultiplier from '../components/gamification/StreakMultiplier';
 import FinancialAchievementBadge from '../components/gamification/FinancialAchievementBadge';
 import CircularGauge from '../components/common/CircularGauge';
 import DiamondRainEffect from '../components/effects/DiamondRainEffect';
+import MissionsPanel, { Mission } from '../components/gamification/MissionsPanel';
+import { dailyChallengeService } from '../services/DailyChallengeService';
 import { useSwipeTabs } from '../hooks/useSwipeTabs';
 import styles from './ProfilePage.module.css';
 
@@ -212,6 +214,7 @@ export default function ProfilePage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<PokerStats>(DEFAULT_STATS);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [missions, setMissions] = useState<Mission[]>([]);
   const [diamonds, setDiamonds] = useState(0);
   const [isVIP, setIsVIP] = useState(false);
   const [dailyStreak, setDailyStreak] = useState(0);
@@ -304,6 +307,28 @@ export default function ProfilePage() {
         } catch {
           // Achievements table may not exist yet
           setAchievements([]);
+        }
+
+        // Load daily missions
+        try {
+          const userMissions = await dailyChallengeService.getTodaysChallenges(authUser.id);
+          setMissions(
+            userMissions.map((mc) => ({
+              id: mc.id,
+              tier: 'daily',
+              title: mc.challenge.name,
+              description: mc.challenge.description,
+              icon: mc.challenge.icon,
+              current: mc.progress,
+              target: mc.challenge.requirement,
+              rewardAmount: mc.challenge.chipReward,
+              rewardType: 'chips',
+              completed: mc.completed,
+              claimed: mc.claimed,
+            }))
+          );
+        } catch (err) {
+          console.error('[PROFILE] Failed to load missions:', err);
         }
 
         // Load transaction history for profit graph
@@ -751,6 +776,43 @@ export default function ProfilePage() {
         <button className={styles.bonusButton} onClick={() => setShowBonusWheel(true)}>
           Daily Bonus
         </button>
+      </section>
+
+      {/* Daily Missions */}
+      <section className={styles.contentSection}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 16,
+          }}
+        >
+          <h3 style={{ margin: 0, fontSize: '0.875rem', color: '#8a9aaa', fontWeight: 600 }}>
+            Daily Missions
+          </h3>
+        </div>
+        <MissionsPanel
+          missions={missions}
+          onClaim={async (missionId) => {
+            if (!user?.id) return;
+            const targetMission = missions.find((m) => m.id === missionId);
+            if (!targetMission) return;
+            try {
+              await dailyChallengeService.claimChallenge(
+                user.id,
+                targetMission.id,
+                targetMission.rewardAmount
+              );
+              setMissions((prev) =>
+                prev.map((m) => (m.id === missionId ? { ...m, claimed: true } : m))
+              );
+            } catch (err: any) {
+              console.error('Failed to claim mission:', err);
+              // Fallback to error handling if needed, button remains active on failure
+            }
+          }}
+        />
       </section>
 
       {/* Achievement Showcase — always visible */}

@@ -30,7 +30,6 @@ interface Promotion {
 }
 
 export default function PromotionsPage() {
-  const navigate = useNavigate();
   useVisibilityRefresh(() => loadPromotions());
   const { clubId } = useParams();
   const { user } = useUserStore();
@@ -49,7 +48,8 @@ export default function PromotionsPage() {
   });
 
   useEffect(() => {
-    loadPromotions();
+    let isMounted = true;
+    loadPromotions(() => isMounted);
 
     // Real-time promotions updates
     const channelKey = 'promotions-live';
@@ -65,17 +65,21 @@ export default function PromotionsPage() {
         },
         () => {
           toast.info(' New promotion available!');
-          loadPromotionsRef.current();
+          if (isMounted) {
+            loadPromotionsRef.current();
+          }
         }
       )
       .subscribe();
 
     return () => {
+      isMounted = false;
       masterBus.removeRegisteredChannel(channelKey);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clubId]);
 
-  const loadPromotions = async () => {
+  const loadPromotions = async (getIsMounted?: () => boolean) => {
     setLoading(true);
     try {
       let query = supabase.from('promotions').select('*').order('start_date', { ascending: false });
@@ -86,6 +90,8 @@ export default function PromotionsPage() {
 
       const { data, error } = await query.limit(20);
 
+      if (getIsMounted && !getIsMounted()) return;
+
       if (!error && data) {
         setPromotions(data);
       }
@@ -93,6 +99,7 @@ export default function PromotionsPage() {
       console.error('Failed to load promotions:', error);
       toast.error('Failed to load promotions');
     }
+    if (getIsMounted && !getIsMounted()) return;
     setLoading(false);
   };
 
@@ -116,6 +123,7 @@ export default function PromotionsPage() {
       setTimeout(() => setVisiblePromoCards((prev) => new Set([...prev, i])), i * 50)
     );
     return () => timers.forEach((t) => clearTimeout(t));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredPromos.length]);
 
   const getTypeIcon = (type: string): string => {

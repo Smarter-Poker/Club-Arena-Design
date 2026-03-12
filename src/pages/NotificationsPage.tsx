@@ -60,8 +60,9 @@ export default function NotificationsPage() {
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     if (user?.id) {
-      loadNotifications();
+      loadNotifications(() => isMounted);
 
       // Subscribe to real-time notifications
       const channelKey = 'user-notifications';
@@ -77,6 +78,7 @@ export default function NotificationsPage() {
             filter: `user_id=eq.${user.id}`,
           },
           (payload) => {
+            if (!isMounted) return;
             const newNotif = payload.new as Notification;
             setNotifications((prev) => [newNotif, ...prev]);
 
@@ -96,6 +98,7 @@ export default function NotificationsPage() {
         .subscribe();
 
       return () => {
+        isMounted = false;
         masterBus.removeRegisteredChannel(channelKey);
         if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
       };
@@ -104,19 +107,21 @@ export default function NotificationsPage() {
 
   // ── Bus Listeners: cross-page notification reactivity ──
   useEffect(() => {
+    let isMounted = true;
     const unsubReceived = masterBus.subscribe('NOTIFICATION_RECEIVED', () => {
-      loadNotifications();
+      if (isMounted) loadNotifications(() => isMounted);
     });
     const unsubCount = masterBus.subscribe('NOTIFICATION_COUNT_CHANGED', () => {
-      loadNotifications();
+      if (isMounted) loadNotifications(() => isMounted);
     });
     return () => {
+      isMounted = false;
       unsubReceived();
       unsubCount();
     };
   }, []);
 
-  const loadNotifications = async () => {
+  const loadNotifications = async (getIsMounted?: () => boolean) => {
     if (!user?.id) return;
     setLoading(true);
     try {
@@ -127,6 +132,8 @@ export default function NotificationsPage() {
         .order('created_at', { ascending: false })
         .limit(50);
 
+      if (getIsMounted && !getIsMounted()) return;
+
       if (!error && data) {
         setNotifications(data);
       }
@@ -134,6 +141,7 @@ export default function NotificationsPage() {
       console.error('Failed to load notifications:', error);
       toast.error('Failed to load notifications');
     }
+    if (getIsMounted && !getIsMounted()) return;
     setLoading(false);
   };
 

@@ -3,14 +3,12 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import {
-  LineChart,
-  Line,
   AreaChart,
   Area,
   BarChart,
@@ -23,7 +21,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from 'recharts';
 import PositionWinRates from '../components/stats/PositionWinRates';
 import SessionHistory from '../components/stats/SessionHistory';
@@ -96,7 +93,6 @@ function useCountUpNumber(target: number, duration: number = 400) {
 }
 
 export default function PlayerStatsPage() {
-  const navigate = useNavigate();
   const { userId } = useParams();
   const { user } = useUserStore();
 
@@ -132,13 +128,19 @@ export default function PlayerStatsPage() {
       );
       return () => timers.forEach((t) => clearTimeout(t));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionHistory.length]);
 
   useEffect(() => {
+    let isMounted = true;
     if (targetUserId) {
-      loadStats();
-      loadSessionHistory();
+      loadStats(() => isMounted);
+      loadSessionHistory(() => isMounted);
     }
+    return () => {
+      isMounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetUserId]);
 
   // ── Realtime: live stats updates when new hands complete ──
@@ -165,6 +167,7 @@ export default function PlayerStatsPage() {
     return () => {
       masterBus.removeRegisteredChannel(channelKey);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetUserId]);
 
   // ── Bus Listeners: debounced refresh from engine events ──
@@ -190,9 +193,10 @@ export default function PlayerStatsPage() {
       unsubHand();
       unsubBalance();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadStats = async () => {
+  const loadStats = async (getIsMounted?: () => boolean) => {
     if (!targetUserId) return;
     setLoading(true);
     try {
@@ -201,6 +205,8 @@ export default function PlayerStatsPage() {
         .select('*')
         .eq('user_id', targetUserId)
         .maybeSingle();
+
+      if (getIsMounted && !getIsMounted()) return;
 
       if (!error && data) {
         setStats(data);
@@ -251,8 +257,10 @@ export default function PlayerStatsPage() {
             fullName: fullNames[p.position] || p.position,
           }))
           .filter((p) => p.value > 0); // Only chart positions with actual wins
+        if (getIsMounted && !getIsMounted()) return;
         setPositionData(mapped.length > 0 ? mapped : []);
       } else {
+        if (getIsMounted && !getIsMounted()) return;
         setPositionData([]);
       }
     } catch (error) {
@@ -262,7 +270,7 @@ export default function PlayerStatsPage() {
     setLoading(false);
   };
 
-  const loadSessionHistory = async () => {
+  const loadSessionHistory = async (getIsMounted?: () => boolean) => {
     try {
       const { data } = await supabase
         .from('player_sessions')
@@ -285,9 +293,11 @@ export default function PlayerStatsPage() {
             cumulative,
           };
         });
+        if (getIsMounted && !getIsMounted()) return;
         setSessionHistory(history);
       } else {
         // No real session data yet — show empty state (no fake data)
+        if (getIsMounted && !getIsMounted()) return;
         setSessionHistory([]);
       }
     } catch (error) {
