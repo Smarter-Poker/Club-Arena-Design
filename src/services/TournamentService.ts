@@ -1209,6 +1209,12 @@ class TournamentService {
       tableAssign.nextSeat++;
     }
 
+    // Update tables.current_players in DB for accurate merge/balance checks
+    for (const ts of tableSeats) {
+      const seatedCount = ts.nextSeat - 1; // nextSeat was incremented after each seat
+      await supabase.from('tables').update({ current_players: seatedCount }).eq('id', ts.tableId);
+    }
+
     // 4. Update Tournament
     const { data, error } = await supabase
       .from('tournaments')

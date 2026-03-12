@@ -1343,9 +1343,21 @@ export default function TablePage({
       const currentBet = (handState.current_bet as number) || 0;
       const currentPlayer = handState.current_player as string | null;
       const dealerSeat = (handState.dealer_seat as number) || 0;
+      const handNumber = (handState.hand_number as number) ?? -1;
 
       setTableState((prev) => {
         const updatedPlayers = [...prev.players];
+
+        // Detect new hand: if hand_number changed, clear all stale holeCards/showCards
+        // to prevent previous hand's cards flashing before new cards arrive
+        const isNewHand = handNumber !== (prev as any)._lastHandNumber && handNumber >= 0;
+        if (isNewHand) {
+          for (let i = 0; i < updatedPlayers.length; i++) {
+            if (updatedPlayers[i]) {
+              updatedPlayers[i] = { ...updatedPlayers[i], holeCards: [], showCards: false } as any;
+            }
+          }
+        }
 
         // Merge server player data with existing UI state
         for (const sp of serverPlayers) {
@@ -1445,7 +1457,8 @@ export default function TablePage({
           currentPlayerSeat,
           dealerSeat,
           isHandInProgress: stage !== 'preflop' || pot > 0,
-        };
+          _lastHandNumber: handNumber,
+        } as any;
       });
     });
 

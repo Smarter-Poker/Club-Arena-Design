@@ -143,6 +143,7 @@ export default function NotificationsPage() {
       if (error) throw error;
 
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+      masterBus.emit('NOTIFICATION_READ', { notifId: id, allRead: false });
     } catch (err) {
       console.error('[Notifications] markAsRead error:', err);
       toast.error('Failed to mark as read');

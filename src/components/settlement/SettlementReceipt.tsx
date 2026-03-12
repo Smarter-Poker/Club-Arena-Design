@@ -6,7 +6,7 @@
  * animated "stamp" effect, and copy-to-clipboard functionality.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { triggerHaptic } from '../../services/HapticService';
 import { masterBus } from '../../core/MasterBus';
 import './SettlementReceipt.css';
@@ -36,6 +36,15 @@ export default function SettlementReceipt({
 }: SettlementReceiptProps) {
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
 
   const shortId = receiptId.slice(0, 8).toUpperCase();
 
@@ -45,7 +54,10 @@ export default function SettlementReceipt({
       triggerHaptic('success');
       masterBus.emit('SETTLEMENT_RECEIPT_COPIED', { receiptId });
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = setTimeout(() => {
+        if (isMountedRef.current) setCopied(false);
+      }, 2000);
     } catch {
       // Fallback: select text
     }
