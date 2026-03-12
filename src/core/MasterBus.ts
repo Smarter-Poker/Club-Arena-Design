@@ -171,7 +171,10 @@ export type BusEventType =
   // Phase 5: Hand Reveal + EV Cashout events
   | 'HAND_REVEALED'
   | 'HAND_MUCKED'
-  | 'EV_CASHOUT_ACCEPTED';
+  | 'EV_CASHOUT_ACCEPTED'
+  // Phase 6: Card Back Store events
+  | 'SETTINGS_CHANGED'
+  | 'DIAMOND_SPENT';
 
 // #13: Type-safe payload map — compile-time enforcement of correct payloads
 export interface BusPayloadMap {
@@ -495,6 +498,9 @@ export interface BusPayloadMap {
     cashoutAmount: number;
     equityPercent: number;
   };
+  // Phase 6: Card Back Store payloads
+  SETTINGS_CHANGED: { setting: string; value: string };
+  DIAMOND_SPENT: { amount: number; item: string; category: string };
 }
 
 export interface BusEvent<T = unknown> {
