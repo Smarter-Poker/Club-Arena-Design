@@ -260,8 +260,7 @@ export default function DailyChallenges() {
         } = await supabase.auth.getUser();
         if (user) {
           // STEP 1: Mark claimed in DB FIRST (idempotent upsert — safe to re-run)
-          // This MUST happen before diamonds are incremented to prevent double-reward exploit:
-          // If diamond increment succeeds but this upsert fails, user could re-claim.
+          // This MUST happen before diamonds are incremented to prevent double-reward exploit.
           const { error: claimError } = await supabase.from('daily_challenge_progress').upsert(
             {
               user_id: user.id,
@@ -275,20 +274,9 @@ export default function DailyChallenges() {
           // CRITICAL: Supabase does NOT throw on errors — it returns {error}. Must check explicitly.
           if (claimError) throw claimError;
 
-          // Lock claimed in local state IMMEDIATELY after DB confirms
-          setClaimed((prev) => {
-            const next = { ...prev, [challengeIndex]: true };
-            try {
-              localStorage.setItem(`${dayKey}_claimed`, JSON.stringify(next));
-            } catch {
-              /* */
-            }
-            return next;
-          });
-
           // STEP 2: Atomically increment diamond balance (TOCTOU-safe)
-          // If this fails, user already lost their claim but gained 0 diamonds.
-          // This is safer than the reverse (gaining diamonds but retaining claim ability).
+          // The upsert is idempotent, so if this step fails the user can safely retry
+          // and the upsert will re-run without side effects.
           const { data: rpcResult, error: diamondError } = await supabase.rpc(
             'increment_diamonds',
             {
@@ -298,6 +286,17 @@ export default function DailyChallenges() {
           );
           if (diamondError) throw diamondError;
           const newBalance = typeof rpcResult === 'number' ? rpcResult : reward;
+
+          // STEP 3: Both DB writes confirmed — NOW lock local state
+          setClaimed((prev) => {
+            const next = { ...prev, [challengeIndex]: true };
+            try {
+              localStorage.setItem(`${dayKey}_claimed`, JSON.stringify(next));
+            } catch {
+              /* */
+            }
+            return next;
+          });
 
           // Emit DIAMOND_BALANCE_CHANGED for header + tile badges
           masterBus.emit('DIAMOND_BALANCE_CHANGED', {
