@@ -97,7 +97,7 @@ export default function MissionsPanel({ missions, onClaim }: MissionsPanelProps)
           </div>
         ) : (
           filtered.map((mission) => {
-            const progress = Math.min(mission.current / mission.target, 1);
+            const progress = mission.target > 0 ? Math.min(mission.current / mission.target, 1) : 0;
             const rewardIcon = REWARD_ICONS[mission.rewardType] || '⭐';
             return (
               <div

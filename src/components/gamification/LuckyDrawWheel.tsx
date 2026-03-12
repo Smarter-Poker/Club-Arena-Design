@@ -61,7 +61,7 @@ export default function LuckyDrawWheel({
     };
   }, []);
 
-  const segAngle = 360 / segments.length;
+  const segAngle = segments.length > 0 ? 360 / segments.length : 45; // fallback to 8 segments
 
   const handleSpin = useCallback(async () => {
     if (spinning || spinsRemaining <= 0) return;
@@ -83,13 +83,14 @@ export default function LuckyDrawWheel({
     if (!isMounted.current) return;
 
     const winIndex = segments.findIndex((s) => s.id === winnerId);
-    const winSegment = segments[winIndex >= 0 ? winIndex : 0];
+    const safeIndex = winIndex >= 0 ? winIndex : 0;
+    const winSegment = segments[safeIndex];
 
     // Calculate final rotation:
     // Multiple full spins (4-6) + offset to land on winning segment
     const fullSpins = (4 + Math.random() * 2) * 360;
     // The pointer is at the top (0°), so we need the winning segment's center there
-    const segCenterAngle = winIndex * segAngle + segAngle / 2;
+    const segCenterAngle = safeIndex * segAngle + segAngle / 2;
     const targetRotation = rotation + fullSpins + (360 - segCenterAngle);
 
     setRotation(targetRotation);
