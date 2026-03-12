@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   disconnectProtectionService,
   type ConnectionState,
@@ -39,12 +39,17 @@ export const ConnectionHUD: React.FC<ConnectionHUDProps> = ({ tableId, userId })
   const [showDisconnectWarning, setShowDisconnectWarning] = useState(false);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const [isReconnecting, setIsReconnecting] = useState(false);
+  /** Prevents the polling interval from overwriting the DISCONNECT_TIMEOUT state */
+  const hasTimedOutRef = useRef(false);
 
   // ── Poll connection state ──
   useEffect(() => {
     const interval = setInterval(() => {
       const state = disconnectProtectionService.getConnectionState(tableId, userId);
       setConn(state);
+
+      // Don't overwrite countdown if DISCONNECT_TIMEOUT has already fired
+      if (hasTimedOutRef.current) return;
 
       // Update grace countdown
       if (state && !state.isConnected && state.graceExpiresAt) {
@@ -63,12 +68,14 @@ export const ConnectionHUD: React.FC<ConnectionHUDProps> = ({ tableId, userId })
     const unsubDC = masterBus.subscribe('PLAYER_DISCONNECTED', (event: any) => {
       const data = event?.payload;
       if (data?.userId === userId && data?.tableId === tableId) {
+        hasTimedOutRef.current = false; // Reset on new disconnect
         setShowDisconnectWarning(true);
       }
     });
     const unsubRC = masterBus.subscribe('PLAYER_RECONNECTED', (event: any) => {
       const data = event?.payload;
       if (data?.userId === userId && data?.tableId === tableId) {
+        hasTimedOutRef.current = false; // Reset on reconnect
         setShowDisconnectWarning(false);
       }
     });
@@ -76,6 +83,7 @@ export const ConnectionHUD: React.FC<ConnectionHUDProps> = ({ tableId, userId })
     const unsubTimeout = masterBus.subscribe('DISCONNECT_TIMEOUT', (event: any) => {
       const data = event?.payload;
       if (data?.userId === userId && data?.tableId === tableId) {
+        hasTimedOutRef.current = true; // Lock the countdown at 0
         setGraceCountdown(0); // Force countdown to 0 to show timeout message
         console.log(
           `[ConnectionHUD] Disconnect timeout — auto-action: ${data.action || 'check_fold'}`

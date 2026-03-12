@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { cashGameOrchestrator } from '../../engine/CashGameOrchestrator';
 import { tournamentOrchestrator } from '../../engine/TournamentOrchestrator';
 import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
 import { useToast } from '../../components/common/Toast';
+import { SettlementCronStatus } from '../../components/SettlementCronStatus';
 import './EngineDashboard.css';
 
 export default function EngineDashboard() {
@@ -102,7 +104,29 @@ export default function EngineDashboard() {
       <header className="engine-header">
         <h1>⚙️ Global Matrix Orchestrator</h1>
         <p>Master Control Panel for the Smarter.Poker Cash Game & Hydra Engines</p>
+        <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+          <Link
+            to="/analytics"
+            style={{
+              padding: '6px 16px',
+              borderRadius: 8,
+              background: 'rgba(59, 130, 246, 0.15)',
+              border: '1px solid rgba(59, 130, 246, 0.3)',
+              color: '#3b82f6',
+              fontSize: 13,
+              fontWeight: 600,
+              textDecoration: 'none',
+            }}
+          >
+            📊 Analytics Dashboard
+          </Link>
+        </div>
       </header>
+
+      {/* ── Settlement Cron Status ─────────────────────────────────── */}
+      <div style={{ marginBottom: 16 }}>
+        <SettlementCronStatus />
+      </div>
 
       <div className="engine-grid">
         <div className="engine-card">
@@ -153,6 +177,16 @@ export default function EngineDashboard() {
             <div className="metric">
               <span className="label">Seated Horses</span>
               <span className="value text-green">{hydraStats.seated}</span>
+            </div>
+          </div>
+          <div className="card-metrics" style={{ marginTop: 8 }}>
+            <div className="metric">
+              <span className="label">3-Player Min</span>
+              <span className="value text-green">ENFORCING</span>
+            </div>
+            <div className="metric">
+              <span className="label">Persona Rotation</span>
+              <span className="value text-green">30m CYCLE</span>
             </div>
           </div>
           <button className="engine-btn btn-secondary" disabled>

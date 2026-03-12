@@ -189,7 +189,8 @@ export function TableChat({
     const unsubChat = masterBus.subscribe('TABLE_CHAT_MESSAGE', (event: any) => {
       const data = event?.payload;
       // QuickChatPresets emits { tableId, userId, message, type }
-      if (data && data.userId !== myPlayerId) {
+      // Guard: if myPlayerId is undefined, skip to prevent own-message duplication
+      if (data && myPlayerId && data.userId !== myPlayerId) {
         setBusMessages((prev) => {
           const newMsg: ChatMessage = {
             id: `bus-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -206,7 +207,7 @@ export function TableChat({
     const unsubReaction = masterBus.subscribe('TABLE_REACTION', (event: any) => {
       const data = event?.payload;
       // QuickChatPresets emits { tableId, userId, emoji }
-      if (data && data.userId !== myPlayerId) {
+      if (data && myPlayerId && data.userId !== myPlayerId) {
         setBusMessages((prev) => {
           const reactionMsg: ChatMessage = {
             id: `react-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
