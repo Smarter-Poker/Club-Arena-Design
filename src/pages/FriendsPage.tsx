@@ -536,7 +536,7 @@ function SwipeableFriendRow({ friend, visible, onMessage, onRemove, navigate }: 
         </div>
         <div className="friend-info">
           <span className="friend-name">{friend.username}</span>
-          {friend.is_online && <span className="fr-at-table-badge">🟢 Online</span>}
+          {/* fr-at-table-badge reserved for future current_table data */}
         </div>
       </div>
     </div>
