@@ -320,6 +320,24 @@ class TournamentService {
     return 9;
   }
 
+  /**
+   * Map tournament game_type (NLH, PLO4, etc.) to the DB game_variant column value.
+   * Mirrors TournamentEngine.mapGameVariant() to keep both code paths in sync.
+   */
+  private static mapGameVariant(gameType?: string | null): string {
+    const map: Record<string, string> = {
+      NLH: 'nlh',
+      PLO: 'plo4',
+      PLO4: 'plo4',
+      PLO5: 'plo5',
+      PLO6: 'plo6',
+      PLO8: 'plo8',
+      OFC_PINEAPPLE: 'ofc_pineapple',
+      SHORT_DECK: 'short_deck',
+    };
+    return map[gameType?.toUpperCase() || ''] || 'nlh';
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   // Tournament CRUD
   // ─────────────────────────────────────────────────────────────────────────────
