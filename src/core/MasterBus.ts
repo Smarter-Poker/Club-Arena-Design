@@ -738,6 +738,8 @@ class MasterBusCore {
     this.debouncedTimers.clear();
     this.eventLog = [];
     this.onEventCallbacks.clear();
+    // Phase 15: Clear dedup fingerprint cache
+    this.recentEventFingerprints.clear();
     // #4: Stop health monitor
     if (this.healthCheckInterval) {
       clearInterval(this.healthCheckInterval);
