@@ -82,7 +82,13 @@ export type BusEventType =
   | 'TABLE_MERGED'
   // Cashier events
   | 'CHIPS_ADDED'
-  | 'CHIPS_WITHDRAWN';
+  | 'CHIPS_WITHDRAWN'
+  // Resilience & Connection Events
+  | 'OFFLINE_QUEUE_REPLAYED'
+  | 'WS_CONNECTION_FAILED'
+  | 'WS_CONNECTED'
+  | 'WS_RECONNECTING'
+  | 'WS_DISCONNECTED';
 
 // #13: Type-safe payload map — compile-time enforcement of correct payloads
 export interface BusPayloadMap {
@@ -162,6 +168,12 @@ export interface BusPayloadMap {
   // Cashier events
   CHIPS_ADDED: { tableId: string; userId: string; amount: number; newStack: number };
   CHIPS_WITHDRAWN: { tableId: string; userId: string; amount: number; newStack: number };
+  // Resilience & Connection Events
+  OFFLINE_QUEUE_REPLAYED: { replayed: number; failed: number };
+  WS_CONNECTION_FAILED: { url: string; retries: number };
+  WS_CONNECTED: { url: string };
+  WS_RECONNECTING: { url: string; attempt: number };
+  WS_DISCONNECTED: { url: string };
 }
 
 export interface BusEvent<T = unknown> {

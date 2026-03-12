@@ -88,6 +88,7 @@ export default function NotificationsPage() {
   }, []);
 
   const loadNotifications = async () => {
+    if (!user?.id) return;
     setLoading(true);
     try {
       const { data, error } = await supabase

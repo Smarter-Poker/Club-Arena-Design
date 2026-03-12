@@ -178,21 +178,41 @@ export default function ClubDashboard() {
 
   // ── Bus Listeners: cross-page event reactivity (debounced to prevent rapid reloads) ──
   useEffect(() => {
-    const unsubClub = masterBus.subscribeDebounced('CLUB_UPDATED', () => {
-      loadDashboardData();
-    }, 500);
-    const unsubBalance = masterBus.subscribeDebounced('BALANCE_UPDATED', () => {
-      loadDashboardData();
-    }, 500);
-    const unsubSeated = masterBus.subscribeDebounced('TABLE_SEATED', () => {
-      loadDashboardData();
-    }, 500);
-    const unsubChipsAdded = masterBus.subscribeDebounced('CHIPS_ADDED', () => {
-      loadDashboardData();
-    }, 500);
-    const unsubChipsWithdrawn = masterBus.subscribeDebounced('CHIPS_WITHDRAWN', () => {
-      loadDashboardData();
-    }, 500);
+    const unsubClub = masterBus.subscribeDebounced(
+      'CLUB_UPDATED',
+      () => {
+        loadDashboardData();
+      },
+      500
+    );
+    const unsubBalance = masterBus.subscribeDebounced(
+      'BALANCE_UPDATED',
+      () => {
+        loadDashboardData();
+      },
+      500
+    );
+    const unsubSeated = masterBus.subscribeDebounced(
+      'TABLE_SEATED',
+      () => {
+        loadDashboardData();
+      },
+      500
+    );
+    const unsubChipsAdded = masterBus.subscribeDebounced(
+      'CHIPS_ADDED',
+      () => {
+        loadDashboardData();
+      },
+      500
+    );
+    const unsubChipsWithdrawn = masterBus.subscribeDebounced(
+      'CHIPS_WITHDRAWN',
+      () => {
+        loadDashboardData();
+      },
+      500
+    );
     return () => {
       unsubClub();
       unsubBalance();
@@ -203,6 +223,7 @@ export default function ClubDashboard() {
   }, []);
 
   const loadDashboardData = async () => {
+    if (!clubId) return;
     setLoading(true);
     try {
       // Load club info

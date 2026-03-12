@@ -92,6 +92,7 @@ export default function ClubAnnouncementsPage() {
   }, []);
 
   const loadAnnouncements = async () => {
+    if (!clubId) return;
     setLoading(true);
     try {
       // Load announcements

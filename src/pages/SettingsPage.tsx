@@ -17,7 +17,6 @@ import TermsGate from '../components/auth/TermsGate';
 import styles from './SettingsPage.module.css';
 import ConfirmModal from '../components/common/ConfirmModal';
 import { useToast } from '../components/common/Toast';
-import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 const settingsSectionAnimationStyle = (index: number) => ({
   opacity: 0,

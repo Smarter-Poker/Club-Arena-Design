@@ -156,8 +156,9 @@ export default function App() {
     if (!isInIframe) return;
 
     const handleMessage = async (event: MessageEvent) => {
-      // Only accept from smarter.poker
-      if (!event.origin.includes('smarter.poker')) return;
+      // Accept from smarter.poker OR localhost:3000 for local dev
+      if (!event.origin.includes('smarter.poker') && event.origin !== 'http://localhost:3000')
+        return;
 
       if (event.data?.type === 'SMARTER_AUTH_TOKEN' && event.data.token) {
         try {

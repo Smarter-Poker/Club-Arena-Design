@@ -24,7 +24,9 @@ export default function SuperAgentDashboard() {
   const { clubId } = useParams();
   const { user } = useUserStore();
   const toast = useToast();
-  useVisibilityRefresh(() => loadDashboardData());
+  useVisibilityRefresh(() => {
+    if (clubId && user?.id) loadDashboardData();
+  });
 
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
   const [agent, setAgent] = useState<Agent | null>(null);

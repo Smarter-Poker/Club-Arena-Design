@@ -160,6 +160,7 @@ export default function ClubFinancialsPage() {
   }, []);
 
   const loadFinancials = async () => {
+    if (!clubId) return;
     setLoading(true);
     try {
       // Calculate date range based on period

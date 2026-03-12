@@ -195,6 +195,7 @@ export default function PlayerStatsPage() {
   }, []);
 
   const loadStats = async () => {
+    if (!targetUserId) return;
     setLoading(true);
     try {
       const { data, error } = await supabase
