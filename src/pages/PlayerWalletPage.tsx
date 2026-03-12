@@ -24,6 +24,7 @@ type WalletType = 'BUSINESS' | 'PLAYER' | 'PROMO';
 function useAnimatedNumber(target: number, duration = 800) {
   const [display, setDisplay] = useState(0);
   const prevTarget = useRef(0);
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     const start = prevTarget.current;
@@ -38,13 +39,22 @@ function useAnimatedNumber(target: number, duration = 800) {
       const progress = Math.min((now - startTime) / duration, 1);
       const eased = easeOutCubic(progress);
       setDisplay(Math.round(start + delta * eased));
-      if (progress < 1) requestAnimationFrame(animate);
-      else {
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(animate);
+      } else {
         setDisplay(target);
         prevTarget.current = target;
+        rafRef.current = null;
       }
     };
-    requestAnimationFrame(animate);
+    rafRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
   }, [target, duration]);
 
   return display;
