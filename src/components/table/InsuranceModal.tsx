@@ -10,6 +10,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { haptic } from '../../services/SoundService';
+import { masterBus } from '../../core/MasterBus';
 import './InsuranceModal.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -124,8 +125,15 @@ export function InsuranceModal({
 
   const handleEvCashout = useCallback(() => {
     haptic.medium();
+    masterBus.emit('EV_CASHOUT_ACCEPTED', {
+      handId: '',
+      tableId: '',
+      playerId: '',
+      cashoutAmount: evCashoutAmount,
+      equityPercent: offer.equityPercent,
+    });
     onEvCashout?.(evCashoutAmount);
-  }, [evCashoutAmount, onEvCashout]);
+  }, [evCashoutAmount, offer.equityPercent, onEvCashout]);
 
   const presets = useMemo(
     () => [

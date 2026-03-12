@@ -262,7 +262,7 @@ export default function DailyChallenges() {
           // STEP 1: Mark claimed in DB FIRST (idempotent upsert — safe to re-run)
           // This MUST happen before diamonds are incremented to prevent double-reward exploit:
           // If diamond increment succeeds but this upsert fails, user could re-claim.
-          await supabase.from('daily_challenge_progress').upsert(
+          const { error: claimError } = await supabase.from('daily_challenge_progress').upsert(
             {
               user_id: user.id,
               day_key: dayKey,
@@ -272,6 +272,8 @@ export default function DailyChallenges() {
             },
             { onConflict: 'user_id,day_key,challenge_index' }
           );
+          // CRITICAL: Supabase does NOT throw on errors — it returns {error}. Must check explicitly.
+          if (claimError) throw claimError;
 
           // Lock claimed in local state IMMEDIATELY after DB confirms
           setClaimed((prev) => {
@@ -287,10 +289,14 @@ export default function DailyChallenges() {
           // STEP 2: Atomically increment diamond balance (TOCTOU-safe)
           // If this fails, user already lost their claim but gained 0 diamonds.
           // This is safer than the reverse (gaining diamonds but retaining claim ability).
-          const { data: rpcResult } = await supabase.rpc('increment_diamonds', {
-            p_user_id: user.id,
-            p_amount: reward,
-          });
+          const { data: rpcResult, error: diamondError } = await supabase.rpc(
+            'increment_diamonds',
+            {
+              p_user_id: user.id,
+              p_amount: reward,
+            }
+          );
+          if (diamondError) throw diamondError;
           const newBalance = typeof rpcResult === 'number' ? rpcResult : reward;
 
           // Emit DIAMOND_BALANCE_CHANGED for header + tile badges
