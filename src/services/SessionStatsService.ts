@@ -12,6 +12,7 @@
  */
 
 import { masterBus } from '../core/MasterBus';
+import { supabase } from '../lib/supabase';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -44,6 +45,8 @@ export interface SessionStats {
 
 class SessionStatsServiceClass {
   private sessions: Map<string, SessionStats> = new Map(); // key = tableId
+  /** Feature 8: Debounce timers for SESSION_STATS_UPDATE emissions */
+  private emitTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
 
   /**
    * Start tracking a new session at a table
@@ -74,6 +77,25 @@ class SessionStatsServiceClass {
     console.log(
       `[SessionStats] Started tracking — table: ${tableId.slice(0, 8)}, stack: ${initialStack}`
     );
+  }
+
+  /**
+   * Feature 8: Debounced emission — batches rapid SESSION_STATS_UPDATE bus events
+   * within a 500ms window to reduce bus traffic during high-volume play.
+   */
+  private debouncedEmit(tableId: string, session: SessionStats): void {
+    // Clear existing timer for this table
+    const existing = this.emitTimers.get(tableId);
+    if (existing) clearTimeout(existing);
+
+    const timer = setTimeout(() => {
+      this.emitTimers.delete(tableId);
+      masterBus.emit('SESSION_STATS_UPDATE', {
+        tableId,
+        stats: { ...session, trajectory: [...session.trajectory] },
+      });
+    }, 500);
+    this.emitTimers.set(tableId, timer);
   }
 
   /**
@@ -113,11 +135,8 @@ class SessionStatsServiceClass {
       session.trajectory = thinned;
     }
 
-    // Broadcast update — deep-copy trajectory to prevent shared reference mutation
-    masterBus.emit('SESSION_STATS_UPDATE', {
-      tableId,
-      stats: { ...session, trajectory: [...session.trajectory] },
-    });
+    // Feature 8: Debounced broadcast to reduce bus traffic
+    this.debouncedEmit(tableId, session);
   }
 
   /**
@@ -134,7 +153,7 @@ class SessionStatsServiceClass {
       session.bigBlind > 0 ? Math.round((session.profitLoss / session.bigBlind) * 100) / 100 : 0;
     session.trajectory.push([Date.now(), session.currentStack]);
 
-    // Emit update so SessionHUD reflects the rebuy immediately
+    // Rebuys emit immediately (user expects instant feedback)
     masterBus.emit('SESSION_STATS_UPDATE', {
       tableId,
       stats: { ...session, trajectory: [...session.trajectory] },
@@ -149,15 +168,60 @@ class SessionStatsServiceClass {
   }
 
   /**
-   * End session tracking and return final stats
+   * Feature 6: End session tracking, persist to Supabase, and return final stats.
+   * Writes session data to `session_history` table for permanent analytics.
    */
   endSession(tableId: string): SessionStats | null {
     const session = this.sessions.get(tableId);
     if (!session) return null;
+
+    // Clear any pending debounce timer for this table
+    const pendingTimer = this.emitTimers.get(tableId);
+    if (pendingTimer) {
+      clearTimeout(pendingTimer);
+      this.emitTimers.delete(tableId);
+    }
+
     this.sessions.delete(tableId);
+
+    const durationMs = Date.now() - session.sessionStartTime;
+    const durationMinutes = Math.round(durationMs / 60_000);
+
     console.log(
-      `[SessionStats] Session ended — table: ${tableId.slice(0, 8)}, P/L: ${session.profitLoss}, hands: ${session.handsPlayed}`
+      `[SessionStats] Session ended — table: ${tableId.slice(0, 8)}, P/L: ${session.profitLoss}, hands: ${session.handsPlayed}, duration: ${durationMinutes}m`
     );
+
+    // Feature 6: Persist to Supabase (fire-and-forget, non-blocking)
+    if (session.handsPlayed > 0) {
+      supabase
+        .from('session_history')
+        .insert({
+          user_id: session.userId,
+          table_id: tableId,
+          started_at: new Date(session.sessionStartTime).toISOString(),
+          ended_at: new Date().toISOString(),
+          duration_minutes: durationMinutes,
+          initial_stack: session.initialStack,
+          final_stack: session.currentStack,
+          buy_in_total: session.buyInTotal,
+          profit_loss: session.profitLoss,
+          hands_played: session.handsPlayed,
+          hands_won: session.handsWon,
+          vpip_percent: session.vpipPercent,
+          pfr_percent: session.pfrPercent,
+          big_blind: session.bigBlind,
+          bb_won: session.bigBlindsWon,
+          trajectory: session.trajectory,
+        })
+        .then(({ error }) => {
+          if (error) {
+            console.warn('[SessionStats] Failed to persist session:', error.message);
+          } else {
+            console.log(`[SessionStats] Session persisted to DB — table: ${tableId.slice(0, 8)}`);
+          }
+        });
+    }
+
     return session;
   }
 
@@ -165,6 +229,9 @@ class SessionStatsServiceClass {
    * Reset all sessions (cleanup on unmount)
    */
   resetAll(): void {
+    // Clear all debounce timers
+    this.emitTimers.forEach((timer) => clearTimeout(timer));
+    this.emitTimers.clear();
     this.sessions.clear();
   }
 }

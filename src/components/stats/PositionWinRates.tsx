@@ -14,6 +14,7 @@ interface PositionStats {
   handsPlayed: number;
   vpip: number;
   pfr: number;
+  threeBet: number; // 3-bet %
   winRate: number; // bb/100
   totalProfit: number;
 }
@@ -25,6 +26,7 @@ const DEFAULT_STATS: PositionStats[] = [
     handsPlayed: 0,
     vpip: 0,
     pfr: 0,
+    threeBet: 0,
     winRate: 0,
     totalProfit: 0,
   },
@@ -34,6 +36,7 @@ const DEFAULT_STATS: PositionStats[] = [
     handsPlayed: 0,
     vpip: 0,
     pfr: 0,
+    threeBet: 0,
     winRate: 0,
     totalProfit: 0,
   },
@@ -43,6 +46,7 @@ const DEFAULT_STATS: PositionStats[] = [
     handsPlayed: 0,
     vpip: 0,
     pfr: 0,
+    threeBet: 0,
     winRate: 0,
     totalProfit: 0,
   },
@@ -52,6 +56,7 @@ const DEFAULT_STATS: PositionStats[] = [
     handsPlayed: 0,
     vpip: 0,
     pfr: 0,
+    threeBet: 0,
     winRate: 0,
     totalProfit: 0,
   },
@@ -61,6 +66,7 @@ const DEFAULT_STATS: PositionStats[] = [
     handsPlayed: 0,
     vpip: 0,
     pfr: 0,
+    threeBet: 0,
     winRate: 0,
     totalProfit: 0,
   },
@@ -70,6 +76,7 @@ const DEFAULT_STATS: PositionStats[] = [
     handsPlayed: 0,
     vpip: 0,
     pfr: 0,
+    threeBet: 0,
     winRate: 0,
     totalProfit: 0,
   },
@@ -79,6 +86,7 @@ const DEFAULT_STATS: PositionStats[] = [
     handsPlayed: 0,
     vpip: 0,
     pfr: 0,
+    threeBet: 0,
     winRate: 0,
     totalProfit: 0,
   },
@@ -103,11 +111,13 @@ const PositionWinRates: React.FC = () => {
       const updatedStats = DEFAULT_STATS.map((defPos) => {
         const live = posData.find((p) => p.position === defPos.position);
         if (live) {
+          const hp = live.hands_played || 0;
           return {
             ...defPos,
-            handsPlayed: live.hands_played || 0,
-            vpip: live.hands_played > 0 ? (live.vpip_count / live.hands_played) * 100 : 0,
-            pfr: live.hands_played > 0 ? (live.pfr_count / live.hands_played) * 100 : 0,
+            handsPlayed: hp,
+            vpip: hp > 0 ? (live.vpip_count / hp) * 100 : 0,
+            pfr: hp > 0 ? (live.pfr_count / hp) * 100 : 0,
+            threeBet: hp > 0 ? ((live.three_bet_count || 0) / hp) * 100 : 0,
           };
         }
         return defPos;

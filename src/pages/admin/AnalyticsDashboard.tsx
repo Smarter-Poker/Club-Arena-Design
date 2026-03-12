@@ -178,14 +178,22 @@ export default function AnalyticsDashboard() {
   }, [refreshAll]);
 
   useEffect(() => {
-    // Real-time refresh on engine events
-    const unsubHand = masterBus.subscribe('HAND_COMPLETED', refreshAll);
+    // Debounce bus events — HAND_COMPLETED can fire very rapidly across many tables.
+    // Without debounce, 30+ tables dealing simultaneously = 90+ queries/sec.
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const debouncedRefresh = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(refreshAll, 5000); // 5s debounce
+    };
+
+    const unsubHand = masterBus.subscribe('HAND_COMPLETED', debouncedRefresh);
     const unsubSettlement = masterBus.subscribe('SETTLEMENT_COMPLETED', refreshAll);
     const unsubVip = masterBus.subscribe('MILESTONE_UNLOCKED', refreshAll);
     return () => {
       unsubHand();
       unsubSettlement();
       unsubVip();
+      if (debounceTimer) clearTimeout(debounceTimer);
     };
   }, [refreshAll]);
 

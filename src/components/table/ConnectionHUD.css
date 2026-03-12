@@ -111,3 +111,29 @@
   font-size: 12px;
   color: rgba(255, 255, 255, 0.5);
 }
+
+/* Phase 3: Quality label next to latency indicator */
+.conn-label {
+  font-size: 10px;
+  opacity: 0.6;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Phase 3: Reconnect attempt counter */
+.conn-dc-retry {
+  font-size: 11px;
+  color: #f59e0b;
+  font-weight: 600;
+  animation: pulse-retry 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-retry {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
