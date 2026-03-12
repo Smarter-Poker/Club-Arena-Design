@@ -219,9 +219,7 @@ export default function FriendsPage() {
     setLoading(false);
   };
 
-  useEffect(() => {
-    loadFriendsRef.current = loadFriends;
-  }, [user?.id, onlineUserIds]);
+
 
   const acceptRequest = async (friendshipId: string) => {
     try {
