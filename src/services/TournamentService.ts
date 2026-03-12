@@ -1110,17 +1110,18 @@ class TournamentService {
 
     if (!players || players.length === 0) throw new Error('No players registered');
 
-    // Auto-cancel if fewer than 3 players — minimum for a valid tournament
-    if (players.length < 3) {
+    // Auto-cancel if fewer than the minimum players required for this variant
+    const minPlayers = Math.max(2, TournamentService.getTableCapacityForTournament(tournament));
+    if (players.length < minPlayers) {
       console.debug(
-        `[TournamentService] Auto-cancelling tournament ${tournament.name}: only ${players.length} players (minimum 3 required)`
+        `[TournamentService] Auto-cancelling tournament ${tournament.name}: only ${players.length} players (minimum ${minPlayers} required for this variant)`
       );
       await this.cancelTournament(
         tournamentId,
-        `Only ${players.length} player(s) registered — minimum 3 required`
+        `Only ${players.length} player(s) registered — minimum ${minPlayers} required`
       );
       throw new Error(
-        `Tournament cancelled: only ${players.length} player(s) registered (minimum 3 required)`
+        `Tournament cancelled: only ${players.length} player(s) registered (minimum ${minPlayers} required)`
       );
     }
 
