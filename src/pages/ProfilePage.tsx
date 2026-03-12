@@ -23,6 +23,7 @@ import { StreakFire } from '../components/gamification/StreakFire';
 import StreakMultiplier from '../components/gamification/StreakMultiplier';
 import FinancialAchievementBadge from '../components/gamification/FinancialAchievementBadge';
 import CircularGauge from '../components/common/CircularGauge';
+import DiamondRainEffect from '../components/effects/DiamondRainEffect';
 import { useSwipeTabs } from '../hooks/useSwipeTabs';
 import styles from './ProfilePage.module.css';
 
@@ -205,6 +206,7 @@ export default function ProfilePage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [showBonusWheel, setShowBonusWheel] = useState(false);
+  const [showDiamondRain, setShowDiamondRain] = useState(false);
 
   // Real data from database
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -424,7 +426,8 @@ export default function ProfilePage() {
       500
     );
     // Gamification bus listeners: refresh balance when rewards earned on other pages
-    const unsubDailyReward = masterBus.subscribe('DAILY_REWARD_CLAIMED', () => {
+    const unsubDailyReward = masterBus.subscribe('DAILY_REWARD_CLAIMED', (payload: any) => {
+      if (payload?.rewardType === 'diamonds') setShowDiamondRain(true);
       supabase.auth
         .getUser()
         .then(({ data: { user: authUser } }) => {
@@ -444,7 +447,8 @@ export default function ProfilePage() {
         })
         .catch(() => {});
     });
-    const unsubMissionClaim = masterBus.subscribe('MISSION_CLAIMED', () => {
+    const unsubMissionClaim = masterBus.subscribe('MISSION_CLAIMED', (payload: any) => {
+      if (payload?.rewardType === 'diamonds') setShowDiamondRain(true);
       supabase.auth
         .getUser()
         .then(({ data: { user: authUser } }) => {
@@ -461,7 +465,8 @@ export default function ProfilePage() {
         })
         .catch(() => {});
     });
-    const unsubWheelSpin = masterBus.subscribe('WHEEL_SPIN_RESULT', () => {
+    const unsubWheelSpin = masterBus.subscribe('WHEEL_SPIN_RESULT', (payload: any) => {
+      if (payload?.type === 'diamonds') setShowDiamondRain(true);
       supabase.auth
         .getUser()
         .then(({ data: { user: authUser } }) => {
@@ -1124,6 +1129,9 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+
+      {/* Diamond Rain Gamification Effect */}
+      <DiamondRainEffect active={showDiamondRain} onComplete={() => setShowDiamondRain(false)} />
     </div>
   );
 }
