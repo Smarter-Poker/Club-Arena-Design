@@ -43,7 +43,9 @@ export default function FinancialAlertsPage() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'financial_alerts' },
-        () => { loadAlerts(); }
+        () => {
+          loadAlerts();
+        }
       )
       .subscribe();
     return () => {
@@ -51,14 +53,50 @@ export default function FinancialAlertsPage() {
     };
   }, [loadAlerts]);
 
-  // ── Bus Listener: react to FINANCIAL_ALERT events from services ──
+  // ── Bus Listeners: react to all financial/security events ──
   useEffect(() => {
-    const unsub = masterBus.subscribeDebounced(
+    const unsub1 = masterBus.subscribeDebounced(
       'FINANCIAL_ALERT',
-      () => { loadAlerts(); },
+      () => {
+        loadAlerts();
+      },
       1000
     );
-    return () => { unsub(); };
+    const unsub2 = masterBus.subscribeDebounced(
+      'COLLUSION_DETECTED',
+      () => {
+        loadAlerts();
+      },
+      1000
+    );
+    const unsub3 = masterBus.subscribeDebounced(
+      'VALIDATION_MISMATCH',
+      () => {
+        loadAlerts();
+      },
+      1000
+    );
+    const unsub4 = masterBus.subscribeDebounced(
+      'CHIPS_ADDED',
+      () => {
+        loadAlerts();
+      },
+      2000
+    );
+    const unsub5 = masterBus.subscribeDebounced(
+      'CHIPS_WITHDRAWN',
+      () => {
+        loadAlerts();
+      },
+      2000
+    );
+    return () => {
+      unsub1();
+      unsub2();
+      unsub3();
+      unsub4();
+      unsub5();
+    };
   }, [loadAlerts]);
 
   const handleResolve = async (alertId: string) => {
@@ -72,9 +110,7 @@ export default function FinancialAlertsPage() {
     setResolving(null);
   };
 
-  const filteredAlerts = filter === 'all'
-    ? alerts
-    : alerts.filter((a) => a.severity === filter);
+  const filteredAlerts = filter === 'all' ? alerts : alerts.filter((a) => a.severity === filter);
 
   const criticalCount = alerts.filter((a) => a.severity === 'critical').length;
   const warningCount = alerts.filter((a) => a.severity === 'warning').length;
@@ -98,15 +134,9 @@ export default function FinancialAlertsPage() {
       <div className="alerts-header">
         <h2>🔔 Financial Alerts</h2>
         <div className="alert-stats">
-          {criticalCount > 0 && (
-            <span className="stat critical">🔴 {criticalCount} critical</span>
-          )}
-          {warningCount > 0 && (
-            <span className="stat warning">🟡 {warningCount} warning</span>
-          )}
-          {alerts.length === 0 && (
-            <span className="stat clear">✅ All clear</span>
-          )}
+          {criticalCount > 0 && <span className="stat critical">🔴 {criticalCount} critical</span>}
+          {warningCount > 0 && <span className="stat warning">🟡 {warningCount} warning</span>}
+          {alerts.length === 0 && <span className="stat clear">✅ All clear</span>}
         </div>
         <button className="refresh-btn" onClick={loadAlerts} title="Refresh">
           ↻
@@ -144,18 +174,13 @@ export default function FinancialAlertsPage() {
       ) : (
         <div className="alert-list">
           {filteredAlerts.map((alert) => (
-            <div
-              key={alert.id}
-              className={`alert-card severity-${alert.severity}`}
-            >
+            <div key={alert.id} className={`alert-card severity-${alert.severity}`}>
               <div className="alert-header">
                 <span className={`severity-badge ${alert.severity}`}>
                   {alert.severity === 'critical' ? '🔴' : '🟡'} {alert.severity.toUpperCase()}
                 </span>
                 <span className="alert-source">{alert.source}</span>
-                <span className="alert-time">
-                  {new Date(alert.createdAt).toLocaleString()}
-                </span>
+                <span className="alert-time">{new Date(alert.createdAt).toLocaleString()}</span>
               </div>
               <p className="alert-message">{alert.message}</p>
               {alert.context && Object.keys(alert.context).length > 0 && (
