@@ -13,6 +13,7 @@ import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import AchievementBadge, { AchievementGrid } from '../components/achievements/AchievementBadge';
 import { AchievementShareCard } from '../components/achievements/AchievementShareCard';
+import BottomSheet from '../components/common/BottomSheet';
 import {
   achievementService,
   ACHIEVEMENTS as SERVICE_ACHIEVEMENTS,
@@ -221,6 +222,7 @@ export default function AchievementsPage() {
   const [newUnlock, setNewUnlock] = useState<Achievement | null>(null);
   const [visibleBadges, setVisibleBadges] = useState(new Set<number>());
   const [sharingAchievement, setSharingAchievement] = useState<Achievement | null>(null);
+  const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
   const unlockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadAchievementsRef = useRef<(() => Promise<void>) | null>(null);
 
@@ -319,6 +321,13 @@ export default function AchievementsPage() {
 
   const unlockedCount = achievements.filter((a) => a.unlocked).length;
 
+  const nextUp = useMemo(() => {
+    return achievements
+      .filter((a) => !a.unlocked && a.progress > 0)
+      .sort((a, b) => b.progress - a.progress)
+      .slice(0, 3);
+  }, [achievements]);
+
   // Stagger badge cards
   useEffect(() => {
     setVisibleBadges(new Set());
@@ -353,6 +362,46 @@ export default function AchievementsPage() {
         </div>
       </div>
 
+      {/* Next Up Section */}
+      {nextUp.length > 0 && category === 'all' && (
+        <div className="next-up-section">
+          <h3
+            className="section-title"
+            style={{
+              fontSize: '1rem',
+              color: '#00d4ff',
+              marginBottom: '1rem',
+              fontFamily: 'Orbitron, sans-serif',
+            }}
+          >
+            Next Up
+          </h3>
+          <div className="next-up-list">
+            {nextUp.map((achievement, index) => (
+              <div
+                key={achievement.id}
+                className="next-up-card"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <div className="next-up-icon">{achievement.icon}</div>
+                <div className="next-up-info">
+                  <h4>{achievement.name}</h4>
+                  <div className="next-up-progress-bar">
+                    <div
+                      className="next-up-progress-fill"
+                      style={{ width: `${Math.max(5, achievement.progress)}%` }}
+                    ></div>
+                  </div>
+                  <p className="next-up-motivational">
+                    {100 - achievement.progress}% remaining for {achievement.name}!
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Category Filter */}
       <div className="category-filter">
         {(['all', 'poker', 'social', 'financial', 'tournament'] as AchievementCategory[]).map(
@@ -386,10 +435,12 @@ export default function AchievementsPage() {
           filteredAchievements.map((achievement, index) => (
             <div
               key={achievement.id}
+              onClick={() => setSelectedAchievement(achievement)}
               style={{
                 opacity: visibleBadges.has(index) ? 1 : 0,
                 transform: visibleBadges.has(index) ? 'scale(1)' : 'scale(0.85)',
                 transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                cursor: 'pointer',
               }}
             >
               <AchievementBadge
@@ -401,31 +452,109 @@ export default function AchievementsPage() {
                 rarity={achievement.rarity}
                 unlockedAt={achievement.unlockedAt}
               />
-              {achievement.unlocked && (
-                <button
-                  className="share-achievement-btn"
-                  onClick={() => setSharingAchievement(achievement)}
-                  style={{
-                    marginTop: 6,
-                    width: '100%',
-                    padding: '6px 12px',
-                    fontSize: '0.7rem',
-                    fontWeight: 600,
-                    color: 'rgba(255,255,255,0.6)',
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  📤 Share
-                </button>
-              )}
             </div>
           ))
         )}
       </AchievementGrid>
+
+      {/* Achievement Detail Bottom Sheet */}
+      <BottomSheet
+        isOpen={!!selectedAchievement}
+        onClose={() => setSelectedAchievement(null)}
+        detent="half"
+      >
+        {selectedAchievement && (
+          <div className="achievement-detail-view" style={{ textAlign: 'center', padding: '1rem' }}>
+            <div
+              style={{
+                fontSize: '4rem',
+                filter: `drop-shadow(0 0 20px ${getRarityColor(selectedAchievement.rarity)}88)`,
+              }}
+            >
+              {selectedAchievement.icon}
+            </div>
+            <h2
+              style={{
+                fontSize: '1.5rem',
+                color: '#fff',
+                margin: '1rem 0 0.5rem',
+                fontFamily: 'Orbitron, sans-serif',
+              }}
+            >
+              {selectedAchievement.name}
+            </h2>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+              {selectedAchievement.description}
+            </p>
+
+            <div className="next-up-progress-bar" style={{ marginBottom: '1rem' }}>
+              <div
+                className="next-up-progress-fill"
+                style={{
+                  width: `${selectedAchievement.progress}%`,
+                  background: getRarityColor(selectedAchievement.rarity),
+                }}
+              ></div>
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                color: '#cbd5e1',
+                fontSize: '0.85rem',
+                marginBottom: '2rem',
+              }}
+            >
+              <span>{Math.round(selectedAchievement.progress)}% Complete</span>
+              <span>{selectedAchievement.requirement}</span>
+            </div>
+
+            {selectedAchievement.unlocked ? (
+              <>
+                <p style={{ color: '#10b981', fontSize: '0.8rem', marginBottom: '1rem' }}>
+                  Unlocked on{' '}
+                  {new Date(selectedAchievement.unlockedAt || Date.now()).toLocaleDateString()}
+                </p>
+                <button
+                  onClick={() => {
+                    const ach = selectedAchievement;
+                    setSelectedAchievement(null);
+                    setTimeout(() => setSharingAchievement(ach), 300);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '0.85rem',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #00d4ff 0%, #0066aa 100%)',
+                    border: 'none',
+                    color: '#fff',
+                    fontWeight: 700,
+                    fontSize: '1rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 15px rgba(0, 212, 255, 0.4)',
+                  }}
+                >
+                  📤 Share Achievement
+                </button>
+              </>
+            ) : (
+              <p
+                style={{
+                  color: '#ef4444',
+                  fontSize: '0.85rem',
+                  fontStyle: 'italic',
+                  padding: '1rem',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  borderRadius: '8px',
+                }}
+              >
+                Keep playing to unlock this badge!
+              </p>
+            )}
+          </div>
+        )}
+      </BottomSheet>
 
       {/* New Achievement Unlock Popup */}
       {newUnlock && (

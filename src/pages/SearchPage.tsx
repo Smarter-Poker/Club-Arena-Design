@@ -145,11 +145,17 @@ export default function SearchPage() {
 
   // ── Bus Listeners: re-search when data changes from other pages ──
   useEffect(() => {
-    const refresh = () => { if (query.trim()) search(query); };
+    const refresh = () => {
+      if (query.trim()) search(query);
+    };
     const unsubClub = masterBus.subscribe('CLUB_UPDATED', refresh);
     const unsubProfile = masterBus.subscribe('PROFILE_UPDATED', refresh);
     const unsubJoined = masterBus.subscribe('CLUB_JOINED', refresh);
-    return () => { unsubClub(); unsubProfile(); unsubJoined(); };
+    return () => {
+      unsubClub();
+      unsubProfile();
+      unsubJoined();
+    };
   }, [query, search]);
 
   const getIcon = (type: string): string => {
@@ -216,20 +222,108 @@ export default function SearchPage() {
 
       <div className="search-content">
         {loading ? (
-          <div className="loading-state">
-            <div className="spinner" />
+          <div
+            className="search-skeletons"
+            style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}
+          >
+            {[1, 2, 3, 4].map((n) => (
+              <div
+                key={n}
+                style={{
+                  display: 'flex',
+                  gap: '1rem',
+                  alignItems: 'center',
+                  padding: '1rem',
+                  background: 'rgba(255,255,255,0.03)',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                }}
+              >
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.05)',
+                    animation: 'pulse 1.5s infinite',
+                  }}
+                />
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div
+                    style={{
+                      width: '40%',
+                      height: 16,
+                      borderRadius: 4,
+                      background: 'rgba(255,255,255,0.05)',
+                      animation: 'pulse 1.5s infinite',
+                    }}
+                  />
+                  <div
+                    style={{
+                      width: '25%',
+                      height: 12,
+                      borderRadius: 4,
+                      background: 'rgba(255,255,255,0.05)',
+                      animation: 'pulse 1.5s infinite',
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         ) : query.length === 0 ? (
           <div className="recent-searches">
-            <h3>Recent Searches</h3>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-muted)' }}>
+                Recent Searches
+              </h3>
+              {recentSearches.length > 0 && (
+                <button
+                  onClick={() => {
+                    setRecentSearches([]);
+                    localStorage.removeItem('recentSearches');
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#ef4444',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    padding: 0,
+                  }}
+                >
+                  Clear History
+                </button>
+              )}
+            </div>
             {recentSearches.length === 0 ? (
               <p className="empty-text">No recent searches</p>
             ) : (
-              recentSearches.map((s, i) => (
-                <button key={i} className="recent-item" onClick={() => setQuery(s)}>
-                  {s}
-                </button>
-              ))
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                {recentSearches.map((s, i) => (
+                  <button
+                    key={i}
+                    className="recent-item"
+                    onClick={() => setQuery(s)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '20px',
+                      color: '#fff',
+                    }}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         ) : results.length === 0 ? (

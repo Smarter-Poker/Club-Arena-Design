@@ -31,6 +31,7 @@ interface Message {
   userPicture: string;
   content: string;
   imageUrl?: string;
+  audioUrl?: string;
   createdAt: string;
   isSeen: boolean;
   reactions: { [emoji: string]: number };
@@ -126,7 +127,7 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
             `
                     id,
                     conversation_id,
-                    user_id,
+                    sender_id,
                     content,
                     image_url,
                     created_at,
@@ -143,11 +144,12 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
             .map((m: any) => ({
               id: m.id,
               conversationId: m.conversation_id,
-              userId: m.user_id,
+              userId: m.sender_id,
               userFullname: m.profiles?.username || 'Unknown',
               userPicture: m.profiles?.avatar_url || '/default-avatar.png',
               content: m.content,
               imageUrl: m.image_url,
+              audioUrl: m.audio_url,
               createdAt: m.created_at,
               isSeen: m.is_seen,
               reactions: {},
@@ -192,19 +194,24 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
   );
 
   // Send message
-  const sendMessage = async (text: string, imageUrl?: string) => {
-    if (!text.trim() && !imageUrl) return;
+  const sendMessage = async (text: string, imageUrl?: string, audioUrl?: string) => {
+    if (!text.trim() && !imageUrl && !audioUrl) return;
     if (!user?.id || !conversationId) return;
 
     setSending(true);
     try {
+      const otherParticipant = participants.find((p) => p.userId !== user.id);
+      const receiverId = otherParticipant?.userId || null;
+
       const { data, error } = await supabase
         .from('messages')
         .insert({
           conversation_id: conversationId,
-          user_id: user.id,
+          sender_id: user.id,
+          receiver_id: receiverId,
           content: text.trim(),
           image_url: imageUrl || null,
+          audio_url: audioUrl || null,
         })
         .select()
         .maybeSingle();
@@ -219,6 +226,7 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
           userPicture: user.avatar_url || '/default-avatar.png',
           content: data.content,
           imageUrl: data.image_url,
+          audioUrl: data.audio_url,
           createdAt: data.created_at,
           isSeen: false,
           reactions: {},
@@ -227,6 +235,12 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
           threadReplyCount: 0,
         };
         setMessages((prev) => [...prev, newMessage]);
+
+        // Cross-tab perfect sync natively on local client
+        masterBus.emit('MESSAGE_SENT', {
+          conversationId,
+          message: newMessage as unknown as Record<string, unknown>,
+        });
 
         // Scroll to bottom
         setTimeout(() => {
@@ -237,7 +251,11 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
         await supabase
           .from('conversations')
           .update({
-            last_message: text.trim().substring(0, 100),
+            last_message: audioUrl
+              ? '🎤 Voice message'
+              : imageUrl
+                ? '📷 Image'
+                : text.trim().substring(0, 100),
             last_message_time: new Date().toISOString(),
             last_message_user_id: user.id,
           })
@@ -345,8 +363,8 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          // Only add if not from current user (they already have it)
-          if (payload.new && (payload.new as any).user_id !== user?.id) {
+          // Only sync if not from current user (they already have it via optimistic update)
+          if (payload.new && (payload.new as any).sender_id !== user?.id) {
             loadMessages(true);
           }
         }
@@ -377,11 +395,27 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
 
   // ── Bus Listener: cross-tab message sync ──
   useEffect(() => {
-    const unsub = masterBus.subscribe('MESSAGE_RECEIVED', () => {
+    const unsubReceived = masterBus.subscribe('MESSAGE_RECEIVED', () => {
       loadMessages(true);
     });
-    return () => unsub();
-  }, [loadMessages]);
+    const unsubSent = masterBus.subscribe('MESSAGE_SENT', (ev) => {
+      if (ev.payload.conversationId === conversationId) {
+        setMessages((prev) => {
+          // Prevent duplicate from optimistic UI
+          if (prev.some((m) => m.id === (ev.payload.message as any).id)) return prev;
+          return [...prev, ev.payload.message as unknown as Message];
+        });
+        setTimeout(() => {
+          scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+        }, 50);
+      }
+    });
+
+    return () => {
+      unsubReceived();
+      unsubSent();
+    };
+  }, [loadMessages, conversationId]);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -499,8 +533,8 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
 
       {/* Input */}
       <MessageInput
-        onSend={(text, imageUrl) => {
-          sendMessage(text, imageUrl);
+        onSend={(text, imageUrl, audioUrl) => {
+          sendMessage(text, imageUrl, audioUrl);
           clearDraft();
         }}
         onTyping={setTyping}

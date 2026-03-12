@@ -13,7 +13,7 @@ import { VoiceRecorder } from './VoiceRecorder';
 import { haptic } from '../../services/HapticService';
 
 interface MessageInputProps {
-  onSend: (text: string, imageUrl?: string) => void;
+  onSend: (text: string, imageUrl?: string, audioUrl?: string) => void;
   onTyping?: (isTyping: boolean) => void;
   disabled?: boolean;
   placeholder?: string;
@@ -204,8 +204,12 @@ export default function MessageInput({
       {/* GIF/Sticker Picker Panel */}
       <GifPicker
         isOpen={showGifPicker}
-        onSelect={(emoji) => {
-          onSend(emoji);
+        onSelect={(selection) => {
+          if (selection.startsWith('http')) {
+            onSend('', selection); // Send as imageUrl
+          } else {
+            onSend(selection); // Send as text (sticker)
+          }
           setShowGifPicker(false);
         }}
         onClose={() => setShowGifPicker(false)}
@@ -215,8 +219,12 @@ export default function MessageInput({
       {showVoiceRecorder && (
         <VoiceRecorder
           onSend={(blob, durationMs) => {
-            // For now, send as text indicator until storage is integrated
-            onSend(`🎤 Voice message (${Math.ceil(durationMs / 1000)}s)`);
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              const audioDataUrl = event.target?.result as string;
+              onSend('', undefined, audioDataUrl);
+            };
+            reader.readAsDataURL(blob);
             setShowVoiceRecorder(false);
           }}
           onCancel={() => setShowVoiceRecorder(false)}

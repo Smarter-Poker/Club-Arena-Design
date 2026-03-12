@@ -23,6 +23,7 @@ import { CardImage, CardBack } from './CardImage';
 import MiniHUD from './MiniHUD';
 import type { MiniHUDStats } from './MiniHUD';
 import type { PlayerStyleResult } from '../../services/PlayerStyleClassifier';
+import { ChipPhysics } from './ChipPhysics';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -325,6 +326,21 @@ export const SeatSlot = memo(
             {getActionLabel(lastAction, lastBetAmount)}
           </div>
         )}
+
+        {/* Player Bet Chips on Felt */}
+        {lastBetAmount && lastBetAmount > 0 ? (
+          <div className="seat__bet-chips">
+            <ChipPhysics
+              amount={lastBetAmount}
+              animate={
+                lastAction === 'bet' || lastAction === 'raise' || lastAction === 'all_in'
+                  ? 'slide-in'
+                  : 'none'
+              }
+              compact={true}
+            />
+          </div>
+        ) : null}
 
         {/* Hole Cards — opponents: beside avatar at showdown */}
         {player.holeCards && player.holeCards.length > 0 && !player.isHero && (

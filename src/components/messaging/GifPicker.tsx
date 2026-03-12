@@ -22,20 +22,44 @@ interface GifResult {
   title: string;
 }
 
-// Curated built-in GIF set (no external API dependency)
+// Curated built-in GIF set (placeholder URLs for development)
 const TRENDING_GIFS: GifResult[] = [
-  { id: 'thumbs-up', previewUrl: '', fullUrl: '', title: '👍 Nice Hand' },
-  { id: 'clap', previewUrl: '', fullUrl: '', title: '👏 Well Played' },
-  { id: 'mind-blown', previewUrl: '', fullUrl: '', title: '🤯 Mind Blown' },
-  { id: 'crying', previewUrl: '', fullUrl: '', title: '😭 Bad Beat' },
-  { id: 'money', previewUrl: '', fullUrl: '', title: '💰 Money' },
-  { id: 'fire', previewUrl: '', fullUrl: '', title: '🔥 On Fire' },
-  { id: 'celebration', previewUrl: '', fullUrl: '', title: '🎉 Celebrate' },
-  { id: 'thinking', previewUrl: '', fullUrl: '', title: '🤔 Thinking' },
-  { id: 'shocked', previewUrl: '', fullUrl: '', title: '😱 Shocked' },
-  { id: 'cool', previewUrl: '', fullUrl: '', title: '😎 Cool' },
-  { id: 'lol', previewUrl: '', fullUrl: '', title: '🤣 LOL' },
-  { id: 'angry', previewUrl: '', fullUrl: '', title: '😤 Tilted' },
+  {
+    id: 'thumbs-up',
+    previewUrl: 'https://media.giphy.com/media/11ISwbgCxEzMyY/giphy.gif',
+    fullUrl: 'https://media.giphy.com/media/11ISwbgCxEzMyY/giphy.gif',
+    title: '👍 Nice Hand',
+  },
+  {
+    id: 'clap',
+    previewUrl: 'https://media.giphy.com/media/ytwDCy0RqTbkG9gFcY/giphy.gif',
+    fullUrl: 'https://media.giphy.com/media/ytwDCy0RqTbkG9gFcY/giphy.gif',
+    title: '👏 Well Played',
+  },
+  {
+    id: 'crying',
+    previewUrl: 'https://media.giphy.com/media/2rtQMJvhzOnRe/giphy.gif',
+    fullUrl: 'https://media.giphy.com/media/2rtQMJvhzOnRe/giphy.gif',
+    title: '😭 Bad Beat',
+  },
+  {
+    id: 'money',
+    previewUrl: 'https://media.giphy.com/media/3o6gDWzmAzrpi5DQU8/giphy.gif',
+    fullUrl: 'https://media.giphy.com/media/3o6gDWzmAzrpi5DQU8/giphy.gif',
+    title: '💰 Money',
+  },
+  {
+    id: 'fire',
+    previewUrl: 'https://media.giphy.com/media/nrXif9YExO9EI/giphy.gif',
+    fullUrl: 'https://media.giphy.com/media/nrXif9YExO9EI/giphy.gif',
+    title: '🔥 On Fire',
+  },
+  {
+    id: 'thinking',
+    previewUrl: 'https://media.giphy.com/media/3o7buirYcmV5nSwIRW/giphy.gif',
+    fullUrl: 'https://media.giphy.com/media/3o7buirYcmV5nSwIRW/giphy.gif',
+    title: '🤔 Thinking',
+  },
 ];
 
 // Sticker packs
@@ -89,8 +113,8 @@ export const GifPicker: React.FC<GifPickerProps> = ({ isOpen, onSelect, onClose 
   const handleSelectGif = useCallback(
     (gif: GifResult) => {
       haptic.medium();
-      // Send the emoji representation since we're not fetching actual GIF URLs
-      onSelect(gif.title);
+      // Send the actual GIF URL
+      onSelect(gif.fullUrl);
       onClose();
     },
     [onSelect, onClose]
@@ -173,8 +197,11 @@ export const GifPicker: React.FC<GifPickerProps> = ({ isOpen, onSelect, onClose 
             <div className="gif-grid">
               {filteredGifs.map((gif) => (
                 <button key={gif.id} className="gif-item" onClick={() => handleSelectGif(gif)}>
-                  <span className="gif-emoji">{gif.title.split(' ')[0]}</span>
-                  <span className="gif-label">{gif.title.split(' ').slice(1).join(' ')}</span>
+                  <img
+                    src={gif.previewUrl}
+                    alt={gif.title}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
                 </button>
               ))}
               {filteredGifs.length === 0 && (

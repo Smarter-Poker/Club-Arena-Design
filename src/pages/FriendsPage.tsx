@@ -10,7 +10,9 @@ import { masterBus } from '../core/MasterBus';
 import { useToast } from '../components/common/Toast';
 import FriendsList from '../components/social/FriendsList';
 import RecentPlayers from '../components/social/RecentPlayers';
+import FriendActivityFeed from '../components/social/FriendActivityFeed';
 import InviteToTable from '../components/social/InviteToTable';
+import { useSwipeAction } from '../hooks/useSwipeAction';
 import './FriendsPage.css';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
@@ -40,6 +42,7 @@ export default function FriendsPage() {
   const [visibleFriendRows, setVisibleFriendRows] = useState(new Set<number>());
   const [visiblePendingRows, setVisiblePendingRows] = useState(new Set<number>());
   const [searchFocused, setSearchFocused] = useState(false);
+  const loadFriendsRef = useRef(async () => {});
 
   useEffect(() => {
     if (user?.id) loadFriends();
@@ -104,13 +107,13 @@ export default function FriendsPage() {
   // ── Bus Listeners: cross-page friend reactivity ──
   useEffect(() => {
     const unsubAccepted = masterBus.subscribe('FRIEND_REQUEST_ACCEPTED', () => {
-      loadFriends();
+      loadFriendsRef.current();
     });
     const unsubSent = masterBus.subscribe('FRIEND_REQUEST_SENT', () => {
-      loadFriends();
+      loadFriendsRef.current();
     });
     const unsubProfile = masterBus.subscribe('PROFILE_UPDATED', () => {
-      loadFriends();
+      loadFriendsRef.current();
     });
     return () => {
       unsubAccepted();
@@ -186,6 +189,10 @@ export default function FriendsPage() {
     setLoading(false);
   };
 
+  useEffect(() => {
+    loadFriendsRef.current = loadFriends;
+  }, [user?.id, onlineUserIds]);
+
   const acceptRequest = async (friendshipId: string) => {
     try {
       const { error } = await supabase
@@ -211,6 +218,18 @@ export default function FriendsPage() {
     } catch (err) {
       console.error('[Friends] Failed to decline request:', err);
       toast.error('Failed to decline request');
+    }
+  };
+
+  const removeFriend = async (friendshipId: string) => {
+    try {
+      const { error } = await supabase.from('friendships').delete().eq('id', friendshipId);
+      if (error) throw error;
+      loadFriends();
+      toast.success('Friend removed');
+    } catch (err) {
+      console.error('[Friends] Failed to remove friend:', err);
+      toast.error('Failed to remove friend');
     }
   };
 
@@ -336,42 +355,46 @@ export default function FriendsPage() {
                 </button>
               </div>
             ) : (
-              filteredFriends.map((friend, index) => (
-                <div
-                  key={friend.id}
-                  className="friend-row"
-                  onClick={() => navigate(`/profile/${friend.user_id}`)}
-                  style={{
-                    opacity: visibleFriendRows.has(index) ? 1 : 0,
-                    transform: visibleFriendRows.has(index) ? 'translateY(0)' : 'translateY(8px)',
-                    transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                  }}
-                >
-                  <div className="friend-avatar">
-                    {friend.avatar_url ? (
-                      <img src={friend.avatar_url} alt="" loading="lazy" />
-                    ) : (
-                      <span>{friend.username[0]?.toUpperCase()}</span>
-                    )}
-                    {friend.is_online && <span className="online-dot" />}
+              <>
+                {filteredFriends.filter((f) => f.is_online).length > 0 && (
+                  <div className="friend-group">
+                    <h3 className="friend-group-header">
+                      Online — {filteredFriends.filter((f) => f.is_online).length}
+                    </h3>
+                    {filteredFriends
+                      .filter((f) => f.is_online)
+                      .map((friend, index) => (
+                        <SwipeableFriendRow
+                          key={friend.id}
+                          friend={friend}
+                          visible={visibleFriendRows.has(filteredFriends.indexOf(friend))}
+                          onMessage={() => navigate(`/messages/new?userId=${friend.user_id}`)}
+                          onRemove={() => removeFriend(friend.id)}
+                          navigate={navigate}
+                        />
+                      ))}
                   </div>
-                  <div className="friend-info">
-                    <span className="friend-name">{friend.username}</span>
-                    {friend.current_table && (
-                      <span className="friend-status"> Playing at {friend.current_table}</span>
-                    )}
+                )}
+                {filteredFriends.filter((f) => !f.is_online).length > 0 && (
+                  <div className="friend-group">
+                    <h3 className="friend-group-header">
+                      Offline — {filteredFriends.filter((f) => !f.is_online).length}
+                    </h3>
+                    {filteredFriends
+                      .filter((f) => !f.is_online)
+                      .map((friend, index) => (
+                        <SwipeableFriendRow
+                          key={friend.id}
+                          friend={friend}
+                          visible={visibleFriendRows.has(filteredFriends.indexOf(friend))}
+                          onMessage={() => navigate(`/messages/new?userId=${friend.user_id}`)}
+                          onRemove={() => removeFriend(friend.id)}
+                          navigate={navigate}
+                        />
+                      ))}
                   </div>
-                  <button
-                    className="action-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/messages/new?userId=${friend.user_id}`);
-                    }}
-                  >
-                    ◈
-                  </button>
-                </div>
-              ))
+                )}
+              </>
             )}
           </div>
         </>
@@ -420,16 +443,88 @@ export default function FriendsPage() {
       )}
 
       {activeTab === 'recent' && (
-        <RecentPlayers
-          onAddFriend={(playerId) => {
-            sendFriendRequest(playerId);
-          }}
-          onInviteToTable={(playerId) => {
-            navigate(`/messages/new?userId=${playerId}`);
-            toast.info('Opening chat to invite...');
-          }}
-        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          <FriendActivityFeed friends={friends} />
+          <RecentPlayers
+            onAddFriend={(playerId) => {
+              sendFriendRequest(playerId);
+            }}
+            onInviteToTable={(playerId) => {
+              navigate(`/messages/new?userId=${playerId}`);
+              toast.info('Opening chat to invite...');
+            }}
+          />
+        </div>
       )}
+    </div>
+  );
+}
+
+function SwipeableFriendRow({ friend, visible, onMessage, onRemove, navigate }: any) {
+  const { handlers, rowStyle, offset, reset } = useSwipeAction({
+    actionWidth: 80,
+    threshold: 40,
+    onSwipeRight: () => {
+      // Swipe right reveals left action (Message)
+    },
+    onSwipeLeft: () => {
+      // Swipe left reveals right action (Remove)
+    },
+  });
+
+  return (
+    <div
+      className="swipe-container"
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(8px)',
+        transition: 'opacity 0.3s, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+      }}
+    >
+      <div
+        className="swipe-actions-left"
+        onClick={(e) => {
+          e.stopPropagation();
+          reset();
+          onMessage();
+        }}
+      >
+        💬
+      </div>
+      <div
+        className="swipe-actions-right"
+        onClick={(e) => {
+          e.stopPropagation();
+          reset();
+          onRemove();
+        }}
+      >
+        🗑️
+      </div>
+      <div
+        className="friend-row surface"
+        style={rowStyle}
+        {...handlers}
+        onClick={() => {
+          if (offset !== 0) reset();
+          else navigate(`/profile/${friend.user_id}`);
+        }}
+      >
+        <div className="friend-avatar">
+          {friend.avatar_url ? (
+            <img src={friend.avatar_url} alt="" loading="lazy" />
+          ) : (
+            <span>{friend.username[0]?.toUpperCase()}</span>
+          )}
+          {friend.is_online && <span className="online-dot pulse-anim" />}
+        </div>
+        <div className="friend-info">
+          <span className="friend-name">{friend.username}</span>
+          {friend.current_table && (
+            <span className="friend-status"> Playing at {friend.current_table}</span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -20,8 +20,8 @@ export interface ReactionEvent {
   timestamp: number;
 }
 
-const REACTION_MSG_REGEX = /^\[REACTION:(.+):(\d+)]$/;
-const THROW_MSG_REGEX = /^\[THROW:.+:\d+]$/;
+const REACTION_MSG_REGEX = /^\[REACTION:(.+):(\d+)\]$/;
+const THROW_MSG_REGEX = /^\[THROW:.+:\d+\]$/;
 const REACTION_LIFETIME_MS = 2500;
 
 export interface UseTableChatReturn {
@@ -62,6 +62,9 @@ export function useTableChat(
     // Check for reaction messages
     const reactionMatch = content.match(REACTION_MSG_REGEX);
     if (reactionMatch) {
+      // DoS Protection: Cap max concurrent animations to 20
+      if (pendingTimersRef.current.size >= 20) return true;
+
       const emoji = reactionMatch[1];
       const seatIndex = parseInt(reactionMatch[2], 10);
       const reactionId = `rx_${++reactionIdRef.current}`;

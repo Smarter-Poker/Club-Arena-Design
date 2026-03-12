@@ -25,6 +25,7 @@ interface Message {
   userPicture: string;
   content: string;
   imageUrl?: string;
+  audioUrl?: string;
   createdAt: string;
   reactions: { [emoji: string]: number };
   myReaction?: string;
@@ -146,6 +147,17 @@ export default function MessageBubble({
           {message.imageUrl && (
             <div className={styles.imageContainer}>
               <ImageThumbnail imageUrl={message.imageUrl} onClick={() => setShowLightbox(true)} />
+            </div>
+          )}
+
+          {/* Audio */}
+          {message.audioUrl && (
+            <div className={styles.audioContainer}>
+              <audio
+                controls
+                src={message.audioUrl}
+                style={{ width: '100%', maxWidth: '240px', height: '40px' }}
+              />
             </div>
           )}
 

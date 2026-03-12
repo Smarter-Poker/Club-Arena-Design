@@ -11,6 +11,7 @@ import { useToast } from '../components/common/Toast';
 import { PremiumSFX } from '../services/PremiumSFX';
 import { haptic } from '../services/HapticService';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import { useSwipeAction } from '../hooks/useSwipeAction';
 import './NotificationsPage.css';
 
 type NotifCategory = 'all' | 'games' | 'social' | 'achievements' | 'system';
@@ -56,6 +57,7 @@ export default function NotificationsPage() {
   const [newNotifId, setNewNotifId] = useState<string | null>(null);
   const [visibleNotifications, setVisibleNotifications] = useState(new Set<number>());
   const [activeCategory, setActiveCategory] = useState<NotifCategory>('all');
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -80,7 +82,8 @@ export default function NotificationsPage() {
 
             // Highlight new notification
             setNewNotifId(newNotif.id);
-            setTimeout(() => setNewNotifId(null), 3000);
+            if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+            highlightTimerRef.current = setTimeout(() => setNewNotifId(null), 3000);
 
             // Play notification sound via PremiumSFX
             try {
@@ -94,6 +97,7 @@ export default function NotificationsPage() {
 
       return () => {
         masterBus.removeRegisteredChannel(channelKey);
+        if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
       };
     }
   }, [user?.id]);
@@ -170,17 +174,10 @@ export default function NotificationsPage() {
     }
   };
 
-  const getIcon = (type: string): string => {
-    switch (type) {
-      case 'success':
-        return '✓';
-      case 'warning':
-        return '!';
-      case 'error':
-        return '✗';
-      default:
-        return 'i';
-    }
+  const getRichIcon = (notif: Notification): string => {
+    const cat = categorizeNotification(notif);
+    const catObj = NOTIF_CATEGORIES.find((c) => c.id === cat);
+    return catObj ? catObj.icon : '📋';
   };
 
   const formatDate = (dateStr: string): string => {
@@ -224,11 +221,37 @@ export default function NotificationsPage() {
     return counts;
   }, [notifications]);
 
+  // Group by Time
+  type TimeGroup = 'Today' | 'Yesterday' | 'This Week' | 'Earlier';
+  const groupedNotifications = useMemo(() => {
+    const groups: Record<TimeGroup, typeof filteredNotifications> = {
+      Today: [],
+      Yesterday: [],
+      'This Week': [],
+      Earlier: [],
+    };
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const yesterday = today - 86400000;
+    const thisWeek = today - 86400000 * 7;
+
+    filteredNotifications.forEach((notif) => {
+      const date = new Date(notif.created_at).getTime();
+      if (date >= today) groups['Today'].push(notif);
+      else if (date >= yesterday) groups['Yesterday'].push(notif);
+      else if (date >= thisWeek) groups['This Week'].push(notif);
+      else groups['Earlier'].push(notif);
+    });
+
+    return groups;
+  }, [filteredNotifications]);
+
   // Stagger notification rows
   useEffect(() => {
     setVisibleNotifications(new Set());
     const timers = filteredNotifications.map((_, i) =>
-      setTimeout(() => setVisibleNotifications((prev) => new Set([...prev, i])), i * 40)
+      setTimeout(() => setVisibleNotifications((prev) => new Set([...prev, i])), i * 30)
     );
     return () => timers.forEach((t) => clearTimeout(t));
   }, [filteredNotifications.length, activeCategory]);
@@ -287,40 +310,96 @@ export default function NotificationsPage() {
             <p>No {activeCategory} notifications</p>
           </div>
         ) : (
-          filteredNotifications.map((notif, index) => (
-            <div
-              key={notif.id}
-              className={`notification-item ${notif.read ? 'read' : 'unread'} ${newNotifId === notif.id ? 'new-highlight' : ''}`}
-              onClick={() => {
-                haptic.light();
-                markAsRead(notif.id);
-                if (notif.action_url) navigate(notif.action_url);
-              }}
-              style={{
-                opacity: visibleNotifications.has(index) ? 1 : 0,
-                transform: visibleNotifications.has(index) ? 'translateY(0)' : 'translateY(8px)',
-                transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-              }}
-            >
-              <span className="notif-icon">{getIcon(notif.type)}</span>
-              <div className="notif-content">
-                <span className="notif-title">{notif.title}</span>
-                <span className="notif-message">{notif.message}</span>
-                <span className="notif-time">{formatDate(notif.created_at)}</span>
+          (Object.keys(groupedNotifications) as TimeGroup[]).map((groupName) => {
+            const groupNotifs = groupedNotifications[groupName];
+            if (groupNotifs.length === 0) return null;
+            return (
+              <div key={groupName} className="notif-group">
+                <div className="time-group-header">
+                  <span>{groupName}</span>
+                </div>
+                {groupNotifs.map((notif) => {
+                  const globalIndex = filteredNotifications.indexOf(notif);
+                  return (
+                    <SwipeableNotificationItem
+                      key={notif.id}
+                      notif={notif}
+                      visible={visibleNotifications.has(globalIndex)}
+                      newHighlight={newNotifId === notif.id}
+                      icon={getRichIcon(notif)}
+                      timeStr={formatDate(notif.created_at)}
+                      onRead={() => {
+                        markAsRead(notif.id);
+                        if (notif.action_url) navigate(notif.action_url);
+                      }}
+                      onDelete={() => deleteNotification(notif.id)}
+                    />
+                  );
+                })}
               </div>
-              {!notif.read && <span className="unread-dot" />}
-              <button
-                className="delete-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteNotification(notif.id);
-                }}
-              >
-                ×
-              </button>
-            </div>
-          ))
+            );
+          })
         )}
+      </div>
+    </div>
+  );
+}
+
+function SwipeableNotificationItem({
+  notif,
+  visible,
+  newHighlight,
+  icon,
+  timeStr,
+  onRead,
+  onDelete,
+}: any) {
+  const { handlers, rowStyle, offset, reset } = useSwipeAction({
+    actionWidth: 80,
+    threshold: 40,
+    onSwipeLeft: () => {
+      // Swipe left reveals right action (Delete)
+    },
+  });
+
+  return (
+    <div
+      className="swipe-container"
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(8px)',
+        transition: 'opacity 0.3s, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+      }}
+    >
+      <div
+        className="swipe-actions-right"
+        onClick={(e) => {
+          e.stopPropagation();
+          reset();
+          onDelete();
+        }}
+      >
+        🗑️
+      </div>
+      <div
+        className={`notification-item surface ${notif.read ? 'read' : 'unread'} ${newHighlight ? 'new-highlight' : ''}`}
+        style={rowStyle}
+        {...handlers}
+        onClick={() => {
+          if (offset !== 0) reset();
+          else {
+            haptic.light();
+            onRead();
+          }
+        }}
+      >
+        <span className="notif-icon">{icon}</span>
+        <div className="notif-content">
+          <span className="notif-title">{notif.title}</span>
+          <span className="notif-message">{notif.message}</span>
+          <span className="notif-time">{timeStr}</span>
+        </div>
+        {!notif.read && <span className="unread-dot" />}
       </div>
     </div>
   );

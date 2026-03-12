@@ -85,6 +85,50 @@
   opacity: 0.4;
 }
 
+.notif-group {
+  margin-bottom: 1.5rem;
+}
+
+.time-group-header {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #6a7a8a;
+  letter-spacing: 0.5px;
+  margin: 0 0 0.5rem 0.5rem;
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Swipe Container */
+.swipe-container {
+  position: relative;
+  border-radius: 12px;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  background: transparent;
+}
+
+.swipe-actions-right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 20px;
+  background: linear-gradient(-90deg, rgba(239, 68, 68, 0.4) 0%, rgba(239, 68, 68, 0) 100%);
+  font-size: 1.5rem;
+  cursor: pointer;
+  border-radius: 12px;
+}
+
 .notification-item {
   display: flex;
   align-items: flex-start;
@@ -93,12 +137,16 @@
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(100, 100, 100, 0.02) 100%);
   border: 1px solid #2a3a4a;
   border-radius: 12px;
-  margin-bottom: 0.5rem;
   cursor: pointer;
   position: relative;
   transition: all 0.25s var(--ease-spring, cubic-bezier(0.175, 0.885, 0.32, 1.275));
   backdrop-filter: blur(16px) saturate(1.2);
   -webkit-backdrop-filter: blur(16px) saturate(1.2);
+}
+
+.notification-item.surface {
+  z-index: 2;
+  width: 100%;
 }
 
 .notification-item:hover {

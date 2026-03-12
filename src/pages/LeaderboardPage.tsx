@@ -304,17 +304,6 @@ export default function LeaderboardPage() {
         </button>
       </div>
 
-      {/* User Rank Card */}
-      {userRank && (
-        <div className="user-rank-card">
-          <div className="user-rank-position">
-            <span className="rank-number">{getRankLabel(userRank.rank)}</span>
-            <span className="rank-label">Your Rank</span>
-          </div>
-          <div className="rank-context">out of {userRank.total.toLocaleString()} players</div>
-        </div>
-      )}
-
       {/* Filters */}
       <div className="leaderboard-filters">
         {/* Club Selector (only shown when multiple clubs) */}
@@ -429,6 +418,11 @@ export default function LeaderboardPage() {
                     showVipRing={true}
                   />
                   {top3[1].isVIP && <span className="vip-badge">VIP</span>}
+                  {(top3[1].change || 0) >= 3 && (
+                    <span className="hot-streak-badge" title="Hot Streak!">
+                      🔥
+                    </span>
+                  )}
                   <span className="podium-name">{top3[1].username}</span>
                   <span className="podium-value silver-text">
                     {formatValue(top3[1].value, metric)}
@@ -456,6 +450,11 @@ export default function LeaderboardPage() {
                     showVipRing={true}
                   />
                   {top3[0].isVIP && <span className="vip-badge">VIP</span>}
+                  {(top3[0].change || 0) >= 3 && (
+                    <span className="hot-streak-badge" title="Hot Streak!">
+                      🔥
+                    </span>
+                  )}
                   <span className="podium-name">{top3[0].username}</span>
                   <span className="podium-value gold-text">
                     {formatValue(top3[0].value, metric)}
@@ -482,6 +481,11 @@ export default function LeaderboardPage() {
                     showVipRing={true}
                   />
                   {top3[2].isVIP && <span className="vip-badge">VIP</span>}
+                  {(top3[2].change || 0) >= 3 && (
+                    <span className="hot-streak-badge" title="Hot Streak!">
+                      🔥
+                    </span>
+                  )}
                   <span className="podium-name">{top3[2].username}</span>
                   <span className="podium-value bronze-text">
                     {formatValue(top3[2].value, metric)}
@@ -546,12 +550,17 @@ export default function LeaderboardPage() {
                   <span className="entry-name">
                     {entry.username}
                     {entry.isVIP && <span className="entry-vip-tag">VIP</span>}
+                    {(entry.change || 0) >= 3 && (
+                      <span className="hot-streak-badge" title="Hot Streak!">
+                        🔥
+                      </span>
+                    )}
                   </span>
                 </div>
                 <div className={`entry-value ${entry.value >= 0 ? 'positive' : 'negative'}`}>
                   {formatValue(entry.value, metric)}
                   {entry.change !== 0 && (
-                    <span className={`change ${entry.change > 0 ? 'up' : 'down'}`}>
+                    <span className={`change rank-change-anim ${entry.change > 0 ? 'up' : 'down'}`}>
                       {entry.change > 0 ? '▲' : '▼'} {Math.abs(entry.change)}
                     </span>
                   )}
@@ -610,6 +619,17 @@ export default function LeaderboardPage() {
           </>
         ) : null}
       </div>
+
+      {/* Sticky User Rank Card (Bottom) */}
+      {userRank && (
+        <div className="user-rank-card sticky-bottom">
+          <div className="user-rank-position">
+            <span className="rank-number">{getRankLabel(userRank.rank)}</span>
+            <span className="rank-label">Your Rank</span>
+          </div>
+          <div className="rank-context">out of {userRank.total.toLocaleString()} players</div>
+        </div>
+      )}
     </div>
   );
 }

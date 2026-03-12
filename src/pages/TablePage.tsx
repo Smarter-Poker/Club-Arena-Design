@@ -123,7 +123,7 @@ import { QuickActionsBar } from '../components/table/QuickActionsBar';
 import { SpectatorOverlay } from '../components/table/SpectatorOverlay';
 import { TableReactions } from '../components/table/TableReactions';
 import { useTableKeyboard } from '../hooks/useTableKeyboard';
-import { ChipPhysics } from '../components/table/ChipPhysics';
+
 import { PremiumPot } from '../components/table/PremiumPot';
 import { TablePerfMonitor } from '../components/table/TablePerfMonitor';
 import { HoleCardReveal } from '../components/tournament/HoleCardReveal';
@@ -1671,8 +1671,13 @@ export default function TablePage({
           // Parse special messages (reactions, throws) — filter from chat display
           const chatPayload = msg.payload as any;
           const content = chatPayload?.message || chatPayload?.content || '';
-          const senderId = chatPayload?.user_id || chatPayload?.userId || '';
-          const senderName = chatPayload?.display_name || chatPayload?.playerName || 'Player';
+
+          // CRITICAL FIX: RoomService puts sender at msg.sender, not inside payload
+          const senderId = msg.sender || chatPayload?.user_id || '';
+
+          // Get player name if seated, otherwise fallback
+          const seatedPlayer = Array.from(tableState.players).find((p) => p && p.id === senderId);
+          const senderName = seatedPlayer?.name || chatPayload?.display_name || 'Player';
 
           // Skip if empty content or sent by us (already optimistically added)
           if (!content || senderId === userId) break;
@@ -3621,6 +3626,21 @@ export default function TablePage({
             )}
 
             {/* ─── ACTION PANEL — PokerBros 3-button layout ─── */}
+            {/* Quick Actions Bar — always available when seated */}
+            <QuickActionsBar
+              isSoundEnabled={isSoundEnabled}
+              isChatVisible={!isChatCollapsed}
+              isHandStrengthVisible={userSettings.showHUD}
+              isStatsVisible={userSettings.showHUD}
+              isAutoRebuyEnabled={false}
+              onToggleSound={() => setIsSoundEnabled((prev) => !prev)}
+              onToggleChat={() => setIsChatCollapsed((prev) => !prev)}
+              onToggleHandStrength={() => updateSetting('showHUD', !userSettings.showHUD)}
+              onToggleStats={() => updateSetting('showHUD', !userSettings.showHUD)}
+              onToggleAutoRebuy={() => {}}
+              onOpenSettings={() => setShowSettings(true)}
+            />
+
             {tableState.currentPlayerSeat === tableState.heroSeat && tableState.isHandInProgress
               ? (() => {
                   const handState = handControllerRef.current?.getState();
@@ -3634,20 +3654,6 @@ export default function TablePage({
 
                   return (
                     <>
-                      {/* Quick Actions Bar — above action buttons */}
-                      <QuickActionsBar
-                        isSoundEnabled={isSoundEnabled}
-                        isChatVisible={!isChatCollapsed}
-                        isHandStrengthVisible={userSettings.showHUD}
-                        isStatsVisible={userSettings.showHUD}
-                        isAutoRebuyEnabled={false}
-                        onToggleSound={() => setIsSoundEnabled((prev) => !prev)}
-                        onToggleChat={() => setIsChatCollapsed((prev) => !prev)}
-                        onToggleHandStrength={() => updateSetting('showHUD', !userSettings.showHUD)}
-                        onToggleStats={() => updateSetting('showHUD', !userSettings.showHUD)}
-                        onToggleAutoRebuy={() => {}}
-                        onOpenSettings={() => setShowSettings(true)}
-                      />
                       <ActionPanel
                         canFold={true}
                         canCheck={callAmount === 0}

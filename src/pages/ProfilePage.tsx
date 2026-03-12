@@ -20,6 +20,8 @@ import { profileService } from '../services/ProfileService';
 import { bonusService } from '../services/BonusService';
 import { masterBus } from '../core/MasterBus';
 import { StreakFire } from '../components/gamification/StreakFire';
+import CircularGauge from '../components/common/CircularGauge';
+import { useSwipeTabs } from '../hooks/useSwipeTabs';
 import styles from './ProfilePage.module.css';
 
 // #5: Lazy-load Recharts (387KB) — only imported when History tab is opened
@@ -52,6 +54,7 @@ interface PokerStats {
   tournamentsPlayed: number;
   tournamentsWon: number;
   bountyKOs: number;
+  roi: number;
 }
 
 interface Achievement {
@@ -81,6 +84,7 @@ const DEFAULT_STATS: PokerStats = {
   tournamentsPlayed: 0,
   tournamentsWon: 0,
   bountyKOs: 0,
+  roi: 0,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -190,6 +194,13 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<'stats' | 'achievements' | 'history' | 'social'>(
     'stats'
   );
+  
+  const swipeHandlers = useSwipeTabs({
+    tabs: ['stats', 'achievements', 'history', 'social'],
+    activeTab,
+    onTabChange: (tab) => setActiveTab(tab as any),
+  });
+
   const [isLoading, setIsLoading] = useState(true);
   const [showBonusWheel, setShowBonusWheel] = useState(false);
 
@@ -205,13 +216,15 @@ export default function ProfilePage() {
 
   // Stat stagger animation
   useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
     if (!isLoading && user) {
       setVisibleStats(new Set());
       const statCount = 11; // Update based on actual stat count
       for (let i = 0; i < statCount; i++) {
-        setTimeout(() => setVisibleStats((prev) => new Set(prev).add(i)), i * 50);
+        timers.push(setTimeout(() => setVisibleStats((prev) => new Set(prev).add(i)), i * 50));
       }
     }
+    return () => timers.forEach(t => clearTimeout(t));
   }, [activeTab, isLoading, user]);
 
   // Load profile data from Supabase
@@ -259,6 +272,7 @@ export default function ProfilePage() {
               tournamentsPlayed: profile.stats.tournaments_played || 0,
               tournamentsWon: profile.stats.tournaments_won || 0,
               bountyKOs: profile.stats.bounty_kos || 0,
+              roi: profile.stats.roi || 0,
             });
           }
         }
@@ -372,6 +386,7 @@ export default function ProfilePage() {
                   tournamentsPlayed: profile.stats.tournaments_played || 0,
                   tournamentsWon: profile.stats.tournaments_won || 0,
                   bountyKOs: profile.stats.bounty_kos || 0,
+                  roi: profile.stats.roi || 0,
                 });
               }
             });
@@ -406,19 +421,20 @@ export default function ProfilePage() {
 
   // #1+#2: Setup Supabase Realtime via Channel Registry (fixed cleanup leak)
   useEffect(() => {
-    let channelKey = '';
+    let isMounted = true;
+    let activeChannelKey: string | null = null;
 
     async function setupRealtimeSubscription() {
       try {
         const {
           data: { user: authUser },
         } = await supabase.auth.getUser();
-        if (!authUser) return;
+        if (!authUser || !isMounted) return;
 
-        channelKey = `profile-${authUser.id}`;
+        activeChannelKey = `profile-${authUser.id}`;
 
         // #1: Use Channel Registry for deduplication
-        const channel = masterBus.getOrCreateChannel(channelKey);
+        const channel = masterBus.getOrCreateChannel(activeChannelKey);
 
         // Subscribe to profile changes
         channel
@@ -467,6 +483,7 @@ export default function ProfilePage() {
                     tournamentsPlayed: updatedProfile.stats.tournaments_played || 0,
                     tournamentsWon: updatedProfile.stats.tournaments_won || 0,
                     bountyKOs: updatedProfile.stats.bounty_kos || 0,
+                    roi: updatedProfile.stats.roi || 0,
                   });
                 }
               }
@@ -503,10 +520,11 @@ export default function ProfilePage() {
 
     setupRealtimeSubscription();
 
-    // #2: FIX — cleanup is now synchronous and correctly removes the channel
+    // #2: FIX — cleanup is now robust against async race conditions
     return () => {
-      if (channelKey) {
-        masterBus.removeRegisteredChannel(channelKey);
+      isMounted = false;
+      if (activeChannelKey) {
+        masterBus.removeRegisteredChannel(activeChannelKey);
       }
     };
   }, []);
@@ -550,13 +568,29 @@ export default function ProfilePage() {
             {dailyStreak > 0 && <StreakFire streakCount={dailyStreak} size="sm" showLabel />}
           </h1>
           <p className={styles.playerNumber}>Player #{user.playerNumber}</p>
-          <p className={styles.memberSince}>
-            Member since{' '}
-            {new Date(user.memberSince).toLocaleDateString('en-US', {
-              month: 'long',
-              year: 'numeric',
-            })}
-          </p>
+          <div className={styles.statChipsContainer}>
+            <div className={styles.statChip}>
+              <span className={styles.chipLabel}>Member</span>
+              <span className={styles.chipValue}>
+                {new Date(user.memberSince).toLocaleDateString('en-US', {
+                  month: 'short',
+                  year: '2-digit',
+                })}
+              </span>
+            </div>
+            <div className={styles.statChip}>
+              <span className={styles.chipLabel}>Hands</span>
+              <span className={styles.chipValue}>{stats.totalHands.toLocaleString()}</span>
+            </div>
+            <div className={styles.statChip}>
+              <span className={styles.chipLabel}>VPIP</span>
+              <span className={styles.chipValue}>{stats.vpip}%</span>
+            </div>
+            <div className={styles.statChip}>
+              <span className={styles.chipLabel}>ROI</span>
+              <span className={styles.chipValue}>{stats.roi > 0 ? `+${stats.roi}` : stats.roi}%</span>
+            </div>
+          </div>
         </div>
 
         <div className={styles.headerActions}>
@@ -728,46 +762,38 @@ export default function ProfilePage() {
       </nav>
 
       {/* Tab Content */}
-      <section className={styles.tabContent}>
+      <section className={styles.tabContent} {...swipeHandlers}>
         {activeTab === 'stats' && (
           <div className={styles.statsContainer}>
             <div className={styles.statsGroup}>
               <h3>Core Stats</h3>
+              <div className={styles.circularStatsGrid}>
+                <div className={`${styles.circularGaugeWrapper} ${visibleStats.has(0) ? styles.visible : styles.hidden}`}>
+                  <CircularGauge value={stats.vpip} label="VPIP" sublabel="Volun. Put In Pot" accent="#00d4ff" />
+                </div>
+                <div className={`${styles.circularGaugeWrapper} ${visibleStats.has(1) ? styles.visible : styles.hidden}`}>
+                  <CircularGauge value={stats.pfr} label="PFR" sublabel="Pre-Flop Raise" accent="#fbbf24" />
+                </div>
+                <div className={`${styles.circularGaugeWrapper} ${visibleStats.has(2) ? styles.visible : styles.hidden}`}>
+                  <CircularGauge value={stats.winRate} label="Win Rate" sublabel="Hands Won" accent="#10b981" />
+                </div>
+              </div>
               <div className={styles.statsGrid}>
                 <StatCard
                   value={stats.totalHands.toLocaleString()}
                   label="Hands Played"
-                  index={0}
-                  isVisible={visibleStats.has(0)}
-                />
-                <StatCard
-                  value={`${stats.vpip}%`}
-                  label="VPIP"
-                  index={1}
-                  isVisible={visibleStats.has(1)}
-                />
-                <StatCard
-                  value={`${stats.pfr}%`}
-                  label="PFR"
-                  index={2}
-                  isVisible={visibleStats.has(2)}
-                />
-                <StatCard
-                  value={`${stats.threeBet}%`}
-                  label="3-Bet"
                   index={3}
                   isVisible={visibleStats.has(3)}
                 />
                 <StatCard
-                  value={stats.aggression.toFixed(1)}
-                  label="Aggression"
+                  value={`${stats.threeBet}%`}
+                  label="3-Bet"
                   index={4}
                   isVisible={visibleStats.has(4)}
                 />
                 <StatCard
-                  value={`${stats.winRate}%`}
-                  label="Win Rate"
-                  positive={stats.winRate > 50}
+                  value={stats.aggression.toFixed(1)}
+                  label="Aggression"
                   index={5}
                   isVisible={visibleStats.has(5)}
                 />
