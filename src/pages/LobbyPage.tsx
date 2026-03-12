@@ -10,6 +10,7 @@ import styles from './LobbyPage.module.css';
 import TableCard from '../components/lobby/TableCard';
 import GameTypeTabs from '../components/lobby/GameTypeTabs';
 import QuickActions from '../components/lobby/QuickActions';
+import LobbyHeroBanner from '../components/lobby/LobbyHeroBanner';
 import { tableService } from '../services/TableService';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
@@ -19,320 +20,341 @@ import type { PokerTable } from '../types/database.types';
 type GameFilter = 'all' | 'nlh' | 'plo' | 'ofc' | 'tournaments' | 'favorites';
 
 export default function LobbyPage() {
-    const navigate = useNavigate();
-    const { user } = useUserStore();
-    const [activeFilter, setActiveFilter] = useState<GameFilter>('all');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [stakeFilter, setStakeFilter] = useState<string>('any');
-    const [tables, setTables] = useState<PokerTable[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [onlinePlayers, setOnlinePlayers] = useState(0);
-    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const navigate = useNavigate();
+  const { user } = useUserStore();
+  const [activeFilter, setActiveFilter] = useState<GameFilter>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [stakeFilter, setStakeFilter] = useState<string>('any');
+  const [tables, setTables] = useState<PokerTable[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [onlinePlayers, setOnlinePlayers] = useState(0);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Favorite Tables (stored in localStorage)
-    const [favorites, setFavorites] = useState<Set<string>>(() => {
-        try {
-            const stored = JSON.parse(localStorage.getItem('favorite_tables') || '[]');
-            return new Set(stored);
-        } catch { return new Set(); }
+  // Favorite Tables (stored in localStorage)
+  const [favorites, setFavorites] = useState<Set<string>>(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('favorite_tables') || '[]');
+      return new Set(stored);
+    } catch {
+      return new Set();
+    }
+  });
+
+  const toggleFavorite = (tableId: string) => {
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(tableId)) next.delete(tableId);
+      else next.add(tableId);
+      localStorage.setItem('favorite_tables', JSON.stringify([...next]));
+      return next;
     });
+  };
 
-    const toggleFavorite = (tableId: string) => {
-        setFavorites(prev => {
-            const next = new Set(prev);
-            if (next.has(tableId)) next.delete(tableId);
-            else next.add(tableId);
-            localStorage.setItem('favorite_tables', JSON.stringify([...next]));
-            return next;
-        });
+  // UNION-FIRST: Check if user belongs to a union and redirect to union lobby
+  useEffect(() => {
+    const checkUnionMembership = async () => {
+      if (!user?.id) return;
+      try {
+        // Find clubs the user belongs to
+        const { data: memberships } = await supabase
+          .from('club_members')
+          .select('club_id')
+          .eq('user_id', user.id);
+
+        if (!memberships?.length) return;
+
+        // Check if any of these clubs are in a union
+        const clubIds = memberships.map((m) => m.club_id);
+        const { data: unionClub } = await supabase
+          .from('union_clubs')
+          .select('union_id')
+          .in('club_id', clubIds)
+          .limit(1)
+          .maybeSingle();
+
+        if (unionClub) {
+          // User's club is in a union — redirect to union lobby
+          navigate(`/unions/${unionClub.union_id}`, { replace: true });
+          return;
+        }
+      } catch (err) {
+        console.warn('[LobbyPage] Union check failed, showing all tables:', err);
+      }
     };
 
-    // UNION-FIRST: Check if user belongs to a union and redirect to union lobby
-    useEffect(() => {
-        const checkUnionMembership = async () => {
-            if (!user?.id) return;
-            try {
-                // Find clubs the user belongs to
-                const { data: memberships } = await supabase
-                    .from('club_members')
-                    .select('club_id')
-                    .eq('user_id', user.id);
+    checkUnionMembership();
+  }, [user?.id, navigate]);
 
-                if (!memberships?.length) return;
+  // Fetch tables and subscribe to real-time updates
+  useEffect(() => {
+    const fetchTables = async () => {
+      try {
+        setLoading(true);
+        // For users in unions, they'll be redirected above.
+        // This fallback shows all tables for standalone (non-union) users.
+        const activeTables = await tableService.getActiveTables();
+        setTables(activeTables);
+      } catch (error) {
+        console.error('Failed to fetch tables:', error);
+        setTables([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-                // Check if any of these clubs are in a union
-                const clubIds = memberships.map(m => m.club_id);
-                const { data: unionClub } = await supabase
-                    .from('union_clubs')
-                    .select('union_id')
-                    .in('club_id', clubIds)
-                    .limit(1)
-                    .maybeSingle();
+    fetchTables();
 
-                if (unionClub) {
-                    // User's club is in a union — redirect to union lobby
-                    navigate(`/unions/${unionClub.union_id}`, { replace: true });
-                    return;
-                }
-            } catch (err) {
-                console.warn('[LobbyPage] Union check failed, showing all tables:', err);
-            }
-        };
-
-        checkUnionMembership();
-    }, [user?.id, navigate]);
-
-    // Fetch tables and subscribe to real-time updates
-    useEffect(() => {
-        const fetchTables = async () => {
-            try {
-                setLoading(true);
-                // For users in unions, they'll be redirected above.
-                // This fallback shows all tables for standalone (non-union) users.
-                const activeTables = await tableService.getActiveTables();
-                setTables(activeTables);
-            } catch (error) {
-                console.error('Failed to fetch tables:', error);
-                setTables([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchTables();
-
-        // Subscribe to real-time table changes via Channel Registry
-        const tableChannelKey = 'lobby-tables';
-        const channel = masterBus.getOrCreateChannel(tableChannelKey);
-        channel
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'tables',
-                },
-                (payload) => {
-                    if (payload.eventType === 'INSERT') {
-                        setTables(prev => [...prev, payload.new as PokerTable]);
-                    } else if (payload.eventType === 'UPDATE') {
-                        setTables(prev =>
-                            prev.map(t => t.id === payload.new.id ? payload.new as PokerTable : t)
-                        );
-                    } else if (payload.eventType === 'DELETE') {
-                        setTables(prev => prev.filter(t => t.id !== payload.old.id));
-                    }
-                }
-            )
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'table_seats',
-                },
-                () => {
-                    // Debounce seat changes to avoid rapid refetching
-                    if (debounceRef.current) clearTimeout(debounceRef.current);
-                    debounceRef.current = setTimeout(() => {
-                        tableService.getActiveTables().then(setTables).catch(err => {
-                            console.error('[LobbyPage] Failed to refresh tables on seat change:', err);
-                        });
-                    }, 500);
-                }
-            )
-            .subscribe();
-
-        // Get online player count via Channel Registry
-        const presenceKey = 'online-users';
-        const presenceChannel = masterBus.getOrCreateChannel(presenceKey);
-        presenceChannel
-            .on('presence', { event: 'sync' }, () => {
-                const presenceState = presenceChannel.presenceState();
-                setOnlinePlayers(Object.keys(presenceState).length);
-            })
-            .subscribe(async (status) => {
-                if (status === 'SUBSCRIBED') {
-                    await presenceChannel.track({ online: true });
-                }
-            });
-
-        // Cleanup — untrack presence + remove channels + clear debounce
-        return () => {
-            presenceChannel.untrack().catch(() => {});
-            masterBus.removeRegisteredChannel(tableChannelKey);
-            masterBus.removeRegisteredChannel(presenceKey);
-            if (debounceRef.current) clearTimeout(debounceRef.current);
-        };
-    }, []);
-
-    const filteredTables = tables.filter(table => {
-        if (activeFilter === 'favorites') return favorites.has(table.id);
-        if (activeFilter !== 'all') {
-            if (activeFilter === 'nlh' && !['nlh', 'short_deck', 'flh'].includes(table.game_variant)) return false;
-            if (activeFilter === 'plo' && !table.game_variant.startsWith('plo')) return false;
-            if (activeFilter === 'ofc' && !table.game_variant.startsWith('ofc')) return false;
-            if (activeFilter === 'tournaments' && (table as any).game_type !== 'tournament') return false;
+    // Subscribe to real-time table changes via Channel Registry
+    const tableChannelKey = 'lobby-tables';
+    const channel = masterBus.getOrCreateChannel(tableChannelKey);
+    channel
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tables',
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setTables((prev) => [...prev, payload.new as PokerTable]);
+          } else if (payload.eventType === 'UPDATE') {
+            setTables((prev) =>
+              prev.map((t) => (t.id === payload.new.id ? (payload.new as PokerTable) : t))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setTables((prev) => prev.filter((t) => t.id !== payload.old.id));
+          }
         }
-        if (searchQuery && !(table.name || '').toLowerCase().includes(searchQuery.toLowerCase())) return false;
-
-        // Stake range filter
-        if (stakeFilter !== 'any' && table.stakes) {
-            const bbMatch = table.stakes.match(/(\d+)\/(\d+)/);
-            const bb = bbMatch ? parseInt(bbMatch[2]) : 0;
-            if (stakeFilter === 'low' && bb > 10) return false;
-            if (stakeFilter === 'mid' && (bb <= 10 || bb > 50)) return false;
-            if (stakeFilter === 'high' && bb <= 50) return false;
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'table_seats',
+        },
+        () => {
+          // Debounce seat changes to avoid rapid refetching
+          if (debounceRef.current) clearTimeout(debounceRef.current);
+          debounceRef.current = setTimeout(() => {
+            tableService
+              .getActiveTables()
+              .then(setTables)
+              .catch((err) => {
+                console.error('[LobbyPage] Failed to refresh tables on seat change:', err);
+              });
+          }, 500);
         }
+      )
+      .subscribe();
 
-        return true;
-    });
+    // Get online player count via Channel Registry
+    const presenceKey = 'online-users';
+    const presenceChannel = masterBus.getOrCreateChannel(presenceKey);
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        const presenceState = presenceChannel.presenceState();
+        setOnlinePlayers(Object.keys(presenceState).length);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({ online: true });
+        }
+      });
 
-    const totalPlaying = tables.reduce((sum, t) => sum + (t.current_players || 0), 0);
+    // Cleanup — untrack presence + remove channels + clear debounce
+    return () => {
+      presenceChannel.untrack().catch(() => {});
+      masterBus.removeRegisteredChannel(tableChannelKey);
+      masterBus.removeRegisteredChannel(presenceKey);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
-    return (
-        <div className={styles.lobby}>
-            {/* Hero Section */}
-            <section className={styles.hero}>
-                <div className={styles.heroContent}>
-                    <h1 className={styles.heroTitle}>
-                        <span className={styles.heroIcon}>♠</span>
-                        Club Engine
-                    </h1>
-                    <p className={styles.heroSubtitle}>
-                        Private poker clubs, better than ever.
-                    </p>
-                    <div className={styles.liveStats}>
-                        <span className={styles.liveDot}></span>
-                        <span>{onlinePlayers} online</span>
-                        <span className={styles.divider}>•</span>
-                        <span>{totalPlaying} playing</span>
-                        <span className={styles.divider}>•</span>
-                        <span>{tables.length} tables</span>
-                    </div>
-                </div>
-                <QuickActions />
-            </section>
+  const filteredTables = tables.filter((table) => {
+    if (activeFilter === 'favorites') return favorites.has(table.id);
+    if (activeFilter !== 'all') {
+      if (activeFilter === 'nlh' && !['nlh', 'short_deck', 'flh'].includes(table.game_variant))
+        return false;
+      if (activeFilter === 'plo' && !table.game_variant.startsWith('plo')) return false;
+      if (activeFilter === 'ofc' && !table.game_variant.startsWith('ofc')) return false;
+      if (activeFilter === 'tournaments' && (table as any).game_type !== 'tournament') return false;
+    }
+    if (searchQuery && !(table.name || '').toLowerCase().includes(searchQuery.toLowerCase()))
+      return false;
 
-            {/* Game Type Tabs */}
-            <section className={styles.filterSection}>
-                <GameTypeTabs
-                    activeFilter={activeFilter}
-                    onFilterChange={setActiveFilter}
-                />
+    // Stake range filter
+    if (stakeFilter !== 'any' && table.stakes) {
+      const bbMatch = table.stakes.match(/(\d+)\/(\d+)/);
+      const bb = bbMatch ? parseInt(bbMatch[2]) : 0;
+      if (stakeFilter === 'low' && bb > 10) return false;
+      if (stakeFilter === 'mid' && (bb <= 10 || bb > 50)) return false;
+      if (stakeFilter === 'high' && bb <= 50) return false;
+    }
 
-                <div className={styles.searchBox}>
-                    <span className={styles.searchIcon}></span>
-                    <input
-                        type="text"
-                        placeholder="Search tables..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className={styles.searchInput}
-                    />
-                    <select
-                        value={stakeFilter}
-                        onChange={(e) => setStakeFilter(e.target.value)}
-                        style={{
-                            padding: '6px 10px', borderRadius: 8,
-                            background: 'rgba(0,0,0,0.3)',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            color: '#aaa', fontSize: '0.72rem',
-                            marginLeft: 6,
-                        }}
-                    >
-                        <option value="any">All Stakes</option>
-                        <option value="low">Low (≤10 BB)</option>
-                        <option value="mid">Mid (10-50 BB)</option>
-                        <option value="high">High (50+ BB)</option>
-                    </select>
-                </div>
-            </section>
+    return true;
+  });
 
-            {/* Tables Grid */}
-            <section className={styles.tablesSection}>
-                <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>Active Tables</h2>
-                    <span className={styles.tableCount}>{filteredTables.length} tables</span>
-                </div>
+  const totalPlaying = tables.reduce((sum, t) => sum + (t.current_players || 0), 0);
 
-                {loading ? (
-                    <div className={styles.emptyState}>
-                        <span className={styles.emptyIcon}></span>
-                        <h3>Loading tables...</h3>
-                    </div>
-                ) : filteredTables.length > 0 ? (
-                    <div className={styles.tablesGrid}>
-                        {filteredTables.map((table, index) => (
-                            <div
-                                key={table.id}
-                                style={{
-                                    position: 'relative',
-                                    animation: `tableSlideIn 0.5s ease-out ${index * 50}ms both`,
-                                }}
-                            >
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); toggleFavorite(table.id); }}
-                                    style={{
-                                        position: 'absolute', top: 8, right: 8, zIndex: 10,
-                                        background: 'none', border: 'none', cursor: 'pointer',
-                                        fontSize: '1.1rem', filter: favorites.has(table.id) ? 'none' : 'grayscale(1) opacity(0.4)',
-                                        transition: 'filter 0.2s ease',
-                                    }}
-                                    title={favorites.has(table.id) ? 'Remove from favorites' : 'Add to favorites'}
-                                >
-                                    ⭐
-                                </button>
-                                {/* Live pulse indicator for active tables */}
-                                {table.current_players > 0 && (
-                                    <div
-                                        style={{
-                                            position: 'absolute', top: 12, right: 44, zIndex: 10,
-                                            width: 8, height: 8, borderRadius: '50%',
-                                            background: '#ef4444', boxShadow: '0 0 8px #ef4444',
-                                            animation: 'livePulse 2s infinite',
-                                        }}
-                                        title={`${table.current_players} players live`}
-                                    />
-                                )}
-                                <TableCard table={table} />
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className={`${styles.emptyState} ${styles.emptyStatePremium}`}>
-                        <span className={styles.emptyIcon}>♠</span>
-                        <h3>No tables found</h3>
-                        <p>Try adjusting your filters or create a new table.</p>
-                        <button
-                            className="btn btn-primary"
-                            onClick={() => navigate('/clubs')}
-                            style={{
-                                marginTop: 16,
-                                padding: '10px 20px',
-                                borderRadius: 8,
-                                background: 'linear-gradient(135deg, #0099ff, #00d4ff)',
-                                border: 'none',
-                                color: '#000',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                                transition: 'all 0.3s ease',
-                            }}
-                            onMouseEnter={(e) => {
-                                (e.target as HTMLElement).style.transform = 'translateY(-2px)';
-                                (e.target as HTMLElement).style.boxShadow = '0 8px 20px rgba(0, 180, 255, 0.4)';
-                            }}
-                            onMouseLeave={(e) => {
-                                (e.target as HTMLElement).style.transform = 'translateY(0)';
-                                (e.target as HTMLElement).style.boxShadow = 'none';
-                            }}
-                        >
-                            Create Table
-                        </button>
-                    </div>
-                )}
-            </section>
+  return (
+    <div className={styles.lobby}>
+      {/* Hero Section */}
+      <section className={styles.hero}>
+        <div className={styles.heroContent}>
+          <h1 className={styles.heroTitle}>
+            <span className={styles.heroIcon}>♠</span>
+            Club Engine
+          </h1>
+          <p className={styles.heroSubtitle}>Private poker clubs, better than ever.</p>
+          <div className={styles.liveStats}>
+            <span className={styles.liveDot}></span>
+            <span>{onlinePlayers} online</span>
+            <span className={styles.divider}>•</span>
+            <span>{totalPlaying} playing</span>
+            <span className={styles.divider}>•</span>
+            <span>{tables.length} tables</span>
+          </div>
         </div>
-    );
-}
+        <QuickActions />
+      </section>
 
+      {/* Promotional Banner Carousel */}
+      <LobbyHeroBanner />
+
+      {/* Game Type Tabs */}
+      <section className={styles.filterSection}>
+        <GameTypeTabs activeFilter={activeFilter} onFilterChange={setActiveFilter} />
+
+        <div className={styles.searchBox}>
+          <span className={styles.searchIcon}></span>
+          <input
+            type="text"
+            placeholder="Search tables..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={styles.searchInput}
+          />
+          <select
+            value={stakeFilter}
+            onChange={(e) => setStakeFilter(e.target.value)}
+            style={{
+              padding: '6px 10px',
+              borderRadius: 8,
+              background: 'rgba(0,0,0,0.3)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              color: '#aaa',
+              fontSize: '0.72rem',
+              marginLeft: 6,
+            }}
+          >
+            <option value="any">All Stakes</option>
+            <option value="low">Low (≤10 BB)</option>
+            <option value="mid">Mid (10-50 BB)</option>
+            <option value="high">High (50+ BB)</option>
+          </select>
+        </div>
+      </section>
+
+      {/* Tables Grid */}
+      <section className={styles.tablesSection}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle}>Active Tables</h2>
+          <span className={styles.tableCount}>{filteredTables.length} tables</span>
+        </div>
+
+        {loading ? (
+          <div className={styles.emptyState}>
+            <span className={styles.emptyIcon}></span>
+            <h3>Loading tables...</h3>
+          </div>
+        ) : filteredTables.length > 0 ? (
+          <div className={styles.tablesGrid}>
+            {filteredTables.map((table, index) => (
+              <div
+                key={table.id}
+                style={{
+                  position: 'relative',
+                  animation: `tableSlideIn 0.5s ease-out ${index * 50}ms both`,
+                }}
+              >
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFavorite(table.id);
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    zIndex: 10,
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '1.1rem',
+                    filter: favorites.has(table.id) ? 'none' : 'grayscale(1) opacity(0.4)',
+                    transition: 'filter 0.2s ease',
+                  }}
+                  title={favorites.has(table.id) ? 'Remove from favorites' : 'Add to favorites'}
+                >
+                  ⭐
+                </button>
+                {/* Live pulse indicator for active tables */}
+                {table.current_players > 0 && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 12,
+                      right: 44,
+                      zIndex: 10,
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: '#ef4444',
+                      boxShadow: '0 0 8px #ef4444',
+                      animation: 'livePulse 2s infinite',
+                    }}
+                    title={`${table.current_players} players live`}
+                  />
+                )}
+                <TableCard table={table} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className={`${styles.emptyState} ${styles.emptyStatePremium}`}>
+            <span className={styles.emptyIcon}>♠</span>
+            <h3>No tables found</h3>
+            <p>Try adjusting your filters or create a new table.</p>
+            <button
+              className="btn btn-primary"
+              onClick={() => navigate('/clubs')}
+              style={{
+                marginTop: 16,
+                padding: '10px 20px',
+                borderRadius: 8,
+                background: 'linear-gradient(135deg, #0099ff, #00d4ff)',
+                border: 'none',
+                color: '#000',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+              }}
+              onMouseEnter={(e) => {
+                (e.target as HTMLElement).style.transform = 'translateY(-2px)';
+                (e.target as HTMLElement).style.boxShadow = '0 8px 20px rgba(0, 180, 255, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                (e.target as HTMLElement).style.transform = 'translateY(0)';
+                (e.target as HTMLElement).style.boxShadow = 'none';
+              }}
+            >
+              Create Table
+            </button>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}

@@ -13,6 +13,8 @@ import { useSwipeTabs } from '../hooks/useSwipeTabs';
 import ClubHome from '../components/club/ClubHome';
 import ActivityHeatmap from '../components/common/ActivityHeatmap';
 import CircularGauge from '../components/common/CircularGauge';
+import SecurityDashboard from '../components/admin/SecurityDashboard';
+import AdminCommandPalette from '../components/admin/AdminCommandPalette';
 import CurrencyStore from '../components/club/CurrencyStore';
 import TableOperationsPanel from '../components/club/TableOperationsPanel';
 
@@ -1293,8 +1295,19 @@ export default function ClubDetailPage() {
           </div>
         )}
 
-        {/* Operations Tab — Admin Table Controls */}
-        {activeTab === 'operations' && clubId && <TableOperationsPanel clubId={clubId} />}
+        {/* Operations Tab — Admin Table Controls + Security */}
+        {activeTab === 'operations' && clubId && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <SecurityDashboard
+              memberCount={members.length}
+              onlineCount={onlineCount}
+              agentCount={agents.length}
+              isPublic={club?.isPublic ?? true}
+              requiresApproval={club?.requiresApproval ?? false}
+            />
+            <TableOperationsPanel clubId={clubId} />
+          </div>
+        )}
 
         {/* Settings Tab */}
         {activeTab === 'settings' && (
@@ -1519,6 +1532,9 @@ export default function ClubDetailPage() {
         }}
         onCancel={() => setDeleteTableConfirm({ show: false, tableId: null, tableName: null })}
       />
+
+      {/* Admin Command Palette (Cmd+K) */}
+      <AdminCommandPalette clubId={clubId} isOwner={userRole === 'owner'} />
     </div>
   );
 }

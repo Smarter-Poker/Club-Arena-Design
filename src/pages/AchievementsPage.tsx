@@ -12,6 +12,7 @@ import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
 import AchievementBadge, { AchievementGrid } from '../components/achievements/AchievementBadge';
+import { AchievementShareCard } from '../components/achievements/AchievementShareCard';
 import {
   achievementService,
   ACHIEVEMENTS as SERVICE_ACHIEVEMENTS,
@@ -219,6 +220,7 @@ export default function AchievementsPage() {
 
   const [newUnlock, setNewUnlock] = useState<Achievement | null>(null);
   const [visibleBadges, setVisibleBadges] = useState(new Set<number>());
+  const [sharingAchievement, setSharingAchievement] = useState<Achievement | null>(null);
   const unlockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadAchievementsRef = useRef<(() => Promise<void>) | null>(null);
 
@@ -399,6 +401,27 @@ export default function AchievementsPage() {
                 rarity={achievement.rarity}
                 unlockedAt={achievement.unlockedAt}
               />
+              {achievement.unlocked && (
+                <button
+                  className="share-achievement-btn"
+                  onClick={() => setSharingAchievement(achievement)}
+                  style={{
+                    marginTop: 6,
+                    width: '100%',
+                    padding: '6px 12px',
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    color: 'rgba(255,255,255,0.6)',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  📤 Share
+                </button>
+              )}
             </div>
           ))
         )}
@@ -418,6 +441,17 @@ export default function AchievementsPage() {
             ✕
           </button>
         </div>
+      )}
+      {/* Achievement Share Card Modal */}
+      {sharingAchievement && (
+        <AchievementShareCard
+          icon={sharingAchievement.icon}
+          name={sharingAchievement.name}
+          description={sharingAchievement.description}
+          rarity={sharingAchievement.rarity}
+          unlockedAt={sharingAchievement.unlockedAt}
+          onClose={() => setSharingAchievement(null)}
+        />
       )}
     </div>
   );
