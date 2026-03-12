@@ -1,0 +1,200 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  HEADS UP OVERLAY STYLES
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+.hu-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto; /* Allow tap to dismiss */
+  perspective: 1000px;
+}
+
+/* Backdrop */
+.hu-overlay__backdrop {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(10, 10, 12, 0.8) 0%, rgba(5, 5, 8, 0.95) 100%);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hu-overlay--show .hu-overlay__backdrop {
+  opacity: 1;
+}
+
+.hu-overlay--exit .hu-overlay__backdrop {
+  opacity: 0;
+  transition: opacity 0.4s ease-out;
+}
+
+/* Content Container */
+.hu-overlay__content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  width: 90%;
+  max-width: 600px;
+  transform: translateY(40px) scale(0.9) rotateX(20deg);
+  opacity: 0;
+  transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy entry */
+}
+
+.hu-overlay--show .hu-overlay__content {
+  transform: translateY(0) scale(1) rotateX(0);
+  opacity: 1;
+}
+
+.hu-overlay--exit .hu-overlay__content {
+  transform: translateY(-40px) scale(0.95) rotateX(-10deg);
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.55, 0.085, 0.68, 0.53); /* Snap exit */
+}
+
+/* Title Section */
+.hu-overlay__title-wrap {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.hu-overlay__swords {
+  font-size: 3rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 10px rgba(255, 60, 60, 0.8));
+  animation: hu-pulse 2s infinite ease-in-out;
+}
+
+.hu-overlay__title {
+  margin: 0;
+  font-size: 3rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  color: #fff;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #fff 0%, #ff4d4d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 4px 20px rgba(255, 60, 60, 0.5);
+}
+
+.hu-overlay__subtitle {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* VS Container */
+.hu-overlay__vs-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  width: 100%;
+}
+
+.hu-overlay__player {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 1.5rem 1rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.hu-overlay__player:first-child {
+  border-left: 2px solid #ff4d4d;
+  background: linear-gradient(90deg, rgba(255, 77, 77, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+}
+
+.hu-overlay__player:last-child {
+  border-right: 2px solid #ff4d4d;
+  background: linear-gradient(-90deg, rgba(255, 77, 77, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+}
+
+.hu-overlay__player-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+}
+
+.hu-overlay__player-chips {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #eedd82; /* Gold */
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.hu-overlay__chip-icon {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+/* VS Badge */
+.hu-overlay__vs-badge {
+  flex-shrink: 0;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #111, #222);
+  border: 2px solid #555;
+  color: #aaa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 1.25rem;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  position: relative;
+  z-index: 2;
+}
+
+@keyframes hu-pulse {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 10px rgba(255, 60, 60, 0.6));
+  }
+  50% {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 20px rgba(255, 60, 60, 0.9));
+  }
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 10px rgba(255, 60, 60, 0.6));
+  }
+}
+
+/* Mobile Adjustments */
+@media (max-width: 480px) {
+  .hu-overlay__title {
+    font-size: 2.5rem;
+  }
+  .hu-overlay__vs-container {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .hu-overlay__vs-badge {
+    margin: -1rem 0;
+  }
+}

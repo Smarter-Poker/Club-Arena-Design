@@ -114,6 +114,7 @@ import { ConnectionHUD } from '../components/table/ConnectionHUD';
 import { QuickChatPresets } from '../components/table/QuickChatPresets';
 import { TableErrorBoundary } from '../components/common/TableErrorBoundary';
 import { FinalTableOverlay } from '../components/tournament/FinalTableOverlay';
+import { HeadsUpOverlay } from '../components/tournament/HeadsUpOverlay';
 import { HoleCardReveal } from '../components/tournament/HoleCardReveal';
 import { playerStyleClassifier } from '../services/PlayerStyleClassifier';
 
@@ -3930,6 +3931,14 @@ export default function TablePage({
                 }
               : null;
           }}
+        />
+      )}
+
+      {/* Heads-Up Overlay (tournament only) */}
+      {tableId && tableState.isTournament && tableState.tournamentId && (
+        <HeadsUpOverlay
+          tournamentId={tableState.tournamentId}
+          tournamentName={tableState.tableName || 'Tournament'}
         />
       )}
 
