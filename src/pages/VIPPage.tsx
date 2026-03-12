@@ -35,8 +35,7 @@ export default function VIPPage() {
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [vipEntranceComplete, setVIPEntranceComplete] = useState(false);
 
-  // VIP Points System — TODO: Replace with real data from Supabase once vip_points table is available
-  // These are placeholder values shown while the back-end VIP points tracking is not yet built
+  // VIP Points System
   const [vipPoints, setVipPoints] = useState({
     current: 0,
     lifetime: 0,
@@ -44,36 +43,7 @@ export default function VIPPage() {
     activeStreak: 0,
   });
 
-  // Sample activities for demonstration
-  const sampleActivities: VIPActivity[] = [
-    {
-      id: '1',
-      date: new Date(Date.now() - 1000 * 60 * 2),
-      action: 'earned',
-      description: 'Completed tournament',
-      points: 500,
-      balanceAfter: vipPoints.current,
-      icon: '🎟️',
-    },
-    {
-      id: '2',
-      date: new Date(Date.now() - 1000 * 60 * 15),
-      action: 'earned',
-      description: 'Daily bonus',
-      points: 100,
-      balanceAfter: vipPoints.current - 500,
-      icon: '⭐',
-    },
-    {
-      id: '3',
-      date: new Date(Date.now() - 1000 * 60 * 60 * 2),
-      action: 'spent',
-      description: 'Redeemed Gold Frame Badge',
-      points: 1500,
-      balanceAfter: vipPoints.current - 500 - 100 + 1500,
-      icon: '🏆',
-    },
-  ];
+  const [recentActivities, setRecentActivities] = useState<VIPActivity[]>([]);
 
   // VIP entrance animation
   useEffect(() => {
@@ -140,14 +110,49 @@ export default function VIPPage() {
       const vipStatus = await vipService.checkVIPStatus(user.id);
       setIsVIP(vipStatus.isVIP);
 
-      // Load diamond balance
-      const { data } = await supabase
+      // Load diamond balance & vip points aggregate
+      const { data: profData } = await supabase
         .from('profiles')
-        .select('diamonds')
+        .select('diamonds, vip_points')
         .eq('id', user.id)
         .maybeSingle();
 
-      setDiamonds(data?.diamonds || 0);
+      setDiamonds(profData?.diamonds || 0);
+
+      const currentPts = profData?.vip_points || 0;
+      setVipPoints((prev) => ({
+        ...prev,
+        current: currentPts,
+        lifetime: currentPts, // Will refine with real ledger if needed
+      }));
+
+      // Load VIP Ledger (Activity History)
+      const { data: ledgerData } = await supabase
+        .from('vip_points_ledger')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (ledgerData) {
+        let runningBalance = currentPts;
+        const mapped = ledgerData.map((entry) => {
+          // We calculate trailing balance backwards
+          const bal = runningBalance;
+          runningBalance -= entry.amount;
+
+          return {
+            id: entry.id,
+            date: new Date(entry.created_at),
+            action: entry.amount > 0 ? 'earned' : 'spent',
+            description: entry.description || entry.transaction_type,
+            points: Math.abs(entry.amount),
+            balanceAfter: bal,
+            icon: entry.amount > 0 ? '⭐' : '💸',
+          } as VIPActivity;
+        });
+        setRecentActivities(mapped);
+      }
     } catch (error) {
       toast.error('Failed to load VIP status');
     }
@@ -225,7 +230,7 @@ export default function VIPPage() {
       )}
 
       {/* Activity History */}
-      {vipEntranceComplete && <VIPActivityHistory activities={sampleActivities} />}
+      {vipEntranceComplete && <VIPActivityHistory activities={recentActivities} />}
 
       {/* Legacy VIP Gold Status Section */}
       {isVIP && (
