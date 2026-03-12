@@ -107,6 +107,7 @@ const PrivacyPolicyPage = lazy(() => import('./pages/legal/PrivacyPolicyPage'));
 
 // Admin Singletons
 const EngineDashboard = lazy(() => import('./pages/admin/EngineDashboard'));
+const AnalyticsDashboard = lazy(() => import('./pages/admin/AnalyticsDashboard'));
 
 // Loading fallback
 function LoadingSpinner() {
@@ -1123,6 +1124,16 @@ export default function App() {
                     <AuthGuard>
                       <PageErrorBoundary pageName="Engine Dashboard">
                         <EngineDashboard />
+                      </PageErrorBoundary>
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="analytics"
+                  element={
+                    <AuthGuard>
+                      <PageErrorBoundary pageName="Analytics Dashboard">
+                        <AnalyticsDashboard />
                       </PageErrorBoundary>
                     </AuthGuard>
                   }

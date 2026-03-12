@@ -93,7 +93,15 @@ export const ConnectionHUD: React.FC<ConnectionHUDProps> = ({ tableId, userId })
       setReconnectAttempts(attempt);
       try {
         // Attempt reconnection via the disconnect protection service
-        await disconnectProtectionService.attemptReconnect?.(tableId, userId);
+        const svc = disconnectProtectionService as any;
+        if (typeof svc.attemptReconnect === 'function') {
+          await svc.attemptReconnect(tableId, userId);
+        } else {
+          // Fallback: check if connection re-established via polling
+          const state = disconnectProtectionService.getConnectionState(tableId, userId);
+          if (state?.isConnected) return; // Successfully reconnected
+          throw new Error('Still disconnected');
+        }
       } catch {
         // Exponential backoff: 1s, 2s, 4s, 8s, max 16s
         const delay = Math.min(1000 * Math.pow(2, attempt), 16_000);

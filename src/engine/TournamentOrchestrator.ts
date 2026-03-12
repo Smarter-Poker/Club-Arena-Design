@@ -140,6 +140,198 @@ export class TournamentOrchestrator {
       this.activeEngines.delete(tournamentId);
     });
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // MULTI-DAY FLIGHT SUPPORT (Day 1 bag-and-tag → Day 2 resume)
+  // ═══════════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Bag-and-tag: Save all remaining players' chip counts at end of Day 1.
+   * Creates entries in `tournament_flights` with status 'bagged'.
+   */
+  async handleMultiDayFlight(tournamentId: string): Promise<void> {
+    const engine = this.activeEngines.get(tournamentId);
+    if (!engine) {
+      console.warn(`[TournamentOrchestrator] No active engine for ${tournamentId}`);
+      return;
+    }
+
+    try {
+      // 1. Get all remaining players and their chip stacks
+      const { data: players, error } = await supabase
+        .from('tournament_players')
+        .select('user_id, chips')
+        .eq('tournament_id', tournamentId)
+        .eq('status', 'ACTIVE');
+
+      if (error) throw error;
+
+      if (!players || players.length === 0) {
+        console.warn(`[TournamentOrchestrator] No active players to bag for ${tournamentId}`);
+        return;
+      }
+
+      // 2. Insert bagged chip counts into tournament_flights
+      const flightRecords = players.map((p) => ({
+        tournament_id: tournamentId,
+        user_id: p.user_id,
+        bagged_chips: p.chips,
+        flight_day: 1,
+        status: 'bagged',
+        bagged_at: new Date().toISOString(),
+      }));
+
+      const { error: insertError } = await supabase
+        .from('tournament_flights')
+        .upsert(flightRecords, { onConflict: 'tournament_id,user_id' });
+
+      if (insertError) {
+        console.error(`[TournamentOrchestrator] Failed to bag flights:`, insertError);
+        return;
+      }
+
+      // 3. Pause the tournament
+      await supabase
+        .from('tournaments')
+        .update({ status: 'DAY_BREAK', day1_ended_at: new Date().toISOString() })
+        .eq('id', tournamentId);
+
+      // 4. Stop the engine for this tournament
+      engine.stop();
+      this.activeEngines.delete(tournamentId);
+
+      console.log(
+        `[TournamentOrchestrator] Day 1 bagged for ${tournamentId}: ${players.length} players`
+      );
+
+      // 5. Emit bus event
+      try {
+        const { masterBus } = await import('../core/MasterBus');
+        masterBus.emit('FLIGHT_BAGGED', {
+          tournamentId,
+          playersCount: players.length,
+          avgStack: Math.round(
+            players.reduce((sum, p) => sum + (p.chips || 0), 0) / players.length
+          ),
+        });
+      } catch {
+        /* best effort */
+      }
+    } catch (err) {
+      console.error(`[TournamentOrchestrator] Error bagging flight ${tournamentId}:`, err);
+    }
+  }
+
+  /**
+   * Resume Day 2: Restore players with their bagged chip stacks.
+   */
+  async scheduleDayTwoStart(tournamentId: string): Promise<void> {
+    try {
+      // 1. Load bagged flights
+      const { data: flights, error } = await supabase
+        .from('tournament_flights')
+        .select('user_id, bagged_chips')
+        .eq('tournament_id', tournamentId)
+        .eq('status', 'bagged');
+
+      if (error) throw error;
+      if (!flights || flights.length === 0) {
+        console.warn(`[TournamentOrchestrator] No bagged players for ${tournamentId}`);
+        return;
+      }
+
+      // 2. Restore chip stacks in tournament_players
+      for (const flight of flights) {
+        await supabase
+          .from('tournament_players')
+          .update({ chips: flight.bagged_chips, status: 'ACTIVE' })
+          .eq('tournament_id', tournamentId)
+          .eq('user_id', flight.user_id);
+      }
+
+      // 3. Mark flights as resumed
+      await supabase
+        .from('tournament_flights')
+        .update({ status: 'resumed', resumed_at: new Date().toISOString() })
+        .eq('tournament_id', tournamentId)
+        .eq('status', 'bagged');
+
+      // 4. Update tournament status
+      await supabase
+        .from('tournaments')
+        .update({ status: 'RUNNING', day2_started_at: new Date().toISOString() })
+        .eq('id', tournamentId);
+
+      // 5. Spin up the engine
+      this.spinUpTournament(tournamentId);
+
+      console.log(
+        `[TournamentOrchestrator] Day 2 started for ${tournamentId}: ${flights.length} players restored`
+      );
+
+      // 6. Emit bus event
+      try {
+        const { masterBus } = await import('../core/MasterBus');
+        masterBus.emit('FLIGHT_RESUMED', {
+          tournamentId,
+          playersResumed: flights.length,
+        });
+      } catch {
+        /* best effort */
+      }
+    } catch (err) {
+      console.error(`[TournamentOrchestrator] Error starting Day 2 for ${tournamentId}:`, err);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // NOTIFICATION HOOKS — 24h and 1h pre-tournament alerts
+  // ═══════════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Check all ANNOUNCED tournaments and emit notification events
+   * if within 24h or 1h of start time.
+   * Call this from the regular sync poll.
+   */
+  async checkNotificationHooks(): Promise<void> {
+    try {
+      const now = Date.now();
+      const { data: upcoming } = await supabase
+        .from('tournaments')
+        .select('id, name, started_at, status')
+        .eq('status', 'ANNOUNCED')
+        .not('started_at', 'is', null);
+
+      if (!upcoming) return;
+
+      const { masterBus } = await import('../core/MasterBus');
+
+      for (const t of upcoming) {
+        const startTime = new Date(t.started_at).getTime();
+        const diff = startTime - now;
+
+        // 24h notification window (between 24h and 23h before start)
+        if (diff > 23 * 60 * 60 * 1000 && diff <= 24 * 60 * 60 * 1000) {
+          masterBus.emit('TOURNAMENT_STARTING_24H', {
+            tournamentId: t.id,
+            name: t.name,
+            startsAt: t.started_at,
+          });
+        }
+
+        // 1h notification window (between 1h and 55m before start)
+        if (diff > 55 * 60 * 1000 && diff <= 60 * 60 * 1000) {
+          masterBus.emit('TOURNAMENT_STARTING_1H', {
+            tournamentId: t.id,
+            name: t.name,
+            startsAt: t.started_at,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('[TournamentOrchestrator] Error checking notification hooks:', err);
+    }
+  }
 }
 
 export const tournamentOrchestrator = TournamentOrchestrator.getInstance();

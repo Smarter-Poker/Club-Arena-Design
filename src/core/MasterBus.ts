@@ -121,7 +121,18 @@ export type BusEventType =
   // Tournament timer & rebuy events
   | 'BLIND_LEVEL_CHANGE'
   | 'TOURNAMENT_REBUY'
-  | 'TOURNAMENT_ADDON';
+  | 'TOURNAMENT_ADDON'
+  // Multi-day flight events
+  | 'FLIGHT_BAGGED'
+  | 'FLIGHT_RESUMED'
+  // Tournament notification hooks
+  | 'TOURNAMENT_STARTING_24H'
+  | 'TOURNAMENT_STARTING_1H'
+  // VIP points events
+  | 'VIP_POINTS_AWARDED'
+  // Horse fleet events
+  | 'HORSE_SEATED'
+  | 'HORSE_REMOVED';
 
 // #13: Type-safe payload map — compile-time enforcement of correct payloads
 export interface BusPayloadMap {
@@ -278,6 +289,17 @@ export interface BusPayloadMap {
   };
   TOURNAMENT_REBUY: { tournamentId: string; userId: string; newStack?: number };
   TOURNAMENT_ADDON: { tournamentId: string; userId: string; newStack?: number };
+  // Multi-day flight events
+  FLIGHT_BAGGED: { tournamentId: string; playersCount: number; avgStack: number };
+  FLIGHT_RESUMED: { tournamentId: string; playersResumed: number };
+  // Tournament notification hooks
+  TOURNAMENT_STARTING_24H: { tournamentId: string; name: string; startsAt: string };
+  TOURNAMENT_STARTING_1H: { tournamentId: string; name: string; startsAt: string };
+  // VIP points events
+  VIP_POINTS_AWARDED: { userId: string; amount: number; source: string };
+  // Horse fleet events
+  HORSE_SEATED: { tableId: string; horseId: string; horseName: string };
+  HORSE_REMOVED: { tableId: string; horseId: string; reason: string };
 }
 
 export interface BusEvent<T = unknown> {

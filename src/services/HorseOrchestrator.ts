@@ -2181,6 +2181,200 @@ class HorseOrchestrator {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // PHASE 3: 3-PLAYER MINIMUM ENFORCEMENT (Hydra Law)
+  // ═══════════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Enforce the Hydra 3-Player Minimum Law:
+   * ANY table with < 3 players triggers at least 3 horses as action seeds.
+   */
+  async enforceMinimumPlayers(): Promise<{ tablesSeeded: number; horsesAdded: number }> {
+    let tablesSeeded = 0;
+    let horsesAdded = 0;
+    const MIN_PLAYERS = 3;
+
+    try {
+      // Find all active tables
+      const { data: tables, error } = await supabase
+        .from('tables')
+        .select('id, big_blind, max_players')
+        .is('is_deleted', false)
+        .neq('status', 'closed')
+        .is('tournament_id', null);
+
+      if (error || !tables) return { tablesSeeded, horsesAdded };
+
+      for (const table of tables) {
+        // Count current players (real + horses)
+        const { count } = await supabase
+          .from('table_players')
+          .select('id', { count: 'exact', head: true })
+          .eq('table_id', table.id)
+          .eq('status', 'active');
+
+        const currentPlayers = count || 0;
+        if (currentPlayers < MIN_PLAYERS) {
+          const needed = MIN_PLAYERS - currentPlayers;
+          try {
+            // seedTable manages the horse count internally; call once per table
+            for (let n = 0; n < needed; n++) {
+              await HydraService.seedTable(table.id, table.big_blind);
+            }
+            tablesSeeded++;
+            horsesAdded += needed;
+            console.debug(
+              `[Orchestrator] 3-Player Minimum: seeded ${needed} horses at table ${table.id} (had ${currentPlayers})`
+            );
+
+            // Emit bus event for each horse seated
+            try {
+              masterBus.emit('HORSE_SEATED', {
+                tableId: table.id,
+                horseId: 'batch',
+                horseName: `${needed} horses seeded`,
+              });
+            } catch {
+              /* best effort */
+            }
+          } catch (err: any) {
+            this.logError(`enforceMinimumPlayers seed failed for ${table.id}: ${err.message}`);
+          }
+        }
+      }
+    } catch (err: any) {
+      this.logError(`enforceMinimumPlayers error: ${err.message}`);
+    }
+
+    return { tablesSeeded, horsesAdded };
+  }
+
+  /**
+   * Smart Seat Selection: Horses prefer empty seats adjacent to real players.
+   * This creates a more natural table feel instead of clumping horses together.
+   * Returns the optimal seat number for a new horse at the given table.
+   */
+  async smartSeatSelection(tableId: string, maxPlayers: number): Promise<number> {
+    try {
+      const { data: players } = await supabase
+        .from('table_players')
+        .select('seat_number, is_horse')
+        .eq('table_id', tableId)
+        .eq('status', 'active');
+
+      if (!players || players.length === 0) return 1; // Empty table, seat 1
+
+      const occupied = new Set(players.map((p) => p.seat_number));
+      const realPlayerSeats = players.filter((p) => !p.is_horse).map((p) => p.seat_number);
+
+      // Score each empty seat based on adjacency to real players
+      let bestSeat = 1;
+      let bestScore = -1;
+
+      for (let seat = 1; seat <= maxPlayers; seat++) {
+        if (occupied.has(seat)) continue;
+
+        let score = 0;
+        for (const realSeat of realPlayerSeats) {
+          // Higher score for seats closer to real players (circular distance)
+          const dist = Math.min(Math.abs(seat - realSeat), maxPlayers - Math.abs(seat - realSeat));
+          if (dist === 1)
+            score += 3; // Adjacent = highest priority
+          else if (dist === 2) score += 1; // 2 away = some bonus
+        }
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestSeat = seat;
+        }
+      }
+
+      return bestSeat;
+    } catch {
+      // Fallback: return first available seat
+      return 1;
+    }
+  }
+
+  /**
+   * Dynamic Persona Rotation: Every 30 minutes, rotate the display_name and
+   * avatar of horses that have been seated for > 30 min. This prevents
+   * pattern recognition by observant players.
+   */
+  async dynamicPersonaRotation(): Promise<number> {
+    let rotated = 0;
+    const ROTATION_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
+
+    try {
+      // Find horses that have been seated for > 30 minutes
+      const cutoff = new Date(Date.now() - ROTATION_THRESHOLD_MS).toISOString();
+      const { data: staleHorses } = await supabase
+        .from('table_players')
+        .select('id, user_id, table_id')
+        .eq('is_horse', true)
+        .eq('status', 'active')
+        .lt('seated_at', cutoff);
+
+      if (!staleHorses || staleHorses.length === 0) return 0;
+
+      // Load available horse personas
+      const { data: availableHorses } = await supabase
+        .from('profiles')
+        .select('id, display_name, avatar_url')
+        .eq('is_horse', true)
+        .eq('horse_status', 'available')
+        .limit(staleHorses.length);
+
+      if (!availableHorses || availableHorses.length === 0) return 0;
+
+      // Swap personas: each stale horse gets a fresh persona
+      for (let i = 0; i < Math.min(staleHorses.length, availableHorses.length); i++) {
+        const stale = staleHorses[i];
+        const fresh = availableHorses[i];
+
+        // Mark old horse as available
+        await supabase
+          .from('profiles')
+          .update({ horse_status: 'available' })
+          .eq('id', stale.user_id);
+
+        // Seat new horse in same position
+        await supabase
+          .from('table_players')
+          .update({ user_id: fresh.id, seated_at: new Date().toISOString() })
+          .eq('id', stale.id);
+
+        // Mark new horse as seated
+        await supabase.from('profiles').update({ horse_status: 'seated' }).eq('id', fresh.id);
+
+        rotated++;
+
+        try {
+          masterBus.emit('HORSE_REMOVED', {
+            tableId: stale.table_id,
+            horseId: stale.user_id,
+            reason: 'persona_rotation',
+          });
+          masterBus.emit('HORSE_SEATED', {
+            tableId: stale.table_id,
+            horseId: fresh.id,
+            horseName: fresh.display_name || 'Horse',
+          });
+        } catch {
+          /* best effort */
+        }
+      }
+
+      if (rotated > 0) {
+        console.debug(`[Orchestrator] Persona rotation: swapped ${rotated} horse personas`);
+      }
+    } catch (err: any) {
+      this.logError(`dynamicPersonaRotation error: ${err.message}`);
+    }
+
+    return rotated;
+  }
+
   private logError(msg: string): void {
     console.error(`[Orchestrator] ${msg}`);
     this.errors.push(`${new Date().toISOString()} - ${msg}`);
