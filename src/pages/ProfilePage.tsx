@@ -21,6 +21,7 @@ import { bonusService } from '../services/BonusService';
 import { masterBus } from '../core/MasterBus';
 import { StreakFire } from '../components/gamification/StreakFire';
 import StreakMultiplier from '../components/gamification/StreakMultiplier';
+import FinancialAchievementBadge from '../components/gamification/FinancialAchievementBadge';
 import CircularGauge from '../components/common/CircularGauge';
 import { useSwipeTabs } from '../hooks/useSwipeTabs';
 import styles from './ProfilePage.module.css';
@@ -976,6 +977,42 @@ export default function ProfilePage() {
                 <p>No achievements yet. Start playing to unlock achievements!</p>
               </div>
             )}
+
+            {/* Financial Achievement Badges */}
+            <div style={{ marginTop: 16 }}>
+              <h3
+                style={{
+                  margin: '0 0 8px',
+                  fontSize: '0.875rem',
+                  color: '#8a9aaa',
+                  fontWeight: 600,
+                }}
+              >
+                Financial Milestones
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <FinancialAchievementBadge
+                  type="first_cashout"
+                  unlocked={stats.totalProfit > 0}
+                  size="sm"
+                />
+                <FinancialAchievementBadge
+                  type="thousand_club"
+                  unlocked={stats.totalProfit >= 1000}
+                  size="sm"
+                />
+                <FinancialAchievementBadge
+                  type="perfect_settlement"
+                  unlocked={stats.totalHands >= 500}
+                  size="sm"
+                />
+                <FinancialAchievementBadge
+                  type="diamond_whale"
+                  unlocked={diamonds >= 10000}
+                  size="sm"
+                />
+              </div>
+            </div>
           </div>
         )}
 

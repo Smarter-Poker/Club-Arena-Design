@@ -18,6 +18,8 @@ import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import SecurityBadge from '../components/common/SecurityBadge';
+import SettlementReceipt from '../components/settlement/SettlementReceipt';
+import SettlementTimeline from '../components/settlement/SettlementTimeline';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MONDAY 4AM COUNTDOWN — Live payout timer widget
@@ -957,6 +959,53 @@ export default function SettlementPage() {
           </div>
         )}
       </div>
+      {/* Settlement Receipt for settled periods */}
+      {selectedPeriod && selectedPeriod.status === 'settled' && (
+        <SettlementReceipt
+          receiptId={selectedPeriod.id}
+          amount={selectedPeriod.totalRake}
+          netAmount={selectedPeriod.totalRake - (selectedPeriod.totalBBJ || 0)}
+          settledAt={selectedPeriod.endAt}
+          periodStart={selectedPeriod.startAt}
+          periodEnd={selectedPeriod.endAt}
+          status="paid"
+        />
+      )}
+
+      {/* Settlement Timeline */}
+      {periods.length > 0 && (
+        <div style={{ padding: '0 16px', marginBottom: 16 }}>
+          <h3
+            style={{
+              margin: '12px 0 8px',
+              fontSize: '0.875rem',
+              color: '#8a9aaa',
+              fontWeight: 600,
+            }}
+          >
+            Settlement History
+          </h3>
+          <SettlementTimeline
+            entries={periods.map((p) => ({
+              id: p.id,
+              amount: p.totalRake,
+              netAmount: p.totalRake - (p.totalBBJ || 0),
+              settledAt: p.endAt,
+              status:
+                p.status === 'settled'
+                  ? ('paid' as const)
+                  : p.status === 'processing'
+                    ? ('processing' as const)
+                    : ('pending' as const),
+              periodLabel: `Week ${p.periodNumber}`,
+            }))}
+            onSelect={(id) => {
+              const period = periods.find((p) => p.id === id);
+              if (period) setSelectedPeriod(period);
+            }}
+          />
+        </div>
+      )}
 
       {/* Bottom Navigation */}
       {clubId && <ClubBottomNav clubId={clubId} />}
