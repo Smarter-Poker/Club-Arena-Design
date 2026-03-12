@@ -343,6 +343,12 @@ export const SettlementService = {
 
         if (payoutError) throw payoutError;
 
+        // Emit bus event so agent sees their settlement in real-time
+        masterBus.emit('BALANCE_UPDATED', {
+          source: 'agent_settlement_payout',
+          userId: settlement.agent_id,
+        });
+
         // Send push notification to agent
         pushNotificationService
           .notifySettlement(settlement.agent_id, settlement.net_settlement, 'Weekly Commission')
@@ -382,6 +388,12 @@ export const SettlementService = {
         if (payoutError) {
           throw payoutError;
         }
+
+        // Emit bus event so player sees their rakeback in real-time
+        masterBus.emit('BALANCE_UPDATED', {
+          source: 'player_rakeback_payout',
+          userId: snapshot.player_id,
+        });
 
         // Send push notification to player
         pushNotificationService
@@ -539,7 +551,7 @@ export const SettlementService = {
               p_category: 'settlement',
               p_debit_description: `Weekly rake back to ${club.name}: 90% of ${clubRake}`,
               p_credit_description: `Weekly rake back from ${union.name}: 90% of ${clubRake} collected`,
-              p_related_entity_id: club.id
+              p_related_entity_id: club.id,
             }),
           3
         );

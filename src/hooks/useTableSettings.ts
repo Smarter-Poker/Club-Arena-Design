@@ -31,6 +31,7 @@ export interface TableUserSettings {
   autoPostBlinds: boolean;
   cardBack: string; // Card back design ID
   showStackInBB: boolean;
+  autoRebuy: boolean; // Auto-rebuy when stack drops below threshold
 }
 
 const DEFAULT_SETTINGS: TableUserSettings = {
@@ -48,6 +49,7 @@ const DEFAULT_SETTINGS: TableUserSettings = {
   autoPostBlinds: true,
   cardBack: 'black',
   showStackInBB: false,
+  autoRebuy: false,
 };
 
 const STORAGE_KEY = 'club-arena-table-settings';

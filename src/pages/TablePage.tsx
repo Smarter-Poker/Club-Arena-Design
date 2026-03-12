@@ -3865,12 +3865,12 @@ export default function TablePage({
               isChatVisible={!isChatCollapsed}
               isHandStrengthVisible={userSettings.showHUD}
               isStatsVisible={userSettings.showHUD}
-              isAutoRebuyEnabled={false}
+              isAutoRebuyEnabled={userSettings.autoRebuy}
               onToggleSound={() => setIsSoundEnabled((prev) => !prev)}
               onToggleChat={() => setIsChatCollapsed((prev) => !prev)}
               onToggleHandStrength={() => updateSetting('showHUD', !userSettings.showHUD)}
               onToggleStats={() => updateSetting('showHUD', !userSettings.showHUD)}
-              onToggleAutoRebuy={() => {}}
+              onToggleAutoRebuy={() => updateSetting('autoRebuy', !userSettings.autoRebuy)}
               onOpenSettings={() => setShowSettings(true)}
             />
 

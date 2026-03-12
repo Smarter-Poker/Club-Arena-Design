@@ -256,7 +256,7 @@ function PlayerActionModal({
       setConfirmRole(null);
 
       // Emit bus event so AgentManagement, ClubDetail, and other pages refresh
-      masterBus.emit('BALANCE_UPDATED', { source: 'role_promotion', userId: member.user_id });
+      masterBus.emit('CLUB_UPDATED', { clubId });
 
       // Brief delay to show success, then refresh
       setTimeout(() => {
