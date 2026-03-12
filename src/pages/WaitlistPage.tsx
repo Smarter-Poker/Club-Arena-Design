@@ -44,9 +44,9 @@ export default function WaitlistPage() {
 
   useEffect(() => {
     if (user?.id) {
-      loadWaitlist();
+      let isMounted = true;
+      loadWaitlist(() => isMounted);
 
-      // Subscribe to real-time waitlist changes
       const channelKey = 'user-waitlist';
 
       const channel = masterBus.getOrCreateChannel(channelKey);
@@ -59,13 +59,13 @@ export default function WaitlistPage() {
             table: 'table_waitlists',
           },
           (payload) => {
-            // Refresh waitlist on any change — use ref to avoid stale closure
             loadWaitlistRef.current();
           }
         )
         .subscribe();
 
       return () => {
+        isMounted = false;
         masterBus.removeRegisteredChannel(channelKey);
       };
     }
@@ -90,27 +90,28 @@ export default function WaitlistPage() {
     };
   }, []);
 
-  const loadWaitlist = async () => {
+  const loadWaitlist = async (getIsMounted?: () => boolean) => {
     if (!user?.id) return;
-    setLoading(true);
+    if (!getIsMounted || getIsMounted()) setLoading(true);
     try {
       const waitlists = await waitlistService.getUserWaitlists(user.id);
+      if (getIsMounted && !getIsMounted()) return;
       setEntries(
         waitlists.map((e: ServiceEntry) => ({
           id: e.id,
           table_id: e.tableId,
           table_name: e.tableName,
-          stakes: '', // Will be loaded from table data
+          stakes: '',
           game_type: 'NLH',
           position: e.position,
           joined_at: e.joinedAt,
-          estimated_wait: e.position * 5, // rough estimate
+          estimated_wait: e.position * 5,
         }))
       );
     } catch (error) {
       console.error('Failed to load waitlist:', error);
     }
-    setLoading(false);
+    if (!getIsMounted || getIsMounted()) setLoading(false);
   };
 
   const leaveWaitlist = async (tableId: string, entryId: string) => {

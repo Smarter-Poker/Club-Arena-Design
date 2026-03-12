@@ -53,9 +53,13 @@ export default function HandHistoryPage() {
   }, [hands.length]);
 
   useEffect(() => {
+    let isMounted = true;
     if (user?.id) {
-      loadHands(true);
+      loadHands(true, undefined, () => isMounted);
     }
+    return () => {
+      isMounted = false;
+    };
   }, [user?.id, filter]);
 
   // ── Realtime subscription: refresh hands on new entries ──
@@ -102,20 +106,22 @@ export default function HandHistoryPage() {
     };
   }, []);
 
-  const loadHands = async (reset = false, overridePage?: number) => {
+  const loadHands = async (reset = false, overridePage?: number, getIsMounted?: () => boolean) => {
     if (!user?.id) return;
     const currentPage = reset ? 1 : (overridePage ?? page);
     if (reset) {
-      setLoading(true);
-      setPage(1);
+      if (!getIsMounted || getIsMounted()) {
+        setLoading(true);
+        setPage(1);
+      }
     } else {
-      setLoadingMore(true);
+      if (!getIsMounted || getIsMounted()) setLoadingMore(true);
     }
 
     try {
       const data = await handHistoryService.getPlayerHands(user.id, PAGE_SIZE * currentPage);
 
-      // Apply filter
+      if (getIsMounted && !getIsMounted()) return;
       let filtered = data;
       if (filter === 'won') {
         filtered = data.filter((h) => {
@@ -135,10 +141,12 @@ export default function HandHistoryPage() {
       setHasMore(data.length === PAGE_SIZE * currentPage);
     } catch (error) {
       console.error('Failed to load hands:', error);
-      toast.error('Failed to load hand history');
+      if (!getIsMounted || getIsMounted()) toast.error('Failed to load hand history');
     }
-    setLoading(false);
-    setLoadingMore(false);
+    if (!getIsMounted || getIsMounted()) {
+      setLoading(false);
+      setLoadingMore(false);
+    }
   };
 
   const loadMore = () => {
