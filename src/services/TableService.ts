@@ -199,7 +199,7 @@ class TableService {
     if (error) {
       console.error('[TableService] Error closing table and refunding chips:', error);
       // Fallback: manually flag it as closed if the RPC somehow fails
-      await supabase.from('tables').update({ status: 'closed' }).eq('id', tableId);
+      await supabase.from('tables').update({ status: 'closed', current_players: 0 }).eq('id', tableId);
     } else {
       console.debug(`[TableService] Table closed successfully. Result:`, result);
     }
