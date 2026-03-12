@@ -8,295 +8,297 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useUserStore } from '../../stores/useUserStore';
-import PresenceIndicator from './PresenceIndicator';
+import { PlayerAvatar } from '../avatars/PlayerAvatar';
+import type { VipTier, PresenceStatus } from '../avatars/PlayerAvatar';
 import styles from './FriendListPanel.module.css';
 
 interface Friend {
-    id: string;
-    friendId: string;
-    displayName: string;
-    username: string;
-    avatarUrl?: string;
-    isOnline: boolean;
-    status?: 'online' | 'playing' | 'away' | 'offline';
-    tableName?: string;
+  id: string;
+  friendId: string;
+  displayName: string;
+  username: string;
+  avatarUrl?: string;
+  isOnline: boolean;
+  status?: PresenceStatus;
+  tableName?: string;
+  level?: number;
+  vipTier?: VipTier;
+  xpProgress?: number;
 }
 
 interface FriendListPanelProps {
-    onMessageClick?: (friendId: string, friendName: string) => void;
-    onProfileClick?: (friendId: string) => void;
-    onInviteClick?: (friendId: string) => void;
+  onMessageClick?: (friendId: string, friendName: string) => void;
+  onProfileClick?: (friendId: string) => void;
+  onInviteClick?: (friendId: string) => void;
 }
 
 export default function FriendListPanel({
-    onMessageClick,
-    onProfileClick,
-    onInviteClick
+  onMessageClick,
+  onProfileClick,
+  onInviteClick,
 }: FriendListPanelProps) {
-    const { user } = useUserStore();
-    const [friends, setFriends] = useState<Friend[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [showAddFriend, setShowAddFriend] = useState(false);
-    const [addFriendInput, setAddFriendInput] = useState('');
-    const [addingFriend, setAddingFriend] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [visibleFriends, setVisibleFriends] = useState<Set<number>>(new Set());
+  const { user } = useUserStore();
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showAddFriend, setShowAddFriend] = useState(false);
+  const [addFriendInput, setAddFriendInput] = useState('');
+  const [addingFriend, setAddingFriend] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [visibleFriends, setVisibleFriends] = useState<Set<number>>(new Set());
 
-    useEffect(() => {
-        if (user?.id) {
-            loadFriends();
-        }
-    }, [user?.id]);
+  useEffect(() => {
+    if (user?.id) {
+      loadFriends();
+    }
+  }, [user?.id]);
 
-    const loadFriends = async () => {
-        if (!user?.id) return;
-        setLoading(true);
+  const loadFriends = async () => {
+    if (!user?.id) return;
+    setLoading(true);
 
-        try {
-            // Get friends list
-            const { data, error } = await supabase
-                .from('friendships')
-                .select(`
+    try {
+      // Get friends list
+      const { data, error } = await supabase
+        .from('friendships')
+        .select(
+          `
                     id,
                     friend_id,
                     profiles!friendships_friend_id_fkey(
-                        id, username, display_name, avatar_url
+                        id, username, display_name, avatar_url, level, vip_tier, vip_points
                     )
-                `)
-                .eq('user_id', user.id)
-                .eq('status', 'accepted');
+                `
+        )
+        .eq('user_id', user.id)
+        .eq('status', 'accepted');
 
-            if (error) throw error;
+      if (error) throw error;
 
-            // Map friends (online status would come from real-time subscriptions)
-            const friendList: Friend[] = (data || []).map((f: any) => ({
-                id: f.id,
-                friendId: f.friend_id,
-                displayName: f.profiles?.display_name || f.profiles?.username || 'Unknown',
-                username: f.profiles?.username || '',
-                avatarUrl: f.profiles?.avatar_url,
-                isOnline: false, // Will be updated by presence subscriptions
-                status: 'offline' as const,
-                tableName: undefined
-            }));
+      // Map friends (online status would come from real-time subscriptions)
+      const friendList: Friend[] = (data || []).map((f: any) => ({
+        id: f.id,
+        friendId: f.friend_id,
+        displayName: f.profiles?.display_name || f.profiles?.username || 'Unknown',
+        username: f.profiles?.username || '',
+        avatarUrl: f.profiles?.avatar_url,
+        isOnline: false, // Will be updated by presence subscriptions
+        status: 'offline' as PresenceStatus,
+        tableName: undefined,
+        level: f.profiles?.level || 1,
+        vipTier: (f.profiles?.vip_tier as VipTier) || 'bronze',
+        xpProgress: Math.min(100, (f.profiles?.vip_points || 0) % 100),
+      }));
 
-            // Sort by online status
-            friendList.sort((a, b) => {
-                if (a.isOnline && !b.isOnline) return -1;
-                if (!a.isOnline && b.isOnline) return 1;
-                return a.displayName.localeCompare(b.displayName);
-            });
+      // Sort by online status
+      friendList.sort((a, b) => {
+        if (a.isOnline && !b.isOnline) return -1;
+        if (!a.isOnline && b.isOnline) return 1;
+        return a.displayName.localeCompare(b.displayName);
+      });
 
-            setFriends(friendList);
-            // Stagger entrance
-            setVisibleFriends(new Set());
-            friendList.forEach((_, i) => {
-                setTimeout(() => setVisibleFriends(prev => new Set(prev).add(i)), i * 50);
-            });
-        } catch (err) {
-            console.error('Failed to load friends:', err);
-        }
-        setLoading(false);
-    };
+      setFriends(friendList);
+      // Stagger entrance
+      setVisibleFriends(new Set());
+      friendList.forEach((_, i) => {
+        setTimeout(() => setVisibleFriends((prev) => new Set(prev).add(i)), i * 50);
+      });
+    } catch (err) {
+      console.error('Failed to load friends:', err);
+    }
+    setLoading(false);
+  };
 
-    const handleAddFriend = async () => {
-        if (!addFriendInput.trim() || !user?.id) return;
-        setAddingFriend(true);
-        setError(null);
+  const handleAddFriend = async () => {
+    if (!addFriendInput.trim() || !user?.id) return;
+    setAddingFriend(true);
+    setError(null);
 
-        try {
-            // Find user by username
-            const { data: targetUser, error: findError } = await supabase
-                .from('profiles')
-                .select('id, username, display_name')
-                .ilike('username', addFriendInput.trim())
-                .maybeSingle();
+    try {
+      // Find user by username
+      const { data: targetUser, error: findError } = await supabase
+        .from('profiles')
+        .select('id, username, display_name')
+        .ilike('username', addFriendInput.trim())
+        .maybeSingle();
 
-            if (findError || !targetUser) {
-                setError('User not found');
-                setAddingFriend(false);
-                return;
-            }
-
-            if (targetUser.id === user.id) {
-                setError("You can't add yourself");
-                setAddingFriend(false);
-                return;
-            }
-
-            // Check if already friends
-            const { data: existing } = await supabase
-                .from('friendships')
-                .select('id')
-                .eq('user_id', user.id)
-                .eq('friend_id', targetUser.id)
-                .maybeSingle();
-
-            if (existing) {
-                setError('Already friends');
-                setAddingFriend(false);
-                return;
-            }
-
-            // Create friendship request
-            await supabase
-                .from('friendships')
-                .insert({
-                    user_id: user.id,
-                    friend_id: targetUser.id,
-                    status: 'pending'
-                });
-
-            // Notify target user
-            await supabase
-                .from('notifications')
-                .insert({
-                    user_id: targetUser.id,
-                    type: 'friend_request',
-                    title: 'Friend Request',
-                    message: `${user?.display_name || 'Someone'} wants to be your friend!`,
-                    data: { from_user_id: user.id }
-                });
-
-            setAddFriendInput('');
-            setShowAddFriend(false);
-            setError(null);
-        } catch (err) {
-            setError('Failed to send request');
-        }
+      if (findError || !targetUser) {
+        setError('User not found');
         setAddingFriend(false);
-    };
+        return;
+      }
 
-    const handleRemoveFriend = async (friendshipId: string) => {
-        await supabase
-            .from('friendships')
-            .delete()
-            .eq('id', friendshipId);
+      if (targetUser.id === user.id) {
+        setError("You can't add yourself");
+        setAddingFriend(false);
+        return;
+      }
 
-        setFriends(prev => prev.filter(f => f.id !== friendshipId));
-    };
+      // Check if already friends
+      const { data: existing } = await supabase
+        .from('friendships')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('friend_id', targetUser.id)
+        .maybeSingle();
 
-    const filteredFriends = friends.filter(f =>
-        f.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        f.username.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+      if (existing) {
+        setError('Already friends');
+        setAddingFriend(false);
+        return;
+      }
 
-    const onlineCount = friends.filter(f => f.isOnline).length;
+      // Create friendship request
+      await supabase.from('friendships').insert({
+        user_id: user.id,
+        friend_id: targetUser.id,
+        status: 'pending',
+      });
 
-    const getStatusIcon = (status?: string): string => {
-        switch (status) {
-            case 'online': return '🟢';
-            case 'playing': return '♠';
-            case 'away': return '🟡';
-            default: return '⚫';
-        }
-    };
+      // Notify target user
+      await supabase.from('notifications').insert({
+        user_id: targetUser.id,
+        type: 'friend_request',
+        title: 'Friend Request',
+        message: `${user?.display_name || 'Someone'} wants to be your friend!`,
+        data: { from_user_id: user.id },
+      });
 
-    return (
-        <div className={styles.panel}>
-            {/* Header */}
-            <div className={styles.header}>
-                <h3> Friends</h3>
-                <span className={styles.onlineCount}>{onlineCount} online</span>
-            </div>
+      setAddFriendInput('');
+      setShowAddFriend(false);
+      setError(null);
+    } catch (err) {
+      setError('Failed to send request');
+    }
+    setAddingFriend(false);
+  };
 
-            {/* Search */}
-            <div className={styles.searchBar}>
-                <input
-                    type="text"
-                    placeholder="Search friends..."
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                />
-                <button
-                    className={styles.addBtn}
-                    onClick={() => setShowAddFriend(!showAddFriend)}
-                >
-                    +
-                </button>
-            </div>
+  const handleRemoveFriend = async (friendshipId: string) => {
+    await supabase.from('friendships').delete().eq('id', friendshipId);
 
-            {/* Add Friend */}
-            {showAddFriend && (
-                <div className={styles.addFriendRow}>
-                    <input
-                        type="text"
-                        placeholder="Enter username..."
-                        value={addFriendInput}
-                        onChange={e => setAddFriendInput(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handleAddFriend()}
-                    />
-                    <button onClick={handleAddFriend} disabled={addingFriend}>
-                        {addingFriend ? '...' : 'Add'}
-                    </button>
-                </div>
-            )}
+    setFriends((prev) => prev.filter((f) => f.id !== friendshipId));
+  };
 
-            {error && <div className={styles.error}>{error}</div>}
+  const filteredFriends = friends.filter(
+    (f) =>
+      f.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      f.username.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-            {/* Friend List */}
-            <div className={styles.list}>
-                {loading ? (
-                    <div className={styles.loading}>Loading...</div>
-                ) : filteredFriends.length === 0 ? (
-                    <div className={styles.empty}>
-                        {searchQuery ? 'No friends match your search' : 'No friends yet'}
-                    </div>
-                ) : (
-                    filteredFriends.map((friend, idx) => (
-                        <div key={friend.id} className={styles.friendRow} style={{
-                            opacity: visibleFriends.has(idx) ? 1 : 0,
-                            transform: visibleFriends.has(idx) ? 'translateX(0)' : 'translateX(-8px)',
-                            transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                        }}>
-                            <div
-                                className={styles.avatar}
-                                onClick={() => onProfileClick?.(friend.friendId)}
-                            >
-                                {friend.avatarUrl ? (
-                                    <img src={friend.avatarUrl} alt="" />
-                                ) : (
-                                    <span>●</span>
-                                )}
-                                <PresenceIndicator
-                                    userId={friend.friendId}
-                                    size="small"
-                                    className={styles.statusDot}
-                                />
-                            </div>
+  const onlineCount = friends.filter((f) => f.isOnline).length;
 
-                            <div className={styles.info}>
-                                <span className={styles.name}>{friend.displayName}</span>
-                                {friend.status === 'playing' && friend.tableName && (
-                                    <span className={styles.playing}>
-                                        {friend.tableName}
-                                    </span>
-                                )}
-                            </div>
+  const getStatusIcon = (status?: string): string => {
+    switch (status) {
+      case 'online':
+        return '🟢';
+      case 'playing':
+        return '♠';
+      case 'away':
+        return '🟡';
+      default:
+        return '⚫';
+    }
+  };
 
-                            <div className={styles.actions}>
-                                <button
-                                    className={styles.iconBtn}
-                                    onClick={() => onMessageClick?.(friend.friendId, friend.displayName)}
-                                    title="Message"
-                                >
+  return (
+    <div className={styles.panel}>
+      {/* Header */}
+      <div className={styles.header}>
+        <h3> Friends</h3>
+        <span className={styles.onlineCount}>{onlineCount} online</span>
+      </div>
 
-                                </button>
-                                {friend.isOnline && onInviteClick && (
-                                    <button
-                                        className={styles.iconBtn}
-                                        onClick={() => onInviteClick(friend.friendId)}
-                                        title="Invite to table"
-                                    >
+      {/* Search */}
+      <div className={styles.searchBar}>
+        <input
+          type="text"
+          placeholder="Search friends..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        <button className={styles.addBtn} onClick={() => setShowAddFriend(!showAddFriend)}>
+          +
+        </button>
+      </div>
 
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
+      {/* Add Friend */}
+      {showAddFriend && (
+        <div className={styles.addFriendRow}>
+          <input
+            type="text"
+            placeholder="Enter username..."
+            value={addFriendInput}
+            onChange={(e) => setAddFriendInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddFriend()}
+          />
+          <button onClick={handleAddFriend} disabled={addingFriend}>
+            {addingFriend ? '...' : 'Add'}
+          </button>
         </div>
-    );
+      )}
+
+      {error && <div className={styles.error}>{error}</div>}
+
+      {/* Friend List */}
+      <div className={styles.list}>
+        {loading ? (
+          <div className={styles.loading}>Loading...</div>
+        ) : filteredFriends.length === 0 ? (
+          <div className={styles.empty}>
+            {searchQuery ? 'No friends match your search' : 'No friends yet'}
+          </div>
+        ) : (
+          filteredFriends.map((friend, idx) => (
+            <div
+              key={friend.id}
+              className={styles.friendRow}
+              style={{
+                opacity: visibleFriends.has(idx) ? 1 : 0,
+                transform: visibleFriends.has(idx) ? 'translateX(0)' : 'translateX(-8px)',
+                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+              }}
+            >
+              <PlayerAvatar
+                src={friend.avatarUrl}
+                name={friend.displayName}
+                size="md"
+                vipTier={friend.vipTier}
+                level={friend.level}
+                xpProgress={friend.xpProgress}
+                presenceStatus={friend.status}
+                isPlaying={friend.status === 'playing'}
+                showPresence={true}
+                showLevelBadge={true}
+                showXpRing={true}
+                showVipRing={true}
+                onClick={() => onProfileClick?.(friend.friendId)}
+              />
+
+              <div className={styles.info}>
+                <span className={styles.name}>{friend.displayName}</span>
+                {friend.status === 'playing' && friend.tableName && (
+                  <span className={styles.playing}>{friend.tableName}</span>
+                )}
+              </div>
+
+              <div className={styles.actions}>
+                <button
+                  className={styles.iconBtn}
+                  onClick={() => onMessageClick?.(friend.friendId, friend.displayName)}
+                  title="Message"
+                ></button>
+                {friend.isOnline && onInviteClick && (
+                  <button
+                    className={styles.iconBtn}
+                    onClick={() => onInviteClick(friend.friendId)}
+                    title="Invite to table"
+                  ></button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
 }

@@ -68,6 +68,9 @@ import { usePlayerStats } from '../hooks/usePlayerStats';
 import { useTableSettings } from '../hooks/useTableSettings';
 import { useTableTimer } from '../hooks/useTableTimer';
 import { useTableModals } from '../hooks/useTableModals';
+import { useTableChat } from '../hooks/useTableChat';
+import { useTableTournament } from '../hooks/useTableTournament';
+import { useTableAnimations } from '../hooks/useTableAnimations';
 import { GTOQueryService, type GTOSolution } from '../services/GTOQueryService';
 import { RakeService, type RakeCalculation } from '../services/RakeService';
 import { tableService } from '../services/TableService';
@@ -413,15 +416,7 @@ export default function TablePage({
   const [showHandReplay, setShowHandReplay] = useState(false);
   const [lastHandId, setLastHandId] = useState<string | null>(null);
   const [showGameRules, setShowGameRules] = useState(false);
-  const [chipAnimations, setChipAnimations] = useState<
-    Array<{
-      id: string;
-      from: { x: number; y: number };
-      to: { x: number; y: number };
-      amount: number;
-      chipColor?: 'red' | 'green' | 'blue' | 'black' | 'gold';
-    }>
-  >([]);
+
   const [showSitOut, setShowSitOut] = useState(false);
   const [sitOutTimeRemaining, setSitOutTimeRemaining] = useState(300); // 5 min default
   const [showWaitList, setShowWaitList] = useState(false);
@@ -444,41 +439,28 @@ export default function TablePage({
     }>
   >([]);
 
-  // Tournament rebuy state
-  const [showTournamentRebuy, setShowTournamentRebuy] = useState(false);
-  const [rebuyProcessing, setRebuyProcessing] = useState(false);
-
-  // Tournament break state
-  const [tournamentBreak, setTournamentBreak] = useState<{
-    active: boolean;
-    timeRemaining: number;
-    nextLevel?: {
-      level: number;
-      smallBlind: number;
-      bigBlind: number;
-      ante?: number;
-      duration: number;
-    };
-  }>({ active: false, timeRemaining: 0 });
-  const breakChannelRef = useRef<any>(null);
-
-  // Tournament announcement overlay state
-  const [announcement, setAnnouncement] = useState<{ type: string; data?: any } | null>(null);
-
-  // Rebuy modal state
-  const [showRebuyModal, setShowRebuyModal] = useState(false);
-  const [rebuyData, setRebuyData] = useState<{ cost: number; chips: number } | null>(null);
-
-  // Add-on period state
-  const [addOnPeriod, setAddOnPeriod] = useState<{
-    active: boolean;
-    addOnCost: number;
-    addOnChips: number;
-    walletBalance: number;
-    timeRemaining: number;
-  }>({ active: false, addOnCost: 0, addOnChips: 0, walletBalance: 0, timeRemaining: 60 });
-  const addOnChannelRef = useRef<any>(null);
-  const bountyChannelRef = useRef<any>(null);
+  // Tournament — extracted to useTableTournament hook
+  const {
+    showTournamentRebuy,
+    setShowTournamentRebuy,
+    rebuyProcessing,
+    setRebuyProcessing,
+    tournamentBreak,
+    setTournamentBreak,
+    breakChannelRef,
+    announcement,
+    setAnnouncement,
+    showRebuyModal,
+    setShowRebuyModal,
+    rebuyData,
+    setRebuyData,
+    addOnPeriod,
+    setAddOnPeriod,
+    addOnChannelRef,
+    bountyChannelRef,
+    tournamentWinner,
+    setTournamentWinner,
+  } = useTableTournament();
 
   // Buy-in processing lock to prevent double-click
   const buyInProcessingRef = useRef(false);
@@ -486,39 +468,21 @@ export default function TablePage({
   // Actual club_id from the table record (NOT the tableId)
   const actualClubIdRef = useRef<string>('');
 
-  // Chat state
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [isChatCollapsed, setIsChatCollapsed] = useState(true);
-  const [isChatMuted, setIsChatMuted] = useState(false);
-
-  // Send chat message via RoomService
-  const handleSendChatMessage = (message: string) => {
-    if (!tableId || !userId) return;
-
-    roomService.sendChat(tableId, userId, message);
-
-    // Optimistically add to local state
-    setChatMessages((prev) => [
-      ...prev,
-      {
-        id: `msg_${Date.now()}`,
-        type: 'PLAYER' as const,
-        playerId: userId,
-        playerName: tableState.players[tableState.heroSeat - 1]?.name || 'You',
-        content: message,
-        timestamp: new Date(),
-      },
-    ]);
-  };
+  // Chat — extracted to useTableChat hook
+  const heroName = tableState.players[tableState.heroSeat - 1]?.name || 'You';
+  const {
+    chatMessages,
+    setChatMessages,
+    isChatCollapsed,
+    setIsChatCollapsed,
+    isChatMuted,
+    setIsChatMuted,
+    handleSendChatMessage,
+  } = useTableChat(tableId, userId, heroName);
 
   // Insurance Modal state
   const [showInsurance, setShowInsurance] = useState(false);
   const [insuranceOffer, setInsuranceOffer] = useState<InsuranceOffer | null>(null);
-
-  // Tournament Winner state
-  const [tournamentWinner, setTournamentWinner] = useState<{ prize: number; name: string } | null>(
-    null
-  );
 
   // Run It Twice state
   const [showRIT, setShowRIT] = useState(false);
@@ -629,10 +593,21 @@ export default function TablePage({
     sendAction('rit_decline', { seat: tableState.heroSeat });
   };
 
-  // Throwable Panel state
-  const [showThrowableSelector, setShowThrowableSelector] = useState(false);
-  const [throwTargetSeat, setThrowTargetSeat] = useState<number | null>(null);
-  const [activeThrows, setActiveThrows] = useState<ThrowEvent[]>([]);
+  // Animations — extracted to useTableAnimations hook
+  const {
+    showThrowableSelector,
+    setShowThrowableSelector,
+    throwTargetSeat,
+    setThrowTargetSeat,
+    activeThrows,
+    handleThrowableSelect,
+    handleThrowComplete,
+    getSeatPositions,
+    chipAnimations,
+    setChipAnimations,
+    showConfetti,
+    setShowConfetti,
+  } = useTableAnimations(tableId, userId, tableState.heroSeat);
 
   // Tip Dealer state
   const [showTipDealer, setShowTipDealer] = useState(false);
@@ -641,53 +616,6 @@ export default function TablePage({
   const [isStraddleEnabled, setIsStraddleEnabled] = useState(false);
   const [straddleAmount] = useState(4); // 2x big blind
   const [isStraddleAvailable] = useState(true); // Set based on position
-
-  // Handle throwable selection
-  const handleThrowableSelect = async (throwable: Throwable) => {
-    if (!tableId || !userId || throwTargetSeat === null) return;
-
-    // Create throw event
-    const event = throwableService.createThrowEvent(
-      tableState.heroSeat,
-      throwTargetSeat,
-      throwable.id
-    );
-
-    if (event) {
-      // Add to active throws for animation
-      setActiveThrows((prev) => [...prev, event]);
-
-      // Broadcast via room service
-      roomService.sendChat(tableId, userId, `[THROW:${throwable.id}:${throwTargetSeat}]`);
-    }
-
-    setShowThrowableSelector(false);
-    setThrowTargetSeat(null);
-  };
-
-  // Remove completed throw animations
-  const handleThrowComplete = (eventId: string) => {
-    setActiveThrows((prev) => prev.filter((e) => e.id !== eventId));
-  };
-
-  // Get seat positions for throw animation targeting
-  const getSeatPositions = (): Map<number, { x: number; y: number }> => {
-    const positions = new Map<number, { x: number; y: number }>();
-    const centerX = 400;
-    const centerY = 250;
-    const radiusX = 300;
-    const radiusY = 150;
-    const maxSeats = tableState.maxPlayers || 6;
-
-    for (let i = 0; i < maxSeats; i++) {
-      const angle = (i * (360 / maxSeats) - 90) * (Math.PI / 180);
-      positions.set(i, {
-        x: centerX + radiusX * Math.cos(angle),
-        y: centerY + radiusY * Math.sin(angle),
-      });
-    }
-    return positions;
-  };
 
   // Handle dealer tip
   const handleTipDealer = async (amount: number) => {
@@ -928,9 +856,6 @@ export default function TablePage({
       soundService.playTurnAlert();
     }
   };
-
-  // Confetti state for big wins
-  const [showConfetti, setShowConfetti] = useState(false);
 
   // All-in dramatic mode
   const [isAllInMode, setIsAllInMode] = useState(false);
@@ -3978,7 +3903,7 @@ export default function TablePage({
       {/* Throw Animations */}
       <ThrowAnimationContainer
         events={activeThrows}
-        seatPositions={getSeatPositions()}
+        seatPositions={getSeatPositions(tableState.maxPlayers || 6)}
         onEventComplete={handleThrowComplete}
       />
 

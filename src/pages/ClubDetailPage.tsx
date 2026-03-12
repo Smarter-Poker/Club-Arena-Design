@@ -74,28 +74,169 @@ const TabButton = ({
 }: {
   active: boolean;
   onClick: () => void;
-  icon: string;
+  icon: React.ReactNode;
   label: string;
 }) => (
   <button className={`${styles.tab} ${active ? styles.activeTab : ''}`} onClick={onClick}>
-    <span>{icon}</span>
+    <span className={styles.tabIcon}>{icon}</span>
     <span>{label}</span>
   </button>
 );
+
+/* ── SVG Icon Library ── */
+const Icons = {
+  online: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <circle cx="10" cy="10" r="4" fill="#22c55e">
+        <animate attributeName="r" values="3;5;3" dur="2s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="10" cy="10" r="8" stroke="#22c55e" strokeWidth="1.5" fill="none" opacity="0.3">
+        <animate attributeName="r" values="6;9;6" dur="2s" repeatCount="indefinite" />
+      </circle>
+    </svg>
+  ),
+  members: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <circle cx="7" cy="7" r="3" stroke="#60a5fa" strokeWidth="1.5" />
+      <path
+        d="M1 17c0-3 2.5-5.5 6-5.5s6 2.5 6 5.5"
+        stroke="#60a5fa"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <circle cx="14" cy="6" r="2.5" stroke="#60a5fa" strokeWidth="1.2" opacity="0.6" />
+      <path
+        d="M14 10.5c2.5 0 5 1.8 5 4.5"
+        stroke="#60a5fa"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        opacity="0.6"
+      />
+    </svg>
+  ),
+  tables: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <rect x="2" y="2" width="7" height="7" rx="2" stroke="#00d4ff" strokeWidth="1.5" />
+      <rect x="11" y="2" width="7" height="7" rx="2" stroke="#00d4ff" strokeWidth="1.5" />
+      <rect x="2" y="11" width="7" height="7" rx="2" stroke="#00d4ff" strokeWidth="1.5" />
+      <rect
+        x="11"
+        y="11"
+        width="7"
+        height="7"
+        rx="2"
+        stroke="#00d4ff"
+        strokeWidth="1.5"
+        opacity="0.4"
+      />
+    </svg>
+  ),
+  rake: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <text
+        x="4"
+        y="15"
+        fontSize="14"
+        fontWeight="700"
+        fill="#fbbf24"
+        fontFamily="Orbitron, monospace"
+      >
+        %
+      </text>
+    </svg>
+  ),
+  overview: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+      <rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+      <rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+      <rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  ),
+  tableTab: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <ellipse cx="8" cy="8" rx="7" ry="4.5" stroke="currentColor" strokeWidth="1.5" />
+      <line x1="1" y1="8" x2="15" y2="8" stroke="currentColor" strokeWidth="1" opacity="0.4" />
+    </svg>
+  ),
+  people: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <circle cx="6" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="M1 14c0-2.5 2-4.5 5-4.5s5 2 5 4.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <circle cx="12" cy="5" r="2" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+    </svg>
+  ),
+  shield: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path
+        d="M8 1L2 4v4c0 3.5 2.5 5.8 6 7 3.5-1.2 6-3.5 6-7V4L8 1z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6 8l2 2 3-4"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+  wrench: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path
+        d="M10 2a4 4 0 00-3.5 6L2 12.5 3.5 14l4.5-4.5A4 4 0 0010 2z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+  gear: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <circle cx="8" cy="8" r="2.5" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.5 1.5M11.5 11.5L13 13M13 3l-1.5 1.5M4.5 11.5L3 13"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+    </svg>
+  ),
+};
 
 const StatCard = ({
   value,
   label,
   icon,
+  accent = '#00d4ff',
 }: {
   value: string | number;
   label: string;
-  icon: string;
+  icon: React.ReactNode;
+  accent?: string;
 }) => (
-  <div className={styles.statCard}>
-    <span className={styles.statIcon}>{icon}</span>
+  <div
+    className={styles.statCard}
+    style={{ borderColor: `color-mix(in srgb, ${accent} 40%, #2a3a4a)` }}
+  >
+    <div
+      className={styles.statIconWrap}
+      style={{ background: `color-mix(in srgb, ${accent} 15%, transparent)` }}
+    >
+      {icon}
+    </div>
     <div className={styles.statInfo}>
-      <span className={styles.statValue}>{value}</span>
+      <span className={styles.statValue} style={{ color: accent }}>
+        {value}
+      </span>
       <span className={styles.statLabel}>{label}</span>
     </div>
   </div>
@@ -593,16 +734,117 @@ export default function ClubDetailPage() {
                 .table-row-animated { animation: slideInUp 0.5s ease-out forwards; opacity: 0; }
                 @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
                 .club-detail-skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.1)); background-size: 1000px 100%; animation: shimmer 2s infinite; }
+                @keyframes heroPulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+                @keyframes heroGlow { 0%, 100% { box-shadow: 0 0 20px rgba(0,212,255,0.2); } 50% { box-shadow: 0 0 40px rgba(0,212,255,0.4); } }
             `}</style>
+
+      {/* ── Hero Banner ── */}
+      <section className={styles.heroBanner}>
+        <div className={styles.heroGradient} />
+        <div className={styles.heroContent}>
+          <div className={styles.heroAvatar}>
+            {club.avatarUrl ? (
+              <img src={club.avatarUrl} alt={club.name} />
+            ) : (
+              <span>{club.name.charAt(0).toUpperCase()}</span>
+            )}
+          </div>
+          <div className={styles.heroInfo}>
+            <h1 className={styles.heroTitle}>{club.name}</h1>
+            <p className={styles.heroClubId}>ID: {club.clubId}</p>
+            {club.description && <p className={styles.heroDesc}>{club.description}</p>}
+          </div>
+          <div className={styles.heroBadges}>
+            <span className={styles.heroBadge} style={{ borderColor: '#22c55e' }}>
+              <span className={styles.heroBadgeDot} style={{ background: '#22c55e' }} />
+              {onlineCount} Online
+            </span>
+            <span className={styles.heroBadge} style={{ borderColor: '#60a5fa' }}>
+              {club.memberCount} Members
+            </span>
+            <span className={styles.heroBadge} style={{ borderColor: '#00d4ff' }}>
+              {tables.filter((t) => t.status === 'running').length} Live
+            </span>
+          </div>
+        </div>
+        <div className={styles.heroActions}>
+          <button
+            className={styles.heroActionBtn}
+            onClick={() => navigate(`/clubs/${clubId}/invite`)}
+            title="Invite"
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path
+                d="M9 3v12M3 9h12"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+          <button
+            className={styles.heroActionBtn}
+            onClick={() => navigate(`/clubs/${clubId}/financials`)}
+            title="Financials"
+            style={{ color: '#22c55e' }}
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path
+                d="M9 2v14M5 6h8M6 10h6M7 14h4"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+          <button
+            className={styles.heroActionBtn}
+            onClick={() => navigate(`/clubs/${clubId}/announcements`)}
+            title="Announcements"
+            style={{ color: '#fbbf24' }}
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path
+                d="M3 7l6-4 6 4v5l-6 4-6-4V7z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+              />
+              <circle cx="9" cy="9" r="2" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+          </button>
+        </div>
+      </section>
+
       {/* Quick Stats */}
       <section
         className={styles.statsRow}
         style={{ animation: `slideInUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)` }}
       >
-        <StatCard value={animatedOnlineCount} label="Online Now" icon="" />
-        <StatCard value={animatedMemberCount} label="Members" icon="" />
-        <StatCard value={animatedTableCount} label="Active Tables" icon="" />
-        <StatCard value={`${club.settings.defaultRakePercent}%`} label="Rake" icon="" />
+        <StatCard
+          value={animatedOnlineCount}
+          label="Online Now"
+          icon={Icons.online}
+          accent="#22c55e"
+        />
+        <StatCard
+          value={animatedMemberCount}
+          label="Members"
+          icon={Icons.members}
+          accent="#60a5fa"
+        />
+        <StatCard
+          value={animatedTableCount}
+          label="Active Tables"
+          icon={Icons.tables}
+          accent="#00d4ff"
+        />
+        <StatCard
+          value={`${club.settings.defaultRakePercent}%`}
+          label="Rake"
+          icon={Icons.rake}
+          accent="#fbbf24"
+        />
       </section>
 
       {/* Tab Navigation */}
@@ -610,39 +852,39 @@ export default function ClubDetailPage() {
         <TabButton
           active={activeTab === 'overview'}
           onClick={() => setActiveTab('overview')}
-          icon=""
+          icon={Icons.overview}
           label="Overview"
         />
         <TabButton
           active={activeTab === 'tables'}
           onClick={() => setActiveTab('tables')}
-          icon=""
+          icon={Icons.tableTab}
           label="Tables"
         />
         <TabButton
           active={activeTab === 'members'}
           onClick={() => setActiveTab('members')}
-          icon=""
+          icon={Icons.people}
           label="Members"
         />
         <TabButton
           active={activeTab === 'agents'}
           onClick={() => setActiveTab('agents')}
-          icon=""
+          icon={Icons.shield}
           label="Agents"
         />
         {(userRole === 'owner' || userRole === 'admin') && (
           <TabButton
             active={activeTab === 'operations'}
             onClick={() => setActiveTab('operations')}
-            icon=""
+            icon={Icons.wrench}
             label="Ops"
           />
         )}
         <TabButton
           active={activeTab === 'settings'}
           onClick={() => setActiveTab('settings')}
-          icon=""
+          icon={Icons.gear}
           label="Settings"
         />
       </nav>

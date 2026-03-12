@@ -18,6 +18,122 @@ import ClubBottomNav from '../components/club/ClubBottomNav';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// MONDAY 4AM COUNTDOWN — Live payout timer widget
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function MondayPayoutCountdown() {
+  const [countdown, setCountdown] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+    progress: 0,
+  });
+
+  useEffect(() => {
+    const getNextMondayPayout = () => {
+      const now = new Date();
+      // Monday 4AM PST = Monday 12:00 UTC
+      const target = new Date(now);
+      const dayOfWeek = target.getUTCDay(); // 0=Sun, 1=Mon
+      const daysUntilMonday =
+        dayOfWeek === 0 ? 1 : dayOfWeek === 1 ? (target.getUTCHours() < 12 ? 0 : 7) : 8 - dayOfWeek;
+      target.setUTCDate(target.getUTCDate() + daysUntilMonday);
+      target.setUTCHours(12, 0, 0, 0);
+      if (target <= now) target.setUTCDate(target.getUTCDate() + 7);
+      return target;
+    };
+
+    const tick = () => {
+      const now = new Date();
+      const target = getNextMondayPayout();
+      const diff = target.getTime() - now.getTime();
+      const totalWeekMs = 7 * 24 * 60 * 60 * 1000;
+      const elapsed = totalWeekMs - diff;
+      const progress = Math.max(0, Math.min(100, (elapsed / totalWeekMs) * 100));
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      setCountdown({ days, hours, minutes, seconds, progress });
+    };
+
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div
+      style={{
+        margin: '0 0 16px',
+        padding: '16px 20px',
+        background: 'linear-gradient(135deg, rgba(0,100,200,0.12) 0%, rgba(0,200,83,0.08) 100%)',
+        border: '1px solid rgba(0,150,255,0.2)',
+        borderRadius: '14px',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '10px',
+        }}
+      >
+        <span
+          style={{
+            fontSize: '0.8rem',
+            color: 'rgba(255,255,255,0.7)',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+          }}
+        >
+          ⏱ Next Payout (Monday 4AM PST)
+        </span>
+        <span
+          style={{
+            fontSize: '1.1rem',
+            fontWeight: 800,
+            fontFamily: 'monospace',
+            color: '#fff',
+            textShadow:
+              countdown.days === 0 && countdown.hours < 4 ? '0 0 12px rgba(0,200,83,0.5)' : 'none',
+          }}
+        >
+          {countdown.days}d {String(countdown.hours).padStart(2, '0')}h{' '}
+          {String(countdown.minutes).padStart(2, '0')}m {String(countdown.seconds).padStart(2, '0')}
+          s
+        </span>
+      </div>
+      <div
+        style={{
+          height: '6px',
+          background: 'rgba(255,255,255,0.06)',
+          borderRadius: '3px',
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            height: '100%',
+            width: `${countdown.progress}%`,
+            background: 'linear-gradient(90deg, #0088ff, #00C853)',
+            borderRadius: '3px',
+            transition: 'width 1s linear',
+            boxShadow: '0 0 8px rgba(0, 200, 83, 0.3)',
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -510,6 +626,9 @@ export default function SettlementPage() {
           </button>
         </div>
       </header>
+
+      {/* Monday 4AM Payout Countdown */}
+      {selectedPeriod.status === 'open' && <MondayPayoutCountdown />}
 
       {/* Key Metrics */}
       <div className={styles.metricsGrid}>

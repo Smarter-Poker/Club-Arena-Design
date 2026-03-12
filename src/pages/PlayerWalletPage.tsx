@@ -305,6 +305,30 @@ export default function PlayerWalletPage() {
           <span>{animatedDiamonds.toLocaleString()}</span>
         </div>
 
+        {/* Escrow Transparency Badge */}
+        {balances.PLAYER.locked > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              marginTop: '8px',
+              background: 'rgba(255, 167, 38, 0.08)',
+              border: '1px solid rgba(255, 167, 38, 0.2)',
+              borderRadius: '20px',
+              fontSize: '0.75rem',
+              color: '#ffa726',
+            }}
+          >
+            <span>🔒</span>
+            <span>{balances.PLAYER.locked.toLocaleString()} chips in escrow</span>
+            <span style={{ marginLeft: 'auto', fontSize: '0.65rem', opacity: 0.7 }}>
+              Funds Secured
+            </span>
+          </div>
+        )}
+
         <div className="hero-actions">
           <button className="hero-btn deposit" onClick={() => setShowDepositModal(true)}>
             + Deposit

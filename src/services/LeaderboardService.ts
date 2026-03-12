@@ -35,6 +35,8 @@ export interface LeaderboardEntry {
   metric: LeaderboardMetric;
   change: number; // Position change from previous period
   isVIP?: boolean;
+  vipTier?: string;
+  level?: number;
 }
 
 export interface PlayerStats {
@@ -124,7 +126,7 @@ export const LeaderboardService = {
       const userIds = statsData.map((s: any) => s.user_id);
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url')
+        .select('id, username, avatar_url, level, vip_tier')
         .in('id', userIds);
 
       const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
@@ -153,7 +155,12 @@ export const LeaderboardService = {
           value,
           metric,
           change: 0,
-          isVIP: false,
+          isVIP:
+            profile.vip_tier === 'gold' ||
+            profile.vip_tier === 'platinum' ||
+            profile.vip_tier === 'diamond',
+          vipTier: profile.vip_tier || 'bronze',
+          level: profile.level || 1,
         };
       });
     } catch (err) {
@@ -205,7 +212,7 @@ export const LeaderboardService = {
       const userIds = statsData.map((s: any) => s.user_id);
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url')
+        .select('id, username, avatar_url, level, vip_tier')
         .in('id', userIds);
 
       const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
@@ -234,7 +241,12 @@ export const LeaderboardService = {
           value,
           metric,
           change: 0,
-          isVIP: false,
+          isVIP:
+            profile.vip_tier === 'gold' ||
+            profile.vip_tier === 'platinum' ||
+            profile.vip_tier === 'diamond',
+          vipTier: profile.vip_tier || 'bronze',
+          level: profile.level || 1,
         };
       });
     } catch (err) {

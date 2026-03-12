@@ -20,6 +20,8 @@ import type {
 import { getUserMemberships } from '../services/ClubsService';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
+import { PlayerAvatar } from '../components/avatars/PlayerAvatar';
+import type { VipTier } from '../components/avatars/PlayerAvatar';
 import './LeaderboardPage.css';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
@@ -414,13 +416,18 @@ export default function LeaderboardPage() {
                   className="podium-place podium-2nd"
                   onClick={() => navigate(`/profile/${top3[1].userId}`)}
                 >
-                  <div className="podium-avatar silver">
-                    {top3[1].avatar ? (
-                      <img src={top3[1].avatar} alt="" loading="lazy" />
-                    ) : (
-                      <span>{(top3[1].username || '?')[0]?.toUpperCase()}</span>
-                    )}
-                  </div>
+                  <PlayerAvatar
+                    src={top3[1].avatar}
+                    name={top3[1].username}
+                    size="lg"
+                    vipTier={(top3[1].vipTier as VipTier) || 'silver'}
+                    level={top3[1].level || 1}
+                    xpProgress={50}
+                    showPresence={false}
+                    showLevelBadge={true}
+                    showXpRing={true}
+                    showVipRing={true}
+                  />
                   {top3[1].isVIP && <span className="vip-badge">VIP</span>}
                   <span className="podium-name">{top3[1].username}</span>
                   <span className="podium-value silver-text">
@@ -436,13 +443,18 @@ export default function LeaderboardPage() {
                   onClick={() => navigate(`/profile/${top3[0].userId}`)}
                 >
                   <div className="podium-crown">👑</div>
-                  <div className="podium-avatar gold">
-                    {top3[0].avatar ? (
-                      <img src={top3[0].avatar} alt="" loading="lazy" />
-                    ) : (
-                      <span>{(top3[0].username || '?')[0]?.toUpperCase()}</span>
-                    )}
-                  </div>
+                  <PlayerAvatar
+                    src={top3[0].avatar}
+                    name={top3[0].username}
+                    size="xl"
+                    vipTier={(top3[0].vipTier as VipTier) || 'gold'}
+                    level={top3[0].level || 1}
+                    xpProgress={75}
+                    showPresence={false}
+                    showLevelBadge={true}
+                    showXpRing={true}
+                    showVipRing={true}
+                  />
                   {top3[0].isVIP && <span className="vip-badge">VIP</span>}
                   <span className="podium-name">{top3[0].username}</span>
                   <span className="podium-value gold-text">
@@ -457,13 +469,18 @@ export default function LeaderboardPage() {
                   className="podium-place podium-3rd"
                   onClick={() => navigate(`/profile/${top3[2].userId}`)}
                 >
-                  <div className="podium-avatar bronze">
-                    {top3[2].avatar ? (
-                      <img src={top3[2].avatar} alt="" loading="lazy" />
-                    ) : (
-                      <span>{(top3[2].username || '?')[0]?.toUpperCase()}</span>
-                    )}
-                  </div>
+                  <PlayerAvatar
+                    src={top3[2].avatar}
+                    name={top3[2].username}
+                    size="lg"
+                    vipTier={(top3[2].vipTier as VipTier) || 'bronze'}
+                    level={top3[2].level || 1}
+                    xpProgress={30}
+                    showPresence={false}
+                    showLevelBadge={true}
+                    showXpRing={true}
+                    showVipRing={true}
+                  />
                   {top3[2].isVIP && <span className="vip-badge">VIP</span>}
                   <span className="podium-name">{top3[2].username}</span>
                   <span className="podium-value bronze-text">

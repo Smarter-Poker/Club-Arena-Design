@@ -6,175 +6,214 @@
  */
 
 .bottomNav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-    background: linear-gradient(180deg, rgba(15, 25, 40, 0.98) 0%, rgba(8, 15, 25, 0.99) 100%);
-    border-top: 1px solid rgba(0, 180, 255, 0.15);
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(10px) saturate(1.1);
-    -webkit-backdrop-filter: blur(10px) saturate(1.1);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: linear-gradient(180deg, rgba(15, 25, 40, 0.98) 0%, rgba(8, 15, 25, 0.99) 100%);
+  border-top: 1px solid rgba(0, 180, 255, 0.15);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px) saturate(1.1);
+  -webkit-backdrop-filter: blur(10px) saturate(1.1);
 }
 
 /* Club header bar showing active tables/tournaments */
 .clubHeader {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 6px 12px;
-    background: linear-gradient(90deg,
-            rgba(0, 80, 120, 0.6) 0%,
-            rgba(0, 100, 150, 0.4) 50%,
-            rgba(0, 80, 120, 0.6) 100%);
-    border-bottom: 1px solid rgba(0, 180, 255, 0.15);
-    font-size: 11px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.9);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    overflow-x: auto;
-    white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 80, 120, 0.6) 0%,
+    rgba(0, 100, 150, 0.4) 50%,
+    rgba(0, 80, 120, 0.6) 100%
+  );
+  border-bottom: 1px solid rgba(0, 180, 255, 0.15);
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  overflow-x: auto;
+  white-space: nowrap;
 }
 
 .clubBadge {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    color: #000;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-weight: 700;
-    font-size: 10px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #000;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 10px;
 }
 
 .clubName {
-    color: #fff;
-    font-weight: 600;
+  color: #fff;
+  font-weight: 600;
 }
 
 .clubStats {
-    color: rgba(0, 200, 255, 0.9);
-    font-weight: 500;
+  color: rgba(0, 200, 255, 0.9);
+  font-weight: 500;
 }
 
 .divider {
-    color: rgba(255, 255, 255, 0.3);
-    margin: 0 4px;
+  color: rgba(255, 255, 255, 0.3);
+  margin: 0 4px;
 }
 
 /* Navigation items container */
 .navItems {
-    display: flex;
-    align-items: stretch;
-    justify-content: space-around;
-    padding: 8px 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  padding: 8px 0;
 }
 
 /* Individual nav item */
 .navItem {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    flex: 1;
-    padding: 8px 4px;
-    text-decoration: none;
-    color: rgba(255, 255, 255, 0.5);
-    transition: all 0.2s ease;
-    border-radius: 8px;
-    margin: 0 4px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex: 1;
+  padding: 8px 4px;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.5);
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  margin: 0 4px;
 }
 
 .navItem:hover {
-    color: rgba(0, 200, 255, 0.9);
-    background: rgba(0, 180, 255, 0.1);
+  color: rgba(0, 200, 255, 0.9);
+  background: rgba(0, 180, 255, 0.1);
 }
 
 .navItem.active {
-    color: #00d4ff;
-    background: rgba(0, 180, 255, 0.15);
+  color: #00d4ff;
+  background: rgba(0, 180, 255, 0.15);
+}
+
+.navItem.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 25%;
+  width: 50%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+  border-radius: 2px;
+  animation: activeSlide 0.3s ease-out;
+}
+
+@keyframes activeSlide {
+  from {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
 }
 
 .navItem.active .icon {
-    filter: drop-shadow(0 0 6px rgba(0, 212, 255, 0.6));
+  filter: drop-shadow(0 0 6px rgba(0, 212, 255, 0.6));
+  transform: scale(1.05);
 }
 
 /* Icon styling */
 .icon {
-    width: 24px;
-    height: 24px;
-    transition: all 0.2s ease;
+  width: 24px;
+  height: 24px;
+  transition: all 0.2s ease;
 }
 
 /* Label styling */
 .label {
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-    text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  text-align: center;
 }
 
 /* Notification badge */
 .badge {
-    position: absolute;
-    top: 2px;
-    right: 8px;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 4px;
-    border-radius: 8px;
-    background: #EF4444;
-    color: #fff;
-    font-size: 9px;
-    font-weight: 800;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-    box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
-    pointer-events: none;
+  position: absolute;
+  top: 2px;
+  right: 8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+  pointer-events: none;
+  animation: badgePop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes badgePop {
+  0% {
+    transform: scale(0);
+  }
+  70% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* Disabled state for players tab when not admin */
 .navItem.disabled {
-    opacity: 0.4;
-    pointer-events: none;
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 /* Responsive adjustments */
 @media (max-width: 400px) {
-    .navItem {
-        padding: 6px 2px;
-        margin: 0 2px;
-    }
+  .navItem {
+    padding: 6px 2px;
+    margin: 0 2px;
+  }
 
-    .icon {
-        width: 20px;
-        height: 20px;
-    }
+  .icon {
+    width: 20px;
+    height: 20px;
+  }
 
-    .label {
-        font-size: 8px;
-        letter-spacing: 0;
-    }
+  .label {
+    font-size: 8px;
+    letter-spacing: 0;
+  }
 
-    .clubHeader {
-        font-size: 10px;
-        padding: 4px 8px;
-    }
+  .clubHeader {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
 }
 
 /* Safe area for devices with home indicators */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
-    .bottomNav {
-        padding-bottom: env(safe-area-inset-bottom);
-    }
+  .bottomNav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }

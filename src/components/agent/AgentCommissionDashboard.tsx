@@ -12,349 +12,472 @@ import { useToast } from '../common/Toast';
 import './AgentCommissionDashboard.css';
 
 interface CommissionSummary {
-    totalEarned: number;
-    thisWeek: number;
-    thisMonth: number;
-    pendingPayout: number;
-    lastPayout: Date | null;
+  totalEarned: number;
+  thisWeek: number;
+  thisMonth: number;
+  pendingPayout: number;
+  lastPayout: Date | null;
 }
 
 interface CommissionRecord {
-    id: string;
-    playerId: string;
-    playerName: string;
-    amount: number;
-    rakeAmount: number;
-    commissionRate: number;
-    createdAt: Date;
-    tableId?: string;
-    tableName?: string;
+  id: string;
+  playerId: string;
+  playerName: string;
+  amount: number;
+  rakeAmount: number;
+  commissionRate: number;
+  createdAt: Date;
+  tableId?: string;
+  tableName?: string;
 }
 
 interface SubAgent {
-    id: string;
-    username: string;
-    avatarUrl: string;
-    totalPlayers: number;
-    totalCommission: number;
-    commissionRate: number;
-    joinedAt: Date;
+  id: string;
+  username: string;
+  avatarUrl: string;
+  totalPlayers: number;
+  totalCommission: number;
+  commissionRate: number;
+  joinedAt: Date;
 }
 
 export function AgentCommissionDashboard() {
-    const { user } = useUserStore();
-    const toast = useToast();
+  const { user } = useUserStore();
+  const toast = useToast();
 
-    const [summary, setSummary] = useState<CommissionSummary | null>(null);
-    const [records, setRecords] = useState<CommissionRecord[]>([]);
-    const [subAgents, setSubAgents] = useState<SubAgent[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'summary' | 'records' | 'subagents'>('summary');
-    const [visibleCards, setVisibleCards] = useState<boolean[]>([]);
-    const [visibleRows, setVisibleRows] = useState<boolean[]>([]);
+  const [summary, setSummary] = useState<CommissionSummary | null>(null);
+  const [records, setRecords] = useState<CommissionRecord[]>([]);
+  const [subAgents, setSubAgents] = useState<SubAgent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'summary' | 'records' | 'subagents'>('summary');
+  const [visibleCards, setVisibleCards] = useState<boolean[]>([]);
+  const [visibleRows, setVisibleRows] = useState<boolean[]>([]);
 
-    useEffect(() => {
-        if (user?.id) {
-            loadData();
-        }
-    }, [user?.id]);
+  useEffect(() => {
+    if (user?.id) {
+      loadData();
+    }
+  }, [user?.id]);
 
-    // ── Real-time bus listeners for commission updates ──
-    const loadDataRef = useRef<() => void>(() => {});
-    useEffect(() => { loadDataRef.current = loadData; }, [user?.id]);
+  // ── Real-time bus listeners for commission updates ──
+  const loadDataRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    loadDataRef.current = loadData;
+  }, [user?.id]);
 
-    useEffect(() => {
-        if (!user?.id) return;
+  useEffect(() => {
+    if (!user?.id) return;
 
-        // Postgres Changes: live commission_records updates
-        const channelKey = `agent-commission-live-${user.id}`;
-        const channel = masterBus.getOrCreateChannel(channelKey);
-        channel
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'commission_records',
-                    filter: `agent_id=eq.${user.id}`,
-                },
-                () => loadDataRef.current()
-            )
-            .on(
-                'postgres_changes',
-                {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'wallets',
-                    filter: `user_id=eq.${user.id}`,
-                },
-                () => loadDataRef.current()
-            )
-            .subscribe();
+    // Postgres Changes: live commission_records updates
+    const channelKey = `agent-commission-live-${user.id}`;
+    const channel = masterBus.getOrCreateChannel(channelKey);
+    channel
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'commission_records',
+          filter: `agent_id=eq.${user.id}`,
+        },
+        () => loadDataRef.current()
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'wallets',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => loadDataRef.current()
+      )
+      .subscribe();
 
-        // Bus event: BALANCE_UPDATED from engine
-        const unsubBalance = masterBus.subscribeDebounced('BALANCE_UPDATED', () => {
-            loadDataRef.current();
-        }, 500);
+    // Bus event: BALANCE_UPDATED from engine
+    const unsubBalance = masterBus.subscribeDebounced(
+      'BALANCE_UPDATED',
+      () => {
+        loadDataRef.current();
+      },
+      500
+    );
 
-        return () => {
-            masterBus.removeRegisteredChannel(channelKey);
-            unsubBalance();
-        };
-    }, [user?.id]);
-
-    useEffect(() => {
-        if (activeTab === 'summary' && summary) {
-            setVisibleCards([]);
-            [0, 1, 2, 3].forEach((i) => {
-                setTimeout(() => {
-                    setVisibleCards(prev => [...prev, true]);
-                }, i * 60);
-            });
-        }
-    }, [activeTab, summary]);
-
-    useEffect(() => {
-        if (activeTab === 'records' && records.length > 0) {
-            setVisibleRows([]);
-            records.forEach((_, i) => {
-                setTimeout(() => {
-                    setVisibleRows(prev => [...prev, true]);
-                }, i * 60);
-            });
-        }
-    }, [activeTab, records]);
-
-    useEffect(() => {
-        if (activeTab === 'subagents' && subAgents.length > 0) {
-            setVisibleCards([]);
-            subAgents.forEach((_, i) => {
-                setTimeout(() => {
-                    setVisibleCards(prev => [...prev, true]);
-                }, i * 60);
-            });
-        }
-    }, [activeTab, subAgents]);
-
-    const loadData = async () => {
-        if (!user?.id) return;
-        setLoading(true);
-
-        try {
-            // Load commission summary
-            const { data: summaryData, error: summaryErr } = await supabase
-                .rpc('fn_get_agent_commission_summary', { p_agent_id: user.id });
-            if (summaryErr) console.error('[AgentCommission] Summary RPC failed:', summaryErr.message);
-
-            if (summaryData) {
-                setSummary({
-                    totalEarned: summaryData.total_earned || 0,
-                    thisWeek: summaryData.this_week || 0,
-                    thisMonth: summaryData.this_month || 0,
-                    pendingPayout: summaryData.pending_payout || 0,
-                    lastPayout: summaryData.last_payout ? new Date(summaryData.last_payout) : null
-                });
-            }
-
-            // Load recent records
-            const { data: recordsData } = await supabase
-                .from('commission_records')
-                .select('*')
-                .eq('agent_id', user.id)
-                .order('created_at', { ascending: false })
-                .limit(50);
-
-            if (recordsData) {
-                setRecords(recordsData.map(r => ({
-                    id: r.id,
-                    playerId: r.player_id,
-                    playerName: r.player_name || 'Unknown',
-                    amount: r.amount,
-                    rakeAmount: r.rake_amount || 0,
-                    commissionRate: r.commission_rate || 0,
-                    createdAt: new Date(r.created_at),
-                    tableId: r.table_id,
-                    tableName: r.table_name
-                })));
-            }
-
-            // Load sub-agents
-            const { data: subAgentsData } = await supabase
-                .from('agents')
-                .select('id, username, avatar_url, player_count, total_commission, commission_rate, created_at')
-                .eq('parent_agent_id', user.id);
-
-            if (subAgentsData) {
-                setSubAgents(subAgentsData.map(a => ({
-                    id: a.id,
-                    username: a.username,
-                    avatarUrl: a.avatar_url || '',
-                    totalPlayers: a.player_count || 0,
-                    totalCommission: a.total_commission || 0,
-                    commissionRate: a.commission_rate || 0,
-                    joinedAt: new Date(a.created_at)
-                })));
-            }
-        } catch (error) {
-            toast.error('Failed to load commission data');
-        }
-
-        setLoading(false);
+    return () => {
+      masterBus.removeRegisteredChannel(channelKey);
+      unsubBalance();
     };
+  }, [user?.id]);
 
-    const requestPayout = async () => {
-        if (!user?.id || !summary?.pendingPayout) return;
+  useEffect(() => {
+    if (activeTab === 'summary' && summary) {
+      setVisibleCards([]);
+      [0, 1, 2, 3].forEach((i) => {
+        setTimeout(() => {
+          setVisibleCards((prev) => [...prev, true]);
+        }, i * 60);
+      });
+    }
+  }, [activeTab, summary]);
 
-        try {
-            const { error } = await supabase
-                .rpc('fn_request_agent_payout', { p_agent_id: user.id });
+  useEffect(() => {
+    if (activeTab === 'records' && records.length > 0) {
+      setVisibleRows([]);
+      records.forEach((_, i) => {
+        setTimeout(() => {
+          setVisibleRows((prev) => [...prev, true]);
+        }, i * 60);
+      });
+    }
+  }, [activeTab, records]);
 
-            if (error) {
-                console.warn('[AgentDashboard] fn_request_agent_payout RPC not available');
-                return null;
-            }
+  useEffect(() => {
+    if (activeTab === 'subagents' && subAgents.length > 0) {
+      setVisibleCards([]);
+      subAgents.forEach((_, i) => {
+        setTimeout(() => {
+          setVisibleCards((prev) => [...prev, true]);
+        }, i * 60);
+      });
+    }
+  }, [activeTab, subAgents]);
 
-            toast.success('Payout request submitted!');
-            loadData();
-        } catch (error) {
-            console.warn('[AgentDashboard] Payout request failed (non-fatal):', error);
-        }
-    };
+  const loadData = async () => {
+    if (!user?.id) return;
+    setLoading(true);
 
-    if (loading) {
-        return (
-            <div className="agent-commission">
-                <div className="loading-state"><div className="spinner" /></div>
-            </div>
+    try {
+      // Load commission summary
+      const { data: summaryData, error: summaryErr } = await supabase.rpc(
+        'fn_get_agent_commission_summary',
+        { p_agent_id: user.id }
+      );
+      if (summaryErr) console.error('[AgentCommission] Summary RPC failed:', summaryErr.message);
+
+      if (summaryData) {
+        setSummary({
+          totalEarned: summaryData.total_earned || 0,
+          thisWeek: summaryData.this_week || 0,
+          thisMonth: summaryData.this_month || 0,
+          pendingPayout: summaryData.pending_payout || 0,
+          lastPayout: summaryData.last_payout ? new Date(summaryData.last_payout) : null,
+        });
+      }
+
+      // Load recent records
+      const { data: recordsData } = await supabase
+        .from('commission_records')
+        .select('*')
+        .eq('agent_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (recordsData) {
+        setRecords(
+          recordsData.map((r) => ({
+            id: r.id,
+            playerId: r.player_id,
+            playerName: r.player_name || 'Unknown',
+            amount: r.amount,
+            rakeAmount: r.rake_amount || 0,
+            commissionRate: r.commission_rate || 0,
+            createdAt: new Date(r.created_at),
+            tableId: r.table_id,
+            tableName: r.table_name,
+          }))
         );
+      }
+
+      // Load sub-agents
+      const { data: subAgentsData } = await supabase
+        .from('agents')
+        .select(
+          'id, username, avatar_url, player_count, total_commission, commission_rate, created_at'
+        )
+        .eq('parent_agent_id', user.id);
+
+      if (subAgentsData) {
+        setSubAgents(
+          subAgentsData.map((a) => ({
+            id: a.id,
+            username: a.username,
+            avatarUrl: a.avatar_url || '',
+            totalPlayers: a.player_count || 0,
+            totalCommission: a.total_commission || 0,
+            commissionRate: a.commission_rate || 0,
+            joinedAt: new Date(a.created_at),
+          }))
+        );
+      }
+    } catch (error) {
+      toast.error('Failed to load commission data');
     }
 
+    setLoading(false);
+  };
+
+  const requestPayout = async () => {
+    if (!user?.id || !summary?.pendingPayout) return;
+
+    try {
+      const { error } = await supabase.rpc('fn_request_agent_payout', { p_agent_id: user.id });
+
+      if (error) {
+        console.warn('[AgentDashboard] fn_request_agent_payout RPC not available');
+        return null;
+      }
+
+      toast.success('Payout request submitted!');
+      loadData();
+    } catch (error) {
+      console.warn('[AgentDashboard] Payout request failed (non-fatal):', error);
+    }
+  };
+
+  if (loading) {
     return (
-        <div className="agent-commission">
-            {/* Tabs */}
-            <div className="agent-commission__tabs">
-                <button
-                    className={activeTab === 'summary' ? 'active' : ''}
-                    onClick={() => setActiveTab('summary')}
-                >
-                     Summary
-                </button>
-                <button
-                    className={activeTab === 'records' ? 'active' : ''}
-                    onClick={() => setActiveTab('records')}
-                >
-                     Records
-                </button>
-                <button
-                    className={activeTab === 'subagents' ? 'active' : ''}
-                    onClick={() => setActiveTab('subagents')}
-                >
-                     Sub-Agents
-                </button>
-            </div>
-
-            {/* Summary Tab */}
-            {activeTab === 'summary' && summary && (
-                <div className="agent-commission__summary">
-                    {[
-                        { className: 'total', label: 'Total Earned', value: summary.totalEarned },
-                        { className: '', label: 'This Week', value: summary.thisWeek },
-                        { className: '', label: 'This Month', value: summary.thisMonth },
-                        { className: 'pending', label: 'Pending Payout', value: summary.pendingPayout }
-                    ].map((card, idx) => (
-                        <div
-                            key={idx}
-                            className={`summary-card ${card.className}`}
-                            style={{
-                                opacity: visibleCards[idx] ? 1 : 0,
-                                transform: visibleCards[idx] ? 'translateY(0)' : 'translateY(8px)',
-                                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                            }}
-                        >
-                            <span className="label">{card.label}</span>
-                            <span className="value">{card.value.toLocaleString()}</span>
-                            {card.className === 'pending' && summary.pendingPayout > 0 && (
-                                <button className="payout-btn" onClick={requestPayout}>
-                                    Request Payout
-                                </button>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            {/* Records Tab */}
-            {activeTab === 'records' && (
-                <div className="agent-commission__records">
-                    {records.length === 0 ? (
-                        <div className="empty-state">No commission records yet</div>
-                    ) : (
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Player</th>
-                                    <th>Rake</th>
-                                    <th>Rate</th>
-                                    <th>Commission</th>
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {records.map((record, idx) => (
-                                    <tr
-                                        key={record.id}
-                                        style={{
-                                            opacity: visibleRows[idx] ? 1 : 0,
-                                            transform: visibleRows[idx] ? 'translateY(0)' : 'translateY(8px)',
-                                            transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                                        }}
-                                    >
-                                        <td>{record.playerName}</td>
-                                        <td>{record.rakeAmount.toLocaleString()}</td>
-                                        <td>{(record.commissionRate * 100).toFixed(1)}%</td>
-                                        <td className="commission">{record.amount.toLocaleString()}</td>
-                                        <td>{record.createdAt.toLocaleDateString()}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
-                </div>
-            )}
-
-            {/* Sub-Agents Tab */}
-            {activeTab === 'subagents' && (
-                <div className="agent-commission__subagents">
-                    {subAgents.length === 0 ? (
-                        <div className="empty-state">No sub-agents yet</div>
-                    ) : (
-                        <div className="subagent-grid">
-                            {subAgents.map((agent, idx) => (
-                                <div
-                                    key={agent.id}
-                                    className="subagent-card"
-                                    style={{
-                                        opacity: visibleCards[idx] ? 1 : 0,
-                                        transform: visibleCards[idx] ? 'translateY(0)' : 'translateY(8px)',
-                                        transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                                    }}
-                                >
-                                    <span className="avatar">{agent.avatarUrl}</span>
-                                    <div className="info">
-                                        <span className="name">{agent.username}</span>
-                                        <span className="stats">
-                                            {agent.totalPlayers} players • {(agent.commissionRate * 100).toFixed(0)}% rate
-                                        </span>
-                                    </div>
-                                    <span className="earnings">{agent.totalCommission.toLocaleString()}</span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            )}
+      <div className="agent-commission">
+        <div className="loading-state">
+          <div className="spinner" />
         </div>
+      </div>
     );
+  }
+
+  return (
+    <div className="agent-commission">
+      {/* Tabs */}
+      <div className="agent-commission__tabs">
+        <button
+          className={activeTab === 'summary' ? 'active' : ''}
+          onClick={() => setActiveTab('summary')}
+        >
+          Summary
+        </button>
+        <button
+          className={activeTab === 'records' ? 'active' : ''}
+          onClick={() => setActiveTab('records')}
+        >
+          Records
+        </button>
+        <button
+          className={activeTab === 'subagents' ? 'active' : ''}
+          onClick={() => setActiveTab('subagents')}
+        >
+          Sub-Agents
+        </button>
+      </div>
+
+      {/* Summary Tab */}
+      {activeTab === 'summary' && summary && (
+        <div className="agent-commission__summary">
+          {[
+            { className: 'total', label: 'Total Earned', value: summary.totalEarned },
+            { className: '', label: 'This Week', value: summary.thisWeek },
+            { className: '', label: 'This Month', value: summary.thisMonth },
+            { className: 'pending', label: 'Pending Payout', value: summary.pendingPayout },
+          ].map((card, idx) => (
+            <div
+              key={idx}
+              className={`summary-card ${card.className}`}
+              style={{
+                opacity: visibleCards[idx] ? 1 : 0,
+                transform: visibleCards[idx] ? 'translateY(0)' : 'translateY(8px)',
+                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+              }}
+            >
+              <span className="label">{card.label}</span>
+              <span className="value">{card.value.toLocaleString()}</span>
+              {card.className === 'pending' && summary.pendingPayout > 0 && (
+                <button className="payout-btn" onClick={requestPayout}>
+                  Request Payout
+                </button>
+              )}
+            </div>
+          ))}
+
+          {/* Commission Waterfall Visualization */}
+          {summary.totalEarned > 0 && (
+            <div
+              style={{
+                gridColumn: '1 / -1',
+                padding: '16px',
+                background: 'rgba(255,255,255,0.03)',
+                borderRadius: '12px',
+                border: '1px solid rgba(255,255,255,0.08)',
+              }}
+            >
+              <h4
+                style={{
+                  margin: '0 0 12px',
+                  fontSize: '0.8rem',
+                  color: 'rgba(255,255,255,0.6)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                Commission Flow
+              </h4>
+              {[
+                { label: 'Total Earned', value: summary.totalEarned, color: '#10b981', pct: 100 },
+                {
+                  label: 'This Month',
+                  value: summary.thisMonth,
+                  color: '#3b82f6',
+                  pct:
+                    summary.totalEarned > 0 ? (summary.thisMonth / summary.totalEarned) * 100 : 0,
+                },
+                {
+                  label: 'This Week',
+                  value: summary.thisWeek,
+                  color: '#8b5cf6',
+                  pct: summary.totalEarned > 0 ? (summary.thisWeek / summary.totalEarned) * 100 : 0,
+                },
+                {
+                  label: 'Pending',
+                  value: summary.pendingPayout,
+                  color: '#f59e0b',
+                  pct:
+                    summary.totalEarned > 0
+                      ? (summary.pendingPayout / summary.totalEarned) * 100
+                      : 0,
+                },
+              ].map((tier, i) => (
+                <div key={tier.label} style={{ marginBottom: i < 3 ? '8px' : 0 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      fontSize: '0.75rem',
+                      marginBottom: '4px',
+                    }}
+                  >
+                    <span style={{ color: 'rgba(255,255,255,0.5)' }}>{tier.label}</span>
+                    <span style={{ color: tier.color, fontWeight: 600 }}>
+                      {tier.value.toLocaleString()}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      height: '6px',
+                      background: 'rgba(255,255,255,0.05)',
+                      borderRadius: '3px',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: '100%',
+                        width: `${Math.max(tier.pct, 2)}%`,
+                        background: tier.color,
+                        borderRadius: '3px',
+                        transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+
+              {/* Month-over-month indicator */}
+              {summary.thisMonth > 0 && summary.thisWeek > 0 && (
+                <div
+                  style={{
+                    marginTop: '12px',
+                    padding: '8px 12px',
+                    background: 'rgba(255,255,255,0.03)',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    fontSize: '0.75rem',
+                  }}
+                >
+                  <span style={{ color: 'rgba(255,255,255,0.5)' }}>Weekly Avg</span>
+                  <span style={{ color: '#10b981', fontWeight: 600 }}>
+                    {(summary.thisMonth / 4).toLocaleString(undefined, {
+                      maximumFractionDigits: 0,
+                    })}{' '}
+                    / week
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Records Tab */}
+      {activeTab === 'records' && (
+        <div className="agent-commission__records">
+          {records.length === 0 ? (
+            <div className="empty-state">No commission records yet</div>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>Rake</th>
+                  <th>Rate</th>
+                  <th>Commission</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {records.map((record, idx) => (
+                  <tr
+                    key={record.id}
+                    style={{
+                      opacity: visibleRows[idx] ? 1 : 0,
+                      transform: visibleRows[idx] ? 'translateY(0)' : 'translateY(8px)',
+                      transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    }}
+                  >
+                    <td>{record.playerName}</td>
+                    <td>{record.rakeAmount.toLocaleString()}</td>
+                    <td>{(record.commissionRate * 100).toFixed(1)}%</td>
+                    <td className="commission">{record.amount.toLocaleString()}</td>
+                    <td>{record.createdAt.toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/* Sub-Agents Tab */}
+      {activeTab === 'subagents' && (
+        <div className="agent-commission__subagents">
+          {subAgents.length === 0 ? (
+            <div className="empty-state">No sub-agents yet</div>
+          ) : (
+            <div className="subagent-grid">
+              {subAgents.map((agent, idx) => (
+                <div
+                  key={agent.id}
+                  className="subagent-card"
+                  style={{
+                    opacity: visibleCards[idx] ? 1 : 0,
+                    transform: visibleCards[idx] ? 'translateY(0)' : 'translateY(8px)',
+                    transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                  }}
+                >
+                  <span className="avatar">{agent.avatarUrl}</span>
+                  <div className="info">
+                    <span className="name">{agent.username}</span>
+                    <span className="stats">
+                      {agent.totalPlayers} players • {(agent.commissionRate * 100).toFixed(0)}% rate
+                    </span>
+                  </div>
+                  <span className="earnings">{agent.totalCommission.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default AgentCommissionDashboard;

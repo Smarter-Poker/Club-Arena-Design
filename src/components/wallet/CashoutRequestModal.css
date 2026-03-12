@@ -313,3 +313,114 @@
   text-align: center;
   line-height: 1.5;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CASHOUT STEP TRACKER — 5-step lifecycle visual
+   ═══════════════════════════════════════════════════════════════════ */
+
+.cashout-step-tracker {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px 0;
+  margin: 8px 0;
+  position: relative;
+}
+
+.cashout-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+}
+
+.step-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.4);
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 2;
+}
+
+.step-dot.complete {
+  background: #00c853;
+  border-color: #00c853;
+  color: #fff;
+  box-shadow: 0 0 8px rgba(0, 200, 83, 0.3);
+}
+
+.step-dot.active {
+  background: rgba(255, 167, 38, 0.15);
+  border-color: #ffa726;
+  color: #ffa726;
+  animation: stepPulse 2s ease-in-out infinite;
+  box-shadow: 0 0 12px rgba(255, 167, 38, 0.25);
+}
+
+.step-dot.rejected {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+@keyframes stepPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(255, 167, 38, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 167, 38, 0.4);
+  }
+}
+
+.step-label {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.3);
+  margin-top: 6px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: 500;
+}
+
+.step-label.complete {
+  color: #00c853;
+}
+.step-label.active {
+  color: #ffa726;
+}
+
+.step-line {
+  position: absolute;
+  top: 12px;
+  left: calc(50% + 14px);
+  width: calc(100% - 28px);
+  height: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  z-index: 1;
+}
+
+.step-line.complete {
+  background: #00c853;
+}
+
+@media (max-width: 380px) {
+  .step-label {
+    font-size: 7px;
+  }
+  .step-dot {
+    width: 20px;
+    height: 20px;
+    font-size: 8px;
+  }
+}
