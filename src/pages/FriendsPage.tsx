@@ -536,9 +536,7 @@ function SwipeableFriendRow({ friend, visible, onMessage, onRemove, navigate }: 
         </div>
         <div className="friend-info">
           <span className="friend-name">{friend.username}</span>
-          {friend.current_table && (
-            <span className="friend-status"> Playing at {friend.current_table}</span>
-          )}
+          {friend.current_table && <span className="fr-at-table-badge">🎯 At Table</span>}
         </div>
       </div>
     </div>

@@ -13,70 +13,68 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undef
 
 // SECURITY: No hardcoded fallback credentials — env vars are required
 if (!supabaseUrl || !supabaseAnonKey) {
-    console.error(
-        '[Supabase] VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set in environment variables. ' +
-        'Check your .env file.'
-    );
+  console.error(
+    '[Supabase] VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set in environment variables. ' +
+      'Check your .env file.'
+  );
 }
 
 // Create the Supabase client with realtime enabled for live traffic
 // CRITICAL: storageKey MUST match Hub's 'smarter-poker-auth' for same-origin SSO
-export const supabase = createClient(
-    supabaseUrl || '',
-    supabaseAnonKey || '',
-    {
-        auth: {
-            autoRefreshToken: true,
-            persistSession: true,
-            detectSessionInUrl: true,
-            storageKey: 'smarter-poker-auth', // MUST match Hub for SSO
-            flowType: 'implicit', // Avoids PKCE lock contention
-            // CRITICAL: Bypass navigator.locks to prevent getSession() deadlock.
-            // The default lock implementation acquires an exclusive Web Lock that
-            // never releases if the initial getSession() network call is slow,
-            // causing every subsequent auth operation to deadlock permanently.
-            lock: async (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => fn(),
-        },
-        realtime: {
-            params: {
-                eventsPerSecond: 10,
-            },
-        },
-    }
-);
+export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    storageKey: 'smarter-poker-auth', // MUST match Hub for SSO
+    flowType: 'implicit', // Avoids PKCE lock contention
+    // CRITICAL: Bypass navigator.locks to prevent getSession() deadlock.
+    // The default lock implementation acquires an exclusive Web Lock that
+    // never releases if the initial getSession() network call is slow,
+    // causing every subsequent auth operation to deadlock permanently.
+    lock: async (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => fn(),
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+  },
+});
 
 // Filter options for realtime subscriptions
 interface SubscribeFilter {
-    column: string;
-    value: string;
+  column: string;
+  value: string;
 }
 
 // Subscribe to realtime changes on a database table
 export function subscribeToTable<T>(
-    tableName: string,
-    callback: (data: T) => void,
-    filter?: SubscribeFilter
+  tableName: string,
+  callback: (data: T) => void,
+  filter?: SubscribeFilter
 ): () => void {
-    const channelName = filter
-        ? `${tableName}:${filter.column}:${filter.value}`
-        : tableName;
+  const channelName = filter ? `${tableName}:${filter.column}:${filter.value}` : tableName;
 
-    const channel: RealtimeChannel = supabase
-        .channel(channelName)
-        .on('postgres_changes', {
-            event: '*',
-            schema: 'public',
-            table: tableName,
-            filter: filter ? `${filter.column}=eq.${filter.value}` : undefined
-        }, (payload) => {
-            callback(payload.new as T);
-        })
-        .subscribe();
+  const channel: RealtimeChannel = supabase
+    .channel(channelName)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: tableName,
+        filter: filter ? `${filter.column}=eq.${filter.value}` : undefined,
+      },
+      (payload) => {
+        callback(payload.new as T);
+      }
+    )
+    .subscribe();
 
-    // Return unsubscribe function
-    return () => {
-        supabase.removeChannel(channel);
-    };
+  // Return unsubscribe function
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -89,19 +87,47 @@ export function subscribeToTable<T>(
 /**
  * Broadcast hand state to all subscribers for a given table.
  * Called by HeadlessTableEngine on every hand event.
+ *
+ * CRITICAL: Supabase Realtime requires channels to be subscribed (joined)
+ * before .send() can deliver messages. We maintain a cache of subscribed
+ * channels to avoid re-subscribing on every broadcast call.
  */
-export function broadcastHandState(
-    tableId: string,
-    handState: Record<string, unknown>
-): void {
-    const channelName = `hand-state:${tableId}`;
-    const channel = supabase.channel(channelName);
-    channel.send({
-        type: 'broadcast',
-        event: 'hand_state',
-        payload: handState,
-    }).catch((err: unknown) => {
-        console.warn(`[Broadcast] Failed to send hand state for ${tableId}:`, err);
+const broadcastChannels = new Map<string, ReturnType<typeof supabase.channel>>();
+
+export function broadcastHandState(tableId: string, handState: Record<string, unknown>): void {
+  const channelName = `hand-state:${tableId}`;
+
+  // Reuse existing subscribed channel if available
+  let channel = broadcastChannels.get(channelName);
+  if (!channel) {
+    channel = supabase.channel(channelName);
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        // Channel is now ready — send any pending state
+        channel!
+          .send({
+            type: 'broadcast',
+            event: 'hand_state',
+            payload: handState,
+          })
+          .catch((err: unknown) => {
+            console.warn(`[Broadcast] Failed to send hand state for ${tableId}:`, err);
+          });
+      }
+    });
+    broadcastChannels.set(channelName, channel);
+    return; // First call subscribes; the callback above will send once joined
+  }
+
+  // Channel already subscribed — send immediately
+  channel
+    .send({
+      type: 'broadcast',
+      event: 'hand_state',
+      payload: handState,
+    })
+    .catch((err: unknown) => {
+      console.warn(`[Broadcast] Failed to send hand state for ${tableId}:`, err);
     });
 }
 
@@ -110,21 +136,21 @@ export function broadcastHandState(
  * Returns an unsubscribe function.
  */
 export function subscribeToHandState(
-    tableId: string,
-    callback: (handState: Record<string, unknown>) => void
+  tableId: string,
+  callback: (handState: Record<string, unknown>) => void
 ): () => void {
-    const channelName = `hand-state:${tableId}`;
-    const channel = supabase
-        .channel(channelName)
-        .on('broadcast', { event: 'hand_state' }, (payload) => {
-            callback(payload.payload as Record<string, unknown>);
-        })
-        .subscribe();
+  const channelName = `hand-state:${tableId}`;
+  const channel = supabase
+    .channel(channelName)
+    .on('broadcast', { event: 'hand_state' }, (payload) => {
+      callback(payload.payload as Record<string, unknown>);
+    })
+    .subscribe();
 
-    return () => {
-        channel.unsubscribe().catch(() => {});
-        supabase.removeChannel(channel);
-    };
+  return () => {
+    channel.unsubscribe().catch(() => {});
+    supabase.removeChannel(channel);
+  };
 }
 
 // Export type-safe database interface
@@ -137,35 +163,33 @@ export type SupabaseClient = typeof supabase;
 // it automatically shares the 'smarter-poker-auth' localStorage key with the Hub.
 // No postMessage or iframe handshake needed - just use the same storageKey above.
 if (typeof window !== 'undefined') {
+  // ══════════════════════════════════════════════════════════════════════════
+  // SESSION MIGRATION — Move sessions from old default key to shared key
+  // ══════════════════════════════════════════════════════════════════════════
+  // Users who logged in before the SSO update may have their session stored
+  // under the default Supabase key. This migrates them to the shared key.
+  const OLD_DEFAULT_KEY = 'sb-kuklfnapbkmacvwxktbh-auth-token';
+  const NEW_SHARED_KEY = 'smarter-poker-auth';
+  const MIGRATION_FLAG = 'smarter_poker_auth_migration';
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // SESSION MIGRATION — Move sessions from old default key to shared key
-    // ══════════════════════════════════════════════════════════════════════════
-    // Users who logged in before the SSO update may have their session stored
-    // under the default Supabase key. This migrates them to the shared key.
-    const OLD_DEFAULT_KEY = 'sb-kuklfnapbkmacvwxktbh-auth-token';
-    const NEW_SHARED_KEY = 'smarter-poker-auth';
-    const MIGRATION_FLAG = 'smarter_poker_auth_migration';
+  try {
+    const hasMigrated = localStorage.getItem(MIGRATION_FLAG);
+    const hasNewSession = localStorage.getItem(NEW_SHARED_KEY);
+    const hasOldSession = localStorage.getItem(OLD_DEFAULT_KEY);
 
-    try {
-        const hasMigrated = localStorage.getItem(MIGRATION_FLAG);
-        const hasNewSession = localStorage.getItem(NEW_SHARED_KEY);
-        const hasOldSession = localStorage.getItem(OLD_DEFAULT_KEY);
-
-        if (!hasMigrated && !hasNewSession && hasOldSession) {
-            localStorage.setItem(NEW_SHARED_KEY, hasOldSession);
-            localStorage.setItem(MIGRATION_FLAG, new Date().toISOString());
-            // Reload to pick up the migrated session
-            window.location.reload();
-        } else if (!hasMigrated) {
-            // Mark as checked even if no migration needed
-            localStorage.setItem(MIGRATION_FLAG, new Date().toISOString());
-        }
-    } catch (e) {
-        console.error('[SSO] Migration error:', e);
+    if (!hasMigrated && !hasNewSession && hasOldSession) {
+      localStorage.setItem(NEW_SHARED_KEY, hasOldSession);
+      localStorage.setItem(MIGRATION_FLAG, new Date().toISOString());
+      // Reload to pick up the migrated session
+      window.location.reload();
+    } else if (!hasMigrated) {
+      // Mark as checked even if no migration needed
+      localStorage.setItem(MIGRATION_FLAG, new Date().toISOString());
     }
+  } catch (e) {
+    console.error('[SSO] Migration error:', e);
+  }
 
-    // Session status logged by AntiGravityBoot — no duplicate getSession() here
-    // (duplicate calls cause navigator.locks deadlock)
+  // Session status logged by AntiGravityBoot — no duplicate getSession() here
+  // (duplicate calls cause navigator.locks deadlock)
 }
-

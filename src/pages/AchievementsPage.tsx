@@ -557,14 +557,22 @@ export default function AchievementsPage() {
           filteredAchievements.map((achievement, index) => (
             <div
               key={achievement.id}
+              className={`achievement-card ${achievement.unlocked ? 'unlocked' : 'locked'} ${achievement.rarity ? `rarity-${achievement.rarity}` : ''}`}
               onClick={() => setSelectedAchievement(achievement)}
               style={{
                 opacity: visibleBadges.has(index) ? 1 : 0,
                 transform: visibleBadges.has(index) ? 'scale(1)' : 'scale(0.85)',
                 transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                 cursor: 'pointer',
+                position: 'relative',
               }}
             >
+              {/* NEW badge for recently unlocked (last 24h) */}
+              {achievement.unlocked &&
+                achievement.unlockedAt &&
+                Date.now() - new Date(achievement.unlockedAt).getTime() < 86400000 && (
+                  <span className="ach-new-badge">NEW</span>
+                )}
               <AchievementBadge
                 icon={achievement.icon}
                 name={achievement.name}

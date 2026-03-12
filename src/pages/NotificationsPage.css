@@ -90,15 +90,18 @@
 }
 
 .time-group-header {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  color: #6a7a8a;
-  letter-spacing: 0.5px;
+  color: #00d4ff;
+  letter-spacing: 1px;
   margin: 0 0 0.5rem 0.5rem;
+  padding: 6px 12px;
   font-weight: 700;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-left: 3px solid rgba(0, 212, 255, 0.4);
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.2);
 }
 
 /* Swipe Container */
@@ -509,20 +512,4 @@
   font-size: 0.6rem;
   font-weight: 700;
   padding: 0 4px;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════════
-   ENHANCED TIME GROUP HEADERS (Initiative 12)
-   ═══════════════════════════════════════════════════════════════════════════════ */
-
-.time-group-header {
-  padding: 6px 12px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #00d4ff;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  border-left: 3px solid rgba(0, 212, 255, 0.4);
-  margin-top: 0.5rem;
-  text-shadow: 0 0 8px rgba(0, 212, 255, 0.2);
 }

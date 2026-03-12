@@ -4,7 +4,7 @@
  * WITH REAL-TIME UPDATES
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './LobbyPage.module.css';
 import TableCard from '../components/lobby/TableCard';
@@ -16,6 +16,9 @@ import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import type { PokerTable } from '../types/database.types';
+import DailyLoginReward from '../components/gamification/DailyLoginReward';
+import LuckyDrawWheel, { DEFAULT_SEGMENTS } from '../components/gamification/LuckyDrawWheel';
+import { bonusService } from '../services/BonusService';
 
 type GameFilter = 'all' | 'nlh' | 'plo' | 'ofc' | 'tournaments' | 'favorites';
 
@@ -29,6 +32,15 @@ export default function LobbyPage() {
   const [loading, setLoading] = useState(true);
   const [onlinePlayers, setOnlinePlayers] = useState(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Gamification overlays
+  const [showDailyReward, setShowDailyReward] = useState(false);
+  const [dailyRewardData, setDailyRewardData] = useState<{
+    amount: number;
+    rewardType: 'diamonds' | 'chips';
+    streakDay: number;
+  } | null>(null);
+  const [showLuckyWheel, setShowLuckyWheel] = useState(false);
 
   // Favorite Tables (stored in localStorage)
   const [favorites, setFavorites] = useState<Set<string>>(() => {
@@ -386,6 +398,31 @@ export default function LobbyPage() {
           </div>
         )}
       </section>
+
+      {/* Gamification Overlays */}
+      {showDailyReward && dailyRewardData && (
+        <DailyLoginReward
+          amount={dailyRewardData.amount}
+          rewardType={dailyRewardData.rewardType}
+          streakDay={dailyRewardData.streakDay}
+          onClaim={() => {
+            if (user?.id) bonusService.claimDailyBonus(user.id).catch(() => {});
+          }}
+          onClose={() => setShowDailyReward(false)}
+        />
+      )}
+
+      {showLuckyWheel && (
+        <LuckyDrawWheel
+          onSpin={async () => {
+            // Random segment selection from defaults — server integration future-ready
+            const segments = DEFAULT_SEGMENTS;
+            const randomIndex = Math.floor(Math.random() * segments.length);
+            return segments[randomIndex].id;
+          }}
+          onClose={() => setShowLuckyWheel(false)}
+        />
+      )}
     </div>
   );
 }

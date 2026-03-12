@@ -22,7 +22,7 @@ interface WheelSegment {
 }
 
 interface LuckyDrawWheelProps {
-  segments: WheelSegment[];
+  segments?: WheelSegment[];
   /** Called when user spins — should return the winning segment ID */
   onSpin: () => Promise<string>;
   onClose: () => void;
@@ -198,4 +198,5 @@ export default function LuckyDrawWheel({
   );
 }
 
+export { DEFAULT_SEGMENTS };
 export type { WheelSegment };
