@@ -3790,6 +3790,7 @@ export default function TablePage({
         messages={chatMessages}
         onSendMessage={handleSendChatMessage}
         myPlayerId={userId}
+        tableId={tableId}
         isCollapsed={isChatCollapsed}
         onToggleCollapse={() => setIsChatCollapsed(!isChatCollapsed)}
         placeholder="Say something..."

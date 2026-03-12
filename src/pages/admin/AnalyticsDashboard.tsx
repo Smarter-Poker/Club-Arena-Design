@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
+import { useToast } from '../../components/common/Toast';
 import './AnalyticsDashboard.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -90,6 +91,7 @@ export default function AnalyticsDashboard() {
   const [timeRange, setTimeRange] = useState<TimeRange>('all'); // Enhancement #1
   const [isLoading, setIsLoading] = useState(true); // Enhancement #7
   const mountedRef = useRef(true);
+  const toast = useToast();
 
   // Cleanup on unmount
   useEffect(() => {
@@ -253,13 +255,24 @@ export default function AnalyticsDashboard() {
     const unsubHand = masterBus.subscribe('HAND_COMPLETED', debouncedRefresh);
     const unsubSettlement = masterBus.subscribe('SETTLEMENT_COMPLETED', refreshAll);
     const unsubVip = masterBus.subscribe('MILESTONE_UNLOCKED', refreshAll);
+
+    // Admin listeners
+    const unsubCrash = masterBus.subscribe('COMPONENT_CRASH', (eventData: any) => {
+      if (eventData && eventData.componentName) {
+        toast.error(`Crash: ${eventData.componentName}`);
+      }
+    });
+    const unsubStats = masterBus.subscribe('SESSION_STATS_UPDATE', debouncedRefresh);
+
     return () => {
       unsubHand();
       unsubSettlement();
       unsubVip();
+      unsubCrash();
+      unsubStats();
       if (debounceTimer) clearTimeout(debounceTimer);
     };
-  }, [refreshAll]);
+  }, [refreshAll, toast]);
 
   // ── Enhancement #5: CSV Export ─────────────────────────────────────────
 

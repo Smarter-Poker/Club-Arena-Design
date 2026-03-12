@@ -37,15 +37,16 @@ This skill covers **everything that happens at the poker table** — the live ga
 
 ### Sensory Layer
 
-| Service              | Path                                      | Purpose                                   |
-| :------------------- | :---------------------------------------- | :---------------------------------------- |
-| `SoundService.ts`    | `src/services/SoundService.ts`            | 14 procedural sounds via Web Audio API    |
-| `PremiumSFX.ts`      | `src/services/PremiumSFX.ts`              | Premium sound effects layer               |
-| `ChipAnimation.tsx`  | `src/components/table/ChipAnimation.tsx`  | Bezier-curve chip flights                 |
-| `ConfettiCanvas.tsx` | `src/components/table/ConfettiCanvas.tsx` | Winner celebration canvas                 |
-| `ParticleSystem.tsx` | `src/components/table/ParticleSystem.tsx` | Gold sparks, chip burst, confetti modes   |
-| `ScreenShake.ts`     | `src/utils/ScreenShake.ts`                | Screen shake utility (light/medium/heavy) |
-| `ThrowAnimation.tsx` | `src/components/table/ThrowAnimation.tsx` | Object throwables                         |
+| Service               | Path                                      | Purpose                                   |
+| :-------------------- | :---------------------------------------- | :---------------------------------------- |
+| `SoundService.ts`     | `src/services/SoundService.ts`            | 14 procedural sounds via Web Audio API    |
+| `PremiumSFX.ts`       | `src/services/PremiumSFX.ts`              | Premium sound effects layer               |
+| `ChipAnimation.tsx`   | `src/components/table/ChipAnimation.tsx`  | Bezier-curve chip flights                 |
+| `ConfettiCanvas.tsx`  | `src/components/table/ConfettiCanvas.tsx` | Winner celebration canvas                 |
+| `ParticleSystem.tsx`  | `src/components/table/ParticleSystem.tsx` | Gold sparks, chip burst, confetti modes   |
+| `SoundPackService.ts` | `src/services/SoundPackService.ts`        | Themed sound volumes (casino/minimal/etc) |
+| `ScreenShake.ts`      | `src/utils/ScreenShake.ts`                | Screen shake utility (light/medium/heavy) |
+| `ThrowAnimation.tsx`  | `src/components/table/ThrowAnimation.tsx` | Object throwables                         |
 
 ### Multiplayer & Sync
 
@@ -98,14 +99,14 @@ ActionPanel, SitOutModal, WaitListModal, TimeBank, CashierModal, BuyInModal, Str
 - [x] Chip drop animation — already existed (`chip-drop` keyframes)
 - [x] Bonus: Fixed ShareHand.tsx board preview Unicode → CardImage
 
-### 🔲 Phase 3: Sensory & Immersion
+### ✅ Phase 3: Sensory & Immersion — COMPLETE
 
-- [ ] All-in drama mode (darken UI, spotlight, slow reveal)
-- [ ] Sound pack selection (casino/minimal/tournament/silent)
-- [ ] Table felt fabric texture upgrade
-- [ ] Rail leather stitching texture
-- [ ] Center table watermark (club logo)
-- [ ] Theme-configurable felt color
+- [x] All-in drama mode — tension glow border, dimmed UI, super spotlight, 0.9s slow dealing
+- [x] Sound pack selection — `SoundPackService.ts` (casino/minimal/tournament/silent)
+- [x] Table felt fabric texture — SVG weave data URI
+- [x] Rail leather stitching — inner dashed ring
+- [x] Center watermark — 'S' logo at 1.8% opacity
+- [x] Theme-configurable felt color — 6 themes via `data-felt-theme` CSS variable
 
 ### 🔲 Phase 4: New Game Modes
 

@@ -116,6 +116,8 @@ export type BusEventType =
   // Table chat events
   | 'TABLE_CHAT_MESSAGE'
   | 'TABLE_REACTION'
+  // Diagnostics
+  | 'COMPONENT_CRASH'
   // Gamification events
   | 'MILESTONE_UNLOCKED'
   // Tournament timer & rebuy events
