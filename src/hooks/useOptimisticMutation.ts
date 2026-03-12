@@ -58,12 +58,15 @@ export function useOptimisticMutation<TInput, TResult = unknown>(
   const optionsRef = useRef(options);
   optionsRef.current = options;
 
+  // Use ref for throttle check — avoids stale closure under rapid calls
+  const pendingCountRef = useRef(0);
+
   const mutate = useCallback(async (input: TInput) => {
     const opts = optionsRef.current;
     const maxConcurrent = opts.maxConcurrent ?? 1;
 
-    // Throttle concurrent mutations
-    if (pendingCount >= maxConcurrent) {
+    // Throttle concurrent mutations (ref is always current, no stale closure)
+    if (pendingCountRef.current >= maxConcurrent) {
       console.warn('[OptimisticMutation] Max concurrent mutations reached, dropping');
       return;
     }
@@ -75,6 +78,7 @@ export function useOptimisticMutation<TInput, TResult = unknown>(
       console.error('[OptimisticMutation] onOptimistic threw:', err);
     }
 
+    pendingCountRef.current++;
     setPendingCount((c) => c + 1);
     setError(null);
 
@@ -95,9 +99,10 @@ export function useOptimisticMutation<TInput, TResult = unknown>(
       setError(error);
       opts.onError?.(error, input);
     } finally {
+      pendingCountRef.current = Math.max(0, pendingCountRef.current - 1);
       setPendingCount((c) => Math.max(0, c - 1));
     }
-  }, [pendingCount]);
+  }, []);
 
   return {
     mutate,

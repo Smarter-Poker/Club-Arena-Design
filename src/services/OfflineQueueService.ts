@@ -35,6 +35,7 @@ const MAX_QUEUE_SIZE = 50;
 
 export const OfflineQueueService = {
   db: null as IDBDatabase | null,
+  _onlineHandler: null as (() => void) | null,
 
   /**
    * Initialize IndexedDB and set up online listener
@@ -46,12 +47,32 @@ export const OfflineQueueService = {
       console.warn('[OfflineQueue] IndexedDB not available:', err);
     }
 
+    // Remove previous listener if re-initializing (prevent stacking)
+    if (this._onlineHandler && typeof window !== 'undefined') {
+      window.removeEventListener('online', this._onlineHandler);
+    }
+
     // Auto-replay when coming back online
     if (typeof window !== 'undefined') {
-      window.addEventListener('online', () => {
+      this._onlineHandler = () => {
         console.log('[OfflineQueue] Back online — replaying queue');
         this.replayQueue();
-      });
+      };
+      window.addEventListener('online', this._onlineHandler);
+    }
+  },
+
+  /**
+   * Dispose — close DB and remove listeners
+   */
+  dispose(): void {
+    if (this._onlineHandler && typeof window !== 'undefined') {
+      window.removeEventListener('online', this._onlineHandler);
+      this._onlineHandler = null;
+    }
+    if (this.db) {
+      this.db.close();
+      this.db = null;
     }
   },
 
