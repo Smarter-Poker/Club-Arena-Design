@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { haptic } from '../../services/HapticService';
 import './ThrowableReaction.css';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -98,6 +99,7 @@ export const ThrowablePicker: React.FC<ThrowablePickerProps> = ({
               key={emoji.id}
               className="throwable-item"
               onClick={() => {
+                haptic.heavy();
                 onSelect(emoji);
                 onClose();
               }}

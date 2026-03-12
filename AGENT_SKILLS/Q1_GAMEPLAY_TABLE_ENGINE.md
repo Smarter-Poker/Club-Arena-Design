@@ -138,6 +138,13 @@ ActionPanel, SitOutModal, WaitListModal, TimeBank, CashierModal, BuyInModal, Str
 - [x] Integrated AvatarGallery + CardBackSelector into SettingsPanel (new Customization section)
 - [x] Added `SETTINGS_CHANGED` listener in useTableSettings + `DIAMOND_SPENT` listener in MasterBus
 
+### ✅ Phase 8: Table Experience Enhancements — COMPLETE
+
+- [x] `QuickActionsBar.tsx` — 6-button glassmorphism pill bar (auto-rebuy, chat, hand-strength, stats, sound, settings)
+- [x] `SpectatorOverlay.tsx` — Viewer count badge (pulse animation), expandable viewer list, follow-player indicator
+- [x] `TableReactions.tsx` — 6 animated float-up emoji reactions (👏😂😱🔥💀🍀), 3s rate limit, room broadcast
+- [x] `useTableKeyboard.ts` — Keyboard shortcuts (F/C/R/A actions, 1-4 bet presets, M/H/S toggles, Escape close)
+
 ---
 
 ## Competitive Benchmarks

@@ -899,6 +899,60 @@ export default function ClubDetailPage() {
         />
       </nav>
 
+      {/* Smart Context Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          padding: '0.75rem 1rem',
+          margin: '0 0 0.5rem',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+        }}
+      >
+        <span style={{ fontSize: '1.1rem' }}>
+          {activeTab === 'overview'
+            ? '📊'
+            : activeTab === 'tables'
+              ? '🃏'
+              : activeTab === 'members'
+                ? '👥'
+                : activeTab === 'agents'
+                  ? '🛡️'
+                  : activeTab === 'operations'
+                    ? '⚙️'
+                    : '🔧'}
+        </span>
+        <div>
+          <span style={{ color: '#fff', fontSize: '0.85rem', fontWeight: 600, display: 'block' }}>
+            {activeTab === 'overview'
+              ? 'Club Overview'
+              : activeTab === 'tables'
+                ? 'Table Management'
+                : activeTab === 'members'
+                  ? 'Member Directory'
+                  : activeTab === 'agents'
+                    ? 'Agent Hierarchy'
+                    : activeTab === 'operations'
+                      ? 'Operations'
+                      : 'Club Settings'}
+          </span>
+          <span style={{ color: '#6a7a8a', fontSize: '0.7rem' }}>
+            {activeTab === 'overview'
+              ? 'Activity feed, stats & quick actions'
+              : activeTab === 'tables'
+                ? 'Create, configure & monitor tables'
+                : activeTab === 'members'
+                  ? 'View, manage & search members'
+                  : activeTab === 'agents'
+                    ? 'Agent tree, commissions & transfers'
+                    : activeTab === 'operations'
+                      ? 'Announcements, reports & audits'
+                      : 'Club configuration & danger zone'}
+          </span>
+        </div>
+      </div>
+
       {/* Tab Content — Swipeable */}
       <section className={styles.tabContent} {...swipeHandlers}>
         {/* Overview Tab */}

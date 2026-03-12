@@ -85,6 +85,7 @@ export default function MessageInput({
   const handleSend = () => {
     if ((!text.trim() && !attachmentPreview) || disabled) return;
 
+    haptic.medium();
     onSend(text.trim(), attachmentPreview || undefined);
     setText('');
     setAttachmentPreview(null);
