@@ -112,33 +112,36 @@ export function AgentCommissionDashboard() {
   useEffect(() => {
     if (activeTab === 'summary' && summary) {
       setVisibleCards([]);
-      [0, 1, 2, 3].forEach((i) => {
+      const timers = [0, 1, 2, 3].map((i) =>
         setTimeout(() => {
           setVisibleCards((prev) => [...prev, true]);
-        }, i * 60);
-      });
+        }, i * 60)
+      );
+      return () => timers.forEach((t) => clearTimeout(t));
     }
   }, [activeTab, summary]);
 
   useEffect(() => {
     if (activeTab === 'records' && records.length > 0) {
       setVisibleRows([]);
-      records.forEach((_, i) => {
+      const timers = records.map((_, i) =>
         setTimeout(() => {
           setVisibleRows((prev) => [...prev, true]);
-        }, i * 60);
-      });
+        }, i * 60)
+      );
+      return () => timers.forEach((t) => clearTimeout(t));
     }
   }, [activeTab, records]);
 
   useEffect(() => {
     if (activeTab === 'subagents' && subAgents.length > 0) {
       setVisibleCards([]);
-      subAgents.forEach((_, i) => {
+      const timers = subAgents.map((_, i) =>
         setTimeout(() => {
           setVisibleCards((prev) => [...prev, true]);
-        }, i * 60);
-      });
+        }, i * 60)
+      );
+      return () => timers.forEach((t) => clearTimeout(t));
     }
   }, [activeTab, subAgents]);
 
