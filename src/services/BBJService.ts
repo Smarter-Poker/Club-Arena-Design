@@ -305,14 +305,11 @@ export const BBJService = {
     const promoPortion = contribution - mainPortion - backupPortion; // remainder to ensure precision
 
     // Call RPC to atomically update pool and record contribution
-    // Using the existing add_bbj_contribution function signature with allocation portions
+    // add_bbj_contribution accepts 6 params only — it handles allocation internally
     const { data, error } = await supabase.rpc('add_bbj_contribution', {
       p_table_id: params.tableId,
       p_club_id: clubId,
       p_amount: contribution,
-      p_main_portion: mainPortion,
-      p_backup_portion: backupPortion,
-      p_promo_portion: promoPortion,
       p_big_blind: params.bigBlind,
       p_hand_number: params.handNumber || 0,
       p_stakes_tier: stakesTier,

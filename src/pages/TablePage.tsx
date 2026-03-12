@@ -1660,34 +1660,10 @@ export default function TablePage({
   }, []);
 
   // ── BUG-02 FIX: Action timer countdown ──────────────────────────────────
-  // Decrements every second when it's hero's turn and hand is in progress.
-  // Auto-folds when timer reaches 0 (prevents indefinite stall).
-  useEffect(() => {
-    const isHeroTurn =
-      tableState.isHandInProgress &&
-      tableState.currentPlayerSeat === tableState.heroSeat &&
-      tableState.heroSeat > 0;
-
-    if (!isHeroTurn) return;
-
-    const interval = setInterval(() => {
-      setActionTimeRemaining((prev) => {
-        if (prev <= 1) {
-          // Auto-fold on timeout
-          clearInterval(interval);
-          if (handControllerRef.current) {
-            handControllerRef.current.performAction(tableState.heroSeat, 'fold');
-          }
-          return 0;
-        }
-        // Play timer warning at ≤5 seconds
-        if (prev <= 6 && prev > 1) soundService.playTimerWarning();
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [tableState.isHandInProgress, tableState.currentPlayerSeat, tableState.heroSeat]);
+  // REMOVED: Duplicate timer lived here, conflicting with the timer at line ~3035.
+  // The authoritative auto-fold timer at ~3035 has sendAction() broadcast,
+  // error handling, and playFold() sound. This duplicate was causing
+  // performAction to fire TWICE and lacked the broadcast.
 
   // ═══════════════════════════════════════════════════════════════════════════
   // HORSE LOADING — Load seated horses from DB into React table state
@@ -1942,7 +1918,7 @@ export default function TablePage({
             handStartStacksRef.current = stacks;
           }
           // Play deal/chips sound
-          soundService.playChips();
+          if (soundService.isEnabled()) soundService.playChips();
           break;
 
         case 'CARDS_DEALT':
@@ -2446,8 +2422,11 @@ export default function TablePage({
 
             // ── Session Tracking: update refs for end-of-session summary ──
             handsPlayedRef.current += 1;
-            if (currentState.pot > biggestPotRef.current) {
-              biggestPotRef.current = currentState.pot;
+            // Use event.pot (authoritative HC value) — currentState.pot is already 0
+            // because WINNERS handler sets pot: 0 before HAND_COMPLETE fires
+            const handPotForSession = event.pot || 0;
+            if (handPotForSession > biggestPotRef.current) {
+              biggestPotRef.current = handPotForSession;
             }
             if (heroEndStack > peakStackRef.current) {
               peakStackRef.current = heroEndStack;
@@ -2512,7 +2491,7 @@ export default function TablePage({
             await handleHandComplete(
               handPersistenceService.getCurrentHandId() || crypto.randomUUID(),
               event.rake > 0 ? handPot : 0,
-              true,
+              event.rake > 0, // wentToFlop: if HC calculated rake, flop was seen
               rakePlayers
             );
           }

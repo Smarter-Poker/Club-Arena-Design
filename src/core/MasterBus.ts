@@ -75,7 +75,10 @@ export type BusEventType =
   | 'ANNOUNCEMENT_CHANGED'
   // Financial events
   | 'COMMISSION_PAID'
-  | 'SETTLEMENT_COMPLETED';
+  | 'SETTLEMENT_COMPLETED'
+  // Tournament lifecycle events
+  | 'PLAYER_ELIMINATED'
+  | 'TABLE_MERGED';
 
 // #13: Type-safe payload map — compile-time enforcement of correct payloads
 export interface BusPayloadMap {
@@ -123,6 +126,20 @@ export interface BusPayloadMap {
   // Financial events
   COMMISSION_PAID: { agentId: string; amount: number };
   SETTLEMENT_COMPLETED: { clubId: string; periodId: string };
+  // Tournament lifecycle events
+  PLAYER_ELIMINATED: {
+    tournamentId: string;
+    userId: string;
+    position: number;
+    prize: number;
+    username: string;
+  };
+  TABLE_MERGED: {
+    tournamentId: string;
+    sourceTableId: string;
+    targetTableId: string;
+    playersMoved: number;
+  };
 }
 
 export interface BusEvent<T = unknown> {
@@ -438,7 +455,9 @@ class MasterBusCore {
             status: 'online',
           },
           {
-            onEvent: (clubEvent) => {},
+            onEvent: () => {
+              /* reserved for future club channel events */
+            },
           }
         );
       }
