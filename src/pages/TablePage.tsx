@@ -110,6 +110,7 @@ import SessionTimer from '../components/table/SessionTimer';
 import { horseBugReporter } from '../services/HorseBugReporter';
 import { submitAction } from '../services/GameServerAPI';
 import { retryAsync } from '../utils/retryAsync';
+import { monteCarloEquity } from '../engine/MonteCarloEquity';
 import './TablePage.css';
 import SessionSummary from '../components/table/SessionSummary';
 
@@ -586,6 +587,23 @@ export default function TablePage({
     }
   };
 
+  // Insurance auto-decline timeout — prevents hand from stalling if player AFK
+  const insuranceTimeoutRef = useRef<ReturnType<typeof workerTimeout> | null>(null);
+  useEffect(() => {
+    if (showInsurance) {
+      // Auto-decline after 15 seconds
+      insuranceTimeoutRef.current = workerTimeout(() => {
+        console.log('[Insurance] Auto-declined after 15s timeout');
+        handleInsuranceDecline();
+      }, 15000);
+    } else {
+      // Clear timeout when insurance is dismissed
+      if (insuranceTimeoutRef.current) {
+        insuranceTimeoutRef.current = null;
+      }
+    }
+  }, [showInsurance]);
+
   // Run It Twice handlers
   const handleRITAccept = () => {
     setShowRIT(false);
@@ -713,19 +731,23 @@ export default function TablePage({
         }
         return { ...prev, players: updatedPlayers };
       });
-      // Sync stack to Supabase table_seats (fire-and-forget)
+      // Sync stack to Supabase table_seats (with retry for resilience)
       // Compute the NEW stack directly — tableState hasn't updated yet (setState is async)
       const currentStack = tableState.players[tableState.heroSeat - 1]?.stack || 0;
       const newStack = currentStack + amount;
-      supabase
-        .from('table_seats')
-        .update({ stack: newStack })
-        .eq('table_id', tableId)
-        .eq('seat_number', tableState.heroSeat)
-        .is('left_at', null)
-        .then(({ error: syncErr }) => {
-          if (syncErr) console.warn('[Cashier] Add chips stack sync failed:', syncErr.message);
-        });
+      retryAsync(
+        async () => await supabase
+          .from('table_seats')
+          .update({ stack: newStack })
+          .eq('table_id', tableId)
+          .eq('seat_number', tableState.heroSeat)
+          .is('left_at', null),
+        2, 500
+      ).then((result: any) => {
+        if (result?.error) console.warn('[Cashier] Add chips stack sync failed:', result.error.message);
+      }).catch((err: unknown) => {
+        console.warn('[Cashier] Add chips sync exhausted all retries:', err);
+      });
       // Emit bus event so other pages (Dashboard, Profile) know about the chip change
       masterBus.emit('CHIPS_ADDED', { tableId, userId, amount, newStack: newStack });
     } catch (error) {
@@ -757,19 +779,23 @@ export default function TablePage({
         }
         return { ...prev, players: updatedPlayers };
       });
-      // Sync stack to Supabase table_seats (fire-and-forget)
+      // Sync stack to Supabase table_seats (with retry for resilience)
       // Compute the NEW stack directly — tableState hasn't updated yet (setState is async)
       const currentStack = tableState.players[tableState.heroSeat - 1]?.stack || 0;
       const newStack = Math.max(0, currentStack - amount);
-      supabase
-        .from('table_seats')
-        .update({ stack: newStack })
-        .eq('table_id', tableId)
-        .eq('seat_number', tableState.heroSeat)
-        .is('left_at', null)
-        .then(({ error: syncErr }) => {
-          if (syncErr) console.warn('[Cashier] Withdraw chips stack sync failed:', syncErr.message);
-        });
+      retryAsync(
+        async () => await supabase
+          .from('table_seats')
+          .update({ stack: newStack })
+          .eq('table_id', tableId)
+          .eq('seat_number', tableState.heroSeat)
+          .is('left_at', null),
+        2, 500
+      ).then((result: any) => {
+        if (result?.error) console.warn('[Cashier] Withdraw chips stack sync failed:', result.error.message);
+      }).catch((err: unknown) => {
+        console.warn('[Cashier] Withdraw chips sync exhausted all retries:', err);
+      });
       // Emit bus event so other pages know about the chip change
       masterBus.emit('CHIPS_WITHDRAWN', { tableId, userId, amount, newStack: newStack });
     } catch (error) {
@@ -911,14 +937,39 @@ export default function TablePage({
   });
   const [showHandHistory, setShowHandHistory] = useState(false);
 
-  // Persist hand history to localStorage whenever it changes
+  // Persist hand history to localStorage (debounced to prevent rapid-fire writes)
+  const localStorageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (handHistory.length > 0 && tableId) {
-      try {
-        localStorage.setItem(`hand_history_${tableId}`, JSON.stringify(handHistory.slice(0, 50)));
-      } catch { /* localStorage full — ignore */ }
+      if (localStorageTimerRef.current) clearTimeout(localStorageTimerRef.current);
+      localStorageTimerRef.current = setTimeout(() => {
+        try {
+          localStorage.setItem(`hand_history_${tableId}`, JSON.stringify(handHistory.slice(0, 50)));
+        } catch { /* localStorage full — ignore */ }
+      }, 500);
     }
+    return () => { if (localStorageTimerRef.current) clearTimeout(localStorageTimerRef.current); };
   }, [handHistory, tableId]);
+
+  // Clean up stale hand history keys older than 7 days on mount
+  useEffect(() => {
+    try {
+      const now = Date.now();
+      const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key?.startsWith('hand_history_') && key !== `hand_history_${tableId}`) {
+          try {
+            const data = JSON.parse(localStorage.getItem(key) || '[]');
+            const lastTimestamp = data[0]?.timestamp || 0;
+            if (lastTimestamp && now - lastTimestamp > MAX_AGE_MS) {
+              localStorage.removeItem(key);
+            }
+          } catch { localStorage.removeItem(key!); } // Corrupt data — remove
+        }
+      }
+    } catch { /* localStorage not available */ }
+  }, [tableId]);
 
   // Hand history recording refs — accumulate actions during a hand
   const handActionsRef = useRef<
@@ -1933,6 +1984,7 @@ export default function TablePage({
           }
           // Reset hand history recording for this hand
           handActionsRef.current = [];
+          streetPotsRef.current = { preflop: 0, flop: 0, turn: 0, river: 0 };
           historyHandCountRef.current += 1;
           {
             const currentState = tableStateRef.current;
@@ -2011,6 +2063,10 @@ export default function TablePage({
           {
             const hcState = handControllerRef.current?.getState();
             const stagePot = hcState?.pot || tableStateRef.current.pot || 0;
+            // When flop is dealt, the pot IS the preflop total — capture it for preflop street
+            if (event.stage === 'flop' && !streetPotsRef.current['preflop']) {
+              streetPotsRef.current['preflop'] = stagePot;
+            }
             streetPotsRef.current[event.stage as string] = stagePot;
           }
           break;
@@ -2544,6 +2600,8 @@ export default function TablePage({
                   2, 500
                 ).then((result: any) => {
                   if (result?.error) console.warn('[Seats] Stack sync failed after retries:', result.error.message);
+                }).catch((err: unknown) => {
+                  console.warn('[Seats] Stack sync exhausted all retries:', err);
                 });
               }
             }
@@ -2905,19 +2963,18 @@ export default function TablePage({
             suit: c.suit as 'h' | 'd' | 'c' | 's',
           })) || [];
 
-        // Calculate real equity using PokerEngine hand evaluator
+        // Calculate real equity using Monte Carlo simulation (1000 iterations)
         let equityPercent = 65; // fallback
         try {
           if (heroCards.length >= 2 && boardCards.length >= 3) {
             // Cast cards to engine Card format (engine uses full suit names)
             const suitFullMap: Record<string, string> = { h: 'hearts', d: 'diamonds', c: 'clubs', s: 'spades' };
-            const heroEval = evaluateHand(
-              heroCards.map(c => ({ rank: c.rank, suit: suitFullMap[c.suit] || c.suit })) as any,
-              boardCards.map(c => ({ rank: c.rank, suit: suitFullMap[c.suit] || c.suit })) as any
-            );
-            // Simple equity estimate: stronger hand ≈ higher equity
-            // Ranking 1 = high card (weakest), 10 = royal flush (strongest)
-            equityPercent = Math.min(95, Math.max(20, (heroEval.ranking / 10) * 100));
+            const engineHero = heroCards.map(c => ({ rank: c.rank, suit: suitFullMap[c.suit] || c.suit })) as any;
+            const engineBoard = boardCards.map(c => ({ rank: c.rank, suit: suitFullMap[c.suit] || c.suit })) as any;
+            const numOpponents = allInPlayers.length - 1;
+            equityPercent = monteCarloEquity(engineHero, engineBoard, numOpponents, 1000);
+            // Clamp to sensible range for insurance display
+            equityPercent = Math.min(95, Math.max(5, equityPercent));
           }
         } catch { /* fallback to 65% */ }
 
@@ -3904,9 +3961,8 @@ export default function TablePage({
                 console.log('[BuyIn] table_seats INSERT success, seat:', selectedSeat);
 
                 // Atomic current_players increment (prevents race with simultaneous buy-ins)
-                try {
-                  await supabase.rpc('increment_table_players', { p_table_id: tableId });
-                } catch {
+                const { error: rpcErr } = await supabase.rpc('increment_table_players', { p_table_id: tableId });
+                if (rpcErr) {
                   // Fallback: non-atomic increment if RPC doesn't exist
                   const { data: td } = await supabase
                     .from('tables')

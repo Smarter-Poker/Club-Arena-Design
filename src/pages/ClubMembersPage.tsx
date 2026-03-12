@@ -11,6 +11,7 @@ import { useToast } from '../components/common/Toast';
 import { useVirtualScroll } from '../hooks/useVirtualScroll';
 import PageSkeleton from '../components/common/PageSkeleton';
 import ClubBottomNav from '../components/club/ClubBottomNav';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import './ClubMembersPage.css';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -397,6 +398,7 @@ export default function ClubMembersPage() {
   const clubId = routeClubId || searchParams.get('club') || undefined;
   const { user } = useUserStore();
   const toast = useToast();
+  useVisibilityRefresh(() => loadMembers());
 
   const [members, setMembers] = useState<ClubMember[]>([]);
   const [loading, setLoading] = useState(true);

@@ -14,6 +14,8 @@ import PageSkeleton from '../components/common/PageSkeleton';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import AuditLog from '../components/admin/AuditLog';
 import { StatsExport } from '../components/admin/StatsExport';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import '../components/common/ButtonSpinner.css';
 import './ClubSettingsPage.css';
 
 interface ClubSettings {
@@ -431,7 +433,7 @@ export default function ClubSettingsPage() {
 
         {isOwner && (
           <button className="btn btn-primary save-btn" onClick={saveSettings} disabled={saving}>
-            {saving ? 'Saving...' : 'Save Changes'}
+            {saving ? <><span className="btn-spinner" /> Saving...</> : 'Save Changes'}
           </button>
         )}
       </div>

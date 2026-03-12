@@ -12,6 +12,7 @@ import { masterBus } from '../core/MasterBus';
 import { SettlementService } from '../services/SettlementService';
 import { exportToCSV } from '../lib/export';
 import styles from './SettlementPage.module.css';
+import '../components/common/ButtonSpinner.css';
 import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 
@@ -620,7 +621,7 @@ export default function SettlementPage() {
                   onClick={handleExecutePayouts}
                   disabled={isProcessing}
                 >
-                  {isProcessing ? ' Processing...' : ' Execute Settlement'}
+                  {isProcessing ? <><span className="btn-spinner" /> Processing...</> : '⚡ Execute Settlement'}
                 </button>
                 <p className={styles.actionNote}>
                   This will finalize all wires and process agent payouts

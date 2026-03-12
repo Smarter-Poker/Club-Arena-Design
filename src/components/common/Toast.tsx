@@ -73,7 +73,7 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
   }, [toast.duration, onRemove]);
 
   const icons: Record<ToastType, string> = {
-    success: '',
+    success: '✓',
     error: '✕',
     warning: '⚠',
     info: 'ℹ',

@@ -25,6 +25,8 @@ import ErrorBoundary from './components/common/ErrorBoundary';
 import RouteErrorBoundary from './components/common/RouteErrorBoundary';
 import { PageErrorBoundary } from './components/common/PageErrorBoundary';
 import OfflineQueueBadge from './components/common/OfflineQueueBadge';
+import NavigationProgress from './components/common/NavigationProgress';
+import ConnectionIndicator from './components/common/ConnectionIndicator';
 
 // Auth Guards
 import { AuthGuard, GuestGuard } from './components/auth/AuthGuard';
@@ -257,7 +259,8 @@ export default function App() {
             </div>
           )}
           <OfflineQueueBadge />
-          <Suspense fallback={<LoadingSpinner />}>
+          <ConnectionIndicator />
+          <Suspense fallback={<><NavigationProgress /><LoadingSpinner /></>}>
             <Routes>
               {/* ═══════════════════════════════════════════════════════════════
                         PUBLIC ROUTES (No Auth Required)

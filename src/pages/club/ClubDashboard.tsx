@@ -23,6 +23,7 @@ import LeaderboardCard from '../../components/leaderboard/LeaderboardCard';
 import ClubBottomNav from '../../components/club/ClubBottomNav';
 import PageSkeleton from '../../components/common/PageSkeleton';
 import { useToast } from '../../components/common/Toast';
+import { useVisibilityRefresh } from '../../hooks/useVisibilityRefresh';
 import styles from './ClubDashboard.module.css';
 
 interface ClubInfo {
@@ -49,6 +50,7 @@ export default function ClubDashboard() {
   const clubId = routeClubId || searchParams.get('club') || undefined;
   const { user } = useUserStore();
   const toast = useToast();
+  useVisibilityRefresh(() => loadDashboardData());
   const [club, setClub] = useState<ClubInfo | null>(null);
   const [topPlayers, setTopPlayers] = useState<TopPlayer[]>([]);
   const [loading, setLoading] = useState(true);

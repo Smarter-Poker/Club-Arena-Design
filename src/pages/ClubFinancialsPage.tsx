@@ -13,6 +13,7 @@ import { ClubFinancialDashboard } from '../components/dashboard/ClubFinancialDas
 import FinancialChart from '../components/charts/FinancialChart';
 import RakeReports from '../components/admin/RakeReports';
 import PageSkeleton from '../components/common/PageSkeleton';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import './ClubFinancialsPage.css';
 
 interface FinancialSummary {
@@ -48,6 +49,7 @@ export default function ClubFinancialsPage() {
   const [period, setPeriod] = useState<'week' | 'month' | 'all'>('week');
   const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
   const toast = useToast();
+  useVisibilityRefresh(() => loadFinancials());
   const [visibleTransactions, setVisibleTransactions] = useState<Set<string>>(new Set());
 
   useEffect(() => {

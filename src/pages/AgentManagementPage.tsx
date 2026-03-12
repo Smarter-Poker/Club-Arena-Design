@@ -30,6 +30,7 @@ import AgentCashoutPanel from '@/components/agent/AgentCashoutPanel';
 import ClubBottomNav from '@/components/club/ClubBottomNav';
 import { PlayerSearch } from '@/components/admin/PlayerSearch';
 import PageSkeleton from '../components/common/PageSkeleton';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPONENT
@@ -42,6 +43,11 @@ export default function AgentManagementPage() {
   const navigate = useNavigate();
   const { user } = useUserStore();
   const toast = useToast();
+  useVisibilityRefresh(async () => {
+    if (!clubId) return;
+    const data = await AgentService.getAgents(clubId);
+    setAgents(data);
+  });
   const [activeTab, setActiveTab] = useState<TabType>('agents');
   const [agents, setAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
