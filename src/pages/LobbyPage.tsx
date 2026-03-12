@@ -4,7 +4,7 @@
  * WITH REAL-TIME UPDATES
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './LobbyPage.module.css';
 import TableCard from '../components/lobby/TableCard';
@@ -62,13 +62,34 @@ export default function LobbyPage() {
     });
   };
 
-  // Mount ref
   const isMounted = useRef(true);
   useEffect(() => {
     return () => {
       isMounted.current = false;
     };
   }, []);
+
+  // ── Check daily bonus eligibility on mount ──
+  useEffect(() => {
+    if (!user?.id) return;
+    bonusService
+      .getBonusStatus(user.id)
+      .then((status) => {
+        if (!isMounted.current) return;
+        if (status.canClaimDaily) {
+          const dayReward = status.dailyBonuses[status.currentDay - 1];
+          setDailyRewardData({
+            amount: dayReward?.reward || 100,
+            rewardType: dayReward?.rewardType === 'vip_points' ? 'diamonds' : 'chips',
+            streakDay: status.currentDay,
+          });
+          setShowDailyReward(true);
+        }
+      })
+      .catch((err) => {
+        console.warn('[LobbyPage] Daily bonus check failed:', err);
+      });
+  }, [user?.id]);
 
   // UNION-FIRST: Check if user belongs to a union and redirect to union lobby
   useEffect(() => {
@@ -239,6 +260,58 @@ export default function LobbyPage() {
           </div>
         </div>
         <QuickActions />
+        {/* Gamification triggers */}
+        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          <button
+            onClick={() => {
+              if (!dailyRewardData && user?.id) {
+                bonusService
+                  .getBonusStatus(user.id)
+                  .then((status) => {
+                    if (!isMounted.current) return;
+                    const dayReward =
+                      status.dailyBonuses[(status.currentDay - 1) % status.dailyBonuses.length];
+                    setDailyRewardData({
+                      amount: dayReward?.reward || 100,
+                      rewardType: dayReward?.rewardType === 'vip_points' ? 'diamonds' : 'chips',
+                      streakDay: status.currentDay,
+                    });
+                    setShowDailyReward(true);
+                  })
+                  .catch(() => {});
+              } else {
+                setShowDailyReward(true);
+              }
+            }}
+            style={{
+              padding: '6px 14px',
+              borderRadius: 8,
+              background: 'linear-gradient(135deg, #ff6d00, #ffa726)',
+              border: 'none',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: '0.75rem',
+              cursor: 'pointer',
+            }}
+          >
+            🎁 Daily Bonus
+          </button>
+          <button
+            onClick={() => setShowLuckyWheel(true)}
+            style={{
+              padding: '6px 14px',
+              borderRadius: 8,
+              background: 'linear-gradient(135deg, #7c3aed, #a855f7)',
+              border: 'none',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: '0.75rem',
+              cursor: 'pointer',
+            }}
+          >
+            🍀 Lucky Draw
+          </button>
+        </div>
       </section>
 
       {/* Session Performance Widget (Initiative 14) */}

@@ -806,6 +806,14 @@ export class TournamentEngine {
       }
     }
 
+    // Update tables.current_players in DB so checkTableMerge/balancing reads correct counts
+    for (const table of this.tables) {
+      await this.supabase
+        .from('tables')
+        .update({ current_players: table.playerCount })
+        .eq('id', table.tableId);
+    }
+
     console.log(
       `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Seated ${activePlayers.length} players across ${this.tables.length} tables`
     );
