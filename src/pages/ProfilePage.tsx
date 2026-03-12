@@ -20,6 +20,7 @@ import { profileService } from '../services/ProfileService';
 import { bonusService } from '../services/BonusService';
 import { masterBus } from '../core/MasterBus';
 import { StreakFire } from '../components/gamification/StreakFire';
+import StreakMultiplier from '../components/gamification/StreakMultiplier';
 import CircularGauge from '../components/common/CircularGauge';
 import { useSwipeTabs } from '../hooks/useSwipeTabs';
 import styles from './ProfilePage.module.css';
@@ -194,7 +195,7 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<'stats' | 'achievements' | 'history' | 'social'>(
     'stats'
   );
-  
+
   const swipeHandlers = useSwipeTabs({
     tabs: ['stats', 'achievements', 'history', 'social'],
     activeTab,
@@ -224,7 +225,7 @@ export default function ProfilePage() {
         timers.push(setTimeout(() => setVisibleStats((prev) => new Set(prev).add(i)), i * 50));
       }
     }
-    return () => timers.forEach(t => clearTimeout(t));
+    return () => timers.forEach((t) => clearTimeout(t));
   }, [activeTab, isLoading, user]);
 
   // Load profile data from Supabase
@@ -412,10 +413,59 @@ export default function ProfilePage() {
       },
       500
     );
+    // Gamification bus listeners: refresh balance when rewards earned on other pages
+    const unsubDailyReward = masterBus.subscribe('DAILY_REWARD_CLAIMED', () => {
+      supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+        if (authUser) {
+          supabase
+            .from('profiles')
+            .select('diamonds, daily_streak')
+            .eq('id', authUser.id)
+            .maybeSingle()
+            .then(({ data }) => {
+              if (data) {
+                setDiamonds(data.diamonds || 0);
+                setDailyStreak(data.daily_streak || 0);
+              }
+            });
+        }
+      });
+    });
+    const unsubMissionClaim = masterBus.subscribe('MISSION_CLAIMED', () => {
+      supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+        if (authUser) {
+          supabase
+            .from('profiles')
+            .select('diamonds')
+            .eq('id', authUser.id)
+            .maybeSingle()
+            .then(({ data }) => {
+              if (data) setDiamonds(data.diamonds || 0);
+            });
+        }
+      });
+    });
+    const unsubWheelSpin = masterBus.subscribe('WHEEL_SPIN_RESULT', () => {
+      supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+        if (authUser) {
+          supabase
+            .from('profiles')
+            .select('diamonds')
+            .eq('id', authUser.id)
+            .maybeSingle()
+            .then(({ data }) => {
+              if (data) setDiamonds(data.diamonds || 0);
+            });
+        }
+      });
+    });
     return () => {
       unsubProfile();
       unsubHand();
       unsubBalance();
+      unsubDailyReward();
+      unsubMissionClaim();
+      unsubWheelSpin();
     };
   }, []);
 
@@ -566,6 +616,9 @@ export default function ProfilePage() {
           <h1 className={styles.displayName}>
             {user.displayName}
             {dailyStreak > 0 && <StreakFire streakCount={dailyStreak} size="sm" showLabel />}
+            {dailyStreak > 0 && (
+              <StreakMultiplier streak={dailyStreak} multiplier={1 + dailyStreak * 0.1} size="sm" />
+            )}
           </h1>
           <p className={styles.playerNumber}>Player #{user.playerNumber}</p>
           <div className={styles.statChipsContainer}>
@@ -588,7 +641,9 @@ export default function ProfilePage() {
             </div>
             <div className={styles.statChip}>
               <span className={styles.chipLabel}>ROI</span>
-              <span className={styles.chipValue}>{stats.roi > 0 ? `+${stats.roi}` : stats.roi}%</span>
+              <span className={styles.chipValue}>
+                {stats.roi > 0 ? `+${stats.roi}` : stats.roi}%
+              </span>
             </div>
           </div>
         </div>
@@ -768,14 +823,35 @@ export default function ProfilePage() {
             <div className={styles.statsGroup}>
               <h3>Core Stats</h3>
               <div className={styles.circularStatsGrid}>
-                <div className={`${styles.circularGaugeWrapper} ${visibleStats.has(0) ? styles.visible : styles.hidden}`}>
-                  <CircularGauge value={stats.vpip} label="VPIP" sublabel="Volun. Put In Pot" accent="#00d4ff" />
+                <div
+                  className={`${styles.circularGaugeWrapper} ${visibleStats.has(0) ? styles.visible : styles.hidden}`}
+                >
+                  <CircularGauge
+                    value={stats.vpip}
+                    label="VPIP"
+                    sublabel="Volun. Put In Pot"
+                    accent="#00d4ff"
+                  />
                 </div>
-                <div className={`${styles.circularGaugeWrapper} ${visibleStats.has(1) ? styles.visible : styles.hidden}`}>
-                  <CircularGauge value={stats.pfr} label="PFR" sublabel="Pre-Flop Raise" accent="#fbbf24" />
+                <div
+                  className={`${styles.circularGaugeWrapper} ${visibleStats.has(1) ? styles.visible : styles.hidden}`}
+                >
+                  <CircularGauge
+                    value={stats.pfr}
+                    label="PFR"
+                    sublabel="Pre-Flop Raise"
+                    accent="#fbbf24"
+                  />
                 </div>
-                <div className={`${styles.circularGaugeWrapper} ${visibleStats.has(2) ? styles.visible : styles.hidden}`}>
-                  <CircularGauge value={stats.winRate} label="Win Rate" sublabel="Hands Won" accent="#10b981" />
+                <div
+                  className={`${styles.circularGaugeWrapper} ${visibleStats.has(2) ? styles.visible : styles.hidden}`}
+                >
+                  <CircularGauge
+                    value={stats.winRate}
+                    label="Win Rate"
+                    sublabel="Hands Won"
+                    accent="#10b981"
+                  />
                 </div>
               </div>
               <div className={styles.statsGrid}>

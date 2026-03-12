@@ -17,6 +17,7 @@ import '../components/common/ButtonSpinner.css';
 import { useToast } from '../components/common/Toast';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import SecurityBadge from '../components/common/SecurityBadge';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MONDAY 4AM COUNTDOWN — Live payout timer widget
@@ -619,6 +620,7 @@ export default function SettlementPage() {
           {selectedPeriod.status === 'processing' && '🟡 Processing'}
           {selectedPeriod.status === 'settled' && ' Settled'}
         </div>
+        <SecurityBadge variant="secured" label="Bank-Grade" />
         <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
           <button
             onClick={handleExportSettlement}
