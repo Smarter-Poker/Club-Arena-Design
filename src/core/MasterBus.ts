@@ -302,6 +302,9 @@ class MasterBusCore {
   // #4: Channel health monitor interval
   private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
 
+  // Phase 7: Cross-Tab Broadcast Channel
+  private broadcastChannel: BroadcastChannel | null = null;
+
   // #9 Event log for DevTools dashboard (capped at 200)
   private eventLog: EventLogEntry[] = [];
   private onEventCallbacks: Set<OnEventCallback> = new Set();
@@ -394,6 +397,17 @@ class MasterBusCore {
     // Set up internal event handlers for cross-store sync
     this.setupInternalHandlers();
 
+    // Set up native broadcast channel for cross-tab synchronization
+    if (typeof window !== 'undefined' && window.BroadcastChannel) {
+      this.broadcastChannel = new BroadcastChannel('smarter-poker-master-bus');
+      this.broadcastChannel.onmessage = (event) => {
+        if (event.data && event.data.type && event.data.payload) {
+          // Re-emit local events received from other tabs, explicitly marking them as fromBroadcast
+          this.emit(event.data.type, event.data.payload, true);
+        }
+      };
+    }
+
     // #4: Start channel health monitoring (every 30s)
     this.startChannelHealthMonitor();
 
@@ -425,13 +439,23 @@ class MasterBusCore {
    */
   emit<K extends BusEventType>(
     type: K,
-    payload: K extends keyof BusPayloadMap ? BusPayloadMap[K] : unknown
+    payload: K extends keyof BusPayloadMap ? BusPayloadMap[K] : unknown,
+    fromBroadcast: boolean = false
   ): void {
     const event: BusEvent<typeof payload> = {
       type,
       payload,
       timestamp: new Date().toISOString(),
     };
+
+    // Phase 7: Cross-tab synchronization
+    if (!fromBroadcast && this.broadcastChannel) {
+      try {
+        this.broadcastChannel.postMessage({ type, payload });
+      } catch (e) {
+        console.warn('[MasterBus] Failed to broadcast event cross-tab:', e);
+      }
+    }
 
     // #9: Log to event log for DevTools dashboard
     const logEntry: EventLogEntry = { ...(event as BusEvent), id: ++_eventLogIdCounter };
@@ -596,8 +620,52 @@ class MasterBusCore {
       clearInterval(this.healthCheckInterval);
       this.healthCheckInterval = null;
     }
+
+    // Close cross-tab channel
+    if (this.broadcastChannel) {
+      this.broadcastChannel.close();
+      this.broadcastChannel = null;
+    }
+
     this.status = null;
     this.initialized = false;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // OPTIMISTIC MIDDLEWARE (Phase 7)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Optimistic Execution Middleware (Zero Latency UI)
+   * Instantly emits the optimistic payload to update the UI lag-free,
+   * awaits the database mutate, and gracefully rolls back the cache upon failure.
+   */
+  async executeOptimistic<T, K extends BusEventType>(
+    eventType: K,
+    optimisticPayload: K extends keyof BusPayloadMap ? BusPayloadMap[K] : unknown,
+    asyncFn: () => Promise<T>,
+    rollbackPayload?: K extends keyof BusPayloadMap ? BusPayloadMap[K] : unknown
+  ): Promise<T> {
+    // 1. Instantly Mutate the Local World State (0ms Latency)
+    this.emit(eventType, optimisticPayload);
+
+    // 2. Await the Server-Side Source of Truth
+    try {
+      return await asyncFn();
+    } catch (err: any) {
+      // 3. Rollback the World State silently upon failure
+      if (rollbackPayload) {
+        this.emit(eventType, rollbackPayload);
+      }
+
+      // Dispatch globally for structured error alerts if not suppressed
+      this.emit('SYSTEM_ERROR', {
+        message: err.message || 'Optimistic execution failed and was rolled back.',
+        code: err.code || 'OPTIMISTIC_ROLLBACK',
+      });
+
+      throw err;
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

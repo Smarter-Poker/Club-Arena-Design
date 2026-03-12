@@ -17,6 +17,7 @@ import WaitlistBanner from './components/common/WaitlistBanner';
 
 // Intro Video for first-time load
 import IntroVideo from './components/IntroVideo';
+import { useSettingsStore } from './stores/useSettingsStore';
 
 // Layouts
 import AppLayout from './components/layouts/AppLayout';
@@ -169,6 +170,17 @@ export default function App() {
         // Send ACK immediately to halt World Hub retry loop.
         const parentOrigin = event.origin;
         window.parent.postMessage({ type: 'SMARTER_AUTH_ACK' }, parentOrigin);
+
+        // Bridge Global Settings from World Hub instantly
+        if (event.data.settings) {
+          const s = event.data.settings;
+          const store = useSettingsStore.getState();
+          if (typeof s.soundEnabled === 'boolean' && s.soundEnabled !== store.soundEnabled)
+            store.toggleSound();
+          if (typeof s.fourColorDeck === 'boolean' && s.fourColorDeck !== store.fourColorDeck)
+            store.toggleFourColorDeck();
+          if (s.theme && s.theme !== store.theme) store.setTheme(s.theme);
+        }
 
         // Improvement #4: Skip redundant setSession if token hasn't changed
         if (lastAuthTokenRef.current === event.data.token) return;

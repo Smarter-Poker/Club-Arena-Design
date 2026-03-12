@@ -1,0 +1,184 @@
+import { supabase } from '../lib/supabase';
+import { HeadlessTableEngine } from './HeadlessTableEngine';
+import { HydraService } from '../services/HydraService';
+
+/**
+ * CASH GAME ORCHESTRATOR
+ * Master service that watches for active cash tables, spins up headless engines,
+ * and manages the global horse fleet via HydraService.
+ * Designed to be run from an active Admin / Node context.
+ */
+export class CashGameOrchestrator {
+  private activeEngines: Map<string, HeadlessTableEngine> = new Map();
+  private isRunning: boolean = false;
+  private pollInterval: any = null;
+  private hydraInterval: any = null;
+
+  // Singleton instance
+  private static instance: CashGameOrchestrator;
+
+  private constructor() {}
+
+  static getInstance(): CashGameOrchestrator {
+    if (!CashGameOrchestrator.instance) {
+      CashGameOrchestrator.instance = new CashGameOrchestrator();
+    }
+    return CashGameOrchestrator.instance;
+  }
+
+  /**
+   * Start the global orchestrator
+   */
+  async start() {
+    if (this.isRunning) return;
+    this.isRunning = true;
+    console.log('[CashGameOrchestrator] Starting global cash game engine...');
+
+    // 1. Initial spin up of all existing active tables
+    await this.syncActiveTables();
+
+    // 2. Start polling for new tables every 30 seconds
+    this.pollInterval = setInterval(() => {
+      this.syncActiveTables();
+    }, 30_000);
+
+    // 3. Start Hydra Fleet management
+    // Hydra check happens less frequently to let organic recedes trigger
+    this.hydraInterval = setInterval(() => {
+      this.manageLiquidity();
+    }, 45_000);
+  }
+
+  /**
+   * Stop the orchestrator and all engines gracefully
+   */
+  async stop() {
+    this.isRunning = false;
+    if (this.pollInterval) clearInterval(this.pollInterval);
+    if (this.hydraInterval) clearInterval(this.hydraInterval);
+
+    console.log(
+      `[CashGameOrchestrator] Stopping ${this.activeEngines.size} active table engines...`
+    );
+
+    for (const [tableId, engine] of this.activeEngines.entries()) {
+      await engine.stop();
+      this.activeEngines.delete(tableId);
+    }
+  }
+
+  /**
+   * Check stats
+   */
+  getStats() {
+    return {
+      running: this.isRunning,
+      activeTables: this.activeEngines.size,
+      totalHandsDealt: Array.from(this.activeEngines.values()).reduce(
+        (acc, e) => acc + e.getHandCount(),
+        0
+      ),
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // PRIVATE METHODS
+  // ═══════════════════════════════════════════════════════════════════════════════
+
+  private async syncActiveTables() {
+    if (!this.isRunning) return;
+
+    try {
+      // Find all active cash tables
+      const { data, error } = await supabase
+        .from('tables')
+        .select('id, status')
+        .is('is_deleted', false)
+        .neq('status', 'closed')
+        .is('tournament_id', null);
+
+      if (error) throw error;
+
+      const currentTableIds = new Set((data || []).map((t) => t.id));
+
+      // 1. Start engines for new tables
+      for (const tableId of currentTableIds) {
+        if (!this.activeEngines.has(tableId)) {
+          console.log(
+            `[CashGameOrchestrator] Spinning up HeadlessTableEngine for table: ${tableId}`
+          );
+          const engine = new HeadlessTableEngine(tableId, supabase);
+          this.activeEngines.set(tableId, engine);
+
+          // Fire and forget start
+          engine.start().catch((err) => {
+            console.error(`[CashGameOrchestrator] Engine failed to start for ${tableId}:`, err);
+            this.activeEngines.delete(tableId);
+          });
+        }
+      }
+
+      // 2. Stop and remove engines for closed tables
+      for (const [tableId, engine] of Array.from(this.activeEngines.entries())) {
+        if (!currentTableIds.has(tableId)) {
+          console.log(
+            `[CashGameOrchestrator] Table ${tableId} is no longer active. Stopping engine...`
+          );
+          await engine.stop();
+          this.activeEngines.delete(tableId);
+        } else if (!engine.isRunning()) {
+          // Engine crashed or stopped internally, restart it
+          console.log(`[CashGameOrchestrator] Engine for ${tableId} died. Restarting...`);
+          engine.start().catch((err) => console.error(err));
+        }
+      }
+    } catch (err) {
+      console.error('[CashGameOrchestrator] Error syncing active tables:', err);
+    }
+  }
+
+  /**
+   * Hydra Service: Seed/Recede tables
+   */
+  private async manageLiquidity() {
+    if (!this.isRunning) return;
+
+    for (const tableId of this.activeEngines.keys()) {
+      try {
+        const status = await HydraService.getTableLiquidityStatus(tableId);
+
+        // 1. Need more horses (3 Horses to Start rule)
+        if (status.needsMoreHorses) {
+          const { data: tableData } = await supabase
+            .from('tables')
+            .select('big_blind')
+            .eq('id', tableId)
+            .maybeSingle();
+
+          if (tableData?.big_blind) {
+            console.log(`[CashGameOrchestrator] Table ${tableId} needs horses. Seeding...`);
+            await HydraService.seedTable(tableId, tableData.big_blind);
+          }
+        }
+
+        // 2. Need fewer horses (Organic Recede rule)
+        // If real players arrived, schedule a horse to leave
+        if (status.needsFewerHorses && status.horsePlayers > 0) {
+          const horses = await HydraService.getActiveHorses(tableId);
+          const horseToRemove = horses.find((h) => !h.leavingAfterOrbit);
+
+          if (horseToRemove) {
+            console.log(
+              `[CashGameOrchestrator] Table ${tableId} has too many horses. Scheduling recede...`
+            );
+            await HydraService.scheduleHorseRemoval(tableId, horseToRemove.id);
+          }
+        }
+      } catch (err) {
+        console.error(`[CashGameOrchestrator] Error managing liquidity for table ${tableId}:`, err);
+      }
+    }
+  }
+}
+
+export const cashGameOrchestrator = CashGameOrchestrator.getInstance();
