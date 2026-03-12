@@ -135,10 +135,10 @@ export const TournamentClock: React.FC<TournamentClockProps> = ({
     };
   }, [refreshState]);
 
-  // ── Listen for level change bus events ──
+  // ── Listen for tournament update bus events ──
   useEffect(() => {
-    const unsub = masterBus.on('BLIND_LEVEL_CHANGE', (data: any) => {
-      if (data.tournamentId === tournamentId) {
+    const unsub = masterBus.subscribe('TOURNAMENT_UPDATED', (event: any) => {
+      if (event?.payload?.tournamentId === tournamentId) {
         refreshState();
       }
     });

@@ -75,6 +75,13 @@ export default function VIPPage() {
             if (newData.diamonds !== undefined) {
               setDiamonds(newData.diamonds);
             }
+            if (newData.vip_points !== undefined) {
+              setVipPoints((prev) => ({
+                ...prev,
+                current: newData.vip_points,
+                lifetime: Math.max(prev.lifetime, newData.vip_points),
+              }));
+            }
           }
         )
         .subscribe();
