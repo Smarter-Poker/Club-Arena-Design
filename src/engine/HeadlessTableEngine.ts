@@ -1335,28 +1335,23 @@ export class HeadlessTableEngine {
           continue;
         }
 
-        // 2. Deduct from Player Wallet via SECURITY DEFINER RPC
-        const { error: deductError } = await this.supabaseClient.rpc('deduct_player_wallet', {
+        // 2 & 3. Deduct from Player Wallet and update seat atomically via SECURITY DEFINER RPC
+        const { error: rebuyError } = await this.supabaseClient.rpc('atomic_table_rebuy', {
           p_user_id: horse.user_id,
+          p_table_id: this.tableId,
           p_amount: rebuyAmount,
         });
 
-        if (deductError) {
+        if (rebuyError) {
           console.error(
-            `[HeadlessTableEngine:${this.tableId}] Player Wallet deduction failed for ${horse.username}:`,
-            deductError.message
+            `[HeadlessTableEngine:${this.tableId}] Atomic auto-rebuy failed for ${horse.username}:`,
+            rebuyError.message
           );
           continue;
         }
 
-        // 3. Update stack at table
+        // Update local stack so the engine knows right away
         horse.stack = rebuyAmount;
-        await this.supabaseClient
-          .from('table_seats')
-          .update({ stack: rebuyAmount })
-          .eq('table_id', this.tableId)
-          .eq('user_id', horse.user_id)
-          .is('left_at', null);
 
         // 4. Log transaction via centralized WalletService RPC
         WalletService.logTransaction(

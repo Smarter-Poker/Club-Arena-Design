@@ -434,100 +434,59 @@ export const HydraService = {
       return null;
     }
 
-    // ── Deduct buy-in from horse's Player Wallet ──
+    // Execute FULLY ATOMIC buy-in and seat insertion for Horse
+    const { error: rpcErr } = await retryAsync(
+      () =>
+        supabase.rpc('atomic_table_buyin', {
+          p_user_id: horseId,
+          p_table_id: tableId,
+          p_seat_number: availableSeat,
+          p_amount: stack,
+          p_auto_rebuy: true, // Horses auto-rebuy by default
+        }),
+      3
+    );
+
+    if (rpcErr) {
+      console.error(
+        `[HydraService] atomic_table_buyin FAILED for horse ${horseId}:`,
+        rpcErr.message
+      );
+      return null;
+    }
+
+    console.debug(
+      `[HydraService] atomic_table_buyin SUCCESS for horse ${horseId} at seat ${availableSeat}`
+    );
+
+    // Log buy-in transaction via centralized WalletService RPC
+    await WalletService.logTransaction(
+      horseId,
+      'PLAYER',
+      stack,
+      'debit',
+      'buyin',
+      `Horse buy-in ${stack} chips at ${bigBlind}BB table`,
+      tableId
+    );
+    masterBus.emit('BALANCE_UPDATED', { source: 'hydra_seat_horse', userId: horseId });
+
+    // Try to log in chip_transactions for club accounting (non-blocking)
     const { data: tableClubData } = await supabase
       .from('tables')
       .select('club_id')
       .eq('id', tableId)
       .maybeSingle();
 
-    const clubId = tableClubData?.club_id;
-    if (clubId) {
-      // Deduct from Player Wallet via SECURITY DEFINER RPC
-      const { data: deductResult, error: deductError } = await retryAsync(
-        () =>
-          supabase.rpc('deduct_player_wallet', {
-            p_user_id: horseId,
-            p_amount: stack,
-          }),
-        3
-      );
-
-      if (deductError) {
-        console.warn(
-          `HydraService.seatHorse: Failed to deduct ${stack} from horse ${horseId} Player Wallet:`,
-          deductError.message
-        );
-        return null;
-      }
-
-      console.debug(`[HydraService] Deducted ${stack} chips from horse ${horseId} Player Wallet`);
-
-      // Log buy-in transaction via centralized WalletService RPC
-      await WalletService.logTransaction(
-        horseId,
-        'PLAYER',
-        stack,
-        'debit',
-        'buyin',
-        `Horse buy-in ${stack} chips at ${bigBlind}BB table`,
-        tableId
-      );
-      masterBus.emit('BALANCE_UPDATED', { source: 'hydra_seat_horse', userId: horseId });
-
-      // Log in chip_transactions for club accounting
-      await supabase.from('chip_transactions').insert({
-        club_id: clubId,
+    if (tableClubData?.club_id) {
+      // Fire and forget: logging
+      supabase.from('chip_transactions').insert({
+        club_id: tableClubData.club_id,
         to_user_id: horseId,
         amount: stack,
         transaction_type: 'buy_in',
         notes: `Horse buy-in at table ${tableId}`,
       });
-
-      console.debug(`HydraService.seatHorse: Deducted ${stack} from horse ${horseId} wallet`);
-    }
-
-    // Insert into table_seats
-    const { error } = await supabase.from('table_seats').insert({
-      table_id: tableId,
-      seat_number: availableSeat,
-      user_id: horseId,
-      stack,
-      is_sitting_out: false,
-    });
-
-    if (error) {
-      console.error('HydraService.seatHorse insert error:', error);
-      // Refund Player Wallet if seat insert fails
-      const { error: refundError } = await retryAsync(
-        () =>
-          supabase.rpc('credit_player_wallet', {
-            p_user_id: horseId,
-            p_amount: stack,
-          }),
-        3
-      );
-      if (!refundError) {
-        await WalletService.logTransaction(
-          horseId,
-          'PLAYER',
-          stack,
-          'credit',
-          'refund',
-          `Refund buy-in — seat insert failed at table ${tableId}`,
-          tableId
-        );
-        masterBus.emit('BALANCE_UPDATED', { source: 'hydra_seat_refund', userId: horseId });
-        console.debug(
-          `[HydraService] Refunded ${stack} to horse ${horseId} Player Wallet after seat insert failure`
-        );
-      } else {
-        console.error(
-          `[HydraService] CRITICAL: Failed to refund ${stack} to horse ${horseId}:`,
-          refundError.message
-        );
-      }
-      return null;
     }
 
     // Update horse status to seated
@@ -577,7 +536,7 @@ export const HydraService = {
     // 1. Get the horse's current stack BEFORE removing the seat
     const { data: seatData, error: seatFetchErr } = await supabase
       .from('table_seats')
-      .select('stack')
+      .select('stack, seat_number')
       .eq('table_id', tableId)
       .eq('user_id', horseId)
       .is('left_at', null)
@@ -592,75 +551,57 @@ export const HydraService = {
 
     const remainingStack = seatData.stack || 0;
 
-    // 2. Soft-delete the seat (set left_at — consistent with rest of codebase)
-    const { error: seatError } = await supabase
-      .from('table_seats')
-      .update({ left_at: new Date().toISOString() })
-      .eq('table_id', tableId)
-      .eq('user_id', horseId)
-      .is('left_at', null);
+    // 2. ATOMIC CASH-OUT: Return chips to Player Wallet and clear seat
+    const { data: rpcAmount, error: cashoutError } = await retryAsync(
+      () =>
+        supabase.rpc('atomic_table_cashout', {
+          p_user_id: horseId,
+          p_table_id: tableId,
+          p_seat_number: seatData.seat_number,
+        }),
+      3
+    );
 
-    if (seatError) {
-      console.error('HydraService.removeHorse seat removal error:', seatError);
+    if (cashoutError) {
+      console.error('HydraService.removeHorse atomic_table_cashout error:', cashoutError.message);
       return false;
     }
 
-    // 3. Credit remaining stack back to horse's Player Wallet
-    if (remainingStack > 0) {
+    const returnedChips = rpcAmount || 0;
+
+    // Log cash-out transaction via centralized WalletService RPC if there were chips returned
+    if (returnedChips > 0) {
+      console.debug(
+        `[HydraService] Credited ${returnedChips} chips to horse ${horseId} Player Wallet`
+      );
+
+      await WalletService.logTransaction(
+        horseId,
+        'PLAYER',
+        returnedChips,
+        'credit',
+        'cashout',
+        `Horse cash-out ${returnedChips} chips from table`,
+        tableId
+      );
+      masterBus.emit('BALANCE_UPDATED', { source: 'hydra_remove_horse', userId: horseId });
+
+      // Try to log in chip_transactions for club accounting
       const { data: tableClubData } = await supabase
         .from('tables')
         .select('club_id')
         .eq('id', tableId)
         .maybeSingle();
 
-      const clubId = tableClubData?.club_id;
-      if (clubId) {
-        // Credit to Player Wallet via SECURITY DEFINER RPC
-        const { data: creditResult, error: creditError } = await retryAsync(
-          () =>
-            supabase.rpc('credit_player_wallet', {
-              p_user_id: horseId,
-              p_amount: remainingStack,
-            }),
-          3
-        );
-
-        if (creditError) {
-          console.error(
-            `HydraService.removeHorse: Failed to credit ${remainingStack} to horse ${horseId} Player Wallet:`,
-            creditError.message
-          );
-          return false;
-        }
-
-        console.debug(
-          `[HydraService] Credited ${remainingStack} chips to horse ${horseId} Player Wallet`
-        );
-
-        // Log cash-out transaction via centralized WalletService RPC
-        await WalletService.logTransaction(
-          horseId,
-          'PLAYER',
-          remainingStack,
-          'credit',
-          'cashout',
-          `Horse cash-out ${remainingStack} chips from table`,
-          tableId
-        );
-        masterBus.emit('BALANCE_UPDATED', { source: 'hydra_remove_horse', userId: horseId });
-
-        // Log in chip_transactions for club accounting
-        await supabase.from('chip_transactions').insert({
-          club_id: clubId,
+      if (tableClubData?.club_id) {
+        // Fire and forget: logging
+        supabase.from('chip_transactions').insert({
+          club_id: tableClubData.club_id,
           from_user_id: horseId,
-          amount: remainingStack,
+          amount: returnedChips,
           transaction_type: 'cashout',
           notes: `Horse cash-out from table ${tableId}`,
         });
-
-        console.debug(
-          `HydraService.removeHorse: Credited ${remainingStack} back to ${horseId} wallet`
-        );
       }
     }
 

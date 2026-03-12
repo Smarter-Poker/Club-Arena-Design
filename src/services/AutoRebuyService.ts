@@ -191,20 +191,21 @@ class AutoRebuyServiceCore {
 
     this.rebuyInProgress.add(rebuyKey);
     try {
-      // Step 1: Deduct from wallet
-      const { data: deductResult, error: deductError } = await retryAsync(
+      // Execute ATOMIC rebuy
+      const { error: rebuyError } = await retryAsync(
         () =>
-          supabase.rpc('deduct_player_wallet', {
+          supabase.rpc('atomic_table_rebuy', {
             p_user_id: horseId,
+            p_table_id: tableId,
             p_amount: amount,
           }),
         3
       );
 
-      if (deductError) {
+      if (rebuyError) {
         console.error(
-          '[AutoRebuy] Wallet deduction failed for horse ' + horseId + ':',
-          deductError.message
+          '[AutoRebuy] Atomic rebuy failed for horse ' + horseId + ':',
+          rebuyError.message
         );
         horseBugReporter.report({
           horseName: 'AutoRebuy',
@@ -214,53 +215,17 @@ class AutoRebuyServiceCore {
           handNumber: 0,
           category: 'wallet_sync',
           severity: 'high',
-          title: 'Auto-rebuy wallet deduction failed',
+          title: 'Auto-rebuy failed',
           description:
-            'Could not deduct ' +
+            'Could not complete atomic rebuy of ' +
             amount +
-            ' from horse wallet: ' +
-            (deductError.message || 'unknown error'),
+            ' chips: ' +
+            (rebuyError.message || 'unknown error'),
           context: { horseId, tableId, amount },
         });
         return false;
       }
 
-      // Step 2: Fetch current stack and update table_seats
-      const { data: seatData } = await supabase
-        .from('table_seats')
-        .select('stack')
-        .eq('table_id', tableId)
-        .eq('user_id', horseId)
-        .is('left_at', null)
-        .maybeSingle();
-
-      if (seatData) {
-        const newStack = (seatData.stack || 0) + amount;
-        const { error: stackError } = await supabase
-          .from('table_seats')
-          .update({ stack: newStack })
-          .eq('table_id', tableId)
-          .eq('user_id', horseId)
-          .is('left_at', null);
-
-        if (stackError) {
-          console.error(
-            '[AutoRebuy] Stack update failed for horse ' + horseId + ':',
-            stackError.message
-          );
-        }
-      }
-
-      // Log transaction via centralized WalletService RPC
-      await WalletService.logTransaction(
-        horseId,
-        'PLAYER',
-        amount,
-        'debit',
-        'rebuy',
-        'Auto-rebuy: topup ' + amount + ' chips',
-        tableId
-      );
       masterBus.emit('BALANCE_UPDATED', { source: 'auto_rebuy_horse', userId: horseId });
 
       horseBugReporter.report({

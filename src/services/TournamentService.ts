@@ -544,40 +544,73 @@ class TournamentService {
     const rake = tournament.buy_in_fee || 0;
     const totalCost = buyIn + rake;
 
-    // ─── Deduct from Player Wallet (wallets table, not club_members) ───
-    // Chip flow: Union → Club Bank → Agent Wallet → Player Wallet → Game Buy-ins
-    // Players buy into tournaments from their Player Wallet only
+    // ─── ATOMIC Tournament Registration ───
+    // Chip flow: Player Wallet → Tournament entry
+    // Uses atomic_tournament_register RPC to deduct + insert in a single transaction
     const clubId = tournament.club_id;
 
-    // Check player wallet balance first (for better error messages)
-    const { data: walletData } = await supabase
-      .from('wallets')
-      .select('balance')
-      .eq('user_id', userId)
-      .eq('wallet_type', 'PLAYER')
-      .maybeSingle();
-
-    if (!walletData || (walletData.balance || 0) < totalCost) {
-      throw new Error(
-        `Insufficient chips in Player Wallet. Need ${totalCost}, have ${walletData?.balance || 0}`
-      );
+    // Initialize bounty values for bounty tournaments (needed BEFORE the RPC call)
+    const isBountyTournament =
+      tournament.is_bounty || tournament.is_pko || tournament.is_mystery_bounty;
+    let currentBounty = 0;
+    let mysteryBountyValue = 0;
+    if (isBountyTournament) {
+      currentBounty = tournament.bounty_amount || 0;
+      if (tournament.is_mystery_bounty) {
+        const baseBounty = tournament.bounty_amount || 0;
+        const bountyConfig: BountyConfig = {
+          bountyType: 'mystery',
+          baseBounty,
+          mysteryTiers: [
+            { minMultiplier: 1, maxMultiplier: 1, probability: 60 },
+            { minMultiplier: 2, maxMultiplier: 2, probability: 25 },
+            { minMultiplier: 5, maxMultiplier: 5, probability: 10 },
+            { minMultiplier: 10, maxMultiplier: 10, probability: 4 },
+            { minMultiplier: 50, maxMultiplier: 50, probability: 0.9 },
+            { minMultiplier: 500, maxMultiplier: 500, probability: 0.1 },
+          ],
+        };
+        mysteryBountyValue = this.rollMysteryBounty(bountyConfig);
+        currentBounty = mysteryBountyValue;
+      }
     }
 
-    // Atomically deduct from Player Wallet via RPC (SECURITY DEFINER bypasses RLS)
-    const { data: deductResult, error: deductError } = await retryAsync(
+    // ATOMIC: Deduct wallet + insert tournament_players in a single Postgres transaction
+    const { data: atomicPlayerId, error: atomicError } = await retryAsync(
       () =>
-        supabase.rpc('deduct_player_wallet', {
+        supabase.rpc('atomic_tournament_register', {
+          p_tournament_id: tournamentId,
           p_user_id: userId,
-          p_amount: totalCost,
+          p_username: username,
+          p_total_cost: totalCost,
+          p_current_bounty: currentBounty,
+          p_mystery_bounty_value: mysteryBountyValue || 0,
+          p_is_bounty_tournament: isBountyTournament,
         }),
       3
     );
 
-    if (deductError) {
-      throw new Error(`Failed to deduct tournament buy-in: ${deductError.message}`);
+    if (atomicError) {
+      // Duplicate registration (23505 unique constraint) surfaces as an RPC exception
+      if (atomicError.message?.includes('duplicate') || atomicError.message?.includes('23505')) {
+        throw new Error('Already registered for this tournament');
+      }
+      if (atomicError.message?.includes('Insufficient')) {
+        throw new Error(atomicError.message);
+      }
+      throw new Error(`Tournament registration failed: ${atomicError.message}`);
     }
-    if (deductResult === false) {
-      throw new Error('Insufficient chips in Player Wallet for tournament buy-in');
+
+    // Re-fetch the player row we just inserted (the RPC returns only the id)
+    const { data, error } = await supabase
+      .from('tournament_players')
+      .select('*')
+      .eq('id', atomicPlayerId)
+      .maybeSingle();
+
+    if (error || !data) {
+      console.error('[TournamentService] Could not re-fetch registered player:', error);
+      throw new Error('Registration succeeded but player data could not be retrieved');
     }
 
     // Log buy-in transaction (just the buy-in amount that feeds prize pool)
@@ -611,7 +644,6 @@ class TournamentService {
       );
 
       // ── Credit tournament rake to club + track at union level ──
-      // Record in rake_records for audit trail
       try {
         await supabase.from('rake_records').insert({
           hand_id: `tournament-reg-${tournamentId}-${userId}`,
@@ -661,91 +693,6 @@ class TournamentService {
           console.warn(`[TournamentService] Failed to update union total_rake:`, e);
         }
       }
-    }
-
-    // Initialize bounty values for bounty tournaments
-    const isBountyTournament =
-      tournament.is_bounty || tournament.is_pko || tournament.is_mystery_bounty;
-    let currentBounty = 0;
-    let mysteryBountyValue = 0;
-    if (isBountyTournament) {
-      currentBounty = tournament.bounty_amount || 0;
-      if (tournament.is_mystery_bounty) {
-        // Roll the mystery bounty value at registration (hidden until revealed on KO)
-        const baseBounty = tournament.bounty_amount || 0;
-        const bountyConfig: BountyConfig = {
-          bountyType: 'mystery',
-          baseBounty,
-          mysteryTiers: [
-            { minMultiplier: 1, maxMultiplier: 1, probability: 60 },
-            { minMultiplier: 2, maxMultiplier: 2, probability: 25 },
-            { minMultiplier: 5, maxMultiplier: 5, probability: 10 },
-            { minMultiplier: 10, maxMultiplier: 10, probability: 4 },
-            { minMultiplier: 50, maxMultiplier: 50, probability: 0.9 },
-            { minMultiplier: 500, maxMultiplier: 500, probability: 0.1 },
-          ],
-        };
-        mysteryBountyValue = this.rollMysteryBounty(bountyConfig);
-        currentBounty = mysteryBountyValue;
-      }
-    }
-
-    // Insert player (username is NOT NULL in schema — must be provided)
-    const { data, error } = await supabase
-      .from('tournament_players')
-      .insert({
-        tournament_id: tournamentId,
-        user_id: userId,
-        username: username,
-        chips: 0,
-        status: 'registered',
-        ...(isBountyTournament
-          ? {
-              current_bounty: currentBounty,
-              mystery_bounty_value: mysteryBountyValue || null,
-              bounties_collected: 0,
-              bounty_winnings: 0,
-            }
-          : {}),
-      })
-      .select()
-      .maybeSingle();
-
-    if (error) {
-      // Check for race condition: duplicate registration (unique constraint violation)
-      if ((error as any).code === '23505') {
-        // Refund immediately on race condition
-        const { error: refundErr } = await retryAsync(
-          () =>
-            supabase.rpc('credit_player_wallet', {
-              p_user_id: userId,
-              p_amount: totalCost,
-            }),
-          3
-        );
-        if (refundErr) {
-          console.error(
-            '[TournamentService] CRITICAL: Refund on duplicate registration failed:',
-            refundErr.message
-          );
-        }
-        throw new Error('Already registered for this tournament');
-      }
-
-      // Refund to Player Wallet on other failures
-      console.error('[TournamentService] Registration failed, refunding buy-in:', error);
-      const { error: refundErr } = await retryAsync(
-        () =>
-          supabase.rpc('credit_player_wallet', {
-            p_user_id: userId,
-            p_amount: totalCost,
-          }),
-        3
-      );
-      if (refundErr) {
-        console.error('[TournamentService] CRITICAL: Refund also failed:', refundErr.message);
-      }
-      throw error;
     }
 
     // Re-read fresh tournament data to avoid stale read-then-write race condition

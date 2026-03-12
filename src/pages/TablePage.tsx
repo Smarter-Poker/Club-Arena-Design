@@ -4310,60 +4310,32 @@ export default function TablePage({
               }
             } else if (userId && userId !== 'guest' && tableId && selectedSeat) {
               try {
-                console.debug('[BuyIn] Calling WalletService.lockForBuyIn:', {
+                console.debug('[BuyIn] Calling atomic_table_buyin:', {
                   userId,
                   tableId,
                   amount,
-                });
-                // Lock chips in escrow for table buy-in
-                await WalletService.lockForBuyIn(userId, tableId, amount);
-                console.debug('[BuyIn] lockForBuyIn SUCCESS');
-
-                // ─── Clear any stale seat record, then INSERT into table_seats ───
-                // Stale records (left_at IS NOT NULL) can block due to unique constraint
-                await supabase
-                  .from('table_seats')
-                  .delete()
-                  .eq('table_id', tableId)
-                  .eq('seat_number', selectedSeat)
-                  .not('left_at', 'is', null);
-
-                const { error: seatError } = await supabase.from('table_seats').insert({
-                  table_id: tableId,
-                  seat_number: selectedSeat,
-                  user_id: userId,
-                  stack: amount,
-                  status: 'active',
-                  auto_rebuy: autoRebuy || false,
+                  selectedSeat,
                 });
 
-                if (seatError) {
-                  console.error('[BuyIn] table_seats insert FAILED:', seatError);
-                  // NOTE: Do NOT refund here — the catch block handles refund
-                  throw new Error('Failed to seat: ' + seatError.message);
-                }
-                console.debug('[BuyIn] table_seats INSERT success, seat:', selectedSeat);
-
-                // Atomic current_players increment (prevents race with simultaneous buy-ins)
+                // Execute FULLY ATOMIC buy-in and seat insertion
                 const { error: rpcErr } = await retryAsync(
                   () =>
-                    supabase.rpc('increment_table_players', {
+                    supabase.rpc('atomic_table_buyin', {
+                      p_user_id: userId,
                       p_table_id: tableId,
+                      p_seat_number: selectedSeat,
+                      p_amount: amount,
+                      p_auto_rebuy: autoRebuy || false,
                     }),
                   3
                 );
+
                 if (rpcErr) {
-                  // Fallback: non-atomic increment if RPC doesn't exist
-                  const { data: td } = await supabase
-                    .from('tables')
-                    .select('current_players')
-                    .eq('id', tableId)
-                    .maybeSingle();
-                  await supabase
-                    .from('tables')
-                    .update({ current_players: (td?.current_players || 0) + 1 })
-                    .eq('id', tableId);
+                  console.error('[BuyIn] atomic_table_buyin FAILED:', rpcErr);
+                  throw new Error('Failed to buy-in: ' + rpcErr.message);
                 }
+
+                console.debug('[BuyIn] atomic_table_buyin SUCCESS');
 
                 setAccountBalance((prev) => Math.max(0, prev - amount));
 
@@ -4397,15 +4369,7 @@ export default function TablePage({
                 // Player seated successfully
               } catch (error) {
                 console.error('[BuyIn] Buy-in FAILED:', error);
-                // Attempt to refund locked chips
-                try {
-                  await WalletService.unlockFromTable(userId, tableId, amount);
-                  setAccountBalance((prev) => prev + amount);
-                  console.debug('[BuyIn] Refunded chips after failed buy-in');
-                } catch (refundErr) {
-                  console.error('[BuyIn] CRITICAL — refund also failed:', refundErr);
-                }
-                toast.error('Buy-in failed. Your chips have been refunded.');
+                toast.error('Buy-in failed. Please try again or check your balance.');
               }
             } else {
               console.error('[BuyIn] FELL THROUGH - no branch matched:', {

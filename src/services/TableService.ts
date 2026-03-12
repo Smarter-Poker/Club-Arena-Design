@@ -261,57 +261,39 @@ class TableService {
         return { success: false, chipsReturned: 0 };
       }
 
-      // Return chips to Player Wallet via credit_player_wallet RPC (ONLY for cash games!)
-      if (chipsToReturn > 0 && !tableData?.tournament_id) {
-        const { data: creditResult, error: creditError } = await retryAsync(
+      let returnedChips = 0;
+
+      // ATOMIC CASH-OUT: Return chips to Player Wallet (ONLY for cash games) and clear seat
+      if (!tableData?.tournament_id) {
+        const { data: rpcAmount, error: cashoutError } = await retryAsync(
           () =>
-            supabase.rpc('credit_player_wallet', {
+            supabase.rpc('atomic_table_cashout', {
               p_user_id: userId,
-              p_amount: chipsToReturn,
+              p_table_id: tableId,
+              p_seat_number: seatNumber,
             }),
           3
         );
 
-        if (creditError) {
-          console.error('[TableService] Error crediting Player Wallet:', creditError);
-          // CRITICAL: Do NOT delete the seat if chip return failed — chips would be lost
+        if (cashoutError) {
+          console.error('[TableService] Error in atomic_table_cashout:', cashoutError.message);
           return { success: false, chipsReturned: 0 };
         }
 
+        returnedChips = rpcAmount || 0;
         console.debug(
-          `[TableService] Returned ${chipsToReturn} chips to Player Wallet for user ${userId}`
-        );
-
-        // Log transaction for audit trail
-        await WalletService.logTransaction(
-          userId,
-          'PLAYER',
-          chipsToReturn,
-          'credit',
-          'cashout',
-          `Cash-out from table`,
-          tableId
+          `[TableService] Returned ${returnedChips} chips to Player Wallet for user ${userId}`
         );
         masterBus.emit('BALANCE_UPDATED', { source: 'table_leave_cashout', userId });
-      }
-
-      // Soft-delete the seat — MUST succeed since chips were already returned
-      const { error: clearError } = await supabase
-        .from('table_seats')
-        .update({ left_at: new Date().toISOString() })
-        .eq('table_id', tableId)
-        .eq('seat_number', seatNumber)
-        .eq('user_id', userId)
-        .is('left_at', null);
-
-      if (clearError) {
-        // Chips were already credited — seat will be orphaned but player won't lose chips
-        // This is the safe failure mode (fail-open: player gets chips, seat gets cleaned up later)
-        console.error(
-          '[TableService] Error clearing seat after chip return — seat orphaned:',
-          clearError
-        );
-        // Don't return failure since chips ARE safe
+      } else {
+        // For tournaments, just clear the seat without crediting wallets
+        await supabase
+          .from('table_seats')
+          .update({ left_at: new Date().toISOString() })
+          .eq('table_id', tableId)
+          .eq('seat_number', seatNumber)
+          .eq('user_id', userId)
+          .is('left_at', null);
       }
 
       // If this is a tournament table, update tournament_players status
