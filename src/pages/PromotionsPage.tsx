@@ -2,7 +2,7 @@
  *  PROMOTIONS PAGE — Club Promotions & Bonuses with Live Updates
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
