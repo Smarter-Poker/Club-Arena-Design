@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
 import './PositionWinRates.css';
 
 interface PositionStats {
@@ -16,91 +17,125 @@ interface PositionStats {
   totalProfit: number;
 }
 
-const POSITION_STATS: PositionStats[] = [
+const DEFAULT_STATS: PositionStats[] = [
   {
     position: 'UTG',
     positionLabel: 'Under The Gun',
-    handsPlayed: 245,
-    vpip: 12.5,
-    pfr: 9.8,
-    winRate: 2.4,
-    totalProfit: 580,
+    handsPlayed: 0,
+    vpip: 0,
+    pfr: 0,
+    winRate: 0,
+    totalProfit: 0,
   },
   {
     position: 'UTG+1',
     positionLabel: 'UTG+1',
-    handsPlayed: 238,
-    vpip: 13.2,
-    pfr: 10.5,
-    winRate: 2.8,
-    totalProfit: 640,
+    handsPlayed: 0,
+    vpip: 0,
+    pfr: 0,
+    winRate: 0,
+    totalProfit: 0,
   },
   {
     position: 'MP',
     positionLabel: 'Middle Position',
-    handsPlayed: 312,
-    vpip: 18.5,
-    pfr: 14.2,
-    winRate: 3.2,
-    totalProfit: 980,
+    handsPlayed: 0,
+    vpip: 0,
+    pfr: 0,
+    winRate: 0,
+    totalProfit: 0,
   },
   {
     position: 'CO',
     positionLabel: 'Cutoff',
-    handsPlayed: 418,
-    vpip: 24.8,
-    pfr: 19.5,
-    winRate: 4.1,
-    totalProfit: 1720,
+    handsPlayed: 0,
+    vpip: 0,
+    pfr: 0,
+    winRate: 0,
+    totalProfit: 0,
   },
   {
     position: 'BTN',
     positionLabel: 'Button',
-    handsPlayed: 465,
-    vpip: 32.5,
-    pfr: 26.8,
-    winRate: 5.2,
-    totalProfit: 2420,
+    handsPlayed: 0,
+    vpip: 0,
+    pfr: 0,
+    winRate: 0,
+    totalProfit: 0,
   },
   {
     position: 'SB',
     positionLabel: 'Small Blind',
-    handsPlayed: 388,
-    vpip: 28.2,
-    pfr: 21.3,
-    winRate: 1.8,
-    totalProfit: 700,
+    handsPlayed: 0,
+    vpip: 0,
+    pfr: 0,
+    winRate: 0,
+    totalProfit: 0,
   },
   {
     position: 'BB',
     positionLabel: 'Big Blind',
-    handsPlayed: 412,
-    vpip: 25.5,
-    pfr: 8.5,
-    winRate: 0.9,
-    totalProfit: 370,
+    handsPlayed: 0,
+    vpip: 0,
+    pfr: 0,
+    winRate: 0,
+    totalProfit: 0,
   },
 ];
 
 const PositionWinRates: React.FC = () => {
+  const [statsData, setStatsData] = useState<PositionStats[]>(DEFAULT_STATS);
   const [visiblePositions, setVisiblePositions] = useState<Set<number>>(new Set());
   const [hoveredPosition, setHoveredPosition] = useState<number | null>(null);
 
   useEffect(() => {
-    POSITION_STATS.forEach((_, i) => {
+    async function loadPositionStats() {
+      const { data: userResp } = await supabase.auth.getUser();
+      if (!userResp.user) return;
+
+      const { data: posData, error } = await supabase
+        .from('player_position_stats')
+        .select('*')
+        .eq('user_id', userResp.user.id);
+
+      if (!error && posData && posData.length > 0) {
+        // Map DB data correctly to positional cards
+        const updatedStats = DEFAULT_STATS.map((defPos) => {
+          const live = posData.find((p) => p.position === defPos.position);
+          if (live) {
+            return {
+              ...defPos,
+              handsPlayed: live.hands_played || 0,
+              vpip: live.hands_played > 0 ? (live.vpip_count / live.hands_played) * 100 : 0,
+              pfr: live.hands_played > 0 ? (live.pfr_count / live.hands_played) * 100 : 0,
+            };
+          }
+          return defPos;
+        });
+        setStatsData(updatedStats);
+      }
+    }
+
+    loadPositionStats();
+
+    statsData.forEach((_, i) => {
       setTimeout(() => {
-        setVisiblePositions(prev => new Set([...prev, i]));
+        setVisiblePositions((prev) => new Set([...prev, i]));
       }, i * 80);
     });
   }, []);
 
-  // Find best and worst positions
-  const bestPosition = POSITION_STATS.reduce((best, current) =>
-    current.winRate > best.winRate ? current : best
-  );
-  const worstPosition = POSITION_STATS.reduce((worst, current) =>
-    current.winRate < worst.winRate ? current : worst
-  );
+  // Find best and worst positions (with at least 1 hand played to prevent 0.0 ties)
+  const activeStats = statsData.filter((s) => s.handsPlayed > 0);
+  const bestPosition =
+    activeStats.length > 0
+      ? activeStats.reduce((best, current) => (current.winRate > best.winRate ? current : best))
+      : statsData[0];
+
+  const worstPosition =
+    activeStats.length > 0
+      ? activeStats.reduce((worst, current) => (current.winRate < worst.winRate ? current : worst))
+      : statsData[0];
 
   const getTrendArrow = (value: number) => {
     if (value > 3) return '↑ Exceptional';
@@ -121,7 +156,8 @@ const PositionWinRates: React.FC = () => {
       <div className="position-header">
         <h3>Win Rate by Position</h3>
         <p className="position-subtitle">
-          Position profitability at {POSITION_STATS.reduce((sum, p) => sum + p.handsPlayed, 0).toLocaleString()} hands
+          Position profitability at{' '}
+          {statsData.reduce((sum, p) => sum + p.handsPlayed, 0).toLocaleString()} hands
         </p>
       </div>
 
@@ -129,11 +165,19 @@ const PositionWinRates: React.FC = () => {
       <div className="position-table-diagram">
         <svg width="100%" height="350" viewBox="0 0 400 350" className="position-svg">
           {/* Table ellipse */}
-          <ellipse cx="200" cy="160" rx="120" ry="100" fill="none" stroke="rgba(0, 212, 255, 0.15)" strokeWidth="2" />
+          <ellipse
+            cx="200"
+            cy="160"
+            rx="120"
+            ry="100"
+            fill="none"
+            stroke="rgba(0, 212, 255, 0.15)"
+            strokeWidth="2"
+          />
 
           {/* Position markers on circle - arranged like poker table */}
-          {POSITION_STATS.map((pos, i) => {
-            const angleStep = (2 * Math.PI) / POSITION_STATS.length;
+          {statsData.map((pos, i) => {
+            const angleStep = (2 * Math.PI) / statsData.length;
             const angle = i * angleStep - Math.PI / 2; // Start from top
             const radius = 130;
             const x = 200 + radius * Math.cos(angle);
@@ -221,30 +265,30 @@ const PositionWinRates: React.FC = () => {
         {hoveredPosition !== null && (
           <div className="position-tooltip" style={{ display: 'block' }}>
             <div className="tooltip-content">
-              <h4>{POSITION_STATS[hoveredPosition].positionLabel}</h4>
+              <h4>{statsData[hoveredPosition].positionLabel}</h4>
               <div className="tooltip-stat">
                 <span>Hands:</span>
-                <span>{POSITION_STATS[hoveredPosition].handsPlayed}</span>
+                <span>{statsData[hoveredPosition].handsPlayed}</span>
               </div>
               <div className="tooltip-stat">
                 <span>VPIP:</span>
-                <span>{POSITION_STATS[hoveredPosition].vpip.toFixed(1)}%</span>
+                <span>{statsData[hoveredPosition].vpip.toFixed(1)}%</span>
               </div>
               <div className="tooltip-stat">
                 <span>PFR:</span>
-                <span>{POSITION_STATS[hoveredPosition].pfr.toFixed(1)}%</span>
+                <span>{statsData[hoveredPosition].pfr.toFixed(1)}%</span>
               </div>
               <div className="tooltip-stat">
                 <span>Win Rate:</span>
-                <span style={{ color: getPositionColor(POSITION_STATS[hoveredPosition].winRate) }}>
-                  {POSITION_STATS[hoveredPosition].winRate.toFixed(2)} bb/100
+                <span style={{ color: getPositionColor(statsData[hoveredPosition].winRate) }}>
+                  {statsData[hoveredPosition].winRate.toFixed(2)} bb/100
                 </span>
               </div>
               <div className="tooltip-stat total">
                 <span>Total Profit:</span>
-                <span style={{ color: getPositionColor(POSITION_STATS[hoveredPosition].winRate) }}>
-                  {POSITION_STATS[hoveredPosition].totalProfit > 0 ? '+' : ''}
-                  {POSITION_STATS[hoveredPosition].totalProfit}
+                <span style={{ color: getPositionColor(statsData[hoveredPosition].winRate) }}>
+                  {statsData[hoveredPosition].totalProfit > 0 ? '+' : ''}
+                  {statsData[hoveredPosition].totalProfit}
                 </span>
               </div>
             </div>
@@ -274,7 +318,7 @@ const PositionWinRates: React.FC = () => {
 
       {/* Detailed stats grid */}
       <div className="position-stats-grid">
-        {POSITION_STATS.map((pos, i) => {
+        {statsData.map((pos, i) => {
           const isVisible = visiblePositions.has(i);
           return (
             <div
@@ -289,7 +333,8 @@ const PositionWinRates: React.FC = () => {
               <div className="card-header">
                 <span className="position-name">{pos.position}</span>
                 <span className="win-rate-badge" style={{ color: getPositionColor(pos.winRate) }}>
-                  {pos.winRate > 0 ? '+' : ''}{pos.winRate.toFixed(2)}
+                  {pos.winRate > 0 ? '+' : ''}
+                  {pos.winRate.toFixed(2)}
                 </span>
               </div>
               <div className="card-stats">
@@ -307,10 +352,13 @@ const PositionWinRates: React.FC = () => {
                 </div>
               </div>
               <div className="card-progress">
-                <div className="progress-bar" style={{
-                  width: `${(pos.winRate / 5.5) * 100}%`,
-                  backgroundColor: getPositionColor(pos.winRate),
-                }} />
+                <div
+                  className="progress-bar"
+                  style={{
+                    width: `${Math.min(100, Math.max(0, (pos.winRate / 5.5) * 100))}%`,
+                    backgroundColor: getPositionColor(pos.winRate),
+                  }}
+                />
               </div>
               <div className="card-trend">
                 <span>{getTrendArrow(pos.winRate)}</span>

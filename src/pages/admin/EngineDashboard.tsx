@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { cashGameOrchestrator } from '../../engine/CashGameOrchestrator';
+import { tournamentOrchestrator } from '../../engine/TournamentOrchestrator';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/common/Toast';
 import './EngineDashboard.css';
 
 export default function EngineDashboard() {
   const [stats, setStats] = useState(cashGameOrchestrator.getStats());
+  const [tStats, setTStats] = useState(tournamentOrchestrator.getStats());
   const [hydraStats, setHydraStats] = useState({ available: 0, seated: 0 });
   const toast = useToast();
 
@@ -13,6 +15,7 @@ export default function EngineDashboard() {
     // Refresh stats every second
     const interval = setInterval(() => {
       setStats(cashGameOrchestrator.getStats());
+      setTStats(tournamentOrchestrator.getStats());
     }, 1000);
     return () => clearInterval(interval);
   }, []);
@@ -56,6 +59,21 @@ export default function EngineDashboard() {
       setStats(cashGameOrchestrator.getStats());
     } catch (err) {
       toast.error('Failed to toggle orchestrator');
+    }
+  };
+
+  const handleToggleTournament = async () => {
+    try {
+      if (tStats.running) {
+        await tournamentOrchestrator.stop();
+        toast.info('Tournament Orchestrator stopped. All tournaments paused.');
+      } else {
+        await tournamentOrchestrator.start();
+        toast.success('Tournament Orchestrator started!');
+      }
+      setTStats(tournamentOrchestrator.getStats());
+    } catch (err) {
+      toast.error('Failed to toggle tournament orchestrator');
     }
   };
 
@@ -119,6 +137,35 @@ export default function EngineDashboard() {
           </div>
           <button className="engine-btn btn-secondary" disabled>
             Hydra is linked to Master Engine
+          </button>
+        </div>
+
+        <div className="engine-card">
+          <div className="card-header">
+            <h3>Tournament Director</h3>
+            <span className={`status-badge ${tStats.running ? 'online' : 'offline'}`}>
+              {tStats.running ? 'ONLINE' : 'OFFLINE'}
+            </span>
+          </div>
+          <p className="card-desc">
+            Controls all TournamentEngine instances globally. When online, tournaments will
+            automatically start, break tables, and process payouts.
+          </p>
+          <div className="card-metrics">
+            <div className="metric">
+              <span className="label">Active Tourneys</span>
+              <span className="value">{tStats.activeTournaments}</span>
+            </div>
+            <div className="metric">
+              <span className="label">Total Players</span>
+              <span className="value">{tStats.totalPlayers.toLocaleString()}</span>
+            </div>
+          </div>
+          <button
+            className={`engine-btn ${tStats.running ? 'btn-stop' : 'btn-start'}`}
+            onClick={handleToggleTournament}
+          >
+            {tStats.running ? 'SHUTDOWN DIRECTOR' : 'START DIRECTOR'}
           </button>
         </div>
       </div>

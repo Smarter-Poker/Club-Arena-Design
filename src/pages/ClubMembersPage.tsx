@@ -472,6 +472,21 @@ export default function ClubMembersPage() {
 
   useEffect(() => {
     if (clubId) loadMembers();
+
+    // Subscribe to bus-level CLUB_UPDATED for cross-component sync (role changes, kicks, approvals)
+    const unsubClub = masterBus.subscribeDebounced(
+      'CLUB_UPDATED',
+      (event) => {
+        if (!clubId || event.payload?.clubId === clubId) {
+          loadMembers();
+        }
+      },
+      500
+    );
+
+    return () => {
+      unsubClub();
+    };
   }, [clubId]);
 
   // Stagger animation for members

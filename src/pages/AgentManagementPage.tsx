@@ -197,11 +197,21 @@ export default function AgentManagementPage() {
       },
       300
     );
+    const unsubClub = masterBus.subscribeDebounced(
+      'CLUB_UPDATED',
+      (event) => {
+        if (event.payload?.clubId === clubId) {
+          loadAgentsData();
+        }
+      },
+      300
+    );
 
     return () => {
       masterBus.removeRegisteredChannel(channelKey);
       unsubWallet();
       unsubBalance();
+      unsubClub();
     };
   }, [clubId]);
 

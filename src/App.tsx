@@ -105,6 +105,9 @@ const ClubPromotionRulesPage = lazy(() => import('./pages/legal/PromotionsPage')
 const FairGamingPage = lazy(() => import('./pages/legal/FairGamingPage'));
 const PrivacyPolicyPage = lazy(() => import('./pages/legal/PrivacyPolicyPage'));
 
+// Admin Singletons
+const EngineDashboard = lazy(() => import('./pages/admin/EngineDashboard'));
+
 // Loading fallback
 function LoadingSpinner() {
   return (
@@ -1099,6 +1102,18 @@ export default function App() {
                   element={
                     <AuthGuard>
                       <PrivacyPolicyPage />
+                    </AuthGuard>
+                  }
+                />
+
+                {/* Engine Dashboard */}
+                <Route
+                  path="engine"
+                  element={
+                    <AuthGuard>
+                      <PageErrorBoundary pageName="Engine Dashboard">
+                        <EngineDashboard />
+                      </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />

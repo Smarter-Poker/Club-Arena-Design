@@ -405,8 +405,21 @@ export default function UnionDetailPage() {
       )
       .subscribe();
 
+    // Subscribe to bus-level UNION_UPDATED events from service layer
+    const unsubUnion = masterBus.subscribeDebounced(
+      'UNION_UPDATED',
+      (event) => {
+        if (event.payload?.unionId === unionId) {
+          void reloadUnion();
+          void reloadUnionClubs();
+        }
+      },
+      500
+    );
+
     return () => {
       masterBus.removeRegisteredChannel(channelKey);
+      unsubUnion();
     };
   }, [unionId, union?.settings?.crossClubTournaments, clubs]);
 

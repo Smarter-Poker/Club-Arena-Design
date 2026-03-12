@@ -106,12 +106,14 @@ export default function UnionsPage() {
   useEffect(() => {
     loadUnions();
 
-    // Refresh when club membership changes (debounced to prevent rapid-fire reloads)
+    // Refresh when club membership or union data changes (debounced)
     const unsubJoined = masterBus.subscribeDebounced('CLUB_JOINED', () => loadUnions(), 500);
     const unsubLeft = masterBus.subscribeDebounced('CLUB_LEFT', () => loadUnions(), 500);
+    const unsubUnion = masterBus.subscribeDebounced('UNION_UPDATED', () => loadUnions(), 500);
     return () => {
       unsubJoined();
       unsubLeft();
+      unsubUnion();
     };
   }, []);
 
