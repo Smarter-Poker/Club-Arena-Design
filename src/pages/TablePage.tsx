@@ -39,7 +39,7 @@ import BadBeatJackpot from '../components/table/BadBeatJackpot';
 import { ThrowableSelector } from '../components/table/ThrowableSelector';
 import { ThrowAnimationContainer } from '../components/table/ThrowAnimation';
 import { throwableService, type Throwable, type ThrowEvent } from '../services/ThrowableService';
-import { useTabKeepAlive, workerTimeout } from '../hooks/useTabKeepAlive';
+import { useTabKeepAlive, workerTimeout, cancelWorkerTimeout } from '../hooks/useTabKeepAlive';
 import TipDealer from '../components/table/TipDealer';
 import StraddleToggle from '../components/table/StraddleToggle';
 import TimeBank from '../components/table/TimeBank';
@@ -589,7 +589,7 @@ export default function TablePage({
   };
 
   // Insurance auto-decline timeout — prevents hand from stalling if player AFK
-  const insuranceTimeoutRef = useRef<ReturnType<typeof workerTimeout> | null>(null);
+  const insuranceTimeoutRef = useRef<number | null>(null);
   useEffect(() => {
     if (showInsurance) {
       // Auto-decline after 15 seconds
@@ -598,8 +598,9 @@ export default function TablePage({
         handleInsuranceDecline();
       }, 15000);
     } else {
-      // Clear timeout when insurance is dismissed
-      if (insuranceTimeoutRef.current) {
+      // Cancel the timer when insurance is dismissed (user acted)
+      if (insuranceTimeoutRef.current !== null) {
+        cancelWorkerTimeout(insuranceTimeoutRef.current);
         insuranceTimeoutRef.current = null;
       }
     }
@@ -737,18 +738,23 @@ export default function TablePage({
       const currentStack = tableState.players[tableState.heroSeat - 1]?.stack || 0;
       const newStack = currentStack + amount;
       retryAsync(
-        async () => await supabase
-          .from('table_seats')
-          .update({ stack: newStack })
-          .eq('table_id', tableId)
-          .eq('seat_number', tableState.heroSeat)
-          .is('left_at', null),
-        2, 500
-      ).then((result: any) => {
-        if (result?.error) console.warn('[Cashier] Add chips stack sync failed:', result.error.message);
-      }).catch((err: unknown) => {
-        console.warn('[Cashier] Add chips sync exhausted all retries:', err);
-      });
+        async () =>
+          await supabase
+            .from('table_seats')
+            .update({ stack: newStack })
+            .eq('table_id', tableId)
+            .eq('seat_number', tableState.heroSeat)
+            .is('left_at', null),
+        2,
+        500
+      )
+        .then((result: any) => {
+          if (result?.error)
+            console.warn('[Cashier] Add chips stack sync failed:', result.error.message);
+        })
+        .catch((err: unknown) => {
+          console.warn('[Cashier] Add chips sync exhausted all retries:', err);
+        });
       // Emit bus event so other pages (Dashboard, Profile) know about the chip change
       masterBus.emit('CHIPS_ADDED', { tableId, userId, amount, newStack: newStack });
     } catch (error) {
@@ -785,18 +791,23 @@ export default function TablePage({
       const currentStack = tableState.players[tableState.heroSeat - 1]?.stack || 0;
       const newStack = Math.max(0, currentStack - amount);
       retryAsync(
-        async () => await supabase
-          .from('table_seats')
-          .update({ stack: newStack })
-          .eq('table_id', tableId)
-          .eq('seat_number', tableState.heroSeat)
-          .is('left_at', null),
-        2, 500
-      ).then((result: any) => {
-        if (result?.error) console.warn('[Cashier] Withdraw chips stack sync failed:', result.error.message);
-      }).catch((err: unknown) => {
-        console.warn('[Cashier] Withdraw chips sync exhausted all retries:', err);
-      });
+        async () =>
+          await supabase
+            .from('table_seats')
+            .update({ stack: newStack })
+            .eq('table_id', tableId)
+            .eq('seat_number', tableState.heroSeat)
+            .is('left_at', null),
+        2,
+        500
+      )
+        .then((result: any) => {
+          if (result?.error)
+            console.warn('[Cashier] Withdraw chips stack sync failed:', result.error.message);
+        })
+        .catch((err: unknown) => {
+          console.warn('[Cashier] Withdraw chips sync exhausted all retries:', err);
+        });
       // Emit bus event so other pages know about the chip change
       masterBus.emit('CHIPS_WITHDRAWN', { tableId, userId, amount, newStack: newStack });
     } catch (error) {
@@ -934,7 +945,9 @@ export default function TablePage({
     try {
       const saved = localStorage.getItem(`hand_history_${tableId || 'default'}`);
       return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
+    } catch {
+      return [];
+    }
   });
   const [showHandHistory, setShowHandHistory] = useState(false);
 
@@ -946,10 +959,14 @@ export default function TablePage({
       localStorageTimerRef.current = setTimeout(() => {
         try {
           localStorage.setItem(`hand_history_${tableId}`, JSON.stringify(handHistory.slice(0, 50)));
-        } catch { /* localStorage full — ignore */ }
+        } catch {
+          /* localStorage full — ignore */
+        }
       }, 500);
     }
-    return () => { if (localStorageTimerRef.current) clearTimeout(localStorageTimerRef.current); };
+    return () => {
+      if (localStorageTimerRef.current) clearTimeout(localStorageTimerRef.current);
+    };
   }, [handHistory, tableId]);
 
   // Clean up stale hand history keys older than 7 days on mount
@@ -966,10 +983,14 @@ export default function TablePage({
             if (lastTimestamp && now - lastTimestamp > MAX_AGE_MS) {
               localStorage.removeItem(key);
             }
-          } catch { localStorage.removeItem(key!); } // Corrupt data — remove
+          } catch {
+            localStorage.removeItem(key!);
+          } // Corrupt data — remove
         }
       }
-    } catch { /* localStorage not available */ }
+    } catch {
+      /* localStorage not available */
+    }
   }, [tableId]);
 
   // Hand history recording refs — accumulate actions during a hand
@@ -2510,14 +2531,23 @@ export default function TablePage({
 
             // Persist to Supabase for cross-device access and admin review (fire-and-forget)
             if (tableId) {
-              handHistoryService.saveHandToSupabase(tableId, {
-                handNumber: record.handNumber,
-                pot: record.potTotal,
-                communityCards: currentState.communityCards.map(c => ({ rank: c.rank, suit: c.suit })),
-                players: record.players as any,
-                actions: handActionsRef.current,
-                winners: record.winners.map(w => ({ playerId: w.playerId, amount: w.amount, hand: w.hand })),
-              }).catch(() => {}); // Fire-and-forget
+              handHistoryService
+                .saveHandToSupabase(tableId, {
+                  handNumber: record.handNumber,
+                  pot: record.potTotal,
+                  communityCards: currentState.communityCards.map((c) => ({
+                    rank: c.rank,
+                    suit: c.suit,
+                  })),
+                  players: record.players as any,
+                  actions: handActionsRef.current,
+                  winners: record.winners.map((w) => ({
+                    playerId: w.playerId,
+                    amount: w.amount,
+                    hand: w.hand,
+                  })),
+                })
+                .catch(() => {}); // Fire-and-forget
             }
 
             // ── Session Tracking: update refs for end-of-session summary ──
@@ -2610,12 +2640,19 @@ export default function TablePage({
                       .eq('table_id', tableId)
                       .eq('seat_number', seatIdx + 1)
                       .is('left_at', null),
-                  2, 500
-                ).then((result: any) => {
-                  if (result?.error) console.warn('[Seats] Stack sync failed after retries:', result.error.message);
-                }).catch((err: unknown) => {
-                  console.warn('[Seats] Stack sync exhausted all retries:', err);
-                });
+                  2,
+                  500
+                )
+                  .then((result: any) => {
+                    if (result?.error)
+                      console.warn(
+                        '[Seats] Stack sync failed after retries:',
+                        result.error.message
+                      );
+                  })
+                  .catch((err: unknown) => {
+                    console.warn('[Seats] Stack sync exhausted all retries:', err);
+                  });
               }
             }
           }
@@ -2981,15 +3018,28 @@ export default function TablePage({
         try {
           if (heroCards.length >= 2 && boardCards.length >= 3) {
             // Cast cards to engine Card format (engine uses full suit names)
-            const suitFullMap: Record<string, string> = { h: 'hearts', d: 'diamonds', c: 'clubs', s: 'spades' };
-            const engineHero = heroCards.map(c => ({ rank: c.rank, suit: suitFullMap[c.suit] || c.suit })) as any;
-            const engineBoard = boardCards.map(c => ({ rank: c.rank, suit: suitFullMap[c.suit] || c.suit })) as any;
+            const suitFullMap: Record<string, string> = {
+              h: 'hearts',
+              d: 'diamonds',
+              c: 'clubs',
+              s: 'spades',
+            };
+            const engineHero = heroCards.map((c) => ({
+              rank: c.rank,
+              suit: suitFullMap[c.suit] || c.suit,
+            })) as any;
+            const engineBoard = boardCards.map((c) => ({
+              rank: c.rank,
+              suit: suitFullMap[c.suit] || c.suit,
+            })) as any;
             const numOpponents = allInPlayers.length - 1;
             equityPercent = monteCarloEquity(engineHero, engineBoard, numOpponents, 1000);
             // Clamp to sensible range for insurance display
             equityPercent = Math.min(95, Math.max(5, equityPercent));
           }
-        } catch { /* fallback to 65% */ }
+        } catch {
+          /* fallback to 65% */
+        }
 
         setInsuranceOffer({
           maxCoverage,
@@ -3974,7 +4024,9 @@ export default function TablePage({
                 console.log('[BuyIn] table_seats INSERT success, seat:', selectedSeat);
 
                 // Atomic current_players increment (prevents race with simultaneous buy-ins)
-                const { error: rpcErr } = await supabase.rpc('increment_table_players', { p_table_id: tableId });
+                const { error: rpcErr } = await supabase.rpc('increment_table_players', {
+                  p_table_id: tableId,
+                });
                 if (rpcErr) {
                   // Fallback: non-atomic increment if RPC doesn't exist
                   const { data: td } = await supabase

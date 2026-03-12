@@ -96,7 +96,7 @@ export default function ClubRulesPage() {
     try {
       const { error } = await supabase
         .from('clubs')
-        .update({ rules_text: editValue })
+        .update({ rules_text: sanitizeInput(editValue) })
         .eq('id', clubId);
 
       if (error) throw error;

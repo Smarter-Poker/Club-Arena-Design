@@ -149,8 +149,8 @@ export default function CreateUnionPage() {
       const { data, error: insertError } = await supabase
         .from('unions')
         .insert({
-          name: form.name.trim(),
-          description: form.description.trim() || null,
+          name: sanitizeInput(form.name.trim()),
+          description: form.description.trim() ? sanitizeInput(form.description.trim()) : null,
           owner_id: user?.id,
           settings: {
             revenue_share_percent: form.revenueSharePercent,

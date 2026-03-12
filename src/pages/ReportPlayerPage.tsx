@@ -52,8 +52,8 @@ export default function ReportPlayerPage() {
         reporter_id: user.id,
         reported_player_id: playerId,
         reason: form.reason,
-        description: form.description,
-        hand_id: form.hand_id || null,
+        description: sanitizeInput(form.description),
+        hand_id: form.hand_id ? sanitizeInput(form.hand_id) : null,
         include_chat_logs: form.include_chat_logs,
         status: 'pending',
       });
