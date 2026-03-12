@@ -1,61 +1,57 @@
 {
-    "$schema": "https://openapi.vercel.sh/vercel.json",
-    "outputDirectory": "dist",
-    "framework": null,
-    "redirects": [
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": "dist",
+  "framework": null,
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/hub/club-arena/",
+      "permanent": false
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/hub/club-arena/assets/:path*",
+      "destination": "/assets/:path*"
+    },
+    {
+      "source": "/hub/club-arena/images/:path*",
+      "destination": "/images/:path*"
+    },
+    {
+      "source": "/hub/club-arena/videos/:path*",
+      "destination": "/videos/:path*"
+    },
+    {
+      "source": "/club-stats-panel.svg",
+      "destination": "/club-stats-panel.svg"
+    },
+    {
+      "source": "/hub/club-arena/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/hub/club-arena",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/((?!assets/|images/|videos/|.*\\.svg$).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
         {
-            "source": "/",
-            "destination": "/hub/club-arena/",
-            "permanent": false
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors 'self' https://smarter.poker https://*.smarter.poker http://localhost:3000"
         }
-    ],
-    "rewrites": [
-        {
-            "source": "/hub/club-arena/assets/:path*",
-            "destination": "/assets/:path*"
-        },
-        {
-            "source": "/hub/club-arena/images/:path*",
-            "destination": "/images/:path*"
-        },
-        {
-            "source": "/hub/club-arena/videos/:path*",
-            "destination": "/videos/:path*"
-        },
-        {
-            "source": "/club-stats-panel.svg",
-            "destination": "/club-stats-panel.svg"
-        },
-        {
-            "source": "/hub/club-arena/:path*",
-            "destination": "/index.html"
-        },
-        {
-            "source": "/hub/club-arena",
-            "destination": "/index.html"
-        },
-        {
-            "source": "/((?!assets/|images/|videos/|.*\\.svg$).*)",
-            "destination": "/index.html"
-        }
-    ],
-    "headers": [
-        {
-            "source": "/(.*)",
-            "headers": [
-                {
-                    "key": "X-Content-Type-Options",
-                    "value": "nosniff"
-                },
-                {
-                    "key": "X-Frame-Options",
-                    "value": "SAMEORIGIN"
-                },
-                {
-                    "key": "Content-Security-Policy",
-                    "value": "frame-ancestors 'self' https://smarter.poker https://*.smarter.poker"
-                }
-            ]
-        }
-    ]
+      ]
+    }
+  ]
 }

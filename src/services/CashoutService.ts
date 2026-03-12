@@ -16,6 +16,7 @@ import { notificationService } from './NotificationService';
 import { WalletService } from './WalletService';
 import { ChipFlowService } from './ChipFlowService';
 import { FinancialAlertService } from './FinancialAlertService';
+import { masterBus } from '../core/MasterBus';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -116,6 +117,13 @@ class CashoutServiceClass {
       }
     }
 
+    // Emit balance change so Cashier/Wallet pages refresh instantly
+    masterBus.emit('BALANCE_UPDATED', {
+      source: 'cashout_request',
+      userId: playerId,
+      amount: -amount,
+    });
+
     return cashout;
   }
 
@@ -132,6 +140,9 @@ class CashoutServiceClass {
       console.error('[Cashout] Failed to cancel cashout:', error);
       throw new Error(error.message || 'Failed to cancel cashout');
     }
+
+    // Emit balance change — chips returned from escrow
+    masterBus.emit('BALANCE_UPDATED', { source: 'cashout_cancel', userId: playerId });
 
     return data === true;
   }
@@ -244,6 +255,13 @@ class CashoutServiceClass {
     if (escrowError) {
       console.error('[Cashout] Failed to release escrow:', escrowError);
     }
+
+    // Emit balance change — chips returned to player from rejected cashout
+    masterBus.emit('BALANCE_UPDATED', {
+      source: 'cashout_reject',
+      userId: cashout.playerId,
+      amount: cashout.amount,
+    });
 
     return true;
   }
