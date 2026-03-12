@@ -20,7 +20,6 @@ import { profileService } from '../services/ProfileService';
 import { bonusService } from '../services/BonusService';
 import { masterBus } from '../core/MasterBus';
 import styles from './ProfilePage.module.css';
-import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 // #5: Lazy-load Recharts (387KB) — only imported when History tab is opened
 const LazyProfitChart = lazy(() => import('../components/profile/ProfitChart'));

@@ -272,6 +272,7 @@ export default function AchievementsPage() {
   }, [user?.id]);
 
   const loadAchievements = async () => {
+    if (!user?.id) return;
     setLoading(true);
     try {
       // Get user's achievements from AchievementService
