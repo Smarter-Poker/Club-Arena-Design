@@ -114,14 +114,14 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     title: n.title,
     message: n.message,
     actionUrl: n.action_url,
-    isRead: n.is_read,
+    isRead: n.read,
     createdAt: new Date(n.created_at),
   });
 
   const handleNotificationClick = async (notif: Notification) => {
     // Mark as read
     if (!notif.isRead) {
-      await supabase.from('notifications').update({ is_read: true }).eq('id', notif.id);
+      await supabase.from('notifications').update({ read: true }).eq('id', notif.id);
 
       setNotifications((prev) => prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n)));
     }
@@ -136,15 +136,15 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   const handleMarkAllRead = async () => {
     await supabase
       .from('notifications')
-      .update({ is_read: true })
+      .update({ read: true })
       .eq('user_id', userId)
-      .eq('is_read', false);
+      .eq('read', false);
 
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
   };
 
   const handleClearAll = async () => {
-    await supabase.from('notifications').delete().eq('user_id', userId).eq('is_read', true);
+    await supabase.from('notifications').delete().eq('user_id', userId).eq('read', true);
 
     setNotifications((prev) => prev.filter((n) => !n.isRead));
   };

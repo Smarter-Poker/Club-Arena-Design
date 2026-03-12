@@ -83,6 +83,56 @@ export default function GlobalHeader({ pageDepth = 1 }: GlobalHeaderProps) {
     // ─── MASTER BUS LISTENERS (#4: Debounced balance refresh) ───
     let unsubWallet: (() => void) | null = null;
     let unsubProfile: (() => void) | null = null;
+    let activeChannelKey: string | null = null;
+
+    const setupRealtime = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user?.id) return;
+
+      activeChannelKey = `header-sync-${data.user.id}`;
+      const channel = masterBus.getOrCreateChannel(activeChannelKey);
+
+      channel
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${data.user.id}`,
+          },
+          async () => {
+            if (!mounted) return;
+            const { count } = await supabase
+              .from('notifications')
+              .select('*', { count: 'exact', head: true })
+              .eq('user_id', data.user.id)
+              .eq('read', false);
+            if (mounted) setNotificationCount(count || 0);
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'messages',
+            filter: `recipient_id=eq.${data.user.id}`,
+          },
+          async () => {
+            if (!mounted) return;
+            const { count } = await supabase
+              .from('messages')
+              .select('*', { count: 'exact', head: true })
+              .eq('recipient_id', data.user.id)
+              .eq('read', false);
+            if (mounted) setUnreadMessages(count || 0);
+          }
+        )
+        .subscribe();
+    };
+
+    setupRealtime();
 
     // #4: Debounced — collapses rapid-fire wallet refreshes into one call
     unsubWallet = masterBus.subscribeDebounced(
@@ -104,6 +154,9 @@ export default function GlobalHeader({ pageDepth = 1 }: GlobalHeaderProps) {
       mounted = false;
       unsubWallet?.();
       unsubProfile?.();
+      if (activeChannelKey) {
+        masterBus.removeRegisteredChannel(activeChannelKey);
+      }
     };
   }, [loadBalances, loadDiamonds]);
 
