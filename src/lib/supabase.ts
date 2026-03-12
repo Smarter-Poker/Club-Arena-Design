@@ -126,6 +126,22 @@ export function broadcastHandState(tableId: string, handState: Record<string, un
 }
 
 /**
+ * Clean up a broadcast channel when a table engine stops.
+ * Prevents resource leaks in the broadcastReady Map.
+ */
+export function cleanupBroadcastChannel(tableId: string): void {
+  const channelName = `hand-state:${tableId}`;
+  const ready = broadcastReady.get(channelName);
+  if (ready) {
+    ready.then((channel) => {
+      channel.unsubscribe().catch(() => {});
+      supabase.removeChannel(channel);
+    });
+    broadcastReady.delete(channelName);
+  }
+}
+
+/**
  * Subscribe to hand state broadcasts for a given table.
  * Returns an unsubscribe function.
  */
