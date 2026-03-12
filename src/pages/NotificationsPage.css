@@ -412,3 +412,117 @@
     right: 0.75rem;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SKELETON LOADING (Initiative 10)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.nf-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 0;
+}
+
+.nf-skeleton-row {
+  height: 64px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(26, 37, 53, 0.5), rgba(13, 21, 32, 0.7));
+  border: 1px solid rgba(42, 58, 74, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.nf-skeleton-row::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.04), transparent);
+  animation: nfSkelShimmer 1.5s infinite;
+}
+
+@keyframes nfSkelShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PILL CHIP FILTERS (Initiative 11)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.nf-chip-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.nf-chip-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.nf-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: #8899aa;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.nf-filter-chip:hover {
+  border-color: rgba(0, 212, 255, 0.4);
+  color: #00d4ff;
+  background: rgba(0, 212, 255, 0.08);
+}
+
+.nf-filter-chip.active {
+  border-color: #00d4ff;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 153, 204, 0.15));
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+}
+
+/* Unread count badge */
+.nf-count-badge {
+  min-width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 0 4px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ENHANCED TIME GROUP HEADERS (Initiative 12)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.time-group-header {
+  padding: 6px 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #00d4ff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-left: 3px solid rgba(0, 212, 255, 0.4);
+  margin-top: 0.5rem;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.2);
+}

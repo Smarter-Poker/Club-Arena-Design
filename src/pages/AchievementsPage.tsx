@@ -522,24 +522,24 @@ export default function AchievementsPage() {
         </div>
       )}
 
-      {/* Category Filter */}
-      <div className="category-filter">
+      {/* Category Filter — Pill Chips (Initiative 5) */}
+      <div className="category-filter ach-chip-bar">
         {(['all', 'poker', 'social', 'financial', 'tournament'] as AchievementCategory[]).map(
           (cat) => (
             <button
               key={cat}
-              className={category === cat ? 'active' : ''}
+              className={`ach-filter-chip ${category === cat ? 'active' : ''}`}
               onClick={() => setCategory(cat)}
             >
               {cat === 'all'
-                ? ' All'
+                ? '📋 All'
                 : cat === 'poker'
-                  ? ' Poker'
+                  ? '🃏 Poker'
                   : cat === 'social'
-                    ? ' Social'
+                    ? '👥 Social'
                     : cat === 'financial'
-                      ? ' Financial'
-                      : ' Tournament'}
+                      ? '💰 Financial'
+                      : '🏆 Tournament'}
             </button>
           )
         )}
@@ -548,8 +548,10 @@ export default function AchievementsPage() {
       {/* Achievements Grid */}
       <AchievementGrid>
         {loading ? (
-          <div className="loading-state">
-            <div className="spinner" />
+          <div className="ach-skeleton-grid">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="ach-skeleton-card" />
+            ))}
           </div>
         ) : (
           filteredAchievements.map((achievement, index) => (

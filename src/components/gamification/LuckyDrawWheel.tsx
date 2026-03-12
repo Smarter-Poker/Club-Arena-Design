@@ -8,6 +8,8 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
+import { triggerHaptic } from '../../services/HapticService';
+import { masterBus } from '../../core/MasterBus';
 import './LuckyDrawWheel.css';
 
 interface WheelSegment {
@@ -38,14 +40,6 @@ const DEFAULT_SEGMENTS: WheelSegment[] = [
   { id: '8', label: '2x', icon: '⭐', color: '#9c27b0', amount: 2, type: 'bonus' },
 ];
 
-const haptic = (pattern: number | number[] = 10) => {
-  try {
-    navigator?.vibrate?.(pattern);
-  } catch {
-    /* silent */
-  }
-};
-
 export default function LuckyDrawWheel({
   segments = DEFAULT_SEGMENTS,
   onSpin,
@@ -63,7 +57,7 @@ export default function LuckyDrawWheel({
     if (spinning || spinsRemaining <= 0) return;
     setSpinning(true);
     setResult(null);
-    haptic(15);
+    triggerHaptic('medium');
 
     // Get winning segment from server
     const winnerId = await onSpin();
@@ -81,7 +75,12 @@ export default function LuckyDrawWheel({
 
     // Wait for spin to complete (matches CSS transition duration)
     setTimeout(() => {
-      haptic([20, 100, 20]);
+      triggerHaptic('success');
+      masterBus.emit('WHEEL_SPIN_RESULT', {
+        segmentId: winSegment.id,
+        amount: winSegment.amount,
+        type: winSegment.type,
+      });
       setResult(winSegment);
       setSpinning(false);
     }, 4000);

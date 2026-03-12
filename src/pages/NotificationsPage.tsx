@@ -264,12 +264,12 @@ export default function NotificationsPage() {
         <span>Live updates</span>
       </div>
 
-      {/* Category Filter Tabs */}
-      <div className="notif-category-tabs">
+      {/* Category Filter — Pill Chips (Initiative 11) */}
+      <div className="notif-category-tabs nf-chip-bar">
         {NOTIF_CATEGORIES.map((cat) => (
           <button
             key={cat.id}
-            className={`notif-category-tab ${activeCategory === cat.id ? 'active' : ''}`}
+            className={`nf-filter-chip ${activeCategory === cat.id ? 'active' : ''}`}
             onClick={() => {
               haptic.selection();
               setActiveCategory(cat.id);
@@ -278,7 +278,7 @@ export default function NotificationsPage() {
             <span className="cat-icon">{cat.icon}</span>
             <span className="cat-label">{cat.label}</span>
             {categoryCounts[cat.id] > 0 && cat.id !== 'all' && (
-              <span className="cat-badge">{categoryCounts[cat.id]}</span>
+              <span className="nf-count-badge">{categoryCounts[cat.id]}</span>
             )}
           </button>
         ))}
@@ -294,8 +294,10 @@ export default function NotificationsPage() {
 
       <div className="notifications-list">
         {loading ? (
-          <div className="loading-state">
-            <div className="spinner" />
+          <div className="nf-skeleton-list">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="nf-skeleton-row" />
+            ))}
           </div>
         ) : notifications.length === 0 ? (
           <div className="empty-state">

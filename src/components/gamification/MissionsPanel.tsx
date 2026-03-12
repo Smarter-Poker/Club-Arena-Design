@@ -6,6 +6,8 @@
  */
 
 import { useState, useMemo } from 'react';
+import { triggerHaptic } from '../../services/HapticService';
+import { masterBus } from '../../core/MasterBus';
 import './MissionsPanel.css';
 
 type MissionTier = 'daily' | 'weekly' | 'monthly';
@@ -39,14 +41,6 @@ const REWARD_ICONS: Record<string, string> = {
   xp: '⭐',
   diamonds: '💎',
   chips: '🪙',
-};
-
-const haptic = (ms: number | number[] = 10) => {
-  try {
-    navigator?.vibrate?.(ms);
-  } catch {
-    /* silent */
-  }
 };
 
 export default function MissionsPanel({ missions, onClaim }: MissionsPanelProps) {
@@ -139,7 +133,13 @@ export default function MissionsPanel({ missions, onClaim }: MissionsPanelProps)
                     <button
                       className="mp-claim-btn"
                       onClick={() => {
-                        haptic([15, 60, 15]);
+                        triggerHaptic('success');
+                        masterBus.emit('MISSION_CLAIMED', {
+                          missionId: mission.id,
+                          tier: mission.tier,
+                          rewardType: mission.rewardType,
+                          rewardAmount: mission.rewardAmount,
+                        });
                         onClaim(mission.id);
                       }}
                     >

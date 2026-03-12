@@ -442,3 +442,168 @@
     height: 34px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SKELETON LOADING (Initiative 7)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.fr-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 0;
+}
+
+.fr-skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(26, 37, 53, 0.5), rgba(13, 21, 32, 0.7));
+  border: 1px solid rgba(42, 58, 74, 0.3);
+}
+
+.fr-skel-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(42, 58, 74, 0.5);
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.fr-skel-avatar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.06), transparent);
+  animation: frSkelShimmer 1.5s infinite;
+}
+
+.fr-skel-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fr-skel-name {
+  width: 120px;
+  height: 12px;
+  border-radius: 4px;
+  background: rgba(42, 58, 74, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.fr-skel-name::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.06), transparent);
+  animation: frSkelShimmer 1.5s infinite;
+}
+
+.fr-skel-status {
+  width: 70px;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(42, 58, 74, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.fr-skel-status::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.06), transparent);
+  animation: frSkelShimmer 1.5s infinite 0.2s;
+}
+
+@keyframes frSkelShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PILL CHIP TAB BAR (Initiative 8)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.fr-chip-bar {
+  display: flex;
+  gap: 6px;
+}
+
+.fr-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: #8899aa;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.fr-filter-chip:hover {
+  border-color: rgba(0, 212, 255, 0.4);
+  color: #00d4ff;
+  background: rgba(0, 212, 255, 0.08);
+}
+
+.fr-filter-chip.active {
+  border-color: #00d4ff;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 153, 204, 0.15));
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+}
+
+/* Pending count badge */
+.fr-pending-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0 4px;
+  animation: pendingBadgePulse 2s infinite;
+}
+
+@keyframes pendingBadgePulse {
+  0%,
+  100% {
+    box-shadow: 0 0 4px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+  }
+}
+
+/* At Table badge for online friends (Initiative 9) */
+.fr-at-table-badge {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: auto;
+}

@@ -174,7 +174,13 @@ export type BusEventType =
   | 'EV_CASHOUT_ACCEPTED'
   // Phase 6: Card Back Store events
   | 'SETTINGS_CHANGED'
-  | 'DIAMOND_SPENT';
+  | 'DIAMOND_SPENT'
+  // Gamification engagement events (Session Build)
+  | 'SETTLEMENT_RECEIPT_COPIED'
+  | 'MISSION_CLAIMED'
+  | 'DAILY_REWARD_CLAIMED'
+  | 'WHEEL_SPIN_RESULT'
+  | 'NOTIFICATION_DISMISSED';
 
 // #13: Type-safe payload map — compile-time enforcement of correct payloads
 export interface BusPayloadMap {
@@ -501,6 +507,12 @@ export interface BusPayloadMap {
   // Phase 6: Card Back Store payloads
   SETTINGS_CHANGED: { setting: string; value: string };
   DIAMOND_SPENT: { amount: number; item: string; category: string };
+  // Gamification engagement events (Session Build)
+  SETTLEMENT_RECEIPT_COPIED: { receiptId: string };
+  MISSION_CLAIMED: { missionId: string; tier: string; rewardType: string; rewardAmount: number };
+  DAILY_REWARD_CLAIMED: { amount: number; rewardType: string; streakDay: number };
+  WHEEL_SPIN_RESULT: { segmentId: string; amount: number; type: string };
+  NOTIFICATION_DISMISSED: { notificationId: string };
 }
 
 export interface BusEvent<T = unknown> {

@@ -7,6 +7,8 @@
  */
 
 import { useState, useCallback } from 'react';
+import { triggerHaptic } from '../../services/HapticService';
+import { masterBus } from '../../core/MasterBus';
 import './SettlementReceipt.css';
 
 interface SettlementReceiptProps {
@@ -20,15 +22,6 @@ interface SettlementReceiptProps {
   status: 'paid' | 'pending' | 'processing';
   method?: string;
 }
-
-// Haptic
-const haptic = (ms: number | number[] = 10) => {
-  try {
-    navigator?.vibrate?.(ms);
-  } catch {
-    /* vibrate unsupported */
-  }
-};
 
 export default function SettlementReceipt({
   receiptId,
@@ -49,7 +42,8 @@ export default function SettlementReceipt({
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(receiptId);
-      haptic([10, 50, 10]);
+      triggerHaptic('success');
+      masterBus.emit('SETTLEMENT_RECEIPT_COPIED', { receiptId });
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -100,7 +94,7 @@ export default function SettlementReceipt({
         className="sr-expand-btn"
         onClick={() => {
           setExpanded(!expanded);
-          haptic(8);
+          triggerHaptic('selection');
         }}
       >
         {expanded ? '▲ Hide Details' : '▼ Show Details'}

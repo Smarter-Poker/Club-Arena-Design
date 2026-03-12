@@ -7,6 +7,8 @@
  */
 
 import { useState, useCallback } from 'react';
+import { triggerHaptic } from '../../services/HapticService';
+import { masterBus } from '../../core/MasterBus';
 import './DailyLoginReward.css';
 
 interface DailyLoginRewardProps {
@@ -22,15 +24,6 @@ interface DailyLoginRewardProps {
   onClose: () => void;
 }
 
-// Haptic
-const haptic = (ms: number | number[] = 10) => {
-  try {
-    navigator?.vibrate?.(ms);
-  } catch {
-    /* silent */
-  }
-};
-
 export default function DailyLoginReward({
   amount,
   rewardType,
@@ -42,17 +35,18 @@ export default function DailyLoginReward({
   const [claimed, setClaimed] = useState(false);
 
   const handleReveal = useCallback(() => {
-    haptic(15);
+    triggerHaptic('medium');
     setRevealed(true);
   }, []);
 
   const handleClaim = useCallback(() => {
-    haptic([20, 100, 20]);
+    triggerHaptic('success');
     setClaimed(true);
+    masterBus.emit('DAILY_REWARD_CLAIMED', { amount, rewardType, streakDay });
     onClaim();
     // Auto-close after celebration
     setTimeout(onClose, 1800);
-  }, [onClaim, onClose]);
+  }, [onClaim, onClose, amount, rewardType, streakDay]);
 
   const icon = rewardType === 'diamonds' ? '💎' : '🪙';
 

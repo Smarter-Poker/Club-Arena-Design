@@ -538,3 +538,138 @@
   font-size: 0.75rem;
   color: var(--text-muted);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SKELETON LOADING (Initiative 4)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.ach-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+  padding: 1rem 0;
+}
+
+.ach-skeleton-card {
+  height: 120px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(26, 37, 53, 0.6), rgba(13, 21, 32, 0.8));
+  border: 1px solid rgba(42, 58, 74, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.ach-skeleton-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.04), transparent);
+  animation: achSkelShimmer 1.5s infinite;
+}
+
+@keyframes achSkelShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PILL CHIP FILTERS (Initiative 5)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.ach-chip-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+}
+
+.ach-chip-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.ach-filter-chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: #8899aa;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.ach-filter-chip:hover {
+  border-color: rgba(0, 212, 255, 0.4);
+  color: #00d4ff;
+  background: rgba(0, 212, 255, 0.08);
+}
+
+.ach-filter-chip.active {
+  border-color: #00d4ff;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 153, 204, 0.15));
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   RARITY GLOW BORDERS (Initiative 5)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.achievement-card[style*='--rarity-color: #6a7a8a'] {
+  border-left-color: #6a7a8a;
+}
+
+.achievement-card.rarity-rare {
+  --rarity-color: #4169e1;
+  border-left-color: #4169e1;
+}
+
+.achievement-card.rarity-epic {
+  --rarity-color: #8b5cf6;
+  border-left-color: #8b5cf6;
+  box-shadow:
+    inset 0 1px 0 rgba(139, 92, 246, 0.1),
+    0 0 8px rgba(139, 92, 246, 0.1);
+}
+
+.achievement-card.rarity-legendary {
+  --rarity-color: #ffd700;
+  border-left-color: #ffd700;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 215, 0, 0.1),
+    0 0 12px rgba(255, 215, 0, 0.15);
+}
+
+/* Recently unlocked pulsing badge */
+.ach-new-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #10b981, #059669);
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  animation: newBadgePulse 2s infinite;
+}
+
+@keyframes newBadgePulse {
+  0%,
+  100% {
+    box-shadow: 0 0 6px rgba(16, 185, 129, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.6);
+  }
+}

@@ -6,6 +6,7 @@
  */
 
 import { useState, useMemo } from 'react';
+import { masterBus } from '../../core/MasterBus';
 import './NotificationGrouper.css';
 
 type NotificationCategory = 'games' | 'social' | 'achievements' | 'system';
@@ -110,6 +111,7 @@ export default function NotificationGrouper({
                   className="ng-dismiss"
                   onClick={(e) => {
                     e.stopPropagation();
+                    masterBus.emit('NOTIFICATION_DISMISSED', { notificationId: notif.id });
                     onDismiss(notif.id);
                   }}
                 >

@@ -308,24 +308,27 @@ export default function FriendsPage() {
         )}
       </div>
 
-      <div className="friends-tabs">
+      <div className="friends-tabs fr-chip-bar">
         <button
-          className={activeTab === 'friends' ? 'active' : ''}
+          className={`fr-filter-chip ${activeTab === 'friends' ? 'active' : ''}`}
           onClick={() => setActiveTab('friends')}
         >
-          Friends ({friends.length})
+          👥 Friends ({friends.length})
         </button>
         <button
-          className={activeTab === 'pending' ? 'active' : ''}
+          className={`fr-filter-chip ${activeTab === 'pending' ? 'active' : ''}`}
           onClick={() => setActiveTab('pending')}
         >
-          Requests ({pendingRequests.length})
+          🔔 Requests{' '}
+          {pendingRequests.length > 0 && (
+            <span className="fr-pending-badge">{pendingRequests.length}</span>
+          )}
         </button>
         <button
-          className={activeTab === 'recent' ? 'active' : ''}
+          className={`fr-filter-chip ${activeTab === 'recent' ? 'active' : ''}`}
           onClick={() => setActiveTab('recent')}
         >
-          Recent
+          🕒 Recent
         </button>
       </div>
 
@@ -348,8 +351,16 @@ export default function FriendsPage() {
 
           <div className="friends-list">
             {loading ? (
-              <div className="loading-state">
-                <div className="spinner" />
+              <div className="fr-skeleton-list">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="fr-skeleton-row">
+                    <div className="fr-skel-avatar" />
+                    <div className="fr-skel-text">
+                      <div className="fr-skel-name" />
+                      <div className="fr-skel-status" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : filteredFriends.length === 0 ? (
               <div className="empty-state">

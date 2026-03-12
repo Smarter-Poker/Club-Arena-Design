@@ -23,6 +23,7 @@ interface ActionPanelProps {
   isMyTurn?: boolean;
   showPotOdds?: boolean;
   confirmAllIn?: boolean;
+  showBetSizePresets?: boolean;
 }
 
 function formatChips(amount: number): string {
@@ -47,6 +48,7 @@ export default function ActionPanel({
   isMyTurn = true,
   showPotOdds = false,
   confirmAllIn = true,
+  showBetSizePresets = true,
 }: ActionPanelProps) {
   const [isRaiseMode, setIsRaiseMode] = useState(false);
   const [pendingAllIn, setPendingAllIn] = useState(false);
@@ -258,22 +260,23 @@ export default function ActionPanel({
         </div>
 
         {/* Preset Row */}
-        <div className="raise-presets">
-          {presets.map((p) => (
-            <button
-              key={p.label}
-              className="raise-preset"
-              onClick={() => setPreset(p.value)}
-              disabled={p.value > maxRaise || p.value < minRaise}
-            >
-              {p.label}
+        {showBetSizePresets && (
+          <div className="raise-presets">
+            {presets.map((p) => (
+              <button
+                key={p.label}
+                className="raise-preset"
+                onClick={() => setPreset(p.value)}
+                disabled={p.value > maxRaise || p.value < minRaise}
+              >
+                {p.label}
+              </button>
+            ))}
+            <button className="raise-preset raise-preset--allin" onClick={handleAllIn}>
+              ALL IN
             </button>
-          ))}
-          <button className="raise-preset raise-preset--allin" onClick={handleAllIn}>
-            ALL IN
-          </button>
-        </div>
-
+          </div>
+        )}
         {/* Confirm / Cancel Row */}
         <div className="raise-actions">
           <button className="raise-cancel" onClick={() => setIsRaiseMode(false)}>

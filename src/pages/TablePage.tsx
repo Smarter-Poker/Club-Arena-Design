@@ -895,6 +895,12 @@ export default function TablePage({
     userSettingsRef.current = userSettings;
   }, [userSettings]);
 
+  // Sync persisted sound volume to SoundService on mount
+  useEffect(() => {
+    soundService.setMasterVolume(userSettings.soundVolume / 100);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only on mount
+
   // Hand history state — load from localStorage for session continuity
   const [handHistory, setHandHistory] = useState<HandRecord[]>(() => {
     try {
@@ -3864,6 +3870,7 @@ export default function TablePage({
                         isMyTurn={true}
                         showPotOdds={userSettings.showPotOdds}
                         confirmAllIn={userSettings.confirmAllIn}
+                        showBetSizePresets={userSettings.showBetSizePresets}
                       />
                     </>
                   );
@@ -4586,6 +4593,7 @@ export default function TablePage({
           }
           if (settingsUpdate.soundVolume !== undefined) {
             updateSetting('soundVolume', settingsUpdate.soundVolume);
+            soundService.setMasterVolume(settingsUpdate.soundVolume / 100);
           }
           if (settingsUpdate.showBetSizePresets !== undefined) {
             updateSetting('showBetSizePresets', settingsUpdate.showBetSizePresets);
