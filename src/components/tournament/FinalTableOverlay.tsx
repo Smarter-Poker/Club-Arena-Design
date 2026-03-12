@@ -58,6 +58,14 @@ export const FinalTableOverlay: React.FC<FinalTableOverlayProps> = ({
   const [isVisible, setIsVisible] = useState(false);
   const [players, setPlayers] = useState<FinalTablePlayer[]>([]);
   const [phase, setPhase] = useState<'enter' | 'show' | 'exit'>('enter');
+  const timerRefs = React.useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // Clean up timers on unmount
+  useEffect(() => {
+    return () => {
+      timerRefs.current.forEach(clearTimeout);
+    };
+  }, []);
 
   // Listen for FINAL_TABLE bus event
   useEffect(() => {
@@ -65,16 +73,20 @@ export const FinalTableOverlay: React.FC<FinalTableOverlayProps> = ({
       if (event.payload.tournamentId !== tournamentId) return;
 
       const ftPlayers = (event.payload.players || []) as FinalTablePlayer[];
-      // Sort by chips descending (chip leader first)
-      ftPlayers.sort((a, b) => b.chips - a.chips);
-      setPlayers(ftPlayers);
+      // Sort by chips descending — spread first to avoid mutating source array
+      const sorted = [...ftPlayers].sort((a, b) => b.chips - a.chips);
+      setPlayers(sorted);
       setPhase('enter');
       setIsVisible(true);
 
-      // Phase transitions
-      setTimeout(() => setPhase('show'), 800);
-      setTimeout(() => setPhase('exit'), 7200);
-      setTimeout(() => setIsVisible(false), 8000);
+      // Clear any previous timers
+      timerRefs.current.forEach(clearTimeout);
+      timerRefs.current = [];
+
+      // Phase transitions — tracked for cleanup
+      timerRefs.current.push(setTimeout(() => setPhase('show'), 800));
+      timerRefs.current.push(setTimeout(() => setPhase('exit'), 7200));
+      timerRefs.current.push(setTimeout(() => setIsVisible(false), 8000));
     });
 
     return unsub;
@@ -82,8 +94,10 @@ export const FinalTableOverlay: React.FC<FinalTableOverlayProps> = ({
 
   // Dismiss on tap
   const handleDismiss = useCallback(() => {
+    timerRefs.current.forEach(clearTimeout);
+    timerRefs.current = [];
     setPhase('exit');
-    setTimeout(() => setIsVisible(false), 600);
+    timerRefs.current.push(setTimeout(() => setIsVisible(false), 600));
   }, []);
 
   // Classify each player's style
