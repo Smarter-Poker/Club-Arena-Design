@@ -2,6 +2,12 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  * 🛠️ UTILS — Unit Tests
  * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * Updated to match the EXACT-PRECISION formatting directive:
+ * - formatCurrency: comma-separated, 2 decimal places, NO $ prefix
+ * - formatChips: comma-separated, 2 decimal places, NO K/M abbreviations
+ * - formatStakes: uses formatChipsWhole (integer display for blinds)
+ * - calculatePotOdds: uses toBeCloseTo for floating-point safety
  */
 
 import { describe, it, expect } from 'vitest';
@@ -31,27 +37,32 @@ import {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('formatCurrency', () => {
-    it('should format USD correctly', () => {
-        expect(formatCurrency(1000)).toBe('$1,000');
-        expect(formatCurrency(99.99)).toBe('$99.99');
-        expect(formatCurrency(0)).toBe('$0');
+    it('should format with exact precision (no $ prefix, 2 decimals)', () => {
+        expect(formatCurrency(1000)).toBe('1,000.00');
+        expect(formatCurrency(99.99)).toBe('99.99');
+        expect(formatCurrency(0)).toBe('0.00');
     });
 });
 
 describe('formatChips', () => {
-    it('should format millions correctly', () => {
-        expect(formatChips(1500000)).toBe('1.5M');
-        expect(formatChips(2000000)).toBe('2.0M');
+    it('should format large numbers with exact precision (no K/M abbreviations)', () => {
+        expect(formatChips(1500000)).toBe('1,500,000.00');
+        expect(formatChips(2000000)).toBe('2,000,000.00');
     });
 
-    it('should format thousands correctly', () => {
-        expect(formatChips(15000)).toBe('15.0K');
-        expect(formatChips(5500)).toBe('5.5K');
+    it('should format thousands with exact precision', () => {
+        expect(formatChips(15000)).toBe('15,000.00');
+        expect(formatChips(5500)).toBe('5,500.00');
     });
 
-    it('should format small numbers correctly', () => {
-        expect(formatChips(500)).toBe('500');
-        expect(formatChips(0)).toBe('0');
+    it('should format small numbers with 2 decimal places', () => {
+        expect(formatChips(500)).toBe('500.00');
+        expect(formatChips(0)).toBe('0.00');
+    });
+
+    it('should preserve decimal precision', () => {
+        expect(formatChips(1286.50)).toBe('1,286.50');
+        expect(formatChips(0.75)).toBe('0.75');
     });
 });
 
@@ -113,16 +124,17 @@ describe('slugify', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('formatStakes', () => {
-    it('should format stakes correctly', () => {
+    it('should format stakes using whole-chip display', () => {
         expect(formatStakes(1, 2)).toBe('1/2');
         expect(formatStakes(5, 10)).toBe('5/10');
-        expect(formatStakes(1000, 2000)).toBe('1.0K/2.0K');
+        expect(formatStakes(1000, 2000)).toBe('1,000/2,000');
     });
 });
 
 describe('calculatePotOdds', () => {
     it('should calculate pot odds correctly', () => {
-        expect(calculatePotOdds(100, 50)).toBe(100 / 3); // 33.33%
+        // 50 / (100 + 50) * 100 = 33.333...%
+        expect(calculatePotOdds(100, 50)).toBeCloseTo(100 / 3, 10);
         expect(calculatePotOdds(100, 0)).toBe(100);
     });
 });

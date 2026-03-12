@@ -286,7 +286,7 @@ export default function HandHistoryPage() {
             </span>
             <span className="stat-label">P/L</span>
           </div>
-          <button className="export-btn" onClick={handleExport}>
+          <button className="export-btn" onClick={handleExport} aria-label="Export hand history data">
             {' '}
             Export
           </button>
@@ -298,9 +298,10 @@ export default function HandHistoryPage() {
         {loading ? (
           <PageSkeleton variant="list" />
         ) : hands.length === 0 ? (
-          <div className="empty-state">
-            <span className="empty-icon">♠</span>
-            <p>No hands found. Play some poker!</p>
+          <div className="empty-state" style={{ padding: '48px 24px', textAlign: 'center' }}>
+            <span className="empty-icon" style={{ fontSize: 48, display: 'block', marginBottom: 12, opacity: 0.5 }}>♠♥♦♣</span>
+            <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 4 }}>No Hands Recorded Yet</p>
+            <p style={{ fontSize: 13, opacity: 0.6, margin: 0 }}>Play some poker and your hand history will appear here.</p>
           </div>
         ) : (
           hands.map((hand, index) => {

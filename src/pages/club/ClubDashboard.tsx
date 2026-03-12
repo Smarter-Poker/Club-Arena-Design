@@ -174,17 +174,17 @@ export default function ClubDashboard() {
     };
   }, [clubId]);
 
-  // ── Bus Listeners: cross-page event reactivity ──
+  // ── Bus Listeners: cross-page event reactivity (debounced to prevent rapid reloads) ──
   useEffect(() => {
-    const unsubClub = masterBus.subscribe('CLUB_UPDATED', () => {
+    const unsubClub = masterBus.subscribeDebounced('CLUB_UPDATED', () => {
       loadDashboardData();
-    });
-    const unsubBalance = masterBus.subscribe('BALANCE_UPDATED', () => {
+    }, 500);
+    const unsubBalance = masterBus.subscribeDebounced('BALANCE_UPDATED', () => {
       loadDashboardData();
-    });
-    const unsubSeated = masterBus.subscribe('TABLE_SEATED', () => {
+    }, 500);
+    const unsubSeated = masterBus.subscribeDebounced('TABLE_SEATED', () => {
       loadDashboardData();
-    });
+    }, 500);
     return () => {
       unsubClub();
       unsubBalance();

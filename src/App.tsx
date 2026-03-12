@@ -23,6 +23,7 @@ import AppLayout from './components/layouts/AppLayout';
 import { ToastProvider } from './components/common/Toast';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import RouteErrorBoundary from './components/common/RouteErrorBoundary';
+import { PageErrorBoundary } from './components/common/PageErrorBoundary';
 import OfflineQueueBadge from './components/common/OfflineQueueBadge';
 
 // Auth Guards
@@ -345,7 +346,9 @@ export default function App() {
                   path="clubs/:clubId/agents"
                   element={
                     <AuthGuard>
+                      <PageErrorBoundary pageName="Agent Management">
                       <AgentManagementPage />
+                    </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -369,7 +372,9 @@ export default function App() {
                   path="clubs/:clubId/dashboard"
                   element={
                     <AuthGuard>
+                      <PageErrorBoundary pageName="Club Dashboard">
                       <ClubDashboard />
+                    </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -433,7 +438,9 @@ export default function App() {
                   path="hand-history"
                   element={
                     <AuthGuard>
+                      <PageErrorBoundary pageName="Hand History">
                       <HandHistoryPage />
+                    </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -467,7 +474,9 @@ export default function App() {
                   path="unions/:unionId"
                   element={
                     <AuthGuard>
+                      <PageErrorBoundary pageName="Union Details">
                       <UnionDetailPage />
+                    </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -592,7 +601,9 @@ export default function App() {
                   path="players"
                   element={
                     <AuthGuard>
+                      <PageErrorBoundary pageName="Club Members">
                       <ClubMembersPage />
+                    </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -600,7 +611,9 @@ export default function App() {
                   path="data"
                   element={
                     <AuthGuard>
+                      <PageErrorBoundary pageName="Club Dashboard">
                       <ClubDashboard />
+                    </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -608,7 +621,9 @@ export default function App() {
                   path="admin"
                   element={
                     <AuthGuard>
+                      <PageErrorBoundary pageName="Club Settings">
                       <ClubSettingsPage />
+                    </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -632,7 +647,9 @@ export default function App() {
                   path="clubs/:clubId/agent-dashboard"
                   element={
                     <AuthGuard>
+                      <PageErrorBoundary pageName="Super Agent Dashboard">
                       <SuperAgentDashboard />
+                    </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -680,7 +697,9 @@ export default function App() {
                   path="stats"
                   element={
                     <AuthGuard>
+                      <PageErrorBoundary pageName="Player Stats">
                       <PlayerStatsPage />
+                    </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -712,7 +731,9 @@ export default function App() {
                   path="clubs/:clubId/settings"
                   element={
                     <AuthGuard>
+                      <PageErrorBoundary pageName="Club Settings">
                       <ClubSettingsPage />
+                    </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -752,7 +773,9 @@ export default function App() {
                   path="clubs/:clubId/reports"
                   element={
                     <AuthGuard>
+                      <PageErrorBoundary pageName="Report Review">
                       <ReportReviewPage />
+                    </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -776,7 +799,9 @@ export default function App() {
                   path="clubs/:clubId/financials"
                   element={
                     <AuthGuard>
+                      <PageErrorBoundary pageName="Club Financials">
                       <ClubFinancialsPage />
+                    </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />

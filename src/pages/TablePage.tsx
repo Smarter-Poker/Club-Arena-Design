@@ -713,9 +713,12 @@ export default function TablePage({
         return { ...prev, players: updatedPlayers };
       });
       // Sync stack to Supabase table_seats (fire-and-forget)
+      // Compute the NEW stack directly — tableState hasn't updated yet (setState is async)
+      const currentStack = tableState.players[tableState.heroSeat - 1]?.stack || 0;
+      const newStack = currentStack + amount;
       supabase
         .from('table_seats')
-        .update({ stack: (tableState.players[tableState.heroSeat - 1]?.stack || 0) + amount })
+        .update({ stack: newStack })
         .eq('table_id', tableId)
         .eq('seat_number', tableState.heroSeat)
         .is('left_at', null)
@@ -752,11 +755,12 @@ export default function TablePage({
         return { ...prev, players: updatedPlayers };
       });
       // Sync stack to Supabase table_seats (fire-and-forget)
+      // Compute the NEW stack directly — tableState hasn't updated yet (setState is async)
+      const currentStack = tableState.players[tableState.heroSeat - 1]?.stack || 0;
+      const newStack = Math.max(0, currentStack - amount);
       supabase
         .from('table_seats')
-        .update({
-          stack: Math.max(0, (tableState.players[tableState.heroSeat - 1]?.stack || 0) - amount),
-        })
+        .update({ stack: newStack })
         .eq('table_id', tableId)
         .eq('seat_number', tableState.heroSeat)
         .is('left_at', null)
@@ -2379,7 +2383,7 @@ export default function TablePage({
                 streets.push({
                   name,
                   actions: streetMap[name],
-                  pot: currentState.pot,
+                  pot: event.pot || 0, // Use HC's authoritative pot (currentState.pot is zeroed by WINNERS)
                 });
               }
             }
@@ -2845,15 +2849,17 @@ export default function TablePage({
 
     // Check for all-in scenario triggers (after slight delay to let state update)
     workerTimeout(() => {
-      const activePlayers = tableState.players.filter(
+      // Use tableStateRef.current instead of stale tableState closure
+      const currentState = tableStateRef.current;
+      const activePlayers = currentState.players.filter(
         (p) => p && p.status === 'active' && p.stack > 0
       );
-      const allInPlayers = tableState.players.filter((p) => p && p.status === 'all_in');
+      const allInPlayers = currentState.players.filter((p) => p && p.status === 'all_in');
 
       // If heads-up all-in (2 players all-in), trigger insurance
       if (activePlayers.length === 0 && allInPlayers.length >= 2) {
         const opponent = allInPlayers.find((p) => p?.id !== hero?.id);
-        const potSize = tableState.pot;
+        const potSize = currentState.pot;
         const maxCoverage = Math.trunc(potSize * 0.8 * 100) / 100; // 80% of pot coverage
 
         // Convert board cards to proper format

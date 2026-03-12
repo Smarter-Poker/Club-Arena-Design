@@ -176,6 +176,7 @@ export default function ClubSettingsPage() {
       if (!error) {
         toast.success('Settings saved!');
         masterBus.emit('SETTINGS_UPDATED', { settings: { clubId, ...settings } });
+        if (clubId) masterBus.emit('CLUB_UPDATED', { clubId });
         navigate(`/clubs/${clubId}`);
       } else {
         toast.error('Failed to save settings: ' + error.message);
