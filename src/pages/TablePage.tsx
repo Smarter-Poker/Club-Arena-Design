@@ -2324,7 +2324,7 @@ export default function TablePage({
           }
           break;
 
-        case 'SHOWDOWN':
+        case 'SHOWDOWN': {
           // Play showdown dramatic sound
           // BUG-01 FIX: use soundService.isEnabled() not stale closure
           if (soundService.isEnabled()) soundService.playShowdown();
@@ -2395,6 +2395,7 @@ export default function TablePage({
             });
           }
           break;
+        }
 
         case 'WINNERS':
           // Sync all player stacks from the engine state after pot distribution
