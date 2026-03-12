@@ -108,12 +108,12 @@ ActionPanel, SitOutModal, WaitListModal, TimeBank, CashierModal, BuyInModal, Str
 - [x] Center watermark — 'S' logo at 1.8% opacity
 - [x] Theme-configurable felt color — 6 themes via `data-felt-theme` CSS variable
 
-### 🔲 Phase 4: New Game Modes
+### ✅ Phase 4: New Game Modes — COMPLETE
 
-- [ ] SpinItEngine.ts — lottery SNG
-- [ ] SpinItWheel.tsx — animated prize wheel
-- [ ] FlashPoolEngine.ts — fast-fold player pool
-- [ ] FlashTransition.tsx — table wipe transition
+- [x] `SpinItEngine.ts` — 3-player lottery SNG (weighted prize wheel, hyper-turbo blinds)
+- [x] `SpinItWheel.tsx` + CSS — animated radial prize wheel with CSS spin deceleration
+- [x] `FlashPoolEngine.ts` — fast-fold player pool with instant reassignment
+- [x] `FlashTransition.tsx` + CSS — table wipe (wipe/fade/blur)
 
 ### 🔲 Phase 5: Feature Parity+
 
@@ -134,8 +134,8 @@ ActionPanel, SitOutModal, WaitListModal, TimeBank, CashierModal, BuyInModal, Str
 | GTO Advisor       | ✅  |    ❌     |   ❌   |     ❌     |
 | Player Style Tags | ✅  |    ❌     |   ❌   |     ❌     |
 | Equity Display    | ✅  |    ❌     |   ❌   |     ❌     |
-| Spin-It           | ❌  |    ✅     |   ❌   |     ❌     |
-| Flash/Fast-Fold   | ❌  |    ❌     |   ❌   |     ✅     |
+| Spin-It           | ✅  |    ✅     |   ❌   |     ❌     |
+| Flash/Fast-Fold   | ✅  |    ❌     |   ❌   |     ✅     |
 | EV Cashout        | ❌  |    ❌     |   ✅   |     ❌     |
 
 ---

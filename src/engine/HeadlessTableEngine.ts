@@ -198,6 +198,10 @@ export class HeadlessTableEngine {
 
     // Clean up per-table persistence
     this.persistence.dispose();
+
+    // Clean up straddle and RIT engine state for this table (prevents stale enrollments/offers)
+    straddleEngine.dispose(this.tableId);
+    runItTwiceEngine.dispose(this.tableId);
   }
 
   /**
@@ -665,6 +669,12 @@ export class HeadlessTableEngine {
         const offeredTo = activeIds[1];
         const handId = `${this.tableId}-${this.handCount}`;
 
+        // Guard: only enter the RIT flow if the engine is configured for this table
+        if (!runItTwiceEngine.isEnabled(this.tableId) || activeIds.length < 2) {
+          if (this.handController) this.handController.resumeRunout();
+          break;
+        }
+
         // Asynchronous flow for RIT Engine
         (async () => {
           return new Promise<void>((resolve) => {
@@ -742,6 +752,15 @@ export class HeadlessTableEngine {
 
               const w1 = determineWinners(event.activePlayers, board1, pots, variant);
               const w2 = determineWinners(event.activePlayers, board2, pots, variant);
+
+              // Guard: if either board has no winners, fall back to normal runout
+              if (w1.length === 0 || w2.length === 0) {
+                console.warn(
+                  `[HeadlessTableEngine:${this.tableId}] RIT board evaluation produced no winners — falling back`
+                );
+                this.handController.resumeRunout();
+                return;
+              }
 
               // Give RunItTwiceEngine the primary winner strings for bus emission
               runItTwiceEngine.resolve(this.tableId, w1[0].userId, w2[0].userId);

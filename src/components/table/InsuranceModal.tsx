@@ -1,13 +1,11 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- *  INSURANCE MODAL — All-In Insurance Options
+ *  INSURANCE MODAL — All-In Insurance + EV Cashout
  * ═══════════════════════════════════════════════════════════════════════════════
  *
- * All-in insurance system:
- * - Calculate equity and insurance cost
- * - Slider for coverage amount
- * - Premium display
- * - Accept/decline
+ * Two-tab modal:
+ *   1. Insurance — coverage slider with premium calculation
+ *   2. EV Cashout — take guaranteed equity payout at slight rake discount
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -19,15 +17,16 @@ import './InsuranceModal.css';
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface InsuranceOffer {
-  maxCoverage: number; // Maximum amount you can insure
-  equityPercent: number; // Your current equity (0-100)
-  premiumRate: number; // Premium as percentage of coverage (e.g., 0.05 = 5%)
+  maxCoverage: number;
+  equityPercent: number; // 0-100
+  premiumRate: number; // e.g., 0.05 = 5%
   potAmount: number;
   yourStack: number;
   opponentStack: number;
   yourCards: { rank: string; suit: 'h' | 'd' | 'c' | 's' }[];
   opponentCards?: { rank: string; suit: 'h' | 'd' | 'c' | 's' }[];
   board: { rank: string; suit: 'h' | 'd' | 'c' | 's' }[];
+  evCashoutRake?: number; // EV cashout rake (default 1%)
 }
 
 export interface InsuranceModalProps {
@@ -35,10 +34,14 @@ export interface InsuranceModalProps {
   onClose: () => void;
   onAccept: (coverageAmount: number) => void;
   onDecline: () => void;
+  onEvCashout?: (cashoutAmount: number) => void;
   offer: InsuranceOffer;
   timeRemaining?: number;
   currency?: string;
+  enableEvCashout?: boolean;
 }
+
+type ModalTab = 'insurance' | 'ev-cashout';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // UTILITIES
@@ -71,10 +74,13 @@ export function InsuranceModal({
   onClose,
   onAccept,
   onDecline,
+  onEvCashout,
   offer,
   timeRemaining = 15,
   currency = '',
+  enableEvCashout = true,
 }: InsuranceModalProps) {
+  const [activeTab, setActiveTab] = useState<ModalTab>('insurance');
   const [coverageAmount, setCoverageAmount] = useState(offer.maxCoverage);
   const [mounted, setMounted] = useState(false);
 
@@ -83,20 +89,29 @@ export function InsuranceModal({
       setTimeout(() => setMounted(true), 50);
     } else {
       setMounted(false);
+      setActiveTab('insurance');
     }
   }, [isOpen]);
 
-  // Calculate premium
-  const premium = useMemo(() => {
-    return Math.trunc(coverageAmount * offer.premiumRate);
-  }, [coverageAmount, offer.premiumRate]);
+  // ── Insurance calculations ──
+  const premium = useMemo(
+    () => Math.trunc(coverageAmount * offer.premiumRate),
+    [coverageAmount, offer.premiumRate]
+  );
+  const payout = useMemo(() => coverageAmount - premium, [coverageAmount, premium]);
 
-  // Payout if you lose
-  const payout = useMemo(() => {
-    return coverageAmount - premium;
-  }, [coverageAmount, premium]);
+  // ── EV Cashout calculations ──
+  const evCashoutRake = offer.evCashoutRake ?? 0.01;
+  const evRaw = useMemo(
+    () => Math.trunc(offer.potAmount * (offer.equityPercent / 100)),
+    [offer.potAmount, offer.equityPercent]
+  );
+  const evCashoutAmount = useMemo(
+    () => Math.trunc(evRaw * (1 - evCashoutRake)),
+    [evRaw, evCashoutRake]
+  );
+  const evRakeAmount = useMemo(() => evRaw - evCashoutAmount, [evRaw, evCashoutAmount]);
 
-  // Handle accept
   const handleAccept = useCallback(() => {
     haptic.light();
     onAccept(coverageAmount);
@@ -107,7 +122,11 @@ export function InsuranceModal({
     onDecline();
   }, [onDecline]);
 
-  // Slider presets
+  const handleEvCashout = useCallback(() => {
+    haptic.medium();
+    onEvCashout?.(evCashoutAmount);
+  }, [evCashoutAmount, onEvCashout]);
+
   const presets = useMemo(
     () => [
       { label: '25%', value: Math.trunc(offer.maxCoverage * 0.25) },
@@ -134,12 +153,38 @@ export function InsuranceModal({
         <div className="insurance-modal__header">
           <div className="insurance-modal__title-row">
             <span className="insurance-modal__icon">⛨</span>
-            <h2 className="insurance-modal__title">Insurance</h2>
+            <h2 className="insurance-modal__title">
+              {activeTab === 'insurance' ? 'Insurance' : 'EV Cashout'}
+            </h2>
           </div>
           {timeRemaining !== undefined && (
             <span className="insurance-modal__timer">{timeRemaining}s</span>
           )}
         </div>
+
+        {/* Tab Switcher */}
+        {enableEvCashout && (
+          <div className="insurance-modal__tabs">
+            <button
+              className={`insurance-modal__tab ${activeTab === 'insurance' ? 'insurance-modal__tab--active' : ''}`}
+              onClick={() => {
+                haptic.light();
+                setActiveTab('insurance');
+              }}
+            >
+              ⛨ Insurance
+            </button>
+            <button
+              className={`insurance-modal__tab ${activeTab === 'ev-cashout' ? 'insurance-modal__tab--active' : ''}`}
+              onClick={() => {
+                haptic.light();
+                setActiveTab('ev-cashout');
+              }}
+            >
+              💰 EV Cashout
+            </button>
+          </div>
+        )}
 
         {/* Cards Display */}
         <div className="insurance-modal__cards">
@@ -157,9 +202,7 @@ export function InsuranceModal({
               ))}
             </div>
           </div>
-
           <div className="insurance-modal__vs">vs</div>
-
           <div className="insurance-modal__hand">
             <span className="insurance-modal__hand-label">Opponent</span>
             <div className="insurance-modal__hand-cards">
@@ -209,73 +252,144 @@ export function InsuranceModal({
           </span>
         </div>
 
-        {/* Coverage Slider */}
-        <div className="insurance-modal__coverage">
-          <span className="insurance-modal__coverage-label">Coverage Amount</span>
-          <input
-            type="range"
-            className="insurance-modal__slider"
-            min={0}
-            max={offer.maxCoverage}
-            step={Math.max(1, Math.floor(offer.maxCoverage / 100))}
-            value={coverageAmount}
-            onChange={(e) => setCoverageAmount(parseInt(e.target.value))}
-          />
-          <div className="insurance-modal__presets">
-            {presets.map((preset) => (
+        {/* ═══ INSURANCE TAB ═══ */}
+        {activeTab === 'insurance' && (
+          <>
+            <div className="insurance-modal__coverage">
+              <span className="insurance-modal__coverage-label">Coverage Amount</span>
+              <input
+                type="range"
+                className="insurance-modal__slider"
+                min={0}
+                max={offer.maxCoverage}
+                step={Math.max(1, Math.floor(offer.maxCoverage / 100))}
+                value={coverageAmount}
+                onChange={(e) => setCoverageAmount(parseInt(e.target.value))}
+              />
+              <div className="insurance-modal__presets">
+                {presets.map((preset) => (
+                  <button
+                    key={preset.label}
+                    className={`insurance-modal__preset ${coverageAmount === preset.value ? 'insurance-modal__preset--active' : ''}`}
+                    onClick={() => setCoverageAmount(preset.value)}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="insurance-modal__summary">
+              <div className="insurance-modal__summary-row">
+                <span className="insurance-modal__summary-label">Coverage</span>
+                <span className="insurance-modal__summary-value">
+                  {currency}
+                  {coverageAmount.toLocaleString()}
+                </span>
+              </div>
+              <div className="insurance-modal__summary-row">
+                <span className="insurance-modal__summary-label">
+                  Premium ({(offer.premiumRate * 100).toFixed(1)}%)
+                </span>
+                <span className="insurance-modal__summary-value insurance-modal__summary-value--negative">
+                  -{currency}
+                  {premium.toLocaleString()}
+                </span>
+              </div>
+              <div className="insurance-modal__summary-row insurance-modal__summary-row--total">
+                <span className="insurance-modal__summary-label">If you lose, receive</span>
+                <span className="insurance-modal__summary-value insurance-modal__summary-value--highlight">
+                  {currency}
+                  {payout.toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            <div className="insurance-modal__actions">
               <button
-                key={preset.label}
-                className={`insurance-modal__preset ${coverageAmount === preset.value ? 'insurance-modal__preset--active' : ''}`}
-                onClick={() => setCoverageAmount(preset.value)}
+                className="insurance-modal__btn insurance-modal__btn--decline"
+                onClick={handleDecline}
               >
-                {preset.label}
+                No Insurance
               </button>
-            ))}
-          </div>
-        </div>
+              <button
+                className="insurance-modal__btn insurance-modal__btn--accept"
+                onClick={handleAccept}
+              >
+                Buy Insurance
+              </button>
+            </div>
+          </>
+        )}
 
-        {/* Summary */}
-        <div className="insurance-modal__summary">
-          <div className="insurance-modal__summary-row">
-            <span className="insurance-modal__summary-label">Coverage</span>
-            <span className="insurance-modal__summary-value">
-              {currency}
-              {coverageAmount.toLocaleString()}
-            </span>
-          </div>
-          <div className="insurance-modal__summary-row">
-            <span className="insurance-modal__summary-label">
-              Premium ({(offer.premiumRate * 100).toFixed(1)}%)
-            </span>
-            <span className="insurance-modal__summary-value insurance-modal__summary-value--negative">
-              -{currency}
-              {premium.toLocaleString()}
-            </span>
-          </div>
-          <div className="insurance-modal__summary-row insurance-modal__summary-row--total">
-            <span className="insurance-modal__summary-label">If you lose, receive</span>
-            <span className="insurance-modal__summary-value insurance-modal__summary-value--highlight">
-              {currency}
-              {payout.toLocaleString()}
-            </span>
-          </div>
-        </div>
+        {/* ═══ EV CASHOUT TAB ═══ */}
+        {activeTab === 'ev-cashout' && (
+          <>
+            <div className="insurance-modal__ev-section">
+              <div className="insurance-modal__ev-hero">
+                <span className="insurance-modal__ev-amount">
+                  {currency}
+                  {evCashoutAmount.toLocaleString()}
+                </span>
+                <span className="insurance-modal__ev-subtitle">Guaranteed Payout</span>
+              </div>
 
-        {/* Actions */}
-        <div className="insurance-modal__actions">
-          <button
-            className="insurance-modal__btn insurance-modal__btn--decline"
-            onClick={handleDecline}
-          >
-            No Insurance
-          </button>
-          <button
-            className="insurance-modal__btn insurance-modal__btn--accept"
-            onClick={handleAccept}
-          >
-            Buy Insurance
-          </button>
-        </div>
+              <div className="insurance-modal__summary">
+                <div className="insurance-modal__summary-row">
+                  <span className="insurance-modal__summary-label">Pot Size</span>
+                  <span className="insurance-modal__summary-value">
+                    {currency}
+                    {offer.potAmount.toLocaleString()}
+                  </span>
+                </div>
+                <div className="insurance-modal__summary-row">
+                  <span className="insurance-modal__summary-label">
+                    Your Equity ({offer.equityPercent.toFixed(1)}%)
+                  </span>
+                  <span className="insurance-modal__summary-value">
+                    {currency}
+                    {evRaw.toLocaleString()}
+                  </span>
+                </div>
+                <div className="insurance-modal__summary-row">
+                  <span className="insurance-modal__summary-label">
+                    Cashout Fee ({(evCashoutRake * 100).toFixed(0)}%)
+                  </span>
+                  <span className="insurance-modal__summary-value insurance-modal__summary-value--negative">
+                    -{currency}
+                    {evRakeAmount.toLocaleString()}
+                  </span>
+                </div>
+                <div className="insurance-modal__summary-row insurance-modal__summary-row--total">
+                  <span className="insurance-modal__summary-label">You receive</span>
+                  <span className="insurance-modal__summary-value insurance-modal__summary-value--highlight">
+                    {currency}
+                    {evCashoutAmount.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              <p className="insurance-modal__ev-note">
+                Take your guaranteed equity now. The hand will continue but your payout is locked.
+              </p>
+            </div>
+
+            <div className="insurance-modal__actions">
+              <button
+                className="insurance-modal__btn insurance-modal__btn--decline"
+                onClick={handleDecline}
+              >
+                Play It Out
+              </button>
+              <button
+                className="insurance-modal__btn insurance-modal__btn--cashout"
+                onClick={handleEvCashout}
+              >
+                💰 Cash Out
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

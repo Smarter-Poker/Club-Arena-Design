@@ -259,15 +259,12 @@ export default function DailyChallenges() {
           data: { user },
         } = await supabase.auth.getUser();
         if (user) {
-          // Increment diamond balance
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('diamonds')
-            .eq('id', user.id)
-            .maybeSingle();
-          const currentBalance = profile?.diamonds || 0;
-          const newBalance = currentBalance + reward;
-          await supabase.from('profiles').update({ diamonds: newBalance }).eq('id', user.id);
+          // Atomically increment diamond balance (TOCTOU-safe — no SELECT→UPDATE race)
+          const { data: rpcResult } = await supabase.rpc('increment_diamonds', {
+            p_user_id: user.id,
+            p_amount: reward,
+          });
+          const newBalance = typeof rpcResult === 'number' ? rpcResult : reward;
 
           // Mark claimed in daily_challenge_progress
           await supabase.from('daily_challenge_progress').upsert(
@@ -287,19 +284,23 @@ export default function DailyChallenges() {
             delta: reward,
             source: 'daily_challenge',
           });
+
+          // SUCCESS: Only mark as claimed AFTER DB writes succeed
+          setClaimed((prev) => {
+            const next = { ...prev, [challengeIndex]: true };
+            try {
+              localStorage.setItem(`${dayKey}_claimed`, JSON.stringify(next));
+            } catch {
+              /* */
+            }
+            return next;
+          });
         }
-      } catch {
-        // silent
+      } catch (err) {
+        console.error('[DailyChallenges] Claim failed — user can retry:', err);
+        // Release claim guard so user can retry on failure
+        claimingRef.current.delete(challengeIndex);
       }
-      setClaimed((prev) => {
-        const next = { ...prev, [challengeIndex]: true };
-        try {
-          localStorage.setItem(`${dayKey}_claimed`, JSON.stringify(next));
-        } catch {
-          /* */
-        }
-        return next;
-      });
       // Fade out animation timing
       setTimeout(() => setClaimingIndex(null), 600);
     },

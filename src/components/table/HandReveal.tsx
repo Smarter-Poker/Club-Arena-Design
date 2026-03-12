@@ -1,0 +1,218 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  HAND REVEAL — Paid Show / Muck / Auto-Reveal
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *
+ * After a hand where the winning player didn't need to show, this component
+ * allows other players to pay diamonds to reveal the winner's hole cards.
+ * Also handles voluntary show/muck choice for the winner.
+ *
+ * Features:
+ *   - Winner show/muck decision
+ *   - Paid reveal request by other players (costs diamonds)
+ *   - Timed auto-muck if no action
+ *   - Bus integration for reveal events
+ */
+
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { haptic } from '../../services/SoundService';
+import { masterBus } from '../../core/MasterBus';
+import './HandReveal.css';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface HandRevealCard {
+  rank: string;
+  suit: 'h' | 'd' | 'c' | 's';
+}
+
+export interface HandRevealProps {
+  /** Whether this component is visible */
+  isOpen: boolean;
+  /** Whether current user is the winner (show/muck controls) */
+  isWinner: boolean;
+  /** Winner's player ID */
+  winnerId: string;
+  /** Winner's display name */
+  winnerName: string;
+  /** Cards to reveal (only populated after reveal) */
+  revealedCards?: HandRevealCard[];
+  /** Cost in diamonds to reveal */
+  revealCost?: number;
+  /** Current user's diamond balance */
+  userDiamonds?: number;
+  /** Seconds before auto-muck */
+  autoMuckTimer?: number;
+  /** Table ID for bus events */
+  tableId: string;
+  /** Hand ID for bus events */
+  handId: string;
+  /** Callbacks */
+  onShow?: () => void;
+  onMuck?: () => void;
+  onPayReveal?: () => void;
+  onClose: () => void;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const SUIT_SYMBOLS: Record<string, string> = {
+  h: '♥',
+  d: '♦',
+  c: '♣',
+  s: '♠',
+};
+
+const SUIT_COLORS: Record<string, string> = {
+  h: '#F85149',
+  d: '#1877F2',
+  c: '#3FB950',
+  s: '#E4E6EB',
+};
+
+export function HandReveal({
+  isOpen,
+  isWinner,
+  winnerId,
+  winnerName,
+  revealedCards,
+  revealCost = 10,
+  userDiamonds = 0,
+  autoMuckTimer = 8,
+  tableId,
+  handId,
+  onShow,
+  onMuck,
+  onPayReveal,
+  onClose,
+}: HandRevealProps) {
+  const [timer, setTimer] = useState(autoMuckTimer);
+  const [revealed, setRevealed] = useState(false);
+  const [mucked, setMucked] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Auto-muck countdown (winner only)
+  useEffect(() => {
+    if (!isOpen || !isWinner || revealed || mucked) return;
+
+    setTimer(autoMuckTimer);
+    timerRef.current = setInterval(() => {
+      setTimer((prev) => {
+        if (prev <= 1) {
+          // Auto-muck
+          handleMuck();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, isWinner, autoMuckTimer]);
+
+  // Reset on new hand
+  useEffect(() => {
+    if (isOpen) {
+      setRevealed(false);
+      setMucked(false);
+    }
+  }, [isOpen, handId]);
+
+  const handleShow = useCallback(() => {
+    haptic.medium();
+    setRevealed(true);
+    if (timerRef.current) clearInterval(timerRef.current);
+    onShow?.();
+    masterBus.emit('HAND_COMPLETED', { handId, tableId });
+  }, [handId, tableId, onShow]);
+
+  const handleMuck = useCallback(() => {
+    haptic.light();
+    setMucked(true);
+    if (timerRef.current) clearInterval(timerRef.current);
+    onMuck?.();
+  }, [onMuck]);
+
+  const handlePayReveal = useCallback(() => {
+    if (userDiamonds < revealCost) return;
+    haptic.medium();
+    setRevealed(true);
+    onPayReveal?.();
+  }, [userDiamonds, revealCost, onPayReveal]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="hand-reveal-overlay" onClick={onClose}>
+      <div className="hand-reveal" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="hand-reveal__header">
+          <h3 className="hand-reveal__title">{isWinner ? 'Show or Muck?' : `${winnerName} Won`}</h3>
+          {isWinner && !revealed && !mucked && <span className="hand-reveal__timer">{timer}s</span>}
+        </div>
+
+        {/* Card Display */}
+        <div className="hand-reveal__cards">
+          {revealed && revealedCards ? (
+            revealedCards.map((card, i) => (
+              <div key={i} className="hand-reveal__card hand-reveal__card--revealed">
+                <span style={{ color: SUIT_COLORS[card.suit] }}>
+                  {card.rank}
+                  {SUIT_SYMBOLS[card.suit]}
+                </span>
+              </div>
+            ))
+          ) : mucked ? (
+            <div className="hand-reveal__mucked">
+              <span className="hand-reveal__mucked-text">Mucked</span>
+            </div>
+          ) : (
+            <>
+              <div className="hand-reveal__card hand-reveal__card--facedown" />
+              <div className="hand-reveal__card hand-reveal__card--facedown" />
+            </>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="hand-reveal__actions">
+          {isWinner && !revealed && !mucked && (
+            <>
+              <button className="hand-reveal__btn hand-reveal__btn--muck" onClick={handleMuck}>
+                Muck
+              </button>
+              <button className="hand-reveal__btn hand-reveal__btn--show" onClick={handleShow}>
+                Show Cards
+              </button>
+            </>
+          )}
+
+          {!isWinner && !revealed && !mucked && (
+            <button
+              className={`hand-reveal__btn hand-reveal__btn--pay ${userDiamonds < revealCost ? 'hand-reveal__btn--disabled' : ''}`}
+              onClick={handlePayReveal}
+              disabled={userDiamonds < revealCost}
+            >
+              💎 Reveal ({revealCost})
+            </button>
+          )}
+
+          {(revealed || mucked) && (
+            <button className="hand-reveal__btn hand-reveal__btn--close" onClick={onClose}>
+              Done
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default HandReveal;
