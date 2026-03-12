@@ -264,8 +264,17 @@ export default function ClubHomePage() {
       masterBus.subscribe('TABLE_SEATED', debouncedReload),
       masterBus.subscribe('TABLE_LEFT', debouncedReload),
       masterBus.subscribe('BALANCE_UPDATED', debouncedReload),
-      masterBus.subscribe('CLUB_UPDATED', debouncedReload),
       masterBus.subscribe('ANNOUNCEMENT_CHANGED', debouncedReload),
+      // Phase 11: Only reload for OUR club's updates (not every club in the platform)
+      masterBus.subscribe('CLUB_UPDATED', (event) => {
+        if (!clubIdRef.current || event.payload?.clubId === clubIdRef.current) {
+          debouncedReload();
+        }
+      }),
+      masterBus.subscribe('TABLE_UPDATED', (event) => {
+        // Reload when any table linked to this club changes
+        debouncedReload();
+      }),
     ];
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer);
