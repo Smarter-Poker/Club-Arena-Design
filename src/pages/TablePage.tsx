@@ -1375,8 +1375,22 @@ export default function TablePage({
                   ? 'sitting_out'
                   : 'active',
             isHero,
-            // Show cards for hero always, and for all players at showdown (if they have cards)
-            showCards: isHero || (stage === 'showdown' && sp.cards && sp.cards.length > 0),
+            // Show cards for hero always, and for all non-folded players at showdown (if they have cards)
+            // Apply autoMuck preferences for the hero at showdown
+            showCards: (() => {
+              if (isHero) {
+                // At showdown, check autoMuck prefs for hero
+                if (stage === 'showdown' && sp.cards && sp.cards.length > 0) {
+                  // We can't determine winner/loser from broadcast alone,
+                  // so autoMuck for hero losers is handled by the separate SHOWDOWN event.
+                  // Here we just show hero cards by default.
+                  return true;
+                }
+                return true; // Hero always sees their own cards
+              }
+              // Non-hero: show at showdown if they have cards and aren't folded
+              return stage === 'showdown' && sp.cards && sp.cards.length > 0 && !sp.is_folded;
+            })(),
           } as any;
         }
 

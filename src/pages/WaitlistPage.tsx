@@ -9,7 +9,6 @@ import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import { useUserStore } from '../stores/useUserStore';
 import { useToast } from '../components/common/Toast';
-import { PlayerAvatar } from '../components/avatars/PlayerAvatar';
 import { haptic } from '../services/HapticService';
 import './WaitlistPage.css';
 

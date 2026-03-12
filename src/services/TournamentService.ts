@@ -1845,13 +1845,19 @@ class TournamentService {
    * Create final table (consolidate to 1 table when remaining players fit a single table)
    */
   async createFinalTable(tournamentId: string): Promise<{ finalTableId: string | null }> {
+    // Fetch tournament first to determine dynamic capacity
+    const tournament = await this.getTournament(tournamentId);
+    if (!tournament) return { finalTableId: null };
+
+    const finalTableCapacity = TournamentService.getTableCapacityForTournament(tournament);
+
     const { count } = await supabase
       .from('tournament_players')
       .select('*', { count: 'exact' })
       .eq('tournament_id', tournamentId)
       .eq('status', 'playing');
 
-    if (!count || count > 9) return { finalTableId: null };
+    if (!count || count > finalTableCapacity) return { finalTableId: null };
 
     // Get or create final table (look for a table named "Final Table")
     let { data: finalTable } = await supabase
@@ -1864,10 +1870,6 @@ class TournamentService {
       .maybeSingle();
 
     if (!finalTable) {
-      const tournament = await this.getTournament(tournamentId);
-      if (!tournament) return { finalTableId: null };
-
-      const finalTableCapacity = TournamentService.getTableCapacityForTournament(tournament);
       const { data: newTable } = await supabase
         .from('tables')
         .insert({
