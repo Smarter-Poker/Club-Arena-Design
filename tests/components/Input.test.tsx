@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Input, Textarea, Select, Checkbox, Toggle, ChipInput } from '@/components/common/Input';
@@ -26,9 +27,7 @@ describe('Input Component', () => {
   });
 
   it('shows error state', () => {
-    const { container } = render(
-      <Input id="test-input" error="This field is required" />
-    );
+    const { container } = render(<Input id="test-input" error="This field is required" />);
 
     expect(screen.getByText('This field is required')).toBeInTheDocument();
     const wrapper = container.querySelector('.input-error');
@@ -53,13 +52,7 @@ describe('Input Component', () => {
   });
 
   it('applies aria attributes correctly', () => {
-    render(
-      <Input
-        id="test-input"
-        required={true}
-        error="Invalid"
-      />
-    );
+    render(<Input id="test-input" required={true} error="Invalid" />);
 
     const input = screen.getByRole('textbox') as HTMLInputElement;
     expect(input).toHaveAttribute('aria-required', 'true');
@@ -67,25 +60,19 @@ describe('Input Component', () => {
   });
 
   it('applies fullWidth class', () => {
-    const { container } = render(
-      <Input id="test-input" fullWidth />
-    );
+    const { container } = render(<Input id="test-input" fullWidth />);
 
     const wrapper = container.querySelector('.input-full');
     expect(wrapper).toBeInTheDocument();
   });
 
   it('renders with icon on left', () => {
-    render(
-      <Input id="test-input" icon="📧" />
-    );
+    render(<Input id="test-input" icon="📧" />);
     expect(screen.getByText('📧')).toHaveClass('input-icon-left');
   });
 
   it('renders with icon on right when specified', () => {
-    render(
-      <Input id="test-input" icon="✓" iconPosition="right" />
-    );
+    render(<Input id="test-input" icon="✓" iconPosition="right" />);
     expect(screen.getByText('✓')).toHaveClass('input-icon-right');
   });
 
@@ -93,9 +80,7 @@ describe('Input Component', () => {
     const sizes = ['small', 'medium', 'large'] as const;
 
     sizes.forEach((size) => {
-      const { container, unmount } = render(
-        <Input id={`test-${size}`} size={size} />
-      );
+      const { container, unmount } = render(<Input id={`test-${size}`} size={size} />);
 
       const inputContainer = container.querySelector(`.input-${size}`);
       expect(inputContainer).toBeInTheDocument();
@@ -107,9 +92,7 @@ describe('Input Component', () => {
     const variants = ['default', 'filled', 'outlined'] as const;
 
     variants.forEach((variant) => {
-      const { container, unmount } = render(
-        <Input id={`test-${variant}`} variant={variant} />
-      );
+      const { container, unmount } = render(<Input id={`test-${variant}`} variant={variant} />);
 
       const inputContainer = container.querySelector(`.input-${variant}`);
       expect(inputContainer).toBeInTheDocument();
@@ -149,9 +132,7 @@ describe('Textarea Component', () => {
   });
 
   it('shows error state', () => {
-    render(
-      <Textarea id="test-textarea" error="This field is required" />
-    );
+    render(<Textarea id="test-textarea" error="This field is required" />);
 
     expect(screen.getByText('This field is required')).toBeInTheDocument();
   });
@@ -179,13 +160,7 @@ describe('Select Component', () => {
   ];
 
   it('renders with options', () => {
-    render(
-      <Select
-        id="test-select"
-        label="Choose"
-        options={options}
-      />
-    );
+    render(<Select id="test-select" label="Choose" options={options} />);
 
     expect(screen.getByText('Option 1')).toBeInTheDocument();
     expect(screen.getByText('Option 2')).toBeInTheDocument();
@@ -193,25 +168,14 @@ describe('Select Component', () => {
   });
 
   it('renders with placeholder', () => {
-    render(
-      <Select
-        id="test-select"
-        options={options}
-        placeholder="Select an option"
-      />
-    );
+    render(<Select id="test-select" options={options} placeholder="Select an option" />);
 
     expect(screen.getByText('Select an option')).toBeInTheDocument();
   });
 
   it('handles selection', async () => {
     const user = userEvent.setup();
-    render(
-      <Select
-        id="test-select"
-        options={options}
-      />
-    );
+    render(<Select id="test-select" options={options} />);
 
     const select = screen.getByRole('combobox') as HTMLSelectElement;
     await user.selectOptions(select, 'option2');
@@ -220,25 +184,13 @@ describe('Select Component', () => {
   });
 
   it('shows error state', () => {
-    render(
-      <Select
-        id="test-select"
-        options={options}
-        error="Invalid selection"
-      />
-    );
+    render(<Select id="test-select" options={options} error="Invalid selection" />);
 
     expect(screen.getByText('Invalid selection')).toBeInTheDocument();
   });
 
   it('applies disabled state', () => {
-    render(
-      <Select
-        id="test-select"
-        options={options}
-        disabled={true}
-      />
-    );
+    render(<Select id="test-select" options={options} disabled={true} />);
 
     const select = screen.getByRole('combobox') as HTMLSelectElement;
     expect(select).toBeDisabled();
@@ -250,12 +202,7 @@ describe('Select Component', () => {
       { value: 'option2', label: 'Option 2', disabled: true },
     ];
 
-    render(
-      <Select
-        id="test-select"
-        options={optionsWithDisabled}
-      />
-    );
+    render(<Select id="test-select" options={optionsWithDisabled} />);
 
     const option2 = screen.getByText('Option 2') as HTMLOptionElement;
     expect(option2).toBeDisabled();
@@ -264,13 +211,7 @@ describe('Select Component', () => {
 
 describe('Checkbox Component', () => {
   it('renders with label', () => {
-    render(
-      <Checkbox
-        label="Agree"
-        checked={false}
-        onChange={vi.fn()}
-      />
-    );
+    render(<Checkbox label="Agree" checked={false} onChange={vi.fn()} />);
 
     expect(screen.getByText('Agree')).toBeInTheDocument();
   });
@@ -279,13 +220,7 @@ describe('Checkbox Component', () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
 
-    render(
-      <Checkbox
-        label="Agree"
-        checked={false}
-        onChange={handleChange}
-      />
-    );
+    render(<Checkbox label="Agree" checked={false} onChange={handleChange} />);
 
     const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
     await user.click(checkbox);
@@ -297,14 +232,7 @@ describe('Checkbox Component', () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
 
-    render(
-      <Checkbox
-        label="Disabled"
-        checked={false}
-        onChange={handleChange}
-        disabled={true}
-      />
-    );
+    render(<Checkbox label="Disabled" checked={false} onChange={handleChange} disabled={true} />);
 
     const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
     expect(checkbox).toBeDisabled();
@@ -314,13 +242,7 @@ describe('Checkbox Component', () => {
   });
 
   it('shows checked state', () => {
-    render(
-      <Checkbox
-        label="Checked"
-        checked={true}
-        onChange={vi.fn()}
-      />
-    );
+    render(<Checkbox label="Checked" checked={true} onChange={vi.fn()} />);
 
     const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
     expect(checkbox).toBeChecked();
@@ -329,13 +251,7 @@ describe('Checkbox Component', () => {
 
 describe('Toggle Component', () => {
   it('renders with label', () => {
-    render(
-      <Toggle
-        label="Dark Mode"
-        checked={false}
-        onChange={vi.fn()}
-      />
-    );
+    render(<Toggle label="Dark Mode" checked={false} onChange={vi.fn()} />);
 
     expect(screen.getByText('Dark Mode')).toBeInTheDocument();
   });
@@ -344,13 +260,7 @@ describe('Toggle Component', () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
 
-    render(
-      <Toggle
-        label="Toggle"
-        checked={false}
-        onChange={handleChange}
-      />
-    );
+    render(<Toggle label="Toggle" checked={false} onChange={handleChange} />);
 
     const toggle = screen.getByRole('checkbox') as HTMLInputElement;
     await user.click(toggle);
@@ -362,14 +272,7 @@ describe('Toggle Component', () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
 
-    render(
-      <Toggle
-        label="Disabled"
-        checked={false}
-        onChange={handleChange}
-        disabled={true}
-      />
-    );
+    render(<Toggle label="Disabled" checked={false} onChange={handleChange} disabled={true} />);
 
     const toggle = screen.getByRole('checkbox') as HTMLInputElement;
     expect(toggle).toBeDisabled();
@@ -383,11 +286,7 @@ describe('Toggle Component', () => {
 
     sizes.forEach((size) => {
       const { container, unmount } = render(
-        <Toggle
-          size={size}
-          checked={false}
-          onChange={vi.fn()}
-        />
+        <Toggle size={size} checked={false} onChange={vi.fn()} />
       );
 
       const wrapper = container.querySelector(`.toggle-${size}`);
@@ -397,12 +296,7 @@ describe('Toggle Component', () => {
   });
 
   it('shows on state when checked', () => {
-    const { container } = render(
-      <Toggle
-        checked={true}
-        onChange={vi.fn()}
-      />
-    );
+    const { container } = render(<Toggle checked={true} onChange={vi.fn()} />);
 
     const track = container.querySelector('.toggle-on');
     expect(track).toBeInTheDocument();
@@ -411,13 +305,7 @@ describe('Toggle Component', () => {
 
 describe('ChipInput Component', () => {
   it('renders with label', () => {
-    render(
-      <ChipInput
-        value={0}
-        onChange={vi.fn()}
-        label="Bet Amount"
-      />
-    );
+    render(<ChipInput value={0} onChange={vi.fn()} label="Bet Amount" />);
 
     expect(screen.getByText('Bet Amount')).toBeInTheDocument();
   });
@@ -426,12 +314,21 @@ describe('ChipInput Component', () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
 
-    render(
-      <ChipInput
-        value={100}
-        onChange={handleChange}
-      />
-    );
+    // Use a wrapper to test controlled component behavior
+    const Wrapper = () => {
+      const [val, setVal] = useState(100);
+      return (
+        <ChipInput
+          value={val}
+          onChange={(v: number) => {
+            setVal(v);
+            handleChange(v);
+          }}
+        />
+      );
+    };
+
+    render(<Wrapper />);
 
     const input = screen.getByRole('spinbutton') as HTMLInputElement;
     await user.clear(input);
@@ -444,13 +341,7 @@ describe('ChipInput Component', () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
 
-    const { container } = render(
-      <ChipInput
-        value={100}
-        onChange={handleChange}
-        step={10}
-      />
-    );
+    const { container } = render(<ChipInput value={100} onChange={handleChange} step={10} />);
 
     const buttons = container.querySelectorAll('button');
     const plusButton = buttons[1];
@@ -464,13 +355,7 @@ describe('ChipInput Component', () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
 
-    const { container } = render(
-      <ChipInput
-        value={100}
-        onChange={handleChange}
-        step={10}
-      />
-    );
+    const { container } = render(<ChipInput value={100} onChange={handleChange} step={10} />);
 
     const buttons = container.querySelectorAll('button');
     const minusButton = buttons[0];
@@ -489,6 +374,7 @@ describe('ChipInput Component', () => {
         value={10}
         onChange={handleChange}
         min={0}
+        step={15} // Exceeds margin to cross 0
       />
     );
 
@@ -497,7 +383,7 @@ describe('ChipInput Component', () => {
 
     await user.click(minusButton);
 
-    expect(handleChange).toHaveBeenCalledWith(0);
+    expect(handleChange).toHaveBeenCalledWith(0); // 10 - 15 = -5 => clamps to 0
   });
 
   it('respects max value', async () => {
@@ -509,6 +395,7 @@ describe('ChipInput Component', () => {
         value={90}
         onChange={handleChange}
         max={100}
+        step={15} // Exceeds margin to cross 100
       />
     );
 
@@ -517,7 +404,7 @@ describe('ChipInput Component', () => {
 
     await user.click(plusButton);
 
-    expect(handleChange).toHaveBeenCalledWith(100);
+    expect(handleChange).toHaveBeenCalledWith(100); // 90 + 15 = 105 => clamps to 100
   });
 
   it('renders preset buttons', async () => {
@@ -545,13 +432,7 @@ describe('ChipInput Component', () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
 
-    const { container } = render(
-      <ChipInput
-        value={100}
-        onChange={handleChange}
-        disabled={true}
-      />
-    );
+    const { container } = render(<ChipInput value={100} onChange={handleChange} disabled={true} />);
 
     const buttons = container.querySelectorAll('button');
     expect(buttons[0]).toBeDisabled();

@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { BotLogic, type HorseStyle, type BotDecision } from '../../src/engine/BotLogic';
+import { HorseLogic, type HorseStyle, type HorseDecision } from '../../src/engine/HorseLogic';
 import { RakeService } from '../../src/services/RakeService';
 import { BBJService } from '../../src/services/BBJService';
 import type { SeatPlayer, Card } from '../../src/types/database.types';
@@ -30,8 +30,8 @@ const createMockPlayer = (overrides: Partial<SeatPlayer> = {}): SeatPlayer => ({
   bet: 0,
   totalInvested: 0,
   cards: [
-    { rank: 'A', suit: 'h' },
-    { rank: 'K', suit: 's' },
+    { rank: 'A', suit: 'hearts' },
+    { rank: 'K', suit: 'spades' },
   ],
   is_folded: false,
   is_all_in: false,
@@ -56,10 +56,10 @@ const createMockGameState = (overrides: any = {}) => ({
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// BOTLOGIC TESTS — All 5 Horse Styles
+// HORSELOGIC TESTS — All 5 Horse Styles
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe('BotLogic.decide() — Decision Validation', () => {
+describe('HorseLogic.decide() — Decision Validation', () => {
   const styles: HorseStyle[] = ['tag', 'lag', 'balanced', 'tricky', 'grinder'];
 
   describe.each(styles)('Style: %s', (style) => {
@@ -67,7 +67,7 @@ describe('BotLogic.decide() — Decision Validation', () => {
       const player = createMockPlayer();
       const gameState = createMockGameState();
 
-      const decision = BotLogic.decide(player, gameState as any, style);
+      const decision = HorseLogic.decide(player, gameState as any, style);
 
       expect(decision).toBeDefined();
       expect(decision.action).toMatch(/^(fold|check|call|bet|raise|allin)$/);
@@ -80,7 +80,7 @@ describe('BotLogic.decide() — Decision Validation', () => {
       const player = createMockPlayer({ stack: 10000 });
       const gameState = createMockGameState();
 
-      const decision = BotLogic.decide(player, gameState as any, style);
+      const decision = HorseLogic.decide(player, gameState as any, style);
 
       if (decision.action === 'bet' || decision.action === 'raise') {
         expect(decision.amount).toBeDefined();
@@ -95,7 +95,7 @@ describe('BotLogic.decide() — Decision Validation', () => {
       const player = createMockPlayer({ stack: 10 }); // Very short
       const gameState = createMockGameState();
 
-      const decision = BotLogic.decide(player, gameState as any, style);
+      const decision = HorseLogic.decide(player, gameState as any, style);
 
       expect(decision).toBeDefined();
       // Should fold, check, or call with short stack, not overcommit
@@ -111,7 +111,7 @@ describe('BotLogic.decide() — Decision Validation', () => {
         pot: 1000,
       });
 
-      const decision = BotLogic.decide(player, gameState as any, style);
+      const decision = HorseLogic.decide(player, gameState as any, style);
 
       // With small stack and large bet, should either fold or all-in
       expect(['fold', 'allin', 'call']).toContain(decision.action);
@@ -121,20 +121,20 @@ describe('BotLogic.decide() — Decision Validation', () => {
       const player = createMockPlayer();
       const baseGameState = createMockGameState();
 
-      const preflopDecision = BotLogic.decide(
+      const preflopDecision = HorseLogic.decide(
         player,
         { ...baseGameState, stage: 'preflop' } as any,
         style
       );
-      const flopDecision = BotLogic.decide(
+      const flopDecision = HorseLogic.decide(
         player,
         {
           ...baseGameState,
           stage: 'flop',
           communityCards: [
-            { rank: '2', suit: 'h' },
-            { rank: '7', suit: 'c' },
-            { rank: 'K', suit: 'd' },
+            { rank: '2', suit: 'hearts' },
+            { rank: '7', suit: 'clubs' },
+            { rank: 'K', suit: 'diamonds' },
           ],
         } as any,
         style
@@ -150,7 +150,7 @@ describe('BotLogic.decide() — Decision Validation', () => {
       const gameState = createMockGameState({ pot: 0, currentBet: 0 });
 
       for (let i = 0; i < 10; i++) {
-        const decision = BotLogic.decide(player, gameState as any, style);
+        const decision = HorseLogic.decide(player, gameState as any, style);
 
         if (decision.amount !== undefined) {
           expect(Number.isNaN(decision.amount)).toBe(false);
@@ -165,7 +165,7 @@ describe('BotLogic.decide() — Decision Validation', () => {
       const gameState = createMockGameState();
 
       for (let i = 0; i < 20; i++) {
-        const decision = BotLogic.decide(player, gameState as any, style);
+        const decision = HorseLogic.decide(player, gameState as any, style);
 
         if ((decision.action === 'bet' || decision.action === 'raise') && decision.amount) {
           expect(decision.amount).toBeLessThanOrEqual(stack + player.bet);
@@ -177,8 +177,8 @@ describe('BotLogic.decide() — Decision Validation', () => {
       const player = createMockPlayer({
         stack: 100,
         cards: [
-          { rank: '7', suit: 'h' },
-          { rank: '2', suit: 'c' },
+          { rank: '7', suit: 'hearts' },
+          { rank: '2', suit: 'clubs' },
         ],
       });
       const gameState = createMockGameState({
@@ -186,7 +186,7 @@ describe('BotLogic.decide() — Decision Validation', () => {
         pot: 500,
       });
 
-      const decision = BotLogic.decide(player, gameState as any, style);
+      const decision = HorseLogic.decide(player, gameState as any, style);
 
       // Weak hand facing big bet should fold frequently
       expect(['fold', 'call', 'allin']).toContain(decision.action);
@@ -198,7 +198,7 @@ describe('BotLogic.decide() — Decision Validation', () => {
     const gameState = createMockGameState();
 
     styles.forEach((style) => {
-      const decision = BotLogic.decide(player, gameState as any, style);
+      const decision = HorseLogic.decide(player, gameState as any, style);
 
       // All decisions must have these fields
       expect(decision).toHaveProperty('action');
@@ -434,7 +434,7 @@ describe('Regression Tests — Bug Prevention', () => {
     const gameState = createMockGameState();
 
     for (let i = 0; i < 30; i++) {
-      const decision = BotLogic.decide(player, gameState as any, 'balanced');
+      const decision = HorseLogic.decide(player, gameState as any, 'balanced');
 
       // Check no undefined actions
       expect(decision.action).not.toBeUndefined();
@@ -446,7 +446,7 @@ describe('Regression Tests — Bug Prevention', () => {
     const player = createMockPlayer({ stack: Number.MAX_SAFE_INTEGER });
     const gameState = createMockGameState({ pot: Number.MAX_SAFE_INTEGER });
 
-    const decision = BotLogic.decide(player, gameState as any, 'balanced');
+    const decision = HorseLogic.decide(player, gameState as any, 'balanced');
 
     if (decision.amount !== undefined) {
       expect(Number.isFinite(decision.amount)).toBe(true);
@@ -457,7 +457,7 @@ describe('Regression Tests — Bug Prevention', () => {
     const player = createMockPlayer({ stack: -100 });
     const gameState = createMockGameState();
 
-    const decision = BotLogic.decide(player, gameState as any, 'balanced');
+    const decision = HorseLogic.decide(player, gameState as any, 'balanced');
 
     // Should still return valid decision even with negative stack
     expect(decision).toBeDefined();
@@ -468,7 +468,7 @@ describe('Regression Tests — Bug Prevention', () => {
     const gameState = createMockGameState({ players: [] });
     const player = createMockPlayer();
 
-    const decision = BotLogic.decide(player, gameState as any, 'balanced');
+    const decision = HorseLogic.decide(player, gameState as any, 'balanced');
 
     expect(decision).toBeDefined();
   });
@@ -477,7 +477,7 @@ describe('Regression Tests — Bug Prevention', () => {
     const player = createMockPlayer({ cards: [] });
     const gameState = createMockGameState();
 
-    const decision = BotLogic.decide(player, gameState as any, 'balanced');
+    const decision = HorseLogic.decide(player, gameState as any, 'balanced');
 
     expect(decision).toBeDefined();
   });
