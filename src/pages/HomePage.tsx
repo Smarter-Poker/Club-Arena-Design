@@ -777,7 +777,7 @@ function HomePageInner() {
   // DATA FETCHING (with SWR cache)
   // ═══════════════════════════════════════════════════════════════════════════════
   const fetchUserData = useCallback(
-    async (skipLoading = false) => {
+    async (skipLoading = false, getIsMounted?: () => boolean) => {
       if (!skipLoading) setIsLoading(true);
       try {
         const {
@@ -790,8 +790,8 @@ function HomePageInner() {
               ...m.club,
               is_owner: m.role === 'owner',
               member_count: m.club?.member_count || 0,
-              active_tables: m.club?.active_tables || 0,
             })) || [];
+          if (getIsMounted && !getIsMounted()) return;
           setUserClubs(clubs);
           // Enhancement #9: Update SWR cache
           try {
@@ -807,6 +807,7 @@ function HomePageInner() {
               .select('*', { count: 'exact', head: true })
               .eq('user_id', authUser.id)
               .eq('is_read', false);
+            if (getIsMounted && !getIsMounted()) return;
             if (count && count > 0) {
               setTileBadges({ 'Player Stats': count });
             }
@@ -826,12 +827,14 @@ function HomePageInner() {
               profile.card_color_preset !== localStorage.getItem(CARD_COLOR_KEY)
             ) {
               localStorage.setItem(CARD_COLOR_KEY, profile.card_color_preset);
+              if (getIsMounted && !getIsMounted()) return;
               setCardColorPreset(profile.card_color_preset);
             }
           } catch {
             /* silent */
           }
         } else {
+          if (getIsMounted && !getIsMounted()) return;
           setUserClubs([]);
           try {
             localStorage.removeItem(SWR_CACHE_KEY);
@@ -843,14 +846,15 @@ function HomePageInner() {
         console.error('Error fetching user data:', err);
         toast.error('Failed to load user data');
       } finally {
-        setIsLoading(false);
+        if (!getIsMounted || getIsMounted()) setIsLoading(false);
       }
     },
     [toast]
   );
 
   useEffect(() => {
-    fetchUserData();
+    let isMounted = true;
+    fetchUserData(false, () => isMounted);
 
     let channel: any = null;
     const setupRealtimeSubscription = async () => {
@@ -871,7 +875,7 @@ function HomePageInner() {
             filter: `user_id=eq.${authUser.id}`,
           },
           () => {
-            fetchUserData(true);
+            if (isMounted) fetchUserData(true, () => isMounted);
           }
         )
         .subscribe();
@@ -886,7 +890,7 @@ function HomePageInner() {
     const unsubJoined = masterBus.subscribeDebounced(
       'CLUB_JOINED',
       () => {
-        fetchUserData(true);
+        if (isMounted) fetchUserData(true, () => isMounted);
       },
       500
     );
@@ -894,14 +898,15 @@ function HomePageInner() {
     const unsubLeft = masterBus.subscribeDebounced(
       'CLUB_LEFT',
       () => {
-        fetchUserData(true);
+        if (isMounted) fetchUserData(true, () => isMounted);
       },
       500
     );
 
     const unsubAuth = masterBus.subscribe('AUTH_STATE_CHANGED', (event) => {
+      if (!isMounted) return;
       if (event.payload.isAuthenticated) {
-        fetchUserData();
+        fetchUserData(false, () => isMounted);
       } else {
         setUserClubs([]);
       }
@@ -910,13 +915,13 @@ function HomePageInner() {
     // Enhancement #8: Listen for notification badge updates
     const unsubNotif = masterBus.subscribe('NOTIFICATION_READ', () => {
       // Clear all badges when notifications are read
-      setTileBadges({});
+      if (isMounted) setTileBadges({});
     });
 
     // Phase 8 #5: Listen for diamond balance changes from challenge claims
     const unsubDiamond = masterBus.subscribe('DIAMOND_BALANCE_CHANGED', (event) => {
       const delta = event.payload?.delta as number;
-      if (delta && delta > 0) {
+      if (delta && delta > 0 && isMounted) {
         setTileBadges((prev) => ({
           ...prev,
           'Player Stats': (prev['Player Stats'] || 0) + 1,
@@ -925,6 +930,7 @@ function HomePageInner() {
     });
 
     return () => {
+      isMounted = false;
       if (channel) {
         channel.unsubscribe();
       }
@@ -943,6 +949,7 @@ function HomePageInner() {
 
   // Fetch Shark Club stats — ALL data from live Supabase queries
   useEffect(() => {
+    let isMounted = true;
     async function fetchSharkClubStats() {
       try {
         // Find Shark Club by club_id = 25450
@@ -952,7 +959,7 @@ function HomePageInner() {
           .eq('club_id', 25450)
           .maybeSingle();
 
-        if (!club) return;
+        if (!club || !isMounted) return;
         setSharkClubId(club.id);
 
         // 1. Real member count from club_members table (exclude horses)
@@ -971,8 +978,8 @@ function HomePageInner() {
         activePlayers = seatCount || 0;
 
         // 3. Club level — no column exists yet, default to 1
+        if (!isMounted) return;
         const clubLevel = 1;
-
         setSharkClubStats({
           totalMembers: memberCount || 0,
           clubLevel,
@@ -997,25 +1004,27 @@ function HomePageInner() {
           filter: 'club_id=eq.25450',
         },
         () => {
-          fetchSharkClubStats();
+          if (isMounted) fetchSharkClubStats();
         }
       )
       .subscribe();
 
     return () => {
+      isMounted = false;
       masterBus.removeRegisteredChannel(sharkChannelKey);
     };
   }, []);
 
   // Enhancement #6: Real-time stats refresh for ALL club cards (debounced)
   useEffect(() => {
+    let isMounted = true;
     const allClubsKey = 'clubs-all-live-stats';
     const allClubsChannel = masterBus.getOrCreateChannel(allClubsKey);
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const debouncedFetch = () => {
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
-        fetchUserData(true);
+        if (isMounted) fetchUserData(true, () => isMounted);
       }, 500);
     };
     allClubsChannel
@@ -1032,6 +1041,7 @@ function HomePageInner() {
       .subscribe();
 
     return () => {
+      isMounted = false;
       if (debounceTimer) clearTimeout(debounceTimer);
       masterBus.removeRegisteredChannel(allClubsKey);
     };

@@ -1517,7 +1517,10 @@ export default function TournamentDetails() {
                 <button
                   className="btn btn-confirm"
                   onClick={handleRegister}
-                  disabled={isProcessing}
+                  disabled={
+                    isProcessing ||
+                    walletBalance < tournament.buy_in_amount + (tournament.buy_in_fee || 0)
+                  }
                 >
                   {isProcessing ? 'Processing...' : 'Confirm'}
                 </button>

@@ -32,6 +32,7 @@ import ConnectionStatusBar from './components/ConnectionStatusBar';
 import BusToastBridge from './components/common/BusToastBridge';
 import MilestoneToast from './components/common/MilestoneToast';
 import { bootServices, shutdownServices } from './services/ServiceBootstrap';
+import { GlobalBalanceSync } from './core/useGlobalBalanceSync';
 
 // Auth Guards
 import { AuthGuard, GuestGuard } from './components/auth/AuthGuard';
@@ -310,6 +311,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <ToastProvider>
+        <GlobalBalanceSync />
         <BusToastBridge />
         <MilestoneToast />
         <ConnectionStatusBar />

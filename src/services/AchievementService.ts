@@ -290,7 +290,8 @@ class AchievementServiceClass {
     const { data, error } = await supabase
       .from('user_achievements')
       .select('*')
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .limit(500);
 
     if (error) {
       console.error('[AchievementService] Error fetching achievements:', error);

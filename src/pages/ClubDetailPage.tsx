@@ -384,7 +384,11 @@ export default function ClubDetailPage() {
   const animatedTableCount = useCountAnimation(club?.activeTableCount || 0, 800);
 
   useEffect(() => {
-    loadClubData();
+    let isMounted = true;
+    loadClubData(() => isMounted);
+    return () => {
+      isMounted = false;
+    };
   }, [clubId]);
 
   // Sync settings form with loaded club data
@@ -539,13 +543,13 @@ export default function ClubDetailPage() {
     };
   }, []);
 
-  const loadClubData = async () => {
+  const loadClubData = async (getIsMounted?: () => boolean) => {
     if (!clubId) {
-      setLoading(false);
+      if (!getIsMounted || getIsMounted()) setLoading(false);
       return;
     }
 
-    setLoading(true);
+    if (!getIsMounted || getIsMounted()) setLoading(true);
 
     try {
       // Load club from Supabase
@@ -557,7 +561,7 @@ export default function ClubDetailPage() {
 
       if (clubError || !clubData) {
         console.error('[ClubDetailPage] Failed to load club:', clubError);
-        setLoading(false);
+        if (!getIsMounted || getIsMounted()) setLoading(false);
         return;
       }
 
@@ -584,6 +588,7 @@ export default function ClubDetailPage() {
           maxBuyInBB: clubData.max_buyin_bb || 200,
         },
       };
+      if (getIsMounted && !getIsMounted()) return;
       setClub(mappedClub);
 
       // Load members
@@ -603,6 +608,7 @@ export default function ClubDetailPage() {
           joinedAt: m.created_at,
           lastActive: m.last_active,
         }));
+        if (getIsMounted && !getIsMounted()) return;
         setMembers(mappedMembers);
 
         // Update member count to reflect actual data (clubs.member_count may be stale)
@@ -612,7 +618,7 @@ export default function ClubDetailPage() {
         const {
           data: { user },
         } = await supabase.auth.getUser();
-        if (user) {
+        if (user && (!getIsMounted || getIsMounted())) {
           const currentUserMember = memberData.find((m: any) => m.user_id === user.id);
           if (currentUserMember) {
             setUserRole(currentUserMember.role || 'member');
@@ -637,6 +643,7 @@ export default function ClubDetailPage() {
           maxPlayers: t.max_players || 6,
           status: t.status || 'waiting',
         }));
+        if (getIsMounted && !getIsMounted()) return;
         setTables(mappedTables);
 
         // Count active tables
@@ -646,7 +653,7 @@ export default function ClubDetailPage() {
     } catch (error) {
       console.error('[ClubDetailPage] Error loading data:', error);
     } finally {
-      setLoading(false);
+      if (!getIsMounted || getIsMounted()) setLoading(false);
     }
   };
 

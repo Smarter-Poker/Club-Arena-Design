@@ -85,49 +85,55 @@ export default function ClubsPage() {
     return () => timers.forEach((t) => clearTimeout(t));
   }, [myClubs.length]);
 
-  const loadMyClubs = async () => {
+  const loadMyClubs = async (getIsMounted?: () => boolean) => {
     setIsLoading(true);
     try {
       const memberships = await ClubsService.getUserMemberships();
+      if (getIsMounted && !getIsMounted()) return;
       setMyClubs(memberships);
     } catch (err) {
       console.error('[CLUBS] Failed to load memberships:', err);
       toast.error('Failed to load your clubs');
+      if (getIsMounted && !getIsMounted()) return;
       setMyClubs([]);
     } finally {
-      setIsLoading(false);
+      if (!getIsMounted || getIsMounted()) setIsLoading(false);
     }
   };
 
   // Load user's clubs
   useEffect(() => {
-    loadMyClubs();
+    let isMounted = true;
+    loadMyClubs(() => isMounted);
 
     // Realtime: refresh clubs when membership data changes
     const channelKey = 'clubs-page-live';
     const channel = masterBus.getOrCreateChannel(channelKey);
     channel
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'club_members' }, () =>
-        loadMyClubs()
-      )
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'clubs' }, () =>
-        loadMyClubs()
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'club_members' }, () => {
+        if (isMounted) loadMyClubs(() => isMounted);
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'clubs' }, () => {
+        if (isMounted) loadMyClubs(() => isMounted);
+      })
       .subscribe();
     return () => {
+      isMounted = false;
       masterBus.removeRegisteredChannel(channelKey);
     };
   }, []);
 
   // ── Bus Listeners: cross-page event reactivity ──
   useEffect(() => {
+    let isMounted = true;
     const unsubJoined = masterBus.subscribe('CLUB_JOINED', () => {
-      loadMyClubs();
+      if (isMounted) loadMyClubs(() => isMounted);
     });
     const unsubLeft = masterBus.subscribe('CLUB_LEFT', () => {
-      loadMyClubs();
+      if (isMounted) loadMyClubs(() => isMounted);
     });
     return () => {
+      isMounted = false;
       unsubJoined();
       unsubLeft();
     };

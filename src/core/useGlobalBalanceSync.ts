@@ -1,0 +1,81 @@
+import { useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { masterBus } from './MasterBus';
+import { useUserStore } from '../stores/useUserStore';
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * ♠ CLUB ARENA — Global Balance Sync ♠
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * This hook acts as the immutable bridge between the MasterBus `BALANCE_UPDATED`
+ * emissions (triggered by atomic PostgreSQL RPCs) and the frontend Zustand store.
+ *
+ * Since atomic operations update the DB but bypass the frontend state, this listener
+ * guarantees that whenever the ledger mutates, the exact correct balance is fetched
+ * and populated directly into `useUserStore.getState().updateTotalChips(newValue)`.
+ */
+export function useGlobalBalanceSync() {
+  const user = useUserStore((state) => state.user);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchTrueBalance = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('wallets')
+          .select('balance')
+          .eq('user_id', user.id)
+          .eq('wallet_type', 'PLAYER')
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (data && data.balance !== undefined) {
+          useUserStore.getState().updateTotalChips(Number(data.balance));
+        }
+      } catch (err) {
+        console.error('[GlobalBalanceSync] Failed to fetch atomic ledger balance:', err);
+      }
+    };
+
+    // Sub to local intra-app balance updates
+    const unsubscribeLocal = masterBus.subscribe('BALANCE_UPDATED', () => {
+      fetchTrueBalance();
+    });
+
+    // Sub to remote Supabase DB changes for cross-tab or server-initiated updates
+    const channel = supabase
+      .channel(`wallet_sync_${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'wallets',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchTrueBalance();
+        }
+      )
+      .subscribe();
+
+    // Initial fetch on mount to guarantee parity
+    fetchTrueBalance();
+
+    return () => {
+      unsubscribeLocal();
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
+}
+
+/**
+ * Headless component that mounts the global balance sync hook.
+ * Attach this high up in the App tree (e.g. inside App.tsx or inside AuthGuard)
+ */
+export function GlobalBalanceSync() {
+  useGlobalBalanceSync();
+  return null;
+}

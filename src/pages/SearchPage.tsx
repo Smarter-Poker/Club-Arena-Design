@@ -43,13 +43,13 @@ export default function SearchPage() {
   }, []);
 
   const search = useCallback(
-    async (searchQuery: string) => {
+    async (searchQuery: string, getIsMounted?: () => boolean) => {
       if (!searchQuery.trim()) {
-        setResults([]);
+        if (!getIsMounted || getIsMounted()) setResults([]);
         return;
       }
 
-      setLoading(true);
+      if (!getIsMounted || getIsMounted()) setLoading(true);
       const allResults: SearchResult[] = [];
 
       try {
@@ -111,6 +111,7 @@ export default function SearchPage() {
           }
         }
 
+        if (getIsMounted && !getIsMounted()) return;
         setResults(allResults);
 
         if (searchQuery.length >= 2) {
@@ -124,7 +125,7 @@ export default function SearchPage() {
         console.error('Search failed:', error);
         toast.error('Search failed. Please try again.');
       }
-      setLoading(false);
+      if (!getIsMounted || getIsMounted()) setLoading(false);
     },
     [category]
   );
@@ -140,7 +141,11 @@ export default function SearchPage() {
 
   const debouncedQuery = useDebounce(query, 300);
   useEffect(() => {
-    search(debouncedQuery);
+    let isMounted = true;
+    search(debouncedQuery, () => isMounted);
+    return () => {
+      isMounted = false;
+    };
   }, [debouncedQuery, search]);
 
   // ── Bus Listeners: re-search when data changes from other pages ──
