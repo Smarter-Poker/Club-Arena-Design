@@ -47,6 +47,10 @@ class SessionStatsServiceClass {
   private sessions: Map<string, SessionStats> = new Map(); // key = tableId
   /** Feature 8: Debounce timers for SESSION_STATS_UPDATE emissions */
   private emitTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+  /** Enhancement #7: localStorage key prefix for session backup */
+  private readonly STORAGE_PREFIX = 'club-arena-session-';
+  /** Enhancement #8: localStorage key for offline session queue */
+  private readonly OFFLINE_QUEUE_KEY = 'club-arena-offline-sessions';
 
   /**
    * Start tracking a new session at a table
@@ -74,6 +78,28 @@ class SessionStatsServiceClass {
     };
 
     this.sessions.set(tableId, session);
+
+    // Enhancement #7: Try to restore previous session for same table/user
+    try {
+      const stored = localStorage.getItem(this.STORAGE_PREFIX + tableId);
+      if (stored) {
+        const prev = JSON.parse(stored) as SessionStats;
+        if (prev.userId === userId && Date.now() - prev.sessionStartTime < 3600_000) {
+          // Resume session if same user and < 1 hour old
+          Object.assign(session, prev, { tableId, userId, bigBlind, initialStack });
+          console.log(
+            `[SessionStats] Resumed session from localStorage — table: ${tableId.slice(0, 8)}`
+          );
+        }
+        localStorage.removeItem(this.STORAGE_PREFIX + tableId);
+      }
+    } catch {
+      /* localStorage may be unavailable */
+    }
+
+    // Enhancement #8: Flush any queued offline sessions on startup
+    this.flushOfflineQueue();
+
     console.log(
       `[SessionStats] Started tracking — table: ${tableId.slice(0, 8)}, stack: ${initialStack}`
     );
@@ -94,6 +120,13 @@ class SessionStatsServiceClass {
         tableId,
         stats: { ...session, trajectory: [...session.trajectory] },
       });
+
+      // Enhancement #7: Backup session to localStorage for reconnect resume
+      try {
+        localStorage.setItem(this.STORAGE_PREFIX + tableId, JSON.stringify(session));
+      } catch {
+        /* localStorage may be full or unavailable */
+      }
     }, 500);
     this.emitTimers.set(tableId, timer);
   }
@@ -193,36 +226,96 @@ class SessionStatsServiceClass {
 
     // Feature 6: Persist to Supabase (fire-and-forget, non-blocking)
     if (session.handsPlayed > 0) {
+      const insertPayload = {
+        user_id: session.userId,
+        table_id: tableId,
+        started_at: new Date(session.sessionStartTime).toISOString(),
+        ended_at: new Date().toISOString(),
+        duration_minutes: durationMinutes,
+        initial_stack: session.initialStack,
+        final_stack: session.currentStack,
+        buy_in_total: session.buyInTotal,
+        profit_loss: session.profitLoss,
+        hands_played: session.handsPlayed,
+        hands_won: session.handsWon,
+        vpip_percent: session.vpipPercent,
+        pfr_percent: session.pfrPercent,
+        big_blind: session.bigBlind,
+        bb_won: session.bigBlindsWon,
+        trajectory: session.trajectory,
+      };
+
       supabase
         .from('session_history')
-        .insert({
-          user_id: session.userId,
-          table_id: tableId,
-          started_at: new Date(session.sessionStartTime).toISOString(),
-          ended_at: new Date().toISOString(),
-          duration_minutes: durationMinutes,
-          initial_stack: session.initialStack,
-          final_stack: session.currentStack,
-          buy_in_total: session.buyInTotal,
-          profit_loss: session.profitLoss,
-          hands_played: session.handsPlayed,
-          hands_won: session.handsWon,
-          vpip_percent: session.vpipPercent,
-          pfr_percent: session.pfrPercent,
-          big_blind: session.bigBlind,
-          bb_won: session.bigBlindsWon,
-          trajectory: session.trajectory,
-        })
+        .insert(insertPayload)
         .then(({ error }) => {
           if (error) {
             console.warn('[SessionStats] Failed to persist session:', error.message);
+            // Enhancement #8: Queue to localStorage for later retry
+            this.queueOfflineSession(insertPayload);
           } else {
             console.log(`[SessionStats] Session persisted to DB — table: ${tableId.slice(0, 8)}`);
           }
         });
     }
 
+    // Enhancement #7: Clean up localStorage backup
+    try {
+      localStorage.removeItem(this.STORAGE_PREFIX + tableId);
+    } catch {
+      /* no-op */
+    }
+
     return session;
+  }
+
+  /**
+   * Enhancement #8: Queue failed session to localStorage for later retry
+   */
+  private queueOfflineSession(payload: Record<string, unknown>): void {
+    try {
+      const existing = localStorage.getItem(this.OFFLINE_QUEUE_KEY);
+      const queue = existing ? JSON.parse(existing) : [];
+      queue.push({ ...payload, queued_at: new Date().toISOString() });
+      localStorage.setItem(this.OFFLINE_QUEUE_KEY, JSON.stringify(queue.slice(-20))); // Max 20 queued
+      console.log(`[SessionStats] Session queued offline (${queue.length} total)`);
+    } catch {
+      /* localStorage may be full — intentional no-op */
+    }
+  }
+
+  /**
+   * Enhancement #8: Flush offline queue — retry sending queued sessions to Supabase
+   */
+  private flushOfflineQueue(): void {
+    try {
+      const existing = localStorage.getItem(this.OFFLINE_QUEUE_KEY);
+      if (!existing) return;
+      const queue = JSON.parse(existing) as Record<string, unknown>[];
+      if (queue.length === 0) return;
+
+      localStorage.removeItem(this.OFFLINE_QUEUE_KEY); // Clear queue immediately
+      console.log(`[SessionStats] Flushing ${queue.length} offline session(s)`);
+
+      queue.forEach((payload) => {
+        // Remove the queued_at field before inserting
+        const { queued_at: _queued_at, ...insertData } = payload;
+        supabase
+          .from('session_history')
+          .insert(insertData)
+          .then(({ error }) => {
+            if (error) {
+              console.warn('[SessionStats] Offline flush failed:', error.message);
+              // Re-queue if still failing
+              this.queueOfflineSession(insertData);
+            } else {
+              console.log('[SessionStats] Offline session flushed to DB ✅');
+            }
+          });
+      });
+    } catch {
+      /* localStorage may be unavailable — intentional no-op */
+    }
   }
 
   /**

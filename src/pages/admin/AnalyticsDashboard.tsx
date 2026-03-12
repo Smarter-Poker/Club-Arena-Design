@@ -390,6 +390,22 @@ export default function AnalyticsDashboard() {
                 {aggregate.livePlayersNow}
               </div>
             </div>
+            {/* Enhancement #9: Total P/L across all positions */}
+            {(() => {
+              const totalPL = positionStats.reduce((sum, s) => sum + (s.total_profit || 0), 0);
+              return (
+                <div className="summary-card">
+                  <div className="label">Total P/L (All Positions)</div>
+                  <div className={`value ${totalPL >= 0 ? 'text-green' : 'text-red'}`}>
+                    {totalPL >= 0 ? '+' : ''}
+                    {totalPL.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
           </>
         )}
       </div>

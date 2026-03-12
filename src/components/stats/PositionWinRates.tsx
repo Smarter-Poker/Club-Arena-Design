@@ -145,7 +145,16 @@ const PositionWinRates: React.FC = () => {
       () => loadPositionStats(),
       2000
     );
-    return () => unsubHand();
+    // Enhancement #10: Also refresh on SESSION_STATS_UPDATE for real-time mid-session updates
+    const unsubSession = masterBus.subscribeDebounced(
+      'SESSION_STATS_UPDATE',
+      () => loadPositionStats(),
+      5000 // 5s debounce — less aggressive than hand completion
+    );
+    return () => {
+      unsubHand();
+      unsubSession();
+    };
   }, [loadPositionStats]);
 
   // Find best and worst positions (with at least 1 hand played to prevent 0.0 ties)
