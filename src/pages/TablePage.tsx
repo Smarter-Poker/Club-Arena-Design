@@ -742,8 +742,9 @@ export default function TablePage({
         return { ...prev, players: updatedPlayers };
       });
       // Sync stack to Supabase table_seats (with retry for resilience)
-      // Compute the NEW stack directly — tableState hasn't updated yet (setState is async)
-      const currentStack = tableState.players[tableState.heroSeat - 1]?.stack || 0;
+      // Use tableStateRef.current (not closure-captured tableState) for fresh values
+      const tsCurrent = tableStateRef.current;
+      const currentStack = tsCurrent.players[tsCurrent.heroSeat - 1]?.stack || 0;
       const newStack = Math.max(0, currentStack - amount);
       retryAsync(
         async () =>
@@ -751,7 +752,7 @@ export default function TablePage({
             .from('table_seats')
             .update({ stack: newStack })
             .eq('table_id', tableId)
-            .eq('seat_number', tableState.heroSeat)
+            .eq('seat_number', tsCurrent.heroSeat)
             .is('left_at', null),
         2,
         500
