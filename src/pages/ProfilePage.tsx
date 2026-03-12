@@ -338,125 +338,146 @@ export default function ProfilePage() {
   useEffect(() => {
     const unsubProfile = masterBus.subscribe('PROFILE_UPDATED', () => {
       // Re-load profile when updated from settings or other pages
-      supabase.auth.getUser().then(({ data: { user: authUser } }) => {
-        if (authUser) {
-          supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', authUser.id)
-            .maybeSingle()
-            .then(({ data: profile }) => {
-              if (profile) {
-                setUser({
-                  id: profile.id,
-                  username: profile.username || 'Player',
-                  displayName: profile.display_name || profile.username || 'Player',
-                  playerNumber: profile.player_number || 0,
-                  avatarUrl: profile.avatar_url || '',
-                  vipLevel: profile.vip_level || 'bronze',
-                  memberSince: profile.created_at,
-                });
-                setDiamonds(profile.diamonds || 0);
-                setIsVIP(profile.is_vip || false);
-              }
-            });
-        }
-      }).catch(() => {});
+      supabase.auth
+        .getUser()
+        .then(({ data: { user: authUser } }) => {
+          if (authUser) {
+            supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', authUser.id)
+              .maybeSingle()
+              .then(({ data: profile }) => {
+                if (profile) {
+                  setUser({
+                    id: profile.id,
+                    username: profile.username || 'Player',
+                    displayName: profile.display_name || profile.username || 'Player',
+                    playerNumber: profile.player_number || 0,
+                    avatarUrl: profile.avatar_url || '',
+                    vipLevel: profile.vip_level || 'bronze',
+                    memberSince: profile.created_at,
+                  });
+                  setDiamonds(profile.diamonds || 0);
+                  setIsVIP(profile.is_vip || false);
+                }
+              });
+          }
+        })
+        .catch(() => {});
     });
     const unsubHand = masterBus.subscribe('HAND_COMPLETED', () => {
       // Refresh stats after a hand is completed
-      supabase.auth.getUser().then(({ data: { user: authUser } }) => {
-        if (authUser) {
-          supabase
-            .from('profiles')
-            .select('stats')
-            .eq('id', authUser.id)
-            .maybeSingle()
-            .then(({ data: profile }) => {
-              if (profile?.stats) {
-                setStats({
-                  totalHands: profile.stats.total_hands || 0,
-                  vpip: profile.stats.vpip || 0,
-                  pfr: profile.stats.pfr || 0,
-                  threeBet: profile.stats.three_bet || 0,
-                  aggression: profile.stats.aggression_factor || 0,
-                  bbPer100: profile.stats.bb_per_100 || 0,
-                  biggestPot: profile.stats.biggest_pot || 0,
-                  totalProfit: profile.stats.total_profit || 0,
-                  winRate: profile.stats.win_rate || 0,
-                  tournamentsPlayed: profile.stats.tournaments_played || 0,
-                  tournamentsWon: profile.stats.tournaments_won || 0,
-                  bountyKOs: profile.stats.bounty_kos || 0,
-                  roi: profile.stats.roi || 0,
-                });
-              }
-            });
-        }
-      }).catch(() => {});
+      supabase.auth
+        .getUser()
+        .then(({ data: { user: authUser } }) => {
+          if (authUser) {
+            supabase
+              .from('profiles')
+              .select('stats')
+              .eq('id', authUser.id)
+              .maybeSingle()
+              .then(({ data: profile }) => {
+                if (profile?.stats) {
+                  setStats({
+                    totalHands: profile.stats.total_hands || 0,
+                    vpip: profile.stats.vpip || 0,
+                    pfr: profile.stats.pfr || 0,
+                    threeBet: profile.stats.three_bet || 0,
+                    aggression: profile.stats.aggression_factor || 0,
+                    bbPer100: profile.stats.bb_per_100 || 0,
+                    biggestPot: profile.stats.biggest_pot || 0,
+                    totalProfit: profile.stats.total_profit || 0,
+                    winRate: profile.stats.win_rate || 0,
+                    tournamentsPlayed: profile.stats.tournaments_played || 0,
+                    tournamentsWon: profile.stats.tournaments_won || 0,
+                    bountyKOs: profile.stats.bounty_kos || 0,
+                    roi: profile.stats.roi || 0,
+                  });
+                }
+              });
+          }
+        })
+        .catch(() => {});
     });
     const unsubBalance = masterBus.subscribeDebounced(
       'BALANCE_UPDATED',
       () => {
         // Refresh diamond balance when balance changes on other pages
-        supabase.auth.getUser().then(({ data: { user: authUser } }) => {
-          if (authUser) {
-            supabase
-              .from('diamond_wallets')
-              .select('balance')
-              .eq('user_id', authUser.id)
-              .maybeSingle()
-              .then(({ data: dw }) => {
-                if (dw) setDiamonds(dw.balance || 0);
-              });
-          }
-        }).catch(() => {});
+        supabase.auth
+          .getUser()
+          .then(({ data: { user: authUser } }) => {
+            if (authUser) {
+              supabase
+                .from('diamond_wallets')
+                .select('balance')
+                .eq('user_id', authUser.id)
+                .maybeSingle()
+                .then(({ data: dw }) => {
+                  if (dw) setDiamonds(dw.balance || 0);
+                });
+            }
+          })
+          .catch(() => {});
       },
       500
     );
     // Gamification bus listeners: refresh balance when rewards earned on other pages
     const unsubDailyReward = masterBus.subscribe('DAILY_REWARD_CLAIMED', () => {
-      supabase.auth.getUser().then(({ data: { user: authUser } }) => {
-        if (authUser) {
-          supabase
-            .from('profiles')
-            .select('diamonds, daily_streak')
-            .eq('id', authUser.id)
-            .maybeSingle()
-            .then(({ data }) => {
-              if (data) {
-                setDiamonds(data.diamonds || 0);
-                setDailyStreak(data.daily_streak || 0);
-              }
-            });
-        }
-      }).catch(() => {});
-    }); = masterBus.subscribe('MISSION_CLAIMED', () => {
-      supabase.auth.getUser().then(({ data: { user: authUser } }) => {
-        if (authUser) {
-          supabase
-            .from('profiles')
-            .select('diamonds')
-            .eq('id', authUser.id)
-            .maybeSingle()
-            .then(({ data }) => {
-              if (data) setDiamonds(data.diamonds || 0);
-            });
-        }
-      }).catch(() => {});
-    }); = masterBus.subscribe('WHEEL_SPIN_RESULT', () => {
-      supabase.auth.getUser().then(({ data: { user: authUser } }) => {
-        if (authUser) {
-          supabase
-            .from('profiles')
-            .select('diamonds')
-            .eq('id', authUser.id)
-            .maybeSingle()
-            .then(({ data }) => {
-              if (data) setDiamonds(data.diamonds || 0);
-            });
-        }
-      }).catch(() => {});
-    }); {
+      supabase.auth
+        .getUser()
+        .then(({ data: { user: authUser } }) => {
+          if (authUser) {
+            supabase
+              .from('profiles')
+              .select('diamonds, daily_streak')
+              .eq('id', authUser.id)
+              .maybeSingle()
+              .then(({ data }) => {
+                if (data) {
+                  setDiamonds(data.diamonds || 0);
+                  setDailyStreak(data.daily_streak || 0);
+                }
+              });
+          }
+        })
+        .catch(() => {});
+    });
+    const unsubMissionClaim = masterBus.subscribe('MISSION_CLAIMED', () => {
+      supabase.auth
+        .getUser()
+        .then(({ data: { user: authUser } }) => {
+          if (authUser) {
+            supabase
+              .from('profiles')
+              .select('diamonds')
+              .eq('id', authUser.id)
+              .maybeSingle()
+              .then(({ data }) => {
+                if (data) setDiamonds(data.diamonds || 0);
+              });
+          }
+        })
+        .catch(() => {});
+    });
+    const unsubWheelSpin = masterBus.subscribe('WHEEL_SPIN_RESULT', () => {
+      supabase.auth
+        .getUser()
+        .then(({ data: { user: authUser } }) => {
+          if (authUser) {
+            supabase
+              .from('profiles')
+              .select('diamonds')
+              .eq('id', authUser.id)
+              .maybeSingle()
+              .then(({ data }) => {
+                if (data) setDiamonds(data.diamonds || 0);
+              });
+          }
+        })
+        .catch(() => {});
+    });
+    return () => {
       unsubProfile();
       unsubHand();
       unsubBalance();
