@@ -44,9 +44,9 @@ export default function BonusPage() {
 
   useEffect(() => {
     if (user?.id) {
-      loadBonuses();
+      let isMounted = true;
+      loadBonuses(() => isMounted);
 
-      // Real-time bonus updates
       const channelKey = 'bonuses-live';
 
       const channel = masterBus.getOrCreateChannel(channelKey);
@@ -60,32 +60,33 @@ export default function BonusPage() {
             filter: `user_id=eq.${user.id}`,
           },
           () => {
+            if (!isMounted) return;
             toast.info(' New bonus available!');
-            loadBonuses();
+            loadBonuses(() => isMounted);
           }
         )
         .subscribe();
 
       return () => {
+        isMounted = false;
         masterBus.removeRegisteredChannel(channelKey);
       };
     }
   }, [user?.id]);
 
-  const loadBonuses = async () => {
-    setLoading(true);
+  const loadBonuses = async (getIsMounted?: () => boolean) => {
+    if (!getIsMounted || getIsMounted()) setLoading(true);
     try {
-      // Load user's daily login streak
       const { data: profile } = await supabase
         .from('profiles')
         .select('streak_days, last_login')
         .eq('id', user?.id)
         .maybeSingle();
 
+      if (getIsMounted && !getIsMounted()) return;
       if (profile) {
         setCurrentDay(profile.streak_days || 1);
 
-        // Generate daily bonuses (7-day cycle)
         const dailies: DailyBonus[] = [];
         for (let i = 1; i <= 7; i++) {
           dailies.push({
@@ -97,7 +98,6 @@ export default function BonusPage() {
         setDailyBonuses(dailies);
       }
 
-      // Load special bonuses
       const { data: specials } = await supabase
         .from('special_bonuses')
         .select('*')
@@ -105,6 +105,7 @@ export default function BonusPage() {
         .gte('expires_at', new Date().toISOString())
         .order('expires_at', { ascending: true });
 
+      if (getIsMounted && !getIsMounted()) return;
       if (specials) {
         setSpecialBonuses(
           specials.map((b: any) => ({
@@ -119,9 +120,9 @@ export default function BonusPage() {
       }
     } catch (error) {
       console.error('Failed to load bonuses:', error);
-      toast.error('Failed to load bonuses');
+      if (!getIsMounted || getIsMounted()) toast.error('Failed to load bonuses');
     }
-    setLoading(false);
+    if (!getIsMounted || getIsMounted()) setLoading(false);
   };
 
   const claimDailyBonus = async () => {
