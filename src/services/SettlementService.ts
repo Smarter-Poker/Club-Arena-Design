@@ -17,6 +17,7 @@ import { supabase } from '../lib/supabase';
 import { CommissionService } from './CommissionService';
 import { WalletService } from './WalletService';
 import { pushNotificationService } from './PushNotificationService';
+import { masterBus } from '../core/MasterBus';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -418,6 +419,16 @@ export const SettlementService = {
         })
         .eq('id', periodId);
     }
+
+    // 5. Emit settlement completion bus event for real-time dashboard updates
+    masterBus.emit('SETTLEMENT_COMPLETED', {
+      periodId,
+      agentsPaid,
+      playersWithRakeback,
+      totalDisbursed,
+      successRate: totalExpected > 0 ? totalSucceeded / totalExpected : 1,
+      status: successRate === 1 ? 'settled' : 'partial',
+    });
 
     return { agentsPaid, playersWithRakeback, totalDisbursed };
   },
