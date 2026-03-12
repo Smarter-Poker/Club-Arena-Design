@@ -161,17 +161,14 @@ export default function App() {
         return;
 
       if (event.data?.type === 'SMARTER_AUTH_TOKEN' && event.data.token) {
-        try {
-          const senderOrigin = event.origin;
+        // Send ACK immediately to halt World Hub retry loop
+        window.parent.postMessage({ type: 'SMARTER_AUTH_ACK' }, '*');
 
+        try {
           await supabase.auth.setSession({
             access_token: event.data.token,
             refresh_token: event.data.refreshToken || '',
           });
-
-          // Send ACK back to the parent window indicating auth succeeded.
-          // Using window.parent because event.source can be GC'd after the await.
-          window.parent.postMessage({ type: 'SMARTER_AUTH_ACK' }, senderOrigin);
         } catch (e) {
           console.error('[App] Failed to set session from parent:', e);
         }
