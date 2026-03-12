@@ -616,17 +616,29 @@ export class HeadlessTableEngine {
             cards: JSON.parse(JSON.stringify(p.cards || [])), // Ensure clean JSON
           }));
 
-          // Push the final hand cards independently            // Fire-and-forget secure payload insertion
-          this.supabaseClient
-            .from('table_hole_cards')
-            .insert(cardInserts)
-            .then(({ error }) => {
-              if (error)
+          // Secure hole card insertion with retry — MUST succeed or hero has no cards
+          (async () => {
+            const { error } = await this.supabaseClient
+              .from('table_hole_cards')
+              .insert(cardInserts);
+            if (error) {
+              console.error(
+                `[HeadlessTableEngine:${this.tableId}] Secure hole card INSERT failed, retrying:`,
+                error.message
+              );
+              // Retry once after brief delay
+              await new Promise((r) => setTimeout(r, 300));
+              const { error: retryError } = await this.supabaseClient
+                .from('table_hole_cards')
+                .upsert(cardInserts, { onConflict: 'table_id,hand_number,user_id' });
+              if (retryError) {
                 console.error(
-                  `[HeadlessTableEngine:${this.tableId}] Failed to push secure hole cards:`,
-                  error.message
+                  `[HeadlessTableEngine:${this.tableId}] Secure hole card retry ALSO failed:`,
+                  retryError.message
                 );
-            });
+              }
+            }
+          })();
         }
       } catch (err) {
         console.error(`[HeadlessTableEngine:${this.tableId}] Failed to start hand:`, err);

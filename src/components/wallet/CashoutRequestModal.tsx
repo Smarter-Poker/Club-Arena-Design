@@ -11,6 +11,17 @@ import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
 import './CashoutRequestModal.css';
 
+// Haptic feedback for mobile-first financial interactions
+const triggerHaptic = (pattern: number | number[] = 10) => {
+  try {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate(pattern);
+    }
+  } catch {
+    /* silent */
+  }
+};
+
 const REVERSAL_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 
 // ═══════════════════════════════════════════════════════════════════
@@ -216,6 +227,7 @@ export default function CashoutRequestModal({
       setSuccess(true);
       setAmount('');
       setNote('');
+      triggerHaptic([20, 100, 20]);
       loadPendingCashouts();
       onComplete?.();
 
@@ -234,6 +246,7 @@ export default function CashoutRequestModal({
   const handleCancel = async (cashoutId: string) => {
     try {
       await cashoutService.cancelCashout(cashoutId, playerId);
+      triggerHaptic(15);
       loadPendingCashouts();
       onComplete?.();
     } catch (err: any) {
@@ -250,15 +263,9 @@ export default function CashoutRequestModal({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div
-        className="cashout-modal"
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          opacity: mounted ? 1 : 0,
-          transform: mounted ? 'translateY(0)' : 'translateY(8px)',
-          transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-        }}
-      >
+      <div className="cashout-modal" onClick={(e) => e.stopPropagation()}>
+        {/* Bottom-sheet drag handle */}
+        <div className="cashout-drag-handle" />
         <div className="modal-header">
           <h2> Request Cashout</h2>
           <button className="close-btn" onClick={onClose}>
@@ -369,6 +376,8 @@ export default function CashoutRequestModal({
             </div>
           )}
         </div>
+        {/* Bottom safe area spacer */}
+        <div className="cashout-bottom-spacer" />
       </div>
     </div>
   );

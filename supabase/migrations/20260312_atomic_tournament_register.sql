@@ -74,3 +74,5 @@ BEGIN
   RETURN v_player_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION atomic_tournament_register(UUID, UUID, TEXT, NUMERIC, NUMERIC, NUMERIC, BOOLEAN) TO anon, authenticated;

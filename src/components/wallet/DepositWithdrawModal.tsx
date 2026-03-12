@@ -5,10 +5,21 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../common/Toast';
 import styles from './DepositWithdrawModal.module.css';
+
+// Haptic feedback utility for mobile-first financial interactions
+const triggerHaptic = (pattern: number | number[] = 10) => {
+  try {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate(pattern);
+    }
+  } catch {
+    /* silent — not all devices support vibration */
+  }
+};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -246,6 +257,7 @@ export default function DepositWithdrawModal({
   const totalAmount = mode === 'deposit' ? numericAmount : numericAmount + feeAmount;
 
   const handleMethodSelect = (method: PaymentMethod) => {
+    triggerHaptic(10);
     setSelectedMethod(method);
     setStep('amount');
     setError(null);
@@ -256,17 +268,21 @@ export default function DepositWithdrawModal({
 
     if (numericAmount < currentMethod.minAmount) {
       setError(`Minimum amount is ${currentMethod.minAmount}`);
+      triggerHaptic([30, 50, 30]);
       return;
     }
     if (numericAmount > currentMethod.maxAmount) {
       setError(`Maximum amount is ${currentMethod.maxAmount.toLocaleString()}`);
+      triggerHaptic([30, 50, 30]);
       return;
     }
     if (mode === 'withdraw' && numericAmount > currentBalance) {
       setError('Insufficient balance');
+      triggerHaptic([30, 50, 30]);
       return;
     }
 
+    triggerHaptic(15);
     setStep('confirm');
     setError(null);
   };
@@ -312,6 +328,7 @@ export default function DepositWithdrawModal({
 
       setReferenceId(data.id);
       setStep('success');
+      triggerHaptic([20, 100, 20]);
       onComplete?.();
     } catch (err) {
       console.error(`${mode} failed:`, err);
@@ -341,11 +358,12 @@ export default function DepositWithdrawModal({
         className={styles.modal}
         onClick={(e) => e.stopPropagation()}
         style={{
-          opacity: mounted ? 1 : 0,
-          transform: mounted ? 'translateY(0) scale(1)' : 'translateY(16px) scale(0.98)',
-          transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+          animation: mounted ? 'sheetSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards' : 'none',
+          transform: mounted ? undefined : 'translateY(100%)',
         }}
       >
+        {/* Bottom-sheet drag handle */}
+        <div className={styles.dragHandle} />
         {/* Header */}
         <div className={styles.header}>
           <h2>{mode === 'deposit' ? 'Deposit Funds' : 'Withdraw Funds'}</h2>
@@ -594,6 +612,8 @@ export default function DepositWithdrawModal({
             </button>
           </div>
         )}
+        {/* Bottom safe area spacer */}
+        <div className={styles.bottomSpacer} />
       </div>
     </div>
   );
