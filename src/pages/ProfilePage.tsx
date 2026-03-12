@@ -19,6 +19,7 @@ import { VIPProgressRing } from '../components/vip/VIPProgressRing';
 import { profileService } from '../services/ProfileService';
 import { bonusService } from '../services/BonusService';
 import { masterBus } from '../core/MasterBus';
+import { StreakFire } from '../components/gamification/StreakFire';
 import styles from './ProfilePage.module.css';
 
 // #5: Lazy-load Recharts (387KB) — only imported when History tab is opened
@@ -198,6 +199,7 @@ export default function ProfilePage() {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [diamonds, setDiamonds] = useState(0);
   const [isVIP, setIsVIP] = useState(false);
+  const [dailyStreak, setDailyStreak] = useState(0);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [visibleStats, setVisibleStats] = useState<Set<number>>(new Set());
 
@@ -241,6 +243,7 @@ export default function ProfilePage() {
 
           setDiamonds(profile.diamonds || 0);
           setIsVIP(profile.is_vip || false);
+          setDailyStreak(profile.daily_streak || 0);
 
           if (profile.stats) {
             setStats({
@@ -542,7 +545,10 @@ export default function ProfilePage() {
         </div>
 
         <div className={styles.userInfo}>
-          <h1 className={styles.displayName}>{user.displayName}</h1>
+          <h1 className={styles.displayName}>
+            {user.displayName}
+            {dailyStreak > 0 && <StreakFire streakCount={dailyStreak} size="sm" showLabel />}
+          </h1>
           <p className={styles.playerNumber}>Player #{user.playerNumber}</p>
           <p className={styles.memberSince}>
             Member since{' '}

@@ -9,6 +9,7 @@ import { useState, useEffect, ReactNode } from 'react';
 import styles from './ChatBubble.module.css';
 import { ImageThumbnail, ImageLightbox } from './ImageMessage';
 import EmojiReactions from './EmojiReactions';
+import { ReadReceipt } from './ReadReceipt';
 
 interface Reaction {
   emoji: string;
@@ -56,7 +57,8 @@ export default function MessageBubble({
   const [showLightbox, setShowLightbox] = useState(false);
 
   useEffect(() => {
-    setTimeout(() => setMounted(true), 50);
+    const timer = setTimeout(() => setMounted(true), 50);
+    return () => clearTimeout(timer);
   }, []);
 
   const formatTime = (dateStr: string): string => {
@@ -68,7 +70,8 @@ export default function MessageBubble({
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     const parts = text.split(urlRegex);
     return parts.map((part, idx) => {
-      if (urlRegex.test(part)) {
+      // Use a fresh regex for test() to avoid stateful lastIndex with /g
+      if (/^https?:\/\//.test(part)) {
         return (
           <a
             key={idx}
@@ -150,8 +153,11 @@ export default function MessageBubble({
           {message.content && <p className={styles.text}>{linkifyText(message.content)}</p>}
         </div>
 
-        {/* Timestamp */}
-        <span className={styles.timestamp}>{formatTime(message.createdAt)}</span>
+        {/* Timestamp + Read Receipt */}
+        <span className={styles.timestamp}>
+          {formatTime(message.createdAt)}
+          {isCurrentUser && <ReadReceipt status={message.isSeen ? 'seen' : 'delivered'} />}
+        </span>
 
         {/* Reactions */}
         {Object.values(message.reactions).reduce((sum, count) => sum + count, 0) > 0 && (

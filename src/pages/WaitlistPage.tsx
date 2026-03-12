@@ -60,9 +60,8 @@ export default function WaitlistPage() {
             table: 'table_waitlists',
           },
           (payload) => {
-            // Refresh waitlist on any change
-            // Position recalculation happens server-side
-            loadWaitlist();
+            // Refresh waitlist on any change — use ref to avoid stale closure
+            loadWaitlistRef.current();
           }
         )
         .subscribe();
