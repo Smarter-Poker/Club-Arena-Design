@@ -40,6 +40,8 @@ export default function WaitlistPage() {
   const [leavingId, setLeavingId] = useState<string | null>(null);
   const [positionCounts, setPositionCounts] = useState<Record<string, number>>({});
   const positionCountsRef = useRef<Record<string, number>>({});
+  const loadWaitlistRef = useRef<() => void>(() => {});
+  const animFrameIdsRef = useRef<number[]>([]);
 
   useEffect(() => {
     if (user?.id) {
@@ -71,13 +73,18 @@ export default function WaitlistPage() {
     }
   }, [user?.id]);
 
+  // Keep loadWaitlistRef pointing to the latest loadWaitlist
+  useEffect(() => {
+    loadWaitlistRef.current = loadWaitlist;
+  });
+
   // ── Bus Listeners: cross-page waitlist event reactivity ──
   useEffect(() => {
     const unsubPos = masterBus.subscribe('WAITLIST_POSITION_CHANGED', () => {
-      loadWaitlist();
+      loadWaitlistRef.current();
     });
     const unsubSeated = masterBus.subscribe('TABLE_SEATED', () => {
-      loadWaitlist();
+      loadWaitlistRef.current();
     });
     return () => {
       unsubPos();
@@ -124,6 +131,10 @@ export default function WaitlistPage() {
 
   // Animate position number changes
   useEffect(() => {
+    // Cancel any running animation frames from previous render
+    animFrameIdsRef.current.forEach((id) => cancelAnimationFrame(id));
+    animFrameIdsRef.current = [];
+
     entries.forEach((entry) => {
       const current = positionCountsRef.current[entry.id] ?? entry.position;
       if (current !== entry.position) {
@@ -140,16 +151,23 @@ export default function WaitlistPage() {
           setPositionCounts((prev) => ({ ...prev, [entry.id]: animatedPos }));
 
           if (progress < 1) {
-            requestAnimationFrame(animate);
+            const frameId = requestAnimationFrame(animate);
+            animFrameIdsRef.current.push(frameId);
           }
         };
 
-        requestAnimationFrame(animate);
+        const frameId = requestAnimationFrame(animate);
+        animFrameIdsRef.current.push(frameId);
       } else {
         positionCountsRef.current[entry.id] = entry.position;
         setPositionCounts((prev) => ({ ...prev, [entry.id]: entry.position }));
       }
     });
+
+    return () => {
+      animFrameIdsRef.current.forEach((id) => cancelAnimationFrame(id));
+      animFrameIdsRef.current = [];
+    };
   }, [entries]);
 
   const getGameTypeLabel = (type: string): string => {
@@ -236,12 +254,18 @@ export default function WaitlistPage() {
                   {Array.from({ length: Math.min(entry.position, 6) }, (_, i) => (
                     <div
                       key={i}
-                      className={`queue-dot ${i === entry.position - 1 ? 'you' : ''}`}
+                      className={`queue-dot ${
+                        (entry.position <= 6 && i === entry.position - 1) ||
+                        (entry.position > 6 && i === Math.min(entry.position, 6) - 1)
+                          ? 'you'
+                          : ''
+                      }`}
                       style={{
                         animationDelay: `${i * 100}ms`,
                       }}
                     >
-                      {i === entry.position - 1 ? (
+                      {(entry.position <= 6 && i === entry.position - 1) ||
+                      (entry.position > 6 && i === Math.min(entry.position, 6) - 1) ? (
                         <PlayerAvatar
                           src={user?.avatar_url ?? undefined}
                           name={user?.display_name || 'You'}

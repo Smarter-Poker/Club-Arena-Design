@@ -48,7 +48,8 @@ export default function ChatBubble({
   const swipeRef = useRef({ startX: 0, startY: 0, swiping: false });
 
   useEffect(() => {
-    setTimeout(() => setMounted(true), 50);
+    const timer = setTimeout(() => setMounted(true), 50);
+    return () => clearTimeout(timer);
   }, []);
 
   const formatTime = (dateStr: string): string => {

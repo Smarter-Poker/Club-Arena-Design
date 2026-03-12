@@ -118,6 +118,14 @@ import { QuickChatPresets } from '../components/table/QuickChatPresets';
 import { TableErrorBoundary } from '../components/common/TableErrorBoundary';
 import { FinalTableOverlay } from '../components/tournament/FinalTableOverlay';
 import { HeadsUpOverlay } from '../components/tournament/HeadsUpOverlay';
+// Phase 8-9 Premium Components
+import { QuickActionsBar } from '../components/table/QuickActionsBar';
+import { SpectatorOverlay } from '../components/table/SpectatorOverlay';
+import { TableReactions } from '../components/table/TableReactions';
+import { useTableKeyboard } from '../hooks/useTableKeyboard';
+import { ChipPhysics } from '../components/table/ChipPhysics';
+import { PremiumPot } from '../components/table/PremiumPot';
+import { TablePerfMonitor } from '../components/table/TablePerfMonitor';
 import { HoleCardReveal } from '../components/tournament/HoleCardReveal';
 import { playerStyleClassifier } from '../services/PlayerStyleClassifier';
 import { playerPositionStatsService } from '../services/PlayerPositionStatsService';
@@ -478,7 +486,12 @@ export default function TablePage({
     isChatMuted,
     setIsChatMuted,
     handleSendChatMessage,
+    activeReactions,
+    parseIncomingMessage,
   } = useTableChat(tableId, userId, heroName);
+
+  // Reaction picker state
+  const [isReactionPickerOpen, setIsReactionPickerOpen] = useState(false);
 
   // Insurance Modal state
   const [showInsurance, setShowInsurance] = useState(false);
@@ -3043,6 +3056,23 @@ export default function TablePage({
     }, 500);
   };
 
+  // Keyboard Shortcuts — wired to table actions (Phase 8)
+  useTableKeyboard({
+    isHeroTurn: tableState.currentPlayerSeat === tableState.heroSeat && tableState.isHandInProgress,
+    isSpectator: !tableState.players.some((p) => p?.isHero),
+    isModalOpen: showSettings || showInsurance || showRIT,
+    onFold: handleFold,
+    onCallCheck: handleCall,
+    onRaise: handleRaise,
+    onAllIn: handleAllIn,
+    onToggleSound: () => setIsSoundEnabled((prev) => !prev),
+    onClosePanel: () => {
+      setIsChatCollapsed(true);
+      setShowSettings(false);
+      setIsReactionPickerOpen(false);
+    },
+  });
+
   // Side menu toggle — wrapped in startTransition to avoid INP
   const toggleSideMenu = () => {
     startTransition(() => {
@@ -3343,6 +3373,16 @@ export default function TablePage({
                     displayMode={potDisplayMode}
                     onToggleDisplayMode={handleTogglePotDisplay}
                   />
+                  {/* Premium Pot — animated counter + tier glow overlay */}
+                  <PremiumPot
+                    mainPot={tableState.pot}
+                    sidePots={tableState.sidePots.map((sp, i) => ({
+                      id: `sp_${i}`,
+                      amount: sp.amount,
+                      eligible: sp.eligiblePlayers?.map(String) || [],
+                    }))}
+                    compact
+                  />
                 </div>
 
                 {/* Community Cards */}
@@ -3359,6 +3399,17 @@ export default function TablePage({
                 {presence?.observers && presence.observers.length > 0 && (
                   <div className="spectator-area">
                     <SpectatorBadge observers={presence.observers} />
+                    {/* Enhanced Spectator Overlay */}
+                    <SpectatorOverlay
+                      spectators={(presence.observers || []).map((obs: any) => ({
+                        userId: obs.user_id || obs.id || String(Math.random()),
+                        displayName: obs.display_name || obs.name || 'Spectator',
+                        avatarUrl: obs.avatar_url || '',
+                        joinedAt: obs.joined_at ? new Date(obs.joined_at) : new Date(),
+                      }))}
+                      isSpectator={!tableState.players.some((p) => p?.isHero)}
+                      tableId={tableId}
+                    />
                   </div>
                 )}
 
@@ -3558,20 +3609,36 @@ export default function TablePage({
                   const minRaise = Math.max(bb, currentBet > 0 ? currentBet * 2 : bb * 2);
 
                   return (
-                    <ActionPanel
-                      canFold={true}
-                      canCheck={callAmount === 0}
-                      canCall={callAmount > 0}
-                      canRaise={heroStack > minRaise}
-                      canAllIn={heroStack > 0}
-                      callAmount={callAmount}
-                      minRaise={minRaise}
-                      maxRaise={heroStack}
-                      pot={tableState.pot}
-                      bigBlind={bb}
-                      onAction={handleActionPanelAction}
-                      isMyTurn={true}
-                    />
+                    <>
+                      {/* Quick Actions Bar — above action buttons */}
+                      <QuickActionsBar
+                        isSoundEnabled={isSoundEnabled}
+                        isChatVisible={!isChatCollapsed}
+                        isHandStrengthVisible={userSettings.showHUD}
+                        isStatsVisible={userSettings.showHUD}
+                        isAutoRebuyEnabled={false}
+                        onToggleSound={() => setIsSoundEnabled((prev) => !prev)}
+                        onToggleChat={() => setIsChatCollapsed((prev) => !prev)}
+                        onToggleHandStrength={() => updateSetting('showHUD', !userSettings.showHUD)}
+                        onToggleStats={() => updateSetting('showHUD', !userSettings.showHUD)}
+                        onToggleAutoRebuy={() => {}}
+                        onOpenSettings={() => setShowSettings(true)}
+                      />
+                      <ActionPanel
+                        canFold={true}
+                        canCheck={callAmount === 0}
+                        canCall={callAmount > 0}
+                        canRaise={heroStack > minRaise}
+                        canAllIn={heroStack > 0}
+                        callAmount={callAmount}
+                        minRaise={minRaise}
+                        maxRaise={heroStack}
+                        pot={tableState.pot}
+                        bigBlind={bb}
+                        onAction={handleActionPanelAction}
+                        isMyTurn={true}
+                      />
+                    </>
                   );
                 })()
               : null}
@@ -3736,6 +3803,19 @@ export default function TablePage({
         placeholder="Say something..."
         isMuted={isChatMuted}
       />
+
+      {/* Table Reactions — floating emoji picker + active reactions */}
+      <TableReactions
+        tableId={tableId}
+        userId={userId}
+        heroSeat={tableState.heroSeat}
+        isOpen={isReactionPickerOpen}
+        onClose={() => setIsReactionPickerOpen(false)}
+        activeReactions={activeReactions}
+      />
+
+      {/* Performance Monitor — dev-only */}
+      <TablePerfMonitor />
 
       {/* Player Notes Modal */}
       {showPlayerNotes && (
