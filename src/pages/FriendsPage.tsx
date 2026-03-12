@@ -131,8 +131,8 @@ export default function FriendsPage() {
     if (!user?.id) return;
     setLoading(true);
     try {
-      // Load accepted friendships
-      const { data: friendships } = await supabase
+      // Load accepted friendships (where user initiated)
+      const { data: sentFriendships } = await supabase
         .from('friendships')
         .select(
           `
@@ -148,16 +148,41 @@ export default function FriendsPage() {
         .eq('user_id', user?.id)
         .eq('status', 'accepted');
 
-      if (friendships) {
-        setFriends(
-          friendships.map((f: any) => ({
-            id: f.id,
-            user_id: f.friend?.id,
-            username: f.friend?.username || 'Unknown',
-            avatar_url: f.friend?.avatar_url,
-            is_online: onlineUserIds.has(f.friend?.id),
-          }))
-        );
+      // Load accepted friendships (where user received)
+      const { data: receivedFriendships } = await supabase
+        .from('friendships')
+        .select(
+          `
+                    id,
+                    friend:profiles!friendships_user_id_fkey (
+                        id,
+                        username,
+                        avatar_url
+                    ),
+                    status
+                `
+        )
+        .eq('friend_id', user?.id)
+        .eq('status', 'accepted');
+
+      const allFriendships = [...(sentFriendships || []), ...(receivedFriendships || [])];
+
+      if (allFriendships.length > 0) {
+        const uniqueMap = new Map();
+        allFriendships.forEach((f: any) => {
+          if (f.friend?.id && !uniqueMap.has(f.friend.id)) {
+            uniqueMap.set(f.friend.id, {
+              id: f.id,
+              user_id: f.friend.id,
+              username: f.friend.username || 'Unknown',
+              avatar_url: f.friend.avatar_url,
+              is_online: onlineUserIds.has(f.friend.id),
+            });
+          }
+        });
+        setFriends(Array.from(uniqueMap.values()));
+      } else {
+        setFriends([]);
       }
 
       // Load pending requests
