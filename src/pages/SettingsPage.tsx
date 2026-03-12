@@ -534,10 +534,14 @@ export default function SettingsPage() {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        await supabase.from('profiles').update({ settings: settings }).eq('id', user.id);
+        const { error: profileErr } = await supabase
+          .from('profiles')
+          .update({ settings: settings })
+          .eq('id', user.id);
+        if (profileErr) throw profileErr;
 
         // Sync notification preferences to dedicated table (used by push service)
-        await supabase.from('user_notification_preferences').upsert(
+        const { error: notifErr } = await supabase.from('user_notification_preferences').upsert(
           {
             user_id: user.id,
             table_alerts: settings.handWonNotifications ?? true,
@@ -549,6 +553,7 @@ export default function SettingsPage() {
           },
           { onConflict: 'user_id' }
         );
+        if (notifErr) throw notifErr;
       }
 
       setHasChanges(false);

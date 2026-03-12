@@ -505,7 +505,7 @@ export interface BusPayloadMap {
     equityPercent: number;
   };
   // Phase 6: Card Back Store payloads
-  SETTINGS_CHANGED: { setting: string; value: string };
+  SETTINGS_CHANGED: { setting: string; value: string | number | boolean };
   DIAMOND_SPENT: { amount: number; item: string; category: string };
   // Gamification engagement events (Session Build)
   SETTLEMENT_RECEIPT_COPIED: { receiptId: string };

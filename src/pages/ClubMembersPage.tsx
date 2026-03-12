@@ -225,12 +225,13 @@ function PlayerActionModal({
             .maybeSingle();
 
           if (existingAgent) {
-            await supabase
+            const { error: agentUpdateErr } = await supabase
               .from('agents')
               .update({ role: newRole, status: 'active' })
               .eq('id', existingAgent.id);
+            if (agentUpdateErr) throw agentUpdateErr;
           } else {
-            await supabase.from('agents').insert({
+            const { error: agentInsertErr } = await supabase.from('agents').insert({
               club_id: clubId,
               user_id: member.user_id,
               role: newRole,
@@ -240,13 +241,15 @@ function PlayerActionModal({
               credit_limit: 0,
               parent_agent_id: null,
             });
+            if (agentInsertErr) throw agentInsertErr;
           }
         } else if (wasAgentRole && !isAgentRole) {
-          await supabase
+          const { error: suspendErr } = await supabase
             .from('agents')
             .update({ status: 'suspended' })
             .eq('club_id', clubId)
             .eq('user_id', member.user_id);
+          if (suspendErr) throw suspendErr;
         }
       } else if (rpcResult && !rpcResult.success) {
         throw new Error(rpcResult.error || 'Promotion failed');

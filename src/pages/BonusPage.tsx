@@ -154,7 +154,11 @@ export default function BonusPage() {
 
   const claimSpecialBonus = async (bonusId: string) => {
     try {
-      await supabase.from('special_bonuses').update({ claimed: true }).eq('id', bonusId);
+      const { error } = await supabase
+        .from('special_bonuses')
+        .update({ claimed: true })
+        .eq('id', bonusId);
+      if (error) throw error;
       toast.success('Special bonus claimed!');
       loadBonuses();
     } catch (error) {
