@@ -227,24 +227,26 @@ export default function TransactionHistoryPage() {
     }
   };
 
-  const getIcon = (type: string): string => {
+  const getIcon = (type: string): { symbol: string; color: string; bg: string } => {
     switch (type) {
       case 'deposit':
-        return '▲';
+        return { symbol: '▲', color: '#00C853', bg: 'rgba(0,200,83,0.12)' };
       case 'withdrawal':
-        return '▼';
+      case 'cash_out':
+        return { symbol: '▼', color: '#ef4444', bg: 'rgba(239,68,68,0.12)' };
       case 'transfer_in':
-        return '←';
+        return { symbol: '←', color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' };
       case 'transfer_out':
-        return '→';
+      case 'agent_transfer':
+        return { symbol: '→', color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)' };
       case 'rake':
-        return '%';
+        return { symbol: '%', color: '#00d4ff', bg: 'rgba(0,212,255,0.12)' };
       case 'rakeback':
-        return '↺';
+        return { symbol: '↺', color: '#10b981', bg: 'rgba(16,185,129,0.12)' };
       case 'settlement':
-        return '☐';
+        return { symbol: '☐', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' };
       default:
-        return '●';
+        return { symbol: '●', color: '#6a7a8a', bg: 'rgba(106,122,138,0.12)' };
     }
   };
 
@@ -423,7 +425,24 @@ export default function TransactionHistoryPage() {
                   transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                 }}
               >
-                <span className="tx-icon">{getIcon(tx.type)}</span>
+                <span
+                  className="tx-icon"
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: getIcon(tx.type).bg,
+                    color: getIcon(tx.type).color,
+                    fontSize: '1rem',
+                    fontWeight: 700,
+                    flexShrink: 0,
+                  }}
+                >
+                  {getIcon(tx.type).symbol}
+                </span>
                 <div className="tx-info">
                   <span className="tx-desc">{tx.description || tx.type.replace('_', ' ')}</span>
                   <span className="tx-meta">

@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { cashoutService, CashoutRequest } from '../../services/CashoutService';
 import { supabase } from '../../lib/supabase';
+import { masterBus } from '../../core/MasterBus';
 import './CashoutRequestModal.css';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -100,6 +101,42 @@ export default function CashoutRequestModal({
       loadPendingCashouts();
     }
   }, [isOpen, playerId, clubId]);
+
+  // ── Realtime: auto-refresh when cashout status changes (agent approves/rejects) ──
+  useEffect(() => {
+    if (!isOpen || !playerId) return;
+
+    const channelKey = `cashout-modal-${playerId}`;
+    const channel = supabase
+      .channel(channelKey)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'cashout_requests',
+          filter: `player_id=eq.${playerId}`,
+        },
+        () => {
+          loadPendingCashouts();
+        }
+      )
+      .subscribe();
+
+    // Bus listener: reload when balance changes
+    const unsubBalance = masterBus.subscribeDebounced(
+      'BALANCE_UPDATED',
+      () => {
+        loadPendingCashouts();
+      },
+      500
+    );
+
+    return () => {
+      supabase.removeChannel(channel);
+      unsubBalance();
+    };
+  }, [isOpen, playerId]);
 
   const loadPendingCashouts = async () => {
     setLoadingPending(true);

@@ -189,13 +189,67 @@ export default function BadBeatJackpotPage() {
   return (
     <div className="bbj-page">
       {/* Current Jackpot — Main Balance */}
-      <div className="jackpot-display">
+      <div className={`jackpot-display ${justUpdated ? 'just-updated' : ''}`}>
         <div className="jackpot-glow" />
         <span className="jackpot-label">Main Jackpot</span>
         <span className="jackpot-amount">
           {(jackpot?.main_balance || jackpot?.pool_amount || 0).toLocaleString()}
         </span>
       </div>
+
+      {/* $100K Pivot Law Threshold Alert */}
+      {(jackpot?.pool_amount || 0) > 50000 && (
+        <div
+          style={{
+            margin: '0 1rem 0.75rem',
+            padding: '12px 16px',
+            background:
+              'linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(255,165,0,0.06) 100%)',
+            border: '1px solid rgba(255,215,0,0.25)',
+            borderRadius: '12px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <div>
+            <span
+              style={{
+                fontSize: '0.75rem',
+                color: '#FFD700',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}
+            >
+              🎯 $100K Pivot Alert
+            </span>
+            <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>
+              Pool at {(((jackpot?.pool_amount || 0) / 100000) * 100).toFixed(1)}% of pivot
+              threshold
+            </div>
+          </div>
+          <div
+            style={{
+              width: '80px',
+              height: '6px',
+              background: 'rgba(255,255,255,0.06)',
+              borderRadius: '3px',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                height: '100%',
+                width: `${Math.min(100, ((jackpot?.pool_amount || 0) / 100000) * 100)}%`,
+                background: 'linear-gradient(90deg, #FFD700, #FF6B00)',
+                borderRadius: '3px',
+                transition: 'width 1s ease',
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Triple-Bank Breakdown */}
       <div className="jackpot-info" style={{ marginBottom: '0.5rem' }}>
