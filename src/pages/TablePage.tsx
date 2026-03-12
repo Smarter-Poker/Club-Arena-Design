@@ -1667,9 +1667,33 @@ export default function TablePage({
           }
           break;
         }
-        case 'CHAT':
-          // Handle chat message
+        case 'CHAT': {
+          // Parse special messages (reactions, throws) — filter from chat display
+          const chatPayload = msg.payload as any;
+          const content = chatPayload?.message || chatPayload?.content || '';
+          const senderId = chatPayload?.user_id || chatPayload?.userId || '';
+          const senderName = chatPayload?.display_name || chatPayload?.playerName || 'Player';
+
+          // Skip if empty content or sent by us (already optimistically added)
+          if (!content || senderId === userId) break;
+
+          // Check if it's a special message (reaction/throw) — don't add to chat
+          if (parseIncomingMessage(content, senderId)) break;
+
+          // Normal chat message — add to display
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              type: 'PLAYER' as const,
+              playerId: senderId,
+              playerName: senderName,
+              content,
+              timestamp: new Date(),
+            },
+          ]);
           break;
+        }
       }
     });
 
