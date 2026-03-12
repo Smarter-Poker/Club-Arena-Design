@@ -308,6 +308,7 @@ export default function TableConfigPage() {
 
   // Fetch templates for this club on mount
   useEffect(() => {
+    let isMounted = true;
     const fetchTemplates = async () => {
       if (!clubId) return;
       try {
@@ -318,18 +319,23 @@ export default function TableConfigPage() {
           .eq('is_deleted', false)
           .order('created_at', { ascending: false });
 
+        if (!isMounted) return;
         if (error) throw error;
         setTemplates(data || []);
       } catch (err) {
-        console.error('Failed to fetch templates:', err);
+        if (isMounted) console.error('Failed to fetch templates:', err);
       }
     };
     fetchTemplates();
+    return () => {
+      isMounted = false;
+    };
   }, [clubId]);
 
   // ── Realtime: live template updates ──
   useEffect(() => {
     if (!clubId) return;
+    let isMounted = true;
     const channelKey = `table-config-${clubId}`;
 
     const channel = masterBus.getOrCreateChannel(channelKey);
@@ -350,12 +356,13 @@ export default function TableConfigPage() {
             .eq('is_deleted', false)
             .order('created_at', { ascending: false })
             .then(({ data }) => {
-              if (data) setTemplates(data);
+              if (isMounted && data) setTemplates(data);
             });
         }
       )
       .subscribe();
     return () => {
+      isMounted = false;
       masterBus.removeRegisteredChannel(channelKey);
     };
   }, [clubId]);

@@ -262,6 +262,7 @@ export default function SettingsPage() {
 
   // Load settings from localStorage on mount
   useEffect(() => {
+    let isMounted = true;
     const saved = localStorage.getItem('club-arena-settings');
     if (saved) {
       try {
@@ -272,8 +273,11 @@ export default function SettingsPage() {
     }
     // Get current user email
     supabase.auth.getUser().then(({ data }) => {
-      if (data?.user?.email) setUserEmail(data.user.email);
+      if (isMounted && data?.user?.email) setUserEmail(data.user.email);
     });
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Account Actions
