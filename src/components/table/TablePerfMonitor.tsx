@@ -42,7 +42,7 @@ export function TablePerfMonitor({ enabled = false }: TablePerfMonitorProps) {
 
   // Check URL param and dev mode
   useEffect(() => {
-    const isDev = process.env.NODE_ENV === 'development';
+    const isDev = import.meta.env.DEV;
     const hasParam = new URLSearchParams(window.location.search).get('perf') === '1';
     if ((isDev && hasParam) || enabled) {
       setIsVisible(true);
@@ -59,7 +59,7 @@ export function TablePerfMonitor({ enabled = false }: TablePerfMonitorProps) {
         (e.target as HTMLElement).tagName !== 'INPUT' &&
         (e.target as HTMLElement).tagName !== 'TEXTAREA'
       ) {
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.DEV) {
           setIsVisible((v) => !v);
         }
       }
