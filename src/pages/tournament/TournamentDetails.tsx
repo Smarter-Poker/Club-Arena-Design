@@ -256,8 +256,31 @@ export default function TournamentDetails() {
       )
       .subscribe();
 
+    // ── Bus event subscriptions for faster local updates ──
+    const unsubElim = masterBus.subscribe('PLAYER_ELIMINATED', (event) => {
+      if (event.payload.tournamentId !== tournamentId) return;
+      // Immediately update entries list when a player is eliminated
+      setEntries((prev) =>
+        prev.map((e) =>
+          e.user_id === event.payload.userId
+            ? { ...e, status: 'eliminated' as const, position: event.payload.position }
+            : e
+        )
+      );
+      toast.info(`${event.payload.username} eliminated — ${event.payload.position}${getOrdinal(event.payload.position)} place`);
+    });
+
+    const unsubMerge = masterBus.subscribe('TABLE_MERGED', (event) => {
+      if (event.payload.tournamentId !== tournamentId) return;
+      // Remove the closed source table from the tables list
+      setTables((prev) => prev.filter((t) => t.id !== event.payload.sourceTableId));
+      toast.info(`Table merged — ${event.payload.playersMoved} players moved`);
+    });
+
     return () => {
       masterBus.removeRegisteredChannel(channelKey);
+      unsubElim();
+      unsubMerge();
     };
   }, [tournamentId]);
 

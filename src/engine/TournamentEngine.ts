@@ -162,6 +162,7 @@ export class TournamentEngine {
   // Add-on period (60s after rebuy levels end)
   private addOnPeriodTriggered = false;
   private addOnPeriodActive = false;
+  private addOnAbortController: AbortController | null = null;
 
   constructor(tournamentId: string, supabase: SupabaseClient) {
     this.tournamentId = tournamentId;
@@ -310,6 +311,11 @@ export class TournamentEngine {
     this.running = false;
     if (this.blindCheckInterval) clearInterval(this.blindCheckInterval);
     if (this.eliminationCheckInterval) clearInterval(this.eliminationCheckInterval);
+    // Cancel any pending add-on period timeout
+    if (this.addOnAbortController) {
+      this.addOnAbortController.abort();
+      this.addOnAbortController = null;
+    }
     for (const table of this.tables) {
       table.engine.stop();
     }
@@ -958,12 +964,23 @@ export class TournamentEngine {
       /* noop */
     }
 
-    // Wait 60 seconds for all players to accept/decline
+    // Wait 60 seconds for all players to accept/decline (cancellable via AbortController)
+    this.addOnAbortController = new AbortController();
+    const abortSignal = this.addOnAbortController.signal;
+
     await new Promise<void>((resolve) => {
-      setTimeout(() => {
+      const timer = setTimeout(() => resolve(), 60_000);
+      // If abort() is called (e.g., stop()), resolve immediately and clear the timer
+      abortSignal.addEventListener('abort', () => {
+        clearTimeout(timer);
         resolve();
-      }, 60_000);
+      }, { once: true });
     });
+
+    this.addOnAbortController = null;
+
+    // If the engine was stopped during the add-on period, bail out silently
+    if (!this.running) return;
 
     // Add-on period ended — resume tournament
     this.addOnPeriodActive = false;

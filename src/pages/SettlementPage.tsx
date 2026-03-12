@@ -338,6 +338,8 @@ export default function SettlementPage() {
         toast.success(
           `Payouts complete: ${result.agentsPaid} agents, ${result.playersWithRakeback} players, ${result.totalDisbursed.toLocaleString()} disbursed`
         );
+        // Notify other pages (ClubFinancialsPage) that settlement completed
+        masterBus.emit('SETTLEMENT_COMPLETED', { clubId: clubId || '', periodId: period.id });
       }
     } catch (error) {
       console.error('[SettlementPage] Payout failed:', error);

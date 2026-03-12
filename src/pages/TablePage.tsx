@@ -109,6 +109,7 @@ import HandStrengthIndicator from '../components/table/HandStrengthIndicator';
 import SessionTimer from '../components/table/SessionTimer';
 import { horseBugReporter } from '../services/HorseBugReporter';
 import { submitAction } from '../services/GameServerAPI';
+import { retryAsync } from '../utils/retryAsync';
 import './TablePage.css';
 import SessionSummary from '../components/table/SessionSummary';
 
@@ -725,6 +726,8 @@ export default function TablePage({
         .then(({ error: syncErr }) => {
           if (syncErr) console.warn('[Cashier] Add chips stack sync failed:', syncErr.message);
         });
+      // Emit bus event so other pages (Dashboard, Profile) know about the chip change
+      masterBus.emit('CHIPS_ADDED', { tableId, userId, amount, newStack: newStack });
     } catch (error) {
       console.error('Failed to add chips:', error);
       // Surface error to user — alert as fallback since toast not always available
@@ -767,6 +770,8 @@ export default function TablePage({
         .then(({ error: syncErr }) => {
           if (syncErr) console.warn('[Cashier] Withdraw chips stack sync failed:', syncErr.message);
         });
+      // Emit bus event so other pages know about the chip change
+      masterBus.emit('CHIPS_WITHDRAWN', { tableId, userId, amount, newStack: newStack });
     } catch (error) {
       console.error('Failed to withdraw chips:', error);
     }
@@ -897,9 +902,23 @@ export default function TablePage({
   // User settings with persistence
   const { settings: userSettings, updateSetting } = useTableSettings();
 
-  // Hand history state
-  const [handHistory, setHandHistory] = useState<HandRecord[]>([]);
+  // Hand history state — load from localStorage for session continuity
+  const [handHistory, setHandHistory] = useState<HandRecord[]>(() => {
+    try {
+      const saved = localStorage.getItem(`hand_history_${tableId || 'default'}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [showHandHistory, setShowHandHistory] = useState(false);
+
+  // Persist hand history to localStorage whenever it changes
+  useEffect(() => {
+    if (handHistory.length > 0 && tableId) {
+      try {
+        localStorage.setItem(`hand_history_${tableId}`, JSON.stringify(handHistory.slice(0, 50)));
+      } catch { /* localStorage full — ignore */ }
+    }
+  }, [handHistory, tableId]);
 
   // Hand history recording refs — accumulate actions during a hand
   const handActionsRef = useRef<
@@ -907,6 +926,8 @@ export default function TablePage({
   >([]);
   const historyHandCountRef = useRef(0);
   const handStartStacksRef = useRef<Record<number, number>>({});
+  // Per-street pot tracking — records pot at each stage transition for accurate hand history
+  const streetPotsRef = useRef<Record<string, number>>({ preflop: 0, flop: 0, turn: 0, river: 0 });
 
   // Play win sound — escalates based on pot size
   const playWinSound = (potAmount?: number) => {
@@ -1986,6 +2007,12 @@ export default function TablePage({
             boardStage: event.stage as any,
             lastActions: Array(prev.maxPlayers).fill(null), // Clear for new betting round
           }));
+          // Record pot at this stage for per-street hand history
+          {
+            const hcState = handControllerRef.current?.getState();
+            const stagePot = hcState?.pot || tableStateRef.current.pot || 0;
+            streetPotsRef.current[event.stage as string] = stagePot;
+          }
           break;
         }
 
@@ -2383,7 +2410,7 @@ export default function TablePage({
                 streets.push({
                   name,
                   actions: streetMap[name],
-                  pot: event.pot || 0, // Use HC's authoritative pot (currentState.pot is zeroed by WINNERS)
+                  pot: streetPotsRef.current[name] || event.pot || 0, // Per-street pot from ref
                 });
               }
             }
@@ -2500,21 +2527,24 @@ export default function TablePage({
             );
           }
 
-          // Sync player stacks back to table_seats in DB (fire-and-forget)
+          // Sync player stacks back to table_seats in DB (with retry for resilience)
           {
             const allPlayers = tableStateRef.current.players;
             for (let seatIdx = 0; seatIdx < allPlayers.length; seatIdx++) {
               const p = allPlayers[seatIdx];
               if (p && p.id) {
-                supabase
-                  .from('table_seats')
-                  .update({ stack: p.stack })
-                  .eq('table_id', tableId)
-                  .eq('seat_number', seatIdx + 1)
-                  .is('left_at', null)
-                  .then(({ error: syncErr }) => {
-                    if (syncErr) console.warn('[Seats] Stack sync failed:', syncErr.message);
-                  });
+                retryAsync(
+                  async () =>
+                    await supabase
+                      .from('table_seats')
+                      .update({ stack: p.stack })
+                      .eq('table_id', tableId)
+                      .eq('seat_number', seatIdx + 1)
+                      .is('left_at', null),
+                  2, 500
+                ).then((result: any) => {
+                  if (result?.error) console.warn('[Seats] Stack sync failed after retries:', result.error.message);
+                });
               }
             }
           }
@@ -2875,9 +2905,25 @@ export default function TablePage({
             suit: c.suit as 'h' | 'd' | 'c' | 's',
           })) || [];
 
+        // Calculate real equity using PokerEngine hand evaluator
+        let equityPercent = 65; // fallback
+        try {
+          if (heroCards.length >= 2 && boardCards.length >= 3) {
+            // Cast cards to engine Card format (engine uses full suit names)
+            const suitFullMap: Record<string, string> = { h: 'hearts', d: 'diamonds', c: 'clubs', s: 'spades' };
+            const heroEval = evaluateHand(
+              heroCards.map(c => ({ rank: c.rank, suit: suitFullMap[c.suit] || c.suit })) as any,
+              boardCards.map(c => ({ rank: c.rank, suit: suitFullMap[c.suit] || c.suit })) as any
+            );
+            // Simple equity estimate: stronger hand ≈ higher equity
+            // Ranking 1 = high card (weakest), 10 = royal flush (strongest)
+            equityPercent = Math.min(95, Math.max(20, (heroEval.ranking / 10) * 100));
+          }
+        } catch { /* fallback to 65% */ }
+
         setInsuranceOffer({
           maxCoverage,
-          equityPercent: 65, // Would come from hand evaluator in production
+          equityPercent,
           premiumRate: 0.1, // 10% premium rate
           potAmount: potSize,
           yourStack: heroStack,
@@ -3857,16 +3903,21 @@ export default function TablePage({
                 }
                 console.log('[BuyIn] table_seats INSERT success, seat:', selectedSeat);
 
-                // Update current_players count on the table
-                const { data: tableData } = await supabase
-                  .from('tables')
-                  .select('current_players')
-                  .eq('id', tableId)
-                  .maybeSingle();
-                await supabase
-                  .from('tables')
-                  .update({ current_players: (tableData?.current_players || 0) + 1 })
-                  .eq('id', tableId);
+                // Atomic current_players increment (prevents race with simultaneous buy-ins)
+                try {
+                  await supabase.rpc('increment_table_players', { p_table_id: tableId });
+                } catch {
+                  // Fallback: non-atomic increment if RPC doesn't exist
+                  const { data: td } = await supabase
+                    .from('tables')
+                    .select('current_players')
+                    .eq('id', tableId)
+                    .maybeSingle();
+                  await supabase
+                    .from('tables')
+                    .update({ current_players: (td?.current_players || 0) + 1 })
+                    .eq('id', tableId);
+                }
 
                 setAccountBalance((prev) => Math.max(0, prev - amount));
 

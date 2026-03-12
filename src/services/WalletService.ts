@@ -14,6 +14,7 @@
 
 import { supabase } from '../lib/supabase';
 import { retryAsync } from '../utils/retryAsync';
+import { masterBus } from '../core/MasterBus';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -193,6 +194,9 @@ export const WalletService = {
       );
     }
 
+    // Emit bus event so other pages (CashierPage, ClubFinancials) refresh instantly
+    masterBus.emit('BALANCE_UPDATED', { source: 'mint', userId: mintRecipientId || clubId, amount: chipAmount });
+
     return {
       success: true,
       chipsAdded: chipAmount,
@@ -230,7 +234,7 @@ export const WalletService = {
     await this.logTransaction(
       userId,
       request.fromWallet,
-      -request.amount,
+      request.amount,
       'debit',
       'transfer',
       desc
@@ -281,7 +285,7 @@ export const WalletService = {
     await this.logTransaction(
       fromUserId,
       fromWallet,
-      -amount,
+      amount,
       'debit',
       'transfer',
       `Sent ${amount} chips to user`,
@@ -392,12 +396,15 @@ export const WalletService = {
     await this.logTransaction(
       userId,
       'PLAYER',
-      -amount,
+      amount,
       'debit',
       'buyin',
       `Cash game buy-in at table`,
       tableId
     );
+
+    // Emit bus event so CashierPage/PlayerWalletPage refresh balances
+    masterBus.emit('BALANCE_UPDATED', { source: 'buyin', userId, tableId });
 
     console.log(
       `[WalletService] Buy-in: ${amount} chips deducted from Player Wallet for user ${userId}`
@@ -434,6 +441,9 @@ export const WalletService = {
       `Cash game cash-out from table`,
       tableId
     );
+
+    // Emit bus event so CashierPage/PlayerWalletPage refresh balances
+    masterBus.emit('BALANCE_UPDATED', { source: 'cashout', userId, tableId });
 
     console.log(
       `[WalletService] Cash-out: ${amount} chips credited to Player Wallet for user ${userId}`
@@ -542,6 +552,7 @@ export const WalletService = {
     });
 
     if (error) throw error;
+    masterBus.emit('BALANCE_UPDATED', { source: 'commission', userId: agentId, amount });
     return true;
   },
 
@@ -556,6 +567,7 @@ export const WalletService = {
     });
 
     if (error) throw error;
+    masterBus.emit('BALANCE_UPDATED', { source: 'rakeback', userId: playerId, amount });
     return true;
   },
 
@@ -603,7 +615,7 @@ export const WalletService = {
     await this.logTransaction(
       userId,
       'PLAYER',
-      -amount,
+      amount,
       'debit',
       'TIP',
       'Dealer tip at table',
@@ -625,7 +637,7 @@ export const WalletService = {
     if (premium <= 0) throw new Error('Insurance premium must be positive');
 
     // Atomic conditional update — deducts only if sufficient balance exists.
-    const { data: result, error } = await supabase.rpc('deduct_table_chip_lock', {
+    const { error } = await supabase.rpc('deduct_table_chip_lock', {
       p_user_id: userId,
       p_table_id: tableId,
       p_amount: premium,
@@ -662,7 +674,7 @@ export const WalletService = {
     await this.logTransaction(
       userId,
       'PLAYER',
-      -premium,
+      premium,
       'debit',
       'INSURANCE',
       'Insurance premium',

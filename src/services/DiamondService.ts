@@ -84,6 +84,7 @@ export const DiamondService = {
             .from('wallet_transactions')
             .select('id, type, amount, description, created_at')
             .eq('user_id', userId)
+            .in('category', ['diamond_purchase', 'diamond_deduction', 'vip_purchase', 'mint'])
             .order('created_at', { ascending: false })
             .limit(limit);
 

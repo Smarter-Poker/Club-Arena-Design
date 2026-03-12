@@ -120,14 +120,17 @@ class AutoRebuyServiceCore {
         return;
       }
 
-      // Process each table
-      for (const table of tables) {
-        try {
-          await this.processTable(table.id, table.big_blind);
-        } catch (err) {
-          console.error('[AutoRebuy] Error processing table ' + table.id + ':', err);
+      // Process each table in parallel for improved throughput
+      const results = await Promise.allSettled(
+        tables.map(table => this.processTable(table.id, table.big_blind))
+      );
+
+      // Log any individual table failures
+      results.forEach((result, idx) => {
+        if (result.status === 'rejected') {
+          console.error('[AutoRebuy] Error processing table ' + tables[idx].id + ':', result.reason);
         }
-      }
+      });
     } catch (err) {
       console.error('[AutoRebuy] Fatal error in checkAllTables:', err);
     }

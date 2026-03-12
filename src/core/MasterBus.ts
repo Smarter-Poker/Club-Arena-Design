@@ -78,7 +78,10 @@ export type BusEventType =
   | 'SETTLEMENT_COMPLETED'
   // Tournament lifecycle events
   | 'PLAYER_ELIMINATED'
-  | 'TABLE_MERGED';
+  | 'TABLE_MERGED'
+  // Cashier events (cross-page chip sync)
+  | 'CHIPS_ADDED'
+  | 'CHIPS_WITHDRAWN';
 
 // #13: Type-safe payload map — compile-time enforcement of correct payloads
 export interface BusPayloadMap {
@@ -140,6 +143,9 @@ export interface BusPayloadMap {
     targetTableId: string;
     playersMoved: number;
   };
+  // Cashier events
+  CHIPS_ADDED: { tableId: string; userId: string; amount: number; newStack: number };
+  CHIPS_WITHDRAWN: { tableId: string; userId: string; amount: number; newStack: number };
 }
 
 export interface BusEvent<T = unknown> {

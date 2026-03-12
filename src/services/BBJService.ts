@@ -305,7 +305,7 @@ export const BBJService = {
     const promoPortion = contribution - mainPortion - backupPortion; // remainder to ensure precision
 
     // Call RPC to atomically update pool and record contribution
-    // add_bbj_contribution accepts 6 params only — it handles allocation internally
+    // add_bbj_contribution now supports triple-bank allocation (MAIN/BACKUP/PROMO)
     const { data, error } = await supabase.rpc('add_bbj_contribution', {
       p_table_id: params.tableId,
       p_club_id: clubId,
@@ -313,6 +313,9 @@ export const BBJService = {
       p_big_blind: params.bigBlind,
       p_hand_number: params.handNumber || 0,
       p_stakes_tier: stakesTier,
+      p_main_portion: mainPortion,
+      p_backup_portion: backupPortion,
+      p_promo_portion: promoPortion,
     });
 
     if (error) {

@@ -81,6 +81,7 @@ export default function TransactionHistoryPage() {
           event: 'INSERT',
           schema: 'public',
           table: 'chip_transactions',
+          filter: `to_user_id=eq.${user.id}`,
         },
         () => {
           loadTransactions(0, true);

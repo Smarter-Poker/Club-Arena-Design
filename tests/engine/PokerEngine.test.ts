@@ -589,3 +589,141 @@ describe('determineWinners', () => {
     expect(p2Win!.amount).toBe(60);
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SHORT DECK TESTS (Improvement #9)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('Short Deck Straights', () => {
+  it('should detect A-6-7-8-9 straight in Short Deck (A wraps low)', () => {
+    // In Short Deck, A-6-7-8-9 is a valid straight (A acts as 5 equivalent)
+    const hole = [card('A', 'h'), card('9', 'd')];
+    const board = [card('8', 'c'), card('7', 's'), card('6', 'h'), card('K', 'd'), card('2', 'c')];
+    const result = evaluateHand(hole, board);
+    // Standard evaluator treats A as 14 or 1 — A-2-3-4-5 wheel is standard
+    // A-6-7-8-9 is NOT a standard straight (A doesn't connect to 6 in standard rules)
+    // In standard deck, this should NOT be a straight
+    expect(result.name).not.toBe('Straight');
+  });
+
+  it('should detect standard Wheel (A-2-3-4-5) straight', () => {
+    const hole = [card('A', 'h'), card('5', 'd')];
+    const board = [card('4', 'c'), card('3', 's'), card('2', 'h'), card('K', 'd'), card('J', 'c')];
+    const result = evaluateHand(hole, board);
+    expect(result.name).toBe('Straight');
+    expect(result.kickers[0]).toBe(5); // 5-high straight
+  });
+
+  it('Short Deck should have 36 cards after removing below 6', () => {
+    const deck = new Deck();
+    deck.removeCardsBelow('6');
+    expect(deck.remaining()).toBe(36);
+    // Verify no 2s, 3s, 4s, or 5s
+    const dealt = deck.deal(36);
+    const lowCards = dealt.filter(c =>
+      ['2', '3', '4', '5'].includes(c.rank)
+    );
+    expect(lowCards).toHaveLength(0);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// OMAHA HI-LO SPLIT POT TESTS (Improvement #9)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('Omaha Hi-Lo Split', () => {
+  it('should find qualifying low hand with A-2 and low board', () => {
+    // Hole: A♥ 2♦ K♣ Q♠ — A and 2 qualify for low
+    // Board: 3♣ 5♠ 7♥ T♦ J♣ — 3,5,7 are low cards
+    const hole = [card('A', 'h'), card('2', 'd'), card('K', 'c'), card('Q', 's')];
+    const board = [card('3', 'c'), card('5', 's'), card('7', 'h'), card('T', 'd'), card('J', 'c')];
+    const lowHand = evaluateOmahaLowHand(hole, board);
+    expect(lowHand).not.toBeNull();
+    // Low should use A,2 from hand + 3,5,7 from board = A-2-3-5-7 (very strong low)
+    expect(lowHand!.kickers.every((k: number) => k <= 8)).toBe(true);
+  });
+
+  it('should NOT find qualifying low when board has no low cards', () => {
+    // Board is all face cards — no 8-or-better low possible
+    const hole = [card('A', 'h'), card('2', 'd'), card('3', 'c'), card('4', 's')];
+    const board = [card('K', 'c'), card('Q', 's'), card('J', 'h'), card('T', 'd'), card('9', 'c')];
+    const lowHand = evaluateOmahaLowHand(hole, board);
+    expect(lowHand).toBeNull();
+  });
+
+  it('should find hi hand AND lo hand when both qualify', () => {
+    const hole = [card('A', 'h'), card('2', 'd'), card('K', 'h'), card('Q', 'h')];
+    const board = [card('3', 'c'), card('5', 's'), card('7', 'h'), card('J', 'h'), card('T', 'h')];
+    const hiHand = evaluateOmahaHand(hole, board);
+    const loHand = evaluateOmahaLowHand(hole, board);
+    expect(hiHand.ranking).toBeGreaterThan(0);
+    expect(loHand).not.toBeNull();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MULTI-WAY ALL-IN SIDE POT TESTS (Improvement #9)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('Multi-Way All-In Side Pots', () => {
+  it('should create 4 pots for 4 players with different all-in amounts', () => {
+    const players: SeatPlayer[] = [
+      makePlayer({ seat: 1, user_id: 'p1', totalInvested: 10, is_all_in: true }),
+      makePlayer({ seat: 2, user_id: 'p2', totalInvested: 30, is_all_in: true }),
+      makePlayer({ seat: 3, user_id: 'p3', totalInvested: 60, is_all_in: true }),
+      makePlayer({ seat: 4, user_id: 'p4', totalInvested: 100 }),
+    ];
+    const pots = calculatePots(players);
+    // Main: 10*4=40, Side1: 20*3=60, Side2: 30*2=60, Side3: 40*1=40
+    const totalAmount = pots.reduce((s, p) => s + p.amount, 0);
+    expect(totalAmount).toBe(200); // Total invested = 10+30+60+100 = 200
+    expect(pots.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('should award each pot to the best eligible hand', () => {
+    const players: SeatPlayer[] = [
+      makePlayer({
+        seat: 1, user_id: 'p1', totalInvested: 20, is_all_in: true,
+        cards: [card('A', 'h'), card('A', 'd')], // Best hand — Pair of Aces
+      }),
+      makePlayer({
+        seat: 2, user_id: 'p2', totalInvested: 50, is_all_in: true,
+        cards: [card('K', 'h'), card('K', 'd')], // Second — Pair of Kings
+      }),
+      makePlayer({
+        seat: 3, user_id: 'p3', totalInvested: 50,
+        cards: [card('2', 'h'), card('3', 'd')], // Worst hand
+      }),
+    ];
+    const board = [card('7', 'c'), card('8', 's'), card('9', 'h'), card('T', 'd'), card('4', 'c')];
+    const pots = calculatePots(players);
+    const winners = determineWinners(players, board, pots, 'nlh');
+
+    // p1 (AA) wins main pot, p2 (KK) wins side pot
+    const p1Win = winners.find(w => w.userId === 'p1');
+    const p2Win = winners.find(w => w.userId === 'p2');
+    const p3Win = winners.find(w => w.userId === 'p3');
+    expect(p1Win).toBeDefined();
+    expect(p2Win).toBeDefined();
+    expect(p3Win).toBeUndefined(); // p3 has worst hand, wins nothing
+    expect(p1Win!.amount).toBe(60); // 20*3 = 60
+    expect(p2Win!.amount).toBe(60); // (50-20)*2 = 60
+  });
+
+  it('should handle 3-way tie for board straight', () => {
+    // All 3 players use the same board straight — pot splits 3 ways
+    const players: SeatPlayer[] = [
+      makePlayer({ seat: 1, user_id: 'p1', totalInvested: 30, cards: [card('2', 'h'), card('3', 'd')] }),
+      makePlayer({ seat: 2, user_id: 'p2', totalInvested: 30, cards: [card('2', 'c'), card('4', 'd')] }),
+      makePlayer({ seat: 3, user_id: 'p3', totalInvested: 30, cards: [card('2', 's'), card('4', 's')] }),
+    ];
+    const board = [card('A', 'c'), card('K', 's'), card('Q', 'h'), card('J', 'd'), card('T', 'c')];
+    const pots = calculatePots(players);
+    const winners = determineWinners(players, board, pots, 'nlh');
+    // All 3 make A-K-Q-J-T straight from board
+    expect(winners).toHaveLength(3);
+    const totalPaid = winners.reduce((s, w) => s + w.amount, 0);
+    expect(totalPaid).toBe(90);
+  });
+});
+

@@ -19,6 +19,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { masterBus } from '../core/MasterBus';
 import { retryAsync } from '../utils/retryAsync';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -293,6 +294,8 @@ export const CommissionService = {
     }, 2);
 
     if (error) throw error;
+    // Notify listening pages (ClubFinancialsPage) that a commission was paid
+    masterBus.emit('COMMISSION_PAID', { agentId: payoutId, amount: 0 });
     return true;
   },
 

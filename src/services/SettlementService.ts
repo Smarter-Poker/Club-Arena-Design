@@ -279,6 +279,23 @@ export const SettlementService = {
 
         // 2. Process each agent payout
         for (const settlement of agentSettlements || []) {
+            // IDEMPOTENCY GUARD: Atomically claim this settlement by transitioning approved → processing.
+            // If another instance already claimed it (0 rows affected), skip gracefully.
+            const { data: claimData, error: claimError } = await supabase
+                .from('agent_settlements')
+                .update({ status: 'processing', updated_at: new Date().toISOString() })
+                .eq('id', settlement.id)
+                .eq('status', 'approved')  // Only claim if still 'approved' — prevents double-pay
+                .select('id');
+
+            if (claimError || !claimData || claimData.length === 0) {
+                console.warn(
+                    `[Settlement] Skipping agent ${settlement.agent_id}: ` +
+                    `already claimed by another instance or status changed`
+                );
+                continue;
+            }
+
             // Skip agents with zero or negative settlements (e.g. excess credit extended)
             if (settlement.net_settlement <= 0) {
                 console.warn(
@@ -316,6 +333,11 @@ export const SettlementService = {
                 totalDisbursed += settlement.net_settlement;
             } catch (err) {
                 console.error(`Failed to pay agent ${settlement.agent_id}:`, err);
+                // Revert to 'approved' so a retry can pick it up
+                await supabase
+                    .from('agent_settlements')
+                    .update({ status: 'approved', notes: `Payout failed: ${err}` })
+                    .eq('id', settlement.id);
             }
         }
 

@@ -70,6 +70,19 @@ class CashoutServiceClass {
         amount: number,
         note?: string
     ): Promise<CashoutRequest | null> {
+        // Rate limit: max 1 pending cashout per player per club
+        const { data: existing } = await supabase
+            .from('cashout_requests')
+            .select('id')
+            .eq('player_id', playerId)
+            .eq('club_id', clubId)
+            .eq('status', 'pending')
+            .limit(1);
+
+        if (existing && existing.length > 0) {
+            throw new Error('You already have a pending cashout for this club. Please wait for it to be processed before requesting another.');
+        }
+
         const { data, error } = await supabase
             .rpc('fn_request_cashout', {
                 p_player_id: playerId,
