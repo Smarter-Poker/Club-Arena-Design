@@ -90,6 +90,7 @@ const WaitlistPage = lazy(() => import('./pages/WaitlistPage'));
 const ClubRulesPage = lazy(() => import('./pages/ClubRulesPage'));
 const NotificationCenter = lazy(() => import('./pages/NotificationCenter'));
 const BusDevToolsPage = lazy(() => import('./pages/BusDevToolsPage'));
+const FinancialAlertsPage = lazy(() => import('./pages/FinancialAlertsPage'));
 
 // Shared/Public Pages
 const HandReplayerPage = lazy(() => import('./pages/share/HandReplayerPage'));
@@ -134,7 +135,9 @@ export default function App() {
     const goOnline = () => {
       setIsOffline(false);
       // Replay queued mutations on reconnect
-      replayOfflineQueue().catch(() => { /* best effort */ });
+      replayOfflineQueue().catch(() => {
+        /* best effort */
+      });
     };
     window.addEventListener('offline', goOffline);
     window.addEventListener('online', goOnline);
@@ -212,7 +215,9 @@ export default function App() {
       });
     }
 
-    return () => { busEventLogger.stop(); };
+    return () => {
+      busEventLogger.stop();
+    };
   }, []);
 
   return (
@@ -260,7 +265,14 @@ export default function App() {
           )}
           <OfflineQueueBadge />
           <ConnectionIndicator />
-          <Suspense fallback={<><NavigationProgress /><LoadingSpinner /></>}>
+          <Suspense
+            fallback={
+              <>
+                <NavigationProgress />
+                <LoadingSpinner />
+              </>
+            }
+          >
             <Routes>
               {/* ═══════════════════════════════════════════════════════════════
                         PUBLIC ROUTES (No Auth Required)
@@ -350,8 +362,8 @@ export default function App() {
                   element={
                     <AuthGuard>
                       <PageErrorBoundary pageName="Agent Management">
-                      <AgentManagementPage />
-                    </PageErrorBoundary>
+                        <AgentManagementPage />
+                      </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -376,8 +388,8 @@ export default function App() {
                   element={
                     <AuthGuard>
                       <PageErrorBoundary pageName="Club Dashboard">
-                      <ClubDashboard />
-                    </PageErrorBoundary>
+                        <ClubDashboard />
+                      </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -442,8 +454,8 @@ export default function App() {
                   element={
                     <AuthGuard>
                       <PageErrorBoundary pageName="Hand History">
-                      <HandHistoryPage />
-                    </PageErrorBoundary>
+                        <HandHistoryPage />
+                      </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -478,8 +490,8 @@ export default function App() {
                   element={
                     <AuthGuard>
                       <PageErrorBoundary pageName="Union Details">
-                      <UnionDetailPage />
-                    </PageErrorBoundary>
+                        <UnionDetailPage />
+                      </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -605,8 +617,8 @@ export default function App() {
                   element={
                     <AuthGuard>
                       <PageErrorBoundary pageName="Club Members">
-                      <ClubMembersPage />
-                    </PageErrorBoundary>
+                        <ClubMembersPage />
+                      </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -615,8 +627,8 @@ export default function App() {
                   element={
                     <AuthGuard>
                       <PageErrorBoundary pageName="Club Dashboard">
-                      <ClubDashboard />
-                    </PageErrorBoundary>
+                        <ClubDashboard />
+                      </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -625,8 +637,8 @@ export default function App() {
                   element={
                     <AuthGuard>
                       <PageErrorBoundary pageName="Club Settings">
-                      <ClubSettingsPage />
-                    </PageErrorBoundary>
+                        <ClubSettingsPage />
+                      </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -651,8 +663,8 @@ export default function App() {
                   element={
                     <AuthGuard>
                       <PageErrorBoundary pageName="Super Agent Dashboard">
-                      <SuperAgentDashboard />
-                    </PageErrorBoundary>
+                        <SuperAgentDashboard />
+                      </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -701,8 +713,8 @@ export default function App() {
                   element={
                     <AuthGuard>
                       <PageErrorBoundary pageName="Player Stats">
-                      <PlayerStatsPage />
-                    </PageErrorBoundary>
+                        <PlayerStatsPage />
+                      </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -735,8 +747,8 @@ export default function App() {
                   element={
                     <AuthGuard>
                       <PageErrorBoundary pageName="Club Settings">
-                      <ClubSettingsPage />
-                    </PageErrorBoundary>
+                        <ClubSettingsPage />
+                      </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -777,8 +789,8 @@ export default function App() {
                   element={
                     <AuthGuard>
                       <PageErrorBoundary pageName="Report Review">
-                      <ReportReviewPage />
-                    </PageErrorBoundary>
+                        <ReportReviewPage />
+                      </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />
@@ -803,8 +815,18 @@ export default function App() {
                   element={
                     <AuthGuard>
                       <PageErrorBoundary pageName="Club Financials">
-                      <ClubFinancialsPage />
-                    </PageErrorBoundary>
+                        <ClubFinancialsPage />
+                      </PageErrorBoundary>
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="financial-alerts"
+                  element={
+                    <AuthGuard>
+                      <PageErrorBoundary pageName="Financial Alerts">
+                        <FinancialAlertsPage />
+                      </PageErrorBoundary>
                     </AuthGuard>
                   }
                 />

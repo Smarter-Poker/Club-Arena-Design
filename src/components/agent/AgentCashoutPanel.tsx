@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { cashoutService, CashoutRequest } from '../../services/CashoutService';
 import { useUserStore } from '../../stores/useUserStore';
 import { masterBus } from '../../core/MasterBus';
+import { supabase } from '../../lib/supabase';
 import './AgentCashoutPanel.css';
 
 interface AgentCashoutPanelProps {
@@ -57,11 +58,21 @@ export default function AgentCashoutPanel({ clubId, onCashoutProcessed }: AgentC
       500
     );
 
+    // Supabase real-time: instant refresh on cashout_requests changes (cross-device)
+    const channelKey = `agent-cashouts-${user?.id || 'anon'}`;
+    const channel = supabase
+      .channel(channelKey)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cashout_requests' }, () => {
+        loadCashouts();
+      })
+      .subscribe();
+
     return () => {
       clearInterval(interval);
       unsubBalance();
+      supabase.removeChannel(channel);
     };
-  }, [loadCashouts]);
+  }, [loadCashouts, user?.id]);
 
   const handleApprove = async (cashout: CashoutRequest) => {
     if (!user?.id) return;
