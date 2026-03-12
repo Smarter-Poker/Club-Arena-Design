@@ -49,9 +49,9 @@ export default function RakebackPage() {
   // Refs to avoid stale closures
   const loadRakebackDataRef = useRef<() => void>(() => {});
 
-  const loadRakebackData = async () => {
+  const loadRakebackData = async (getIsMounted?: () => boolean) => {
     if (!user?.id) return;
-    setLoading(true);
+    if (!getIsMounted || getIsMounted()) setLoading(true);
     try {
       const { data, error } = await supabase
         .from('rakeback_periods')
@@ -60,6 +60,7 @@ export default function RakebackPage() {
         .order('period_start', { ascending: false })
         .limit(12);
 
+      if (getIsMounted && !getIsMounted()) return;
       if (!error && data) {
         setPeriods(data);
         setTotalEarned(data.reduce((sum, p) => sum + (p.rakeback_earned || 0), 0));
@@ -69,9 +70,9 @@ export default function RakebackPage() {
       }
     } catch (error) {
       console.error('Failed to load rakeback:', error);
-      toast.error('Failed to load rakeback data.');
+      if (!getIsMounted || getIsMounted()) toast.error('Failed to load rakeback data.');
     }
-    setLoading(false);
+    if (!getIsMounted || getIsMounted()) setLoading(false);
   };
 
   // Store ref for callback use
@@ -147,9 +148,13 @@ export default function RakebackPage() {
 
   // Initial load
   useEffect(() => {
+    let isMounted = true;
     if (user?.id) {
-      loadRakebackData();
+      loadRakebackData(() => isMounted);
     }
+    return () => {
+      isMounted = false;
+    };
   }, [user?.id]);
 
   const formatDate = (dateStr: string): string => {

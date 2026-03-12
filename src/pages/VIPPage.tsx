@@ -55,7 +55,8 @@ export default function VIPPage() {
   }, [loading]);
 
   useEffect(() => {
-    loadVIPStatus();
+    let isMounted = true;
+    loadVIPStatus(() => isMounted);
 
     // Real-time profile updates (diamonds, VIP status)
     if (user?.id) {
@@ -72,6 +73,7 @@ export default function VIPPage() {
             filter: `id=eq.${user.id}`,
           },
           (payload) => {
+            if (!isMounted) return;
             const newData = payload.new as any;
             if (newData.diamonds !== undefined) {
               setDiamonds(newData.diamonds);
@@ -88,9 +90,13 @@ export default function VIPPage() {
         .subscribe();
 
       return () => {
+        isMounted = false;
         masterBus.removeRegisteredChannel(channelKey);
       };
     }
+    return () => {
+      isMounted = false;
+    };
   }, [user?.id]);
 
   // Bus listener: update diamond balance when changed from other pages (e.g. diamond purchase, feature buy)
@@ -119,42 +125,40 @@ export default function VIPPage() {
     return unsubVIP;
   }, [user?.id]);
 
-  const loadVIPStatus = async () => {
+  const loadVIPStatus = async (getIsMounted?: () => boolean) => {
     if (!user?.id) {
-      setLoading(false);
+      if (!getIsMounted || getIsMounted()) setLoading(false);
       return;
     }
 
-    setLoading(true);
+    if (!getIsMounted || getIsMounted()) setLoading(true);
     try {
-      // Check VIP Gold status
       const vipStatus = await vipService.checkVIPStatus(user.id);
+      if (getIsMounted && !getIsMounted()) return;
       setIsVIP(vipStatus.isVIP);
 
-      // Load diamond balance & vip points aggregate
       const { data: profData } = await supabase
         .from('profiles')
         .select('diamonds, vip_points, created_at')
         .eq('id', user.id)
         .maybeSingle();
 
+      if (getIsMounted && !getIsMounted()) return;
       setDiamonds(profData?.diamonds || 0);
 
       const currentPts = profData?.vip_points || 0;
       setVipPoints((prev) => ({
         ...prev,
         current: currentPts,
-        lifetime: currentPts, // Will refine with real ledger if needed
+        lifetime: currentPts,
       }));
 
-      // Dynamically calculate days since last 30-day VIP review period
       if (profData?.created_at) {
         const joinDate = new Date(profData.created_at).getTime();
         const daysSinceJoined = Math.floor((Date.now() - joinDate) / (1000 * 60 * 60 * 24));
         setDaysSinceReview(daysSinceJoined % 30);
       }
 
-      // Load VIP Ledger (Activity History)
       const { data: ledgerData } = await supabase
         .from('vip_points_ledger')
         .select('*')
@@ -162,10 +166,10 @@ export default function VIPPage() {
         .order('created_at', { ascending: false })
         .limit(10);
 
+      if (getIsMounted && !getIsMounted()) return;
       if (ledgerData) {
         let runningBalance = currentPts;
         const mapped = ledgerData.map((entry) => {
-          // We calculate trailing balance backwards
           const bal = runningBalance;
           runningBalance -= entry.amount;
 
@@ -182,9 +186,9 @@ export default function VIPPage() {
         setRecentActivities(mapped);
       }
     } catch (error) {
-      toast.error('Failed to load VIP status');
+      if (!getIsMounted || getIsMounted()) toast.error('Failed to load VIP status');
     }
-    setLoading(false);
+    if (!getIsMounted || getIsMounted()) setLoading(false);
   };
 
   const handlePurchase = async (feature: VIPFeature) => {

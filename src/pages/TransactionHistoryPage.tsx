@@ -62,12 +62,16 @@ export default function TransactionHistoryPage() {
   }, [transactions.length]);
 
   useEffect(() => {
+    let isMounted = true;
     if (user?.id) {
       setTransactions([]);
       setPage(0);
       setHasMore(true);
-      loadTransactions(0, true);
+      loadTransactions(0, true, () => isMounted);
     }
+    return () => {
+      isMounted = false;
+    };
   }, [user?.id, filter, dateFrom, dateTo]);
 
   // ── Realtime: live transaction updates ──
@@ -134,10 +138,13 @@ export default function TransactionHistoryPage() {
     };
   }, [user?.id]);
 
-  const loadTransactions = async (pageNum: number, reset = false) => {
+  const loadTransactions = async (pageNum: number, reset = false, getIsMounted?: () => boolean) => {
     if (!user?.id) return;
-    if (reset) setLoading(true);
-    else setLoadingMore(true);
+    if (reset) {
+      if (!getIsMounted || getIsMounted()) setLoading(true);
+    } else {
+      if (!getIsMounted || getIsMounted()) setLoadingMore(true);
+    }
 
     try {
       let query = supabase
@@ -157,7 +164,6 @@ export default function TransactionHistoryPage() {
         .order('created_at', { ascending: false })
         .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1);
 
-      // Apply filter
       if (filter === 'deposits') query = query.eq('transaction_type', 'deposit');
       else if (filter === 'withdrawals')
         query = query.in('transaction_type', ['cash_out', 'withdrawal']);
@@ -165,7 +171,6 @@ export default function TransactionHistoryPage() {
         query = query.in('transaction_type', ['transfer_in', 'transfer_out', 'agent_transfer']);
       else if (filter === 'rake') query = query.in('transaction_type', ['rake', 'rakeback']);
 
-      // Date range filter
       if (dateFrom) query = query.gte('created_at', new Date(dateFrom).toISOString());
       if (dateTo) {
         const endDate = new Date(dateTo);
@@ -175,6 +180,7 @@ export default function TransactionHistoryPage() {
 
       const { data, error } = await query;
 
+      if (getIsMounted && !getIsMounted()) return;
       if (!error && data) {
         const mapped = data.map((t: any) => ({
           id: t.id,
@@ -198,10 +204,12 @@ export default function TransactionHistoryPage() {
       }
     } catch (error) {
       console.error('Failed to load transactions:', error);
-      toast.error('Failed to load transactions');
+      if (!getIsMounted || getIsMounted()) toast.error('Failed to load transactions');
     }
-    setLoading(false);
-    setLoadingMore(false);
+    if (!getIsMounted || getIsMounted()) {
+      setLoading(false);
+      setLoadingMore(false);
+    }
   };
 
   const loadMore = () => {

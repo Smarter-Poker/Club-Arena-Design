@@ -52,9 +52,9 @@ export default function BadBeatJackpotPage() {
 
   useEffect(() => {
     if (clubId) {
-      loadJackpotData();
+      let isMounted = true;
+      loadJackpotData(() => isMounted);
 
-      // Real-time jackpot updates
       const channelKey = 'jackpot-live';
 
       const channel = masterBus.getOrCreateChannel(channelKey);
@@ -68,7 +68,7 @@ export default function BadBeatJackpotPage() {
             filter: `club_id=eq.${clubId}`,
           },
           (payload) => {
-            // Jackpot updated!
+            if (!isMounted) return;
             const newData = payload.new as JackpotInfo;
             if (newData.pool_amount > prevAmountRef.current) {
               setJustUpdated(true);
@@ -91,14 +91,15 @@ export default function BadBeatJackpotPage() {
             filter: `club_id=eq.${clubId}`,
           },
           (payload) => {
-            // Jackpot hit!
+            if (!isMounted) return;
             toast.success(' BAD BEAT JACKPOT HIT!');
-            loadJackpotData();
+            loadJackpotData(() => isMounted);
           }
         )
         .subscribe();
 
       return () => {
+        isMounted = false;
         masterBus.removeRegisteredChannel(channelKey);
         if (flashTimerRef.current) {
           clearTimeout(flashTimerRef.current);
@@ -108,51 +109,54 @@ export default function BadBeatJackpotPage() {
     }
   }, [clubId]);
 
-  const loadJackpotData = useCallback(async () => {
-    if (!clubId) return;
-    setLoading(true);
-    try {
-      // Load jackpot info from bbj_pools
-      const { data: jackpotData } = await supabase
-        .from('bbj_pools')
-        .select('*')
-        .eq('club_id', clubId)
-        .maybeSingle();
-
-      if (jackpotData) {
-        setJackpot(jackpotData);
-        prevAmountRef.current = jackpotData.pool_amount;
-      }
-
-      // Load history from bbj_winners
-      const { data: historyData } = await supabase
-        .from('bbj_winners')
-        .select('*')
-        .eq('club_id', clubId)
-        .order('awarded_at', { ascending: false })
-        .limit(10);
-
-      if (historyData) {
-        setHistory(historyData);
-      }
-
-      // Load player's personal contribution
-      if (user?.id) {
-        const { data: contribData } = await supabase
-          .from('bbj_contributions')
-          .select('amount')
+  const loadJackpotData = useCallback(
+    async (getIsMounted?: () => boolean) => {
+      if (!clubId) return;
+      if (!getIsMounted || getIsMounted()) setLoading(true);
+      try {
+        const { data: jackpotData } = await supabase
+          .from('bbj_pools')
+          .select('*')
           .eq('club_id', clubId)
-          .eq('player_id', user.id);
+          .maybeSingle();
 
-        const total = (contribData || []).reduce((sum, c) => sum + (c.amount || 0), 0);
-        setPlayerContribution(total);
+        if (getIsMounted && !getIsMounted()) return;
+        if (jackpotData) {
+          setJackpot(jackpotData);
+          prevAmountRef.current = jackpotData.pool_amount;
+        }
+
+        const { data: historyData } = await supabase
+          .from('bbj_winners')
+          .select('*')
+          .eq('club_id', clubId)
+          .order('awarded_at', { ascending: false })
+          .limit(10);
+
+        if (getIsMounted && !getIsMounted()) return;
+        if (historyData) {
+          setHistory(historyData);
+        }
+
+        if (user?.id) {
+          const { data: contribData } = await supabase
+            .from('bbj_contributions')
+            .select('amount')
+            .eq('club_id', clubId)
+            .eq('player_id', user.id);
+
+          if (getIsMounted && !getIsMounted()) return;
+          const total = (contribData || []).reduce((sum, c) => sum + (c.amount || 0), 0);
+          setPlayerContribution(total);
+        }
+      } catch (error) {
+        console.error('Failed to load jackpot:', error);
+        if (!getIsMounted || getIsMounted()) toast.error('Failed to load jackpot data.');
       }
-    } catch (error) {
-      console.error('Failed to load jackpot:', error);
-      toast.error('Failed to load jackpot data.');
-    }
-    setLoading(false);
-  }, [clubId]);
+      if (!getIsMounted || getIsMounted()) setLoading(false);
+    },
+    [clubId]
+  );
 
   // Bus listener: reload jackpot data when a hand completes (BBJ contribution may have been added)
   useEffect(() => {

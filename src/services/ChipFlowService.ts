@@ -279,12 +279,15 @@ export const ChipFlowService = {
           p_description: reason,
           p_table_id: null,
           p_hand_id: null,
-          p_related_entity_id: unionId
+          p_related_entity_id: unionId,
         }),
       3
     );
 
     if (error) throw new Error(`Mint failed: ${error.message}`);
+
+    // Emit bus event so all UI components refresh balance instantly
+    masterBus.emit('BALANCE_UPDATED', { source: 'union_mint', userId: unionOwnerId });
 
     // Return new balance
     const { data: wallet } = await supabase
@@ -319,20 +322,27 @@ export const ChipFlowService = {
     const currentBalance = wallet?.balance || 0;
 
     if (currentBalance > 0) {
-      await supabase
-        .from('wallets')
-        .update({ balance: 0 })
-        .eq('user_id', userId)
-        .eq('wallet_type', 'PLAYER');
-
-      await WalletService.logTransaction(
-        userId,
-        'PLAYER',
-        currentBalance,
-        'debit',
-        'settlement',
-        reason
+      const { error: deductErr } = await retryAsync(
+        () =>
+          supabase.rpc('atomic_deduct_wallet_and_log', {
+            p_user_id: userId,
+            p_amount: currentBalance,
+            p_category: 'settlement',
+            p_description: reason,
+            p_table_id: null,
+            p_hand_id: null,
+            p_related_entity_id: null,
+          }),
+        3
       );
+
+      if (deductErr) {
+        console.error('[ChipFlowService] resetBalance atomic deduct failed:', deductErr.message);
+        throw new Error(`Balance reset failed: ${deductErr.message}`);
+      }
+
+      // Emit bus event so UI reflects the zeroed balance
+      masterBus.emit('BALANCE_UPDATED', { source: 'balance_reset', userId });
     }
 
     return currentBalance;

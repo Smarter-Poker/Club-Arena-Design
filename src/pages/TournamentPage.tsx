@@ -56,6 +56,7 @@ export default function TournamentPage() {
 
   // Check club ownership
   useEffect(() => {
+    let isMounted = true;
     async function checkOwnership() {
       if (!clubId || !currentUser.id || currentUser.id === 'guest') {
         setIsOwner(false);
@@ -69,18 +70,22 @@ export default function TournamentPage() {
           .eq('user_id', currentUser.id)
           .maybeSingle();
 
-        // Owner or admin can manage tournaments
+        if (!isMounted) return;
         setIsOwner(data?.role === 'owner' || data?.role === 'admin');
       } catch {
-        setIsOwner(false);
+        if (isMounted) setIsOwner(false);
       }
     }
     checkOwnership();
+    return () => {
+      isMounted = false;
+    };
   }, [clubId, currentUser.id]);
 
   // Check if club is in a union (unions manage their own tournaments)
   useEffect(() => {
     if (!clubId) return;
+    let isMounted = true;
     (async () => {
       try {
         const { data, error } = await supabase
@@ -89,23 +94,28 @@ export default function TournamentPage() {
           .eq('club_id', clubId)
           .limit(1)
           .maybeSingle();
+        if (!isMounted) return;
         if (!error && data) setIsInUnion(true);
       } catch {
         // Query error — fail-open
       }
     })();
+    return () => {
+      isMounted = false;
+    };
   }, [clubId]);
 
   // Load tournaments
   useEffect(() => {
+    let isMounted = true;
     async function loadTournaments() {
       if (!clubId) return;
-      setIsLoading(true);
+      if (isMounted) setIsLoading(true);
       try {
         const data = await tournamentService.getTournaments(clubId);
+        if (!isMounted) return;
         setTournaments(data);
 
-        // If tournamentId provided, select it
         if (tournamentId) {
           const tourn = data.find((t) => t.id === tournamentId);
           if (tourn) setSelectedTournament(tourn);
@@ -113,9 +123,12 @@ export default function TournamentPage() {
       } catch (error) {
         console.error('Failed to load tournaments:', error);
       }
-      setIsLoading(false);
+      if (isMounted) setIsLoading(false);
     }
     loadTournaments();
+    return () => {
+      isMounted = false;
+    };
   }, [clubId, tournamentId]);
 
   // Stagger animation for tournament cards
@@ -173,6 +186,7 @@ export default function TournamentPage() {
       setIsRegistered(false);
       return;
     }
+    let isMounted = true;
     (async () => {
       try {
         const { data } = await supabase
@@ -181,11 +195,14 @@ export default function TournamentPage() {
           .eq('tournament_id', selectedTournament.id)
           .eq('user_id', currentUser.id)
           .maybeSingle();
-        setIsRegistered(!!data);
+        if (isMounted) setIsRegistered(!!data);
       } catch (e) {
         console.error('[TournamentPage] Registration sync error:', e);
       }
     })();
+    return () => {
+      isMounted = false;
+    };
   }, [selectedTournament?.id, currentUser.id]);
 
   // Helper to notify the parent World Hub of a balance change
@@ -361,10 +378,13 @@ export default function TournamentPage() {
 
   // Check rebuy/add-on eligibility when tournament changes
   useEffect(() => {
+    let isMounted = true;
     async function checkRebuyAddOn() {
       if (!selectedTournament || !currentUser.id || currentUser.id === 'guest') {
-        setCanRebuyNow(false);
-        setCanAddOnNow(false);
+        if (isMounted) {
+          setCanRebuyNow(false);
+          setCanAddOnNow(false);
+        }
         return;
       }
       if (selectedTournament.status === 'RUNNING') {
@@ -372,14 +392,20 @@ export default function TournamentPage() {
           tournamentService.canRebuy(selectedTournament.id, currentUser.id),
           tournamentService.canAddOn(selectedTournament.id),
         ]);
+        if (!isMounted) return;
         setCanRebuyNow(rebuyCheck.allowed);
         setCanAddOnNow(addOnCheck.allowed);
       } else {
-        setCanRebuyNow(false);
-        setCanAddOnNow(false);
+        if (isMounted) {
+          setCanRebuyNow(false);
+          setCanAddOnNow(false);
+        }
       }
     }
     checkRebuyAddOn();
+    return () => {
+      isMounted = false;
+    };
   }, [selectedTournament, currentUser.id]);
 
   // ── Broadcast: Tournament events (level_up, player_eliminated, etc) ──

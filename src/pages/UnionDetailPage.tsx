@@ -132,15 +132,17 @@ export default function UnionDetailPage() {
 
   useEffect(() => {
     if (!unionId) return;
+    let isMounted = true;
 
     const loadData = async () => {
-      setLoading(true);
+      if (isMounted) setLoading(true);
       try {
         const unionData = await unionService.getUnion(unionId);
         const clubsData = await unionService.getUnionClubs(unionId);
         const tablesData = await tableService.getUnionTables(unionId);
 
-        // Compute real memberCount from clubs (DB column may be stale)
+        if (!isMounted) return;
+
         const computedMemberCount = (clubsData || []).reduce(
           (sum, c) => sum + (c.memberCount || 0),
           0
@@ -150,7 +152,6 @@ export default function UnionDetailPage() {
         }
         setUnion(unionData);
         setClubs(clubsData);
-        // Sort tables: active (with players) first, then by player count desc
         const sortedTables = (tablesData || []).sort((a: PokerTable, b: PokerTable) => {
           const aPlayers = a.current_players || 0;
           const bPlayers = b.current_players || 0;
@@ -160,10 +161,8 @@ export default function UnionDetailPage() {
         });
         setTables(sortedTables);
 
-        // Load union-wide tournaments if enabled
         if (unionData?.settings?.crossClubTournaments) {
           const clubIds = clubsData.map((c) => c.clubId);
-          // Fetch both club-hosted and union-wide (XMTT) tournaments
           const [{ data: clubTournaments }, { data: xmttTournaments }] = await Promise.all([
             supabase
               .from('tournaments')
@@ -177,7 +176,7 @@ export default function UnionDetailPage() {
               .eq('is_xmtt', true)
               .order('start_time', { ascending: true }),
           ]);
-          // Merge and deduplicate
+          if (!isMounted) return;
           const allTournaments = [...(clubTournaments || []), ...(xmttTournaments || [])];
           const seen = new Set<string>();
           const tournaments = allTournaments.filter((t) => {
@@ -185,7 +184,6 @@ export default function UnionDetailPage() {
             seen.add(t.id);
             return true;
           });
-          // Sort: REGISTERING/ANNOUNCED first, then RUNNING, then by start_time desc
           const statusOrder: Record<string, number> = {
             REGISTERING: 0,
             ANNOUNCED: 1,
@@ -202,11 +200,11 @@ export default function UnionDetailPage() {
           setUnionTournaments(sorted);
         }
 
-        // Load financial summary from SettlementService
+        if (!isMounted) return;
         try {
           const settlementReport = await unionService.getSettlementReport(unionId);
 
-          // Calculate overdue as sum of pending PAY_TO_UNION amounts
+          if (!isMounted) return;
           const overdueAmount =
             Math.trunc(
               settlementReport.clubBreakdowns
@@ -223,7 +221,6 @@ export default function UnionDetailPage() {
             overdueAmount,
           });
 
-          // Populate settlement history from club breakdowns
           setSettlements(
             settlementReport.clubBreakdowns.map((cb, idx) => ({
               id: `settlement-${idx}`,
@@ -238,22 +235,26 @@ export default function UnionDetailPage() {
             }))
           );
         } catch {
-          // Fallback if no settlement data
-          setFinancialSummary({
-            totalRakeThisPeriod: 0,
-            unionRevenue: 0,
-            pendingSettlements: 0,
-            overdueAmount: 0,
-          });
+          if (isMounted) {
+            setFinancialSummary({
+              totalRakeThisPeriod: 0,
+              unionRevenue: 0,
+              pendingSettlements: 0,
+              overdueAmount: 0,
+            });
+          }
         }
       } catch (err) {
         console.error('[UnionDetailPage] Error loading data:', err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     loadData();
+    return () => {
+      isMounted = false;
+    };
   }, [unionId]);
 
   // Sync settings form when union data loads or tab switches to settings
