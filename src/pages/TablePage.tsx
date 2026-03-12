@@ -598,6 +598,13 @@ export default function TablePage({
         insuranceTimeoutRef.current = null;
       }
     }
+    // Cleanup on unmount — prevents setState on unmounted component
+    return () => {
+      if (insuranceTimeoutRef.current !== null) {
+        cancelWorkerTimeout(insuranceTimeoutRef.current);
+        insuranceTimeoutRef.current = null;
+      }
+    };
   }, [showInsurance]);
 
   // Run It Twice handlers
