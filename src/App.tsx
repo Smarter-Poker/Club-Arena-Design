@@ -196,7 +196,7 @@ export default function App() {
     const route = location.pathname.replace(/^\//, '');
     try {
       window.parent.postMessage({ type: 'CLUB_ARENA_ROUTE_CHANGE', route }, '*');
-    } catch (_) {
+    } catch {
       /* best effort */
     }
   }, [location.pathname]);
@@ -210,7 +210,7 @@ export default function App() {
     const heartbeatId = setInterval(() => {
       try {
         window.parent.postMessage({ type: 'CLUB_ARENA_HEARTBEAT' }, '*');
-      } catch (_) {
+      } catch {
         /* best effort */
       }
     }, HEARTBEAT_INTERVAL);
@@ -218,7 +218,7 @@ export default function App() {
     // Send one immediately on mount
     try {
       window.parent.postMessage({ type: 'CLUB_ARENA_HEARTBEAT' }, '*');
-    } catch (_) {
+    } catch {
       /* best effort — ignore postMessage errors from detached frames */
     }
 
