@@ -303,6 +303,15 @@ export default function TournamentDetails() {
     };
   }, [tournamentId]);
 
+  // ── Refresh wallet balance when BALANCE_UPDATED fires ──
+  useEffect(() => {
+    if (!user?.id) return;
+    const unsub = masterBus.subscribe('BALANCE_UPDATED', () => {
+      loadWalletBalance();
+    });
+    return () => unsub();
+  }, [user?.id]);
+
   useEffect(() => {
     if (tournament?.start_time) {
       startCountdown();

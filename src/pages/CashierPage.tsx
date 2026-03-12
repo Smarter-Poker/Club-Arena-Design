@@ -220,20 +220,15 @@ export default function CashierPage() {
     loadPendingCashouts();
   }, [clubId, user?.id, action]);
 
-  // Subscribe to wallet updates
+  // Subscribe to wallet updates (BALANCE_UPDATED is handled by debounced subscriber below)
   useEffect(() => {
     if (!user?.id) return;
-
-    const unsubscribe = masterBus.subscribe('BALANCE_UPDATED', () => {
-      loadBalances(user.id);
-    });
 
     const unsubscribe2 = masterBus.subscribe('WALLET_REFRESHED', () => {
       loadBalances(user.id);
     });
 
     return () => {
-      unsubscribe?.();
       unsubscribe2?.();
     };
   }, [loadBalances, user?.id]);
