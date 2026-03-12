@@ -25,6 +25,8 @@ export const SessionHUD: React.FC<SessionHUDProps> = ({
   const [stats, setStats] = useState<SessionStats | null>(null);
   const [minimized, setMinimized] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [sessionDuration, setSessionDuration] = useState('0m');
+  const [sessionStartTime] = useState(() => Date.now());
 
   // ── Initialize session tracking ──
   useEffect(() => {
@@ -47,6 +49,33 @@ export const SessionHUD: React.FC<SessionHUDProps> = ({
       if (typeof unsub === 'function') unsub();
     };
   }, [tableId]);
+
+  // ── Also refresh on HAND_COMPLETED for real-time profit updates ──
+  useEffect(() => {
+    const unsub = masterBus.subscribe('HAND_COMPLETED', (event: any) => {
+      if (event?.payload?.tableId === tableId) {
+        setStats(sessionStatsService.getStats(tableId));
+      }
+    });
+    return () => {
+      if (typeof unsub === 'function') unsub();
+    };
+  }, [tableId]);
+
+  // ── Session duration timer (updates every second) ──
+  useEffect(() => {
+    const formatDuration = () => {
+      const elapsed = Date.now() - sessionStartTime;
+      const totalMinutes = Math.floor(elapsed / 60_000);
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      if (hours > 0) return `${hours}h ${minutes}m`;
+      return `${minutes}m`;
+    };
+    setSessionDuration(formatDuration());
+    const timer = setInterval(() => setSessionDuration(formatDuration()), 1000);
+    return () => clearInterval(timer);
+  }, [sessionStartTime]);
 
   const formatPL = (value: number): string => {
     const sign = value >= 0 ? '+' : '';
@@ -144,6 +173,18 @@ export const SessionHUD: React.FC<SessionHUDProps> = ({
         <div className="sh-qstat">
           <span className="sh-qstat-value">{stats.handsWon}</span>
           <span className="sh-qstat-label">Won</span>
+        </div>
+        <div className="sh-qstat">
+          <span className="sh-qstat-value">{sessionDuration}</span>
+          <span className="sh-qstat-label">Time</span>
+        </div>
+        <div className="sh-qstat">
+          <span className={`sh-qstat-value ${stats.handsPlayed > 0 ? plClass : ''}`}>
+            {stats.handsPlayed > 0
+              ? ((stats.bigBlindsWon / stats.handsPlayed) * 100).toFixed(1)
+              : '0.0'}
+          </span>
+          <span className="sh-qstat-label">BB/100</span>
         </div>
       </div>
 

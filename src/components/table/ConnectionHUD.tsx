@@ -37,6 +37,8 @@ export const ConnectionHUD: React.FC<ConnectionHUDProps> = ({ tableId, userId })
   const [conn, setConn] = useState<ConnectionState | null>(null);
   const [graceCountdown, setGraceCountdown] = useState<number | null>(null);
   const [showDisconnectWarning, setShowDisconnectWarning] = useState(false);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const [isReconnecting, setIsReconnecting] = useState(false);
 
   // ── Poll connection state ──
   useEffect(() => {
@@ -77,6 +79,33 @@ export const ConnectionHUD: React.FC<ConnectionHUDProps> = ({ tableId, userId })
     };
   }, [tableId, userId]);
 
+  // ── Auto-reconnect with exponential backoff ──
+  useEffect(() => {
+    if (!showDisconnectWarning) {
+      setReconnectAttempts(0);
+      setIsReconnecting(false);
+      return;
+    }
+
+    let timeout: ReturnType<typeof setTimeout>;
+    const attemptReconnect = async (attempt: number) => {
+      setIsReconnecting(true);
+      setReconnectAttempts(attempt);
+      try {
+        // Attempt reconnection via the disconnect protection service
+        await disconnectProtectionService.attemptReconnect?.(tableId, userId);
+      } catch {
+        // Exponential backoff: 1s, 2s, 4s, 8s, max 16s
+        const delay = Math.min(1000 * Math.pow(2, attempt), 16_000);
+        timeout = setTimeout(() => attemptReconnect(attempt + 1), delay);
+      }
+    };
+
+    // Start first reconnect attempt after 1s
+    timeout = setTimeout(() => attemptReconnect(0), 1000);
+    return () => clearTimeout(timeout);
+  }, [showDisconnectWarning, tableId, userId]);
+
   if (!conn) return null;
 
   return (
@@ -85,6 +114,7 @@ export const ConnectionHUD: React.FC<ConnectionHUDProps> = ({ tableId, userId })
       <div className={`conn-hud conn-${conn.quality}`}>
         <span className="conn-icon">{QUALITY_ICONS[conn.quality]}</span>
         <span className="conn-latency">{conn.latencyMs}ms</span>
+        <span className="conn-label">{QUALITY_LABELS[conn.quality]}</span>
       </div>
 
       {/* ── Disconnect Warning Overlay ── */}
@@ -109,6 +139,9 @@ export const ConnectionHUD: React.FC<ConnectionHUDProps> = ({ tableId, userId })
             )}
             {graceCountdown === 0 && (
               <span className="conn-dc-timeout">Auto-action applied: check/fold</span>
+            )}
+            {isReconnecting && reconnectAttempts > 0 && (
+              <span className="conn-dc-retry">Retry attempt {reconnectAttempts}...</span>
             )}
           </div>
         </div>

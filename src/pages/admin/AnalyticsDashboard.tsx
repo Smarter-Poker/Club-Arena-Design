@@ -10,9 +10,9 @@ import './AnalyticsDashboard.css';
 interface PositionStat {
   position: string;
   hands_played: number;
-  hands_won: number;
-  total_profit: number;
-  vpip_pct: number;
+  vpip_count: number;
+  pfr_count: number;
+  vpip_pct: number; // Computed client-side from vpip_count / hands_played
 }
 
 interface VipLedgerEntry {
@@ -68,7 +68,7 @@ export default function AnalyticsDashboard() {
     try {
       const { data, error } = await supabase
         .from('player_position_stats')
-        .select('position, hands_played, hands_won, total_profit, vpip_pct')
+        .select('position, hands_played, vpip_count, pfr_count')
         .order('hands_played', { ascending: false })
         .limit(50);
 
@@ -79,13 +79,22 @@ export default function AnalyticsDashboard() {
           const existing = byPosition.get(row.position);
           if (existing) {
             existing.hands_played += row.hands_played || 0;
-            existing.hands_won += row.hands_won || 0;
-            existing.total_profit += row.total_profit || 0;
-            existing.vpip_pct = Math.round(
-              (existing.vpip_pct + (row.vpip_pct || 0)) / 2
-            );
+            existing.vpip_count += row.vpip_count || 0;
+            existing.pfr_count += row.pfr_count || 0;
+            existing.vpip_pct =
+              existing.hands_played > 0
+                ? Math.round((existing.vpip_count / existing.hands_played) * 100)
+                : 0;
           } else {
-            byPosition.set(row.position, { ...row });
+            const hp = row.hands_played || 0;
+            const vc = row.vpip_count || 0;
+            byPosition.set(row.position, {
+              position: row.position,
+              hands_played: hp,
+              vpip_count: vc,
+              pfr_count: row.pfr_count || 0,
+              vpip_pct: hp > 0 ? Math.round((vc / hp) * 100) : 0,
+            });
           }
         }
         setPositionStats(Array.from(byPosition.values()));
@@ -117,25 +126,17 @@ export default function AnalyticsDashboard() {
       const { data: handData } = await supabase
         .from('player_position_stats')
         .select('hands_played');
-      const totalHands = (handData || []).reduce(
-        (acc, r) => acc + (r.hands_played || 0),
-        0
-      );
+      const totalHands = (handData || []).reduce((acc, r) => acc + (r.hands_played || 0), 0);
 
       // Total VIP points issued
       const { data: vipData } = await supabase
         .from('vip_points_ledger')
         .select('amount')
         .gt('amount', 0);
-      const totalVip = (vipData || []).reduce(
-        (acc, r) => acc + (r.amount || 0),
-        0
-      );
+      const totalVip = (vipData || []).reduce((acc, r) => acc + (r.amount || 0), 0);
 
       // Active players (players with any position stats)
-      const { data: playerData } = await supabase
-        .from('player_position_stats')
-        .select('user_id');
+      const { data: playerData } = await supabase.from('player_position_stats').select('user_id');
       const uniquePlayers = new Set((playerData || []).map((r) => r.user_id));
 
       // Total rake from position stats total_profit (negative profit = rake)
@@ -190,10 +191,7 @@ export default function AnalyticsDashboard() {
 
   // ── Computed values ─────────────────────────────────────────────────────
 
-  const maxHandsPlayed = Math.max(
-    1,
-    ...positionStats.map((s) => s.hands_played)
-  );
+  const maxHandsPlayed = Math.max(1, ...positionStats.map((s) => s.hands_played));
 
   // ── Render ──────────────────────────────────────────────────────────────
 
@@ -214,27 +212,19 @@ export default function AnalyticsDashboard() {
       <div className="analytics-summary">
         <div className="summary-card">
           <div className="label">Total Hands Tracked</div>
-          <div className="value text-blue">
-            {aggregate.totalHands.toLocaleString()}
-          </div>
+          <div className="value text-blue">{aggregate.totalHands.toLocaleString()}</div>
         </div>
         <div className="summary-card">
           <div className="label">Active Players</div>
-          <div className="value text-green">
-            {aggregate.activePlayers.toLocaleString()}
-          </div>
+          <div className="value text-green">{aggregate.activePlayers.toLocaleString()}</div>
         </div>
         <div className="summary-card">
           <div className="label">Est. Total Rake</div>
-          <div className="value text-amber">
-            ${aggregate.totalRake.toLocaleString()}
-          </div>
+          <div className="value text-amber">${aggregate.totalRake.toLocaleString()}</div>
         </div>
         <div className="summary-card">
           <div className="label">VIP Points Issued</div>
-          <div className="value text-purple">
-            {aggregate.totalVipPointsIssued.toLocaleString()}
-          </div>
+          <div className="value text-purple">{aggregate.totalVipPointsIssued.toLocaleString()}</div>
         </div>
       </div>
 
@@ -247,12 +237,8 @@ export default function AnalyticsDashboard() {
             <div className="position-bars">
               {ALL_POSITIONS.map((pos) => {
                 const stat = positionStats.find((s) => s.position === pos);
-                const winRate = stat
-                  ? Math.round((stat.hands_won / Math.max(1, stat.hands_played)) * 100)
-                  : 0;
-                const barWidth = stat
-                  ? Math.round((stat.hands_played / maxHandsPlayed) * 100)
-                  : 0;
+                const winRate = stat?.vpip_pct || 0;
+                const barWidth = stat ? Math.round((stat.hands_played / maxHandsPlayed) * 100) : 0;
 
                 return (
                   <div key={pos} className="position-bar-row">
@@ -354,9 +340,7 @@ export default function AnalyticsDashboard() {
                     {entry.amount >= 0 ? '+' : ''}
                     {entry.amount.toLocaleString()}
                   </td>
-                  <td style={{ color: '#94a3b8' }}>
-                    {entry.description || '—'}
-                  </td>
+                  <td style={{ color: '#94a3b8' }}>{entry.description || '—'}</td>
                 </tr>
               ))}
             </tbody>
