@@ -1343,7 +1343,30 @@ export default function TablePage({
             name: sp.username || existing?.name || `Seat ${sp.seat}`,
             stack: sp.stack,
             bet: sp.bet || 0,
-            holeCards: isHero ? sp.cards || existing?.holeCards || [] : existing?.holeCards || [],
+            // At showdown, server sends all players' cards — use them.
+            // During active play, hero cards come via secure postgres_changes channel;
+            // opponents' cards are null (scrubbed by server).
+            holeCards: (() => {
+              if (stage === 'showdown' && sp.cards && sp.cards.length > 0) {
+                // Showdown: server reveals cards for all players
+                const suitMap: Record<string, 'h' | 'd' | 'c' | 's'> = {
+                  hearts: 'h',
+                  diamonds: 'd',
+                  clubs: 'c',
+                  spades: 's',
+                };
+                return sp.cards.map((c: any) => ({
+                  rank: c.rank,
+                  suit: suitMap[c.suit] || (c.suit as any),
+                }));
+              }
+              if (isHero) {
+                // During active play, hero cards come from secure channel
+                return sp.cards || existing?.holeCards || [];
+              }
+              // During active play, opponents' cards stay hidden
+              return existing?.holeCards || [];
+            })(),
             status: sp.is_folded
               ? 'folded'
               : sp.is_all_in
@@ -1352,7 +1375,8 @@ export default function TablePage({
                   ? 'sitting_out'
                   : 'active',
             isHero,
-            showCards: isHero,
+            // Show cards for hero always, and for all players at showdown (if they have cards)
+            showCards: isHero || (stage === 'showdown' && sp.cards && sp.cards.length > 0),
           } as any;
         }
 
