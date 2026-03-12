@@ -5,7 +5,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
 import { useUserStore } from '../../stores/useUserStore';
@@ -48,6 +48,7 @@ export default function FriendListPanel({
   const [addingFriend, setAddingFriend] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [visibleFriends, setVisibleFriends] = useState<Set<number>>(new Set());
+  const loadFriendsRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     if (user?.id) {
@@ -55,19 +56,24 @@ export default function FriendListPanel({
     }
   }, [user?.id]);
 
+  // Keep loadFriendsRef pointing to the latest loadFriends
+  useEffect(() => {
+    loadFriendsRef.current = loadFriends;
+  });
+
   // ── Bus Listeners: cross-page friend list reactivity ──
   useEffect(() => {
     const unsubAccepted = masterBus.subscribe('FRIEND_REQUEST_ACCEPTED', () => {
-      loadFriends();
+      loadFriendsRef.current();
     });
     const unsubSent = masterBus.subscribe('FRIEND_REQUEST_SENT', () => {
-      loadFriends();
+      loadFriendsRef.current();
     });
     const unsubSeated = masterBus.subscribe('TABLE_SEATED', () => {
-      loadFriends(); // Refresh to pick up "playing" status
+      loadFriendsRef.current(); // Refresh to pick up "playing" status
     });
     const unsubLeft = masterBus.subscribe('TABLE_LEFT', () => {
-      loadFriends();
+      loadFriendsRef.current();
     });
     return () => {
       unsubAccepted();

@@ -30,15 +30,21 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onSend, onCancel }
   const durationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioBlobRef = useRef<Blob | null>(null);
 
-  // Cleanup on unmount
+  // Track audioUrl in a ref for cleanup (avoids stale closure)
+  const audioUrlRef = useRef<string | null>(null);
+  useEffect(() => {
+    audioUrlRef.current = audioUrl;
+  }, [audioUrl]);
+
+  // Cleanup on unmount ONLY — kill timers, animation frames, media tracks, and revoke URL
   useEffect(() => {
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       if (durationTimerRef.current) clearInterval(durationTimerRef.current);
-      if (audioUrl) URL.revokeObjectURL(audioUrl);
+      if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
       stopMediaTracks();
     };
-  }, [audioUrl]);
+  }, []);
 
   const stopMediaTracks = () => {
     if (mediaRecorderRef.current?.stream) {
@@ -148,9 +154,8 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onSend, onCancel }
 
   // Auto-start recording on mount
   useEffect(() => {
-    if (state === 'idle') {
-      startRecording();
-    }
+    startRecording();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

@@ -66,7 +66,9 @@ export const GifPicker: React.FC<GifPickerProps> = ({ isOpen, onSelect, onClose 
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isOpen && inputRef.current) {
+    if (isOpen) {
+      setSearchQuery(''); // Reset search on open
+      setActivePack(0); // Reset to first pack
       setTimeout(() => inputRef.current?.focus(), 200);
     }
   }, [isOpen]);
