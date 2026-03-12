@@ -17,6 +17,9 @@
 
 import { supabase, broadcastHandState } from '../lib/supabase';
 import { HandController, type HandConfig, type HandEvent } from './HandController';
+import { evaluateHand, evaluateOmahaHand, cardToString, determineWinners } from './PokerEngine';
+import { straddleEngine } from './StraddleEngine';
+import { runItTwiceEngine } from './RunItTwiceEngine';
 import { HandPersistence } from '../services/HandPersistenceService';
 import { HorseLogic, type HorseStyle, type HorseDecision } from './HorseLogic';
 import { HorseBrainAdapter } from './HorseBrainAdapter';
@@ -464,6 +467,45 @@ export class HeadlessTableEngine {
       is_sitting_out: false,
     }));
 
+    // Rotate dealer button properly: cycle through actual seat numbers
+    this.dealerSeatIndex = this.dealerSeatIndex % players.length;
+    const dealerSeat = players[this.dealerSeatIndex].seat_number;
+    this.currentHandDealerSeat = dealerSeat; // Freeze for broadcast during this hand
+    this.dealerSeatIndex++; // Advance for next hand
+
+    // --- STRADDLE INJECTION ---
+    const sortedPlayers = [...players]
+      .sort((a, b) => a.seat_number - b.seat_number)
+      .filter((p) => p.stack > 0);
+    const firstActIdx = sortedPlayers.findIndex((p) => p.seat_number > dealerSeat);
+    const orderedPlayers =
+      firstActIdx !== -1
+        ? [...sortedPlayers.slice(firstActIdx), ...sortedPlayers.slice(0, firstActIdx)]
+        : sortedPlayers;
+
+    const seatOrder = orderedPlayers.map((p) => ({ seat: p.seat_number, playerId: p.user_id }));
+    const playerStacks = new Map(players.map((p) => [p.user_id, p.stack]));
+    // utgIdx is after SB and BB. `orderedPlayers` returns SB, BB, UTG...
+    const utgIdx = players.length > 2 ? 2 : 0;
+    const straddleOrder = seatOrder.slice(utgIdx).concat(seatOrder.slice(0, utgIdx));
+
+    // Cash games only
+    let straddles: { seat: number; amount: number }[] | undefined = undefined;
+    if (!this.isTournamentTable()) {
+      const straddleResult = straddleEngine.processStraddles(
+        this.tableId,
+        this.tableInfo.big_blind,
+        straddleOrder,
+        playerStacks
+      );
+      if (straddleResult.posted) {
+        straddles = straddleResult.straddles.map((s: any) => ({
+          seat: s.seatNumber,
+          amount: s.amount,
+        }));
+      }
+    }
+
     // Create HandController
     const config: HandConfig = {
       tableId: this.tableId,
@@ -473,13 +515,9 @@ export class HeadlessTableEngine {
       bigBlind: this.tableInfo.big_blind,
       ante: this.tableInfo.ante,
       rakeConfig: this.getRakeConfig(this.tableInfo.small_blind, this.tableInfo.big_blind),
+      straddles,
+      ritEnabled: !this.isTournamentTable(), // Auto-enable RIT for cash games
     };
-
-    // Rotate dealer button properly: cycle through actual seat numbers
-    this.dealerSeatIndex = this.dealerSeatIndex % players.length;
-    const dealerSeat = players[this.dealerSeatIndex].seat_number;
-    this.currentHandDealerSeat = dealerSeat; // Freeze for broadcast during this hand
-    this.dealerSeatIndex++; // Advance for next hand
 
     this.handController = new HandController(config, hcPlayers, dealerSeat);
 
@@ -617,6 +655,116 @@ export class HeadlessTableEngine {
         // Broadcast after each player action so UI updates bets/stacks
         this.broadcastCurrentState();
         break;
+
+      case 'ALL_IN_RUNOUT_PENDING': {
+        // Broadcast the pending state so UI can show the offer
+        this.broadcastCurrentState();
+
+        const activeIds = event.activePlayers.map((p: any) => p.user_id);
+        const offeredBy = activeIds[0];
+        const offeredTo = activeIds[1];
+        const handId = `${this.tableId}-${this.handCount}`;
+
+        // Asynchronous flow for RIT Engine
+        (async () => {
+          return new Promise<void>((resolve) => {
+            let handled = false;
+            let unsubAccept: (() => void) | null = null;
+            let unsubDecline: (() => void) | null = null;
+
+            const onAccept = (eventData: any) => {
+              const data = eventData.payload;
+              if (data && data.handId === handId) {
+                cleanup();
+                handleAccept();
+              }
+            };
+
+            const onDecline = (eventData: any) => {
+              const data = eventData.payload;
+              if (data && data.handId === handId) {
+                cleanup();
+                handleDecline();
+              }
+            };
+
+            const cleanup = () => {
+              if (handled) return;
+              handled = true;
+              if (unsubAccept) unsubAccept();
+              if (unsubDecline) unsubDecline();
+              resolve();
+            };
+
+            unsubAccept = masterBus.subscribe('RIT_ACCEPTED', onAccept);
+            unsubDecline = masterBus.subscribe('RIT_DECLINED', onDecline);
+
+            // Offer RIT — timeout is handled internally by RunItTwiceEngine emitting RIT_DECLINED
+            runItTwiceEngine.offer(this.tableId, handId, offeredBy, offeredTo, event.pot);
+
+            // Safety timeout fallback if engine fails to fire decline
+            setTimeout(() => {
+              if (!handled) {
+                cleanup();
+                handleDecline();
+              }
+            }, 12000);
+
+            const handleDecline = () => {
+              if (this.handInvalidated || !this.handController) return;
+              this.handController.resumeRunout();
+            };
+
+            const handleAccept = () => {
+              if (this.handInvalidated || !this.handController) return;
+
+              const duelResult = runItTwiceEngine.dealDualBoards(
+                this.tableId,
+                event.remainingDeck.map(cardToString),
+                event.existingBoard.map(cardToString)
+              );
+
+              if (!duelResult) {
+                this.handController.resumeRunout();
+                return;
+              }
+
+              // Convert deck arrays for deals (for internal evaluation)
+              const cardsNeeded = 5 - event.existingBoard.length;
+              const run1Cards = event.remainingDeck.slice(0, cardsNeeded);
+              const run2Cards = event.remainingDeck.slice(cardsNeeded, cardsNeeded * 2);
+              const board1 = [...event.existingBoard, ...run1Cards];
+              const board2 = [...event.existingBoard, ...run2Cards];
+
+              // Evaluate winners
+              const pots = [{ amount: event.pot / 2, eligiblePlayers: activeIds }];
+              const variant = this.tableInfo?.game_variant || 'nlh';
+
+              const w1 = determineWinners(event.activePlayers, board1, pots, variant);
+              const w2 = determineWinners(event.activePlayers, board2, pots, variant);
+
+              // Give RunItTwiceEngine the primary winner strings for bus emission
+              runItTwiceEngine.resolve(this.tableId, w1[0].userId, w2[0].userId);
+
+              // Combine distributions for HandController overriding
+              const distMap = new Map<string, number>();
+              for (const w of [...w1, ...w2]) {
+                distMap.set(w.userId, (distMap.get(w.userId) || 0) + w.amount);
+              }
+              const customDistributions = Array.from(distMap.entries()).map(([userId, amount]) => ({
+                userId,
+                amount,
+              }));
+
+              this.handController.resolveRunItTwice(board1, board2, customDistributions);
+            };
+          });
+        })().catch((err) => {
+          console.error(`[HeadlessTableEngine:${this.tableId}] RIT failed:`, err);
+          if (this.handController) this.handController.resumeRunout();
+        });
+        break;
+      }
 
       case 'COMMUNITY_CARDS':
         // Track if we reached the flop for No Flop No Drop
