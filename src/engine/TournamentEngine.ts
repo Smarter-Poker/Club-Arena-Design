@@ -1353,6 +1353,12 @@ export class TournamentEngine {
             tableId: openTable.tableId,
             seatNumber,
           });
+
+          // Sync tables.current_players in DB
+          await this.supabase
+            .from('tables')
+            .update({ current_players: openTable.playerCount })
+            .eq('id', openTable.tableId);
         }
       } catch (err) {
         console.error(`[TournamentEngine] Failed to seat alternate ${player.user_id}:`, err);
@@ -1449,6 +1455,16 @@ export class TournamentEngine {
       .eq('table_id', tableId)
       .eq('user_id', userId)
       .is('left_at', null);
+
+    // Decrement tables.current_players and local playerCount
+    const table = this.tables.find((t) => t.tableId === tableId);
+    if (table) {
+      table.playerCount = Math.max(0, table.playerCount - 1);
+      await this.supabase
+        .from('tables')
+        .update({ current_players: table.playerCount })
+        .eq('id', tableId);
+    }
 
     // Credit prize to player wallet (if any)
     if (prize > 0) {
