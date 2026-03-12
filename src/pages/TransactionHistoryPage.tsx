@@ -135,6 +135,7 @@ export default function TransactionHistoryPage() {
   }, [user?.id]);
 
   const loadTransactions = async (pageNum: number, reset = false) => {
+    if (!user?.id) return;
     if (reset) setLoading(true);
     else setLoadingMore(true);
 

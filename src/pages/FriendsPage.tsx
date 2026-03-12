@@ -120,6 +120,7 @@ export default function FriendsPage() {
   }, []);
 
   const loadFriends = async () => {
+    if (!user?.id) return;
     setLoading(true);
     try {
       // Load accepted friendships

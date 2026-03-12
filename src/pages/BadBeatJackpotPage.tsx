@@ -100,6 +100,7 @@ export default function BadBeatJackpotPage() {
   }, [clubId]);
 
   const loadJackpotData = useCallback(async () => {
+    if (!clubId) return;
     setLoading(true);
     try {
       // Load jackpot info from bbj_pools

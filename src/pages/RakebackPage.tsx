@@ -43,6 +43,7 @@ export default function RakebackPage() {
   const loadRakebackDataRef = useRef<() => void>(() => {});
 
   const loadRakebackData = async () => {
+    if (!user?.id) return;
     setLoading(true);
     try {
       const { data, error } = await supabase
