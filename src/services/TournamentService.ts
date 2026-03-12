@@ -1388,6 +1388,19 @@ class TournamentService {
           .eq('user_id', userId)
           .eq('table_id', seat.table_id)
           .is('left_at', null);
+
+        // Decrement tables.current_players so merge/balance reads correct count
+        const { data: tbl } = await supabase
+          .from('tables')
+          .select('current_players')
+          .eq('id', seat.table_id)
+          .maybeSingle();
+        if (tbl) {
+          await supabase
+            .from('tables')
+            .update({ current_players: Math.max(0, (tbl.current_players || 0) - 1) })
+            .eq('id', seat.table_id);
+        }
       }
     }
   }
@@ -1865,7 +1878,7 @@ class TournamentService {
       await this.balanceTables(tournamentId);
 
       // Close the broken table
-      await supabase.from('tables').update({ status: 'closed' }).eq('id', tableToBreak.id);
+      await supabase.from('tables').update({ status: 'closed', current_players: 0 }).eq('id', tableToBreak.id);
 
       return { tableMerged: true };
     }

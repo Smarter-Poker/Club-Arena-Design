@@ -1791,7 +1791,14 @@ export class TournamentEngine {
 
       // Update local state
       const targetTable = this.tables.find((t) => t.tableId === move.toTableId);
-      if (targetTable) targetTable.playerCount++;
+      if (targetTable) {
+        targetTable.playerCount++;
+        // Sync destination table current_players in DB
+        await this.supabase
+          .from('tables')
+          .update({ current_players: targetTable.playerCount })
+          .eq('id', move.toTableId);
+      }
 
       const player = this.players.get(move.playerId);
       if (player) {
@@ -1817,7 +1824,7 @@ export class TournamentEngine {
       .eq('table_id', sourceTable.tableId)
       .is('left_at', null);
 
-    await this.supabase.from('tables').update({ status: 'closed' }).eq('id', sourceTable.tableId);
+    await this.supabase.from('tables').update({ status: 'closed', current_players: 0 }).eq('id', sourceTable.tableId);
 
     console.log(
       `[TournamentEngine:${this.tournamentId.slice(0, 8)}] Merge complete. Moved ${result.totalMoved} players via TableBreakEngine.`
@@ -1888,7 +1895,7 @@ export class TournamentEngine {
         .eq('table_id', table.tableId)
         .is('left_at', null);
 
-      await this.supabase.from('tables').update({ status: 'closed' }).eq('id', table.tableId);
+      await this.supabase.from('tables').update({ status: 'closed', current_players: 0 }).eq('id', table.tableId);
     }
 
     // Clear intervals
