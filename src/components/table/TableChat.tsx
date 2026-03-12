@@ -174,12 +174,13 @@ export function TableChat({
   useEffect(() => {
     const unsubChat = masterBus.subscribe('TABLE_CHAT_MESSAGE', (event: any) => {
       const data = event?.payload;
-      if (data && data.playerId !== myPlayerId) {
+      // QuickChatPresets emits { tableId, userId, message, type }
+      if (data && data.userId !== myPlayerId) {
         setBusMessages((prev) => {
           const newMsg: ChatMessage = {
             id: `bus-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
             type: 'PLAYER',
-            playerId: data.playerId,
+            playerId: data.userId,
             playerName: data.playerName || 'Player',
             content: data.message,
             timestamp: new Date(),
@@ -190,14 +191,15 @@ export function TableChat({
     });
     const unsubReaction = masterBus.subscribe('TABLE_REACTION', (event: any) => {
       const data = event?.payload;
-      if (data && data.playerId !== myPlayerId) {
+      // QuickChatPresets emits { tableId, userId, emoji }
+      if (data && data.userId !== myPlayerId) {
         setBusMessages((prev) => {
           const reactionMsg: ChatMessage = {
             id: `react-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
             type: 'EMOJI',
-            playerId: data.playerId,
+            playerId: data.userId,
             playerName: data.playerName || 'Player',
-            content: data.reaction || '👏',
+            content: data.emoji || '👏',
             timestamp: new Date(),
           };
           return [...prev, reactionMsg].slice(-50);

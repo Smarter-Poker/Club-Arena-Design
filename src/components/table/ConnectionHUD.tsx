@@ -72,10 +72,21 @@ export const ConnectionHUD: React.FC<ConnectionHUDProps> = ({ tableId, userId })
         setShowDisconnectWarning(false);
       }
     });
+    // Feature 2b: Listen for grace period expiry — display auto-action taken
+    const unsubTimeout = masterBus.subscribe('DISCONNECT_TIMEOUT', (event: any) => {
+      const data = event?.payload;
+      if (data?.userId === userId && data?.tableId === tableId) {
+        setGraceCountdown(0); // Force countdown to 0 to show timeout message
+        console.log(
+          `[ConnectionHUD] Disconnect timeout — auto-action: ${data.action || 'check_fold'}`
+        );
+      }
+    });
 
     return () => {
       if (typeof unsubDC === 'function') unsubDC();
       if (typeof unsubRC === 'function') unsubRC();
+      if (typeof unsubTimeout === 'function') unsubTimeout();
     };
   }, [tableId, userId]);
 
