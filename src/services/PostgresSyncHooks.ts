@@ -19,7 +19,15 @@ class PostgresSyncHooksService {
   private initialized: boolean = false;
 
   init(userId: string) {
-    if (this.initialized) return;
+    // Guard: If already initialized with a live channel, skip.
+    // We set initialized=true synchronously to prevent race conditions
+    // from rapid auth state changes (e.g., two SIGNED_IN events in quick succession).
+    if (this.initialized && this.channel) return;
+
+    // Clean up any prior stale channel before creating a new one (idempotent)
+    this.destroy();
+
+    this.initialized = true;
 
     // Use a deterministic global channel name scoped to the user to avoid leaks/re-subs
     this.channel = supabase.channel(`global_db_sync:${userId}`);
@@ -106,7 +114,6 @@ class PostgresSyncHooksService {
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           console.info(`[PostgresSync] Absolute Replication Hook Mounted for user ${userId}.`);
-          this.initialized = true;
         }
       });
   }
