@@ -809,7 +809,7 @@ class TournamentService {
           .from('tables')
           .select('id, max_players, current_players')
           .eq('tournament_id', tournamentId)
-          .in('status', ['active', 'running']);
+          .in('status', ['active', 'RUNNING']);
 
         const openTable = (tables || []).find((t) => t.current_players < t.max_players);
         if (openTable) {
