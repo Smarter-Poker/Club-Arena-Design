@@ -16,6 +16,8 @@ interface CronStatusData {
   lastCheckAt: string | null;
   nextCheckIn: string;
   checksPerformed: number;
+  snapshotCountdown: string;
+  payoutCountdown: string;
 }
 
 export function SettlementCronStatus() {
@@ -24,10 +26,14 @@ export function SettlementCronStatus() {
     lastCheckAt: null,
     nextCheckIn: '--',
     checksPerformed: 0,
+    snapshotCountdown: '--',
+    payoutCountdown: '--',
   });
 
   const refresh = useCallback(() => {
     const cronStatus = SettlementCronService.getStatus();
+    const snapshotDate = SettlementCronService.getNextSundaySnapshot();
+    const payoutDate = SettlementCronService.getNextMondayPayout();
     setStatus({
       isRunning: cronStatus.isRunning,
       lastCheckAt: cronStatus.lastCheckAt
@@ -35,6 +41,8 @@ export function SettlementCronStatus() {
         : null,
       nextCheckIn: cronStatus.nextCheckMs ? `${Math.round(cronStatus.nextCheckMs / 1000)}s` : '--',
       checksPerformed: cronStatus.checksPerformed || 0,
+      snapshotCountdown: SettlementCronService.formatCountdown(snapshotDate),
+      payoutCountdown: SettlementCronService.formatCountdown(payoutDate),
     });
   }, []);
 
@@ -75,13 +83,17 @@ export function SettlementCronStatus() {
           display: 'inline-block',
         }}
       />
-      <div>
+      <div style={{ flex: 1 }}>
         <strong style={{ color: '#fff', fontSize: 13 }}>Settlement Cron</strong>
         <div style={{ opacity: 0.7, marginTop: 2 }}>
           {status.isRunning ? 'Running' : 'Stopped'}
           {status.lastCheckAt && ` · Last: ${status.lastCheckAt}`}
           {status.nextCheckIn !== '--' && ` · Next: ${status.nextCheckIn}`}
           {status.checksPerformed > 0 && ` · Checks: ${status.checksPerformed}`}
+        </div>
+        <div style={{ display: 'flex', gap: 16, marginTop: 6, fontSize: 11 }}>
+          <span style={{ color: '#f59e0b' }}>📸 Snapshot: {status.snapshotCountdown}</span>
+          <span style={{ color: '#22c55e' }}>💰 Payout: {status.payoutCountdown}</span>
         </div>
       </div>
     </div>

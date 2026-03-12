@@ -94,6 +94,8 @@ export const SettlementCronService = {
     lastCheckAt: number | null;
     nextCheckMs: number | null;
     checksPerformed: number;
+    nextSnapshotAt: string | null;
+    nextPayoutAt: string | null;
   } {
     return {
       isRunning: !!this.timer,
@@ -103,6 +105,8 @@ export const SettlementCronService = {
           ? Math.max(0, this.config.checkIntervalMs - (Date.now() - this.lastCheckAt))
           : null,
       checksPerformed: this.checksPerformed ?? 0,
+      nextSnapshotAt: this.getNextSundaySnapshot().toISOString(),
+      nextPayoutAt: this.getNextMondayPayout().toISOString(),
     };
   },
 
@@ -248,6 +252,55 @@ export const SettlementCronService = {
       console.warn('[SettlementCron] Canary check error — passing by default:', err);
       return { passed: true, totalCredits: 0, totalDebits: 0, difference: 0 };
     }
+  },
+
+  /**
+   * Get the next Sunday 11:59:59 PM cutoff time (The Sunday Midnight Cutoff Law)
+   */
+  getNextSundaySnapshot(): Date {
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0 = Sunday
+    const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+    const nextSunday = new Date(now);
+    nextSunday.setDate(now.getDate() + daysUntilSunday);
+    nextSunday.setHours(23, 59, 59, 0);
+    // If we're past Sunday 11:59 PM, advance to next week
+    if (nextSunday.getTime() <= now.getTime()) {
+      nextSunday.setDate(nextSunday.getDate() + 7);
+    }
+    return nextSunday;
+  },
+
+  /**
+   * Get the next Monday 4:00 AM payout time (The Monday 4 AM Payout Law)
+   */
+  getNextMondayPayout(): Date {
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 1 = Monday
+    let daysUntilMonday = (1 - dayOfWeek + 7) % 7;
+    if (daysUntilMonday === 0) {
+      // It's Monday — check if 4 AM has passed
+      if (now.getHours() >= 4) daysUntilMonday = 7;
+    }
+    const nextMonday = new Date(now);
+    nextMonday.setDate(now.getDate() + daysUntilMonday);
+    nextMonday.setHours(4, 0, 0, 0);
+    return nextMonday;
+  },
+
+  /**
+   * Format a countdown string from now to a target date
+   */
+  formatCountdown(target: Date): string {
+    const diff = target.getTime() - Date.now();
+    if (diff <= 0) return 'NOW';
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    if (hours >= 24) {
+      const days = Math.floor(hours / 24);
+      return `${days}d ${hours % 24}h`;
+    }
+    return `${hours}h ${minutes}m`;
   },
 };
 

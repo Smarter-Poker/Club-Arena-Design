@@ -113,8 +113,11 @@ class SessionStatsServiceClass {
       session.trajectory = thinned;
     }
 
-    // Broadcast update
-    masterBus.emit('SESSION_STATS_UPDATE', { tableId, stats: { ...session } });
+    // Broadcast update — deep-copy trajectory to prevent shared reference mutation
+    masterBus.emit('SESSION_STATS_UPDATE', {
+      tableId,
+      stats: { ...session, trajectory: [...session.trajectory] },
+    });
   }
 
   /**

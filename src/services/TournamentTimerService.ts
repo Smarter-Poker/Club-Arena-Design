@@ -245,7 +245,9 @@ class TournamentTimerServiceClass {
     payload: Record<string, unknown>
   ): Promise<void> {
     try {
-      const channel = supabase.channel(`tournament:${tournamentId}`);
+      // Use MasterBus channel registry to avoid orphaned channel leaks
+      const channelKey = `tournament:${tournamentId}`;
+      const channel = masterBus.getOrCreateChannel(channelKey);
       await channel.send({
         type: 'broadcast',
         event: eventType,
@@ -280,7 +282,9 @@ class TournamentTimerServiceClass {
    * Stop all active timers (called on app shutdown)
    */
   stopAllTimers(): void {
-    for (const [id] of this.activeTimers) {
+    // Copy keys first to avoid Map-delete-during-iteration skip bug
+    const ids = [...this.activeTimers.keys()];
+    for (const id of ids) {
       this.stopTimer(id);
     }
   }

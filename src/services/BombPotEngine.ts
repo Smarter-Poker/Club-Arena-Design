@@ -147,12 +147,13 @@ class BombPotEngineClass {
   /**
    * Generate two independent boards for double board bomb pot
    * Returns [board1, board2] each with 5 community cards
+   * NOTE: Does NOT mutate the input deck — returns copies
    */
   generateDoubleBoard(deck: string[]): [string[], string[]] {
     // Need 10 community cards total (5 + 5)
-    // Cards should be drawn from the remaining deck after player hole cards
-    const board1 = deck.splice(0, 5);
-    const board2 = deck.splice(0, 5);
+    // Use slice (non-mutating) instead of splice to avoid corrupting caller's deck
+    const board1 = deck.slice(0, 5);
+    const board2 = deck.slice(5, 10);
     return [board1, board2];
   }
 
