@@ -361,7 +361,7 @@ export default function ProfilePage() {
               }
             });
         }
-      });
+      }).catch(() => {});
     });
     const unsubHand = masterBus.subscribe('HAND_COMPLETED', () => {
       // Refresh stats after a hand is completed
@@ -392,7 +392,7 @@ export default function ProfilePage() {
               }
             });
         }
-      });
+      }).catch(() => {});
     });
     const unsubBalance = masterBus.subscribeDebounced(
       'BALANCE_UPDATED',
@@ -409,7 +409,7 @@ export default function ProfilePage() {
                 if (dw) setDiamonds(dw.balance || 0);
               });
           }
-        });
+        }).catch(() => {});
       },
       500
     );
@@ -429,9 +429,8 @@ export default function ProfilePage() {
               }
             });
         }
-      });
-    });
-    const unsubMissionClaim = masterBus.subscribe('MISSION_CLAIMED', () => {
+      }).catch(() => {});
+    }); = masterBus.subscribe('MISSION_CLAIMED', () => {
       supabase.auth.getUser().then(({ data: { user: authUser } }) => {
         if (authUser) {
           supabase
@@ -443,9 +442,8 @@ export default function ProfilePage() {
               if (data) setDiamonds(data.diamonds || 0);
             });
         }
-      });
-    });
-    const unsubWheelSpin = masterBus.subscribe('WHEEL_SPIN_RESULT', () => {
+      }).catch(() => {});
+    }); = masterBus.subscribe('WHEEL_SPIN_RESULT', () => {
       supabase.auth.getUser().then(({ data: { user: authUser } }) => {
         if (authUser) {
           supabase
@@ -457,9 +455,8 @@ export default function ProfilePage() {
               if (data) setDiamonds(data.diamonds || 0);
             });
         }
-      });
-    });
-    return () => {
+      }).catch(() => {});
+    }); {
       unsubProfile();
       unsubHand();
       unsubBalance();
