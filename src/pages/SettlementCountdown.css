@@ -1,0 +1,15 @@
+/**
+ * Settlement Countdown — Payout Celebration Animation
+ * Non-module CSS so the keyframe is globally available
+ * for the inline-styled MondayPayoutCountdown component.
+ */
+
+@keyframes payoutPulse {
+  0%,
+  100% {
+    text-shadow: 0 0 12px rgba(0, 200, 83, 0.4);
+  }
+  50% {
+    text-shadow: 0 0 24px rgba(0, 200, 83, 0.8);
+  }
+}
