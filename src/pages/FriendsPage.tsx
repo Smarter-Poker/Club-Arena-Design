@@ -83,6 +83,7 @@ export default function FriendsPage() {
 
   // Real-time friend request notifications
   useEffect(() => {
+    let isMounted = true;
     if (!user?.id) return;
 
     const channelKey = `friend-requests-${user.id}`;
@@ -97,37 +98,41 @@ export default function FriendsPage() {
           filter: `friend_id=eq.${user.id}`,
         },
         (payload) => {
+          if (!isMounted) return;
           // New friend request!
-          loadFriendsRef.current();
+          if (loadFriendsRef.current) loadFriendsRef.current();
           toast.success('New friend request received!');
         }
       )
       .subscribe();
 
     return () => {
+      isMounted = false;
       masterBus.removeRegisteredChannel(channelKey);
     };
   }, [user?.id]);
 
   // ── Bus Listeners: cross-page friend reactivity ──
   useEffect(() => {
+    let isMounted = true;
     const unsubAccepted = masterBus.subscribe('FRIEND_REQUEST_ACCEPTED', () => {
-      loadFriendsRef.current();
+      if (isMounted && loadFriendsRef.current) loadFriendsRef.current();
     });
     const unsubSent = masterBus.subscribe('FRIEND_REQUEST_SENT', () => {
-      loadFriendsRef.current();
+      if (isMounted && loadFriendsRef.current) loadFriendsRef.current();
     });
     const unsubProfile = masterBus.subscribe('PROFILE_UPDATED', () => {
-      loadFriendsRef.current();
+      if (isMounted && loadFriendsRef.current) loadFriendsRef.current();
     });
     return () => {
+      isMounted = false;
       unsubAccepted();
       unsubSent();
       unsubProfile();
     };
   }, []);
 
-  const loadFriends = async () => {
+  const loadFriends = async (getIsMounted?: () => boolean) => {
     if (!user?.id) return;
     setLoading(true);
     try {
@@ -171,6 +176,8 @@ export default function FriendsPage() {
 
       const allFriendships = [...(sentFriendships || []), ...(receivedFriendships || [])];
 
+      if (getIsMounted && !getIsMounted()) return;
+
       if (allFriendships.length > 0) {
         const uniqueMap = new Map();
         allFriendships.forEach((f: any) => {
@@ -207,6 +214,8 @@ export default function FriendsPage() {
         .order('created_at', { ascending: false })
         .limit(100);
 
+      if (getIsMounted && !getIsMounted()) return;
+
       if (pending) {
         setPendingRequests(
           pending.map((p: any) => ({
@@ -222,10 +231,9 @@ export default function FriendsPage() {
       console.error('Failed to load friends:', error);
       toast.error('Failed to load friends');
     }
+    if (getIsMounted && !getIsMounted()) return;
     setLoading(false);
   };
-
-
 
   const acceptRequest = async (friendshipId: string) => {
     try {

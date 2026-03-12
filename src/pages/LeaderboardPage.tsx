@@ -97,12 +97,16 @@ export default function LeaderboardPage() {
   const [tournamentsLoading, setTournamentsLoading] = useState(false);
 
   // Refs for realtime callbacks to avoid stale closures
-  const loadLeaderboardRef = useRef(async (silent?: boolean) => {});
-  const loadTournamentStatsRef = useRef(async () => {});
+  const loadLeaderboardRef = useRef(async (silent?: boolean, getIsMounted?: () => boolean) => {});
+  const loadTournamentStatsRef = useRef(async (getIsMounted?: () => boolean) => {});
 
   // Load user's clubs on mount
   useEffect(() => {
-    loadUserClubs();
+    let isMounted = true;
+    loadUserClubs(() => isMounted);
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Keep activeTabRef in sync
@@ -136,6 +140,7 @@ export default function LeaderboardPage() {
 
   // Set up real-time Push/Pull Subscriptions ONCE
   useEffect(() => {
+    let isMounted = true;
     const channelKey = 'leaderboard-updates';
     const channel = masterBus.getOrCreateChannel(channelKey);
     channel
@@ -147,7 +152,9 @@ export default function LeaderboardPage() {
           table: 'promotion_leaderboards',
         },
         () => {
-          if (activeTabRef.current === 'rankings') loadLeaderboardRef.current(true);
+          if (!isMounted) return;
+          if (activeTabRef.current === 'rankings')
+            loadLeaderboardRef.current(true, () => isMounted);
         }
       )
       .subscribe();
@@ -163,21 +170,25 @@ export default function LeaderboardPage() {
           table: 'tournament_players',
         },
         () => {
-          if (activeTabRef.current === 'tournaments') loadTournamentStatsRef.current();
+          if (!isMounted) return;
+          if (activeTabRef.current === 'tournaments')
+            loadTournamentStatsRef.current(() => isMounted);
         }
       )
       .subscribe();
 
     // Auto-refresh every 30 seconds
     refreshTimerRef.current = setInterval(() => {
+      if (!isMounted) return;
       if (activeTabRef.current === 'rankings') {
-        loadLeaderboardRef.current(true);
+        loadLeaderboardRef.current(true, () => isMounted);
       } else {
-        loadTournamentStatsRef.current();
+        loadTournamentStatsRef.current(() => isMounted);
       }
     }, 30000);
 
     return () => {
+      isMounted = false;
       masterBus.removeRegisteredChannel(channelKey);
       masterBus.removeRegisteredChannel(tourneyChannelKey);
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
@@ -186,29 +197,37 @@ export default function LeaderboardPage() {
 
   // Fetch Rankings Data
   useEffect(() => {
+    let isMounted = true;
     if (selectedClubId) {
       if (activeTab === 'rankings') {
-        loadLeaderboard();
+        loadLeaderboard(false, () => isMounted);
       }
     } else {
       setEntries([]);
       setLoading(false);
     }
+    return () => {
+      isMounted = false;
+    };
   }, [scope, period, metric, selectedClubId, activeTab]);
 
   // Fetch Tournament Stats Data
   useEffect(() => {
+    let isMounted = true;
     if (selectedClubId) {
       if (activeTab === 'tournaments') {
-        loadTournamentStats();
+        loadTournamentStats(() => isMounted);
       }
     } else {
       setTournamentStats([]);
       setTournamentsLoading(false);
     }
+    return () => {
+      isMounted = false;
+    };
   }, [selectedClubId, activeTab]);
 
-  const loadUserClubs = async () => {
+  const loadUserClubs = async (getIsMounted?: () => boolean) => {
     setClubsLoading(true);
     try {
       const memberships = await getUserMemberships();
@@ -219,6 +238,7 @@ export default function LeaderboardPage() {
         }))
         .filter((c: UserClub) => c.id);
 
+      if (getIsMounted && !getIsMounted()) return;
       setUserClubs(clubs);
       if (clubs.length > 0 && !selectedClubId) {
         setSelectedClubId(clubs[0].id);
@@ -227,10 +247,11 @@ export default function LeaderboardPage() {
       console.error('Failed to load clubs:', error);
       toast.error('Failed to load clubs');
     }
+    if (getIsMounted && !getIsMounted()) return;
     setClubsLoading(false);
   };
 
-  const loadLeaderboard = async (silent = false) => {
+  const loadLeaderboard = async (silent = false, getIsMounted?: () => boolean) => {
     if (!selectedClubId) {
       setLoading(false);
       return;
@@ -238,22 +259,25 @@ export default function LeaderboardPage() {
     if (!silent) setLoading(true);
     try {
       const data = await LeaderboardService.getClubLeaderboard(selectedClubId, metric, period, 50);
+      if (getIsMounted && !getIsMounted()) return;
       setEntries(data);
       setLastUpdated(new Date());
 
       // Get user's rank
       if (user?.id) {
         const rank = await LeaderboardService.getUserRank(user.id, selectedClubId, metric, period);
+        if (getIsMounted && !getIsMounted()) return;
         setUserRank(rank);
       }
     } catch (error) {
       console.error('Failed to load leaderboard:', error);
       if (!silent) toast.error('Failed to load leaderboard');
     }
+    if (getIsMounted && !getIsMounted()) return;
     setLoading(false);
   };
 
-  const loadTournamentStats = async () => {
+  const loadTournamentStats = async (getIsMounted?: () => boolean) => {
     if (!selectedClubId) {
       setTournamentsLoading(false);
       return;
@@ -261,12 +285,14 @@ export default function LeaderboardPage() {
     setTournamentsLoading(true);
     try {
       const data = await LeaderboardService.getClubTournamentStats(selectedClubId, 50);
+      if (getIsMounted && !getIsMounted()) return;
       setTournamentStats(data);
       setLastUpdated(new Date());
     } catch (error) {
       console.error('Failed to load tournament stats:', error);
       toast.error('Failed to load tournament stats');
     }
+    if (getIsMounted && !getIsMounted()) return;
     setTournamentsLoading(false);
   };
 

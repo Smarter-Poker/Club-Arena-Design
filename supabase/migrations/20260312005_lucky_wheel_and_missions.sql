@@ -77,21 +77,6 @@ DECLARE
     v_reward_type TEXT;
     v_amount NUMERIC;
 BEGIN
-    -- Check if user spun today (Atomic lock via UPSERT)
-    INSERT INTO user_lucky_wheel_spins (user_id, last_spin_date, total_spins)
-    VALUES (p_user_id, v_today, 1)
-    ON CONFLICT (user_id) DO UPDATE SET
-        total_spins = CASE 
-            WHEN user_lucky_wheel_spins.last_spin_date < v_today THEN user_lucky_wheel_spins.total_spins + 1 
-            ELSE user_lucky_wheel_spins.total_spins 
-        END,
-        last_spin_date = v_today,
-        updated_at = NOW()
-    RETURNING (xmax = 0), user_lucky_wheel_spins.last_spin_date INTO v_last_spin; -- xmax=0 means inserted
-
-    -- Note: Because RETURNING xmax is tricky in plpgsql without explicit vars, 
-    -- we do a simpler approach: select first, then upsert if safe.
-    
     -- Safe Atomic Approach
     SELECT last_spin_date INTO v_last_spin FROM user_lucky_wheel_spins WHERE user_id = p_user_id FOR UPDATE;
     

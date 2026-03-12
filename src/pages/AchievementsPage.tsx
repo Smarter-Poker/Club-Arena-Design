@@ -254,6 +254,7 @@ export default function AchievementsPage() {
             filter: `user_id=eq.${user.id}`,
           },
           async (payload) => {
+            if (!isMounted.current) return;
             const newRow = payload.new as any;
             if (!newRow || !newRow.achievement_id) return;
 
