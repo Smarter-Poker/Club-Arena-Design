@@ -20,23 +20,31 @@ export default function FinancialAlertsPage() {
   const [resolving, setResolving] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'critical' | 'warning'>('all');
 
-  const loadAlerts = useCallback(async () => {
+  const loadAlerts = useCallback(async (getIsMounted?: () => boolean) => {
     setLoading(true);
     try {
       const data = await FinancialAlertService.getUnresolved(100);
+      if (getIsMounted && !getIsMounted()) return;
       setAlerts(data);
     } catch (err) {
+      if (getIsMounted && !getIsMounted()) return;
       console.error('[FinancialAlerts] Failed to load alerts:', err);
     }
+    if (getIsMounted && !getIsMounted()) return;
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    loadAlerts();
+    let isMounted = true;
+    loadAlerts(() => isMounted);
+    return () => {
+      isMounted = false;
+    };
   }, [loadAlerts]);
 
   // ── Supabase Real-time: auto-refresh when new alerts are inserted ──
   useEffect(() => {
+    let isMounted = true;
     const channelKey = 'financial-alerts-realtime';
     const channel = masterBus.getOrCreateChannel(channelKey);
     channel
@@ -44,53 +52,56 @@ export default function FinancialAlertsPage() {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'financial_alerts' },
         () => {
-          loadAlerts();
+          if (isMounted) loadAlerts(() => isMounted);
         }
       )
       .subscribe();
     return () => {
+      isMounted = false;
       masterBus.removeRegisteredChannel(channelKey);
     };
   }, [loadAlerts]);
 
   // ── Bus Listeners: react to all financial/security events ──
   useEffect(() => {
+    let isMounted = true;
     const unsub1 = masterBus.subscribeDebounced(
       'FINANCIAL_ALERT',
       () => {
-        loadAlerts();
+        if (isMounted) loadAlerts(() => isMounted);
       },
       1000
     );
     const unsub2 = masterBus.subscribeDebounced(
       'COLLUSION_DETECTED',
       () => {
-        loadAlerts();
+        if (isMounted) loadAlerts(() => isMounted);
       },
       1000
     );
     const unsub3 = masterBus.subscribeDebounced(
       'VALIDATION_MISMATCH',
       () => {
-        loadAlerts();
+        if (isMounted) loadAlerts(() => isMounted);
       },
       1000
     );
     const unsub4 = masterBus.subscribeDebounced(
       'CHIPS_ADDED',
       () => {
-        loadAlerts();
+        if (isMounted) loadAlerts(() => isMounted);
       },
       2000
     );
     const unsub5 = masterBus.subscribeDebounced(
       'CHIPS_WITHDRAWN',
       () => {
-        loadAlerts();
+        if (isMounted) loadAlerts(() => isMounted);
       },
       2000
     );
     return () => {
+      isMounted = false;
       unsub1();
       unsub2();
       unsub3();
@@ -138,7 +149,7 @@ export default function FinancialAlertsPage() {
           {warningCount > 0 && <span className="stat warning">🟡 {warningCount} warning</span>}
           {alerts.length === 0 && <span className="stat clear">✅ All clear</span>}
         </div>
-        <button className="refresh-btn" onClick={loadAlerts} title="Refresh">
+        <button className="refresh-btn" onClick={() => loadAlerts()} title="Refresh">
           ↻
         </button>
       </div>

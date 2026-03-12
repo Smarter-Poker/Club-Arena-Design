@@ -47,11 +47,16 @@ export default function ReportReviewPage() {
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
-    if (clubId) loadReports();
+    let isMounted = true;
+    if (clubId) loadReports(() => isMounted);
+    return () => {
+      isMounted = false;
+    };
   }, [clubId, filter]);
 
   // ── Realtime: live updates for new/updated reports ──
   useEffect(() => {
+    let isMounted = true;
     const channelKey = 'report-review-realtime';
 
     const channel = masterBus.getOrCreateChannel(channelKey);
@@ -64,9 +69,10 @@ export default function ReportReviewPage() {
           table: 'player_reports',
         },
         (payload) => {
+          if (!isMounted) return;
           if (payload.eventType === 'INSERT') {
             // New report — reload to get joined profile data
-            loadReports();
+            loadReports(() => isMounted);
           } else if (payload.eventType === 'UPDATE') {
             const updated = payload.new as any;
             setReports((prev) => prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r)));
@@ -76,11 +82,12 @@ export default function ReportReviewPage() {
       .subscribe();
 
     return () => {
+      isMounted = false;
       masterBus.removeRegisteredChannel(channelKey);
     };
   }, [clubId, filter]);
 
-  const loadReports = async () => {
+  const loadReports = async (getIsMounted?: () => boolean) => {
     setLoading(true);
     try {
       let query = supabase
@@ -102,12 +109,15 @@ export default function ReportReviewPage() {
 
       const { data, error } = await query.limit(50);
 
+      if (getIsMounted && !getIsMounted()) return;
       if (error) throw error;
       setReports(data || []);
     } catch (error) {
+      if (getIsMounted && !getIsMounted()) return;
       console.error('Failed to load reports:', error);
       toast.error('Failed to load reports');
     }
+    if (getIsMounted && !getIsMounted()) return;
     setLoading(false);
   };
 

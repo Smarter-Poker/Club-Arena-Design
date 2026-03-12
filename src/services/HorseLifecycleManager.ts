@@ -390,7 +390,7 @@ class HorseLifecycleManagerCore {
             p_description: 'Tournament winnings: ' + amount + ' credits',
             p_table_id: null,
             p_hand_id: null,
-            p_related_entity_id: tournamentId
+            p_related_entity_id: tournamentId,
           }),
         3
       );
@@ -531,7 +531,7 @@ class HorseLifecycleManagerCore {
                       p_description: 'SNG cancelled refund: ' + buyInAmount + ' chips',
                       p_table_id: null,
                       p_hand_id: null,
-                      p_related_entity_id: sng.id
+                      p_related_entity_id: sng.id,
                     }),
                   3
                 );
@@ -539,11 +539,11 @@ class HorseLifecycleManagerCore {
                   console.error(
                     `[HorseLifecycle] SNG cancel atomic refund FAILED for ${player.user_id.slice(0, 8)}: ${refundErr.message}`
                   );
-
-                masterBus.emit('BALANCE_UPDATED', {
-                  source: 'horse_sng_refund',
-                  userId: player.user_id,
-                });
+                else
+                  masterBus.emit('BALANCE_UPDATED', {
+                    source: 'horse_sng_refund',
+                    userId: player.user_id,
+                  });
               }
             }
           }

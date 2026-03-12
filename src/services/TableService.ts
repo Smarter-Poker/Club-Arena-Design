@@ -199,9 +199,14 @@ class TableService {
     if (error) {
       console.error('[TableService] Error closing table and refunding chips:', error);
       // Fallback: manually flag it as closed if the RPC somehow fails
-      await supabase.from('tables').update({ status: 'closed', current_players: 0 }).eq('id', tableId);
+      await supabase
+        .from('tables')
+        .update({ status: 'closed', current_players: 0 })
+        .eq('id', tableId);
     } else {
       console.debug(`[TableService] Table closed successfully. Result:`, result);
+      // Emit for ALL players who were seated — the RPC refunds them atomically
+      masterBus.emit('BALANCE_UPDATED', { source: 'table_force_close_refund' });
     }
   }
 
@@ -481,7 +486,7 @@ class TableService {
             p_description: `Kicked from table: ${seat.stack} chips returned${reason ? ` (${reason})` : ''}`,
             p_table_id: tableId,
             p_hand_id: null,
-            p_related_entity_id: null
+            p_related_entity_id: null,
           }),
         3
       );

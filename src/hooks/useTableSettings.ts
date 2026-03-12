@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { masterBus } from '../core/MasterBus';
 
 /**
@@ -96,12 +96,18 @@ export function useTableSettings() {
     );
   }, [settings.animationSpeed]);
 
-  // Listen for SETTINGS_CHANGED bus events (e.g. card back changes from CardBackSelector)
+  // Listen for SETTINGS_CHANGED bus events (cross-tab / cross-component sync)
+  const localOriginRef = useRef(false);
   useEffect(() => {
     const unsub = masterBus.subscribe('SETTINGS_CHANGED', (event) => {
+      // Skip if this instance emitted the event (prevent redundant setSettings)
+      if (localOriginRef.current) {
+        localOriginRef.current = false;
+        return;
+      }
       const { setting, value } = event.payload;
-      if (setting === 'cardBack') {
-        setSettings((prev) => ({ ...prev, cardBack: value }));
+      if (setting && setting in DEFAULT_SETTINGS) {
+        setSettings((prev) => ({ ...prev, [setting]: value }));
       }
     });
     return unsub;
@@ -114,6 +120,9 @@ export function useTableSettings() {
         ...prev,
         [key]: value,
       }));
+      // Broadcast for cross-tab / cross-component sync
+      localOriginRef.current = true;
+      masterBus.emit('SETTINGS_CHANGED', { setting: key, value: value as any });
     },
     []
   );

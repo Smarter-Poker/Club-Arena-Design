@@ -35,24 +35,30 @@ export default function ClubRulesPage() {
   const [clubName, setClubName] = useState('');
 
   useEffect(() => {
-    if (clubId && user?.id) loadRules();
+    let isMounted = true;
+    if (clubId && user?.id) loadRules(() => isMounted);
+    return () => {
+      isMounted = false;
+    };
   }, [clubId, user?.id]);
 
   // ── Bus Listener: reload rules if another admin updates the club ──
   useEffect(() => {
+    let isMounted = true;
     const unsub = masterBus.subscribeDebounced(
       'CLUB_UPDATED',
       () => {
-        if (clubId && user?.id && !isEditing) loadRules();
+        if (isMounted && clubId && user?.id && !isEditing) loadRules(() => isMounted);
       },
       1000
     );
     return () => {
+      isMounted = false;
       unsub();
     };
   }, [clubId, user?.id, isEditing]);
 
-  const loadRules = async () => {
+  const loadRules = async (getIsMounted?: () => boolean) => {
     setLoading(true);
     try {
       // Load club info
@@ -61,6 +67,8 @@ export default function ClubRulesPage() {
         .select('name, rules_text, owner_id')
         .eq('id', clubId)
         .maybeSingle();
+
+      if (getIsMounted && !getIsMounted()) return;
 
       let adminFromOwner = false;
       if (club) {
@@ -79,14 +87,18 @@ export default function ClubRulesPage() {
           .eq('user_id', user?.id)
           .maybeSingle();
 
+        if (getIsMounted && !getIsMounted()) return;
+
         if (membership?.role === 'owner' || membership?.role === 'admin') {
           setIsAdmin(true);
         }
       }
     } catch (err) {
+      if (getIsMounted && !getIsMounted()) return;
       console.error('Failed to load rules:', err);
       toast.error('Failed to load rules');
     }
+    if (getIsMounted && !getIsMounted()) return;
     setLoading(false);
   };
 
