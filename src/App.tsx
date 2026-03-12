@@ -164,6 +164,16 @@ export default function App() {
     const isInIframe = window.parent !== window;
     if (!isInIframe) return;
 
+    /** Apply settings from World Hub to the local Zustand store */
+    const applySettings = (s: Record<string, unknown>) => {
+      const store = useSettingsStore.getState();
+      if (typeof s.soundEnabled === 'boolean' && s.soundEnabled !== store.soundEnabled)
+        store.toggleSound();
+      if (typeof s.fourColorDeck === 'boolean' && s.fourColorDeck !== store.fourColorDeck)
+        store.toggleFourColorDeck();
+      if (s.theme && s.theme !== store.theme) store.setTheme(s.theme as 'dark' | 'light');
+    };
+
     const handleMessage = async (event: MessageEvent) => {
       // Accept from smarter.poker OR localhost:3000 for local dev
       if (!event.origin.includes('smarter.poker') && event.origin !== 'http://localhost:3000')
@@ -176,13 +186,7 @@ export default function App() {
 
         // Bridge Global Settings from World Hub instantly
         if (event.data.settings) {
-          const s = event.data.settings;
-          const store = useSettingsStore.getState();
-          if (typeof s.soundEnabled === 'boolean' && s.soundEnabled !== store.soundEnabled)
-            store.toggleSound();
-          if (typeof s.fourColorDeck === 'boolean' && s.fourColorDeck !== store.fourColorDeck)
-            store.toggleFourColorDeck();
-          if (s.theme && s.theme !== store.theme) store.setTheme(s.theme);
+          applySettings(event.data.settings);
         }
 
         // Improvement #4: Skip redundant setSession if token hasn't changed
@@ -197,6 +201,12 @@ export default function App() {
         } catch (e) {
           console.error('[App] Failed to set session from parent:', e);
         }
+      }
+
+      // Live settings push — World Hub user changed theme/sound/deck while iframe is open
+      if (event.data?.type === 'SMARTER_SETTINGS_UPDATE' && event.data.settings) {
+        applySettings(event.data.settings);
+        console.log('[App] Live settings update received from World Hub');
       }
     };
 

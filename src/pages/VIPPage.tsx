@@ -96,10 +96,8 @@ export default function VIPPage() {
   useEffect(() => {
     if (!user?.id) return;
     const unsubDiamond = masterBus.subscribe('DIAMOND_BALANCE_CHANGED', (event: any) => {
-      if (event?.payload?.balance !== undefined) {
-        setDiamonds(event.payload.balance);
-      } else {
-        loadVIPStatus();
+      if (event?.payload?.newBalance !== undefined) {
+        setDiamonds(event.payload.newBalance);
       }
     });
     return unsubDiamond;

@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { payoutEngine, type PayoutEntry, type PayoutTemplate } from '../../services/PayoutEngine';
 import './PayoutStructureEditor.css';
 
@@ -37,9 +37,9 @@ export const PayoutStructureEditor: React.FC<PayoutStructureEditorProps> = ({
   }, [template, playerCount, prizePool, customPayouts]);
 
   // Update parent when payouts change
-  useMemo(() => {
+  useEffect(() => {
     onChange(payouts);
-  }, [payouts, onChange]);
+  }, [payouts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleTemplateChange = useCallback(
     (newTemplate: PayoutTemplate) => {
