@@ -15,7 +15,7 @@
  * Multiple tables can deal simultaneously.
  */
 
-import { supabase, broadcastHandState } from '../lib/supabase';
+import { supabase, broadcastHandState, cleanupBroadcastChannel } from '../lib/supabase';
 import { HandController, type HandConfig, type HandEvent } from './HandController';
 import { evaluateHand, evaluateOmahaHand, cardToString, determineWinners } from './PokerEngine';
 import { straddleEngine } from './StraddleEngine';
@@ -196,8 +196,10 @@ export class HeadlessTableEngine {
 
     // Clear brain session data for this table
     HorseBrainAdapter.clearTableSessions(this.tableId);
-
     // Clean up per-table persistence
+
+    // Clean up broadcast channel to prevent resource leak
+    cleanupBroadcastChannel(this.tableId);
     this.persistence.dispose();
 
     // Clean up straddle and RIT engine state for this table (prevents stale enrollments/offers)
