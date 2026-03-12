@@ -30,6 +30,7 @@ import NavigationProgress from './components/common/NavigationProgress';
 import ConnectionIndicator from './components/common/ConnectionIndicator';
 import ConnectionStatusBar from './components/ConnectionStatusBar';
 import BusToastBridge from './components/common/BusToastBridge';
+import MilestoneToast from './components/common/MilestoneToast';
 import { bootServices, shutdownServices } from './services/ServiceBootstrap';
 
 // Auth Guards
@@ -310,6 +311,7 @@ export default function App() {
     <ErrorBoundary>
       <ToastProvider>
         <BusToastBridge />
+        <MilestoneToast />
         <ConnectionStatusBar />
         {/* Accessibility: Skip to main content link */}
         <a href="#main-content" className="skip-link">

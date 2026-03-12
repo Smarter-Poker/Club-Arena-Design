@@ -300,6 +300,10 @@ const PositionWinRates: React.FC = () => {
                 <span>{statsData[hoveredPosition].pfr.toFixed(1)}%</span>
               </div>
               <div className="tooltip-stat">
+                <span>3-Bet:</span>
+                <span>{statsData[hoveredPosition].threeBet.toFixed(1)}%</span>
+              </div>
+              <div className="tooltip-stat">
                 <span>Win Rate:</span>
                 <span style={{ color: getPositionColor(statsData[hoveredPosition].winRate) }}>
                   {statsData[hoveredPosition].winRate.toFixed(2)} bb/100

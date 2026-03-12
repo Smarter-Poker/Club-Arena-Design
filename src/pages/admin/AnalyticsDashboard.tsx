@@ -10,6 +10,8 @@ import './AnalyticsDashboard.css';
 interface PositionStat {
   position: string;
   hands_played: number;
+  hands_won: number;
+  total_profit: number;
   vpip_count: number;
   pfr_count: number;
   vpip_pct: number; // Computed client-side from vpip_count / hands_played
@@ -68,7 +70,7 @@ export default function AnalyticsDashboard() {
     try {
       const { data, error } = await supabase
         .from('player_position_stats')
-        .select('position, hands_played, vpip_count, pfr_count')
+        .select('position, hands_played, hands_won, total_profit, vpip_count, pfr_count')
         .order('hands_played', { ascending: false })
         .limit(50);
 
@@ -79,6 +81,8 @@ export default function AnalyticsDashboard() {
           const existing = byPosition.get(row.position);
           if (existing) {
             existing.hands_played += row.hands_played || 0;
+            existing.hands_won += row.hands_won || 0;
+            existing.total_profit += row.total_profit || 0;
             existing.vpip_count += row.vpip_count || 0;
             existing.pfr_count += row.pfr_count || 0;
             existing.vpip_pct =
@@ -91,6 +95,8 @@ export default function AnalyticsDashboard() {
             byPosition.set(row.position, {
               position: row.position,
               hands_played: hp,
+              hands_won: row.hands_won || 0,
+              total_profit: row.total_profit || 0,
               vpip_count: vc,
               pfr_count: row.pfr_count || 0,
               vpip_pct: hp > 0 ? Math.round((vc / hp) * 100) : 0,
@@ -245,7 +251,9 @@ export default function AnalyticsDashboard() {
             <div className="position-bars">
               {ALL_POSITIONS.map((pos) => {
                 const stat = positionStats.find((s) => s.position === pos);
-                const winRate = stat?.vpip_pct || 0;
+                const winRate = stat
+                  ? Math.round((stat.hands_won / Math.max(1, stat.hands_played)) * 100)
+                  : 0;
                 const barWidth = stat ? Math.round((stat.hands_played / maxHandsPlayed) * 100) : 0;
 
                 return (
