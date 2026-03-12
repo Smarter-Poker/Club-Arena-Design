@@ -42,6 +42,11 @@ export default function PromotionsPage() {
   const [showBonusWheel, setShowBonusWheel] = useState(false);
   const [showReferral, setShowReferral] = useState(false);
   const [visiblePromoCards, setVisiblePromoCards] = useState(new Set<number>());
+  const loadPromotionsRef = useRef(async () => {});
+
+  useEffect(() => {
+    loadPromotionsRef.current = loadPromotions;
+  });
 
   useEffect(() => {
     loadPromotions();
@@ -60,7 +65,7 @@ export default function PromotionsPage() {
         },
         () => {
           toast.info(' New promotion available!');
-          loadPromotions();
+          loadPromotionsRef.current();
         }
       )
       .subscribe();

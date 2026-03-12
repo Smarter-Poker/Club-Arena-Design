@@ -4356,23 +4356,50 @@ export default function TablePage({
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
         settings={{
-          autoMuckLosers: true,
+          autoMuckLosers: userSettings.autoMuck,
           autoMuckWinners: false,
           autoPostBlinds: true,
           soundEnabled: isSoundEnabled,
           soundVolume: 70,
-          showHandStrength: true,
-          showPotOdds: false,
-          animationSpeed: 'normal',
-          fourColorDeck: false,
+          showHandStrength: userSettings.showHUD,
+          showPotOdds: userSettings.showPotOdds,
+          animationSpeed:
+            userSettings.animationSpeed === 0.5
+              ? 'slow'
+              : userSettings.animationSpeed === 1.5 || userSettings.animationSpeed === 2
+                ? 'fast'
+                : 'normal',
+          fourColorDeck: userSettings.fourColorDeck,
           showStackInBB: false,
           showBetSizePresets: true,
-          confirmAllIn: true,
+          confirmAllIn: userSettings.confirmAllIn,
           sitOutNextHand: false,
         }}
-        onSettingsChange={(settings) => {
-          if (settings.soundEnabled !== undefined) {
-            setIsSoundEnabled(settings.soundEnabled);
+        onSettingsChange={(settingsUpdate) => {
+          if (settingsUpdate.soundEnabled !== undefined) {
+            setIsSoundEnabled(settingsUpdate.soundEnabled);
+            updateSetting('isSoundEnabled', settingsUpdate.soundEnabled);
+            soundService.setEnabled(settingsUpdate.soundEnabled);
+          }
+          if (settingsUpdate.autoMuckLosers !== undefined)
+            updateSetting('autoMuck', settingsUpdate.autoMuckLosers);
+          if (settingsUpdate.showHandStrength !== undefined)
+            updateSetting('showHUD', settingsUpdate.showHandStrength);
+          if (settingsUpdate.showPotOdds !== undefined)
+            updateSetting('showPotOdds', settingsUpdate.showPotOdds);
+          if (settingsUpdate.fourColorDeck !== undefined)
+            updateSetting('fourColorDeck', settingsUpdate.fourColorDeck);
+          if (settingsUpdate.confirmAllIn !== undefined)
+            updateSetting('confirmAllIn', settingsUpdate.confirmAllIn);
+          if (settingsUpdate.animationSpeed !== undefined) {
+            updateSetting(
+              'animationSpeed',
+              settingsUpdate.animationSpeed === 'slow'
+                ? 0.5
+                : settingsUpdate.animationSpeed === 'fast'
+                  ? 1.5
+                  : 1
+            );
           }
         }}
       />

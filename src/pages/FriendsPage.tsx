@@ -48,6 +48,11 @@ export default function FriendsPage() {
     if (user?.id) loadFriends();
   }, [user?.id]);
 
+  // Keep ref pointing to the latest version of loadFriends to avoid stale closures
+  useEffect(() => {
+    loadFriendsRef.current = loadFriends;
+  });
+
   // Real-time presence tracking for friends
   useEffect(() => {
     if (!user?.id || friends.length === 0) return;
@@ -93,7 +98,7 @@ export default function FriendsPage() {
         },
         (payload) => {
           // New friend request!
-          loadFriends();
+          loadFriendsRef.current();
           toast.success('New friend request received!');
         }
       )

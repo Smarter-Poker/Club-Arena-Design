@@ -96,6 +96,10 @@ export default function LeaderboardPage() {
   const [tournamentStats, setTournamentStats] = useState<TournamentStats[]>([]);
   const [tournamentsLoading, setTournamentsLoading] = useState(false);
 
+  // Refs for realtime callbacks to avoid stale closures
+  const loadLeaderboardRef = useRef(async (silent?: boolean) => {});
+  const loadTournamentStatsRef = useRef(async () => {});
+
   // Load user's clubs on mount
   useEffect(() => {
     loadUserClubs();
@@ -106,15 +110,21 @@ export default function LeaderboardPage() {
     activeTabRef.current = activeTab;
   }, [activeTab]);
 
+  // Store latest load functions in refs
+  useEffect(() => {
+    loadLeaderboardRef.current = loadLeaderboard;
+    loadTournamentStatsRef.current = loadTournamentStats;
+  });
+
   // ── Bus Listener: instant leaderboard refresh when engine completes a hand ──
   useEffect(() => {
     const unsub = masterBus.subscribeDebounced(
       'HAND_COMPLETED',
       () => {
         if (activeTabRef.current === 'rankings') {
-          loadLeaderboard(true);
+          loadLeaderboardRef.current(true);
         } else {
-          loadTournamentStats();
+          loadTournamentStatsRef.current();
         }
       },
       2000
@@ -124,7 +134,57 @@ export default function LeaderboardPage() {
     };
   }, []);
 
-  // Load leaderboard when filters or selected club change
+  // Set up real-time Push/Pull Subscriptions ONCE
+  useEffect(() => {
+    const channelKey = 'leaderboard-updates';
+    const channel = masterBus.getOrCreateChannel(channelKey);
+    channel
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'promotion_leaderboards',
+        },
+        () => {
+          if (activeTabRef.current === 'rankings') loadLeaderboardRef.current(true);
+        }
+      )
+      .subscribe();
+
+    const tourneyChannelKey = 'tournament-leaderboard-updates';
+    const tourneyChannel = masterBus.getOrCreateChannel(tourneyChannelKey);
+    tourneyChannel
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tournament_players',
+        },
+        () => {
+          if (activeTabRef.current === 'tournaments') loadTournamentStatsRef.current();
+        }
+      )
+      .subscribe();
+
+    // Auto-refresh every 30 seconds
+    refreshTimerRef.current = setInterval(() => {
+      if (activeTabRef.current === 'rankings') {
+        loadLeaderboardRef.current(true);
+      } else {
+        loadTournamentStatsRef.current();
+      }
+    }, 30000);
+
+    return () => {
+      masterBus.removeRegisteredChannel(channelKey);
+      masterBus.removeRegisteredChannel(tourneyChannelKey);
+      if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
+    };
+  }, []);
+
+  // Fetch when filters or club change
   useEffect(() => {
     if (selectedClubId) {
       if (activeTab === 'rankings') {
@@ -132,57 +192,6 @@ export default function LeaderboardPage() {
       } else {
         loadTournamentStats();
       }
-
-      // Subscribe to real-time leaderboard updates
-      const channelKey = 'leaderboard-updates';
-
-      const channel = masterBus.getOrCreateChannel(channelKey);
-      channel
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'promotion_leaderboards',
-          },
-          () => {
-            if (activeTabRef.current === 'rankings') loadLeaderboard(true);
-          }
-        )
-        .subscribe();
-
-      // Also subscribe to tournament updates
-      const tourneyChannelKey = 'tournament-leaderboard-updates';
-
-      const tourneyChannel = masterBus.getOrCreateChannel(tourneyChannelKey);
-      tourneyChannel
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'tournament_players',
-          },
-          () => {
-            if (activeTabRef.current === 'tournaments') loadTournamentStats();
-          }
-        )
-        .subscribe();
-
-      // Auto-refresh every 30 seconds
-      refreshTimerRef.current = setInterval(() => {
-        if (activeTabRef.current === 'rankings') {
-          loadLeaderboard(true);
-        } else {
-          loadTournamentStats();
-        }
-      }, 30000);
-
-      return () => {
-        masterBus.removeRegisteredChannel(channelKey);
-        masterBus.removeRegisteredChannel(tourneyChannelKey);
-        if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
-      };
     } else {
       setEntries([]);
       setTournamentStats([]);
