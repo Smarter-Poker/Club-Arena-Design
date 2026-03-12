@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { haptic } from '../../services/SoundService';
 import { CardImage } from '../table/CardImage';
 import type { Card } from '../table/CardImage';
 import './ShareHand.css';
@@ -321,6 +322,7 @@ export function ShareHand({
 
   // Copy link
   const handleCopy = useCallback(async () => {
+    haptic.light();
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);

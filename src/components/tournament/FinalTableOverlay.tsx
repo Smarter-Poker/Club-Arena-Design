@@ -44,6 +44,10 @@ interface FinalTableOverlayProps {
   tournamentId: string;
   tournamentName?: string;
   prizePool?: number;
+  /** Fallback: get client-side HUD stats when DB stats are missing */
+  hudStatsProvider?: (
+    userId: string
+  ) => { handsPlayed: number; vpipCount: number; pfrCount: number } | null;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -54,6 +58,7 @@ export const FinalTableOverlay: React.FC<FinalTableOverlayProps> = ({
   tournamentId,
   tournamentName = 'Tournament',
   prizePool = 0,
+  hudStatsProvider,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [players, setPlayers] = useState<FinalTablePlayer[]>([]);
@@ -103,16 +108,23 @@ export const FinalTableOverlay: React.FC<FinalTableOverlayProps> = ({
   // Classify each player's style
   const classifiedPlayers = useMemo(() => {
     return players.map((p) => {
-      const styleResult: PlayerStyleResult = p.stats
-        ? playerStyleClassifier.classify(p.stats)
-        : playerStyleClassifier.classify({
-            handsPlayed: 0,
-            vpipCount: 0,
-            pfrCount: 0,
-          });
+      // Priority: event payload stats → client-side HUD stats → default unknown
+      const payloadStats = p.stats;
+      const hudStats = hudStatsProvider?.(p.userId);
+      const statsToUse =
+        payloadStats ||
+        (hudStats
+          ? {
+              handsPlayed: hudStats.handsPlayed,
+              vpipCount: hudStats.vpipCount,
+              pfrCount: hudStats.pfrCount,
+            }
+          : { handsPlayed: 0, vpipCount: 0, pfrCount: 0 });
+
+      const styleResult: PlayerStyleResult = playerStyleClassifier.classify(statsToUse);
       return { ...p, styleResult };
     });
-  }, [players]);
+  }, [players, hudStatsProvider]);
 
   if (!isVisible) return null;
 

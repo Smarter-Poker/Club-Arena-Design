@@ -3919,6 +3919,16 @@ export default function TablePage({
         <FinalTableOverlay
           tournamentId={tableState.tournamentId}
           tournamentName={tableState.tableName || 'Tournament'}
+          hudStatsProvider={(userId) => {
+            const stats = getPlayerHUDStats(userId);
+            return stats
+              ? {
+                  handsPlayed: stats.handsPlayed,
+                  vpipCount: stats.vpipCount,
+                  pfrCount: stats.pfrCount,
+                }
+              : null;
+          }}
         />
       )}
 
@@ -3962,6 +3972,8 @@ export default function TablePage({
       {/* Straddle Toggle (UTG only, cash games only) */}
       {!tableState.isTournament && (
         <StraddleToggle
+          tableId={tableId || ''}
+          playerId={userId || ''}
           isEnabled={isStraddleEnabled}
           onToggle={(v) => startTransition(() => setIsStraddleEnabled(v))}
           amount={straddleAmount}
