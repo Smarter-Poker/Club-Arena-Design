@@ -119,12 +119,13 @@ export class ReconnectingWebSocket {
 
       this.ws.onopen = () => {
         console.log('[ReconnectingWS] Connected');
+        const wasReconnect = this.retryCount > 0;
         this.retryCount = 0;
         this.setStatus('connected');
         this.startHeartbeat();
 
         // Send RESYNC if this is a reconnection
-        if (this.retryCount > 0) {
+        if (wasReconnect) {
           const resyncPayload = this.options.resyncPayload();
           this.send({ type: 'RESYNC', payload: resyncPayload });
         }

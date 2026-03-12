@@ -213,12 +213,28 @@ export default function ClubDashboard() {
       },
       500
     );
+    const unsubSettlement = masterBus.subscribeDebounced(
+      'SETTLEMENT_CYCLE_COMPLETED',
+      () => {
+        loadDashboardData();
+      },
+      1000
+    );
+    const unsubCollusion = masterBus.subscribeDebounced(
+      'COLLUSION_DETECTED',
+      () => {
+        loadDashboardData();
+      },
+      2000
+    );
     return () => {
       unsubClub();
       unsubBalance();
       unsubSeated();
       unsubChipsAdded();
       unsubChipsWithdrawn();
+      unsubSettlement();
+      unsubCollusion();
     };
   }, []);
 

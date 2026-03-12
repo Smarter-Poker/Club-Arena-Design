@@ -54,7 +54,9 @@ export default function MultiTablePage() {
       try {
         const parsed = JSON.parse(savedSession) as TableInstance[];
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch { /* fall through */ }
+      } catch {
+        /* fall through */
+      }
     }
     // Initialize with the table from URL
     if (routeTableId) {
@@ -124,9 +126,30 @@ export default function MultiTablePage() {
         setTables((prev) => prev.filter((t) => t.id !== tableId));
       }
     });
+    const unsubHandComplete = masterBus.subscribeDebounced(
+      'HAND_COMPLETED',
+      (event) => {
+        const tableId = (event as any)?.tableId;
+        const pot = (event as any)?.pot;
+        if (tableId && typeof pot === 'number') {
+          setTables((prev) => prev.map((t) => (t.id === tableId ? { ...t, pot } : t)));
+        }
+      },
+      300
+    );
+    const unsubWsDisconnected = masterBus.subscribe('WS_DISCONNECTED', () => {
+      // Force re-render to show disconnection indicator
+      setTables((prev) => [...prev]);
+    });
+    const unsubWsReconnecting = masterBus.subscribe('WS_RECONNECTING', () => {
+      setTables((prev) => [...prev]);
+    });
     return () => {
       unsubSeated();
       unsubLeft();
+      unsubHandComplete();
+      unsubWsDisconnected();
+      unsubWsReconnecting();
     };
   }, [tables]);
 

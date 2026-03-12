@@ -283,7 +283,7 @@ export default function SettlementPage() {
     };
   }, [unionId]);
 
-  // Bus listeners: refresh settlement data when wallet balance changes from other pages
+  // Bus listeners: refresh settlement data when wallet balance changes or settlement cycles complete
   useEffect(() => {
     const unsubWallet = masterBus.subscribeDebounced(
       'WALLET_REFRESHED',
@@ -299,9 +299,25 @@ export default function SettlementPage() {
       },
       500
     );
+    const unsubCycleComplete = masterBus.subscribeDebounced(
+      'SETTLEMENT_CYCLE_COMPLETED',
+      () => {
+        loadSettlementData();
+      },
+      1000
+    );
+    const unsubSettlement = masterBus.subscribeDebounced(
+      'SETTLEMENT_COMPLETED',
+      () => {
+        loadSettlementData();
+      },
+      1000
+    );
     return () => {
       unsubWallet();
       unsubBalance();
+      unsubCycleComplete();
+      unsubSettlement();
     };
   }, [loadSettlementData]);
 
