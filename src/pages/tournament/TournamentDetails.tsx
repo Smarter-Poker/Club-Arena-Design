@@ -18,6 +18,8 @@ import TournamentStatsDashboard from '../../components/tournament/TournamentStat
 import './TournamentDetails.css';
 import { useToast } from '../../components/common/Toast';
 import PageErrorBoundary from '../../components/common/PageErrorBoundary';
+import { TournamentClock } from '../../components/tournament/TournamentClock';
+import { HandForHandBanner } from '../../components/tournament/HandForHandBanner';
 
 type TabId =
   | 'detail'
@@ -711,6 +713,32 @@ export default function TournamentDetails() {
                 )}
               </div>
             </div>
+
+            {/* Tournament Clock (live blind level timer) */}
+            {tournament.status === 'RUNNING' && tournamentId && (
+              <TournamentClock tournamentId={tournamentId} />
+            )}
+
+            {/* Hand-for-Hand Banner (bubble play active) */}
+            {tournament.status === 'RUNNING' && (tournament as any).hand_for_hand && (
+              <HandForHandBanner
+                active={(tournament as any).hand_for_hand}
+                playersRemaining={entries.filter((e) => e.status === 'playing').length}
+                paidPositions={(() => {
+                  const raw = tournament.payout_structure;
+                  if (!raw) return 0;
+                  if (Array.isArray(raw)) return raw.length;
+                  if (typeof raw === 'string') {
+                    try {
+                      return JSON.parse(raw).length;
+                    } catch {
+                      return 0;
+                    }
+                  }
+                  return 0;
+                })()}
+              />
+            )}
 
             {/* Quick Stats */}
             <div className="quick-stats">

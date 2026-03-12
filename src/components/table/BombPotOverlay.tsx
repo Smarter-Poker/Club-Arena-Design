@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { masterBus } from '../../core/MasterBus';
 import './BombPotOverlay.css';
 
@@ -17,9 +17,10 @@ export const BombPotOverlay: React.FC<BombPotOverlayProps> = ({ tableId }) => {
   const [anteAmount, setAnteAmount] = useState(0);
   const [doubleBoard, setDoubleBoard] = useState(false);
   const [bbMultiplier, setBBMultiplier] = useState(0);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const unsub = masterBus.subscribe('BOMB_POT_TRIGGERED', (event: any) => {
+    const unsubTriggered = masterBus.subscribe('BOMB_POT_TRIGGERED', (event: any) => {
       const data = event?.payload;
       if (data?.tableId === tableId) {
         setAnteAmount(data.anteAmount || 0);
@@ -27,12 +28,32 @@ export const BombPotOverlay: React.FC<BombPotOverlayProps> = ({ tableId }) => {
         setBBMultiplier(data.bbMultiplier || 0);
         setVisible(true);
 
+        // Clear any existing hide timer
+        if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+
         // Auto-hide after 4 seconds
-        setTimeout(() => setVisible(false), 4000);
+        hideTimerRef.current = setTimeout(() => setVisible(false), 4000);
       }
     });
+
+    // Feature 2: Listen for BOMB_POT_COMPLETED to dismiss overlay immediately
+    const unsubCompleted = masterBus.subscribe('BOMB_POT_COMPLETED', (event: any) => {
+      const data = event?.payload;
+      if (data?.tableId === tableId) {
+        if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = null;
+        setVisible(false);
+      }
+    });
+
     return () => {
-      if (typeof unsub === 'function') unsub();
+      unsubTriggered();
+      unsubCompleted();
+      // Feature 5: Clean up timer on unmount — prevents setState-after-unmount
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = null;
+      }
     };
   }, [tableId]);
 

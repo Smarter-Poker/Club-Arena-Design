@@ -121,7 +121,7 @@ class PostgresSyncHooksService {
         const tournamentId = (payload.new as any)?.id || (payload.old as any)?.id;
         if (tournamentId) {
           console.debug('[PostgresSync] External Tournament mutation detected:', payload);
-          const status = (payload.new as any)?.status;
+          const status = payload.eventType === 'DELETE' ? 'deleted' : (payload.new as any)?.status;
           this.debouncedEmit(`tournament_${tournamentId}`, 'TOURNAMENT_UPDATED', {
             tournamentId,
             status,
