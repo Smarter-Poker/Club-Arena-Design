@@ -130,15 +130,21 @@ export function HandReveal({
     setRevealed(true);
     if (timerRef.current) clearInterval(timerRef.current);
     onShow?.();
-    masterBus.emit('HAND_COMPLETED', { handId, tableId });
-  }, [handId, tableId, onShow]);
+    masterBus.emit('HAND_REVEALED', {
+      handId,
+      tableId,
+      winnerId,
+      cards: revealedCards?.map((c) => ({ rank: c.rank, suit: c.suit })) ?? [],
+    });
+  }, [handId, tableId, winnerId, revealedCards, onShow]);
 
   const handleMuck = useCallback(() => {
     haptic.light();
     setMucked(true);
     if (timerRef.current) clearInterval(timerRef.current);
     onMuck?.();
-  }, [onMuck]);
+    masterBus.emit('HAND_MUCKED', { handId, tableId, winnerId });
+  }, [handId, tableId, winnerId, onMuck]);
 
   const handlePayReveal = useCallback(() => {
     if (userDiamonds < revealCost) return;

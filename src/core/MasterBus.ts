@@ -167,7 +167,11 @@ export type BusEventType =
   | 'FLASH_TRANSITION'
   | 'FLASH_SIT_OUT'
   | 'FLASH_SIT_BACK'
-  | 'FLASH_PLAYER_LEFT';
+  | 'FLASH_PLAYER_LEFT'
+  // Phase 5: Hand Reveal + EV Cashout events
+  | 'HAND_REVEALED'
+  | 'HAND_MUCKED'
+  | 'EV_CASHOUT_ACCEPTED';
 
 // #13: Type-safe payload map — compile-time enforcement of correct payloads
 export interface BusPayloadMap {
@@ -476,6 +480,21 @@ export interface BusPayloadMap {
   FLASH_SIT_OUT: { poolId: string; playerId: string };
   FLASH_SIT_BACK: { poolId: string; playerId: string };
   FLASH_PLAYER_LEFT: { poolId: string; playerId: string; cashout: number; handsPlayed: number };
+  // Phase 5: Hand Reveal + EV Cashout payloads
+  HAND_REVEALED: {
+    handId: string;
+    tableId: string;
+    winnerId: string;
+    cards: { rank: string; suit: string }[];
+  };
+  HAND_MUCKED: { handId: string; tableId: string; winnerId: string };
+  EV_CASHOUT_ACCEPTED: {
+    handId: string;
+    tableId: string;
+    playerId: string;
+    cashoutAmount: number;
+    equityPercent: number;
+  };
 }
 
 export interface BusEvent<T = unknown> {
