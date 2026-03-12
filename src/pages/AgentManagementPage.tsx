@@ -31,6 +31,7 @@ import ClubBottomNav from '@/components/club/ClubBottomNav';
 import { PlayerSearch } from '@/components/admin/PlayerSearch';
 import PageSkeleton from '../components/common/PageSkeleton';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import { useSwipeTabs } from '../hooks/useSwipeTabs';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // COMPONENT
@@ -49,6 +50,18 @@ export default function AgentManagementPage() {
     setAgents(data);
   });
   const [activeTab, setActiveTab] = useState<TabType>('agents');
+  const swipeHandlers = useSwipeTabs({
+    tabs: [
+      'agents',
+      'players',
+      'hierarchy',
+      'credit-limits',
+      'commissions',
+      'payouts',
+    ] as TabType[],
+    activeTab,
+    onTabChange: setActiveTab,
+  });
   const [agents, setAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -464,8 +477,8 @@ export default function AgentManagementPage() {
         ))}
       </nav>
 
-      {/* Tab Content */}
-      <div className={styles.content}>
+      {/* Tab Content — Swipeable */}
+      <div className={styles.content} {...swipeHandlers}>
         {/* ═══════════════════════════════════════════════════════════════════════════════ */}
         {/* AGENTS TAB */}
         {/* ═══════════════════════════════════════════════════════════════════════════════ */}

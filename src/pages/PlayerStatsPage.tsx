@@ -31,6 +31,7 @@ import BankrollTracker from '../components/stats/BankrollTracker';
 import AdvancedStatsSummary from '../components/stats/AdvancedStatsSummary';
 import PageSkeleton from '../components/common/PageSkeleton';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import { useSwipeTabs } from '../hooks/useSwipeTabs';
 import './PlayerStatsPage.css';
 
 interface DetailedStats {
@@ -114,6 +115,21 @@ export default function PlayerStatsPage() {
   const [positionData, setPositionData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState<StatCategory>('overview');
+  const statsSwipeHandlers = useSwipeTabs({
+    tabs: [
+      'overview',
+      'advanced',
+      'positions',
+      'sessions',
+      'bankroll',
+      'preflop',
+      'postflop',
+      'results',
+      'charts',
+    ] as StatCategory[],
+    activeTab: category,
+    onTabChange: setCategory,
+  });
   const [visibleSummaryCards, setVisibleSummaryCards] = useState(new Set<number>());
   const [visibleSessionRows, setVisibleSessionRows] = useState(new Set<number>());
   const toast = useToast();
@@ -399,8 +415,8 @@ export default function PlayerStatsPage() {
         ))}
       </div>
 
-      {/* Stats Content */}
-      <div className="stats-content">
+      {/* Stats Content — Swipeable */}
+      <div className="stats-content" {...statsSwipeHandlers}>
         {category === 'overview' && stats && (
           <div className="stats-grid">
             <StatRow label="VPIP" value={`${((stats.vpip || 0) * 100).toFixed(1)}%`} />

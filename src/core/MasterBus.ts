@@ -883,6 +883,14 @@ class MasterBusCore {
       }
     });
 
+    // Phase 7: Reload diamond balance after any diamond spend (CardBackSelector purchases, etc.)
+    this.subscribe('DIAMOND_SPENT', () => {
+      const user = useUserStore.getState().user;
+      if (user) {
+        useWalletStore.getState().loadDiamonds(user.id);
+      }
+    });
+
     // When joining a club, subscribe to realtime channel
     this.subscribe('CLUB_JOINED', (event) => {
       const { clubId } = event.payload;

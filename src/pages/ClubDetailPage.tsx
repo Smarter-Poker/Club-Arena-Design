@@ -9,6 +9,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import styles from './ClubDetailPage.module.css';
 import { getLocalStorage, setLocalStorage } from '../lib/storage';
+import { useSwipeTabs } from '../hooks/useSwipeTabs';
 import ClubHome from '../components/club/ClubHome';
 import CurrencyStore from '../components/club/CurrencyStore';
 import TableOperationsPanel from '../components/club/TableOperationsPanel';
@@ -328,6 +329,13 @@ export default function ClubDetailPage() {
     setActiveTabRaw(t);
     setLocalStorage('ca_club_detail_tab', t);
   };
+
+  // Swipe gesture support for tab navigation
+  const swipeHandlers = useSwipeTabs({
+    tabs: ['overview', 'tables', 'members', 'agents', 'operations', 'settings'] as const,
+    activeTab,
+    onTabChange: setActiveTab,
+  });
   const [club, setClub] = useState<ClubData | null>(null);
   const [members, setMembers] = useState<ClubMember[]>([]);
   const [filteredMembers, setFilteredMembers] = useState<ClubMember[]>([]);
@@ -889,8 +897,8 @@ export default function ClubDetailPage() {
         />
       </nav>
 
-      {/* Tab Content */}
-      <section className={styles.tabContent}>
+      {/* Tab Content — Swipeable */}
+      <section className={styles.tabContent} {...swipeHandlers}>
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className={styles.overviewGrid}>

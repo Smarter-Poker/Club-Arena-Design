@@ -11,6 +11,9 @@ import { masterBus } from '../../core/MasterBus';
 import { useUserStore } from '../../stores/useUserStore';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
+import { PlayerAvatar } from '../avatars/PlayerAvatar';
+import { ThrowableLayer, useThrowableReactions } from './ThrowableReaction';
+import { useMessageDraft } from '../../hooks/useMessageDraft';
 import styles from './MessageThread.module.css';
 
 interface Reaction {
@@ -64,6 +67,12 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
   const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const heartbeatRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Draft persistence
+  const [draft, setDraft, clearDraft] = useMessageDraft(conversationId);
+
+  // Throwable reactions
+  const { activeThrowables, throwReaction, handleComplete } = useThrowableReactions();
 
   // Load conversation details
   const loadConversation = useCallback(async () => {
@@ -399,7 +408,16 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
         )}
         {otherParticipant && (
           <div className={styles.headerUser}>
-            <img src={otherParticipant.avatar} alt="" className={styles.headerAvatar} />
+            <PlayerAvatar
+              src={otherParticipant.avatar}
+              name={otherParticipant.username}
+              size="sm"
+              presenceStatus={otherParticipant.isOnline ? 'online' : 'offline'}
+              showPresence={true}
+              showLevelBadge={false}
+              showXpRing={false}
+              showVipRing={false}
+            />
             <div className={styles.headerInfo}>
               <span className={styles.headerName}>{otherParticipant.username}</span>
               <span className={styles.headerStatus}>
@@ -480,7 +498,19 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
       )}
 
       {/* Input */}
-      <MessageInput onSend={sendMessage} onTyping={setTyping} disabled={sending} />
+      <MessageInput
+        onSend={(text, imageUrl) => {
+          sendMessage(text, imageUrl);
+          clearDraft();
+        }}
+        onTyping={setTyping}
+        disabled={sending}
+        initialDraft={draft}
+        onDraftChange={setDraft}
+      />
+
+      {/* Throwable Animation Layer */}
+      <ThrowableLayer throwables={activeThrowables} onComplete={handleComplete} />
     </div>
   );
 }

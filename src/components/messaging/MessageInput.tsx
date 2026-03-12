@@ -10,126 +10,146 @@ import styles from './MessageInput.module.css';
 import { ImageUpload, ImagePreview } from './ImageMessage';
 
 interface MessageInputProps {
-    onSend: (text: string, imageUrl?: string) => void;
-    onTyping?: (isTyping: boolean) => void;
-    disabled?: boolean;
-    placeholder?: string;
+  onSend: (text: string, imageUrl?: string) => void;
+  onTyping?: (isTyping: boolean) => void;
+  disabled?: boolean;
+  placeholder?: string;
+  /** Initial draft text to restore */
+  initialDraft?: string;
+  /** Called when draft text changes (for persistence) */
+  onDraftChange?: (text: string) => void;
 }
 
-export default function MessageInput({ onSend, onTyping, disabled = false, placeholder = "Type a message..." }: MessageInputProps) {
-    const [text, setText] = useState('');
-    const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const lastTypingState = useRef(false);
+export default function MessageInput({
+  onSend,
+  onTyping,
+  disabled = false,
+  placeholder = 'Type a message...',
+  initialDraft = '',
+  onDraftChange,
+}: MessageInputProps) {
+  const [text, setText] = useState(initialDraft);
+  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingState = useRef(false);
+  const draftInitialized = useRef(false);
 
-    // Auto-resize textarea
-    useEffect(() => {
-        if (textareaRef.current) {
-            textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
-        }
-    }, [text]);
+  // Re-initialize when initialDraft changes (conversation switch)
+  useEffect(() => {
+    if (!draftInitialized.current) {
+      draftInitialized.current = true;
+      if (initialDraft) setText(initialDraft);
+    }
+  }, [initialDraft]);
 
-    // Typing indicator
-    const updateTyping = useCallback((isTyping: boolean) => {
-        if (isTyping !== lastTypingState.current) {
-            lastTypingState.current = isTyping;
-            onTyping?.(isTyping);
-        }
-    }, [onTyping]);
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+    }
+  }, [text]);
 
-    const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setText(e.target.value);
+  // Typing indicator
+  const updateTyping = useCallback(
+    (isTyping: boolean) => {
+      if (isTyping !== lastTypingState.current) {
+        lastTypingState.current = isTyping;
+        onTyping?.(isTyping);
+      }
+    },
+    [onTyping]
+  );
 
-        // Set typing = true
-        updateTyping(true);
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value;
+    setText(newText);
+    onDraftChange?.(newText);
 
-        // Clear existing timeout
-        if (typingTimeoutRef.current) {
-            clearTimeout(typingTimeoutRef.current);
-        }
+    // Set typing = true
+    updateTyping(true);
 
-        // Set typing = false after 3s of inactivity
-        typingTimeoutRef.current = setTimeout(() => {
-            updateTyping(false);
-        }, 3000);
-    };
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
 
-    const handleSend = () => {
-        if ((!text.trim() && !attachmentPreview) || disabled) return;
+    // Set typing = false after 3s of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      updateTyping(false);
+    }, 3000);
+  };
 
-        onSend(text.trim(), attachmentPreview || undefined);
-        setText('');
-        setAttachmentPreview(null);
-        updateTyping(false);
+  const handleSend = () => {
+    if ((!text.trim() && !attachmentPreview) || disabled) return;
 
-        // Reset textarea height
-        if (textareaRef.current) {
-            textareaRef.current.style.height = 'auto';
-        }
-    };
+    onSend(text.trim(), attachmentPreview || undefined);
+    setText('');
+    setAttachmentPreview(null);
+    updateTyping(false);
+    onDraftChange?.(''); // Clear draft on send
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSend();
-        }
-    };
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+  };
 
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file && file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                setAttachmentPreview(event.target?.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
 
-    const removeAttachment = () => {
-        setAttachmentPreview(null);
-    };
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setAttachmentPreview(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
-    return (
-        <div className={styles.container}>
-            {/* Attachment Preview */}
-            {attachmentPreview && (
-                <ImagePreview
-                    imageUrl={attachmentPreview}
-                    onRemove={removeAttachment}
-                />
-            )}
+  const removeAttachment = () => {
+    setAttachmentPreview(null);
+  };
 
-            <div className={styles.inputRow}>
-                {/* Image Upload Button */}
-                <ImageUpload
-                    onPreview={setAttachmentPreview}
-                    maxSizeMB={5}
-                />
+  return (
+    <div className={styles.container}>
+      {/* Attachment Preview */}
+      {attachmentPreview && (
+        <ImagePreview imageUrl={attachmentPreview} onRemove={removeAttachment} />
+      )}
 
-                {/* Text Input */}
-                <textarea
-                    ref={textareaRef}
-                    className={styles.textarea}
-                    value={text}
-                    onChange={handleTextChange}
-                    onKeyDown={handleKeyDown}
-                    placeholder={placeholder}
-                    disabled={disabled}
-                    rows={1}
-                />
+      <div className={styles.inputRow}>
+        {/* Image Upload Button */}
+        <ImageUpload onPreview={setAttachmentPreview} maxSizeMB={5} />
 
-                {/* Send Button */}
-                <button
-                    className={`${styles.sendBtn} ${(text.trim() || attachmentPreview) ? styles.active : ''}`}
-                    onClick={handleSend}
-                    disabled={disabled || (!text.trim() && !attachmentPreview)}
-                >
-                    {disabled ? '' : '➤'}
-                </button>
-            </div>
-        </div>
-    );
+        {/* Text Input */}
+        <textarea
+          ref={textareaRef}
+          className={styles.textarea}
+          value={text}
+          onChange={handleTextChange}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          disabled={disabled}
+          rows={1}
+        />
+
+        {/* Send Button */}
+        <button
+          className={`${styles.sendBtn} ${text.trim() || attachmentPreview ? styles.active : ''}`}
+          onClick={handleSend}
+          disabled={disabled || (!text.trim() && !attachmentPreview)}
+        >
+          {disabled ? '' : '➤'}
+        </button>
+      </div>
+    </div>
+  );
 }
