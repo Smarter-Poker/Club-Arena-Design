@@ -99,6 +99,7 @@ import RealTimeResults from '../components/table/RealTimeResults';
 import PlayerCard from '../components/table/PlayerCard';
 import { Deck, compareHands, calculatePots, determineWinners } from '../engine/PokerEngine';
 import { HandController } from '../engine/HandController';
+import { serverActionValidator } from '../engine/ServerActionValidator';
 import { RakeWaterfallEngine } from '../engines/financial/RakeWaterfallEngine';
 import { OFCPineappleEngine } from '../engine/OFCPineappleEngine';
 import { handPersistenceService } from '../services/HandPersistenceService';
@@ -3148,6 +3149,68 @@ export default function TablePage({
 
   // Action handlers — LOCAL engine is authoritative → broadcast via Supabase Realtime (PRIMARY)
   // → fire-and-forget server call (SECONDARY, for when game server is deployed)
+  const validateAndExecuteAction = (
+    action: 'fold' | 'check' | 'call' | 'raise' | 'allin' | 'bet',
+    amount?: number
+  ) => {
+    if (!handControllerRef.current || !tableId) return false;
+
+    // Auto-allow fold
+    if (action === 'fold') return true;
+
+    try {
+      const state = handControllerRef.current.getState();
+      const heroSeat = tableState.heroSeat;
+      const heroPlayer = state.players.find((p) => p && p.seat === heroSeat);
+
+      if (!heroPlayer || heroPlayer.is_folded || heroPlayer.is_all_in) return false;
+
+      const validationContext = {
+        currentPlayerId: userId,
+        stage: state.stage,
+        currentBet: state.currentBet,
+        playerBet: heroPlayer.bet,
+        playerStack: heroPlayer.stack,
+        bigBlind: parseFloat(tableState.blinds.split('/')[1] || '2'),
+        minRaise: Math.max(
+          parseFloat(tableState.blinds.split('/')[1] || '2'),
+          state.lastRaise || parseFloat(tableState.blinds.split('/')[1] || '2')
+        ),
+        pot: state.pot,
+        canCheck: state.currentBet - heroPlayer.bet <= 0,
+        actionDeadline: 0,
+        playerActedThisRound: false,
+        isAllIn: heroPlayer.is_all_in,
+        isFolded: heroPlayer.is_folded,
+        numActivePlayers: state.players.filter((p) => !p.is_folded && !p.is_all_in && p.stack > 0)
+          .length,
+      };
+
+      const mappedAction = action === 'allin' ? 'all_in' : action;
+
+      const result = serverActionValidator.validate(
+        {
+          tableId,
+          handId: handNumberRef.current.toString(),
+          playerId: userId,
+          action: mappedAction as any,
+          amount,
+          timestamp: Date.now(),
+        },
+        validationContext
+      );
+
+      if (!result.valid) {
+        console.warn('[TablePage] Action rejected locally:', result.reason);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.error('[TablePage] Validation error:', e);
+      return false; // Fail safe
+    }
+  };
+
   const handleFold = async () => {
     const heroSeat = tableState.heroSeat;
     setShowRaiseSlider(false);
@@ -3162,6 +3225,7 @@ export default function TablePage({
   };
 
   const handleCheck = async () => {
+    if (!validateAndExecuteAction('check')) return;
     const heroSeat = tableState.heroSeat;
     setShowRaiseSlider(false);
     startTransition(() => {
@@ -3175,6 +3239,7 @@ export default function TablePage({
   };
 
   const handleCall = async () => {
+    if (!validateAndExecuteAction('call')) return;
     const heroSeat = tableState.heroSeat;
     setShowRaiseSlider(false);
     startTransition(() => {
