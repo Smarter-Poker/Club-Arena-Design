@@ -20,8 +20,6 @@ import DailyLoginReward from '../components/gamification/DailyLoginReward';
 import LuckyDrawWheel from '../components/gamification/LuckyDrawWheel';
 import { bonusService } from '../services/BonusService';
 import { useToast } from '../components/common/Toast';
-import { masterBus } from '../core/MasterBus';
-
 type GameFilter = 'all' | 'nlh' | 'plo' | 'ofc' | 'tournaments' | 'favorites';
 
 export default function LobbyPage() {
@@ -45,6 +43,7 @@ export default function LobbyPage() {
   } | null>(null);
   const [showLuckyWheel, setShowLuckyWheel] = useState(false);
   const [canSpin, setCanSpin] = useState(false);
+  const [wheelStats, setWheelStats] = useState({ totalSpins: 0, streakMultiplier: 1 });
 
   // Favorite Tables (stored in localStorage)
   const [favorites, setFavorites] = useState<Set<string>>(() => {
@@ -94,9 +93,12 @@ export default function LobbyPage() {
         console.warn('[LobbyPage] Daily bonus check failed:', err);
       });
 
-    // Check spin eligibility
+    // Check spin eligibility and fetch stats
     bonusService.canSpinToday(user.id).then((eligible) => {
       if (isMounted.current) setCanSpin(eligible);
+    });
+    bonusService.getWheelStats(user.id).then((stats) => {
+      if (isMounted.current) setWheelStats(stats);
     });
 
     // Listen for balance updates (e.g., from wheel spins or daily claims) to force profile refresh
@@ -511,6 +513,8 @@ export default function LobbyPage() {
       {showLuckyWheel && (
         <LuckyDrawWheel
           spinsRemaining={canSpin ? 1 : 0}
+          totalSpins={wheelStats.totalSpins}
+          streakMultiplier={wheelStats.streakMultiplier}
           onSpin={async () => {
             if (!user?.id) throw new Error('User not loaded');
             if (!canSpin) throw new Error('You have already spun the wheel today!');

@@ -27,6 +27,8 @@ interface LuckyDrawWheelProps {
   onSpin: () => Promise<string>;
   onClose: () => void;
   spinsRemaining?: number;
+  totalSpins?: number;
+  streakMultiplier?: number;
 }
 
 const DEFAULT_SEGMENTS: WheelSegment[] = [
@@ -45,6 +47,8 @@ export default function LuckyDrawWheel({
   onSpin,
   onClose,
   spinsRemaining = 1,
+  totalSpins = 0,
+  streakMultiplier = 1,
 }: LuckyDrawWheelProps) {
   const [spinning, setSpinning] = useState(false);
   const [result, setResult] = useState<WheelSegment | null>(null);
@@ -120,6 +124,10 @@ export default function LuckyDrawWheel({
           </button>
         </div>
 
+        {streakMultiplier > 1 && (
+          <div className="ldw-streak-banner">🔥 {streakMultiplier}x Streak Bonus!</div>
+        )}
+
         {/* Wheel */}
         <div className="ldw-wheel-frame">
           {/* Pointer (top center) */}
@@ -172,7 +180,7 @@ export default function LuckyDrawWheel({
             <span className="ldw-result-text">
               You won{' '}
               <strong>
-                +{result.amount.toLocaleString()} {result.label}
+                +{(result.amount * streakMultiplier).toLocaleString()} {result.label}
               </strong>
               !
             </span>
@@ -192,6 +200,10 @@ export default function LuckyDrawWheel({
           <span className="ldw-spins-left">
             {spinsRemaining} spin{spinsRemaining !== 1 ? 's' : ''} remaining
           </span>
+        )}
+
+        {totalSpins > 0 && (
+          <span className="ldw-total-spins">Total Spins: {totalSpins.toLocaleString()}</span>
         )}
       </div>
     </div>

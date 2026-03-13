@@ -142,17 +142,22 @@ export default function CashierPage() {
     type: 'success' | 'error' | 'info';
     text: string;
   } | null>(null);
+  const [recipientsLoading, setRecipientsLoading] = useState(false);
+  const [cashoutConfirm, setCashoutConfirm] = useState({ show: false, value: 0 });
+  const [recipientConfirm, setRecipientConfirm] = useState<{
+    show: boolean;
+    recipientId: string;
+    amount: number;
+    username: string;
+  }>({ show: false, recipientId: '', amount: 0, username: '' });
 
-  // Confirm modal for high-value cashouts
-  const [cashoutConfirm, setCashoutConfirm] = useState<{ show: boolean; value: number }>({
-    show: false,
-    value: 0,
-  });
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const isMounted = useRef(true);
   useEffect(() => {
     return () => {
       isMounted.current = false;
+      if (abortControllerRef.current) abortControllerRef.current.abort();
     };
   }, []);
 
@@ -765,8 +770,14 @@ export default function CashierPage() {
         setIsProcessing(false);
         return;
       }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
+
       const cashoutRes = await fetch('/api/club-arena/request-cashout', {
         method: 'POST',
+        signal: abortControllerRef.current.signal,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,

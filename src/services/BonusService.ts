@@ -182,6 +182,51 @@ class BonusServiceClass {
   }
 
   /**
+   * Get lifetime wheel stats and streak multiplier for a user
+   */
+  async getWheelStats(
+    userId: string
+  ): Promise<{ totalSpins: number; lastSpinDate: string | null; streakMultiplier: number }> {
+    const { data, error } = await supabase
+      .from('user_lucky_wheel_spins')
+      .select('total_spins, last_spin_date')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error || !data) {
+      return { totalSpins: 0, lastSpinDate: null, streakMultiplier: 1 };
+    }
+
+    // Determine current global login streak (as a proxy for spin streak)
+    let streakMultiplier = 1;
+    let loginStreak = 1; // Default
+    try {
+      const { data: ud } = await supabase
+        .from('user_daily_rewards')
+        .select('current_streak')
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (ud) {
+        loginStreak = ud.current_streak;
+      }
+    } catch {
+      // Ignore
+    }
+
+    if (loginStreak >= 3 && loginStreak <= 6) {
+      streakMultiplier = 1.5;
+    } else if (loginStreak >= 7) {
+      streakMultiplier = 2;
+    }
+
+    return {
+      totalSpins: data.total_spins || 0,
+      lastSpinDate: data.last_spin_date,
+      streakMultiplier,
+    };
+  }
+
+  /**
    * Spin Lucky Draw Wheel (Atomic + Server RNG)
    */
   async spinLuckyWheel(

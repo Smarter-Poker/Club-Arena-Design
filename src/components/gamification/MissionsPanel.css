@@ -203,3 +203,85 @@
   font-size: 14px;
   color: rgba(255, 255, 255, 0.25);
 }
+
+/* ── Celebration Animation ── */
+.mp-celebrate {
+  animation: cardCelebrate 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  z-index: 10;
+  position: relative;
+}
+
+.mp-celebrate::before,
+.mp-celebrate::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  background-color: #ffd700;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mp-celebrate::before {
+  box-shadow:
+    -40px -40px 0 2px #ff0055,
+    40px -40px 0 2px #00ffaa,
+    -40px 40px 0 2px #0055ff,
+    40px 40px 0 2px #ffbb00,
+    -60px 0 0 2px #ff00ff,
+    60px 0 0 2px #00ffff,
+    0 -60px 0 2px #ffff00,
+    0 60px 0 2px #ff0000;
+  animation: confettiBurst 1s ease-out forwards;
+}
+
+.mp-celebrate::after {
+  box-shadow:
+    -30px -30px 0 4px #00ffaa,
+    30px -30px 0 4px #ff0055,
+    -30px 30px 0 4px #ffbb00,
+    30px 30px 0 4px #0055ff,
+    -50px 0 0 4px #00ffff,
+    50px 0 0 4px #ff00ff,
+    0 -50px 0 4px #ff0000,
+    0 50px 0 4px #ffff00;
+  animation: confettiBurst 1s ease-out 0.2s forwards;
+}
+
+@keyframes cardCelebrate {
+  0% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.05);
+    border-color: #ffd700;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+  }
+  85% {
+    transform: scale(1.05);
+    border-color: #ffd700;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+  }
+  100% {
+    transform: scale(1);
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+}
+
+@keyframes confettiBurst {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2);
+    opacity: 0;
+  }
+}

@@ -39,10 +39,12 @@ export default function RakebackPage() {
   const [claimMessage, setClaimMessage] = useState('');
   const [visiblePeriodRows, setVisiblePeriodRows] = useState(new Set<number>());
   const claimTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     return () => {
       if (claimTimerRef.current) clearTimeout(claimTimerRef.current);
+      if (abortControllerRef.current) abortControllerRef.current.abort();
     };
   }, []);
 
@@ -204,8 +206,15 @@ export default function RakebackPage() {
         return;
       }
 
+      // Abort any in-flight claim requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
+
       const res = await fetch('/api/club-arena/rakeback', {
         method: 'POST',
+        signal: abortControllerRef.current.signal,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -235,7 +244,8 @@ export default function RakebackPage() {
         setClaimStatus('error');
         setClaimMessage(data.error || 'Claim failed. Try again.');
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err.name === 'AbortError') return; // Ignore voluntary aborts
       setClaimStatus('error');
       setClaimMessage('Network error. Please try again.');
     }

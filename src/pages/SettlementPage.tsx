@@ -227,11 +227,13 @@ export default function SettlementPage() {
   const [visibleWires, setVisibleWires] = useState<Set<string>>(new Set());
   const [visiblePayouts, setVisiblePayouts] = useState<Set<string>>(new Set());
   const isMounted = useRef(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     isMounted.current = true;
     return () => {
       isMounted.current = false;
+      if (abortControllerRef.current) abortControllerRef.current.abort();
     };
   }, []);
 
@@ -545,8 +547,14 @@ export default function SettlementPage() {
         return;
       }
 
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
+
       const res = await fetch('/api/club-arena/settlement-history', {
         method: 'POST',
+        signal: abortControllerRef.current.signal,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -564,7 +572,8 @@ export default function SettlementPage() {
       } else {
         toast.error(data.error || 'Toggle failed');
       }
-    } catch {
+    } catch (err: any) {
+      if (err.name === 'AbortError') return; // Ignore voluntary aborts
       toast.error('Failed to toggle auto-settlement');
     } finally {
       setTogglingAutoSettle(false);

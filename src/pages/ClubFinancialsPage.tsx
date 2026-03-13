@@ -195,7 +195,8 @@ export default function ClubFinancialsPage() {
         .select('rake_amount, pot_amount, collected_at')
         .eq('club_id', clubId)
         .gte('collected_at', startDate.toISOString())
-        .order('collected_at', { ascending: true });
+        .order('collected_at', { ascending: true })
+        .limit(5000);
 
       // Aggregate totals from actual rake_history rows
       const totalRake = (rakeData || []).reduce(

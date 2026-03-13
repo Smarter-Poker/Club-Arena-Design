@@ -440,7 +440,8 @@ export default function ClubMembersPage() {
           )
           .eq('club_id', clubId)
           .eq('profiles.is_horse', false)
-          .not('status', 'in', '("banned","suspended")');
+          .not('status', 'in', '("banned","suspended")')
+          .limit(5000);
 
         if (getIsMounted && !getIsMounted()) return;
         if (!error && data) {

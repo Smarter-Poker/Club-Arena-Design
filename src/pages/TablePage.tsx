@@ -557,8 +557,9 @@ export default function TablePage({
         // Process insurance payment via WalletService
         const premium = coverageAmount * 0.1; // 10% premium
         await WalletService.processInsurance(userId, tableId, `hand-${Date.now()}`, premium);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Insurance processing failed:', error);
+        toast.error(error.message || 'Failed to process insurance');
       }
     }
     setShowInsurance(false);
@@ -601,12 +602,12 @@ export default function TablePage({
   const handleRITAccept = () => {
     setShowRIT(false);
     // Broadcast RIT acceptance to WebSocket
-    sendAction('rit_accept', { seat: tableState.heroSeat });
+    sendAction('rit_accept', { seat: tableState.heroSeat }).catch(console.error);
   };
 
   const handleRITDecline = () => {
     setShowRIT(false);
-    sendAction('rit_decline', { seat: tableState.heroSeat });
+    sendAction('rit_decline', { seat: tableState.heroSeat }).catch(console.error);
   };
 
   // Animations — extracted to useTableAnimations hook
@@ -638,8 +639,9 @@ export default function TablePage({
     if (userId && tableId) {
       try {
         await WalletService.processDealerTip(userId, tableId, amount);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Tip processing failed:', error);
+        toast.error(error.message || 'Failed to send tip');
       }
     }
     setShowTipDealer(false);
@@ -3246,8 +3248,9 @@ export default function TablePage({
       broadcastLocalHandState();
       // SECONDARY: Fire-and-forget server call
       if (tableId) submitAction(tableId, userId, 'raise', clampedRaise).catch(() => {});
-    } catch (err) {
+    } catch (err: any) {
       console.warn('[TablePage] Raise error:', err);
+      toast.error(err.message || 'Failed to place bet. Please try again.');
     }
   };
 
@@ -3418,8 +3421,9 @@ export default function TablePage({
           joinedAt: new Date(e.joinedAt),
         }))
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load waitlist:', error);
+      toast.error(error.message || 'Failed to load waitlist');
     }
   }, [tableId]);
 
@@ -3500,7 +3504,9 @@ export default function TablePage({
                 'fold'
               );
               if (foldResult !== false) {
-                sendAction('fold', { seat: tableState.heroSeat, autoFold: true });
+                sendAction('fold', { seat: tableState.heroSeat, autoFold: true }).catch(
+                  console.error
+                );
                 soundService.playFold();
               } else {
                 console.warn(
@@ -4483,12 +4489,12 @@ export default function TablePage({
                 HydraService.onRealPlayerJoined(tableId, userId);
 
                 // Broadcast seat update to other clients
-                await sendAction('player_seated', {
+                sendAction('player_seated', {
                   seat: selectedSeat,
                   userId,
                   stack: amount,
                   autoRebuy,
-                });
+                }).catch(console.error);
 
                 // Update RoomService presence state so the user is globally seen as seated
                 roomService.joinRoom(tableId, userId, username || 'Player', selectedSeat, amount);

@@ -85,6 +85,7 @@ function UnionCard({ union, idx }: { union: Union; idx: number }) {
 
 export default function UnionsPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [unions, setUnions] = useState<Union[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);

@@ -45,6 +45,7 @@ const REWARD_ICONS: Record<string, string> = {
 
 export default function MissionsPanel({ missions, onClaim }: MissionsPanelProps) {
   const [activeTier, setActiveTier] = useState<MissionTier>('daily');
+  const [celebratingIds, setCelebratingIds] = useState<string[]>([]);
 
   const filtered = useMemo(
     () => missions.filter((m) => m.tier === activeTier),
@@ -102,7 +103,7 @@ export default function MissionsPanel({ missions, onClaim }: MissionsPanelProps)
             return (
               <div
                 key={mission.id}
-                className={`mp-card ${mission.completed ? 'complete' : ''} ${mission.claimed ? 'claimed' : ''}`}
+                className={`mp-card ${mission.completed ? 'complete' : ''} ${mission.claimed ? 'claimed' : ''} ${celebratingIds.includes(mission.id) ? 'mp-celebrate' : ''}`}
               >
                 <div className="mp-card-icon">{mission.icon}</div>
 
@@ -134,6 +135,11 @@ export default function MissionsPanel({ missions, onClaim }: MissionsPanelProps)
                       className="mp-claim-btn"
                       onClick={() => {
                         triggerHaptic('success');
+                        setCelebratingIds((prev) => [...prev, mission.id]);
+                        setTimeout(() => {
+                          setCelebratingIds((prev) => prev.filter((id) => id !== mission.id));
+                        }, 1500);
+
                         masterBus.emit('MISSION_CLAIMED', {
                           missionId: mission.id,
                           tier: mission.tier,
