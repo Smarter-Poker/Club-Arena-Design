@@ -207,7 +207,7 @@ export async function updateTableStatus(
 }
 
 /**
- * Auto-rebuy a horse from their Player Wallet
+ * Auto-rebuy a horse from their Player Wallet atomically
  */
 export async function autoRebuyHorse(
   tableId: string,
@@ -215,42 +215,21 @@ export async function autoRebuyHorse(
   rebuyAmount: number,
   clubId: string
 ): Promise<boolean> {
-  // Check wallet balance
-  const { data: walletData } = await supabase
-    .from('wallets')
-    .select('balance')
-    .eq('user_id', userId)
-    .eq('wallet_type', 'PLAYER')
-    .single();
-
-  if (!walletData || walletData.balance < rebuyAmount) return false;
-
-  // Deduct from wallet
-  const { error: deductError } = await supabase.rpc('deduct_player_wallet', {
+  const { error } = await supabase.rpc('atomic_table_rebuy', {
     p_user_id: userId,
+    p_table_id: tableId,
     p_amount: rebuyAmount,
   });
-  if (deductError) return false;
 
-  // Update stack at table
-  await supabase
-    .from('table_seats')
-    .update({ stack: rebuyAmount })
-    .eq('table_id', tableId)
-    .eq('user_id', userId)
-    .is('left_at', null);
-
-  // Log transaction
-  const { error: txErr } = await supabase.from('wallet_transactions').insert({
-    user_id: userId,
-    wallet_type: 'PLAYER',
-    amount: rebuyAmount,
-    type: 'debit',
-    category: 'buyin',
-    description: `Auto-rebuy ${rebuyAmount} chips`,
-    table_id: tableId,
-  });
-  if (txErr) console.warn(`[DB] Failed to log rebuy transaction:`, txErr.message);
+  if (error) {
+    if (
+      !error.message.includes('Insufficient balance') &&
+      !error.message.includes('Active seat not found')
+    ) {
+      console.error(`[DB] Unexpected atomic auto-rebuy failure for ${userId}:`, error.message);
+    }
+    return false;
+  }
 
   return true;
 }

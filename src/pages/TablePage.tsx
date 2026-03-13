@@ -3175,7 +3175,11 @@ export default function TablePage({
     }
   }, [tableState.heroSeat, tableId, userId, broadcastLocalHandState, sendAction]);
 
-  const { timeRemaining: actionTimeRemaining, resetTimer } = useTableTimer({
+  const {
+    timeRemaining: actionTimeRemaining,
+    timerProgress: actionTimerProgress,
+    resetTimer,
+  } = useTableTimer({
     isHeroTurn: isHeroTurnContext && !timeBankActive,
     isSoundEnabled,
     onTimeout: () => {
@@ -3690,6 +3694,7 @@ export default function TablePage({
     return () => soundService.stopTimerWarning();
   }, [
     actionTimeRemaining,
+    actionTimerProgress,
     tableState.currentPlayerSeat,
     tableState.heroSeat,
     tableState.isHandInProgress,
@@ -3944,9 +3949,7 @@ export default function TablePage({
                   isActive={seatNumber === tableState.currentPlayerSeat}
                   lastAction={tableState.lastActions[idx] || null}
                   timerProgress={
-                    seatNumber === tableState.currentPlayerSeat
-                      ? (actionTimeRemaining / 15) * 100
-                      : undefined
+                    seatNumber === tableState.currentPlayerSeat ? actionTimerProgress : undefined
                   }
                   bigBlind={parseFloat(tableState.blinds.split('/')[1]) || 2}
                   isTournament={tableState.isTournament}
