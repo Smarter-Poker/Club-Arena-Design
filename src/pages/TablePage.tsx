@@ -572,7 +572,7 @@ export default function TablePage({
           : undefined,
       stakes: tableState.blinds !== '?/?' ? tableState.blinds : undefined,
       isMyTurn: isHeroTurn,
-      timeRemaining: isHeroTurn ? actionTimeRemaining : undefined,
+      timeRemaining: isHeroTurn ? 15 : undefined,
       pot: tableState.pot,
     });
   }, [
@@ -583,7 +583,6 @@ export default function TablePage({
     tableState.currentPlayerSeat,
     tableState.heroSeat,
     tableState.isHandInProgress,
-    actionTimeRemaining,
     onTableInfoUpdate,
   ]);
 
@@ -2440,7 +2439,7 @@ export default function TablePage({
             const currentState = tableStateRef.current;
             if (event.seat === currentState.heroSeat) {
               playTurnAlert();
-              setActionTimeRemaining(15); // Reset action timer
+              resetTimer(15); // Reset action timer
             }
 
             // Auto-action for horses (check extended player properties OR horseMapRef)
@@ -3625,44 +3624,6 @@ export default function TablePage({
     }
   }, [tableState.boardStage, tableState.isHandInProgress]);
 
-  // Timer countdown with auto-fold on timeout
-  // NOTE: actionTimeRemaining removed from deps to prevent re-creating interval every second
-  // The setInterval handles its own countdown via the functional state updater
-  useEffect(() => {
-    if (tableState.currentPlayerSeat === tableState.heroSeat) {
-      const timer = setInterval(() => {
-        setActionTimeRemaining((prev) => {
-          if (prev <= 0) return 0;
-          const newValue = prev - 1;
-          // Auto-fold when timer expires
-          if (newValue <= 0 && handControllerRef.current) {
-            try {
-              const foldResult = handControllerRef.current.performAction(
-                tableState.heroSeat,
-                'fold'
-              );
-              if (foldResult !== false) {
-                sendAction('fold', { seat: tableState.heroSeat, autoFold: true });
-                soundService.playFold();
-                broadcastLocalHandState();
-                if (tableId) submitAction(tableId, userId, 'fold').catch(() => {});
-              } else {
-                console.warn(
-                  '[AutoFold] performAction returned false — fold may not have executed'
-                );
-              }
-            } catch (err) {
-              console.error('[AutoFold] Error during auto-fold:', err);
-            }
-          }
-          return Math.max(0, newValue);
-        });
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tableState.currentPlayerSeat, tableState.heroSeat]);
-
   // Timer warning sound — tick when hero's time is running low
   useEffect(() => {
     const isHeroTurn =
@@ -4013,7 +3974,7 @@ export default function TablePage({
                 {/* Timer Display */}
                 {tableState.currentPlayerSeat === tableState.heroSeat && (
                   <div className="control-strip__timer">
-                    <span className="control-strip__timer-val">{actionTimeRemaining}s</span>
+                    <span className="control-strip__timer-val">{actionTimeRemaining || 0}s</span>
                   </div>
                 )}
 
