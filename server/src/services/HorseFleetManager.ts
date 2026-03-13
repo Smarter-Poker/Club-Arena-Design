@@ -601,75 +601,25 @@ export class HorseFleetManager {
     clubId: string
   ): Promise<boolean> {
     try {
-      // Deduct buy-in from wallet — EXACTLY like a real player
-      // Every chip must be accounted for in the ledger
-      const { error: deductError } = await supabase.rpc('deduct_player_wallet', {
-        p_user_id: horseId,
-        p_amount: buyIn,
+      // 100% ACID-Compliant Seating via Postgres RPC
+      // Prevents "phantom deductions" if the Node server dies mid-seat.
+      const { data: success, error } = await supabase.rpc('atomic_seat_horse', {
+        p_table_id: tableId,
+        p_horse_id: horseId,
+        p_seat_number: seatNumber,
+        p_buy_in: buyIn,
+        p_table_name: tableName,
       });
 
-      if (deductError) {
-        // No funds — skip this horse
-        return false;
-      }
-
-      // Log the buy-in transaction to wallet_transactions
-      const { error: txErr } = await supabase.from('wallet_transactions').insert({
-        user_id: horseId,
-        wallet_type: 'PLAYER',
-        amount: buyIn,
-        type: 'debit',
-        category: 'buyin',
-        description: `Buy-in at ${tableName}: ${buyIn} chips`,
-      });
-      if (txErr)
-        console.warn(
-          `[HorseFleet] Buy-in tx log failed for horse ${horseId.slice(0, 8)} at ${tableName}: ${txErr.message}`
-        );
-
-      // Insert into table_seats
-      const { error: seatError } = await supabase.from('table_seats').insert({
-        table_id: tableId,
-        user_id: horseId,
-        seat_number: seatNumber,
-        stack: buyIn,
-        joined_at: new Date().toISOString(),
-      });
-
-      if (seatError) {
-        // Refund the buy-in
-        const { error: refundErr } = await supabase.rpc('credit_player_wallet', {
-          p_user_id: horseId,
-          p_amount: buyIn,
-        });
-        if (refundErr)
+      if (error || !success) {
+        if (error && !error.message.includes('Insufficient balance')) {
           console.error(
-            `[HorseFleet] Seat-fail refund FAILED for horse ${horseId.slice(0, 8)}: ${refundErr.message}`
+            `[HorseFleet] atomic_seat_horse database failure for ${horseId} at ${tableName}:`,
+            error.message
           );
-        const { error: refundTxErr } = await supabase.from('wallet_transactions').insert({
-          user_id: horseId,
-          wallet_type: 'PLAYER',
-          amount: buyIn,
-          type: 'credit',
-          category: 'cashout',
-          description: `Seat failed refund at ${tableName}: ${buyIn} chips`,
-        });
-        if (refundTxErr)
-          console.warn(
-            `[HorseFleet] Refund tx log failed for horse ${horseId.slice(0, 8)}: ${refundTxErr.message}`
-          );
-        console.error(`[HorseFleet] Seat insert failed at ${tableName}:`, seatError.message);
+        }
         return false;
       }
-
-      // We NO LONGER update horse_status to 'seated' since they can multi-table.
-      // HorseLifecycleManager uses 'available' and 'seated' to detect stuck horses.
-      // To prevent Lifecycle from resetting active multi-tabling horses,
-      // we will leave their status as 'seated' if they are at >= 1 table.
-      await supabase
-        .from('profiles')
-        .update({ horse_status: 'seated', updated_at: new Date().toISOString() })
-        .eq('id', horseId);
 
       return true;
     } catch (err: any) {
