@@ -29,6 +29,7 @@ import { HydraService } from './HydraService';
 import { tournamentService } from './TournamentService';
 import { RakeService } from './RakeService';
 import { masterBus } from '../core/MasterBus';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -1926,7 +1927,7 @@ class HorseOrchestrator {
         const { data: existing } = await supabase
           .from('club_members')
           .select('user_id')
-          .eq('club_id', clubId);
+          .eq('club_id', await resolveClubUUID(clubId));
 
         const existingIds = new Set((existing || []).map((m: any) => m.user_id));
 
@@ -1973,7 +1974,7 @@ class HorseOrchestrator {
         const { count } = await supabase
           .from('club_members')
           .select('user_id, profiles!inner(id)', { count: 'exact', head: true })
-          .eq('club_id', clubId)
+          .eq('club_id', await resolveClubUUID(clubId))
           .eq('profiles.is_horse', false);
 
         if (count !== null) {

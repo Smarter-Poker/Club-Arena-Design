@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { BBJService } from './BBJService';
 import { retryAsync } from '../utils/retryAsync';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
@@ -581,6 +582,7 @@ export const RakeService = {
 
           // Fallback: atomic UPDATE col = col + amount (no read-modify-write race)
           if (rpcError) {
+            const resolvedClubId = await resolveClubUUID(clubId);
             const { error: fallbackErr } = await retryAsync(
               () =>
                 supabase
@@ -588,7 +590,7 @@ export const RakeService = {
                   .update({
                     rake_generated: supabase.rpc('raw_increment', { val: attr.rakeCredit }) as any,
                   })
-                  .eq('club_id', clubId)
+                  .eq('club_id', resolvedClubId)
                   .eq('user_id', attr.userId),
               3
             );

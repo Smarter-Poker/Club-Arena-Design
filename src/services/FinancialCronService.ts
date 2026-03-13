@@ -50,6 +50,7 @@ export interface SuspensionCheckResult {
 export const FinancialCronService = {
   _reconciliationTimer: null as ReturnType<typeof setInterval> | null,
   _suspensionTimer: null as ReturnType<typeof setInterval> | null,
+  _disputeEscalationTimer: null as ReturnType<typeof setInterval> | null,
   _startupTimer: null as ReturnType<typeof setTimeout> | null,
   _isRunning: false,
   _lastReconciliation: null as ReconciliationResult | null,
@@ -85,6 +86,7 @@ export const FinancialCronService = {
     this._startupTimer = setTimeout(() => {
       this.runReconciliation();
       this.runSuspensionCheck();
+      this.escalateStaleDisputes();
     }, 30_000);
 
     this._reconciliationTimer = setInterval(
@@ -93,6 +95,11 @@ export const FinancialCronService = {
     );
     this._suspensionTimer = setInterval(
       () => this.runSuspensionCheck(),
+      this._config.suspensionCheckIntervalMs
+    );
+    // Run dispute escalation every 6 hours (same cadence as suspension checks)
+    this._disputeEscalationTimer = setInterval(
+      () => this.escalateStaleDisputes(),
       this._config.suspensionCheckIntervalMs
     );
 
@@ -106,9 +113,11 @@ export const FinancialCronService = {
     if (this._startupTimer) clearTimeout(this._startupTimer);
     if (this._reconciliationTimer) clearInterval(this._reconciliationTimer);
     if (this._suspensionTimer) clearInterval(this._suspensionTimer);
+    if (this._disputeEscalationTimer) clearInterval(this._disputeEscalationTimer);
     this._startupTimer = null;
     this._reconciliationTimer = null;
     this._suspensionTimer = null;
+    this._disputeEscalationTimer = null;
     this._isRunning = false;
     console.debug('[FinancialCron] Stopped');
   },
@@ -262,6 +271,61 @@ export const FinancialCronService = {
       // Non-blocking — table may not exist yet
       console.warn('[FinancialCron] commission_rate_audit insert failed (table may not exist)');
     }
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // P7-8: DISPUTE AUTO-ESCALATION (72-hour SLA)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Auto-escalate disputes that have been open for more than 72 hours.
+   * Runs on the same interval as suspension checks (every 6 hours).
+   */
+  async escalateStaleDisputes(): Promise<number> {
+    let escalated = 0;
+    try {
+      const cutoff = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
+
+      const { data: staleDisputes } = await supabase
+        .from('disputes')
+        .select('id, submitted_by, club_id, reason')
+        .eq('status', 'open')
+        .lt('created_at', cutoff)
+        .limit(50);
+
+      if (!staleDisputes || staleDisputes.length === 0) return 0;
+
+      for (const dispute of staleDisputes) {
+        try {
+          await supabase
+            .from('disputes')
+            .update({
+              status: 'escalated',
+              resolution: 'Auto-escalated: unresolved for 72+ hours',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', dispute.id)
+            .eq('status', 'open'); // CAS guard
+
+          escalated++;
+
+          await FinancialAlertService.logWarning(
+            'FinancialCronService',
+            `Dispute ${dispute.id.substring(0, 8)} auto-escalated (72h SLA breach)`,
+            { disputeId: dispute.id, clubId: dispute.club_id }
+          );
+        } catch (e) {
+          console.warn(`[FinancialCron] Dispute escalation failed for ${dispute.id}:`, e);
+        }
+      }
+
+      if (escalated > 0) {
+        console.log(`[FinancialCron] Auto-escalated ${escalated} stale disputes`);
+      }
+    } catch (err) {
+      console.error('[FinancialCron] Dispute escalation check failed:', err);
+    }
+    return escalated;
   },
 };
 

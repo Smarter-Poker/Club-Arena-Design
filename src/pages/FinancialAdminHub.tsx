@@ -128,7 +128,7 @@ export default function FinancialAdminHub() {
   });
   const [visibleCards, setVisibleCards] = useState<Set<number>>(new Set());
   const [visibleNavs, setVisibleNavs] = useState<Set<number>>(new Set());
-  const [revenueData, setRevenueData] = useState<{day: string; amount: number}[]>([]);
+  const [revenueData, setRevenueData] = useState<{ day: string; amount: number }[]>([]);
 
   useEffect(() => {
     loadStats();
@@ -256,7 +256,7 @@ export default function FinancialAdminHub() {
             grouped[label] = (grouped[label] || 0) + (r.rake_amount || 0);
           });
           // Build last 7 days in order
-          const days: {day: string; amount: number}[] = [];
+          const days: { day: string; amount: number }[] = [];
           for (let i = 6; i >= 0; i--) {
             const d = new Date(Date.now() - i * 86400000);
             const label = `${dayLabels[d.getDay()]} ${d.getDate()}`;
@@ -266,7 +266,9 @@ export default function FinancialAdminHub() {
         } else {
           setRevenueData([]);
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     } catch (err) {
       console.error('[FinancialAdminHub] Stats load failed:', err);
     }
@@ -377,6 +379,76 @@ export default function FinancialAdminHub() {
           </div>
         ))}
       </div>
+
+      {/* Revenue Sparkline */}
+      {revenueData.length > 0 &&
+        (() => {
+          const maxRevenue = Math.max(...revenueData.map((d) => d.amount), 1);
+          const totalRevenue = revenueData.reduce((s, d) => s + d.amount, 0);
+          return (
+            <div
+              style={{
+                padding: '16px',
+                background: 'rgba(255,255,255,0.03)',
+                borderRadius: '12px',
+                border: '1px solid rgba(255,255,255,0.06)',
+                marginBottom: '20px',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '10px',
+                }}
+              >
+                <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>📈 7-Day Revenue</span>
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    color: '#10b981',
+                    fontWeight: 700,
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  {totalRevenue.toLocaleString()} total
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', height: '60px' }}>
+                {revenueData.map((d) => (
+                  <div
+                    key={d.day}
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '3px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '100%',
+                        height: `${Math.max(3, (d.amount / maxRevenue) * 45)}px`,
+                        background:
+                          d.amount > 0
+                            ? 'linear-gradient(180deg, #10b981, #065f46)'
+                            : 'rgba(255,255,255,0.06)',
+                        borderRadius: '2px 2px 0 0',
+                        transition: 'height 0.5s ease',
+                      }}
+                      title={`${d.day}: ${d.amount.toLocaleString()}`}
+                    />
+                    <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)' }}>
+                      {d.day.split(' ')[0]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
       {/* Navigation Grid */}
       <h2

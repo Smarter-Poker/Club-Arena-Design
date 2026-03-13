@@ -8,6 +8,7 @@
 
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -476,7 +477,7 @@ class UnionServiceClass {
       .from('union_clubs')
       .delete()
       .eq('union_id', unionId)
-      .eq('club_id', clubId);
+      .eq('club_id', await resolveClubUUID(clubId));
 
     if (error) return false;
 
@@ -605,7 +606,7 @@ class UnionServiceClass {
         .from('union_clubs')
         .update({ club_commission_rate: splitPercent / 100 })
         .eq('union_id', unionId)
-        .eq('club_id', clubId);
+        .eq('club_id', await resolveClubUUID(clubId));
     }
 
     masterBus.emit('UNION_UPDATED', { unionId });

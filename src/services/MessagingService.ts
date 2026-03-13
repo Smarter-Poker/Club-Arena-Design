@@ -9,6 +9,7 @@ import { supabase } from '../lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { clubMessagingPermissions } from './ClubMessagingPermissions';
 import { masterBus } from '../core/MasterBus';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -291,7 +292,7 @@ class MessagingServiceClass {
       .from('conversations')
       .select('*')
       .contains('participant_ids', [userId, otherUserId])
-      .eq('club_id', clubId)
+      .eq('club_id', await resolveClubUUID(clubId))
       .eq('category', 'club')
       .maybeSingle();
 
@@ -1000,7 +1001,7 @@ class MessagingServiceClass {
     const { data: invites } = await supabase
       .from('invites')
       .select('*, profiles:inviter_id(username)')
-      .eq('club_id', clubId);
+      .eq('club_id', await resolveClubUUID(clubId));
 
     const all = invites || [];
     const totalSent = all.length;
