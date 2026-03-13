@@ -119,17 +119,21 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
   }, [clubId]);
 
   const fetchDiamondBalance = async () => {
-    const { data, error } = await supabase
-      .from('club_diamond_wallets')
-      .select('balance')
-      .eq('club_id', clubId)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from('club_diamond_wallets')
+        .select('balance')
+        .eq('club_id', clubId)
+        .maybeSingle();
 
-    if (error) {
-      console.error('Failed to load diamond balance:', error);
-      return;
+      if (error) {
+        console.error('Failed to load diamond balance:', error);
+        return;
+      }
+      if (data) setDiamondBalance(data.balance);
+    } catch (err) {
+      console.error('[FinancialDashboard] fetchDiamondBalance error:', err);
     }
-    if (data) setDiamondBalance(data.balance);
   };
 
   const fetchRevenueData = async () => {
@@ -142,7 +146,8 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
         .from('rake_records')
         .select('rake_amount, created_at')
         .eq('club_id', clubId)
-        .gte('created_at', startDate.toISOString());
+        .gte('created_at', startDate.toISOString())
+        .limit(10000);
 
       if (error) throw error;
 

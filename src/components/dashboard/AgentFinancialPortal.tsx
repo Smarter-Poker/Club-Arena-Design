@@ -46,7 +46,8 @@ export const AgentFinancialPortal: React.FC<AgentPortalProps> = ({ agentId }) =>
         .select('amount, created_at')
         .eq('agent_id', agentId)
         .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true })
+        .limit(5000);
 
       if (error) throw error;
 
@@ -74,27 +75,31 @@ export const AgentFinancialPortal: React.FC<AgentPortalProps> = ({ agentId }) =>
   };
 
   const fetchWalletData = async () => {
-    const { data, error } = await supabase
-      .from('agents')
-      .select('agent_wallet_balance, player_wallet_balance, promo_wallet_balance, credit_limit')
-      .eq('id', agentId)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from('agents')
+        .select('agent_wallet_balance, player_wallet_balance, promo_wallet_balance, credit_limit')
+        .eq('id', agentId)
+        .maybeSingle();
 
-    if (error || !data) {
-      console.error('Error loading agent wallet', error);
-      return;
+      if (error || !data) {
+        console.error('Error loading agent wallet', error);
+        return;
+      }
+
+      // Calculate Sunday Debt
+      const calculatedDebt = await CreditService.calculateDebt(agentId);
+
+      setWallet({
+        agentBal: data.agent_wallet_balance || 0,
+        playerBal: data.player_wallet_balance || 0,
+        promoBal: data.promo_wallet_balance || 0,
+        creditLimit: data.credit_limit || 0,
+        debt: calculatedDebt.debtOwed,
+      });
+    } catch (err) {
+      console.error('[AgentPortal] fetchWalletData error:', err);
     }
-
-    // Calculate Sunday Debt
-    const calculatedDebt = await CreditService.calculateDebt(agentId);
-
-    setWallet({
-      agentBal: data.agent_wallet_balance || 0,
-      playerBal: data.player_wallet_balance || 0,
-      promoBal: data.promo_wallet_balance || 0,
-      creditLimit: data.credit_limit || 0,
-      debt: calculatedDebt.debtOwed,
-    });
   };
 
   const handleTransferToPlayer = async () => {

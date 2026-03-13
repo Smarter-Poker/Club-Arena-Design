@@ -74,13 +74,15 @@ export default function PromotionCarousel({ clubId, onPromoClick }: PromotionCar
   const goTo = useCallback(
     (index: number) => {
       setActiveIndex(index);
-      // Reset timer
+      // Reset the auto-rotate timer so it doesn't advance mid-view
       if (timerRef.current) clearInterval(timerRef.current);
-      timerRef.current = setInterval(() => {
-        if (isMounted.current) {
-          setActiveIndex((prev) => (prev + 1) % promos.length);
-        }
-      }, 6000);
+      if (promos.length > 1) {
+        timerRef.current = setInterval(() => {
+          if (isMounted.current) {
+            setActiveIndex((prev) => (prev + 1) % promos.length);
+          }
+        }, 6000);
+      }
     },
     [promos.length]
   );

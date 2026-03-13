@@ -121,14 +121,19 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   const handleNotificationClick = async (notif: Notification) => {
     // Mark as read
     if (!notif.isRead) {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('id', notif.id);
-      if (!error) {
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
-        );
+      try {
+        const { error } = await supabase
+          .from('notifications')
+          .update({ read: true })
+          .eq('id', notif.id);
+        if (!error) {
+          setNotifications((prev) =>
+            prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
+          );
+          masterBus.emit('NOTIFICATION_READ', { notifId: notif.id, allRead: false });
+        }
+      } catch (err) {
+        console.error('[NotificationCenter] mark-read error:', err);
       }
     }
 
@@ -140,26 +145,35 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   };
 
   const handleMarkAllRead = async () => {
-    const { error } = await supabase
-      .from('notifications')
-      .update({ read: true })
-      .eq('user_id', userId)
-      .eq('read', false);
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('user_id', userId)
+        .eq('read', false);
 
-    if (!error) {
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      if (!error) {
+        setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+        masterBus.emit('NOTIFICATION_READ', { notifId: null, allRead: true });
+      }
+    } catch (err) {
+      console.error('[NotificationCenter] mark-all-read error:', err);
     }
   };
 
   const handleClearAll = async () => {
-    const { error } = await supabase
-      .from('notifications')
-      .delete()
-      .eq('user_id', userId)
-      .eq('read', true);
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('user_id', userId)
+        .eq('read', true);
 
-    if (!error) {
-      setNotifications((prev) => prev.filter((n) => !n.isRead));
+      if (!error) {
+        setNotifications((prev) => prev.filter((n) => !n.isRead));
+      }
+    } catch (err) {
+      console.error('[NotificationCenter] clear-all error:', err);
     }
   };
 
