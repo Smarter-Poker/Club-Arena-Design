@@ -1547,3 +1547,263 @@
   color: #6a7a8a;
   line-height: 1.4;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PHASE 4 — VISUAL IMPROVEMENTS (Depth, Atmosphere, Motion)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* P4-1: Podium Confetti Sparkle on 1st Place */
+.podium-1st::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -50%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255, 215, 0, 0.08) 42%,
+    rgba(255, 255, 255, 0.12) 48%,
+    rgba(255, 215, 0, 0.08) 54%,
+    transparent 65%
+  );
+  background-size: 300% 100%;
+  animation: confettiShimmer 4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes confettiShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  50% {
+    background-position: -50% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* P4-2: Entry Row Scan-Line Sweep on Hover */
+.leaderboard-entry {
+  position: relative;
+  overflow: hidden;
+}
+
+.leaderboard-entry::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.04), transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.leaderboard-entry:hover::before {
+  animation: entryScanSweep 0.8s ease-out;
+}
+
+@keyframes entryScanSweep {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 200%;
+  }
+}
+
+/* P4-3: Rank Number Glow Pulse for Top 3 */
+.entry-rank.top-3 {
+  animation: rankGlowPulse 3s ease-in-out infinite;
+}
+
+@keyframes rankGlowPulse {
+  0%,
+  100% {
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+  }
+  50% {
+    text-shadow:
+      0 0 16px rgba(255, 215, 0, 0.8),
+      0 0 30px rgba(255, 215, 0, 0.3);
+  }
+}
+
+/* P4-4: Podium Shimmer Overlay (silver & bronze) */
+.podium-2nd::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -50%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(
+    105deg,
+    transparent 38%,
+    rgba(192, 192, 192, 0.06) 44%,
+    rgba(255, 255, 255, 0.1) 48%,
+    rgba(192, 192, 192, 0.06) 52%,
+    transparent 62%
+  );
+  background-size: 300% 100%;
+  animation: confettiShimmer 5s ease-in-out infinite 1s;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.podium-3rd::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -50%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(
+    105deg,
+    transparent 38%,
+    rgba(205, 127, 50, 0.06) 44%,
+    rgba(255, 220, 150, 0.1) 48%,
+    rgba(205, 127, 50, 0.06) 52%,
+    transparent 62%
+  );
+  background-size: 300% 100%;
+  animation: confettiShimmer 5s ease-in-out infinite 2s;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* P4-5: Stats Cell Value Transition — numbers animate on data change */
+.entry-value {
+  transition:
+    color 0.3s ease,
+    text-shadow 0.3s ease;
+}
+
+.entry-value:hover {
+  text-shadow: 0 0 14px rgba(0, 212, 255, 0.6);
+}
+
+/* P4-6: Header Premium Bottom Gradient Accent */
+.leaderboard-header {
+  position: relative;
+}
+
+.leaderboard-header::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 10%,
+    rgba(0, 212, 255, 0.2),
+    rgba(0, 170, 255, 0.3),
+    rgba(0, 212, 255, 0.2),
+    transparent 90%
+  );
+}
+
+/* P4-7: User Rank Card Breathing Glow */
+.user-rank-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.user-rank-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  animation: rankCardShimmer 6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes rankCardShimmer {
+  0%,
+  60% {
+    left: -100%;
+  }
+  100% {
+    left: 200%;
+  }
+}
+
+/* P4-8: Rankings Divider Dynamic Glow */
+.rankings-divider span {
+  position: relative;
+}
+
+.rankings-divider span::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 1px;
+  background: rgba(0, 212, 255, 0.3);
+  border-radius: 1px;
+  box-shadow: 0 0 6px rgba(0, 212, 255, 0.2);
+  animation: dividerGlowPulse 3s ease-in-out infinite;
+}
+
+@keyframes dividerGlowPulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    width: 30px;
+  }
+  50% {
+    opacity: 1;
+    width: 40px;
+  }
+}
+
+/* P4-9: Tournament Stats Entry Hover Enhancement */
+.tournament-stats-entry {
+  position: relative;
+  overflow: hidden;
+}
+
+.tournament-stats-entry::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.03), transparent);
+  pointer-events: none;
+}
+
+.tournament-stats-entry:hover::before {
+  animation: entryScanSweep 0.8s ease-out;
+}
+
+/* P4-10: Podium Avatar Ring Glow */
+.podium-avatar.gold {
+  animation: goldAvatarGlow 3s ease-in-out infinite;
+}
+
+@keyframes goldAvatarGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 25px rgba(255, 215, 0, 0.6),
+      0 0 40px rgba(255, 215, 0, 0.2);
+  }
+}

@@ -267,7 +267,7 @@ export default function ClubCarouselPage() {
   if (loading) {
     return (
       <div className="club-carousel loading">
-        <div className="loader">Loading...</div>
+        <PageSkeleton variant="stats" />
       </div>
     );
   }

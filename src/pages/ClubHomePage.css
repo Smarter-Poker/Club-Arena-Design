@@ -987,3 +987,225 @@
   text-align: right;
   font-weight: 600;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   PHASE 4 — VISUAL IMPROVEMENTS (Depth, Atmosphere, Motion)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* P4-1: Ambient Background Particles */
+.club-home::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(1px 1px at 15% 25%, rgba(0, 212, 255, 0.15), transparent),
+    radial-gradient(1px 1px at 45% 65%, rgba(0, 255, 180, 0.1), transparent),
+    radial-gradient(1px 1px at 75% 35%, rgba(0, 180, 255, 0.12), transparent),
+    radial-gradient(1px 1px at 85% 80%, rgba(0, 212, 255, 0.08), transparent),
+    radial-gradient(1px 1px at 30% 90%, rgba(0, 255, 136, 0.1), transparent);
+  animation: ambientDrift 20s ease-in-out infinite alternate;
+}
+
+@keyframes ambientDrift {
+  0% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0.6;
+    transform: translateY(-15px);
+  }
+}
+
+/* P4-2: Level Bar Sparkle at Fill Tip */
+.club-level-progress__fill::before {
+  content: '';
+  position: absolute;
+  right: -2px;
+  top: -1px;
+  width: 6px;
+  height: calc(100% + 2px);
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 3px;
+  filter: blur(2px);
+  animation: sparkleGlow 2s ease-in-out infinite;
+  z-index: 1;
+}
+
+@keyframes sparkleGlow {
+  0%,
+  100% {
+    opacity: 0.3;
+    box-shadow: 0 0 4px rgba(0, 212, 255, 0.3);
+  }
+  50% {
+    opacity: 1;
+    box-shadow:
+      0 0 12px rgba(0, 212, 255, 0.8),
+      0 0 24px rgba(0, 212, 255, 0.4);
+  }
+}
+
+/* P4-3: Game Card Scanner Sweep on Hover */
+.table-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.04), transparent);
+  transition: none;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.table-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.table-card:hover::before {
+  animation: cardScanSweep 0.8s ease-out;
+}
+
+@keyframes cardScanSweep {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 200%;
+  }
+}
+
+/* P4-4: Bottom Nav Active Tab Glow */
+.club-home__bottom-nav .nav-item.active,
+.club-bottom-nav .nav-btn.active {
+  position: relative;
+}
+
+.club-home__bottom-nav .nav-item.active::after,
+.club-bottom-nav .nav-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 2px;
+  background: #00d4ff;
+  border-radius: 1px;
+  box-shadow:
+    0 0 8px rgba(0, 212, 255, 0.5),
+    0 0 16px rgba(0, 212, 255, 0.25);
+  animation: navGlowPulse 2s ease-in-out infinite;
+}
+
+@keyframes navGlowPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 6px rgba(0, 212, 255, 0.4);
+    width: 24px;
+  }
+  50% {
+    box-shadow:
+      0 0 14px rgba(0, 212, 255, 0.7),
+      0 0 28px rgba(0, 212, 255, 0.3);
+    width: 30px;
+  }
+}
+
+/* P4-5: Tournament Card Premium Border Glow */
+.tournament-card.live::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 9px;
+  background: linear-gradient(
+    135deg,
+    rgba(239, 68, 68, 0.3),
+    rgba(255, 100, 50, 0.2),
+    rgba(239, 68, 68, 0.3)
+  );
+  z-index: -1;
+  filter: blur(4px);
+  animation: liveCardGlow 2s ease-in-out infinite;
+}
+
+.tournament-card {
+  position: relative;
+  overflow: visible;
+}
+
+@keyframes liveCardGlow {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* P4-6: Club Header Section Depth */
+.club-home__club-section {
+  position: relative;
+}
+
+.club-home__club-section::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 1rem;
+  right: 1rem;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 10%, rgba(0, 212, 255, 0.12), transparent 90%);
+}
+
+/* P4-7: Filter Tab Slide Underline */
+.filter-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 2px;
+  background: linear-gradient(90deg, #ffb800, #ff8c00);
+  border-radius: 1px;
+  box-shadow: 0 0 8px rgba(255, 184, 0, 0.4);
+}
+
+.filter-tab {
+  position: relative;
+}
+
+/* P4-8: Create Table Card + Glow */
+.create-table-card__table {
+  position: relative;
+  overflow: hidden;
+}
+
+.create-table-card__table::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(24, 119, 242, 0.06), transparent);
+  animation: createTableShimmer 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes createTableShimmer {
+  0%,
+  60% {
+    left: -100%;
+  }
+  100% {
+    left: 200%;
+  }
+}

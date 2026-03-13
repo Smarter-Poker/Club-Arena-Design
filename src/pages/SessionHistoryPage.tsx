@@ -41,6 +41,7 @@ interface SessionRecord {
 export default function SessionHistoryPage() {
   const navigate = useNavigate();
   const { user } = useAuthUser();
+  const toast = useToast();
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState<'7d' | '30d' | 'all'>('30d');
