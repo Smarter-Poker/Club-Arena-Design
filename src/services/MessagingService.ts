@@ -882,7 +882,7 @@ class MessagingServiceClass {
 
     const { error } = await query;
     if (!error) {
-      masterBus.emit('MESSAGE_DELETED' as any, { messageId });
+      masterBus.emit('MESSAGE_DELETED', { messageId });
     }
     return !error;
   }
