@@ -729,7 +729,7 @@ export class ServerTableEngine {
 
         // Stop-Loss Bankroll logic: if they have rebought twice already (lost 3 buy-ins total), they leave
         if (currentRebuys >= 2) {
-          await markSeatAsLeft(this.tableId, horse.user_id);
+          await markSeatAsLeft(this.tableId, horse.user_id, horse.seat_number);
           this.horseRebuys.delete(horse.user_id);
           console.log(
             `[ServerTableEngine:${this.tableId}] Stop-Loss: Horse ${horse.username} lost 3 buy-ins and has been removed.`
@@ -751,7 +751,7 @@ export class ServerTableEngine {
             `[ServerTableEngine:${this.tableId}] Auto-rebuy: ${horse.username} -> ${rebuyAmount} chips (Rebuy #${currentRebuys + 1})`
           );
         } else {
-          await markSeatAsLeft(this.tableId, horse.user_id);
+          await markSeatAsLeft(this.tableId, horse.user_id, horse.seat_number);
           this.horseRebuys.delete(horse.user_id);
           console.log(
             `[ServerTableEngine:${this.tableId}] Horse ${horse.username} left — insufficient funds`
@@ -789,7 +789,7 @@ export class ServerTableEngine {
       });
 
       for (const horse of cashedOutHorses) {
-        await markSeatAsLeft(this.tableId, horse.user_id);
+        await markSeatAsLeft(this.tableId, horse.user_id, horse.seat_number);
         this.horseRebuys.delete(horse.user_id);
         console.log(
           `[ServerTableEngine:${this.tableId}] Bankroll Management: Horse ${horse.username} hit profit target (${Math.floor(horse.stack)} chips) and cashed out before posting the Big Blind.`
