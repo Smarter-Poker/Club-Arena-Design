@@ -139,7 +139,11 @@ export default function NotificationCenter() {
 
   const markAsRead = async (notifId: string) => {
     try {
-      await supabase.from('notifications').update({ read: true }).eq('id', notifId);
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', notifId);
+      if (error) throw error;
       setNotifications((prev) => prev.map((n) => (n.id === notifId ? { ...n, read: true } : n)));
       // #3: Emit NOTIFICATION_READ for instant bell badge sync
       masterBus.emit('NOTIFICATION_READ', { notifId, allRead: false });
@@ -152,11 +156,12 @@ export default function NotificationCenter() {
   const markAllRead = async () => {
     if (!user?.id) return;
     try {
-      await supabase
+      const { error } = await supabase
         .from('notifications')
         .update({ read: true })
         .eq('user_id', user.id)
         .eq('read', false);
+      if (error) throw error;
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       // #3: Emit NOTIFICATION_READ for instant bell badge sync
       masterBus.emit('NOTIFICATION_READ', { notifId: null, allRead: true });

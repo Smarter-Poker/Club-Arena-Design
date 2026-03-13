@@ -120,7 +120,7 @@ export default function AuthPage() {
           );
 
           // Update existing profile's last login
-          await supabase
+          const { error: linkError } = await supabase
             .from('profiles')
             .update({
               last_login: new Date().toISOString(),
@@ -128,6 +128,9 @@ export default function AuthPage() {
               is_online: true,
             })
             .eq('id', emailMatch.id);
+          if (linkError) {
+            console.warn('[AUTH] Profile link update failed (non-critical):', linkError.message);
+          }
 
           // Account successfully linked!
         } else {
