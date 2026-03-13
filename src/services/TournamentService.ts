@@ -382,10 +382,11 @@ class TournamentService {
     // Union guard: clubs inside a union cannot create ANY standalone tournaments.
     // All tournaments for union clubs must be created at the union level (XMTT).
     if (!config.isXmtt) {
+      const resolvedClubId = await resolveClubUUID(clubId);
       const { data: unionCheck } = await supabase
         .from('union_clubs')
         .select('union_id')
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedClubId)
         .maybeSingle();
       if (unionCheck) {
         throw new Error(

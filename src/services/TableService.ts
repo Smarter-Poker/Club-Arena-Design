@@ -140,10 +140,11 @@ class TableService {
     };
 
     // Union guard: clubs inside a union cannot create their own tables
+    const resolvedClubId = await resolveClubUUID(clubId);
     const { data: unionCheck } = await supabase
       .from('union_clubs')
       .select('union_id')
-      .eq('club_id', clubId)
+      .eq('club_id', resolvedClubId)
       .maybeSingle();
     if (unionCheck) {
       throw new Error(
