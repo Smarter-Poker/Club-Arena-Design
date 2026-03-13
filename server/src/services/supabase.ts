@@ -179,7 +179,8 @@ export async function syncTournamentChips(tableId: string, tournamentId: string)
   const { data: seats } = await supabase
     .from('table_seats')
     .select('user_id, stack')
-    .eq('table_id', tableId);
+    .eq('table_id', tableId)
+    .is('left_at', null);
 
   if (!seats || seats.length === 0) return;
 

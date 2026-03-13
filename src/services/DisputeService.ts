@@ -240,6 +240,13 @@ export const DisputeService = {
       }
     }
 
+    // Track if wallet was already adjusted (for rollback alerting)
+    const walletAdjusted =
+      resolution.adjustmentType &&
+      resolution.adjustmentType !== 'none' &&
+      resolution.adjustmentAmount &&
+      resolution.adjustmentAmount > 0;
+
     const { data, error } = await supabase
       .from('disputes')
       .update({
@@ -252,8 +259,24 @@ export const DisputeService = {
       .select()
       .maybeSingle();
 
-    if (error) throw error;
-    if (!data) throw new Error('Dispute not found or already resolved');
+    if (error || !data) {
+      // CRITICAL: If wallet was already adjusted but status update failed,
+      // money has been moved but dispute is still "open" — raise alert for ops
+      if (walletAdjusted) {
+        await FinancialAlertService.logCritical(
+          'DisputeService',
+          `Dispute ${disputeId}: wallet adjusted but status update FAILED — manual reconciliation required`,
+          {
+            disputeId,
+            adjustmentType: resolution.adjustmentType,
+            adjustmentAmount: resolution.adjustmentAmount,
+            error: error?.message || 'No data returned',
+          }
+        );
+      }
+      if (error) throw error;
+      throw new Error('Dispute not found or already resolved');
+    }
 
     // Notify the submitter
     if (data?.submitted_by) {

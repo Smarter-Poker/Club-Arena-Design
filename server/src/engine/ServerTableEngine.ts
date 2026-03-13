@@ -809,7 +809,8 @@ export class ServerTableEngine {
       .select('*', { count: 'exact', head: true })
       .eq('table_id', this.tableId)
       .is('left_at', null);
-    await updateTableStatus(this.tableId, dbPlayerCount ?? 0);
+    const finalCount = dbPlayerCount ?? 0;
+    await updateTableStatus(this.tableId, finalCount, finalCount >= 2 ? 'running' : 'waiting');
   }
 
   // ═════════════════════════════════════════════════════════════════════════════

@@ -2010,14 +2010,20 @@ export default function TablePage({
       const payload = (event as any)?.payload || event;
       if (payload.tableId !== tableId || payload.playerId !== userId) return;
       setTimeBankActive(true);
-      setTimeBankTimeRemaining(payload.timeAdded || 30);
+      setTimeBankTimeRemaining(payload.secondsGranted || payload.timeAdded || 15);
+      setTimeBanksRemaining(payload.usesRemaining ?? 0);
     });
 
-    // TIME_BANK_STOPPED / DEPLETED: Persist hero's time bank state to Supabase
+    // TIME_BANK_STOPPED / DEPLETED: Update UI + persist hero's time bank state to Supabase
     const persistTimeBankState = async (event: any) => {
       const payload = (event as any)?.payload || event;
       if (payload.tableId !== tableId || payload.playerId !== userId) return;
       setTimeBankActive(false);
+      setTimeBanksRemaining(payload.usesRemaining ?? 0);
+      // Hide time bank UI if fully depleted
+      if ((payload.usesRemaining ?? 0) <= 0 || (payload.remainingSeconds ?? 0) <= 0) {
+        setShowTimeBank(false);
+      }
       try {
         await supabase
           .from('table_seats')
@@ -2079,6 +2085,59 @@ export default function TablePage({
   // The authoritative auto-fold timer at ~3035 has sendAction() broadcast,
   // error handling, and playFold() sound. This duplicate was causing
   // performAction to fire TWICE and lacked the broadcast.
+
+  // ── Time Bank countdown interval — decrement timeBankTimeRemaining when active ──
+  useEffect(() => {
+    if (!timeBankActive) return;
+    const interval = setInterval(() => {
+      setTimeBankTimeRemaining((prev) => {
+        if (prev <= 1) return 0;
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [timeBankActive]);
+
+  // ── Show Time Bank button when hero is seated, has banks, and it's their turn ──
+  useEffect(() => {
+    if (!tableId || !userId) return;
+    const isHeroTurn =
+      tableState.currentPlayerSeat === tableState.heroSeat && tableState.isHandInProgress;
+    if (isHeroTurn && timeBankEngine.hasTimeBank(tableId, userId)) {
+      setShowTimeBank(true);
+    } else if (!timeBankActive) {
+      // Only hide when time bank is NOT currently counting down
+      setShowTimeBank(false);
+    }
+  }, [
+    tableState.currentPlayerSeat,
+    tableState.heroSeat,
+    tableState.isHandInProgress,
+    tableId,
+    userId,
+    timeBankActive,
+  ]);
+
+  // ── Reset timeBankActive when hero's turn ends ──
+  useEffect(() => {
+    const isHeroTurn =
+      tableState.currentPlayerSeat === tableState.heroSeat && tableState.isHandInProgress;
+    if (!isHeroTurn && timeBankActive) {
+      // Hero acted or hand ended — cancel time bank state
+      setTimeBankActive(false);
+      setShowTimeBank(false);
+      if (tableId && userId) {
+        timeBankEngine.playerActed(tableId, userId);
+      }
+    }
+  }, [
+    tableState.currentPlayerSeat,
+    tableState.heroSeat,
+    tableState.isHandInProgress,
+    timeBankActive,
+    tableId,
+    userId,
+  ]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // HORSE LOADING — Load seated horses from DB into React table state

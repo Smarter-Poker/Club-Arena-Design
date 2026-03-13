@@ -792,14 +792,21 @@ class MessagingServiceClass {
   }
 
   /**
-   * Cancel a scheduled message
+   * Cancel a scheduled message (only the sender can cancel)
    */
-  async cancelScheduledMessage(messageId: string): Promise<boolean> {
-    const { error } = await supabase
+  async cancelScheduledMessage(messageId: string, senderId?: string): Promise<boolean> {
+    let query = supabase
       .from('scheduled_messages')
       .update({ status: 'cancelled' })
-      .eq('id', messageId);
+      .eq('id', messageId)
+      .eq('status', 'pending'); // Only cancel pending messages
 
+    // App-level sender guard (defense-in-depth alongside RLS)
+    if (senderId) {
+      query = query.eq('sender_id', senderId);
+    }
+
+    const { error } = await query;
     return !error;
   }
 

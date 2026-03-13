@@ -221,18 +221,37 @@ class PlayerStatusServiceClass {
     // as metadata will have its own 'type' property.
     const { type: _, ...cardData } = card;
 
-    const { error } = await supabase.from('messages').insert({
-      conversation_id: conversationId,
-      sender_id: senderId,
-      content,
-      metadata: {
-        type: 'contact_card', // Explicit type for the message metadata
-        ...cardData, // All other properties from the card
-      },
-    });
+    const { data, error } = await supabase
+      .from('messages')
+      .insert({
+        conversation_id: conversationId,
+        sender_id: senderId,
+        content,
+        metadata: {
+          type: 'contact_card', // Explicit type for the message metadata
+          ...cardData, // All other properties from the card
+        },
+      })
+      .select()
+      .maybeSingle();
 
     if (error) {
       console.error('[PlayerStatus] shareProfileToConversation error:', error);
+      return;
+    }
+
+    // Update conversation timestamp so it bubbles to top of list
+    await supabase
+      .from('conversations')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', conversationId);
+
+    // Emit bus event so conversation list updates in real-time
+    if (data) {
+      masterBus.emit('MESSAGE_SENT', {
+        message: data as Record<string, unknown>,
+        conversationId,
+      });
     }
   }
 }
