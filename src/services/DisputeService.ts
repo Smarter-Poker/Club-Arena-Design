@@ -307,6 +307,7 @@ export const DisputeService = {
         updated_at: new Date().toISOString(),
       })
       .eq('id', disputeId)
+      .in('status', ['open', 'under_review'])
       .select()
       .maybeSingle();
 

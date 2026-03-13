@@ -111,58 +111,48 @@ class PlayerStatusServiceClass {
 
   /**
    * Get the "playing at" status of all online friends
-   * NOTE: Friendships are bidirectional — query BOTH directions
+   * NOTE: Friendships are bidirectional — query BOTH directions.
+   * Uses two-step query since friendships table has no FK constraints.
    */
   async getFriendsStatus(userId: string): Promise<PlayerStatus[]> {
-    // Direction 1: user_id = me → friend_id references the friend
-    const { data: dir1 } = await supabase
-      .from('friendships')
-      .select(
-        `
-        friend_id,
-        profiles!friendships_friend_id_fkey(
-          id, status_text, current_table, current_table_id, is_online, last_seen
-        )
-      `
-      )
-      .eq('user_id', userId)
-      .eq('status', 'accepted');
+    // Step 1: Get all friend IDs (bidirectional)
+    const [{ data: dir1 }, { data: dir2 }] = await Promise.all([
+      supabase
+        .from('friendships')
+        .select('friend_id')
+        .eq('user_id', userId)
+        .eq('status', 'accepted'),
+      supabase
+        .from('friendships')
+        .select('user_id')
+        .eq('friend_id', userId)
+        .eq('status', 'accepted'),
+    ]);
 
-    // Direction 2: friend_id = me → user_id references the friend
-    const { data: dir2 } = await supabase
-      .from('friendships')
-      .select(
-        `
-        user_id,
-        profiles!friendships_user_id_fkey(
-          id, status_text, current_table, current_table_id, is_online, last_seen
-        )
-      `
-      )
-      .eq('friend_id', userId)
-      .eq('status', 'accepted');
+    // Collect unique friend IDs
+    const friendIds = new Set<string>();
+    (dir1 || []).forEach((f: any) => f.friend_id && friendIds.add(f.friend_id));
+    (dir2 || []).forEach((f: any) => f.user_id && friendIds.add(f.user_id));
 
-    const allFriends = [
-      ...(dir1 || []).filter((f: any) => f.profiles?.is_online).map((f: any) => f.profiles),
-      ...(dir2 || []).filter((f: any) => f.profiles?.is_online).map((f: any) => f.profiles),
-    ];
+    if (friendIds.size === 0) return [];
 
-    // Deduplicate by userId
-    const seen = new Set<string>();
-    return allFriends
-      .filter((p: any) => {
-        if (seen.has(p.id)) return false;
-        seen.add(p.id);
-        return true;
-      })
-      .map((p: any) => ({
-        userId: p.id,
-        statusText: p.status_text || null,
-        playingAt: p.current_table || null,
-        playingAtTableId: p.current_table_id || null,
-        isOnline: true,
-        lastSeen: p.last_seen || new Date().toISOString(),
-      }));
+    // Step 2: Batch-fetch profiles for all friend IDs
+    const { data: profiles, error } = await supabase
+      .from('profiles')
+      .select('id, status_text, current_table, current_table_id, is_online, last_seen')
+      .in('id', Array.from(friendIds))
+      .eq('is_online', true);
+
+    if (error || !profiles) return [];
+
+    return profiles.map((p: any) => ({
+      userId: p.id,
+      statusText: p.status_text || null,
+      playingAt: p.current_table || null,
+      playingAtTableId: p.current_table_id || null,
+      isOnline: true,
+      lastSeen: p.last_seen || new Date().toISOString(),
+    }));
   }
 
   /**

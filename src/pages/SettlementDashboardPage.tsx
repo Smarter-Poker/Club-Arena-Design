@@ -276,6 +276,7 @@ export default function SettlementDashboardPage() {
       }
     } catch (err) {
       console.error('[Settlement] Load failed:', err);
+      if (isMounted.current) toast.error('Failed to load settlement data');
     }
     if (isMounted.current) setLoading(false);
   }, []);
