@@ -12,6 +12,7 @@
  */
 
 import { masterBus } from '../core/MasterBus';
+import { preciseActionTimer } from './PreciseActionTimer';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -311,12 +312,23 @@ class DisconnectEngineClass {
       timeoutSeconds: config.disconnectTimeoutSeconds,
     });
 
-    state.timeoutTimer = setTimeout(() => {
+    // Use preciseActionTimer for drift-immune deadline tracking
+    const durationMs = config.disconnectTimeoutSeconds * 1000;
+    preciseActionTimer.startTimer(tableId, `disconnect:${playerId}`, durationMs, () => {
       // Check if player reconnected during the countdown
       if (state.isConnected) return;
-
       this.executeAutoAction(tableId, playerId, canCheck, 'timeout');
-    }, config.disconnectTimeoutSeconds * 1000);
+    });
+
+    // Keep a reference for cleanup (fallback setTimeout as safety net)
+    state.timeoutTimer = setTimeout(() => {
+      // Safety: if preciseActionTimer callback failed, execute here
+      if (state.isConnected) return;
+      const remaining = preciseActionTimer.getRemainingMs(tableId, `disconnect:${playerId}`);
+      if (remaining <= 0) {
+        this.executeAutoAction(tableId, playerId, canCheck, 'timeout');
+      }
+    }, durationMs + 1000); // +1s grace for safety
   }
 
   private executeAutoAction(

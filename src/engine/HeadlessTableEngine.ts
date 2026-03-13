@@ -30,6 +30,7 @@ import { workerTimeout, cancelWorkerTimeout } from '../hooks/useTabKeepAlive';
 import type { SeatPlayer, GameVariant } from '../types/database.types';
 import { WalletService } from '../services/WalletService';
 import { masterBus } from '../core/MasterBus';
+import { stateVerifier } from './StateVerifier';
 import { useUserStore } from '../stores/useUserStore';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -622,6 +623,20 @@ export class HeadlessTableEngine {
             } catch (e) {
               console.error(`[HeadlessTableEngine:${this.tableId}] handCompleteCallback error:`, e);
             }
+          }
+
+          // State verification between hands
+          try {
+            stateVerifier.verify({
+              tableId: this.tableId,
+              handNumber: this.handCount,
+              players: players as any,
+              communityCards: [],
+              pot: 0,
+              stage: 'showdown',
+            });
+          } catch (verifyErr) {
+            console.warn(`[HeadlessTableEngine:${this.tableId}] StateVerifier error:`, verifyErr);
           }
 
           resolve();

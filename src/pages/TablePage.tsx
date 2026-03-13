@@ -1134,6 +1134,7 @@ export default function TablePage({
 
         // Notify system
         masterBus.emit('TABLE_LEFT', { tableId, seat: tableState.heroSeat });
+        masterBus.emit('SESSION_ENDED', { tableId, userId });
 
         // Show session summary instead of navigating immediately
         // P/L = chips returned to wallet minus total chips invested at table
