@@ -320,6 +320,11 @@ export const FinancialCronService = {
       }
 
       if (escalated > 0) {
+        masterBus.emit('FINANCIAL_ALERT', {
+          source: 'FinancialCronService',
+          message: `${escalated} dispute(s) auto-escalated (72h SLA breach)`,
+          severity: 'warning',
+        });
       }
     } catch (err: unknown) {
       console.error('[FinancialCron] Dispute escalation check failed:', err);

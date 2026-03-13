@@ -2013,6 +2013,27 @@ export default function TablePage({
       setTimeBankTimeRemaining(payload.timeAdded || 30);
     });
 
+    // TIME_BANK_STOPPED / DEPLETED: Persist hero's time bank state to Supabase
+    const persistTimeBankState = async (event: any) => {
+      const payload = (event as any)?.payload || event;
+      if (payload.tableId !== tableId || payload.playerId !== userId) return;
+      setTimeBankActive(false);
+      try {
+        await supabase
+          .from('table_seats')
+          .update({
+            time_bank_remaining: payload.remainingSeconds ?? 0,
+            time_bank_uses_remaining: payload.usesRemaining ?? 0,
+          })
+          .eq('table_id', tableId)
+          .eq('user_id', userId);
+      } catch (err) {
+        console.error('[TablePage] Failed to persist time bank state:', err);
+      }
+    };
+    const unsubTimeBankStopped = masterBus.subscribe('TIME_BANK_STOPPED', persistTimeBankState);
+    const unsubTimeBankDepleted = masterBus.subscribe('TIME_BANK_DEPLETED', persistTimeBankState);
+
     // STRADDLE_TOGGLED: Update straddle toggle UI
     const unsubStraddle = masterBus.subscribe('STRADDLE_TOGGLED', (event) => {
       const payload = (event as any)?.payload || event;
@@ -2045,6 +2066,8 @@ export default function TablePage({
       unsubPreAction();
       unsubInsurance();
       unsubTimeBank();
+      unsubTimeBankStopped();
+      unsubTimeBankDepleted();
       unsubStraddle();
       unsubRakeback();
       unsubBalance();

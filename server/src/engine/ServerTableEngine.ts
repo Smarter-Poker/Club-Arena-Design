@@ -28,6 +28,7 @@ import {
   logRakeCollection,
   logHandHistory,
   cleanupChannel,
+  supabase,
 } from '../services/supabase.js';
 import type {
   SeatPlayer,
@@ -802,8 +803,13 @@ export class ServerTableEngine {
       await processLeavePending(this.tableId, this.tableInfo?.club_id || '');
     }
 
-    // 7. Update table status
-    await updateTableStatus(this.tableId, players.filter((p) => p.stack > 0).length);
+    // 7. Authoritative recount of table players from DB (not stale in-memory array)
+    const { count: dbPlayerCount } = await (await import('../services/supabase.js')).supabase
+      .from('table_seats')
+      .select('*', { count: 'exact', head: true })
+      .eq('table_id', this.tableId)
+      .is('left_at', null);
+    await updateTableStatus(this.tableId, dbPlayerCount ?? 0);
   }
 
   // ═════════════════════════════════════════════════════════════════════════════
