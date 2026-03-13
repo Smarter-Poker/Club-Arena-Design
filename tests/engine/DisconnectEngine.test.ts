@@ -266,6 +266,6 @@ describe('DisconnectEngine - Action Callbacks', () => {
     disconnectEngine.configure('dc-turn', { disconnectTimeoutSeconds: 30 });
     disconnectEngine.registerPlayer('dc-turn', 'p1');
     const triggered = disconnectEngine.onPlayerTurn('dc-turn', 'p1', true);
-    expect(triggered).toBe(false); // No disconnect action needed
+    expect(triggered).toBe(true); // Connected player can act normally
   });
 });

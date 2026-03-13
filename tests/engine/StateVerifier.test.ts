@@ -86,15 +86,19 @@ describe('StateVerifier - Chip Conservation', () => {
     const players = makePlayers([100, 100]);
     stateVerifier.recordInitialChipTotal('table-2', players);
 
+    // Create players with reduced stacks, pot holds the difference
+    const verifyPlayers = makePlayers([90, 80]);
+
     const result = stateVerifier.verify({
       tableId: 'table-2',
       handNumber: 1,
-      players: makePlayers([90, 80]),
+      players: verifyPlayers,
       communityCards: [],
-      pot: 30,
+      pot: 30, // 100+100 - 90-80 = 30 in pot
       stage: 'preflop',
     });
 
+    // Chip conservation: stacks(170) + pot(30) = 200 = initial(200)
     expect(result.valid).toBe(true);
   });
 
