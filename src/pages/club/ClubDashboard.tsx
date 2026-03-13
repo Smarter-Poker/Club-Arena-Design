@@ -213,8 +213,13 @@ export default function ClubDashboard() {
         if (data) resolvedId = data.id;
       }
 
-      const { error } = await supabase.rpc('recompute_club_levels', { p_club_id: resolvedId });
+      const { data: resData, error } = await supabase.rpc('recompute_club_levels', {
+        p_club_id: resolvedId,
+      });
       if (error) throw error;
+      if (resData && resData.success === false) {
+        throw new Error(resData.error || 'Failed to recalculate level.');
+      }
       toast.success('Club Level Recalculated Successfully!');
       loadDashboardData();
     } catch (err: any) {

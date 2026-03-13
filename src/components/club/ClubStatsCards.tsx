@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { resolveClubUUID } from '../../utils/clubIdResolver';
+import { masterBus } from '../../core/MasterBus';
 import styles from './ClubStatsCards.module.css';
 
 interface ClubStats {
@@ -39,6 +40,28 @@ export default function ClubStatsCards({ clubId }: ClubStatsCardsProps) {
 
   useEffect(() => {
     loadStats();
+
+    // 🔴 AntiGravity: Ensure Club Stats stay fresh when users join/leave or tables start/stop
+    const channelKey = `club-stats-cards-${clubId}`;
+    masterBus.getOrCreateChannel(channelKey);
+
+    const reload = () => {
+      loadStats();
+    };
+
+    const unsubscribes = [
+      masterBus.subscribeDebounced('CLUB_JOINED', reload, 1000),
+      masterBus.subscribeDebounced('CLUB_LEFT', reload, 1000),
+      masterBus.subscribeDebounced('TABLE_CREATED', reload, 1000),
+      masterBus.subscribeDebounced('TABLE_LEFT', reload, 1000),
+      masterBus.subscribeDebounced('TABLE_SEATED', reload, 1000),
+      masterBus.subscribeDebounced('CLUB_UPDATED', reload, 1000),
+    ];
+
+    return () => {
+      unsubscribes.forEach((unsub) => unsub());
+      masterBus.removeRegisteredChannel(channelKey);
+    };
   }, [clubId]);
 
   const loadStats = async () => {
