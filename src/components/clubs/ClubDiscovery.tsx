@@ -87,9 +87,9 @@ export const ClubDiscovery: React.FC<ClubDiscoveryProps> = ({ onJoinRequest, onV
         activeTableCount: c.table_count || 0,
         minStakes: c.min_stakes || '1/2',
         maxStakes: c.max_stakes || '5/10',
-        tags: c.tags || ['Texas Holdem'],
+        tags: c.tags || (c.game_type ? [c.game_type] : ['Texas Holdem']),
         isPrivate: c.requires_approval || !c.is_public,
-        rating: c.rating || 5.0,
+        rating: c.average_rating || c.rating || 0,
       }));
 
       // Apply stake filter client-side

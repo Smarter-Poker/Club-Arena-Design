@@ -769,9 +769,9 @@ class MessagingServiceClass {
   /**
    * Get pending scheduled messages for a conversation
    */
-  async getScheduledMessages(conversationId: string): Promise<
-    Array<{ id: string; content: string; sendAt: string; status: string }>
-  > {
+  async getScheduledMessages(
+    conversationId: string
+  ): Promise<Array<{ id: string; content: string; sendAt: string; status: string }>> {
     const { data, error } = await supabase
       .from('scheduled_messages')
       .select('id, content, send_at, status')
@@ -810,13 +810,15 @@ class MessagingServiceClass {
   getNotificationPreferences(): Record<string, boolean> {
     try {
       const raw = localStorage.getItem('notif_preferences');
-      return raw ? JSON.parse(raw) : {
-        messages: true,
-        games: true,
-        social: true,
-        achievements: true,
-        system: true,
-      };
+      return raw
+        ? JSON.parse(raw)
+        : {
+            messages: true,
+            games: true,
+            social: true,
+            achievements: true,
+            system: true,
+          };
     } catch {
       return { messages: true, games: true, social: true, achievements: true, system: true };
     }
@@ -835,6 +837,330 @@ class MessagingServiceClass {
   isNotificationTypeMuted(type: string): boolean {
     const prefs = this.getNotificationPreferences();
     return prefs[type] === false;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Q3 PHASE 11: MESSAGE EDIT / DELETE
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /** Edit a message within 5-minute window */
+  async editMessage(messageId: string, senderId: string, newContent: string): Promise<boolean> {
+    const { data: msg } = await supabase
+      .from('messages')
+      .select('created_at, sender_id')
+      .eq('id', messageId)
+      .single();
+
+    if (!msg || msg.sender_id !== senderId) return false;
+
+    // 5-minute edit window
+    const elapsed = Date.now() - new Date(msg.created_at).getTime();
+    if (elapsed > 5 * 60 * 1000) return false;
+
+    const { error } = await supabase
+      .from('messages')
+      .update({
+        content: newContent,
+        edited_at: new Date().toISOString(),
+        is_edited: true,
+      })
+      .eq('id', messageId);
+
+    if (!error)
+      masterBus.emit('MESSAGE_SENT', {
+        message: { id: messageId, content: newContent, edited: true },
+        conversationId: '',
+      });
+    return !error;
+  }
+
+  /** Delete a message (sender deletes own, admin deletes any) */
+  async deleteMessage(messageId: string, userId: string, isAdmin = false): Promise<boolean> {
+    let query = supabase.from('messages').delete().eq('id', messageId);
+    if (!isAdmin) query = query.eq('sender_id', userId);
+
+    const { error } = await query;
+    return !error;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Q3 PHASE 11: READ RECEIPT GRANULARITY
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /** Mark message as seen with timestamp and reader identity */
+  async markSeenWithDetail(messageId: string, userId: string): Promise<void> {
+    await supabase.from('message_read_receipts').upsert(
+      {
+        message_id: messageId,
+        user_id: userId,
+        seen_at: new Date().toISOString(),
+      },
+      { onConflict: 'message_id,user_id' }
+    );
+  }
+
+  /** Get detailed read receipts for a message (for group conversations) */
+  async getReadReceipts(
+    messageId: string
+  ): Promise<Array<{ userId: string; username: string; seenAt: string }>> {
+    const { data } = await supabase
+      .from('message_read_receipts')
+      .select('user_id, seen_at, profiles(username)')
+      .eq('message_id', messageId);
+
+    return (data || []).map((r: any) => ({
+      userId: r.user_id,
+      username: r.profiles?.username || 'Unknown',
+      seenAt: r.seen_at,
+    }));
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Q3 PHASE 11: PINNED MESSAGES (Club Channels)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /** Pin a message in a conversation */
+  async pinMessage(messageId: string, conversationId: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('messages')
+      .update({ is_pinned: true })
+      .eq('id', messageId)
+      .eq('conversation_id', conversationId);
+    return !error;
+  }
+
+  /** Unpin a message */
+  async unpinMessage(messageId: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('messages')
+      .update({ is_pinned: false })
+      .eq('id', messageId);
+    return !error;
+  }
+
+  /** Get pinned messages for a conversation */
+  async getPinnedMessages(conversationId: string): Promise<any[]> {
+    const { data } = await supabase
+      .from('messages')
+      .select('*, profiles:sender_id(username, avatar_url)')
+      .eq('conversation_id', conversationId)
+      .eq('is_pinned', true)
+      .order('created_at', { ascending: false });
+    return data || [];
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Q3 PHASE 12: CLUB ANNOUNCEMENT CHANNEL
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /** Create a read-only announcement channel for a club */
+  async createAnnouncementChannel(clubId: string, adminId: string): Promise<string | null> {
+    const { data, error } = await supabase
+      .from('conversations')
+      .insert({
+        name: 'Announcements',
+        category: 'club_announcement',
+        club_id: clubId,
+        created_by: adminId,
+        participant_ids: [adminId],
+        is_read_only: true,
+      })
+      .select('id')
+      .single();
+    return error ? null : data.id;
+  }
+
+  /** Post an admin announcement (only club admins can post) */
+  async postAnnouncement(
+    conversationId: string,
+    adminId: string,
+    content: string
+  ): Promise<boolean> {
+    const { error } = await supabase.from('messages').insert({
+      conversation_id: conversationId,
+      sender_id: adminId,
+      content,
+      message_type: 'announcement',
+    });
+    return !error;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Q3 PHASE 12: INVITE TRACKING ANALYTICS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /** Get invite analytics for a club admin */
+  async getInviteAnalytics(clubId: string): Promise<{
+    totalSent: number;
+    totalAccepted: number;
+    pending: number;
+    conversionRate: number;
+    topInviters: Array<{ userId: string; username: string; sent: number; accepted: number }>;
+  }> {
+    const { data: invites } = await supabase
+      .from('invites')
+      .select('*, profiles:inviter_id(username)')
+      .eq('club_id', clubId);
+
+    const all = invites || [];
+    const totalSent = all.length;
+    const totalAccepted = all.filter((i: any) => i.status === 'accepted').length;
+    const pending = all.filter((i: any) => i.status === 'pending').length;
+
+    // Aggregate by inviter
+    const inviterMap = new Map<
+      string,
+      { userId: string; username: string; sent: number; accepted: number }
+    >();
+    all.forEach((inv: any) => {
+      const id = inv.inviter_id;
+      const existing = inviterMap.get(id) || {
+        userId: id,
+        username: inv.profiles?.username || 'Unknown',
+        sent: 0,
+        accepted: 0,
+      };
+      existing.sent++;
+      if (inv.status === 'accepted') existing.accepted++;
+      inviterMap.set(id, existing);
+    });
+
+    const topInviters = Array.from(inviterMap.values())
+      .sort((a, b) => b.accepted - a.accepted)
+      .slice(0, 10);
+
+    return {
+      totalSent,
+      totalAccepted,
+      pending,
+      conversionRate: totalSent > 0 ? Math.round((totalAccepted / totalSent) * 100) : 0,
+      topInviters,
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Q3 PHASE 12: RECENT PLAYERS "PLAYED WITH" COUNT
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /** Get count of shared sessions with another player */
+  async getPlayedWithCount(userId: string, otherUserId: string): Promise<number> {
+    const { count } = await supabase
+      .from('hand_histories')
+      .select('id', { count: 'exact', head: true })
+      .contains('player_ids', [userId, otherUserId]);
+    return count || 0;
+  }
+
+  /** Get "last played together" timestamp */
+  async getLastPlayedTogether(userId: string, otherUserId: string): Promise<string | null> {
+    const { data } = await supabase
+      .from('hand_histories')
+      .select('created_at')
+      .contains('player_ids', [userId, otherUserId])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return data?.created_at || null;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Q3 PHASE 13: TYPING INDICATOR OPTIMIZATION (Supabase Presence)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /** Track typing via Supabase Presence (replaces 5s heartbeat polling) */
+  async setTypingPresence(
+    conversationId: string,
+    userId: string,
+    isTyping: boolean
+  ): Promise<void> {
+    const channelKey = `typing-${conversationId}`;
+    const channel = masterBus.getOrCreateChannel(channelKey);
+
+    if (isTyping) {
+      await channel.track({ user_id: userId, typing: true, at: Date.now() });
+    } else {
+      await channel.untrack();
+    }
+  }
+
+  /** Subscribe to typing presence for a conversation */
+  subscribeToTypingPresence(
+    conversationId: string,
+    callback: (typingUserIds: string[]) => void
+  ): () => void {
+    const channelKey = `typing-${conversationId}`;
+    const channel = masterBus.getOrCreateChannel(channelKey);
+
+    channel.on('presence', { event: 'sync' }, () => {
+      const state = channel.presenceState();
+      const typingIds: string[] = [];
+      Object.values(state).forEach((presences) => {
+        (presences as any[]).forEach((p) => {
+          if (p.typing && Date.now() - p.at < 10000) {
+            typingIds.push(p.user_id);
+          }
+        });
+      });
+      callback(typingIds);
+    });
+
+    channel.subscribe();
+
+    return () => {
+      masterBus.removeRegisteredChannel(channelKey);
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Q3 PHASE 13: NOTIFICATION DIGEST MODE
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /** Get/set notification digest mode (batch non-urgent into hourly/daily) */
+  getDigestMode(): 'instant' | 'hourly' | 'daily' {
+    return (localStorage.getItem('notif_digest_mode') as any) || 'instant';
+  }
+
+  setDigestMode(mode: 'instant' | 'hourly' | 'daily'): void {
+    localStorage.setItem('notif_digest_mode', mode);
+  }
+
+  /** Get/set notification sound preferences */
+  getSoundPreferences(): Record<string, string> {
+    try {
+      const raw = localStorage.getItem('notif_sounds');
+      return raw
+        ? JSON.parse(raw)
+        : {
+            messages: 'default',
+            games: 'default',
+            social: 'default',
+            achievements: 'celebration',
+            system: 'default',
+          };
+    } catch {
+      return {
+        messages: 'default',
+        games: 'default',
+        social: 'default',
+        achievements: 'celebration',
+        system: 'default',
+      };
+    }
+  }
+
+  setSoundPreferences(prefs: Record<string, string>): void {
+    localStorage.setItem('notif_sounds', JSON.stringify(prefs));
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Q3 PHASE 13: PROFILE QR CODE GENERATION
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /** Generate a QR code data URL for a player's profile */
+  generateProfileQRData(userId: string): string {
+    const profileUrl = `${window.location.origin}/profile/${userId}`;
+    // Return a Google Charts QR API URL for now (no library needed)
+    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(profileUrl)}`;
   }
 }
 

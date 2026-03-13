@@ -18,6 +18,7 @@ import { ChipFlowService } from './ChipFlowService';
 import { FinancialAlertService } from './FinancialAlertService';
 import { masterBus } from '../core/MasterBus';
 import { retryAsync } from '../utils/retryAsync';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -73,11 +74,12 @@ class CashoutServiceClass {
     note?: string
   ): Promise<CashoutRequest | null> {
     // Rate limit: max 1 pending cashout per player per club
+    const resolvedClubId = await resolveClubUUID(clubId);
     const { data: existing } = await supabase
       .from('cashout_requests')
       .select('id')
       .eq('player_id', playerId)
-      .eq('club_id', clubId)
+      .eq('club_id', resolvedClubId)
       .eq('status', 'pending')
       .limit(1);
 
@@ -358,7 +360,7 @@ class CashoutServiceClass {
       .limit(100);
 
     if (clubId) {
-      query = query.eq('club_id', clubId);
+      query = query.eq('club_id', await resolveClubUUID(clubId));
     }
 
     const { data, error } = await query;
@@ -389,7 +391,7 @@ class CashoutServiceClass {
       .limit(100);
 
     if (clubId) {
-      query = query.eq('club_id', clubId);
+      query = query.eq('club_id', await resolveClubUUID(clubId));
     }
 
     const { data, error } = await query;
@@ -512,7 +514,7 @@ class CashoutServiceClass {
       })
       .eq('from_user_id', agentId)
       .eq('to_user_id', playerId)
-      .eq('club_id', clubId)
+      .eq('club_id', await resolveClubUUID(clubId))
       .eq('transaction_type', 'send')
       .eq('is_reversed', false)
       .gte('reversible_until', new Date().toISOString())

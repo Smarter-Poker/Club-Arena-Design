@@ -442,6 +442,34 @@ export default function PublicProfilePage() {
         </div>
       )}
 
+      {/* Q3: Achievement Showcase */}
+      {profile.achievements && profile.achievements.length > 0 && (
+        <div className="achievement-showcase">
+          <h3>🏆 Achievement Showcase</h3>
+          <div className="achievement-grid">
+            {profile.achievements.slice(0, 5).map((achievement: any, i: number) => (
+              <div key={i} className="achievement-card">
+                <span className="achievement-icon">{achievement.icon || '🏅'}</span>
+                <span className="achievement-name">{achievement.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Q3: Profile QR Code */}
+      {userId && (
+        <div className="profile-qr-section">
+          <h3>📱 Scan to Connect</h3>
+          <img
+            src={messagingService.generateProfileQRData(userId)}
+            alt="Profile QR Code"
+            className="profile-qr-image"
+          />
+          <p className="qr-hint">Scan at the table to add as friend</p>
+        </div>
+      )}
+
       {/* Block Modal */}
       {showBlockModal && (
         <PlayerBlockModal

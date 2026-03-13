@@ -21,6 +21,7 @@
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import { retryAsync } from '../utils/retryAsync';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -111,11 +112,12 @@ export const CommissionService = {
 
     // P2-17/20: Read old rate for audit trail before upserting
     let oldRate = 0;
+    const resolvedClubId = await resolveClubUUID(clubId);
     try {
       const { data: existing } = await supabase
         .from('commission_structures')
         .select('rate')
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedClubId)
         .eq('agent_id', agentId)
         .eq('target_role', targetRole)
         .maybeSingle();

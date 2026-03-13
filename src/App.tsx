@@ -101,6 +101,10 @@ const DisputeManagementPage = lazy(() => import('./pages/DisputeManagementPage')
 const FinancialHealthPage = lazy(() => import('./pages/FinancialHealthPage'));
 const FinancialAdminHub = lazy(() => import('./pages/FinancialAdminHub'));
 const RateAuditPage = lazy(() => import('./pages/RateAuditPage'));
+const AgentPortalPage = lazy(() => import('./pages/AgentPortalPage'));
+const RakebackDashboard = lazy(() => import('./pages/RakebackDashboard'));
+const CreditAdminPanel = lazy(() => import('./pages/CreditAdminPanel'));
+const SettlementHistoryPage = lazy(() => import('./pages/SettlementHistoryPage'));
 
 // Q3: Social, Messaging & Discovery Pages
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
@@ -1098,6 +1102,46 @@ export default function App() {
                     <AuthGuard>
                       <PageErrorBoundary pageName="Rate Audit">
                         <RateAuditPage />
+                      </PageErrorBoundary>
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="agent-portal"
+                  element={
+                    <AuthGuard>
+                      <PageErrorBoundary pageName="Agent Portal">
+                        <AgentPortalPage />
+                      </PageErrorBoundary>
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="rakeback"
+                  element={
+                    <AuthGuard>
+                      <PageErrorBoundary pageName="Rakeback">
+                        <RakebackDashboard />
+                      </PageErrorBoundary>
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="credit-admin"
+                  element={
+                    <AuthGuard>
+                      <PageErrorBoundary pageName="Credit Admin">
+                        <CreditAdminPanel />
+                      </PageErrorBoundary>
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="settlement-history"
+                  element={
+                    <AuthGuard>
+                      <PageErrorBoundary pageName="Settlement History">
+                        <SettlementHistoryPage />
                       </PageErrorBoundary>
                     </AuthGuard>
                   }

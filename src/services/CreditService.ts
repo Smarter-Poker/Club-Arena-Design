@@ -24,6 +24,7 @@ import { FinancialAlertService } from './FinancialAlertService';
 import { SettlementService } from './SettlementService';
 import { masterBus } from '../core/MasterBus';
 import { retryAsync } from '../utils/retryAsync';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -260,10 +261,11 @@ export const CreditService = {
    * Calculate debt for all agents in a club
    */
   async calculateClubDebt(clubId: string): Promise<DebtCalculation[]> {
+    const resolvedId = await resolveClubUUID(clubId);
     const { data: agents, error } = await supabase
       .from('agents')
       .select('id, credit_limit, agent_wallet_balance, is_prepaid')
-      .eq('club_id', clubId)
+      .eq('club_id', resolvedId)
       .eq('is_prepaid', false);
 
     if (error) throw error;

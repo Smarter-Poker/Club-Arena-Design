@@ -362,6 +362,9 @@ export default function ConversationList({
                   <span className={styles.message}>
                     {conv.lastMessageUserId === user?.id && ' '}
                     {conv.lastMessage || 'No messages yet'}
+                    {(conv as any).lastReaction && (
+                      <span className={styles.reactionPreview}> {(conv as any).lastReaction}</span>
+                    )}
                   </span>
                   <div className={styles.previewActions}>
                     <button
