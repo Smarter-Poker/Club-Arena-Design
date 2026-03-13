@@ -118,7 +118,7 @@ const NAV_ITEMS = [
     icon: '📥',
     label: 'CSV Exports',
     description: 'Financial reports & data exports',
-    path: '/transactions',
+    path: '/wallet',
     color: '#06b6d4',
     bg: 'rgba(6,182,212,0.1)',
     border: 'rgba(6,182,212,0.3)',
