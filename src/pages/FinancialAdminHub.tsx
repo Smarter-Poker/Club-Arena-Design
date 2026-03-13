@@ -199,54 +199,89 @@ export default function FinancialAdminHub() {
       // ── Batch 1: All KPI counts in parallel ──
       const [disputeResult, commResult, rakeResult, healthCountResult, alertResult] =
         await Promise.all([
-          supabase
-            .from('disputes')
-            .select('*', { count: 'exact', head: true })
-            .in('status', ['open', 'under_review', 'escalated'])
-            .then((r) => r.count || 0)
-            .catch(() => 0),
-          supabase
-            .from('commission_rate_audit')
-            .select('*', { count: 'exact', head: true })
-            .then((r) => r.count || 0)
-            .catch(() => 0),
-          supabase
-            .from('rake_rate_audit')
-            .select('*', { count: 'exact', head: true })
-            .then((r) => r.count || 0)
-            .catch(() => 0),
-          supabase
-            .from('financial_health_checks')
-            .select('*', { count: 'exact', head: true })
-            .then((r) => r.count || 0)
-            .catch(() => 0),
-          supabase
-            .from('financial_alerts')
-            .select('*', { count: 'exact', head: true })
-            .eq('resolved', false)
-            .then((r) => r.count || 0)
-            .catch(() => 0),
+          (async () => {
+            try {
+              const r = await supabase
+                .from('disputes')
+                .select('*', { count: 'exact', head: true })
+                .in('status', ['open', 'under_review', 'escalated']);
+              return r.count || 0;
+            } catch {
+              return 0;
+            }
+          })(),
+          (async () => {
+            try {
+              const r = await supabase
+                .from('commission_rate_audit')
+                .select('*', { count: 'exact', head: true });
+              return r.count || 0;
+            } catch {
+              return 0;
+            }
+          })(),
+          (async () => {
+            try {
+              const r = await supabase
+                .from('rake_rate_audit')
+                .select('*', { count: 'exact', head: true });
+              return r.count || 0;
+            } catch {
+              return 0;
+            }
+          })(),
+          (async () => {
+            try {
+              const r = await supabase
+                .from('financial_health_checks')
+                .select('*', { count: 'exact', head: true });
+              return r.count || 0;
+            } catch {
+              return 0;
+            }
+          })(),
+          (async () => {
+            try {
+              const r = await supabase
+                .from('financial_alerts')
+                .select('*', { count: 'exact', head: true })
+                .eq('resolved', false);
+              return r.count || 0;
+            } catch {
+              return 0;
+            }
+          })(),
         ]);
 
       // ── Batch 2: Last health check + revenue sparkline in parallel ──
       const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
       const [lastCheckResult, rakeDataResult] = await Promise.all([
-        supabase
-          .from('financial_health_checks')
-          .select('passed')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-          .then((r) => r.data)
-          .catch(() => null),
-        supabase
-          .from('rake_records')
-          .select('rake_amount, created_at')
-          .gte('created_at', sevenDaysAgo)
-          .order('created_at', { ascending: true })
-          .limit(5000)
-          .then((r) => r.data)
-          .catch(() => null),
+        (async () => {
+          try {
+            const r = await supabase
+              .from('financial_health_checks')
+              .select('passed')
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            return r.data;
+          } catch {
+            return null;
+          }
+        })(),
+        (async () => {
+          try {
+            const r = await supabase
+              .from('rake_records')
+              .select('rake_amount, created_at')
+              .gte('created_at', sevenDaysAgo)
+              .order('created_at', { ascending: true })
+              .limit(5000);
+            return r.data;
+          } catch {
+            return null;
+          }
+        })(),
       ]);
 
       if (!isMounted.current) return;

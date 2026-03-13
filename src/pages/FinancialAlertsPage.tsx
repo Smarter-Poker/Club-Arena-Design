@@ -10,6 +10,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import { FinancialAlertService, FinancialAlert } from '../services/FinancialAlertService';
+import { FinancialExportService } from '../services/FinancialExportService';
 import { useAuthUser } from '../hooks/useAuthUser';
 import './FinancialAlertsPage.css';
 import PageSkeleton from '../components/common/PageSkeleton';
@@ -23,7 +24,9 @@ export default function FinancialAlertsPage() {
   const [alerts, setAlerts] = useState<FinancialAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [resolving, setResolving] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'critical' | 'warning'>('all');
+  const [bulkResolving, setBulkResolving] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'critical' | 'warning' | 'info'>('all');
 
   const loadAlerts = useCallback(async (getIsMounted?: () => boolean) => {
     setLoading(true);
@@ -124,10 +127,48 @@ export default function FinancialAlertsPage() {
     setResolving(null);
   };
 
+  const handleBulkResolve = async () => {
+    const toResolve = filteredAlerts.filter((a) => a.id);
+    if (toResolve.length === 0) return;
+    setBulkResolving(true);
+    try {
+      await Promise.all(toResolve.map((a) => FinancialAlertService.resolve(a.id!)));
+      setAlerts((prev) => prev.filter((a) => !toResolve.find((r) => r.id === a.id)));
+      toast.success(`Resolved ${toResolve.length} alert(s)`);
+    } catch (err) {
+      toast.error('Bulk resolve failed');
+    }
+    setBulkResolving(false);
+  };
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const headers = ['Severity', 'Source', 'Message', 'Created At', 'Resolved'];
+      const rows = alerts.map((a) => ({
+        severity: a.severity,
+        source: a.source,
+        message: a.message,
+        created_at: a.createdAt,
+        resolved: String(a.resolved),
+      }));
+      const csv = FinancialExportService.generateCSV(headers, rows);
+      FinancialExportService.downloadCSV(
+        csv,
+        `financial_alerts_${new Date().toISOString().split('T')[0]}.csv`
+      );
+      toast.success(`Exported ${rows.length} alert(s)`);
+    } catch {
+      toast.error('Export failed');
+    }
+    setExporting(false);
+  };
+
   const filteredAlerts = filter === 'all' ? alerts : alerts.filter((a) => a.severity === filter);
 
   const criticalCount = alerts.filter((a) => a.severity === 'critical').length;
   const warningCount = alerts.filter((a) => a.severity === 'warning').length;
+  const infoCount = alerts.filter((a) => a.severity === 'info').length;
 
   if (loading && alerts.length === 0) {
     return (
@@ -150,11 +191,37 @@ export default function FinancialAlertsPage() {
         <div className="alert-stats">
           {criticalCount > 0 && <span className="stat critical">🔴 {criticalCount} critical</span>}
           {warningCount > 0 && <span className="stat warning">🟡 {warningCount} warning</span>}
+          {infoCount > 0 && (
+            <span
+              className="stat"
+              style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}
+            >
+              ℹ️ {infoCount} info
+            </span>
+          )}
           {alerts.length === 0 && <span className="stat clear">✅ All clear</span>}
         </div>
-        <button className="refresh-btn" onClick={() => loadAlerts()} title="Refresh">
-          ↻
-        </button>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+          {loading && alerts.length > 0 && (
+            <span
+              style={{ fontSize: '0.7rem', color: '#10b981', animation: 'pulse 1.5s infinite' }}
+            >
+              Syncing...
+            </span>
+          )}
+          <button className="refresh-btn" onClick={() => loadAlerts()} title="Refresh">
+            ↻
+          </button>
+          <button
+            className="refresh-btn"
+            onClick={handleExport}
+            disabled={exporting || alerts.length === 0}
+            title="Export CSV"
+            style={{ fontSize: '0.9rem' }}
+          >
+            {exporting ? '...' : '📥'}
+          </button>
+        </div>
       </div>
 
       {/* Filter Tabs */}
@@ -177,7 +244,38 @@ export default function FinancialAlertsPage() {
         >
           Warning ({warningCount})
         </button>
+        <button
+          className={`filter-tab ${filter === 'info' ? 'active' : ''}`}
+          onClick={() => setFilter('info')}
+          style={
+            filter === 'info'
+              ? {
+                  background: 'rgba(99,102,241,0.12)',
+                  color: '#818cf8',
+                  borderColor: 'rgba(99,102,241,0.25)',
+                }
+              : {}
+          }
+        >
+          Info ({infoCount})
+        </button>
       </div>
+
+      {/* Bulk Actions */}
+      {filteredAlerts.length > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+          <button
+            className="resolve-btn"
+            onClick={handleBulkResolve}
+            disabled={bulkResolving}
+            style={{ fontSize: '0.78rem' }}
+          >
+            {bulkResolving
+              ? 'Resolving...'
+              : `✓ Resolve All ${filteredAlerts.length} ${filter !== 'all' ? filter : ''} Alerts`}
+          </button>
+        </div>
+      )}
 
       {/* Alert List */}
       {filteredAlerts.length === 0 ? (

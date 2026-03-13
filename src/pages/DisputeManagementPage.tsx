@@ -41,6 +41,7 @@ export default function DisputeManagementPage() {
   const [adjustmentAmount, setAdjustmentAmount] = useState('');
   const [adjustmentType, setAdjustmentType] = useState<'credit' | 'debit' | 'none'>('none');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const isMounted = useRef(true);
 
   useEffect(() => {
@@ -150,7 +151,28 @@ export default function DisputeManagementPage() {
     }
   };
 
-  const filtered = activeTab === 'all' ? disputes : disputes.filter((d) => d.status === activeTab);
+  const filtered = (activeTab === 'all' ? disputes : disputes.filter((d) => d.status === activeTab))
+    .filter((d) => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        d.submitterName.toLowerCase().includes(q) ||
+        d.reason.toLowerCase().includes(q) ||
+        d.targetType.toLowerCase().includes(q) ||
+        d.amount.toString().includes(q)
+      );
+    });
+
+  /** Returns SLA time remaining as a human-readable string (e.g., "18h left") */
+  const getSlaRemaining = (createdAt: string): { text: string; urgent: boolean } | null => {
+    const created = new Date(createdAt).getTime();
+    const slaMs = 72 * 60 * 60 * 1000; // 72 hours
+    const remaining = created + slaMs - Date.now();
+    if (remaining <= 0) return { text: 'SLA breached', urgent: true };
+    const hours = Math.floor(remaining / (60 * 60 * 1000));
+    if (hours < 12) return { text: `${hours}h left`, urgent: true };
+    return { text: `${hours}h left`, urgent: false };
+  };
 
   const statusCounts = {
     all: disputes.length,
@@ -199,6 +221,26 @@ export default function DisputeManagementPage() {
         ))}
       </div>
 
+      {/* Search */}
+      <div style={{ marginBottom: '12px' }}>
+        <input
+          type="text"
+          placeholder="Search by name, reason, amount..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{
+            width: '100%',
+            padding: '10px 14px',
+            background: 'rgba(0,0,0,0.3)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '8px',
+            color: '#fff',
+            fontSize: '0.85rem',
+            boxSizing: 'border-box',
+          }}
+        />
+      </div>
+
       {/* Disputes List */}
       {loading ? (
         <div className="loading-state">
@@ -242,6 +284,21 @@ export default function DisputeManagementPage() {
                     hour: '2-digit',
                     minute: '2-digit',
                   })}
+                  {(dispute.status === 'open' || dispute.status === 'under_review') && (() => {
+                    const sla = getSlaRemaining(dispute.createdAt);
+                    if (!sla) return null;
+                    return (
+                      <span style={{
+                        display: 'block',
+                        fontSize: '0.65rem',
+                        marginTop: '2px',
+                        color: sla.urgent ? '#ff3b30' : 'rgba(255,255,255,0.4)',
+                        fontWeight: sla.urgent ? 700 : 400,
+                      }}>
+                        ⏱️ {sla.text}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
 

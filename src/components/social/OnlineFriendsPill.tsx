@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
+import { masterBus } from '../../core/MasterBus';
 import './OnlineFriendsPill.css';
 
 interface OnlineFriend {
@@ -36,6 +37,20 @@ export default function OnlineFriendsPill({ userId, onFriendClick }: OnlineFrien
     // Refresh every 60 seconds to keep online status current
     const interval = setInterval(loadOnlineFriends, 60_000);
     return () => clearInterval(interval);
+  }, [userId]);
+
+  // Q3: Bus listeners — instant refresh when friends come online or status changes
+  useEffect(() => {
+    const unsubProfile = masterBus.subscribe('PROFILE_UPDATED', () => {
+      if (isMounted.current) loadOnlineFriends();
+    });
+    const unsubFriend = masterBus.subscribe('FRIEND_REQUEST_ACCEPTED', () => {
+      if (isMounted.current) loadOnlineFriends();
+    });
+    return () => {
+      unsubProfile();
+      unsubFriend();
+    };
   }, [userId]);
 
   const loadOnlineFriends = async () => {

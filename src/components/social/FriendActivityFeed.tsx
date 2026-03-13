@@ -77,8 +77,29 @@ export default function FriendActivityFeed({ friends }: { friends: any[] }) {
       }
     });
 
+    // Q3: React to new friendships so the feed updates instantly
+    const unsubFriend = masterBus.subscribe('FRIEND_REQUEST_ACCEPTED', (payload: any) => {
+      if (payload?.friendId || payload?.username) {
+        setActivities((prev) =>
+          [
+            {
+              id: Date.now().toString(),
+              userId: payload.friendId || '',
+              username: payload.username || 'A player',
+              avatar: payload.avatarUrl,
+              action: 'became friends with you',
+              timestamp: new Date(),
+              icon: '🤝',
+            },
+            ...prev,
+          ].slice(0, 20)
+        );
+      }
+    });
+
     return () => {
       unsubComplete();
+      unsubFriend();
     };
   }, [friends]);
 
