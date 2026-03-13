@@ -175,10 +175,16 @@ export default function TournamentPage() {
       )
       .subscribe();
 
+    // Refresh profile/wallet when balance changes (e.g., after register/unregister/rebuy)
+    const unsubBalance = masterBus.subscribe('BALANCE_UPDATED', () => {
+      masterBus.emit('PROFILE_UPDATED', { userId: currentUser.id, updates: {} });
+    });
+
     return () => {
       masterBus.removeRegisteredChannel(channelKey);
+      unsubBalance();
     };
-  }, [clubId]);
+  }, [clubId, currentUser.id]);
 
   // ─── Sync registration state when selected tournament changes ───
   useEffect(() => {
