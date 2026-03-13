@@ -33,6 +33,7 @@ interface Message {
   reactionDetails?: Reaction[];
   threadReplyCount?: number;
   isSeen?: boolean;
+  isEdited?: boolean;
 }
 
 interface MessageBubbleProps {
@@ -185,7 +186,9 @@ export default function MessageBubble({
               >
                 <span style={{ fontSize: '1.1rem' }}>📇</span>
                 <span style={{ fontWeight: 600, marginLeft: 6 }}>
-                  {message.content.replace('📇 Shared contact card — ', '').replace(/\/profile\/.*/, 'Profile Card') || 'Contact'}
+                  {message.content
+                    .replace('📇 Shared contact card — ', '')
+                    .replace(/\/profile\/.*/, 'Profile Card') || 'Contact'}
                 </span>
                 <span style={{ display: 'block', fontSize: '0.75rem', opacity: 0.6, marginTop: 2 }}>
                   Tap to view profile
@@ -204,6 +207,9 @@ export default function MessageBubble({
         {/* Timestamp + Read Receipt */}
         <span className={styles.timestamp}>
           {formatTime(message.createdAt)}
+          {message.isEdited && (
+            <span style={{ opacity: 0.5, marginLeft: 4, fontSize: '0.65rem' }}>(edited)</span>
+          )}
           {isCurrentUser && <ReadReceipt status={message.isSeen ? 'seen' : 'delivered'} />}
         </span>
 

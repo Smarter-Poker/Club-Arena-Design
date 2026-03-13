@@ -19,7 +19,7 @@ vi.mock('../../src/core/MasterBus', () => ({
 vi.mock('../../src/engine/PreciseActionTimer', () => ({
   preciseActionTimer: {
     start: vi.fn(),
-    cancel: vi.fn(),
+    cancelTimer: vi.fn(),
     isActive: vi.fn(() => false),
   },
 }));

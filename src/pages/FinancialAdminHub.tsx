@@ -104,7 +104,7 @@ const NAV_ITEMS = [
     border: 'rgba(99,102,241,0.3)',
   },
   {
-    icon: '⚖️',
+    icon: '🏦',
     label: 'Settlements',
     description: 'Club & agent settlement management',
     path: '/wallet',

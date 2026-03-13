@@ -37,6 +37,8 @@ interface Message {
   audioUrl?: string;
   createdAt: string;
   isSeen: boolean;
+  isEdited?: boolean;
+  editedAt?: string;
   reactions: { [emoji: string]: number };
   myReaction?: string;
   reactionDetails?: Reaction[];
@@ -163,6 +165,8 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
               audioUrl: m.audio_url,
               createdAt: m.created_at,
               isSeen: m.is_seen,
+              isEdited: m.is_edited || false,
+              editedAt: m.edited_at || null,
               reactions: {},
               myReaction: undefined,
               reactionDetails: [],
@@ -451,7 +455,7 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
         setMessages((prev) =>
           prev.map((m) =>
             m.id === (ev.payload.message as any).id
-              ? { ...m, content: (ev.payload.message as any).content }
+              ? { ...m, content: (ev.payload.message as any).content, isEdited: true }
               : m
           )
         );

@@ -80,11 +80,13 @@ export default function SettlementDashboardPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    let loadedPeriodId: string | null = null;
     try {
       // Load current period
       try {
         const period = await SettlementService.getCurrentPeriod();
         if (isMounted.current && period) {
+          loadedPeriodId = period.id;
           setCurrentPeriod({
             id: period.id,
             start: period.startAt,
@@ -96,13 +98,20 @@ export default function SettlementDashboardPage() {
         /* period may not exist */
       }
 
-      // Load agent settlements for current period
+      // Load agent settlements — scoped to current period via local variable
+      // (cannot use state here; setCurrentPeriod is async and hasn't applied yet)
       try {
-        const { data: settlements } = await supabase
+        let query = supabase
           .from('agent_settlements')
-          .select('id, agent_id, net_settlement, commission_earned, status, updated_at')
+          .select('id, agent_id, period_id, net_settlement, commission_earned, status, updated_at')
           .order('net_settlement', { ascending: false })
           .limit(100);
+
+        if (loadedPeriodId) {
+          query = query.eq('period_id', loadedPeriodId);
+        }
+
+        const { data: settlements } = await query;
 
         if (isMounted.current && settlements) {
           setAgentPayouts(
