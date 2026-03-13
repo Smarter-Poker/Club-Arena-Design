@@ -11,6 +11,8 @@ import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import { useAuthUser } from '../hooks/useAuthUser';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import { useToast } from '../components/common/Toast';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 interface SettlementCycle {
   id: string;
@@ -26,6 +28,7 @@ interface SettlementCycle {
 export default function SettlementHistoryPage() {
   const navigate = useNavigate();
   const { user } = useAuthUser();
+  const toast = useToast();
 
   const [cycles, setCycles] = useState<SettlementCycle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,11 +36,15 @@ export default function SettlementHistoryPage() {
 
   useVisibilityRefresh(() => loadHistory());
 
-  useEffect(() => { loadHistory(); }, []);
+  useEffect(() => {
+    loadHistory();
+  }, []);
 
   useEffect(() => {
     const unsub = masterBus.subscribeDebounced('SETTLEMENT_COMPLETED', () => loadHistory(), 1000);
-    return () => { unsub(); };
+    return () => {
+      unsub();
+    };
   }, []);
 
   const loadHistory = async () => {
@@ -67,6 +74,7 @@ export default function SettlementHistoryPage() {
       }
     } catch (err) {
       console.error('[SettlementHistory] Load failed:', err);
+      toast.error('Failed to load settlement history');
     }
     setLoading(false);
   };
@@ -79,7 +87,20 @@ export default function SettlementHistoryPage() {
     <div style={{ padding: '16px', maxWidth: '800px', margin: '0 auto', paddingBottom: '100px' }}>
       {/* Header */}
       <div style={{ marginBottom: '24px' }}>
-        <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '0.85rem', padding: 0, marginBottom: '6px' }}>← Back</button>
+        <button
+          onClick={() => navigate(-1)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#3b82f6',
+            cursor: 'pointer',
+            fontSize: '0.85rem',
+            padding: 0,
+            marginBottom: '6px',
+          }}
+        >
+          ← Back
+        </button>
         <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700 }}>📅 Settlement History</h1>
         <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>
           Weekly settlement cycles and revenue trends
@@ -87,33 +108,157 @@ export default function SettlementHistoryPage() {
       </div>
 
       {/* Summary */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '20px' }}>
-        <div style={{ padding: '14px', background: 'rgba(245,158,11,0.08)', borderRadius: '12px', border: '1px solid rgba(245,158,11,0.2)' }}>
-          <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', fontWeight: 600 }}>Total Rake</div>
-          <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#f59e0b', fontFamily: 'monospace' }}>{totalRakeAllTime.toLocaleString()}</div>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '10px',
+          marginBottom: '20px',
+        }}
+      >
+        <div
+          style={{
+            padding: '14px',
+            background: 'rgba(245,158,11,0.08)',
+            borderRadius: '12px',
+            border: '1px solid rgba(245,158,11,0.2)',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '0.65rem',
+              color: 'rgba(255,255,255,0.4)',
+              textTransform: 'uppercase',
+              fontWeight: 600,
+            }}
+          >
+            Total Rake
+          </div>
+          <div
+            style={{
+              fontSize: '1.3rem',
+              fontWeight: 800,
+              color: '#f59e0b',
+              fontFamily: 'monospace',
+            }}
+          >
+            {totalRakeAllTime.toLocaleString()}
+          </div>
         </div>
-        <div style={{ padding: '14px', background: 'rgba(16,185,129,0.08)', borderRadius: '12px', border: '1px solid rgba(16,185,129,0.2)' }}>
-          <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', fontWeight: 600 }}>Net Settled</div>
-          <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#10b981', fontFamily: 'monospace' }}>{totalSettled.toLocaleString()}</div>
+        <div
+          style={{
+            padding: '14px',
+            background: 'rgba(16,185,129,0.08)',
+            borderRadius: '12px',
+            border: '1px solid rgba(16,185,129,0.2)',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '0.65rem',
+              color: 'rgba(255,255,255,0.4)',
+              textTransform: 'uppercase',
+              fontWeight: 600,
+            }}
+          >
+            Net Settled
+          </div>
+          <div
+            style={{
+              fontSize: '1.3rem',
+              fontWeight: 800,
+              color: '#10b981',
+              fontFamily: 'monospace',
+            }}
+          >
+            {totalSettled.toLocaleString()}
+          </div>
         </div>
-        <div style={{ padding: '14px', background: 'rgba(139,92,246,0.08)', borderRadius: '12px', border: '1px solid rgba(139,92,246,0.2)' }}>
-          <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', fontWeight: 600 }}>Cycles</div>
-          <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#8b5cf6', fontFamily: 'monospace' }}>{cycles.length}</div>
+        <div
+          style={{
+            padding: '14px',
+            background: 'rgba(139,92,246,0.08)',
+            borderRadius: '12px',
+            border: '1px solid rgba(139,92,246,0.2)',
+          }}
+        >
+          <div
+            style={{
+              fontSize: '0.65rem',
+              color: 'rgba(255,255,255,0.4)',
+              textTransform: 'uppercase',
+              fontWeight: 600,
+            }}
+          >
+            Cycles
+          </div>
+          <div
+            style={{
+              fontSize: '1.3rem',
+              fontWeight: 800,
+              color: '#8b5cf6',
+              fontFamily: 'monospace',
+            }}
+          >
+            {cycles.length}
+          </div>
         </div>
       </div>
 
       {/* Visual Timeline (bar chart) */}
       {cycles.length > 0 && (
-        <div style={{ padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)', marginBottom: '20px' }}>
-          <div style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: '12px' }}>📊 Revenue Timeline</div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '80px' }}>
-            {cycles.slice(0, 20).reverse().map((c, i) => (
-              <div key={c.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                <div style={{ width: '100%', height: `${Math.max(4, (c.totalRake / maxRake) * 60)}px`, background: c.status === 'completed' ? 'linear-gradient(180deg, #10b981, #065f46)' : 'linear-gradient(180deg, #f59e0b, #92400e)', borderRadius: '2px 2px 0 0', transition: 'height 0.5s ease' }} title={`Rake: ${c.totalRake.toLocaleString()}`} />
-              </div>
-            ))}
+        <div
+          style={{
+            padding: '16px',
+            background: 'rgba(255,255,255,0.03)',
+            borderRadius: '12px',
+            border: '1px solid rgba(255,255,255,0.06)',
+            marginBottom: '20px',
+          }}
+        >
+          <div style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: '12px' }}>
+            📊 Revenue Timeline
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.55rem', color: 'rgba(255,255,255,0.3)', marginTop: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '80px' }}>
+            {cycles
+              .slice(0, 20)
+              .reverse()
+              .map((c, i) => (
+                <div
+                  key={c.id}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '2px',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '100%',
+                      height: `${Math.max(4, (c.totalRake / maxRake) * 60)}px`,
+                      background:
+                        c.status === 'completed'
+                          ? 'linear-gradient(180deg, #10b981, #065f46)'
+                          : 'linear-gradient(180deg, #f59e0b, #92400e)',
+                      borderRadius: '2px 2px 0 0',
+                      transition: 'height 0.5s ease',
+                    }}
+                    title={`Rake: ${c.totalRake.toLocaleString()}`}
+                  />
+                </div>
+              ))}
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontSize: '0.55rem',
+              color: 'rgba(255,255,255,0.3)',
+              marginTop: '4px',
+            }}
+          >
             <span>Oldest</span>
             <span>Most Recent</span>
           </div>
@@ -121,28 +266,96 @@ export default function SettlementHistoryPage() {
       )}
 
       {/* Settlement List */}
-      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Settlement Cycles</div>
+      <div
+        style={{
+          fontSize: '0.75rem',
+          fontWeight: 600,
+          color: 'rgba(255,255,255,0.4)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+          marginBottom: '8px',
+        }}
+      >
+        Settlement Cycles
+      </div>
       {loading && cycles.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>Loading...</div>
+        <PageSkeleton variant="default" />
       ) : cycles.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>No settlement cycles yet</div>
+        <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>
+          No settlement cycles yet
+        </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {cycles.map((cycle, idx) => (
-            <div key={cycle.id} style={{ padding: '12px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)', opacity: visibleRows.has(idx) ? 1 : 0, transform: visibleRows.has(idx) ? 'translateX(0)' : 'translateX(-8px)', transition: 'all 0.3s ease' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <div
+              key={cycle.id}
+              style={{
+                padding: '12px 14px',
+                background: 'rgba(255,255,255,0.03)',
+                borderRadius: '10px',
+                border: '1px solid rgba(255,255,255,0.06)',
+                opacity: visibleRows.has(idx) ? 1 : 0,
+                transform: visibleRows.has(idx) ? 'translateX(0)' : 'translateX(-8px)',
+                transition: 'all 0.3s ease',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '6px',
+                }}
+              >
                 <div>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>Period: {cycle.periodId}</span>
-                  <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginLeft: '8px' }}>{new Date(cycle.createdAt).toLocaleDateString()}</span>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>
+                    Period: {cycle.periodId}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '0.7rem',
+                      color: 'rgba(255,255,255,0.4)',
+                      marginLeft: '8px',
+                    }}
+                  >
+                    {new Date(cycle.createdAt).toLocaleDateString()}
+                  </span>
                 </div>
-                <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700, background: cycle.status === 'completed' ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)', color: cycle.status === 'completed' ? '#10b981' : '#f59e0b' }}>
+                <span
+                  style={{
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    fontSize: '0.65rem',
+                    fontWeight: 700,
+                    background:
+                      cycle.status === 'completed'
+                        ? 'rgba(16,185,129,0.12)'
+                        : 'rgba(245,158,11,0.12)',
+                    color: cycle.status === 'completed' ? '#10b981' : '#f59e0b',
+                  }}
+                >
                   {cycle.status.toUpperCase()}
                 </span>
               </div>
               <div style={{ display: 'flex', gap: '16px', fontSize: '0.75rem' }}>
-                <span>Rake: <span style={{ color: '#f59e0b', fontWeight: 700 }}>{cycle.totalRake.toLocaleString()}</span></span>
-                {cycle.unionTax > 0 && <span>Tax: <span style={{ color: '#ef4444' }}>-{cycle.unionTax.toLocaleString()}</span></span>}
-                <span>Net: <span style={{ color: '#10b981', fontWeight: 700 }}>{cycle.netSettlement.toLocaleString()}</span></span>
+                <span>
+                  Rake:{' '}
+                  <span style={{ color: '#f59e0b', fontWeight: 700 }}>
+                    {cycle.totalRake.toLocaleString()}
+                  </span>
+                </span>
+                {cycle.unionTax > 0 && (
+                  <span>
+                    Tax:{' '}
+                    <span style={{ color: '#ef4444' }}>-{cycle.unionTax.toLocaleString()}</span>
+                  </span>
+                )}
+                <span>
+                  Net:{' '}
+                  <span style={{ color: '#10b981', fontWeight: 700 }}>
+                    {cycle.netSettlement.toLocaleString()}
+                  </span>
+                </span>
               </div>
             </div>
           ))}

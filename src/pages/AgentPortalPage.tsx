@@ -15,6 +15,7 @@ import { useToast } from '../components/common/Toast';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import { CreditService } from '../services/CreditService';
 import { WalletService } from '../services/WalletService';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 interface AgentWallet {
   agentBal: number;
@@ -170,6 +171,14 @@ export default function AgentPortalPage() {
     transform: visibleSections.has(idx) ? 'translateY(0)' : 'translateY(10px)',
     transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
   });
+
+  if (loading) {
+    return (
+      <div style={{ padding: '16px', maxWidth: '800px', margin: '0 auto' }}>
+        <PageSkeleton variant="stats" />
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '16px', maxWidth: '800px', margin: '0 auto', paddingBottom: '100px' }}>
