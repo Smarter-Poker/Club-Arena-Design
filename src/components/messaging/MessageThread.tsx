@@ -454,14 +454,14 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
     });
 
     // Q3 Phase 15: Bus listener for deleted messages
-    const unsubDeleted = masterBus.subscribe('MESSAGE_DELETED' as any, (ev: any) => {
+    const unsubDeleted = masterBus.subscribe('MESSAGE_DELETED', (ev) => {
       if (ev.payload?.messageId) {
         setMessages((prev) => prev.filter((m) => m.id !== ev.payload.messageId));
       }
     });
 
     // Q3 Phase 15: Bus listener for conversation metadata updates
-    const unsubConvUpdated = masterBus.subscribe('CONVERSATION_UPDATED' as any, (ev: any) => {
+    const unsubConvUpdated = masterBus.subscribe('CONVERSATION_UPDATED', (ev) => {
       if (ev.payload?.conversationId === conversationId) {
         loadConversation();
       }
