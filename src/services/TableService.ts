@@ -320,13 +320,17 @@ class TableService {
       // Update player count for TOURNAMENT leaves only
       // (atomic_table_cashout already updates current_players for cash game leaves)
       if (tableData?.tournament_id) {
-        const { count } = await supabase
+        const { count, error: countErr } = await supabase
           .from('table_seats')
           .select('*', { count: 'exact', head: true })
           .eq('table_id', tableId)
           .is('left_at', null);
 
-        await this.updatePlayerCount(tableId, count || 0);
+        if (!countErr) {
+          await this.updatePlayerCount(tableId, count ?? 0);
+        } else {
+          console.error('[TableService] Recount after leave failed:', countErr);
+        }
       }
 
       // Check waitlist and notify next player
@@ -513,16 +517,20 @@ class TableService {
     }
 
     // Update player count
-    const { count } = await supabase
+    const { count, error: countErr } = await supabase
       .from('table_seats')
       .select('*', { count: 'exact', head: true })
       .eq('table_id', tableId)
       .is('left_at', null);
 
-    await supabase
-      .from('tables')
-      .update({ current_players: count || 0 })
-      .eq('id', tableId);
+    if (!countErr) {
+      await supabase
+        .from('tables')
+        .update({ current_players: count ?? 0 })
+        .eq('id', tableId);
+    } else {
+      console.error('[TableService] Recount after kick failed:', countErr);
+    }
 
     return true;
   }
