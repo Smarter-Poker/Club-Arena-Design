@@ -143,7 +143,8 @@ export default function BadBeatJackpotPage() {
             .from('bbj_contributions')
             .select('amount')
             .eq('club_id', clubId)
-            .eq('player_id', user.id);
+            .eq('player_id', user.id)
+            .limit(10000);
 
           if (getIsMounted && !getIsMounted()) return;
           const total = (contribData || []).reduce((sum, c) => sum + (c.amount || 0), 0);
