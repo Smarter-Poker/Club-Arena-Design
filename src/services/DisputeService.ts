@@ -251,6 +251,7 @@ export const DisputeService = {
       .maybeSingle();
 
     if (error) throw error;
+    if (!data) throw new Error('Dispute not found or already resolved');
 
     // Notify the submitter
     if (data?.submitted_by) {
@@ -285,6 +286,7 @@ export const DisputeService = {
       .maybeSingle();
 
     if (error) throw error;
+    if (!data) throw new Error('Dispute not found');
 
     // Raise financial alert for ops team
     await FinancialAlertService.logWarning(
