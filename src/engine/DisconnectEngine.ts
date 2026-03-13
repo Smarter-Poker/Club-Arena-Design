@@ -305,6 +305,7 @@ class DisconnectEngineClass {
 
     // Clear any existing timer
     if (state.timeoutTimer) clearTimeout(state.timeoutTimer);
+    state.timeoutTimer = undefined;
 
     masterBus.emit('DISCONNECT_TIMER_STARTED', {
       tableId,
@@ -312,20 +313,15 @@ class DisconnectEngineClass {
       timeoutSeconds: config.disconnectTimeoutSeconds,
     });
 
-    // Register deadline in preciseActionTimer for drift-immune remaining-time queries
+    // Use PreciseActionTimer as the sole execution mechanism:
+    // it has a 100ms polling loop that fires onExpiry and emits ACTION_TIMER_EXPIRED
     const durationMs = config.disconnectTimeoutSeconds * 1000;
-    preciseActionTimer.startTimer(tableId, `disconnect:${playerId}`, durationMs);
-
-    // Use setTimeout for actual execution (preciseActionTimer only tracks deadlines)
-    state.timeoutTimer = setTimeout(() => {
+    preciseActionTimer.startTimer(tableId, `disconnect:${playerId}`, durationMs, () => {
       // Check if player reconnected during the countdown
       if (state.isConnected) return;
 
-      // Clean up the deadline tracker
-      preciseActionTimer.cancelTimer(tableId, `disconnect:${playerId}`);
-
       this.executeAutoAction(tableId, playerId, canCheck, 'timeout');
-    }, durationMs);
+    });
   }
 
   private executeAutoAction(

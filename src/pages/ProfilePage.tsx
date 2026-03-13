@@ -213,6 +213,38 @@ export default function ProfilePage() {
 
   const toast = useToast();
   const { user: storeUser } = useAuthUser();
+  useVisibilityRefresh(async () => {
+    const {
+      data: { user: au },
+    } = await supabase.auth.getUser();
+    if (!au) return;
+    const { data: p } = await supabase
+      .from('profiles')
+      .select('diamonds, daily_streak, is_vip, stats')
+      .eq('id', au.id)
+      .maybeSingle();
+    if (p) {
+      setDiamonds(p.diamonds || 0);
+      setDailyStreak(p.daily_streak || 0);
+      setIsVIP(p.is_vip || false);
+      if (p.stats)
+        setStats({
+          totalHands: p.stats.total_hands || 0,
+          vpip: p.stats.vpip || 0,
+          pfr: p.stats.pfr || 0,
+          threeBet: p.stats.three_bet || 0,
+          aggression: p.stats.aggression_factor || 0,
+          bbPer100: p.stats.bb_per_100 || 0,
+          biggestPot: p.stats.biggest_pot || 0,
+          totalProfit: p.stats.total_profit || 0,
+          winRate: p.stats.win_rate || 0,
+          tournamentsPlayed: p.stats.tournaments_played || 0,
+          tournamentsWon: p.stats.tournaments_won || 0,
+          bountyKOs: p.stats.bounty_kos || 0,
+          roi: p.stats.roi || 0,
+        });
+    }
+  });
   const [activeTab, setActiveTab] = useState<'stats' | 'achievements' | 'history' | 'social'>(
     'stats'
   );

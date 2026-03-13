@@ -55,6 +55,15 @@ export default function UnionDetailPage() {
   const { unionId } = useParams<{ unionId: string }>();
   const { user } = useAuthUser();
   const toast = useToast();
+  useVisibilityRefresh(async () => {
+    if (!unionId) return;
+    const [unionData, tablesData] = await Promise.all([
+      unionService.getUnion(unionId),
+      tableService.getUnionTables(unionId),
+    ]);
+    if (unionData) setUnion(unionData);
+    if (tablesData) setTables(tablesData);
+  });
 
   const [union, setUnion] = useState<Union | null>(null);
   const [clubs, setClubs] = useState<UnionClub[]>([]);
