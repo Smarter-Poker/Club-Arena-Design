@@ -315,8 +315,12 @@ export const FinancialExportService = {
 
   generateCSV(headers: string[], rows: Record<string, unknown>[]): string {
     const headerLine = headers.map((h) => `"${h}"`).join(',');
+    // Use Object.keys from the first row to establish column order,
+    // ensuring data values align with the header array.
+    const keys = rows.length > 0 ? Object.keys(rows[0]) : [];
     const dataLines = rows.map((row) => {
-      const values = Object.values(row).map((val) => {
+      const values = keys.map((key) => {
+        const val = row[key];
         if (val === null || val === undefined) return '""';
         const str = String(val).replace(/"/g, '""');
         return `"${str}"`;
