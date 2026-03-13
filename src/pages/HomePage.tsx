@@ -22,6 +22,7 @@ import {
 import type { ReactNode, ErrorInfo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 import { ClubsService } from '../services/ClubsService';
 import { useToast } from '../components/common/Toast';
 import GlobalHeader from '../components/navigation/GlobalHeader';
@@ -1214,7 +1215,7 @@ function HomePageInner() {
         const { data } = await supabase
           .from('club_members')
           .select('*, club:clubs(*)', { count: 'exact', head: false })
-          .eq('club_id', clubId)
+          .eq('club_id', await resolveClubUUID(clubId))
           .limit(5);
         // Store in sessionStorage for instant lobby render
         if (data) {

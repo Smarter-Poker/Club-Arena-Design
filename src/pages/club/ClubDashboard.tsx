@@ -23,6 +23,7 @@ import LeaderboardCard from '../../components/leaderboard/LeaderboardCard';
 import ClubBottomNav from '../../components/club/ClubBottomNav';
 import PageSkeleton from '../../components/common/PageSkeleton';
 import { useToast } from '../../components/common/Toast';
+import ClubMemberManagement from '../../components/admin/ClubMemberManagement';
 import { useVisibilityRefresh } from '../../hooks/useVisibilityRefresh';
 import { resolveClubIdFilter } from '../../utils/clubIdResolver';
 import styles from './ClubDashboard.module.css';
@@ -522,6 +523,9 @@ export default function ClubDashboard() {
                 </div>
               ))}
             </div>
+            {clubId && (userRole === 'owner' || userRole === 'admin') && (
+              <ClubMemberManagement clubId={clubId} isAdmin={true} />
+            )}
           </div>
         )}
 

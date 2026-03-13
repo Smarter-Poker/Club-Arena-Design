@@ -49,7 +49,7 @@ const REWARDS: Reward[] = [
   },
   {
     id: 'bonus-50k',
-    name: '$50K Bonus Package',
+    name: '50K Bonus Package',
     description: 'Bonus chips to use in games',
     category: 'bonus',
     pointsCost: 3500,
@@ -81,7 +81,7 @@ const REWARDS: Reward[] = [
   },
   {
     id: 'bonus-25k',
-    name: '$25K Bonus Package',
+    name: '25K Bonus Package',
     description: 'Bonus chips to use in games',
     category: 'bonus',
     pointsCost: 1500,

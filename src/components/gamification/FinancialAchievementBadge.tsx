@@ -28,8 +28,8 @@ const BADGES: Record<
   },
   thousand_club: {
     icon: '💰',
-    title: '$1,000 Club',
-    description: 'Lifetime earnings exceeded $1,000',
+    title: '1,000 Club',
+    description: 'Lifetime earnings exceeded 1,000 chips',
     color: '#ffd700',
   },
   perfect_settlement: {

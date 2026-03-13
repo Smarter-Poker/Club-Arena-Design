@@ -25,6 +25,7 @@ import AdminReports from '@/components/club/AdminReports';
 import SecurityAuditLog from '@/components/club/SecurityAuditLog';
 import { PermissionService } from '@/services/PermissionService';
 import { AgentFinancialPortal } from '@/components/dashboard/AgentFinancialPortal';
+import AgentCommissionDashboard from '@/components/agent/AgentCommissionDashboard';
 import { useToast } from '@/components/common/Toast';
 import AgentCashoutPanel from '@/components/agent/AgentCashoutPanel';
 import ClubBottomNav from '@/components/club/ClubBottomNav';
@@ -825,36 +826,7 @@ export default function AgentManagementPage() {
         {/* ═══════════════════════════════════════════════════════════════════════════════ */}
         {activeTab === 'commissions' && (
           <div className={styles.commissionsSection}>
-            <div className={styles.commissionHeader}>
-              <h2>Commission Structure</h2>
-              <p>The spread between rates determines agent profit</p>
-            </div>
-
-            <div className={styles.rateTable}>
-              <div className={styles.rateRow}>
-                <span className={styles.rateLabel}>Club → Agent Rate (Cap: 70%)</span>
-                <span className={styles.rateValue}>50%</span>
-              </div>
-              <div className={styles.rateRow}>
-                <span className={styles.rateLabel}>Agent → Sub-Agent Rate (Cap: 60%)</span>
-                <span className={styles.rateValue}>35%</span>
-              </div>
-              <div className={styles.rateRow}>
-                <span className={styles.rateLabel}>Agent → Player Rakeback (Cap: 50%)</span>
-                <span className={styles.rateValue}>30%</span>
-              </div>
-            </div>
-
-            <div className={styles.spreadExample}>
-              <h3> Example Spread Calculation</h3>
-              <p>
-                Agent receives <strong>50%</strong> commission from club. Players get{' '}
-                <strong>30%</strong> rakeback (chips).
-                <br />
-                Agent's net margin: <strong className={styles.highlight}>20%</strong> of all rake
-                generated.
-              </p>
-            </div>
+            <AgentCommissionDashboard />
           </div>
         )}
 

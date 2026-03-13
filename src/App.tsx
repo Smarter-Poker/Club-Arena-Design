@@ -105,6 +105,7 @@ const AgentPortalPage = lazy(() => import('./pages/AgentPortalPage'));
 const RakebackDashboard = lazy(() => import('./pages/RakebackDashboard'));
 const CreditAdminPanel = lazy(() => import('./pages/CreditAdminPanel'));
 const SettlementHistoryPage = lazy(() => import('./pages/SettlementHistoryPage'));
+const SessionHistoryPage = lazy(() => import('./pages/SessionHistoryPage'));
 
 // Q3: Social, Messaging & Discovery Pages
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
@@ -1142,6 +1143,16 @@ export default function App() {
                     <AuthGuard>
                       <PageErrorBoundary pageName="Settlement History">
                         <SettlementHistoryPage />
+                      </PageErrorBoundary>
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="session-history"
+                  element={
+                    <AuthGuard>
+                      <PageErrorBoundary pageName="Session History">
+                        <SessionHistoryPage />
                       </PageErrorBoundary>
                     </AuthGuard>
                   }

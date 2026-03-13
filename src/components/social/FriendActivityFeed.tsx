@@ -26,7 +26,7 @@ export default function FriendActivityFeed({ friends }: { friends: any[] }) {
           username: friends[0]?.username || 'Player',
           avatar: friends[0]?.avatar_url,
           action: 'joined table',
-          target: 'Shark Tank $1/$2',
+          target: 'Shark Tank 1/2',
           timestamp: new Date(Date.now() - 1000 * 60 * 5),
           icon: '🃏',
         },

@@ -18,7 +18,7 @@ export default function PresenceHub() {
   useEffect(() => {
     // Simulated initial online friends
     setOnlineFriends([
-      { id: 'f1', username: 'Durrrr', status: 'playing', table: 'Shark Tank $5/$10' },
+      { id: 'f1', username: 'Durrrr', status: 'playing', table: 'Shark Tank 5/10' },
       { id: 'f2', username: 'PokerPro', status: 'playing', table: 'Sunday Million' },
       { id: 'f3', username: 'DealerDan', status: 'online' },
       { id: 'f4', username: 'FishyGuy', status: 'online' },

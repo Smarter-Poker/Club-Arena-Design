@@ -92,7 +92,7 @@ class StateVerifierClass {
         tableId: context.tableId,
         handNumber: context.handNumber,
         violationCount: violations.length,
-        violations: violations.map(v => ({
+        violations: violations.map((v) => ({
           type: v.type,
           message: v.message,
           severity: v.severity,
@@ -120,11 +120,10 @@ class StateVerifierClass {
     const expectedTotal = context.initialChipTotal ?? this.chipTotals.get(context.tableId);
     if (expectedTotal === undefined) return; // No baseline to compare
 
-    const currentTotal =
-      context.players.reduce((sum, p) => sum + (p.stack ?? 0) + (p.bet ?? 0), 0);
+    const currentTotal = context.players.reduce((sum, p) => sum + (p.stack ?? 0) + (p.bet ?? 0), 0);
 
-    // Allow 1-chip rounding tolerance
-    if (Math.abs(currentTotal - expectedTotal) > 1) {
+    // Allow floating-point rounding tolerance (supports fractional chips)
+    if (Math.abs(currentTotal - expectedTotal) > 0.001) {
       violations.push({
         type: 'CHIP_CONSERVATION',
         message: `Chip total mismatch: expected ${expectedTotal}, got ${currentTotal} (diff: ${currentTotal - expectedTotal})`,
@@ -133,7 +132,7 @@ class StateVerifierClass {
           expected: expectedTotal,
           actual: currentTotal,
           diff: currentTotal - expectedTotal,
-          playerStacks: context.players.map(p => ({
+          playerStacks: context.players.map((p) => ({
             id: p.user_id,
             stack: p.stack,
             bet: p.bet,
@@ -220,12 +219,9 @@ class StateVerifierClass {
     }
   }
 
-  private verifyPlayerCounts(
-    context: VerificationContext,
-    violations: IntegrityViolation[]
-  ): void {
-    const nonFolded = context.players.filter(p => !p.is_folded).length;
-    const allIn = context.players.filter(p => p.is_all_in).length;
+  private verifyPlayerCounts(context: VerificationContext, violations: IntegrityViolation[]): void {
+    const nonFolded = context.players.filter((p) => !p.is_folded).length;
+    const allIn = context.players.filter((p) => p.is_all_in).length;
     const active = nonFolded - allIn;
 
     // At least 1 non-folded player should exist during a hand
@@ -239,10 +235,7 @@ class StateVerifierClass {
     }
   }
 
-  private verifyPotSanity(
-    context: VerificationContext,
-    violations: IntegrityViolation[]
-  ): void {
+  private verifyPotSanity(context: VerificationContext, violations: IntegrityViolation[]): void {
     if (context.pot < 0) {
       violations.push({
         type: 'NEGATIVE_POT',

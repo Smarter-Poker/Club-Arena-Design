@@ -211,7 +211,7 @@ function PlayerActionModal({
         const { error: updateError } = await supabase
           .from('club_members')
           .update({ role: newRole })
-          .eq('club_id', clubId)
+          .eq('club_id', await resolveClubUUID(clubId))
           .eq('user_id', member.user_id);
 
         if (updateError) throw updateError;

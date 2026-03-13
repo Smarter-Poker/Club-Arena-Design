@@ -21,6 +21,7 @@ import type { SidePot } from '../components/table/PotDisplay';
 import type { BoardStage } from '../components/table/CommunityCards';
 import { useTableWebSocket } from '../services/TableWebSocket';
 import { supabase, subscribeToHandState, broadcastHandState } from '../lib/supabase';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 import { masterBus } from '../core/MasterBus';
 import { playerStatusService } from '../services/PlayerStatusService';
 import { avatarService } from '../services/AvatarService';
@@ -1063,7 +1064,7 @@ export default function TablePage({
           const { data: ucRow } = await supabase
             .from('union_clubs')
             .select('union_id')
-            .eq('club_id', clubId)
+            .eq('club_id', await resolveClubUUID(clubId))
             .limit(1)
             .maybeSingle();
           if (ucRow) unionId = ucRow.union_id;
