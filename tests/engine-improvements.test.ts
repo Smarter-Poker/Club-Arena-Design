@@ -20,6 +20,12 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { secureRandomInt, secureRandom, secureShuffle } from '../src/engine/CryptoRandom';
 import { calculateRake, calculateTimedRake, type TimedRakeConfig } from '../src/engine/PokerEngine';
 import type { Card } from '../src/types/database.types';
+// Phase 11 imports
+import { tableBalancer } from '../src/engine/TableBalancer';
+import { stateVerifier } from '../src/engine/StateVerifier';
+import { disconnectEngine } from '../src/engine/DisconnectEngine';
+import { preciseActionTimer } from '../src/engine/PreciseActionTimer';
+import { engineTelemetry } from '../src/engine/EngineTelemetry';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CRYPTO RANDOM TESTS
@@ -1237,28 +1243,80 @@ describe('Evaluator LRU Cache', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('Phase 11 — TableBalancer Integration', () => {
-  const { tableBalancer } = require('../src/engine/TableBalancer');
-
   it('should detect imbalance when gap > 1', () => {
     const tables = [
-      { tableId: 't1', playerCount: 8, maxSeats: 9, players: Array.from({ length: 8 }, (_, i) => ({ userId: `p${i}`, stack: 1000, seat: i + 1 })) },
-      { tableId: 't2', playerCount: 5, maxSeats: 9, players: Array.from({ length: 5 }, (_, i) => ({ userId: `p${10 + i}`, stack: 1000, seat: i + 1 })) },
+      {
+        tableId: 't1',
+        playerCount: 8,
+        maxSeats: 9,
+        players: Array.from({ length: 8 }, (_, i) => ({
+          userId: `p${i}`,
+          stack: 1000,
+          seat: i + 1,
+        })),
+      },
+      {
+        tableId: 't2',
+        playerCount: 5,
+        maxSeats: 9,
+        players: Array.from({ length: 5 }, (_, i) => ({
+          userId: `p${10 + i}`,
+          stack: 1000,
+          seat: i + 1,
+        })),
+      },
     ];
     expect(tableBalancer.shouldRebalance(tables)).toBe(true);
   });
 
   it('should not rebalance when gap <= 1', () => {
     const tables = [
-      { tableId: 't1', playerCount: 6, maxSeats: 9, players: Array.from({ length: 6 }, (_, i) => ({ userId: `p${i}`, stack: 1000, seat: i + 1 })) },
-      { tableId: 't2', playerCount: 5, maxSeats: 9, players: Array.from({ length: 5 }, (_, i) => ({ userId: `p${10 + i}`, stack: 1000, seat: i + 1 })) },
+      {
+        tableId: 't1',
+        playerCount: 6,
+        maxSeats: 9,
+        players: Array.from({ length: 6 }, (_, i) => ({
+          userId: `p${i}`,
+          stack: 1000,
+          seat: i + 1,
+        })),
+      },
+      {
+        tableId: 't2',
+        playerCount: 5,
+        maxSeats: 9,
+        players: Array.from({ length: 5 }, (_, i) => ({
+          userId: `p${10 + i}`,
+          stack: 1000,
+          seat: i + 1,
+        })),
+      },
     ];
     expect(tableBalancer.shouldRebalance(tables)).toBe(false);
   });
 
   it('should calculate correct number of moves to balance', () => {
     const tables = [
-      { tableId: 't1', playerCount: 8, maxSeats: 9, players: Array.from({ length: 8 }, (_, i) => ({ userId: `p${i}`, stack: 1000, seat: i + 1 })) },
-      { tableId: 't2', playerCount: 4, maxSeats: 9, players: Array.from({ length: 4 }, (_, i) => ({ userId: `p${10 + i}`, stack: 1000, seat: i + 1 })) },
+      {
+        tableId: 't1',
+        playerCount: 8,
+        maxSeats: 9,
+        players: Array.from({ length: 8 }, (_, i) => ({
+          userId: `p${i}`,
+          stack: 1000,
+          seat: i + 1,
+        })),
+      },
+      {
+        tableId: 't2',
+        playerCount: 4,
+        maxSeats: 9,
+        players: Array.from({ length: 4 }, (_, i) => ({
+          userId: `p${10 + i}`,
+          stack: 1000,
+          seat: i + 1,
+        })),
+      },
     ];
     const moves = tableBalancer.calculateMoves(tables);
     // 8+4=12 players, 2 tables → ideal 6 each → 2 moves from t1 → t2
@@ -1268,19 +1326,62 @@ describe('Phase 11 — TableBalancer Integration', () => {
   });
 
   it('should identify table break when <= 3 players and capacity exists', () => {
-    const smallTable = { tableId: 't1', playerCount: 2, maxSeats: 9, players: [{ userId: 'a', stack: 1000, seat: 1 }, { userId: 'b', stack: 1000, seat: 2 }] };
+    const smallTable = {
+      tableId: 't1',
+      playerCount: 2,
+      maxSeats: 9,
+      players: [
+        { userId: 'a', stack: 1000, seat: 1 },
+        { userId: 'b', stack: 1000, seat: 2 },
+      ],
+    };
     const allTables = [
       smallTable,
-      { tableId: 't2', playerCount: 6, maxSeats: 9, players: Array.from({ length: 6 }, (_, i) => ({ userId: `p${i}`, stack: 1000, seat: i + 1 })) },
+      {
+        tableId: 't2',
+        playerCount: 6,
+        maxSeats: 9,
+        players: Array.from({ length: 6 }, (_, i) => ({
+          userId: `p${i}`,
+          stack: 1000,
+          seat: i + 1,
+        })),
+      },
     ];
     expect(tableBalancer.shouldBreakTable(smallTable, allTables)).toBe(true);
   });
 
   it('should generate break moves distributing to least-populated tables', () => {
-    const breakTable = { tableId: 't1', playerCount: 2, maxSeats: 9, players: [{ userId: 'a', stack: 1000, seat: 1 }, { userId: 'b', stack: 500, seat: 2 }] };
+    const breakTable = {
+      tableId: 't1',
+      playerCount: 2,
+      maxSeats: 9,
+      players: [
+        { userId: 'a', stack: 1000, seat: 1 },
+        { userId: 'b', stack: 500, seat: 2 },
+      ],
+    };
     const otherTables = [
-      { tableId: 't2', playerCount: 5, maxSeats: 9, players: Array.from({ length: 5 }, (_, i) => ({ userId: `p${i}`, stack: 1000, seat: i + 1 })) },
-      { tableId: 't3', playerCount: 6, maxSeats: 9, players: Array.from({ length: 6 }, (_, i) => ({ userId: `p${10 + i}`, stack: 1000, seat: i + 1 })) },
+      {
+        tableId: 't2',
+        playerCount: 5,
+        maxSeats: 9,
+        players: Array.from({ length: 5 }, (_, i) => ({
+          userId: `p${i}`,
+          stack: 1000,
+          seat: i + 1,
+        })),
+      },
+      {
+        tableId: 't3',
+        playerCount: 6,
+        maxSeats: 9,
+        players: Array.from({ length: 6 }, (_, i) => ({
+          userId: `p${10 + i}`,
+          stack: 1000,
+          seat: i + 1,
+        })),
+      },
     ];
     const moves = tableBalancer.breakTable(breakTable, otherTables);
     expect(moves.length).toBe(2);
@@ -1290,8 +1391,6 @@ describe('Phase 11 — TableBalancer Integration', () => {
 });
 
 describe('Phase 11 — StateVerifier Integration', () => {
-  const { stateVerifier } = require('../src/engine/StateVerifier');
-
   it('should detect chip conservation violation when total changes', () => {
     const tableId = 'test-verify-integration';
     const players = [
@@ -1300,7 +1399,10 @@ describe('Phase 11 — StateVerifier Integration', () => {
     ];
 
     // Record initial total: 900+100 + 800+100 = 1900
-    stateVerifier.recordInitialChipTotal(tableId, players.map((p: any) => ({ ...p, stack: p.stack + p.bet })));
+    stateVerifier.recordInitialChipTotal(
+      tableId,
+      players.map((p: any) => ({ ...p, stack: p.stack + p.bet }))
+    );
 
     // Simulate a discrepancy (extra chips appeared)
     const badPlayers = [
@@ -1351,9 +1453,6 @@ describe('Phase 11 — StateVerifier Integration', () => {
 });
 
 describe('Phase 11 — DisconnectEngine + PreciseActionTimer Integration', () => {
-  const { disconnectEngine } = require('../src/engine/DisconnectEngine');
-  const { preciseActionTimer } = require('../src/engine/PreciseActionTimer');
-
   afterEach(() => {
     disconnectEngine.dispose('test-disconnect-table');
     preciseActionTimer.clearTable('test-disconnect-table');
@@ -1390,7 +1489,7 @@ describe('Phase 11 — DisconnectEngine + PreciseActionTimer Integration', () =>
       maxConsecutiveTimeouts: 2,
     });
     disconnectEngine.registerPlayer('test-disconnect-table', 'player1');
-    
+
     // Simulate consecutive timeouts manually
     disconnectEngine.markDisconnected('test-disconnect-table', 'player1');
     const state = disconnectEngine.getState('test-disconnect-table', 'player1');
@@ -1404,8 +1503,6 @@ describe('Phase 11 — DisconnectEngine + PreciseActionTimer Integration', () =>
 });
 
 describe('Phase 11 — EngineTelemetry Integration', () => {
-  const { engineTelemetry } = require('../src/engine/EngineTelemetry');
-
   beforeEach(() => {
     engineTelemetry.dispose();
   });

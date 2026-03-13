@@ -47,12 +47,11 @@ export default function ClubStatsCards({ clubId }: ClubStatsCardsProps) {
       // Resolve integer clubId to UUID for FK queries
       const resolvedId = await resolveClubUUID(clubId);
 
-      // Get member count (all non-banned members, exclude horses)
+      // Get member count (all non-banned members)
       const { count: memberCount } = await supabase
         .from('club_members')
-        .select('user_id, profiles!inner(id)', { count: 'exact', head: true })
+        .select('user_id', { count: 'exact', head: true })
         .eq('club_id', resolvedId)
-        .eq('profiles.is_horse', false)
         .not('status', 'in', '("banned","suspended")');
 
       // Get active tables — tables use status 'running' or 'waiting', not 'active'
