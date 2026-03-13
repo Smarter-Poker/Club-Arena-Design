@@ -16,65 +16,66 @@ import { resolveClubUUID } from '../../utils/clubIdResolver';
 import styles from './ClubAnnouncementBanner.module.css';
 
 interface Announcement {
-    id: string;
-    title: string;
-    message: string;
-    type: 'info' | 'warning' | 'success' | 'urgent';
-    createdAt: string;
-    expiresAt?: string;
-    createdBy: string;
-    createdByName?: string;
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'warning' | 'success' | 'urgent';
+  createdAt: string;
+  expiresAt?: string;
+  createdBy: string;
+  createdByName?: string;
 }
 
 interface ClubAnnouncementBannerProps {
-    clubId?: string;  // Optional - will auto-detect from route if not provided
-    onDismiss?: (announcementId: string) => void;
+  clubId?: string; // Optional - will auto-detect from route if not provided
+  onDismiss?: (announcementId: string) => void;
 }
 
 export default function ClubAnnouncementBanner({
-    clubId: propClubId,
-    onDismiss
+  clubId: propClubId,
+  onDismiss,
 }: ClubAnnouncementBannerProps) {
-    // Auto-detect clubId from route params if not provided
-    const { clubId: routeClubId } = useParams<{ clubId?: string }>();
-    const clubId = propClubId || routeClubId;
+  // Auto-detect clubId from route params if not provided
+  const { clubId: routeClubId } = useParams<{ clubId?: string }>();
+  const clubId = propClubId || routeClubId;
 
-    const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [dismissed, setDismissed] = useState<Set<string>>(new Set());
-    const [loading, setLoading] = useState(true);
-    const [mounted, setMounted] = useState(false);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
-    useEffect(() => {
-        setTimeout(() => setMounted(true), 50);
-    }, []);
+  useEffect(() => {
+    setTimeout(() => setMounted(true), 50);
+  }, []);
 
-    useEffect(() => {
-        if (!clubId) {
-            setLoading(false);
-            return;
-        }
-        loadAnnouncements();
-        // Load dismissed from localStorage
-        const stored = localStorage.getItem(`dismissed_announcements_${clubId}`);
-        if (stored) {
-            try {
-                setDismissed(new Set(JSON.parse(stored)));
-            } catch {
-                localStorage.removeItem(`dismissed_announcements_${clubId}`);
-            }
-        }
-    }, [clubId]);
+  useEffect(() => {
+    if (!clubId) {
+      setLoading(false);
+      return;
+    }
+    loadAnnouncements();
+    // Load dismissed from localStorage
+    const stored = localStorage.getItem(`dismissed_announcements_${clubId}`);
+    if (stored) {
+      try {
+        setDismissed(new Set(JSON.parse(stored)));
+      } catch {
+        localStorage.removeItem(`dismissed_announcements_${clubId}`);
+      }
+    }
+  }, [clubId]);
 
-    const loadAnnouncements = async () => {
-        setLoading(true);
-        try {
-            const now = new Date().toISOString();
-            if (!clubId) return;
-            const resolvedId = await resolveClubUUID(clubId);
-            const { data, error } = await supabase
-                .from('club_announcements')
-                .select(`
+  const loadAnnouncements = async () => {
+    setLoading(true);
+    try {
+      const now = new Date().toISOString();
+      if (!clubId) return;
+      const resolvedId = await resolveClubUUID(clubId!);
+      const { data, error } = await supabase
+        .from('club_announcements')
+        .select(
+          `
                     id,
                     title,
                     message,
@@ -83,110 +84,129 @@ export default function ClubAnnouncementBanner({
                     expires_at,
                     created_by,
                     profiles(display_name)
-                `)
-                .eq('club_id', resolvedId)
-                .eq('is_active', true)
-                .or(`expires_at.is.null,expires_at.gt.${now}`)
-                .order('created_at', { ascending: false })
-                .limit(5);
+                `
+        )
+        .eq('club_id', resolvedId)
+        .eq('is_active', true)
+        .or(`expires_at.is.null,expires_at.gt.${now}`)
+        .order('created_at', { ascending: false })
+        .limit(5);
 
-            if (!error && data) {
-                const mapped: Announcement[] = data.map((a: any) => ({
-                    id: a.id,
-                    title: a.title,
-                    message: a.message,
-                    type: a.type || 'info',
-                    createdAt: a.created_at,
-                    expiresAt: a.expires_at,
-                    createdBy: a.created_by,
-                    createdByName: a.profiles?.display_name
-                }));
-                setAnnouncements(mapped);
-            }
-        } catch (error) {
-            console.error('Failed to load announcements:', error);
-        }
-        setLoading(false);
-    };
-
-    const dismiss = (id: string) => {
-        const newDismissed = new Set(dismissed).add(id);
-        setDismissed(newDismissed);
-        localStorage.setItem(`dismissed_announcements_${clubId}`, JSON.stringify([...newDismissed]));
-        onDismiss?.(id);
-    };
-
-    const getTypeIcon = (type: string): string => {
-        switch (type) {
-            case 'info': return 'i';
-            case 'warning': return '!';
-            case 'success': return '✓';
-            case 'urgent': return '!!';
-            default: return 'i';
-        }
-    };
-
-    const getTypeClass = (type: string): string => {
-        switch (type) {
-            case 'info': return styles.info;
-            case 'warning': return styles.warning;
-            case 'success': return styles.success;
-            case 'urgent': return styles.urgent;
-            default: return '';
-        }
-    };
-
-    const formatDate = (dateStr: string): string => {
-        const date = new Date(dateStr);
-        return date.toLocaleDateString(undefined, {
-            month: 'short',
-            day: 'numeric'
-        });
-    };
-
-    const visibleAnnouncements = announcements.filter(a => !dismissed.has(a.id));
-
-    if (loading || visibleAnnouncements.length === 0) {
-        return null;
+      if (!error && data) {
+        const mapped: Announcement[] = data.map((a: any) => ({
+          id: a.id,
+          title: a.title,
+          message: a.message,
+          type: a.type || 'info',
+          createdAt: a.created_at,
+          expiresAt: a.expires_at,
+          createdBy: a.created_by,
+          createdByName: a.profiles?.display_name,
+        }));
+        setAnnouncements(mapped);
+      }
+    } catch (error) {
+      console.error('Failed to load announcements:', error);
     }
+    setLoading(false);
+  };
 
-    // Safe modulo to avoid negative index (JS % can return negative)
-    const safeIndex = ((currentIndex % visibleAnnouncements.length) + visibleAnnouncements.length) % visibleAnnouncements.length;
-    const current = visibleAnnouncements[safeIndex];
+  const dismiss = (id: string) => {
+    const newDismissed = new Set(dismissed).add(id);
+    setDismissed(newDismissed);
+    localStorage.setItem(`dismissed_announcements_${clubId}`, JSON.stringify([...newDismissed]));
+    onDismiss?.(id);
+  };
 
-    return (
-        <div className={`${styles.banner} ${getTypeClass(current.type)}`} style={{ opacity: mounted ? 1 : 0, transform: mounted ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}>
-            <div className={styles.content}>
-                <span className={styles.icon}>{getTypeIcon(current.type)}</span>
-                <div className={styles.text}>
-                    <span className={styles.title}>{current.title}</span>
-                    <span className={styles.message}>{current.message}</span>
-                </div>
-            </div>
+  const getTypeIcon = (type: string): string => {
+    switch (type) {
+      case 'info':
+        return 'i';
+      case 'warning':
+        return '!';
+      case 'success':
+        return '✓';
+      case 'urgent':
+        return '!!';
+      default:
+        return 'i';
+    }
+  };
 
-            <div className={styles.meta}>
-                {current.createdByName && (
-                    <span className={styles.author}>
-                        — {current.createdByName}, {formatDate(current.createdAt)}
-                    </span>
-                )}
-            </div>
+  const getTypeClass = (type: string): string => {
+    switch (type) {
+      case 'info':
+        return styles.info;
+      case 'warning':
+        return styles.warning;
+      case 'success':
+        return styles.success;
+      case 'urgent':
+        return styles.urgent;
+      default:
+        return '';
+    }
+  };
 
-            <div className={styles.actions}>
-                {visibleAnnouncements.length > 1 && (
-                    <div className={styles.pagination}>
-                        <button onClick={() => setCurrentIndex(prev => prev - 1)}>‹</button>
-                        <span>{safeIndex + 1}/{visibleAnnouncements.length}</span>
-                        <button onClick={() => setCurrentIndex(prev => prev + 1)}>›</button>
-                    </div>
-                )}
-                <button
-                    className={styles.dismissBtn}
-                    onClick={() => dismiss(current.id)}
-                >
-                    ✕
-                </button>
-            </div>
+  const formatDate = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const visibleAnnouncements = announcements.filter((a) => !dismissed.has(a.id));
+
+  if (loading || visibleAnnouncements.length === 0) {
+    return null;
+  }
+
+  // Safe modulo to avoid negative index (JS % can return negative)
+  const safeIndex =
+    ((currentIndex % visibleAnnouncements.length) + visibleAnnouncements.length) %
+    visibleAnnouncements.length;
+  const current = visibleAnnouncements[safeIndex];
+
+  return (
+    <div
+      className={`${styles.banner} ${getTypeClass(current.type)}`}
+      style={{
+        opacity: mounted ? 1 : 0,
+        transform: mounted ? 'translateY(0)' : 'translateY(8px)',
+        transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+      }}
+    >
+      <div className={styles.content}>
+        <span className={styles.icon}>{getTypeIcon(current.type)}</span>
+        <div className={styles.text}>
+          <span className={styles.title}>{current.title}</span>
+          <span className={styles.message}>{current.message}</span>
         </div>
-    );
+      </div>
+
+      <div className={styles.meta}>
+        {current.createdByName && (
+          <span className={styles.author}>
+            — {current.createdByName}, {formatDate(current.createdAt)}
+          </span>
+        )}
+      </div>
+
+      <div className={styles.actions}>
+        {visibleAnnouncements.length > 1 && (
+          <div className={styles.pagination}>
+            <button onClick={() => setCurrentIndex((prev) => prev - 1)}>‹</button>
+            <span>
+              {safeIndex + 1}/{visibleAnnouncements.length}
+            </span>
+            <button onClick={() => setCurrentIndex((prev) => prev + 1)}>›</button>
+          </div>
+        )}
+        <button className={styles.dismissBtn} onClick={() => dismiss(current.id)}>
+          ✕
+        </button>
+      </div>
+    </div>
+  );
 }

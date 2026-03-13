@@ -66,12 +66,15 @@ export default function NotificationsPage() {
   const [showDndPicker, setShowDndPicker] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  const handleDndToggle = useCallback((minutes: number) => {
-    notificationService.setDnd(minutes);
-    setDndActive(true);
-    setShowDndPicker(false);
-    toast.success(`🌙 Do Not Disturb for ${minutes}m`);
-  }, [toast]);
+  const handleDndToggle = useCallback(
+    (minutes: number) => {
+      notificationService.setDnd(minutes);
+      setDndActive(true);
+      setShowDndPicker(false);
+      toast.success(`🌙 Do Not Disturb for ${minutes}m`);
+    },
+    [toast]
+  );
 
   const handleDndClear = useCallback(() => {
     notificationService.clearDnd();
@@ -305,10 +308,22 @@ export default function NotificationsPage() {
         </div>
         <button
           className={`dnd-toggle ${dndActive ? 'dnd-active' : ''}`}
-          onClick={() => dndActive ? handleDndClear() : setShowDndPicker(!showDndPicker)}
-          title={dndActive ? `DND active (${notificationService.getDndRemaining()}m left)` : 'Do Not Disturb'}
+          onClick={() => (dndActive ? handleDndClear() : setShowDndPicker(!showDndPicker))}
+          title={
+            dndActive
+              ? `DND active (${notificationService.getDndRemaining()}m left)`
+              : 'Do Not Disturb'
+          }
         >
           {dndActive ? '🌙 DND On' : '🔔'}
+        </button>
+        <button
+          className="dnd-toggle"
+          onClick={() => setShowSettings(true)}
+          title="Notification Settings"
+          style={{ marginLeft: 4 }}
+        >
+          ⚙️
         </button>
       </div>
 
@@ -318,11 +333,7 @@ export default function NotificationsPage() {
           <span className="dnd-label">Mute notifications for:</span>
           <div className="dnd-options">
             {[15, 30, 60, 120, 480].map((mins) => (
-              <button
-                key={mins}
-                className="dnd-option"
-                onClick={() => handleDndToggle(mins)}
-              >
+              <button key={mins} className="dnd-option" onClick={() => handleDndToggle(mins)}>
                 {mins < 60 ? `${mins}m` : `${mins / 60}h`}
               </button>
             ))}
@@ -334,7 +345,9 @@ export default function NotificationsPage() {
       {dndActive && (
         <div className="dnd-banner">
           🌙 Do Not Disturb — {notificationService.getDndRemaining()}m remaining
-          <button className="dnd-clear" onClick={handleDndClear}>Resume</button>
+          <button className="dnd-clear" onClick={handleDndClear}>
+            Resume
+          </button>
         </div>
       )}
 
@@ -417,6 +430,16 @@ export default function NotificationsPage() {
           })
         )}
       </div>
+
+      {/* Q3 Phase 10: Notification Settings Modal */}
+      {showSettings && (
+        <NotificationSettingsPanel
+          onClose={() => {
+            setShowSettings(false);
+            setDndActive(notificationService.isDndActive());
+          }}
+        />
+      )}
     </div>
   );
 }

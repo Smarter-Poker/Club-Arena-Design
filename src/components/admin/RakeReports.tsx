@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../common/Toast';
+import { resolveClubUUID } from '../../utils/clubIdResolver';
 import './RakeReports.css';
 
 interface RakeData {
@@ -50,10 +51,11 @@ export const RakeReports: React.FC<RakeReportsProps> = ({ clubId }) => {
         startDate.setFullYear(now.getFullYear() - 1);
       }
 
+      const resolvedId = await resolveClubUUID(clubId);
       const { data: records, error } = await supabase
         .from('rake_records')
         .select('rake_amount, created_at')
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .gte('created_at', startDate.toISOString());
 
       if (error) throw error;

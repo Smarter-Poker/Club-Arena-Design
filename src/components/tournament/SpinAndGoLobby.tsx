@@ -9,6 +9,7 @@ import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
 import { useAuthUser } from '../../hooks/useAuthUser';
 import { useToast } from '../common/Toast';
+import { resolveClubUUID } from '../../utils/clubIdResolver';
 import './SpinAndGoLobby.css';
 import { retryAsync } from '../../utils/retryAsync';
 
@@ -81,10 +82,11 @@ export function SpinAndGoLobby({ clubId, onRegister }: SpinAndGoLobbyProps) {
   const loadTournaments = async () => {
     setLoading(true);
     try {
+      const resolvedId = await resolveClubUUID(clubId);
       const { data, error } = await supabase
         .from('spin_tournaments')
         .select('*')
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .in('status', ['registering', 'spinning'])
         .order('buy_in', { ascending: true });
 

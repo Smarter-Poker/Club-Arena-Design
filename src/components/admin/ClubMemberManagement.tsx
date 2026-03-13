@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../common/Toast';
+import { resolveClubUUID } from '../../utils/clubIdResolver';
 import './ClubMemberManagement.css';
 
 interface ClubMemberManagementProps {
@@ -51,10 +52,11 @@ export function ClubMemberManagement({ clubId, isAdmin }: ClubMemberManagementPr
   const loadMembers = async () => {
     setLoading(true);
     try {
+      const resolvedId = await resolveClubUUID(clubId);
       const { data, error } = await supabase
         .from('club_members')
         .select('*, player:profiles!user_id(username, avatar_url)')
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .order('created_at', { ascending: true });
 
       if (!error && data) {
@@ -88,10 +90,11 @@ export function ClubMemberManagement({ clubId, isAdmin }: ClubMemberManagementPr
 
   const updateRole = async (memberId: string, newRole: string) => {
     try {
+      const resolvedId = await resolveClubUUID(clubId);
       const { error } = await supabase
         .from('club_members')
         .update({ role: newRole })
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .eq('user_id', memberId);
 
       if (error) throw error;
@@ -105,10 +108,11 @@ export function ClubMemberManagement({ clubId, isAdmin }: ClubMemberManagementPr
 
   const toggleBan = async (memberId: string, currentlyBanned: boolean) => {
     try {
+      const resolvedId = await resolveClubUUID(clubId);
       const { error } = await supabase
         .from('club_members')
         .update({ is_banned: !currentlyBanned })
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .eq('user_id', memberId);
 
       if (error) throw error;
@@ -122,10 +126,11 @@ export function ClubMemberManagement({ clubId, isAdmin }: ClubMemberManagementPr
 
   const kickMember = async (memberId: string) => {
     try {
+      const resolvedId = await resolveClubUUID(clubId);
       const { error } = await supabase
         .from('club_members')
         .delete()
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .eq('user_id', memberId);
 
       if (error) throw error;
