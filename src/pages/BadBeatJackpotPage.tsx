@@ -215,7 +215,7 @@ export default function BadBeatJackpotPage() {
         </span>
       </div>
 
-      {/* $100K Pivot Law Threshold Alert */}
+      {/* 100K Pivot Law Threshold Alert */}
       {(jackpot?.pool_amount || 0) > 50000 && (
         <div
           style={{
@@ -240,7 +240,7 @@ export default function BadBeatJackpotPage() {
                 letterSpacing: '0.5px',
               }}
             >
-              🎯 $100K Pivot Alert
+              🎯 100K Pivot Alert
             </span>
             <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>
               Pool at {(((jackpot?.pool_amount || 0) / 100000) * 100).toFixed(1)}% of pivot

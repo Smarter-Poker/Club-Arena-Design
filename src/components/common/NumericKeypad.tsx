@@ -26,7 +26,7 @@ interface NumericKeypadProps {
   maxAmount?: number;
   /** Quick-select presets shown above the keypad */
   quickAmounts?: number[];
-  /** Conversion rate: chips per dollar (e.g., 100 = 100 chips/$1) */
+  /** Conversion rate: chips per unit (e.g., 100 = 100 chips per 1 unit) */
   chipsPerDollar?: number;
   /** Whether to show the conversion display */
   showConversion?: boolean;

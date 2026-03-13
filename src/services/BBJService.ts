@@ -99,8 +99,8 @@ export interface BBJPayoutParams {
 
 /**
  * BBJ Allocation Ratios
- * STANDARD MODE: <$100k in main pool
- * PIVOT MODE: ≥$100k in main pool
+ * STANDARD MODE: <100k chips in main pool
+ * PIVOT MODE: ≥100k chips in main pool
  */
 const ALLOCATION = {
   STANDARD: {
@@ -113,7 +113,7 @@ const ALLOCATION = {
     BACKUP: 0.4, // 40%
     PROMO: 0.3, // 30%
   },
-  PIVOT_THRESHOLD: 100000, // $100,000
+  PIVOT_THRESHOLD: 100000, // 100,000 chips
 };
 
 /**

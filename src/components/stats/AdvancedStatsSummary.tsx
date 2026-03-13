@@ -115,7 +115,7 @@ const AdvancedStatsSummary: React.FC = () => {
   useEffect(() => {
     ADVANCED_STATS.forEach((_, i) => {
       setTimeout(() => {
-        setVisibleStats(prev => new Set([...prev, i]));
+        setVisibleStats((prev) => new Set([...prev, i]));
       }, i * 60);
     });
   }, []);
@@ -173,10 +173,7 @@ const AdvancedStatsSummary: React.FC = () => {
               <div className="card-top">
                 <span className="stat-title">{stat.label}</span>
                 <div className="card-actions">
-                  <span
-                    className="trend-badge"
-                    style={{ color: getTrendColor(stat.trend) }}
-                  >
+                  <span className="trend-badge" style={{ color: getTrendColor(stat.trend) }}>
                     {getTrendArrow(stat.trend)} {Math.abs(stat.trend).toFixed(1)}%
                   </span>
                 </div>
@@ -206,9 +203,12 @@ const AdvancedStatsSummary: React.FC = () => {
 
               {/* Description (shown on select) */}
               {isSelected && (
-                <div className="card-description" style={{
-                  animation: 'slideDown 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                }}>
+                <div
+                  className="card-description"
+                  style={{
+                    animation: 'slideDown 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                  }}
+                >
                   <p>{stat.description}</p>
                 </div>
               )}
@@ -225,7 +225,10 @@ const AdvancedStatsSummary: React.FC = () => {
             <span className="insight-icon">📈</span>
             <div className="insight-details">
               <span className="insight-title">Strong Hourly Rate</span>
-              <p className="insight-description">Your hourly earnings of $38.50 indicates consistent profitability across sessions.</p>
+              <p className="insight-description">
+                Your hourly earnings of 38.50 chips indicates consistent profitability across
+                sessions.
+              </p>
             </div>
           </div>
 
@@ -233,7 +236,9 @@ const AdvancedStatsSummary: React.FC = () => {
             <span className="insight-icon">🎯</span>
             <div className="insight-details">
               <span className="insight-title">Above-Average Showdown Win %</span>
-              <p className="insight-description">Your 56.8% showdown win rate is well above the population average of 50%.</p>
+              <p className="insight-description">
+                Your 56.8% showdown win rate is well above the population average of 50%.
+              </p>
             </div>
           </div>
 
@@ -241,7 +246,9 @@ const AdvancedStatsSummary: React.FC = () => {
             <span className="insight-icon">⚡</span>
             <div className="insight-details">
               <span className="insight-title">Healthy Aggression</span>
-              <p className="insight-description">An AF of 2.85 shows balanced aggression — not too tight, not too loose.</p>
+              <p className="insight-description">
+                An AF of 2.85 shows balanced aggression — not too tight, not too loose.
+              </p>
             </div>
           </div>
 
@@ -249,7 +256,10 @@ const AdvancedStatsSummary: React.FC = () => {
             <span className="insight-icon">🔍</span>
             <div className="insight-details">
               <span className="insight-title">Leak Opportunity</span>
-              <p className="insight-description">Your 3-bet % of 7.2% is slightly below optimal (8-12%). Consider widening your 3-bet range.</p>
+              <p className="insight-description">
+                Your 3-bet % of 7.2% is slightly below optimal (8-12%). Consider widening your 3-bet
+                range.
+              </p>
             </div>
           </div>
         </div>

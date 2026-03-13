@@ -29,7 +29,7 @@ const SAMPLE_SESSIONS: SessionRecord[] = [
     cashOut: 642,
     profitLoss: 142,
     gameType: '6-max NLH',
-    stakes: '$1/$2',
+    stakes: '1/2',
     hourlyRate: 30,
   },
   {
@@ -41,7 +41,7 @@ const SAMPLE_SESSIONS: SessionRecord[] = [
     cashOut: 245,
     profitLoss: -55,
     gameType: '9-max NLH',
-    stakes: '$0.5/$1',
+    stakes: '0.5/1',
     hourlyRate: -20,
   },
   {
@@ -53,7 +53,7 @@ const SAMPLE_SESSIONS: SessionRecord[] = [
     cashOut: 580,
     profitLoss: 180,
     gameType: '6-max NLH',
-    stakes: '$1/$2',
+    stakes: '1/2',
     hourlyRate: 45,
   },
   {
@@ -65,7 +65,7 @@ const SAMPLE_SESSIONS: SessionRecord[] = [
     cashOut: 672,
     profitLoss: 72,
     gameType: '9-max NLH',
-    stakes: '$1/$2',
+    stakes: '1/2',
     hourlyRate: 13.5,
   },
   {
@@ -77,7 +77,7 @@ const SAMPLE_SESSIONS: SessionRecord[] = [
     cashOut: 520,
     profitLoss: 170,
     gameType: '6-max NLH',
-    stakes: '$0.5/$1',
+    stakes: '0.5/1',
     hourlyRate: 52.3,
   },
   {
@@ -89,7 +89,7 @@ const SAMPLE_SESSIONS: SessionRecord[] = [
     cashOut: 195,
     profitLoss: -55,
     gameType: '9-max NLH',
-    stakes: '$0.5/$1',
+    stakes: '0.5/1',
     hourlyRate: -23.6,
   },
 ];
@@ -107,13 +107,13 @@ const SessionHistory: React.FC = () => {
     const filtered =
       filterGame === 'all'
         ? sorted
-        : sorted.filter(s => s.gameType.includes(filterGame === '6-max' ? '6-max' : '9-max'));
+        : sorted.filter((s) => s.gameType.includes(filterGame === '6-max' ? '6-max' : '9-max'));
     setSessions(filtered);
 
     // Stagger animation
     filtered.forEach((_, i) => {
       setTimeout(() => {
-        setVisibleSessions(prev => new Set([...prev, i]));
+        setVisibleSessions((prev) => new Set([...prev, i]));
       }, i * 60);
     });
   }, [filterGame]);
@@ -125,8 +125,9 @@ const SessionHistory: React.FC = () => {
   };
 
   const getTotalProfit = () => sessions.reduce((sum, s) => sum + s.profitLoss, 0);
-  const getWinningSessions = () => sessions.filter(s => s.profitLoss > 0).length;
-  const getWinRate = () => sessions.length > 0 ? ((getWinningSessions() / sessions.length) * 100).toFixed(1) : '0';
+  const getWinningSessions = () => sessions.filter((s) => s.profitLoss > 0).length;
+  const getWinRate = () =>
+    sessions.length > 0 ? ((getWinningSessions() / sessions.length) * 100).toFixed(1) : '0';
   const getAverageHourlyRate = () =>
     sessions.length > 0
       ? (sessions.reduce((sum, s) => sum + (s.hourlyRate || 0), 0) / sessions.length).toFixed(2)
@@ -136,9 +137,7 @@ const SessionHistory: React.FC = () => {
     <div className="session-history">
       <div className="session-header">
         <h3>Session History</h3>
-        <p className="session-subtitle">
-          Last {sessions.length} sessions tracked
-        </p>
+        <p className="session-subtitle">Last {sessions.length} sessions tracked</p>
       </div>
 
       {/* Summary Stats */}
@@ -149,7 +148,8 @@ const SessionHistory: React.FC = () => {
             className="stat-value"
             style={{ color: getTotalProfit() >= 0 ? '#10b981' : '#ef4444' }}
           >
-            {getTotalProfit() > 0 ? '+' : ''}{getTotalProfit()}
+            {getTotalProfit() > 0 ? '+' : ''}
+            {getTotalProfit()}
           </span>
         </div>
         <div className="summary-stat">
@@ -243,14 +243,20 @@ const SessionHistory: React.FC = () => {
                       className="hourly-value"
                       style={{ color: (session.hourlyRate || 0) >= 0 ? '#10b981' : '#ef4444' }}
                     >
-                      {(session.hourlyRate || 0) > 0 ? '+' : ''}{(session.hourlyRate || 0).toFixed(1)}
+                      {(session.hourlyRate || 0) > 0 ? '+' : ''}
+                      {(session.hourlyRate || 0).toFixed(1)}
                     </span>
                   </div>
                 </div>
 
                 {/* Expand indicator */}
                 <div className="session-expand">
-                  <span style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                  <span
+                    style={{
+                      transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s',
+                    }}
+                  >
                     ▼
                   </span>
                 </div>
@@ -258,9 +264,12 @@ const SessionHistory: React.FC = () => {
 
               {/* Expanded details */}
               {isExpanded && (
-                <div className="session-details" style={{
-                  animation: 'slideDown 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                }}>
+                <div
+                  className="session-details"
+                  style={{
+                    animation: 'slideDown 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                  }}
+                >
                   <div className="details-grid">
                     <div className="detail-item">
                       <span className="detail-label">Game Type</span>
@@ -277,7 +286,11 @@ const SessionHistory: React.FC = () => {
                     <div className="detail-item">
                       <span className="detail-label">Win Rate</span>
                       <span className="detail-value">
-                        {(session.handsPlayed > 0 ? ((session.profitLoss / session.handsPlayed) * 100).toFixed(2) : 0).toString()}%
+                        {(session.handsPlayed > 0
+                          ? ((session.profitLoss / session.handsPlayed) * 100).toFixed(2)
+                          : 0
+                        ).toString()}
+                        %
                       </span>
                     </div>
                   </div>

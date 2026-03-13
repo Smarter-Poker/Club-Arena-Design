@@ -61,13 +61,13 @@ const BankrollTracker: React.FC = () => {
 
     if (period === '7d') {
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      filtered = BANKROLL_DATA.filter(d => d.dateObj >= sevenDaysAgo);
+      filtered = BANKROLL_DATA.filter((d) => d.dateObj >= sevenDaysAgo);
     } else if (period === '30d') {
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      filtered = BANKROLL_DATA.filter(d => d.dateObj >= thirtyDaysAgo);
+      filtered = BANKROLL_DATA.filter((d) => d.dateObj >= thirtyDaysAgo);
     } else if (period === '90d') {
       const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-      filtered = BANKROLL_DATA.filter(d => d.dateObj >= ninetyDaysAgo);
+      filtered = BANKROLL_DATA.filter((d) => d.dateObj >= ninetyDaysAgo);
     }
 
     setChartData(filtered);
@@ -88,19 +88,24 @@ const BankrollTracker: React.FC = () => {
   // Calculate statistics
   const current = chartData[chartData.length - 1]?.bankroll || 0;
   const previous = chartData[0]?.bankroll || current;
-  const peak = Math.max(...BANKROLL_DATA.map(d => d.bankroll));
-  const trough = Math.min(...BANKROLL_DATA.map(d => d.bankroll));
+  const peak = Math.max(...BANKROLL_DATA.map((d) => d.bankroll));
+  const trough = Math.min(...BANKROLL_DATA.map((d) => d.bankroll));
   const totalProfit = current - BANKROLL_DATA[0].bankroll;
-  const currentStakes = '$1/$2'; // Assuming current stakes
-  const buyInCount = (current / 100); // At $1/$2, each BB is $2
+  const currentStakes = '1/2'; // Assuming current stakes
+  const buyInCount = current / 100; // At 1/2, each BB is 2 chips
 
   const getPeriodLabel = () => {
     switch (period) {
-      case '7d': return 'Last 7 Days';
-      case '30d': return 'Last 30 Days';
-      case '90d': return 'Last 90 Days';
-      case 'all': return 'All Time';
-      default: return 'Last 30 Days';
+      case '7d':
+        return 'Last 7 Days';
+      case '30d':
+        return 'Last 30 Days';
+      case '90d':
+        return 'Last 90 Days';
+      case 'all':
+        return 'All Time';
+      default:
+        return 'Last 30 Days';
     }
   };
 
@@ -136,12 +141,8 @@ const BankrollTracker: React.FC = () => {
 
       {/* Period selector */}
       <div className="bankroll-periods">
-        {(['7d', '30d', '90d', 'all'] as PeriodFilter[]).map(p => (
-          <button
-            key={p}
-            className={period === p ? 'active' : ''}
-            onClick={() => setPeriod(p)}
-          >
+        {(['7d', '30d', '90d', 'all'] as PeriodFilter[]).map((p) => (
+          <button key={p} className={period === p ? 'active' : ''} onClick={() => setPeriod(p)}>
             {p === '7d' ? '7D' : p === '30d' ? '30D' : p === '90d' ? '90D' : 'All'}
           </button>
         ))}
@@ -165,13 +166,16 @@ const BankrollTracker: React.FC = () => {
             <span className="change-amount">${(current - previous).toLocaleString()}</span>
           </div>
           <span className="change-pct">
-            {((((current - previous) / previous) * 100).toFixed(1))}%
+            {(((current - previous) / previous) * 100).toFixed(1)}%
           </span>
         </div>
 
         <div className="bankroll-health">
           <span className="health-label">Bankroll Health</span>
-          <div className="health-indicator" style={{ borderColor: health.color, color: health.color }}>
+          <div
+            className="health-indicator"
+            style={{ borderColor: health.color, color: health.color }}
+          >
             {health.label}
           </div>
           <span className="health-detail">{buyInCount.toFixed(1)} buy-ins</span>
@@ -258,8 +262,12 @@ const BankrollTracker: React.FC = () => {
             <div className="stat-icon total">▪</div>
             <div className="stat-content">
               <span className="stat-label">Total Growth</span>
-              <span className="stat-value" style={{ color: totalProfit >= 0 ? '#10b981' : '#ef4444' }}>
-                {totalProfit > 0 ? '+' : ''}{totalProfit.toLocaleString()}
+              <span
+                className="stat-value"
+                style={{ color: totalProfit >= 0 ? '#10b981' : '#ef4444' }}
+              >
+                {totalProfit > 0 ? '+' : ''}
+                {totalProfit.toLocaleString()}
               </span>
             </div>
           </div>
@@ -275,8 +283,8 @@ const BankrollTracker: React.FC = () => {
             <div className="insight-content">
               <span className="insight-label">Trend</span>
               <p className="insight-text">
-                Your bankroll is {current > previous ? 'growing' : 'declining'} with a moving average showing{' '}
-                {current > previous ? 'upward' : 'downward'} momentum.
+                Your bankroll is {current > previous ? 'growing' : 'declining'} with a moving
+                average showing {current > previous ? 'upward' : 'downward'} momentum.
               </p>
             </div>
           </div>
@@ -286,8 +294,10 @@ const BankrollTracker: React.FC = () => {
             <div className="insight-content">
               <span className="insight-label">Health Status</span>
               <p className="insight-text">
-                At {buyInCount.toFixed(1)} buy-ins, your bankroll is <strong>{health.label.toLowerCase()}</strong>.
-                {buyInCount < 20 && ' Consider taking a shot at higher stakes or reducing your play volume.'}
+                At {buyInCount.toFixed(1)} buy-ins, your bankroll is{' '}
+                <strong>{health.label.toLowerCase()}</strong>.
+                {buyInCount < 20 &&
+                  ' Consider taking a shot at higher stakes or reducing your play volume.'}
               </p>
             </div>
           </div>
@@ -297,8 +307,8 @@ const BankrollTracker: React.FC = () => {
             <div className="insight-content">
               <span className="insight-label">Volatility</span>
               <p className="insight-text">
-                Your swings range from ${trough.toLocaleString()} to ${peak.toLocaleString()}, reflecting
-                typical poker variance at {currentStakes}.
+                Your swings range from ${trough.toLocaleString()} to ${peak.toLocaleString()},
+                reflecting typical poker variance at {currentStakes}.
               </p>
             </div>
           </div>
