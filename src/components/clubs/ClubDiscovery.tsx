@@ -189,6 +189,74 @@ export const ClubDiscovery: React.FC<ClubDiscoveryProps> = ({ onJoinRequest, onV
         </select>
       </div>
 
+      {/* Q3 Phase 14: Featured / Hot Clubs Carousel */}
+      {!loading && filteredClubs.length > 3 && (
+        <div
+          className="featured-carousel"
+          style={{
+            display: 'flex',
+            gap: '12px',
+            overflowX: 'auto',
+            padding: '12px 0',
+            scrollSnapType: 'x mandatory',
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none',
+          }}
+        >
+          {filteredClubs.slice(0, 3).map((club) => (
+            <div
+              key={`featured-${club.id}`}
+              onClick={() => onViewClub?.(club)}
+              style={{
+                minWidth: '200px',
+                scrollSnapAlign: 'start',
+                cursor: 'pointer',
+                background: 'linear-gradient(135deg, rgba(255,107,53,0.12), rgba(255,53,107,0.12))',
+                border: '1px solid rgba(255,107,53,0.2)',
+                borderRadius: '14px',
+                padding: '14px',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '6px',
+                  right: '6px',
+                  background: 'linear-gradient(90deg, #ff6b35, #ff356b)',
+                  color: '#fff',
+                  fontSize: '0.6rem',
+                  fontWeight: 800,
+                  padding: '2px 8px',
+                  borderRadius: '8px',
+                }}
+              >
+                🔥 HOT
+              </div>
+              <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '4px' }}>
+                {club.name}
+              </div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary, #8b9dc3)' }}>
+                {club.memberCount} members • {club.minStakes}
+              </div>
+              {club.activeTableCount > 0 && (
+                <div
+                  style={{
+                    fontSize: '0.65rem',
+                    color: '#10b981',
+                    fontWeight: 700,
+                    marginTop: '4px',
+                  }}
+                >
+                  ● {club.activeTableCount} tables live
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Club Grid */}
       <div className="clubs-grid">
         {loading ? (

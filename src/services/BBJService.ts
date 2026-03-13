@@ -561,16 +561,18 @@ export const BBJService = {
       return false; // Stop before printing any money
     }
 
-    // Phase 2: Distribute promo payout to each recipient — exact cent-precision
-    const totalCents = Math.trunc(params.amount * 100);
-    const baseCents = Math.trunc(totalCents / params.recipientUserIds.length);
-    const remainderCents = totalCents - baseCents * params.recipientUserIds.length;
+    // Phase 2: Distribute promo payout to each recipient — precise chip division
+    const recipientCount = params.recipientUserIds.length;
+    const basePerPlayer = Math.trunc((params.amount / recipientCount) * 100) / 100;
+    // Remainder chips go to first recipients to ensure total is exactly distributed
+    const distributed = basePerPlayer * recipientCount;
+    const remainder = Math.round((params.amount - distributed) * 100) / 100;
     let lastError: Error | null = null;
 
-    for (let i = 0; i < params.recipientUserIds.length; i++) {
+    for (let i = 0; i < recipientCount; i++) {
       const userId = params.recipientUserIds[i];
-      // Give remainder cents to first players (1 cent each)
-      const perPlayer = (baseCents + (i < remainderCents ? 1 : 0)) / 100;
+      // Give remainder to first player (all residual in one place, not split further)
+      const perPlayer = basePerPlayer + (i === 0 ? remainder : 0);
       const { error: payoutError } = await retryAsync(
         () =>
           supabase.rpc('add_to_promo_wallet', {
