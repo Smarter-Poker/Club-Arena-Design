@@ -371,7 +371,8 @@ export default function SettingsPage() {
     if (actionType === 'delete-account') {
       setActionLoading(true);
       try {
-        await supabase.auth.signOut();
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
         window.location.href = '/';
       } catch (err) {
         console.error('Account deletion failed:', err);

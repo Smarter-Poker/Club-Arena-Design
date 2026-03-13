@@ -131,6 +131,7 @@ export async function getAvailableActions(tableId: string, userId: string): Prom
 export async function getServerStatus(): Promise<ServerStatus | null> {
   try {
     const response = await fetch(`${GAME_SERVER_URL}/health`);
+    if (!response.ok) return null;
     return (await response.json()) as ServerStatus;
   } catch {
     return null;
