@@ -348,6 +348,25 @@ export class HeadlessTableEngine {
 
     const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
 
+    // Identify busted seats (stack <= 0) — only for cash game tables
+    // (Tournament table stack=0 is handled by elimination logic in TournamentEngine)
+    if (!this.isTournamentTable()) {
+      const bustedSeats = data.filter((seat) => seat.stack <= 0);
+      if (bustedSeats.length > 0) {
+        const bustedUserIds = bustedSeats.map((s) => s.user_id);
+        await this.supabaseClient
+          .from('table_seats')
+          .update({ left_at: new Date().toISOString() })
+          .eq('table_id', this.tableId)
+          .in('user_id', bustedUserIds)
+          .is('left_at', null);
+
+        console.debug(
+          `[HeadlessTableEngine:${this.tableId}] Cleared ${bustedSeats.length} busted cash game seat(s)`
+        );
+      }
+    }
+
     this.seatedPlayers = data
       .filter((seat) => seat.stack > 0 && profileMap.has(seat.user_id))
       .map((seat) => {
