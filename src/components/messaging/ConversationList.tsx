@@ -214,9 +214,24 @@ export default function ConversationList({
       )
       .subscribe();
 
+    // Bus listeners for cross-component sync (instant, no RT delay)
+    const unsubSent = masterBus.subscribe('MESSAGE_SENT', () => {
+      loadConversations(true);
+    });
+    const unsubDeleted = masterBus.subscribe('MESSAGE_DELETED', () => {
+      loadConversations(true);
+    });
+    const unsubUpdated = masterBus.subscribe('CONVERSATION_UPDATED', () => {
+      loadConversations(true);
+      loadClubMessagesCount();
+    });
+
     return () => {
       if (heartbeatRef.current) clearInterval(heartbeatRef.current);
       masterBus.removeRegisteredChannel(channelKey);
+      unsubSent();
+      unsubDeleted();
+      unsubUpdated();
     };
   }, [loadConversations, loadClubMessagesCount, initHeartbeat]);
 
