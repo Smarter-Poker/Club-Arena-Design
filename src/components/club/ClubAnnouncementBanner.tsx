@@ -12,6 +12,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { resolveClubUUID } from '../../utils/clubIdResolver';
 import styles from './ClubAnnouncementBanner.module.css';
 
 interface Announcement {

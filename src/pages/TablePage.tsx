@@ -235,6 +235,12 @@ interface TableState {
   lateRegOpen?: boolean;
   currentLevel?: number;
   refreshTrigger?: number;
+  // Phase 8: Action timer state
+  actionTimerDeadline?: number;
+  actionTimerPlayerId?: string;
+  // Phase 8: Session stats
+  sessionPL?: number;
+  sessionHands?: number;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1861,6 +1867,71 @@ export default function TablePage({
       unsub();
     };
   }, []);
+
+  // ── Bus Listeners: Phase 8 — Action Rejection + Timer Events ──
+  useEffect(() => {
+    if (!tableId) return;
+
+    // ACTION_REJECTED: Show toast when a player action is rejected
+    const unsubRejected = masterBus.subscribe('ACTION_REJECTED', (event) => {
+      const payload = (event as any)?.payload || event;
+      if (payload.tableId !== tableId) return;
+      if (payload.playerId === userId) {
+        toast?.warning?.(`Action rejected: ${payload.reason || 'Invalid action'}`);
+      }
+    });
+
+    // ACTION_TIMER_STARTED: Update timer UI for current player
+    const unsubTimerStart = masterBus.subscribe('ACTION_TIMER_STARTED', (event) => {
+      const payload = (event as any)?.payload || event;
+      if (payload.tableId !== tableId) return;
+      setTableState((prev) => ({
+        ...prev,
+        actionTimerDeadline: payload.deadline,
+        actionTimerPlayerId: payload.playerId,
+      }));
+    });
+
+    // ACTION_TIMER_EXPIRED: Clear timer and log expiry
+    const unsubTimerExpired = masterBus.subscribe('ACTION_TIMER_EXPIRED', (event) => {
+      const payload = (event as any)?.payload || event;
+      if (payload.tableId !== tableId) return;
+      setTableState((prev) => ({
+        ...prev,
+        actionTimerDeadline: undefined,
+        actionTimerPlayerId: undefined,
+      }));
+    });
+
+    // STATE_INTEGRITY_VIOLATION: Critical alert — log to console (admin-only visibility)
+    const unsubIntegrity = masterBus.subscribe('STATE_INTEGRITY_VIOLATION', (event) => {
+      const payload = (event as any)?.payload || event;
+      if (payload.tableId !== tableId) return;
+      console.error(
+        `[StateVerifier] ⚠️ INTEGRITY VIOLATION hand #${payload.handNumber}:`,
+        payload.violations
+      );
+    });
+
+    // SESSION_STATS_UPDATE: Live session P&L for player HUD
+    const unsubSession = masterBus.subscribe('SESSION_STATS_UPDATE', (event) => {
+      const payload = (event as any)?.payload || event;
+      if (payload.tableId !== tableId) return;
+      setTableState((prev) => ({
+        ...prev,
+        sessionPL: payload.stats?.profitLoss ?? prev.sessionPL,
+        sessionHands: payload.stats?.handsPlayed ?? prev.sessionHands,
+      }));
+    });
+
+    return () => {
+      unsubRejected();
+      unsubTimerStart();
+      unsubTimerExpired();
+      unsubIntegrity();
+      unsubSession();
+    };
+  }, [tableId, userId]);
 
   // ── BUG-02 FIX: Action timer countdown ──────────────────────────────────
   // REMOVED: Duplicate timer lived here, conflicting with the timer at line ~3035.

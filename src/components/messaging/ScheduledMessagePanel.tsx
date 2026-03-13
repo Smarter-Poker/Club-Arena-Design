@@ -30,6 +30,7 @@ export default function ScheduledMessagePanel({
     Array<{ id: string; content: string; sendAt: string; status: string }>
   >([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     loadScheduled();
@@ -44,9 +45,11 @@ export default function ScheduledMessagePanel({
     if (!content.trim() || !sendDate || !sendTime) return;
 
     setLoading(true);
+    setError('');
     const sendAt = new Date(`${sendDate}T${sendTime}`);
 
     if (sendAt.getTime() <= Date.now()) {
+      setError('⚠️ Schedule time must be in the future');
       setLoading(false);
       return;
     }
@@ -61,8 +64,11 @@ export default function ScheduledMessagePanel({
       setContent('');
       setSendDate('');
       setSendTime('');
+      setError('');
       await loadScheduled();
       onScheduled?.();
+    } else {
+      setError('⚠️ Failed to schedule message — please try again');
     }
     setLoading(false);
   };

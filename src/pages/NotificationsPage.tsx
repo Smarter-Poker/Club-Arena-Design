@@ -13,6 +13,7 @@ import { haptic } from '../services/HapticService';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import { useSwipeAction } from '../hooks/useSwipeAction';
 import { notificationService } from '../services/NotificationService';
+import NotificationSettingsPanel from '../components/social/NotificationSettingsPanel';
 import './NotificationsPage.css';
 
 type NotifCategory = 'all' | 'games' | 'social' | 'achievements' | 'system';
@@ -63,6 +64,7 @@ export default function NotificationsPage() {
   // Q3: DND state
   const [dndActive, setDndActive] = useState(() => notificationService.isDndActive());
   const [showDndPicker, setShowDndPicker] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const handleDndToggle = useCallback((minutes: number) => {
     notificationService.setDnd(minutes);
