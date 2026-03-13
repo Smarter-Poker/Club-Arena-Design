@@ -70,6 +70,7 @@ export default function ClubAnnouncementBanner({
         setLoading(true);
         try {
             const now = new Date().toISOString();
+            if (!clubId) return;
             const resolvedId = await resolveClubUUID(clubId);
             const { data, error } = await supabase
                 .from('club_announcements')
