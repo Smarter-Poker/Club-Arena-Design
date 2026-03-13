@@ -13,6 +13,7 @@ import { supabase } from '../lib/supabase';
 import { useAuthUser } from '../hooks/useAuthUser';
 import { masterBus } from '../core/MasterBus';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import { useToast } from '../components/common/Toast';
 import './SessionHistoryPage.css';
 import PageSkeleton from '../components/common/PageSkeleton';
 
@@ -84,6 +85,7 @@ export default function SessionHistoryPage() {
       setSessions(data || []);
     } catch (err) {
       console.error('[SessionHistory] Load failed:', err);
+      toast.error('Failed to load session history');
     }
     setLoading(false);
   };
