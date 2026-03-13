@@ -519,6 +519,7 @@ export default function TablePage({
 
   // Actual club_id from the table record (NOT the tableId)
   const actualClubIdRef = useRef<string>('');
+  const [actionTimeSeconds, setActionTimeSeconds] = useState(15);
 
   // Chat — extracted to useTableChat hook
   const heroName = tableState.players[tableState.heroSeat - 1]?.name || 'You';
@@ -1473,6 +1474,7 @@ export default function TablePage({
 
         // Store actual club_id for persistence and rake
         actualClubIdRef.current = table.club_id || '';
+        setActionTimeSeconds(table.action_time_seconds || 15);
 
         // ─── Load bounty data for KO/PKO tournaments ───
         if (table.tournament_id) {
@@ -2547,7 +2549,7 @@ export default function TablePage({
             const currentState = tableStateRef.current;
             if (event.seat === currentState.heroSeat) {
               playTurnAlert();
-              resetTimer(15); // Reset action timer
+              resetTimer(); // Reset action timer (uses dynamic initialTime from table config)
             }
 
             // Auto-action for horses (check extended player properties OR horseMapRef)
@@ -3305,7 +3307,7 @@ export default function TablePage({
         handleTimerAutoFold();
       }
     },
-    initialTime: 15,
+    initialTime: actionTimeSeconds,
   });
 
   // Handle immediate UI Activation when button is clicked

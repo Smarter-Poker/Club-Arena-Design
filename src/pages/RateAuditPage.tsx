@@ -76,10 +76,12 @@ export default function RateAuditPage() {
   }, []);
 
   useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
     setVisibleRows(new Set());
     changes.forEach((_, i) => {
-      setTimeout(() => setVisibleRows((prev) => new Set(prev).add(i)), i * 40);
+      timers.push(setTimeout(() => setVisibleRows((prev) => new Set(prev).add(i)), i * 40));
     });
+    return () => timers.forEach(clearTimeout);
   }, [changes.length]);
 
   const loadAuditData = async () => {

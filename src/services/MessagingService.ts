@@ -842,11 +842,37 @@ class MessagingServiceClass {
   }
 
   /**
+   * Map a notification DB type to its preference category key
+   * This bridges the gap between DB types and the UI preference keys
+   */
+  private mapNotifTypeToCategory(type: string): string {
+    switch (type) {
+      case 'message':
+        return 'messages';
+      case 'waitlist_ready':
+      case 'table_invite':
+        return 'games';
+      case 'club_announcement':
+      case 'friend_request':
+        return 'social';
+      case 'achievement':
+      case 'bonus':
+        return 'achievements';
+      case 'settlement':
+      case 'system':
+      default:
+        return 'system';
+    }
+  }
+
+  /**
    * Check if a specific notification type is muted
+   * Maps DB notification types → preference category keys before checking
    */
   isNotificationTypeMuted(type: string): boolean {
     const prefs = this.getNotificationPreferences();
-    return prefs[type] === false;
+    const category = this.mapNotifTypeToCategory(type);
+    return prefs[category] === false;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

@@ -177,14 +177,16 @@ export default function FinancialAdminHub() {
   }, []);
 
   useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
     setVisibleCards(new Set());
     [0, 1, 2, 3].forEach((i) => {
-      setTimeout(() => setVisibleCards((prev) => new Set(prev).add(i)), i * 80);
+      timers.push(setTimeout(() => setVisibleCards((prev) => new Set(prev).add(i)), i * 80));
     });
     setVisibleNavs(new Set());
     NAV_ITEMS.forEach((_, i) => {
-      setTimeout(() => setVisibleNavs((prev) => new Set(prev).add(i)), 300 + i * 60);
+      timers.push(setTimeout(() => setVisibleNavs((prev) => new Set(prev).add(i)), 300 + i * 60));
     });
+    return () => timers.forEach(clearTimeout);
   }, []);
 
   const loadStats = async () => {
