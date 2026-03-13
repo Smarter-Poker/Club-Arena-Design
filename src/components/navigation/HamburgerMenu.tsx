@@ -752,10 +752,12 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
                   }
                   if (user?.id) {
                     try {
-                      await supabase
+                      const { error: saveErr } = await supabase
                         .from('profiles')
                         .update({ card_color_preset: preset.id })
                         .eq('id', user.id);
+                      if (saveErr)
+                        console.error('[HamburgerMenu] Card color save failed:', saveErr);
                     } catch {
                       /* silent */
                     }
