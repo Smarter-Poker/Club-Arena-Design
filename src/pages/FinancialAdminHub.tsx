@@ -6,13 +6,14 @@
  *  Quick links to: Alerts, Health, Disputes, Rate Audit, Settlements, Financials.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import { useAuthUser } from '../hooks/useAuthUser';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import PageSkeleton from '../components/common/PageSkeleton';
+import { useToast } from '../components/common/Toast';
 import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip } from 'recharts';
 
 interface HubStats {
@@ -128,6 +129,15 @@ const NAV_ITEMS = [
 export default function FinancialAdminHub() {
   const navigate = useNavigate();
   const { user } = useAuthUser();
+  const toast = useToast();
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   useVisibilityRefresh(() => loadStats());
 
   const [stats, setStats] = useState<HubStats>({
@@ -250,6 +260,7 @@ export default function FinancialAdminHub() {
         /* table may not exist */
       }
 
+      if (!isMounted.current) return;
       setStats({ totalAlerts, openDisputes, rateChanges, healthChecks, lastCheckPassed });
 
       // Load 7-day revenue data for sparkline
@@ -277,17 +288,18 @@ export default function FinancialAdminHub() {
             const label = `${dayLabels[d.getDay()]} ${d.getDate()}`;
             days.push({ day: label, amount: grouped[label] || 0 });
           }
-          setRevenueData(days);
+          if (isMounted.current) setRevenueData(days);
         } else {
-          setRevenueData([]);
+          if (isMounted.current) setRevenueData([]);
         }
       } catch {
         /* ignore */
       }
     } catch (err) {
       console.error('[FinancialAdminHub] Stats load failed:', err);
+      if (isMounted.current) toast.error('Failed to load financial stats');
     }
-    setLoading(false);
+    if (isMounted.current) setLoading(false);
   };
 
   const kpiCards = [

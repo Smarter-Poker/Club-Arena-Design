@@ -54,13 +54,9 @@ export default function FinancialAlertsPage() {
     const channelKey = 'financial-alerts-realtime';
     const channel = masterBus.getOrCreateChannel(channelKey);
     channel
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'financial_alerts' },
-        () => {
-          if (isMounted) loadAlerts(() => isMounted);
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'financial_alerts' }, () => {
+        if (isMounted) loadAlerts(() => isMounted);
+      })
       .subscribe();
     return () => {
       isMounted = false;
