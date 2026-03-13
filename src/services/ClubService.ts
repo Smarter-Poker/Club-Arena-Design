@@ -190,7 +190,8 @@ class ClubServiceClass {
             `
       )
       .eq('club_id', clubId)
-      .order('role', { ascending: true });
+      .order('role', { ascending: true })
+      .limit(5000);
 
     if (error) throw error;
 
@@ -267,7 +268,7 @@ class ClubServiceClass {
             p_description: 'Club balance adjustment (credit)',
             p_table_id: null,
             p_hand_id: null,
-            p_related_entity_id: null
+            p_related_entity_id: null,
           }),
         3
       );
@@ -288,7 +289,7 @@ class ClubServiceClass {
             p_description: 'Club balance adjustment (debit)',
             p_table_id: null,
             p_hand_id: null,
-            p_related_entity_id: null
+            p_related_entity_id: null,
           }),
         3
       );

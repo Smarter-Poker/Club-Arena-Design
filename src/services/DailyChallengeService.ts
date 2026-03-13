@@ -498,7 +498,8 @@ class DailyChallengeServiceClass {
       .from('user_daily_challenges')
       .select('challenge_id, completed, assigned_date')
       .eq('user_id', userId)
-      .eq('completed', true);
+      .eq('completed', true)
+      .limit(500);
 
     if (!data) {
       return { totalCompleted: 0, currentStreak: 0, totalChipsEarned: 0 };

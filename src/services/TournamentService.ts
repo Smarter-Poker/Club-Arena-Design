@@ -351,7 +351,8 @@ class TournamentService {
       .from('tournaments')
       .select('*')
       .eq('club_id', clubId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(200);
 
     if (error) {
       console.error('[TournamentService] Error fetching tournaments:', error);
@@ -375,7 +376,8 @@ class TournamentService {
           .eq('union_id', unionClub.union_id)
           .eq('is_xmtt', true)
           .neq('club_id', clubId) // Avoid duplicates (host club already included above)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .limit(200);
 
         xmttTournaments = xmttData || [];
       }
