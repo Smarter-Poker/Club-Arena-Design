@@ -416,11 +416,24 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          if (payload.new && (payload.new as any).is_seen) {
-            setMessages((current) =>
-              current.map((m) => (m.id === (payload.new as any).id ? { ...m, isSeen: true } : m))
-            );
-          }
+          const updated = payload.new as any;
+          if (!updated) return;
+
+          setMessages((current) =>
+            current.map((m) => {
+              if (m.id !== updated.id) return m;
+              const changes: Partial<Message> = {};
+              // Seen status update
+              if (updated.is_seen && !m.isSeen) changes.isSeen = true;
+              // Edit update
+              if (updated.is_edited && !m.isEdited) {
+                changes.isEdited = true;
+                changes.content = updated.content;
+                changes.editedAt = updated.edited_at;
+              }
+              return Object.keys(changes).length > 0 ? { ...m, ...changes } : m;
+            })
+          );
         }
       )
       .subscribe();

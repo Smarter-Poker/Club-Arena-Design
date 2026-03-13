@@ -25,7 +25,7 @@ vi.mock('../../src/engine/MonteCarloEquity', () => ({
           { playerId: 'p1', equity: 0.35, wins: 350, ties: 0, total: 1000 },
           { playerId: 'p2', equity: 0.65, wins: 650, ties: 0, total: 1000 },
         ],
-      })
+      }),
     ),
   },
 }));
@@ -40,15 +40,15 @@ describe('InsuranceEngine - Configuration', () => {
   it('should configure insurance for a table', () => {
     insuranceEngine.configure('ins-cfg-1', {
       enabled: true,
-      minPot: 20,
-      maxInsuredPercent: 100,
+      minPotForInsurance: 20,
+      maxInsurablePercent: 100,
       offerTimeoutSeconds: 15,
     });
     expect(true).toBe(true);
   });
 
   it('should check if insurance is enabled', () => {
-    insuranceEngine.configure('ins-en', { enabled: true, minPot: 10 });
+    insuranceEngine.configure('ins-en', { enabled: true, minPotForInsurance: 10 });
     expect(insuranceEngine.isEnabled('ins-en')).toBe(true);
   });
 
@@ -66,7 +66,7 @@ describe('InsuranceEngine - Offers', () => {
     vi.clearAllMocks();
     insuranceEngine.configure('ins-off', {
       enabled: true,
-      minPot: 10,
+      minPotForInsurance: 10,
       offerTimeoutSeconds: 15,
     });
   });
@@ -83,13 +83,13 @@ describe('InsuranceEngine - Offers', () => {
 
 describe('InsuranceEngine - Disposal', () => {
   it('should dispose without errors', () => {
-    insuranceEngine.configure('ins-dispose', { enabled: true, minPot: 10 });
+    insuranceEngine.configure('ins-dispose', { enabled: true, minPotForInsurance: 10 });
     insuranceEngine.dispose('ins-dispose');
     expect(true).toBe(true);
   });
 
   it('should return empty offers after disposal', () => {
-    insuranceEngine.configure('ins-disp-2', { enabled: true, minPot: 10 });
+    insuranceEngine.configure('ins-disp-2', { enabled: true, minPotForInsurance: 10 });
     insuranceEngine.dispose('ins-disp-2');
     const offers = insuranceEngine.getOffers('ins-disp-2');
     expect(offers).toHaveLength(0);
@@ -102,7 +102,7 @@ describe('InsuranceEngine - Disposal', () => {
 
 describe('InsuranceEngine - allResponded', () => {
   it('should return true when no active offers exist', () => {
-    insuranceEngine.configure('ins-ar', { enabled: true, minPot: 10 });
+    insuranceEngine.configure('ins-ar', { enabled: true, minPotForInsurance: 10 });
     expect(insuranceEngine.allResponded('ins-ar')).toBe(true);
   });
 });

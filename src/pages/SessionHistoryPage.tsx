@@ -7,7 +7,7 @@
  * Shows P&L trends, session duration, hands played, VPIP/PFR stats.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuthUser } from '../hooks/useAuthUser';
@@ -45,6 +45,11 @@ export default function SessionHistoryPage() {
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState<'7d' | '30d' | 'all'>('30d');
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => { isMounted.current = false; };
+  }, []);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -84,12 +89,14 @@ export default function SessionHistoryPage() {
 
       const { data, error } = await query;
       if (error) throw error;
+      if (!isMounted.current) return;
       setSessions(data || []);
     } catch (err) {
+      if (!isMounted.current) return;
       console.error('[SessionHistory] Load failed:', err);
       toast.error('Failed to load session history');
     }
-    setLoading(false);
+    if (isMounted.current) setLoading(false);
   };
 
   // Aggregate stats

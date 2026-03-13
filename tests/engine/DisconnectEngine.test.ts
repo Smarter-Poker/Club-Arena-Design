@@ -202,7 +202,7 @@ describe('DisconnectEngine - Cancelation & Cleanup', () => {
     disconnectEngine.configure('dc-cancel', { disconnectTimeoutSeconds: 30 });
     disconnectEngine.registerPlayer('dc-cancel', 'p1');
     disconnectEngine.cancelTimeout('dc-cancel', 'p1');
-    expect(preciseActionTimer.cancel).toHaveBeenCalled();
+    expect(preciseActionTimer.cancelTimer).toHaveBeenCalled();
   });
 
   it('should remove player state on unregister', () => {
