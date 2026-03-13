@@ -58,3 +58,58 @@ ALTER TABLE notifications
 -- These should already exist, but ensure for safety
 ALTER TABLE notifications
   ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}';
+
+-- ── 5. Add error_message column and 'failed' status to scheduled_messages ──
+ALTER TABLE scheduled_messages
+  ADD COLUMN IF NOT EXISTS error_message TEXT DEFAULT NULL;
+
+-- Index for listing by conversation
+CREATE INDEX IF NOT EXISTS idx_scheduled_messages_conversation
+  ON scheduled_messages (conversation_id, status);
+
+-- ── 6. Cron function: process_scheduled_messages ──
+-- Call from pg_cron every minute: SELECT process_scheduled_messages();
+CREATE OR REPLACE FUNCTION process_scheduled_messages()
+RETURNS SETOF scheduled_messages
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  rec scheduled_messages%ROWTYPE;
+BEGIN
+  FOR rec IN
+    SELECT * FROM scheduled_messages
+    WHERE status = 'pending' AND send_at <= now()
+    ORDER BY send_at ASC
+    FOR UPDATE SKIP LOCKED
+  LOOP
+    BEGIN
+      -- Insert into messages table
+      INSERT INTO messages (conversation_id, sender_id, content, metadata)
+      VALUES (
+        rec.conversation_id,
+        rec.sender_id,
+        rec.content,
+        jsonb_build_object('type', 'scheduled', 'scheduled_id', rec.id::text)
+      );
+
+      -- Mark as sent
+      UPDATE scheduled_messages
+      SET status = 'sent', sent_at = now()
+      WHERE id = rec.id;
+
+      -- Update conversation timestamp
+      UPDATE conversations
+      SET updated_at = now()
+      WHERE id = rec.conversation_id;
+
+    EXCEPTION WHEN OTHERS THEN
+      UPDATE scheduled_messages
+      SET status = 'failed', error_message = SQLERRM
+      WHERE id = rec.id;
+    END;
+
+    RETURN NEXT rec;
+  END LOOP;
+END;
+$$;

@@ -804,7 +804,7 @@ export class ServerTableEngine {
     }
 
     // 7. Authoritative recount of table players from DB (not stale in-memory array)
-    const { count: dbPlayerCount } = await (await import('../services/supabase.js')).supabase
+    const { count: dbPlayerCount } = await supabase
       .from('table_seats')
       .select('*', { count: 'exact', head: true })
       .eq('table_id', this.tableId)

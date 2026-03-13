@@ -274,44 +274,32 @@ export async function processLeavePending(tableId: string, clubId: string): Prom
   if (!pendingSeats || pendingSeats.length === 0) return;
 
   for (const seat of pendingSeats) {
-    if (seat.stack > 0) {
-      const { error: creditErr } = await supabase.rpc('credit_player_wallet', {
-        p_user_id: seat.user_id,
-        p_amount: seat.stack,
-      });
+    // Use atomic cashout — credits wallet + marks left + updates count in one transaction
+    const { error: cashoutErr } = await supabase.rpc('atomic_table_cashout', {
+      p_user_id: seat.user_id,
+      p_table_id: tableId,
+      p_seat_number: seat.seat_number,
+    });
 
-      if (creditErr) {
-        console.error(
-          `[processLeavePending] Credit failed for ${seat.user_id}: ${creditErr.message}`
-        );
-        continue; // Skip this seat, don't mark as left
+    if (cashoutErr) {
+      console.error(
+        `[processLeavePending] Atomic cashout failed for ${seat.user_id}: ${cashoutErr.message}`
+      );
+      // Fallback: if stack is 0, just mark as left
+      if (seat.stack === 0) {
+        await supabase
+          .from('table_seats')
+          .update({ left_at: new Date().toISOString(), leave_pending: false })
+          .eq('table_id', tableId)
+          .eq('user_id', seat.user_id)
+          .eq('seat_number', seat.seat_number)
+          .is('left_at', null);
       }
-
-      // Log the cash-out transaction — every chip move documented
-      const { error: cashoutTxErr } = await supabase.from('wallet_transactions').insert({
-        user_id: seat.user_id,
-        wallet_type: 'PLAYER',
-        amount: seat.stack,
-        type: 'credit',
-        category: 'cashout',
-        description: `Cash-out from table: ${seat.stack} chips`,
-      });
-      if (cashoutTxErr)
-        console.warn(
-          `[DB] Cash-out tx log failed for ${seat.user_id.slice(0, 8)}: ${cashoutTxErr.message}`
-        );
+      // If stack > 0 and cashout failed, leave them seated to prevent chip loss
     }
-
-    await supabase
-      .from('table_seats')
-      .update({ left_at: new Date().toISOString(), leave_pending: false })
-      .eq('table_id', tableId)
-      .eq('user_id', seat.user_id)
-      .eq('seat_number', seat.seat_number)
-      .is('left_at', null);
   }
 
-  // Update player count
+  // Authoritative recount after all departures
   const { count } = await supabase
     .from('table_seats')
     .select('*', { count: 'exact', head: true })

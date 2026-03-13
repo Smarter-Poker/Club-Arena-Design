@@ -321,9 +321,11 @@ export const FinancialCronService = {
 
       if (escalated > 0) {
         masterBus.emit('FINANCIAL_ALERT', {
+          severity: 'warning',
           source: 'FinancialCronService',
           message: `${escalated} dispute(s) auto-escalated (72h SLA breach)`,
-          severity: 'warning',
+          context: { escalatedCount: escalated },
+          timestamp: new Date().toISOString(),
         });
       }
     } catch (err: unknown) {
