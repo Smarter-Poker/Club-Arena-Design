@@ -28,6 +28,9 @@ import MissionsPanel, { Mission } from '../components/gamification/MissionsPanel
 import GamificationLeaderboard from '../components/gamification/GamificationLeaderboard';
 import PlayerActivityFeed from '../components/social/PlayerActivityFeed';
 import ReferralDashboard from '../components/social/ReferralDashboard';
+import PerformanceTrends from '../components/stats/PerformanceTrends';
+import StakeLevelComparison from '../components/stats/StakeLevelComparison';
+import PlayerStyleRadar from '../components/stats/PlayerStyleRadar';
 import { dailyChallengeService, type UserDailyChallenge } from '../services/DailyChallengeService';
 import { useSwipeTabs } from '../hooks/useSwipeTabs';
 import { useToast } from '../components/common/Toast';
@@ -901,6 +904,23 @@ export default function ProfilePage() {
       {user?.id && (
         <section className={styles.contentSection}>
           <ReferralDashboard userId={user.id} />
+        </section>
+      )}
+
+      {/* Player Intelligence — Analytics Dashboard */}
+      {user?.id && (
+        <section className={styles.contentSection}>
+          <PerformanceTrends userId={user.id} />
+        </section>
+      )}
+      {user?.id && (
+        <section className={styles.contentSection}>
+          <PlayerStyleRadar userId={user.id} />
+        </section>
+      )}
+      {user?.id && (
+        <section className={styles.contentSection}>
+          <StakeLevelComparison userId={user.id} />
         </section>
       )}
 

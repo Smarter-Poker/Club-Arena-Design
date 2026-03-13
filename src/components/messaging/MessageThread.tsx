@@ -216,7 +216,9 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
         .select()
         .maybeSingle();
 
-      if (!error && data) {
+      if (error) throw error;
+
+      if (data) {
         // Add to local state immediately
         const newMessage: Message = {
           id: data.id,
@@ -248,7 +250,7 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
         }, 100);
 
         // Update conversation's last_message
-        await supabase
+        const { error: updateErr } = await supabase
           .from('conversations')
           .update({
             last_message: audioUrl
@@ -260,6 +262,8 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
             last_message_user_id: user.id,
           })
           .eq('id', conversationId);
+        if (updateErr)
+          console.warn('[MessageThread] conversation update failed:', updateErr.message);
       }
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -333,7 +337,12 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
   // Delete message
   const deleteMessage = async (messageId: string) => {
     try {
-      await supabase.from('messages').delete().eq('id', messageId).eq('user_id', user?.id);
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .eq('id', messageId)
+        .eq('user_id', user?.id);
+      if (error) throw error;
       setMessages((prev) => prev.filter((m) => m.id !== messageId));
     } catch (error) {
       console.error('Failed to delete:', error);
