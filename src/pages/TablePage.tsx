@@ -440,60 +440,6 @@ export default function TablePage({
   const [timeBanksRemaining, setTimeBanksRemaining] = useState(4);
   const [timeBankTimeRemaining, setTimeBankTimeRemaining] = useState(15);
 
-  // Unified Table Timer Engine (Phase M)
-  const isHeroTurnContext =
-    tableState.currentPlayerSeat === tableState.heroSeat && tableState.isHandInProgress;
-
-  const handleTimerAutoFold = useCallback(() => {
-    if (handControllerRef.current) {
-      try {
-        const foldResult = handControllerRef.current.performAction(tableState.heroSeat, 'fold');
-        if (foldResult !== false) {
-          sendAction('fold', { seat: tableState.heroSeat, autoFold: true });
-          soundService.playFold();
-
-          // Real-time broadcast
-          broadcastLocalHandState();
-          if (tableId) submitAction(tableId, userId || 'guest', 'fold').catch(() => {});
-        } else {
-          console.warn('[AutoFold] performAction returned false — fold may not have executed');
-        }
-      } catch (err) {
-        console.error('[AutoFold] Error during auto-fold:', err);
-      }
-    }
-  }, [tableState.heroSeat, tableId, userId, broadcastLocalHandState, sendAction]);
-
-  const { timeRemaining: actionTimeRemaining, resetTimer } = useTableTimer({
-    isHeroTurn: isHeroTurnContext && !timeBankActive,
-    isSoundEnabled,
-    onTimeout: () => {
-      // Auto-activate time bank if available
-      if (tableId && userId && timeBankEngine.hasTimeBank(tableId, userId)) {
-        const didActivate = timeBankEngine.onPrimaryTimerExpired(
-          tableId,
-          userId,
-          handleTimerAutoFold
-        );
-        if (!didActivate) {
-          handleTimerAutoFold();
-        }
-      } else {
-        handleTimerAutoFold();
-      }
-    },
-    initialTime: 15,
-  });
-
-  // Handle immediate UI Activation when button is clicked
-  const handleActivateTimeBank = useCallback(() => {
-    if (!tableId || !userId) return;
-    const activated = timeBankEngine.activate(tableId, userId, handleTimerAutoFold);
-    if (activated) {
-      soundService.playChips();
-    }
-  }, [tableId, userId, handleTimerAutoFold]);
-
   // Phase L: Deep Audit — Wire React state to MasterBus for cross-component telemetry
   useEffect(() => {
     if (preAction && tableId && userId) {
@@ -764,26 +710,9 @@ export default function TablePage({
     setShowTipDealer(false);
   };
 
-  // Time Bank state
-  const [showTimeBank, setShowTimeBank] = useState(false);
-  const [timeBankActive, setTimeBankActive] = useState(false);
-  const [timeBanksRemaining, setTimeBanksRemaining] = useState(3);
-  const [timeBankTimeRemaining, setTimeBankTimeRemaining] = useState(0);
-
   // Cashier state
   const [showCashier, setShowCashier] = useState(false);
   const [accountBalance, setAccountBalance] = useState(0); // Player Wallet balance from wallets table
-
-  // Handle Time Bank activation — wrapped in startTransition to avoid INP
-  const handleActivateTimeBank = () => {
-    if (timeBanksRemaining > 0) {
-      startTransition(() => {
-        setTimeBankActive(true);
-        setTimeBanksRemaining((prev) => prev - 1);
-        setTimeBankTimeRemaining(30);
-      });
-    }
-  };
 
   // Handle cashier add chips (deducts from wallet, adds to table stack)
   const handleAddChips = async (amount: number) => {
