@@ -252,12 +252,33 @@ export class HorseLifecycleManager {
   // FORCE RESET function for genuinely stuck horses (used by detectStuckHorses)
   async forceResetHorse(horseId: string): Promise<boolean> {
     try {
-      // Clear stale seat records
-      await supabase
+      // Get all active seats for this horse WITH their stacks
+      const { data: activeSeats } = await supabase
         .from('table_seats')
-        .update({ left_at: new Date().toISOString() })
+        .select('table_id, seat_number, stack')
         .eq('user_id', horseId)
         .is('left_at', null);
+
+      // Cash out each seat atomically to prevent chip loss
+      if (activeSeats && activeSeats.length > 0) {
+        for (const seat of activeSeats) {
+          const { error: cashoutErr } = await supabase.rpc('atomic_table_cashout', {
+            p_user_id: horseId,
+            p_table_id: seat.table_id,
+            p_seat_number: seat.seat_number,
+          });
+          if (cashoutErr) {
+            // Fallback: if atomic cashout fails (e.g. seat already gone), force-close
+            await supabase
+              .from('table_seats')
+              .update({ left_at: new Date().toISOString() })
+              .eq('user_id', horseId)
+              .eq('table_id', seat.table_id)
+              .eq('seat_number', seat.seat_number)
+              .is('left_at', null);
+          }
+        }
+      }
 
       // Reset profile status
       const { error } = await supabase
@@ -348,7 +369,7 @@ export class HorseLifecycleManager {
 
       const { data: staleSeats } = await supabase
         .from('table_seats')
-        .select('id, table_id, user_id, joined_at')
+        .select('id, table_id, user_id, seat_number, stack, joined_at')
         .is('left_at', null)
         .lt('joined_at', thresholdTime);
 
@@ -357,10 +378,20 @@ export class HorseLifecycleManager {
       let cleaned = 0;
       for (const seat of staleSeats) {
         try {
-          await supabase
-            .from('table_seats')
-            .update({ left_at: new Date().toISOString() })
-            .eq('id', seat.id);
+          // Use atomic cashout to prevent chip loss
+          const { error: cashoutErr } = await supabase.rpc('atomic_table_cashout', {
+            p_user_id: seat.user_id,
+            p_table_id: seat.table_id,
+            p_seat_number: seat.seat_number,
+          });
+
+          if (cashoutErr) {
+            // Fallback: force-close the seat if atomic cashout fails
+            await supabase
+              .from('table_seats')
+              .update({ left_at: new Date().toISOString() })
+              .eq('id', seat.id);
+          }
           cleaned++;
 
           // If horse, reset to available
@@ -379,7 +410,7 @@ export class HorseLifecycleManager {
       }
 
       if (cleaned > 0) {
-        console.log(`[Lifecycle] Cleaned up ${cleaned} stale table seats`);
+        console.log(`[Lifecycle] Cleaned up ${cleaned} stale table seats (with atomic cashout)`);
       }
     } catch {
       // Non-critical
