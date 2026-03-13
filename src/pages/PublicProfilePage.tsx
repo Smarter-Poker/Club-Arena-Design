@@ -16,6 +16,7 @@ import { messagingService } from '../services/MessagingService';
 import { playerStatusService } from '../services/PlayerStatusService';
 import type { PlayerStatus } from '../services/PlayerStatusService';
 import { useAuthUser } from '../hooks/useAuthUser';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import { useToast } from '../components/common/Toast';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
@@ -60,6 +61,7 @@ export default function PublicProfilePage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [playerStatus, setPlayerStatus] = useState<PlayerStatus | null>(null);
 
+  useVisibilityRefresh(() => loadProfile());
   const loadProfile = useCallback(async () => {
     if (!userId || !user?.id) return;
 

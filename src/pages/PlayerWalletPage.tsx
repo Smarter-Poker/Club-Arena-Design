@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { masterBus } from '../core/MasterBus';
 import { useWalletStore } from '../stores/useWalletStore';
 import { useAuthUser } from '../hooks/useAuthUser';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import { TransactionHistory } from '../components/wallet/TransactionHistory';
 import DepositWithdrawModal from '../components/wallet/DepositWithdrawModal';
 import DisputeSubmitModal from '../components/wallet/DisputeSubmitModal';
@@ -168,6 +169,12 @@ export default function PlayerWalletPage() {
   const navigate = useNavigate();
   const { user } = useAuthUser();
   const { balances, diamonds, loadBalances, loadDiamonds, internalTransfer } = useWalletStore();
+  useVisibilityRefresh(() => {
+    if (user?.id) {
+      loadBalances(user.id);
+      loadDiamonds(user.id);
+    }
+  });
 
   const [activeTab, setActiveTab] = useState<WalletTab>('overview');
   const [transferFrom, setTransferFrom] = useState<WalletType>('PLAYER');

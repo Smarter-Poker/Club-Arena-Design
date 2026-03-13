@@ -15,6 +15,7 @@ import TournamentLobbyCard from '../../components/tournament/TournamentLobbyCard
 import { CardSkeleton } from '../../components/skeletons/CardSkeleton';
 import { useToast } from '../../components/common/Toast';
 import { ArenaTrainingController } from '../../services/ArenaTrainingController';
+import { resolveClubUUID } from '../../utils/clubIdResolver';
 import styles from './TournamentLobbyPage.module.css';
 
 type TournamentStatus = 'all' | 'upcoming' | 'REGISTERING' | 'RUNNING' | 'COMPLETED';
@@ -72,10 +73,11 @@ export default function TournamentLobbyPage() {
     if (!clubId) return;
     (async () => {
       try {
+        const resolvedId = await resolveClubUUID(clubId);
         const { data } = await supabase
           .from('union_clubs')
           .select('union_id')
-          .eq('club_id', clubId)
+          .eq('club_id', resolvedId)
           .limit(1)
           .maybeSingle();
         if (isMounted.current && data) setIsInUnion(true);
@@ -336,10 +338,11 @@ export default function TournamentLobbyPage() {
       let filterClubIds: string[] = clubId ? [clubId] : [];
       if (clubId) {
         try {
+          const resolvedId = await resolveClubUUID(clubId);
           const { data: ucRow } = await supabase
             .from('union_clubs')
             .select('union_id')
-            .eq('club_id', clubId)
+            .eq('club_id', resolvedId)
             .limit(1)
             .maybeSingle();
           if (ucRow?.union_id) {

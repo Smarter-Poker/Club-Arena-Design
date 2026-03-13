@@ -21,6 +21,7 @@ import HandReplayViewer from '../components/gameplay/HandReplayViewer';
 import { tableService } from '../services/TableService';
 // Tournament registration/refunds handled via TournamentService → Player Wallet RPCs
 import { useToast } from '../components/common/Toast';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 
 type TournFilter = 'all' | 'freeroll' | 'micro' | 'highroller';
@@ -63,10 +64,11 @@ export default function TournamentPage() {
         return;
       }
       try {
+        const resolvedId = await resolveClubUUID(clubId);
         const { data, error } = await supabase
           .from('club_members')
           .select('role')
-          .eq('club_id', clubId)
+          .eq('club_id', resolvedId)
           .eq('user_id', currentUser.id)
           .maybeSingle();
 
@@ -88,10 +90,11 @@ export default function TournamentPage() {
     let isMounted = true;
     (async () => {
       try {
+        const resolvedId = await resolveClubUUID(clubId);
         const { data, error } = await supabase
           .from('union_clubs')
           .select('union_id')
-          .eq('club_id', clubId)
+          .eq('club_id', resolvedId)
           .limit(1)
           .maybeSingle();
         if (!isMounted) return;

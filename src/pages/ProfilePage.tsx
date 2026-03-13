@@ -7,7 +7,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import { useState, useEffect, useMemo, lazy, Suspense, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuthUser } from '../hooks/useAuthUser';
@@ -17,6 +17,7 @@ import FriendListPanel from '../components/social/FriendListPanel';
 import { VIPStatusCard } from '../components/vip/VIPStatusCard';
 import { VIPProgressRing } from '../components/vip/VIPProgressRing';
 import { profileService } from '../services/ProfileService';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import { bonusService } from '../services/BonusService';
 import { masterBus } from '../core/MasterBus';
 import { StreakFire } from '../components/gamification/StreakFire';

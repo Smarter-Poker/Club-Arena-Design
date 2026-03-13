@@ -15,6 +15,7 @@ import { useAuthUser } from '../hooks/useAuthUser';
 import { presenceService } from '../services/PresenceService';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import type { PokerTable, Club, Tournament } from '../types/database.types';
 import { useUnionStore } from '../stores/useUnionStore';
 import PageSkeleton from '../components/common/PageSkeleton';
