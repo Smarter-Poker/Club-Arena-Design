@@ -22,6 +22,7 @@ import LuckyDrawWheel from '../components/gamification/LuckyDrawWheel';
 import { bonusService } from '../services/BonusService';
 import { useToast } from '../components/common/Toast';
 import OnlineFriendsPill from '../components/social/OnlineFriendsPill';
+import PromotionCarousel from '../components/promotions/PromotionCarousel';
 type GameFilter = 'all' | 'nlh' | 'plo' | 'ofc' | 'tournaments' | 'favorites';
 
 export default function LobbyPage() {
@@ -351,6 +352,9 @@ export default function LobbyPage() {
 
       {/* Promotional Banner Carousel */}
       <LobbyHeroBanner />
+
+      {/* Active Promotions Carousel */}
+      <PromotionCarousel />
 
       {/* Online Friends Quick-Invite */}
       {user?.id && (

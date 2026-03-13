@@ -31,6 +31,7 @@ import ReferralDashboard from '../components/social/ReferralDashboard';
 import PerformanceTrends from '../components/stats/PerformanceTrends';
 import StakeLevelComparison from '../components/stats/StakeLevelComparison';
 import PlayerStyleRadar from '../components/stats/PlayerStyleRadar';
+import PromotionsList from '../components/promotions/PromotionsList';
 import { dailyChallengeService, type UserDailyChallenge } from '../services/DailyChallengeService';
 import { useSwipeTabs } from '../hooks/useSwipeTabs';
 import { useToast } from '../components/common/Toast';
@@ -921,6 +922,11 @@ export default function ProfilePage() {
       {user?.id && (
         <section className={styles.contentSection}>
           <StakeLevelComparison userId={user.id} />
+        </section>
+      )}
+      {user?.id && (
+        <section className={styles.contentSection}>
+          <PromotionsList userId={user.id} />
         </section>
       )}
 

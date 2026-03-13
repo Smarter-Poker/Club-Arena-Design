@@ -134,7 +134,8 @@ class ReferralService {
       const { data: redemptions } = await supabase
         .from('referral_redemptions')
         .select('chips_awarded_referrer')
-        .eq('referrer_id', userId);
+        .eq('referrer_id', userId)
+        .limit(5000);
 
       const totalReferrals = redemptions?.length || 0;
       const totalChipsEarned = (redemptions || []).reduce(
