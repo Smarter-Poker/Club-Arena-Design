@@ -180,63 +180,22 @@ export default function ClubDashboard() {
 
   // ── Bus Listeners: cross-page event reactivity (debounced to prevent rapid reloads) ──
   useEffect(() => {
-    const unsubClub = masterBus.subscribeDebounced(
-      'CLUB_UPDATED',
-      () => {
-        loadDashboardData();
-      },
-      500
-    );
-    const unsubBalance = masterBus.subscribeDebounced(
-      'BALANCE_UPDATED',
-      () => {
-        loadDashboardData();
-      },
-      500
-    );
-    const unsubSeated = masterBus.subscribeDebounced(
-      'TABLE_SEATED',
-      () => {
-        loadDashboardData();
-      },
-      500
-    );
-    const unsubChipsAdded = masterBus.subscribeDebounced(
-      'CHIPS_ADDED',
-      () => {
-        loadDashboardData();
-      },
-      500
-    );
-    const unsubChipsWithdrawn = masterBus.subscribeDebounced(
-      'CHIPS_WITHDRAWN',
-      () => {
-        loadDashboardData();
-      },
-      500
-    );
-    const unsubSettlement = masterBus.subscribeDebounced(
-      'SETTLEMENT_CYCLE_COMPLETED',
-      () => {
-        loadDashboardData();
-      },
-      1000
-    );
-    const unsubCollusion = masterBus.subscribeDebounced(
-      'COLLUSION_DETECTED',
-      () => {
-        loadDashboardData();
-      },
-      2000
-    );
+    const reload = () => loadDashboardData();
+    const unsubs = [
+      masterBus.subscribeDebounced('CLUB_UPDATED', reload, 500),
+      masterBus.subscribeDebounced('CLUB_JOINED', reload, 500),
+      masterBus.subscribeDebounced('CLUB_LEFT', reload, 500),
+      masterBus.subscribeDebounced('BALANCE_UPDATED', reload, 500),
+      masterBus.subscribeDebounced('TABLE_SEATED', reload, 500),
+      masterBus.subscribeDebounced('TABLE_LEFT', reload, 500),
+      masterBus.subscribeDebounced('TABLE_CREATED', reload, 500),
+      masterBus.subscribeDebounced('CHIPS_ADDED', reload, 500),
+      masterBus.subscribeDebounced('CHIPS_WITHDRAWN', reload, 500),
+      masterBus.subscribeDebounced('SETTLEMENT_CYCLE_COMPLETED', reload, 1000),
+      masterBus.subscribeDebounced('COLLUSION_DETECTED', reload, 2000),
+    ];
     return () => {
-      unsubClub();
-      unsubBalance();
-      unsubSeated();
-      unsubChipsAdded();
-      unsubChipsWithdrawn();
-      unsubSettlement();
-      unsubCollusion();
+      unsubs.forEach((unsub) => unsub());
     };
   }, []);
 

@@ -493,20 +493,25 @@ export default function ClubMembersPage() {
     let isMounted = true;
     if (clubId) loadMembers(() => isMounted);
 
-    // Subscribe to bus-level CLUB_UPDATED for cross-component sync (role changes, kicks, approvals)
-    const unsubClub = masterBus.subscribeDebounced(
-      'CLUB_UPDATED',
-      (event) => {
-        if (!clubId || event.payload?.clubId === clubId) {
-          if (isMounted) loadMembers(() => isMounted);
-        }
-      },
-      500
-    );
+    // Subscribe to bus-level events for cross-component sync
+    const reload = (event?: any) => {
+      if (!clubId || !event?.payload?.clubId || event.payload.clubId === clubId) {
+        if (isMounted) loadMembers(() => isMounted);
+      }
+    };
+
+    const unsubs = [
+      masterBus.subscribeDebounced('CLUB_UPDATED', reload, 500),
+      masterBus.subscribeDebounced('CLUB_JOINED', reload, 500),
+      masterBus.subscribeDebounced('CLUB_LEFT', reload, 500),
+      masterBus.subscribeDebounced('BALANCE_UPDATED', reload, 500),
+      masterBus.subscribeDebounced('CHIPS_ADDED', reload, 500),
+      masterBus.subscribeDebounced('CHIPS_WITHDRAWN', reload, 500),
+    ];
 
     return () => {
       isMounted = false;
-      unsubClub();
+      unsubs.forEach((unsub) => unsub());
     };
   }, [clubId]);
 

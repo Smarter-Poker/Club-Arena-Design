@@ -904,6 +904,14 @@ function HomePageInner() {
       500
     );
 
+    const unsubUpdated = masterBus.subscribeDebounced(
+      'CLUB_UPDATED',
+      () => {
+        if (isMounted) fetchUserData(true, () => isMounted);
+      },
+      500
+    );
+
     const unsubAuth = masterBus.subscribe('AUTH_STATE_CHANGED', (event) => {
       if (!isMounted) return;
       if (event.payload.isAuthenticated) {
@@ -942,6 +950,7 @@ function HomePageInner() {
       });
       unsubJoined();
       unsubLeft();
+      unsubUpdated();
       unsubAuth();
       unsubNotif();
       unsubDiamond();
