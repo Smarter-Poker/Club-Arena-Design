@@ -83,8 +83,8 @@ export class AutoRebuyService {
           const { error: creditError } = await supabase.rpc('atomic_credit_wallet_and_log', {
             p_user_id: wallet.user_id,
             p_amount: topupAmount,
-            p_category: 'topup',
-            p_description: `Server Auto-rebuy: wallet topup ${topupAmount} credits`,
+            p_category: 'deposit',
+            p_description: `Server Auto-rebuy: wallet deposit ${topupAmount} credits`,
             p_table_id: null,
             p_hand_id: null,
             p_related_entity_id: null,
