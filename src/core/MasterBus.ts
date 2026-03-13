@@ -242,6 +242,9 @@ export type BusEventType =
   | 'ACTION_TIMER_EXPIRED'
   // Phase 8: State Verifier events
   | 'STATE_INTEGRITY_VIOLATION'
+  // Phase 9: Telemetry & Table Balance events
+  | 'ENGINE_TELEMETRY'
+  | 'TABLE_BALANCE_EXECUTED'
   // Session lifecycle
   | 'SESSION_ENDED'
   // Table creation event
@@ -296,8 +299,8 @@ export interface BusPayloadMap {
   PROFILE_UPDATED: { userId: string; updates: Record<string, unknown> };
   NOTIFICATION_RECEIVED: { notification: Record<string, unknown> };
   NOTIFICATION_COUNT_CHANGED: Record<string, unknown>;
-  FRIEND_REQUEST_SENT: { toUserId: string };
-  FRIEND_REQUEST_ACCEPTED: { friendshipId: string };
+  FRIEND_REQUEST_SENT: { toUserId: string; fromUserId?: string };
+  FRIEND_REQUEST_ACCEPTED: { friendshipId?: string; userId?: string; friendId?: string };
   // Settings sync
   SETTINGS_UPDATED: { settings: Record<string, unknown> };
   // Club data mutations (cross-page sync)
@@ -717,15 +720,45 @@ export interface BusPayloadMap {
   };
   HAND_REPLAY_COMPLETE: { handId: string };
   // Atomic stack & validation events
-  STACK_RACE_DETECTED: { tableId: string; userId: string; operation: string; expectedVersion: number; actualVersion: number };
+  STACK_RACE_DETECTED: {
+    tableId: string;
+    userId: string;
+    operation: string;
+    expectedVersion: number;
+    actualVersion: number;
+  };
   STACK_SETTLEMENT: { tableId: string; playerCount: number; totalMoved: number };
-  ACTION_REJECTED: { tableId: string; playerId: string; code: string; reason: string; timestamp: number };
+  ACTION_REJECTED: {
+    tableId: string;
+    playerId: string;
+    code: string;
+    reason: string;
+    timestamp: number;
+  };
   // Precise Action Timer
   ACTION_TIMER_STARTED: { tableId: string; playerId: string; durationMs: number; deadline: number };
-  ACTION_TIMER_EXTENDED: { tableId: string; playerId: string; additionalMs: number; newDeadline: number };
+  ACTION_TIMER_EXTENDED: {
+    tableId: string;
+    playerId: string;
+    additionalMs: number;
+    newDeadline: number;
+  };
   ACTION_TIMER_EXPIRED: { tableId: string; playerId: string; driftMs: number };
   // State Verifier
-  STATE_INTEGRITY_VIOLATION: { tableId: string; handNumber: number; violationCount: number; violations: Array<{ type: string; message: string; severity: string }> };
+  STATE_INTEGRITY_VIOLATION: {
+    tableId: string;
+    handNumber: number;
+    violationCount: number;
+    violations: Array<{ type: string; message: string; severity: string }>;
+  };
+  // Engine Telemetry & Table Balance
+  ENGINE_TELEMETRY: {
+    activeTables: number;
+    totalHandsDealt: number;
+    avgHandsPerHour: number;
+    cacheHitRatio: number;
+  };
+  TABLE_BALANCE_EXECUTED: { moveCount: number; tableCount: number; totalPlayers: number };
   // Session lifecycle
   SESSION_ENDED: { tableId: string; sessionId?: string; userId?: string };
   // Table creation

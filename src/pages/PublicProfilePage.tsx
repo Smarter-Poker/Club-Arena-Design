@@ -155,6 +155,7 @@ export default function PublicProfilePage() {
       });
       if (error) throw error;
       setFriendStatus('pending_sent');
+      masterBus.emit('FRIEND_REQUEST_SENT', { fromUserId: user.id, toUserId: userId });
       toast.success('Friend request sent!');
     } catch (err) {
       console.error('[PublicProfile] Add friend error:', err);
@@ -175,6 +176,7 @@ export default function PublicProfilePage() {
         .eq('status', 'pending');
       if (error) throw error;
       setFriendStatus('friends');
+      masterBus.emit('FRIEND_REQUEST_ACCEPTED', { userId: user.id, friendId: userId });
       toast.success('Friend request accepted!');
     } catch (err) {
       console.error('[PublicProfile] Accept friend error:', err);

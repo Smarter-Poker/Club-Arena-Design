@@ -8,6 +8,7 @@ import type { PokerTable, TableSettings, GameVariant, HandState } from '../types
 import { WalletService } from './WalletService';
 import { masterBus } from '../core/MasterBus';
 import { retryAsync } from '../utils/retryAsync';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 
 class TableService {
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -18,10 +19,12 @@ class TableService {
    * Get all tables for a club
    */
   async getClubTables(clubId: string): Promise<PokerTable[]> {
+    // Resolve integer club_id to UUID for FK query
+    const resolvedId = await resolveClubUUID(clubId);
     const { data, error } = await supabase
       .from('tables')
       .select('*')
-      .eq('club_id', clubId)
+      .eq('club_id', resolvedId)
       .eq('is_deleted', false)
       .neq('status', 'closed')
       .order('created_at', { ascending: false })

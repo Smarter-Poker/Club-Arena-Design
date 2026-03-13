@@ -46,6 +46,7 @@ export default function SearchPage() {
       });
       if (error && error.code !== '23505') throw error;
       setFriendAdded((prev) => new Set(prev).add(playerId));
+      masterBus.emit('FRIEND_REQUEST_SENT', { fromUserId: user.id, toUserId: playerId });
       toast.success('Friend request sent!');
     } catch {
       toast.error('Failed to send request');

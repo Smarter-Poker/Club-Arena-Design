@@ -11,6 +11,8 @@
  * was provided and builds the correct Supabase query filter.
  */
 
+import { supabase } from '../lib/supabase';
+
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
@@ -35,4 +37,43 @@ export function resolveClubIdFilter(clubIdParam: string): {
     return { column: 'id', value: clubIdParam };
   }
   return { column: 'club_id', value: Number(clubIdParam) };
+}
+
+// ─── In-memory cache for resolved UUIDs ────────────────────────────────────
+const uuidCache = new Map<string, string>();
+
+/**
+ * Resolves any club ID (UUID or integer) to its actual UUID.
+ * If the provided ID is already a UUID, returns it immediately.
+ * If it's an integer, queries the clubs table to find the UUID.
+ * Results are cached for the lifetime of the session.
+ *
+ * @example
+ *   const uuid = await resolveClubUUID('25450');
+ *   // Returns the UUID like 'abc123-...'
+ *   supabase.from('tables').select('*').eq('club_id', uuid);
+ */
+export async function resolveClubUUID(clubIdParam: string): Promise<string> {
+  // Already a UUID — return as-is
+  if (isUUID(clubIdParam)) return clubIdParam;
+
+  // Check cache
+  const cached = uuidCache.get(clubIdParam);
+  if (cached) return cached;
+
+  // Query clubs table to get the UUID
+  const { data } = await supabase
+    .from('clubs')
+    .select('id')
+    .eq('club_id', Number(clubIdParam))
+    .maybeSingle();
+
+  if (data?.id) {
+    uuidCache.set(clubIdParam, data.id);
+    return data.id;
+  }
+
+  // Fallback: return as-is (will fail downstream, but that's the existing behavior)
+  console.warn(`[clubIdResolver] Could not resolve club UUID for: ${clubIdParam}`);
+  return clubIdParam;
 }

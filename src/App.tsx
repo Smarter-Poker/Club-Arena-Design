@@ -99,6 +99,8 @@ const BusDevToolsPage = lazy(() => import('./pages/BusDevToolsPage'));
 const FinancialAlertsPage = lazy(() => import('./pages/FinancialAlertsPage'));
 const DisputeManagementPage = lazy(() => import('./pages/DisputeManagementPage'));
 const FinancialHealthPage = lazy(() => import('./pages/FinancialHealthPage'));
+const FinancialAdminHub = lazy(() => import('./pages/FinancialAdminHub'));
+const RateAuditPage = lazy(() => import('./pages/RateAuditPage'));
 
 // Q3: Social, Messaging & Discovery Pages
 const PublicProfilePage = lazy(() => import('./pages/PublicProfilePage'));
@@ -1076,6 +1078,26 @@ export default function App() {
                     <AuthGuard>
                       <PageErrorBoundary pageName="Financial Health">
                         <FinancialHealthPage />
+                      </PageErrorBoundary>
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="financial-admin"
+                  element={
+                    <AuthGuard>
+                      <PageErrorBoundary pageName="Financial Admin Hub">
+                        <FinancialAdminHub />
+                      </PageErrorBoundary>
+                    </AuthGuard>
+                  }
+                />
+                <Route
+                  path="rate-audit"
+                  element={
+                    <AuthGuard>
+                      <PageErrorBoundary pageName="Rate Audit">
+                        <RateAuditPage />
                       </PageErrorBoundary>
                     </AuthGuard>
                   }

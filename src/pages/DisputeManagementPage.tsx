@@ -16,6 +16,7 @@ import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import {
   DisputeService,
   type Dispute,
@@ -40,6 +41,7 @@ export default function DisputeManagementPage() {
   const [adjustmentType, setAdjustmentType] = useState<'credit' | 'debit' | 'none'>('none');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const isMounted = useRef(true);
+  useVisibilityRefresh(() => loadDisputes());
 
   useEffect(() => {
     return () => {
@@ -79,6 +81,20 @@ export default function DisputeManagementPage() {
       masterBus.removeRegisteredChannel(channelKey);
     };
   }, [clubId, loadDisputes]);
+
+  // Bus listeners: refresh when balance changes or settlements complete (may resolve disputes)
+  useEffect(() => {
+    const unsubBalance = masterBus.subscribeDebounced('BALANCE_UPDATED', () => loadDisputes(), 500);
+    const unsubSettlement = masterBus.subscribeDebounced(
+      'SETTLEMENT_COMPLETED',
+      () => loadDisputes(),
+      1000
+    );
+    return () => {
+      unsubBalance();
+      unsubSettlement();
+    };
+  }, [loadDisputes]);
 
   const handleStartReview = async (disputeId: string) => {
     if (!user?.id) return;

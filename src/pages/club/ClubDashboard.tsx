@@ -382,6 +382,9 @@ export default function ClubDashboard() {
           <Link to={`/financial-health`} className={styles.actionBtn}>
             🩺 Health
           </Link>
+          <Link to={`/financial-admin`} className={styles.actionBtn}>
+            🏦 Admin Hub
+          </Link>
           <Link to={`/clubs/${clubId}/settings`} className={styles.actionBtn}>
             Settings
           </Link>

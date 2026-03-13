@@ -124,10 +124,7 @@ export {
 } from './AtomicStackService';
 
 // Precise Action Timer
-export {
-  preciseActionTimer,
-  type ActionDeadline,
-} from './PreciseActionTimer';
+export { preciseActionTimer, type ActionDeadline } from './PreciseActionTimer';
 
 // State Verifier
 export {
@@ -139,3 +136,20 @@ export {
 
 // Evaluator Cache Control
 export { clearEvalCache } from './PokerEngine';
+
+// Engine Telemetry
+export {
+  engineTelemetry,
+  type TableMetrics,
+  type GlobalMetrics,
+  type TelemetrySnapshot,
+} from './EngineTelemetry';
+
+// Table Balancer
+export {
+  tableBalancer,
+  type BalancerTable,
+  type BalancerPlayer,
+  type MoveInstruction,
+  type BalanceScore,
+} from './TableBalancer';

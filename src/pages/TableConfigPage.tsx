@@ -653,6 +653,11 @@ export default function TableConfigPage() {
       if (error) throw error;
       if (!data) throw new Error('Table start returned no data');
 
+      masterBus.emit('TABLE_CREATED', {
+        tableId: data.id,
+        clubId: clubId || undefined,
+        table: data,
+      });
       toast.success('Table created and started!');
       navigate(`/table/${data.id}`);
     } catch (error) {

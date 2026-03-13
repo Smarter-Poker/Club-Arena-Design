@@ -656,3 +656,578 @@ describe('Position-Aware AI', () => {
     expect(decision.action).toBeTruthy();
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SERVER ACTION VALIDATOR TESTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('ServerActionValidator', () => {
+  let serverActionValidator: typeof import('../src/engine/ServerActionValidator').serverActionValidator;
+
+  beforeEach(async () => {
+    const mod = await import('../src/engine/ServerActionValidator');
+    serverActionValidator = mod.serverActionValidator;
+    serverActionValidator.dispose();
+  });
+
+  const baseContext = (): import('../src/engine/ServerActionValidator').ValidationContext => ({
+    currentPlayerId: 'p1',
+    stage: 'flop',
+    currentBet: 0,
+    playerBet: 0,
+    playerStack: 1000,
+    bigBlind: 10,
+    minRaise: 10,
+    pot: 50,
+    canCheck: true,
+    actionDeadline: Date.now() + 30000,
+    playerActedThisRound: false,
+    isAllIn: false,
+    isFolded: false,
+    numActivePlayers: 4,
+  });
+
+  const baseRequest = (
+    action: string,
+    amount?: number
+  ): import('../src/engine/ServerActionValidator').ActionRequest => ({
+    tableId: 'table1',
+    handId: 'hand1',
+    playerId: 'p1',
+    action: action as any,
+    amount,
+    timestamp: Date.now(),
+  });
+
+  it('should reject action from wrong player', () => {
+    const ctx = baseContext();
+    const req = { ...baseRequest('check'), playerId: 'p2' };
+    const result = serverActionValidator.validate(req, ctx);
+    expect(result.valid).toBe(false);
+    expect(result.code).toBe('NOT_YOUR_TURN');
+  });
+
+  it('should reject action from folded player', () => {
+    const ctx = { ...baseContext(), isFolded: true };
+    const result = serverActionValidator.validate(baseRequest('check'), ctx);
+    expect(result.valid).toBe(false);
+    expect(result.code).toBe('ALREADY_FOLDED');
+  });
+
+  it('should reject action from all-in player', () => {
+    const ctx = { ...baseContext(), isAllIn: true };
+    const result = serverActionValidator.validate(baseRequest('check'), ctx);
+    expect(result.valid).toBe(false);
+    expect(result.code).toBe('ALREADY_ALL_IN');
+  });
+
+  it('should allow valid check', () => {
+    const result = serverActionValidator.validate(baseRequest('check'), baseContext());
+    expect(result.valid).toBe(true);
+    expect(result.sanitizedAction).toBe('check');
+  });
+
+  it('should reject check when there is a bet', () => {
+    const ctx = { ...baseContext(), canCheck: false, currentBet: 20 };
+    const result = serverActionValidator.validate(baseRequest('check'), ctx);
+    expect(result.valid).toBe(false);
+    expect(result.code).toBe('CANNOT_CHECK');
+  });
+
+  it('should allow valid fold', () => {
+    const result = serverActionValidator.validate(baseRequest('fold'), baseContext());
+    expect(result.valid).toBe(true);
+    expect(result.sanitizedAction).toBe('fold');
+  });
+
+  it('should allow valid call and return amount', () => {
+    const ctx = { ...baseContext(), currentBet: 20, canCheck: false };
+    const result = serverActionValidator.validate(baseRequest('call'), ctx);
+    expect(result.valid).toBe(true);
+    expect(result.sanitizedAction).toBe('call');
+    expect(result.sanitizedAmount).toBe(20);
+  });
+
+  it('should auto-sanitize call to all-in when stack is insufficient', () => {
+    const ctx = { ...baseContext(), currentBet: 2000, playerStack: 500, canCheck: false };
+    const result = serverActionValidator.validate(baseRequest('call'), ctx);
+    expect(result.valid).toBe(true);
+    expect(result.sanitizedAction).toBe('all_in');
+    expect(result.sanitizedAmount).toBe(500);
+  });
+
+  it('should allow valid bet', () => {
+    const result = serverActionValidator.validate(baseRequest('bet', 50), baseContext());
+    expect(result.valid).toBe(true);
+    expect(result.sanitizedAction).toBe('bet');
+    expect(result.sanitizedAmount).toBe(50);
+  });
+
+  it('should reject bet below minimum', () => {
+    const result = serverActionValidator.validate(baseRequest('bet', 5), baseContext());
+    expect(result.valid).toBe(false);
+    expect(result.code).toBe('BELOW_MIN_RAISE');
+  });
+
+  it('should auto-sanitize bet to all-in when amount >= stack', () => {
+    const result = serverActionValidator.validate(baseRequest('bet', 1500), baseContext());
+    expect(result.valid).toBe(true);
+    expect(result.sanitizedAction).toBe('all_in');
+    expect(result.sanitizedAmount).toBe(1000);
+  });
+
+  it('should reject raise below minimum', () => {
+    const ctx = { ...baseContext(), currentBet: 20, canCheck: false };
+    const result = serverActionValidator.validate(baseRequest('raise', 25), ctx);
+    expect(result.valid).toBe(false);
+    expect(result.code).toBe('BELOW_MIN_RAISE');
+  });
+
+  it('should suppress duplicate actions', () => {
+    const req = baseRequest('check');
+    serverActionValidator.validate(req, baseContext());
+    const result2 = serverActionValidator.validate(req, baseContext());
+    expect(result2.valid).toBe(false);
+    expect(result2.code).toBe('ALREADY_ACTED');
+  });
+
+  it('should reject expired actions', () => {
+    const ctx = { ...baseContext(), actionDeadline: Date.now() - 5000 };
+    const result = serverActionValidator.validate(baseRequest('check'), ctx);
+    expect(result.valid).toBe(false);
+    expect(result.code).toBe('ACTION_EXPIRED');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ATOMIC STACK SERVICE TESTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('AtomicStackService', () => {
+  let atomicStackService: typeof import('../src/engine/AtomicStackService').atomicStackService;
+
+  beforeEach(async () => {
+    const mod = await import('../src/engine/AtomicStackService');
+    atomicStackService = mod.atomicStackService;
+    atomicStackService.dispose();
+  });
+
+  it('should initialize stack with version 1', () => {
+    atomicStackService.initializeStack('t1', 'p1', 1000);
+    const sv = atomicStackService.getStackWithVersion('t1', 'p1');
+    expect(sv.stack).toBe(1000);
+    expect(sv.version).toBe(1);
+  });
+
+  it('should debit with correct version', () => {
+    atomicStackService.initializeStack('t1', 'p1', 1000);
+    const result = atomicStackService.atomicDebit('t1', 'p1', 200, 1);
+    expect(result.success).toBe(true);
+    expect(result.newStack).toBe(800);
+    expect(result.newVersion).toBe(2);
+  });
+
+  it('should reject debit with wrong version', () => {
+    atomicStackService.initializeStack('t1', 'p1', 1000);
+    const result = atomicStackService.atomicDebit('t1', 'p1', 200, 99);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Version conflict');
+  });
+
+  it('should reject debit exceeding stack', () => {
+    atomicStackService.initializeStack('t1', 'p1', 100);
+    const result = atomicStackService.atomicDebit('t1', 'p1', 200, 1);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Insufficient');
+  });
+
+  it('should credit without version check', () => {
+    atomicStackService.initializeStack('t1', 'p1', 1000);
+    const result = atomicStackService.atomicCredit('t1', 'p1', 500);
+    expect(result.success).toBe(true);
+    expect(result.newStack).toBe(1500);
+  });
+
+  it('should batch settle atomically', () => {
+    atomicStackService.initializeStack('t1', 'p1', 1000);
+    atomicStackService.initializeStack('t1', 'p2', 1000);
+
+    const result = atomicStackService.atomicSettle('t1', [
+      { userId: 'p1', delta: 500 },
+      { userId: 'p2', delta: -500 },
+    ]);
+
+    expect(result.success).toBe(true);
+    expect(result.settled.get('p1')).toBe(1500);
+    expect(result.settled.get('p2')).toBe(500);
+  });
+
+  it('should reject settlement that would go negative', () => {
+    atomicStackService.initializeStack('t1', 'p1', 100);
+    const result = atomicStackService.atomicSettle('t1', [{ userId: 'p1', delta: -200 }]);
+    expect(result.success).toBe(false);
+    expect(result.errors.length).toBeGreaterThan(0);
+  });
+
+  it('should clean up table state', () => {
+    atomicStackService.initializeStack('t1', 'p1', 1000);
+    atomicStackService.clearTable('t1');
+    const sv = atomicStackService.getStackWithVersion('t1', 'p1');
+    expect(sv.stack).toBe(0);
+    expect(sv.version).toBe(0);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PRECISE ACTION TIMER TESTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('PreciseActionTimer', () => {
+  let preciseActionTimer: typeof import('../src/engine/PreciseActionTimer').preciseActionTimer;
+
+  beforeEach(async () => {
+    const mod = await import('../src/engine/PreciseActionTimer');
+    preciseActionTimer = mod.preciseActionTimer;
+    preciseActionTimer.clearTable('t1');
+  });
+
+  it('should start a timer and report remaining time', () => {
+    preciseActionTimer.startTimer('t1', 'p1', 10000);
+    const remaining = preciseActionTimer.getRemainingMs('t1', 'p1');
+    expect(remaining).toBeGreaterThan(9000);
+    expect(remaining).toBeLessThanOrEqual(10000);
+    expect(preciseActionTimer.isExpired('t1', 'p1')).toBe(false);
+  });
+
+  it('should report expired for non-existent timer', () => {
+    expect(preciseActionTimer.isExpired('t1', 'nobody')).toBe(true);
+  });
+
+  it('should cancel timer', () => {
+    preciseActionTimer.startTimer('t1', 'p1', 10000);
+    preciseActionTimer.cancelTimer('t1', 'p1');
+    expect(preciseActionTimer.getRemainingMs('t1', 'p1')).toBe(0);
+  });
+
+  it('should extend timer', () => {
+    preciseActionTimer.startTimer('t1', 'p1', 5000);
+    preciseActionTimer.extendTimer('t1', 'p1', 5000);
+    const remaining = preciseActionTimer.getRemainingMs('t1', 'p1');
+    expect(remaining).toBeGreaterThan(9000);
+  });
+
+  it('should pause and resume timer', () => {
+    preciseActionTimer.startTimer('t1', 'p1', 10000);
+    preciseActionTimer.pauseTimer('t1', 'p1');
+    const pausedRemaining = preciseActionTimer.getRemainingMs('t1', 'p1');
+    expect(pausedRemaining).toBeGreaterThan(0);
+    expect(preciseActionTimer.isExpired('t1', 'p1')).toBe(false);
+
+    preciseActionTimer.resumeTimer('t1', 'p1');
+    const resumed = preciseActionTimer.getRemainingMs('t1', 'p1');
+    expect(resumed).toBeGreaterThan(0);
+  });
+
+  it('should get deadline timestamp', () => {
+    preciseActionTimer.startTimer('t1', 'p1', 10000);
+    const deadline = preciseActionTimer.getDeadline('t1', 'p1');
+    expect(deadline).toBeGreaterThan(Date.now());
+  });
+
+  it('should clear all timers for a table', () => {
+    preciseActionTimer.startTimer('t1', 'p1', 10000);
+    preciseActionTimer.startTimer('t1', 'p2', 10000);
+    preciseActionTimer.clearTable('t1');
+    expect(preciseActionTimer.getRemainingMs('t1', 'p1')).toBe(0);
+    expect(preciseActionTimer.getRemainingMs('t1', 'p2')).toBe(0);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STATE VERIFIER TESTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('StateVerifier', () => {
+  let stateVerifier: typeof import('../src/engine/StateVerifier').stateVerifier;
+
+  beforeEach(async () => {
+    const mod = await import('../src/engine/StateVerifier');
+    stateVerifier = mod.stateVerifier;
+    stateVerifier.dispose();
+  });
+
+  const makePlayers = (stacks: number[]) =>
+    stacks.map((s, i) => ({
+      user_id: `p${i}`,
+      username: `P${i}`,
+      seat: i + 1,
+      stack: s,
+      bet: 0,
+      totalInvested: 0,
+      cards: [] as any[],
+      is_folded: false,
+      is_all_in: false,
+      is_sitting_out: false,
+    }));
+
+  it('should pass verification for valid state', () => {
+    const players = makePlayers([500, 500]);
+    stateVerifier.recordInitialChipTotal('t1', players as any);
+    const result = stateVerifier.verify({
+      tableId: 't1',
+      handNumber: 1,
+      players: players as any,
+      communityCards: [],
+      pot: 0,
+      stage: 'preflop',
+      initialChipTotal: 1000,
+    });
+    expect(result.valid).toBe(true);
+    expect(result.violations.length).toBe(0);
+  });
+
+  it('should detect negative stacks', () => {
+    const players = makePlayers([-100, 500]);
+    const result = stateVerifier.verify({
+      tableId: 't1',
+      handNumber: 1,
+      players: players as any,
+      communityCards: [],
+      pot: 0,
+      stage: 'preflop',
+    });
+    expect(result.valid).toBe(false);
+    const neg = result.violations.find((v) => v.type === 'NEGATIVE_STACK');
+    expect(neg).toBeDefined();
+    expect(neg!.severity).toBe('critical');
+  });
+
+  it('should detect duplicate cards', () => {
+    const players = makePlayers([500, 500]);
+    (players[0] as any).cards = [{ rank: 'A', suit: 'spades' }];
+    (players[1] as any).cards = [{ rank: 'A', suit: 'spades' }]; // Duplicate!
+    const result = stateVerifier.verify({
+      tableId: 't1',
+      handNumber: 1,
+      players: players as any,
+      communityCards: [],
+      pot: 0,
+      stage: 'preflop',
+    });
+    expect(result.valid).toBe(false);
+    expect(result.violations.some((v) => v.type === 'DUPLICATE_CARD')).toBe(true);
+  });
+
+  it('should detect wrong community card count for stage', () => {
+    const result = stateVerifier.verify({
+      tableId: 't1',
+      handNumber: 1,
+      players: makePlayers([500, 500]) as any,
+      communityCards: [{ rank: 'K', suit: 'hearts' }] as any, // 1 card on flop = wrong
+      pot: 0,
+      stage: 'flop',
+    });
+    expect(result.violations.some((v) => v.type === 'COMMUNITY_CARD_COUNT')).toBe(true);
+  });
+
+  it('should detect negative pot', () => {
+    const result = stateVerifier.verify({
+      tableId: 't1',
+      handNumber: 1,
+      players: makePlayers([500, 500]) as any,
+      communityCards: [],
+      pot: -10,
+      stage: 'preflop',
+    });
+    expect(result.violations.some((v) => v.type === 'NEGATIVE_POT')).toBe(true);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HAND REPLAY ENGINE TESTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('HandReplayEngine', () => {
+  let handReplayEngine: typeof import('../src/engine/HandReplayEngine').handReplayEngine;
+
+  beforeEach(async () => {
+    const mod = await import('../src/engine/HandReplayEngine');
+    handReplayEngine = mod.handReplayEngine;
+    handReplayEngine.reset();
+  });
+
+  const sampleHand = (): import('../src/engine/HandReplayEngine').HandReplayData => ({
+    handId: 'h1',
+    tableId: 't1',
+    handNumber: 1,
+    initialPot: 0,
+    players: [
+      {
+        userId: 'p1',
+        username: 'Alice',
+        stack: 1000,
+        bet: 0,
+        cards: [],
+        isFolded: false,
+        isAllIn: false,
+        seat: 1,
+      },
+      {
+        userId: 'p2',
+        username: 'Bob',
+        stack: 1000,
+        bet: 0,
+        cards: [],
+        isFolded: false,
+        isAllIn: false,
+        seat: 2,
+      },
+    ],
+    actions: [
+      { type: 'post_blind', playerId: 'p1', amount: 5 },
+      { type: 'post_blind', playerId: 'p2', amount: 10 },
+      { type: 'deal_hole', playerId: 'p1', cards: ['Ah', 'Kh'] },
+      { type: 'deal_hole', playerId: 'p2', cards: ['Qd', 'Jd'] },
+      { type: 'action', playerId: 'p1', action: 'call', amount: 10 },
+      { type: 'action', playerId: 'p2', action: 'check' },
+      { type: 'deal_community', cards: ['Td', '9h', '8s'], stage: 'flop' },
+      { type: 'action', playerId: 'p1', action: 'fold' },
+      { type: 'winners', playerId: 'p2', amount: 20 },
+    ],
+  });
+
+  it('should load hand data', () => {
+    handReplayEngine.loadHand(sampleHand());
+    const snapshot = handReplayEngine.getSnapshot();
+    expect(snapshot).not.toBeNull();
+    expect(snapshot!.totalSteps).toBe(9);
+    expect(snapshot!.stepIndex).toBe(0);
+  });
+
+  it('should step forward through actions', () => {
+    handReplayEngine.loadHand(sampleHand());
+
+    // Post SB
+    expect(handReplayEngine.stepForward()).toBe(true);
+    let snap = handReplayEngine.getSnapshot()!;
+    expect(snap.stepIndex).toBe(1);
+    expect(snap.pot).toBe(5);
+
+    // Post BB
+    expect(handReplayEngine.stepForward()).toBe(true);
+    snap = handReplayEngine.getSnapshot()!;
+    expect(snap.pot).toBe(15);
+  });
+
+  it('should step back by replaying from beginning', () => {
+    handReplayEngine.loadHand(sampleHand());
+    handReplayEngine.stepForward(); // SB
+    handReplayEngine.stepForward(); // BB
+    handReplayEngine.stepForward(); // deal p1
+
+    expect(handReplayEngine.stepBack()).toBe(true);
+    const snap = handReplayEngine.getSnapshot()!;
+    expect(snap.stepIndex).toBe(2); // back to after BB
+  });
+
+  it('should jump to specific step', () => {
+    handReplayEngine.loadHand(sampleHand());
+    handReplayEngine.jumpToStep(5);
+    const snap = handReplayEngine.getSnapshot()!;
+    expect(snap.stepIndex).toBe(5);
+  });
+
+  it('should detect completion', () => {
+    handReplayEngine.loadHand(sampleHand());
+    expect(handReplayEngine.isComplete()).toBe(false);
+
+    // Step through all
+    while (handReplayEngine.stepForward()) {
+      /* exhaust steps */
+    }
+    expect(handReplayEngine.isComplete()).toBe(true);
+  });
+
+  it('should set speed', () => {
+    handReplayEngine.loadHand(sampleHand());
+    handReplayEngine.setSpeed(4);
+    // No throw expected
+    expect(handReplayEngine.getSnapshot()).not.toBeNull();
+  });
+
+  it('should track folded state', () => {
+    handReplayEngine.loadHand(sampleHand());
+    // Step through to fold action (step 8)
+    handReplayEngine.jumpToStep(8);
+    const snap = handReplayEngine.getSnapshot()!;
+    const p1 = snap.players.find((p) => p.userId === 'p1');
+    expect(p1!.isFolded).toBe(true);
+  });
+
+  it('should reset cleanly', () => {
+    handReplayEngine.loadHand(sampleHand());
+    handReplayEngine.stepForward();
+    handReplayEngine.reset();
+    expect(handReplayEngine.getSnapshot()).toBeNull();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// EVALUATOR LRU CACHE TESTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('Evaluator LRU Cache', () => {
+  it('should return same result for same cards (cache hit)', async () => {
+    const { evaluateHand, clearEvalCache } = await import('../src/engine/PokerEngine');
+    clearEvalCache();
+
+    const holeCards = [
+      { rank: 'A' as const, suit: 'spades' as const },
+      { rank: 'K' as const, suit: 'spades' as const },
+    ];
+    const community = [
+      { rank: 'Q' as const, suit: 'spades' as const },
+      { rank: 'J' as const, suit: 'spades' as const },
+      { rank: 'T' as const, suit: 'spades' as const },
+    ];
+
+    const result1 = evaluateHand(holeCards as any, community as any);
+    const result2 = evaluateHand(holeCards as any, community as any);
+
+    expect(result1.ranking).toBe(result2.ranking);
+    expect(result1.name).toBe(result2.name);
+    expect(result1.name).toBe('Royal Flush');
+  });
+
+  it('should handle different hands correctly', async () => {
+    const { evaluateHand, clearEvalCache } = await import('../src/engine/PokerEngine');
+    clearEvalCache();
+
+    const hand1 = evaluateHand(
+      [
+        { rank: 'A', suit: 'spades' },
+        { rank: 'A', suit: 'hearts' },
+      ] as any,
+      [
+        { rank: '2', suit: 'clubs' },
+        { rank: '3', suit: 'diamonds' },
+        { rank: '7', suit: 'hearts' },
+      ] as any
+    );
+
+    const hand2 = evaluateHand(
+      [
+        { rank: '2', suit: 'spades' },
+        { rank: '3', suit: 'hearts' },
+      ] as any,
+      [
+        { rank: 'A', suit: 'clubs' },
+        { rank: 'K', suit: 'diamonds' },
+        { rank: '7', suit: 'clubs' },
+      ] as any
+    );
+
+    // Pair of Aces should beat high card
+    expect(hand1.ranking).toBeGreaterThan(hand2.ranking);
+  });
+});

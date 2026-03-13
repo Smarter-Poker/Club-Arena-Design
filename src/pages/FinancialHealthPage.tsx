@@ -13,7 +13,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FinancialCronService } from '../services/FinancialCronService';
+import { masterBus } from '../core/MasterBus';
 import { useAuthUser } from '../hooks/useAuthUser';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import './FinancialHealthPage.css';
 
 interface CronStatus {
@@ -51,6 +53,25 @@ export default function FinancialHealthPage() {
     loadStatus();
     const interval = setInterval(loadStatus, 10000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Refresh on tab re-focus
+  useVisibilityRefresh(() => loadStatus());
+
+  // Bus listeners: refresh when financial events fire
+  useEffect(() => {
+    const unsubAlert = masterBus.subscribeDebounced('FINANCIAL_ALERT', () => loadStatus(), 500);
+    const unsubSettlement = masterBus.subscribeDebounced(
+      'SETTLEMENT_COMPLETED',
+      () => loadStatus(),
+      1000
+    );
+    const unsubBalance = masterBus.subscribeDebounced('BALANCE_UPDATED', () => loadStatus(), 1000);
+    return () => {
+      unsubAlert();
+      unsubSettlement();
+      unsubBalance();
+    };
   }, []);
 
   const handleManualReconciliation = async () => {

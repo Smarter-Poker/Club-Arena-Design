@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { WalletService } from './WalletService';
 import { masterBus } from '../core/MasterBus';
 import { retryAsync } from '../utils/retryAsync';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 import type { Tournament, TournamentPlayer } from '../types/database.types';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -304,11 +305,14 @@ class TournamentService {
    * Get all tournaments for a club
    */
   async getTournaments(clubId: string): Promise<Tournament[]> {
+    // Resolve integer club_id to UUID for FK queries
+    const resolvedId = await resolveClubUUID(clubId);
+
     // Fetch club-specific tournaments
     const { data: clubTournaments, error } = await supabase
       .from('tournaments')
       .select('*')
-      .eq('club_id', clubId)
+      .eq('club_id', resolvedId)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -322,7 +326,7 @@ class TournamentService {
       const { data: unionClub } = await supabase
         .from('union_clubs')
         .select('union_id')
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .limit(1)
         .maybeSingle();
 
@@ -332,7 +336,7 @@ class TournamentService {
           .select('*')
           .eq('union_id', unionClub.union_id)
           .eq('is_xmtt', true)
-          .neq('club_id', clubId) // Avoid duplicates (host club already included above)
+          .neq('club_id', resolvedId) // Avoid duplicates (host club already included above)
           .order('created_at', { ascending: false });
 
         xmttTournaments = xmttData || [];

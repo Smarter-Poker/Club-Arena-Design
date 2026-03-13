@@ -228,6 +228,12 @@ export const ClubDiscovery: React.FC<ClubDiscoveryProps> = ({ onJoinRequest, onV
                 <span>
                   💵 {club.minStakes} - {club.maxStakes}
                 </span>
+                {club.activeTableCount > 0 && (
+                  <span className="live-indicator">
+                    <span className="live-pulse" />
+                    Live
+                  </span>
+                )}
               </div>
               <div className="club-footer">
                 {renderStars(club.rating)}

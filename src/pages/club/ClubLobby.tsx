@@ -13,6 +13,7 @@ import { masterBus } from '../../core/MasterBus';
 import { useUserStore } from '../../stores/useUserStore';
 import type { Club, PokerTable, Tournament } from '../../types/database.types';
 import ClubBottomNav from '../../components/club/ClubBottomNav';
+import { resolveClubUUID } from '../../utils/clubIdResolver';
 import './ClubLobby.css';
 
 // Animation utilities
@@ -43,10 +44,11 @@ export default function ClubLobby() {
     if (!clubId) return;
     const checkUnion = async () => {
       try {
+        const resolvedId = await resolveClubUUID(clubId);
         const { data: ucRow } = await supabase
           .from('union_clubs')
           .select('union_id')
-          .eq('club_id', clubId)
+          .eq('club_id', resolvedId)
           .limit(1)
           .maybeSingle();
         if (ucRow) {
