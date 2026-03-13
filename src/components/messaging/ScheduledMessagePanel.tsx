@@ -130,6 +130,14 @@ export default function ScheduledMessagePanel({
           >
             {loading ? 'Scheduling...' : '⏰ Schedule'}
           </button>
+          {error && (
+            <div
+              className={styles.errorMsg}
+              style={{ color: '#ff6b6b', fontSize: '0.78rem', textAlign: 'center', marginTop: 4 }}
+            >
+              {error}
+            </div>
+          )}
         </div>
 
         {/* Pending List */}

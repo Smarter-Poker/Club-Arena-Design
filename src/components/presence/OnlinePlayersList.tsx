@@ -1,152 +1,159 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase'
+import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
 import { PresenceIndicator } from './PresenceIndicator';
+import { resolveClubUUID } from '../../utils/clubIdResolver';
 import './OnlinePlayersList.css';
 
 interface OnlinePlayer {
-    id: string;
-    username: string;
-    displayName: string;
-    avatarUrl?: string;
-    status: 'online' | 'playing';
-    currentTable?: string;
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl?: string;
+  status: 'online' | 'playing';
+  currentTable?: string;
 }
 
 interface OnlinePlayersListProps {
-    clubId?: string;
-    limit?: number;
-    onPlayerClick?: (player: OnlinePlayer) => void;
+  clubId?: string;
+  limit?: number;
+  onPlayerClick?: (player: OnlinePlayer) => void;
 }
 
 export const OnlinePlayersList: React.FC<OnlinePlayersListProps> = ({
-    clubId,
-    limit = 20,
-    onPlayerClick
+  clubId,
+  limit = 20,
+  onPlayerClick,
 }) => {
-    const [players, setPlayers] = useState<OnlinePlayer[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [onlineCount, setOnlineCount] = useState(0);
-    const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
+  const [players, setPlayers] = useState<OnlinePlayer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [onlineCount, setOnlineCount] = useState(0);
+  const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
 
-    useEffect(() => {
-        loadOnlinePlayers();
+  useEffect(() => {
+    loadOnlinePlayers();
 
-        // Subscribe to presence changes
-        const channelKey = 'online_players';
+    // Subscribe to presence changes
+    const channelKey = 'online_players';
 
-        const channel = masterBus.getOrCreateChannel(channelKey);
-            channel
-            .on('postgres_changes', {
-                event: '*',
-                schema: 'public',
-                table: 'player_presence'
-            }, () => {
-                loadOnlinePlayers();
-            })
-            .subscribe();
-
-        // Refresh every 30 seconds
-        const interval = setInterval(loadOnlinePlayers, 30000);
-
-        return () => {
-            masterBus.removeRegisteredChannel(channelKey);
-            clearInterval(interval);
-        };
-    }, [clubId]);
-
-    useEffect(() => {
-        players.forEach((_, i) => {
-            setTimeout(() => setVisibleItems(prev => new Set(prev).add(i)), i * 60);
-        });
-    }, [players]);
-
-    const loadOnlinePlayers = async () => {
-        try {
-            let query = supabase
-                .from('player_presence')
-                .select('user_id, status, current_table_id', { count: 'exact' })
-                .in('status', ['online', 'playing'])
-                .order('last_seen_at', { ascending: false })
-                .limit(limit);
-
-            if (clubId) {
-                query = query.eq('club_id', clubId);
-            }
-
-            const { data, count } = await query;
-
-            if (data && data.length > 0) {
-                // Fetch profiles separately
-                const userIds = data.map((p: any) => p.user_id);
-                const { data: profiles } = await supabase
-                    .from('profiles')
-                    .select('id, username, full_name, avatar_url')
-                    .in('id', userIds);
-
-                const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
-
-                const mapped = data.map((p: any) => {
-                    const profile = profileMap.get(p.user_id);
-                    return {
-                        id: p.user_id,
-                        username: profile?.username || 'Unknown',
-                        displayName: profile?.full_name || profile?.username || 'Unknown',
-                        avatarUrl: profile?.avatar_url,
-                        status: p.status,
-                        currentTable: p.current_table_id
-                    };
-                });
-                setPlayers(mapped);
-                setOnlineCount(count || mapped.length);
-            }
-        } catch (error) {
-            console.error('Failed to load online players:', error);
-        } finally {
-            setLoading(false);
+    const channel = masterBus.getOrCreateChannel(channelKey);
+    channel
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'player_presence',
+        },
+        () => {
+          loadOnlinePlayers();
         }
+      )
+      .subscribe();
+
+    // Refresh every 30 seconds
+    const interval = setInterval(loadOnlinePlayers, 30000);
+
+    return () => {
+      masterBus.removeRegisteredChannel(channelKey);
+      clearInterval(interval);
     };
+  }, [clubId]);
 
-    if (loading) {
-        return <div className="online-players-loading">Loading...</div>;
+  useEffect(() => {
+    players.forEach((_, i) => {
+      setTimeout(() => setVisibleItems((prev) => new Set(prev).add(i)), i * 60);
+    });
+  }, [players]);
+
+  const loadOnlinePlayers = async () => {
+    try {
+      let query = supabase
+        .from('player_presence')
+        .select('user_id, status, current_table_id', { count: 'exact' })
+        .in('status', ['online', 'playing'])
+        .order('last_seen_at', { ascending: false })
+        .limit(limit);
+
+      if (clubId) {
+        query = query.eq('club_id', await resolveClubUUID(clubId));
+      }
+
+      const { data, count } = await query;
+
+      if (data && data.length > 0) {
+        // Fetch profiles separately
+        const userIds = data.map((p: any) => p.user_id);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url')
+          .in('id', userIds);
+
+        const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
+        const mapped = data.map((p: any) => {
+          const profile = profileMap.get(p.user_id);
+          return {
+            id: p.user_id,
+            username: profile?.username || 'Unknown',
+            displayName: profile?.full_name || profile?.username || 'Unknown',
+            avatarUrl: profile?.avatar_url,
+            status: p.status,
+            currentTable: p.current_table_id,
+          };
+        });
+        setPlayers(mapped);
+        setOnlineCount(count || mapped.length);
+      }
+    } catch (error) {
+      console.error('Failed to load online players:', error);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    return (
-        <div className="online-players-list">
-            <div className="list-header">
-                <h4>Online Players</h4>
-                <span className="online-count">{onlineCount} online</span>
+  if (loading) {
+    return <div className="online-players-loading">Loading...</div>;
+  }
+
+  return (
+    <div className="online-players-list">
+      <div className="list-header">
+        <h4>Online Players</h4>
+        <span className="online-count">{onlineCount} online</span>
+      </div>
+
+      {players.length === 0 ? (
+        <div className="no-players">No players online</div>
+      ) : (
+        <div className="players-grid">
+          {players.map((player, i) => (
+            <div
+              key={player.id}
+              className="player-card"
+              onClick={() => onPlayerClick?.(player)}
+              style={{
+                opacity: visibleItems.has(i) ? 1 : 0,
+                transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)',
+                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+              }}
+            >
+              <div className="player-avatar">
+                {player.avatarUrl ? (
+                  <img src={player.avatarUrl} alt={player.displayName} />
+                ) : (
+                  <span>{(player.displayName || '?')[0]}</span>
+                )}
+                <PresenceIndicator userId={player.id} size="small" />
+              </div>
+              <div className="player-name">{player.displayName}</div>
+              {player.status === 'playing' && <div className="playing-badge"> In Game</div>}
             </div>
-
-            {players.length === 0 ? (
-                <div className="no-players">No players online</div>
-            ) : (
-                <div className="players-grid">
-                    {players.map((player, i) => (
-                        <div
-                            key={player.id}
-                            className="player-card"
-                            onClick={() => onPlayerClick?.(player)}
-                            style={{ opacity: visibleItems.has(i) ? 1 : 0, transform: visibleItems.has(i) ? 'translateY(0)' : 'translateY(8px)', transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }}
-                        >
-                            <div className="player-avatar">
-                                {player.avatarUrl ? (
-                                    <img src={player.avatarUrl} alt={player.displayName} />
-                                ) : (
-                                    <span>{(player.displayName || '?')[0]}</span>
-                                )}
-                                <PresenceIndicator userId={player.id} size="small" />
-                            </div>
-                            <div className="player-name">{player.displayName}</div>
-                            {player.status === 'playing' && (
-                                <div className="playing-badge"> In Game</div>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            )}
+          ))}
         </div>
-    );
+      )}
+    </div>
+  );
 };
 
 export default OnlinePlayersList;

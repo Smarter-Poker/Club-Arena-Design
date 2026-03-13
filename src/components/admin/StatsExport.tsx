@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuthUser } from '../../hooks/useAuthUser';
 import { useToast } from '../common/Toast';
+import { resolveClubUUID } from '../../utils/clubIdResolver';
 import './StatsExport.css';
 
 interface StatsExportProps {
@@ -58,7 +59,7 @@ export function StatsExport({ clubId, isOpen, onClose }: StatsExportProps) {
       let query = supabase.from('hand_histories').select('*').eq('user_id', user.id);
 
       if (clubId) {
-        query = query.eq('club_id', clubId);
+        query = query.eq('club_id', await resolveClubUUID(clubId));
       }
       if (startDate) {
         query = query.gte('created_at', startDate.toISOString());

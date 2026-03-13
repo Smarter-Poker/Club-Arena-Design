@@ -19,7 +19,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuthUser } from '../../hooks/useAuthUser';
 import { useToast } from '../common/Toast';
 import { ChipFlowService } from '../../services/ChipFlowService';
-import { resolveClubIdFilter } from '../../utils/clubIdResolver';
+import { resolveClubIdFilter, resolveClubUUID } from '../../utils/clubIdResolver';
 import './ChipTransferModal.css';
 
 interface Recipient {
@@ -97,10 +97,11 @@ export default function ChipTransferModal({
       setSenderBalance(wallet?.balance || 0);
 
       // Get sender's role in this club
+      const resolvedId = await resolveClubUUID(clubId);
       const { data: member } = await supabase
         .from('club_members')
         .select('role')
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .eq('user_id', user.id)
         .maybeSingle();
       setSenderRole(member?.role || 'member');
@@ -126,7 +127,7 @@ export default function ChipTransferModal({
       const { data: senderMember } = await supabase
         .from('club_members')
         .select('role')
-        .eq('club_id', clubId)
+        .eq('club_id', await resolveClubUUID(clubId))
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -144,7 +145,7 @@ export default function ChipTransferModal({
                     )
                 `
         )
-        .eq('club_id', clubId)
+        .eq('club_id', await resolveClubUUID(clubId))
         .neq('user_id', user.id);
 
       // Filter recipients based on sender's role in the hierarchy

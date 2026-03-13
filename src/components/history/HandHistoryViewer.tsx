@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuthUser } from '../../hooks/useAuthUser';
 import { useToast } from '../common/Toast';
+import { resolveClubUUID } from '../../utils/clubIdResolver';
 import './HandHistoryViewer.css';
 
 interface HandHistoryViewerProps {
@@ -63,7 +64,7 @@ export function HandHistoryViewer({
         .order('played_at', { ascending: false })
         .limit(limit);
 
-      if (clubId) query = query.eq('club_id', clubId);
+      if (clubId) query = query.eq('club_id', await resolveClubUUID(clubId));
       if (tableId) query = query.eq('table_id', tableId);
 
       const { data, error } = await query;
