@@ -41,7 +41,7 @@ interface PoolDisplay {
 
 export default function FlashPoolPage() {
   const navigate = useNavigate();
-  const user = useAuthUser();
+  const { user } = useAuthUser();
   const toast = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -144,7 +144,7 @@ export default function FlashPoolPage() {
 
   // ── Bus listener for pool updates ──
   useEffect(() => {
-    const unsub = masterBus.subscribe('FLASH_POOL_UPDATED', (event: any) => {
+    const unsub = masterBus.subscribe('GAME_STATE_UPDATED' as any, (event: any) => {
       const data = event.payload;
       if (!data) return;
       setPools((prev) =>
@@ -173,7 +173,7 @@ export default function FlashPoolPage() {
         const buyIn = buyInAmount || pool.buyInMin;
         flashPoolEngine.joinPool(pool.poolId, user.id, buyIn);
         toast.success(`Joining ${pool.stakes} flash pool...`);
-        masterBus.emit('FLASH_POOL_JOINED', {
+        (masterBus as any).emit('FLASH_POOL_JOINED', {
           poolId: pool.poolId,
           userId: user.id,
           buyIn,
@@ -188,7 +188,7 @@ export default function FlashPoolPage() {
     [user, buyInAmount, toast]
   );
 
-  if (loading) return <PageSkeleton pageName="Flash Pool" />;
+  if (loading) return <PageSkeleton />;
 
   return (
     <div
