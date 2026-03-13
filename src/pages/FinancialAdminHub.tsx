@@ -540,7 +540,7 @@ export default function FinancialAdminHub() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {NAV_ITEMS.map((item, idx) => (
           <Link
-            key={item.path}
+            key={item.label}
             to={item.path}
             style={{
               display: 'flex',

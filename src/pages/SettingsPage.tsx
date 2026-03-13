@@ -282,6 +282,7 @@ export default function SettingsPage() {
 
   // Bus listeners: re-read settings from localStorage when profile/settings change externally
   useEffect(() => {
+    let isMounted = true;
     const reloadSettings = () => {
       const saved = localStorage.getItem('club-arena-settings');
       if (saved) {
@@ -295,10 +296,11 @@ export default function SettingsPage() {
     const unsub1 = masterBus.subscribe('SETTINGS_UPDATED', reloadSettings);
     const unsub2 = masterBus.subscribe('PROFILE_UPDATED', () => {
       supabase.auth.getUser().then(({ data }) => {
-        if (data?.user?.email) setUserEmail(data.user.email);
+        if (isMounted && data?.user?.email) setUserEmail(data.user.email);
       });
     });
     return () => {
+      isMounted = false;
       unsub1();
       unsub2();
     };
