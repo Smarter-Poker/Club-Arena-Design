@@ -225,6 +225,9 @@ export default function RakebackPage() {
           clubId: targetClubId,
         }),
       });
+      if (!res.ok) {
+        throw new Error(`Server error (${res.status})`);
+      }
       const data = await res.json();
 
       if (data.success) {

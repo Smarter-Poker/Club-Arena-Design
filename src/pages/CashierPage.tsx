@@ -786,6 +786,9 @@ export default function CashierPage() {
         },
         body: JSON.stringify({ clubId, amount: value }),
       });
+      if (!cashoutRes.ok) {
+        throw new Error(`Server error (${cashoutRes.status})`);
+      }
       const cashoutData = await cashoutRes.json();
       if (cashoutData.success) {
         setMessage({

@@ -27,6 +27,7 @@ import DiamondRainEffect from '../components/effects/DiamondRainEffect';
 import MissionsPanel, { Mission } from '../components/gamification/MissionsPanel';
 import GamificationLeaderboard from '../components/gamification/GamificationLeaderboard';
 import PlayerActivityFeed from '../components/social/PlayerActivityFeed';
+import ReferralDashboard from '../components/social/ReferralDashboard';
 import { dailyChallengeService, type UserDailyChallenge } from '../services/DailyChallengeService';
 import { useSwipeTabs } from '../hooks/useSwipeTabs';
 import { useToast } from '../components/common/Toast';
@@ -892,6 +893,13 @@ export default function ProfilePage() {
       {user?.id && (
         <section className={styles.contentSection}>
           <PlayerActivityFeed userId={user.id} />
+        </section>
+      )}
+
+      {/* Referral Program Dashboard */}
+      {user?.id && (
+        <section className={styles.contentSection}>
+          <ReferralDashboard userId={user.id} />
         </section>
       )}
 

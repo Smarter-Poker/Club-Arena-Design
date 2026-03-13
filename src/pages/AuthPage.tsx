@@ -11,6 +11,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
+import { referralService } from '../services/ReferralService';
 import styles from './AuthPage.module.css';
 
 type AuthMode = 'login' | 'signup' | 'reset';
@@ -22,6 +23,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [username, setUsername] = useState('');
+  const [referralCode, setReferralCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -161,6 +163,15 @@ export default function AuthPage() {
 
         // Check if email confirmation is required
         if (data.session) {
+          // Redeem referral code if provided
+          if (referralCode.trim()) {
+            const result = await referralService.redeemCode(data.user.id, referralCode.trim());
+            if (result.success) {
+              console.debug('[AUTH] Referral code redeemed successfully');
+            } else {
+              console.warn('[AUTH] Referral redemption failed:', result.error);
+            }
+          }
           masterBus.emit('AUTH_STATE_CHANGED', {
             userId: data.user.id,
             isAuthenticated: true,
@@ -393,6 +404,24 @@ export default function AuthPage() {
                 placeholder="••••••••"
                 required
                 autoComplete="new-password"
+              />
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label htmlFor="referral-code">
+                Referral Code{' '}
+                <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }}>
+                  (optional)
+                </span>
+              </label>
+              <input
+                id="referral-code"
+                type="text"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                placeholder="e.g. ABCD1234"
+                autoComplete="off"
+                style={{ textTransform: 'uppercase', letterSpacing: '1px' }}
               />
             </div>
 

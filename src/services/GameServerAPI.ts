@@ -24,26 +24,26 @@ const GAME_SERVER_URL = import.meta.env.VITE_GAME_SERVER_URL || 'http://localhos
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface ActionResult {
-    success: boolean;
-    error?: string;
+  success: boolean;
+  error?: string;
 }
 
 export interface PlayerActions {
-    canAct: boolean;
-    actions: string[];
-    toCall: number;
-    minRaise: number;
-    maxRaise: number;
-    pot: number;
-    error?: string;
+  canAct: boolean;
+  actions: string[];
+  toCall: number;
+  minRaise: number;
+  maxRaise: number;
+  pot: number;
+  error?: string;
 }
 
 export interface ServerStatus {
-    running: boolean;
-    uptime: number;
-    activeTables: number;
-    activeTournaments: number;
-    totalHandsDealt: number;
+  running: boolean;
+  uptime: number;
+  activeTables: number;
+  activeTournaments: number;
+  totalHandsDealt: number;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -61,24 +61,28 @@ export interface ServerStatus {
  * @returns ActionResult with success status and optional error message
  */
 export async function submitAction(
-    tableId: string,
-    userId: string,
-    action: string,
-    amount?: number
+  tableId: string,
+  userId: string,
+  action: string,
+  amount?: number
 ): Promise<ActionResult> {
-    try {
-        const response = await fetch(`${GAME_SERVER_URL}/action`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tableId, userId, action, amount }),
-        });
+  try {
+    const response = await fetch(`${GAME_SERVER_URL}/action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tableId, userId, action, amount }),
+    });
 
-        const result = await response.json();
-        return result as ActionResult;
-    } catch (err) {
-        console.error('[GameServerAPI] Failed to submit action:', err);
-        return { success: false, error: 'Server unreachable' };
+    if (!response.ok) {
+      return { success: false, error: `Server error (${response.status})` };
     }
+
+    const result = await response.json();
+    return result as ActionResult;
+  } catch (err) {
+    console.error('[GameServerAPI] Failed to submit action:', err);
+    return { success: false, error: 'Server unreachable' };
+  }
 }
 
 /**
@@ -89,30 +93,48 @@ export async function submitAction(
  * @param userId - The player's user UUID
  * @returns PlayerActions with available actions and betting limits
  */
-export async function getAvailableActions(
-    tableId: string,
-    userId: string
-): Promise<PlayerActions> {
-    try {
-        const response = await fetch(`${GAME_SERVER_URL}/actions/${tableId}/${userId}`);
-        const result = await response.json();
-        return result as PlayerActions;
-    } catch (err) {
-        console.error('[GameServerAPI] Failed to get actions:', err);
-        return { canAct: false, actions: [], toCall: 0, minRaise: 0, maxRaise: 0, pot: 0, error: 'Server unreachable' };
+export async function getAvailableActions(tableId: string, userId: string): Promise<PlayerActions> {
+  try {
+    const response = await fetch(`${GAME_SERVER_URL}/actions/${tableId}/${userId}`);
+
+    if (!response.ok) {
+      return {
+        canAct: false,
+        actions: [],
+        toCall: 0,
+        minRaise: 0,
+        maxRaise: 0,
+        pot: 0,
+        error: `Server error (${response.status})`,
+      };
     }
+
+    const result = await response.json();
+    return result as PlayerActions;
+  } catch (err) {
+    console.error('[GameServerAPI] Failed to get actions:', err);
+    return {
+      canAct: false,
+      actions: [],
+      toCall: 0,
+      minRaise: 0,
+      maxRaise: 0,
+      pot: 0,
+      error: 'Server unreachable',
+    };
+  }
 }
 
 /**
  * Get game server health/status.
  */
 export async function getServerStatus(): Promise<ServerStatus | null> {
-    try {
-        const response = await fetch(`${GAME_SERVER_URL}/health`);
-        return await response.json() as ServerStatus;
-    } catch {
-        return null;
-    }
+  try {
+    const response = await fetch(`${GAME_SERVER_URL}/health`);
+    return (await response.json()) as ServerStatus;
+  } catch {
+    return null;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -130,70 +152,70 @@ let activeDeltaSync: DeltaSyncService<Record<string, unknown>> | null = null;
  * Uses ReconnectingWebSocket with exponential backoff.
  */
 export function connectTableWebSocket(
-    tableId: string,
-    onStateUpdate: (state: Record<string, unknown>, changedKeys: string[]) => void
+  tableId: string,
+  onStateUpdate: (state: Record<string, unknown>, changedKeys: string[]) => void
 ): ReconnectingWebSocket {
-    // Disconnect any existing connection
-    disconnectTableWebSocket();
+  // Disconnect any existing connection
+  disconnectTableWebSocket();
 
-    const wsUrl = GAME_SERVER_URL.replace(/^http/, 'ws') + `/ws/table/${tableId}`;
+  const wsUrl = GAME_SERVER_URL.replace(/^http/, 'ws') + `/ws/table/${tableId}`;
 
-    // Create delta sync service for incremental state updates
-    activeDeltaSync = new DeltaSyncService<Record<string, unknown>>({});
-    activeDeltaSync.onChange(onStateUpdate);
+  // Create delta sync service for incremental state updates
+  activeDeltaSync = new DeltaSyncService<Record<string, unknown>>({});
+  activeDeltaSync.onChange(onStateUpdate);
 
-    // Create reconnecting WebSocket
-    activeWS = new ReconnectingWebSocket(wsUrl, {
-        maxRetries: 10,
-        initialDelay: 1000,
-        maxDelay: 30000,
-        heartbeatInterval: 30000,
-        resyncPayload: () => ({
-            type: 'RESYNC',
-            tableId,
-            lastVersion: activeDeltaSync?.getVersion() ?? 0,
-        }),
-    });
+  // Create reconnecting WebSocket
+  activeWS = new ReconnectingWebSocket(wsUrl, {
+    maxRetries: 10,
+    initialDelay: 1000,
+    maxDelay: 30000,
+    heartbeatInterval: 30000,
+    resyncPayload: () => ({
+      type: 'RESYNC',
+      tableId,
+      lastVersion: activeDeltaSync?.getVersion() ?? 0,
+    }),
+  });
 
-    // Handle incoming messages through delta sync
-    activeWS.onMessage((msg: WSMessage) => {
-        if (msg.type === 'DELTA' || msg.type === 'SNAPSHOT') {
-            activeDeltaSync?.processMessage(msg as DeltaMessage);
-        }
-    });
+  // Handle incoming messages through delta sync
+  activeWS.onMessage((msg: WSMessage) => {
+    if (msg.type === 'DELTA' || msg.type === 'SNAPSHOT') {
+      activeDeltaSync?.processMessage(msg as DeltaMessage);
+    }
+  });
 
-    // Request snapshot on version gap
-    activeDeltaSync.onSnapshotRequest(() => {
-        activeWS?.send({ type: 'REQUEST_SNAPSHOT', payload: { tableId } });
-    });
+  // Request snapshot on version gap
+  activeDeltaSync.onSnapshotRequest(() => {
+    activeWS?.send({ type: 'REQUEST_SNAPSHOT', payload: { tableId } });
+  });
 
-    activeWS.connect();
-    return activeWS;
+  activeWS.connect();
+  return activeWS;
 }
 
 /**
  * Disconnect the active table WebSocket
  */
 export function disconnectTableWebSocket(): void {
-    if (activeWS) {
-        activeWS.disconnect();
-        activeWS = null;
-    }
-    activeDeltaSync = null;
+  if (activeWS) {
+    activeWS.disconnect();
+    activeWS = null;
+  }
+  activeDeltaSync = null;
 }
 
 /**
  * Get current WebSocket connection status
  */
 export function getWebSocketStatus(): string | null {
-    return activeWS?.getStatus() ?? null;
+  return activeWS?.getStatus() ?? null;
 }
 
 export default {
-    submitAction,
-    getAvailableActions,
-    getServerStatus,
-    connectTableWebSocket,
-    disconnectTableWebSocket,
-    getWebSocketStatus,
+  submitAction,
+  getAvailableActions,
+  getServerStatus,
+  connectTableWebSocket,
+  disconnectTableWebSocket,
+  getWebSocketStatus,
 };

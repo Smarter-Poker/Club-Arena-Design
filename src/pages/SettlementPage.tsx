@@ -564,6 +564,9 @@ export default function SettlementPage() {
           enabled: !autoSettlement,
         }),
       });
+      if (!res.ok) {
+        throw new Error(`Server error (${res.status})`);
+      }
       const data = await res.json();
       if (data.success) {
         setAutoSettlement(data.autoSettlement);
