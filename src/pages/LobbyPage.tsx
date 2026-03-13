@@ -21,6 +21,7 @@ import DailyLoginReward from '../components/gamification/DailyLoginReward';
 import LuckyDrawWheel from '../components/gamification/LuckyDrawWheel';
 import { bonusService } from '../services/BonusService';
 import { useToast } from '../components/common/Toast';
+import OnlineFriendsPill from '../components/social/OnlineFriendsPill';
 type GameFilter = 'all' | 'nlh' | 'plo' | 'ofc' | 'tournaments' | 'favorites';
 
 export default function LobbyPage() {
@@ -350,6 +351,14 @@ export default function LobbyPage() {
 
       {/* Promotional Banner Carousel */}
       <LobbyHeroBanner />
+
+      {/* Online Friends Quick-Invite */}
+      {user?.id && (
+        <OnlineFriendsPill
+          userId={user.id}
+          onFriendClick={(friendId) => navigate(`/messages/new?userId=${friendId}`)}
+        />
+      )}
 
       {/* Game Type Tabs */}
       <section className={styles.filterSection}>

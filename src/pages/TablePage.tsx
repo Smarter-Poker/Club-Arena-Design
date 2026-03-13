@@ -4811,6 +4811,8 @@ export default function TablePage({
             biggestPotRef.current = 0;
             peakStackRef.current = 0;
             sessionPLRef.current = 0;
+            totalBuyInRef.current = 0;
+            autoRebuyCountRef.current = 0;
             sessionStartRef.current = Date.now();
             setShowSessionSummary(false);
 
