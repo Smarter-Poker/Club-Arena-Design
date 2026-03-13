@@ -103,7 +103,8 @@ export default function BonusPage() {
         .select('*')
         .eq('user_id', user?.id)
         .gte('expires_at', new Date().toISOString())
-        .order('expires_at', { ascending: true });
+        .order('expires_at', { ascending: true })
+        .limit(100);
 
       if (getIsMounted && !getIsMounted()) return;
       if (specials) {

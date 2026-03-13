@@ -11,7 +11,7 @@
  * - System messages
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useUserStore } from '../stores/useUserStore';
@@ -48,6 +48,14 @@ export default function NotificationCenter() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
   const [visibleNotifications, setVisibleNotifications] = useState(new Set<number>());
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const loadNotifications = useCallback(async () => {
     if (!user?.id) return;
@@ -60,7 +68,7 @@ export default function NotificationCenter() {
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (data) {
+      if (data && isMounted.current) {
         setNotifications(
           data.map((n) => ({
             id: n.id,
@@ -76,9 +84,9 @@ export default function NotificationCenter() {
       }
     } catch (err) {
       console.error('Failed to load notifications:', err);
-      toast.error('Failed to load notifications');
+      if (isMounted.current) toast.error('Failed to load notifications');
     }
-    setLoading(false);
+    if (isMounted.current) setLoading(false);
   }, [user?.id]);
 
   useEffect(() => {
