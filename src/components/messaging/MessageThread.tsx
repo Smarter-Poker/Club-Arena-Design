@@ -17,7 +17,6 @@ import { useMessageDraft } from '../../hooks/useMessageDraft';
 import MessageSearchBar from './MessageSearchBar';
 import ForwardMessageModal from './ForwardMessageModal';
 import ScheduledMessagePanel from './ScheduledMessagePanel';
-import { playerStatusService } from '../../services/PlayerStatusService';
 import styles from './MessageThread.module.css';
 
 interface Reaction {
