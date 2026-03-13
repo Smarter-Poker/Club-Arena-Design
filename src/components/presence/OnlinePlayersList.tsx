@@ -68,15 +68,33 @@ export const OnlinePlayersList: React.FC<OnlinePlayersListProps> = ({
 
   const loadOnlinePlayers = async () => {
     try {
+      let userIdsFilter: string[] = [];
+      if (clubId) {
+        const resolvedId = await resolveClubUUID(clubId);
+        const { data: members } = await supabase
+          .from('club_members')
+          .select('user_id')
+          .eq('club_id', resolvedId);
+
+        if (members && members.length > 0) {
+          userIdsFilter = members.map((m) => m.user_id);
+        } else {
+          setPlayers([]);
+          setOnlineCount(0);
+          setLoading(false);
+          return;
+        }
+      }
+
       let query = supabase
         .from('player_presence')
-        .select('user_id, status, current_table_id', { count: 'exact' })
+        .select('user_id, status, table_id', { count: 'exact' })
         .in('status', ['online', 'playing'])
         .order('last_seen_at', { ascending: false })
         .limit(limit);
 
       if (clubId) {
-        query = query.eq('club_id', await resolveClubUUID(clubId));
+        query = query.in('user_id', userIdsFilter);
       }
 
       const { data, count } = await query;
@@ -99,7 +117,7 @@ export const OnlinePlayersList: React.FC<OnlinePlayersListProps> = ({
             displayName: profile?.full_name || profile?.username || 'Unknown',
             avatarUrl: profile?.avatar_url,
             status: p.status,
-            currentTable: p.current_table_id,
+            currentTable: p.table_id,
           };
         });
         setPlayers(mapped);

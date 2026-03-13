@@ -256,12 +256,11 @@ export default function ClubDashboard() {
         // Use resolved UUID for all FK queries — clubId from URL may be integer
         const resolvedId = clubData.id;
 
-        // Get member count — exclude horses
+        // Get member count — include horses
         const { count: memberCount } = await supabase
           .from('club_members')
           .select('user_id, profiles!inner(id)', { count: 'exact', head: true })
-          .eq('club_id', resolvedId)
-          .eq('profiles.is_horse', false);
+          .eq('club_id', resolvedId);
 
         // Get table count
         const { count: tableCount } = await supabase
@@ -294,7 +293,6 @@ export default function ClubDashboard() {
                 `
         )
         .eq('club_id', resolvedClubId)
-        .eq('profiles.is_horse', false)
         .order('chips_won', { ascending: false })
         .limit(50);
 

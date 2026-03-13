@@ -268,7 +268,7 @@ export default function HamburgerMenu({ isOpen, onClose }: HamburgerMenuProps) {
           bottom: 0,
           width: '100%',
           maxWidth: 320,
-          background: colors.bg,
+          backgroundColor: '#18191a' /* Solid background to prevent see-through */,
           boxShadow: '4px 0 20px rgba(0, 0, 0, 0.5)',
           zIndex: 1000,
           transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',

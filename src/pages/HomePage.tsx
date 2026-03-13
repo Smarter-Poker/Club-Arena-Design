@@ -963,12 +963,11 @@ function HomePageInner() {
         if (!club || !isMounted) return;
         setSharkClubId(club.id);
 
-        // 1. Real member count from club_members table (exclude horses)
+        // 1. Real member count from club_members table
         const { count: memberCount } = await supabase
           .from('club_members')
           .select('user_id, profiles!inner(id)', { count: 'exact', head: true })
-          .eq('club_id', club.id)
-          .eq('profiles.is_horse', false);
+          .eq('club_id', club.id);
 
         // 2. Real active players: count occupied seats across ALL tables (platform-wide)
         let activePlayers = 0;
