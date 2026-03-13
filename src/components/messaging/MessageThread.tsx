@@ -17,6 +17,7 @@ import { useMessageDraft } from '../../hooks/useMessageDraft';
 import MessageSearchBar from './MessageSearchBar';
 import ForwardMessageModal from './ForwardMessageModal';
 import ScheduledMessagePanel from './ScheduledMessagePanel';
+import { playerStatusService } from '../../services/PlayerStatusService';
 import styles from './MessageThread.module.css';
 
 interface Reaction {
@@ -554,29 +555,59 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
             <p>Start the conversation!</p>
           </div>
         ) : (
-          messages.map((message, idx) => (
-            <div
-              key={message.id}
-              id={`msg-${message.id}`}
-              style={{
-                opacity: visibleMessages.has(idx) ? 1 : 0,
-                transform: visibleMessages.has(idx) ? 'translateY(0)' : 'translateY(8px)',
-                transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                background:
-                  highlightedMessageId === message.id ? 'rgba(0, 212, 255, 0.08)' : undefined,
-                borderRadius: highlightedMessageId === message.id ? '12px' : undefined,
-              }}
-            >
-              <MessageBubble
-                message={message}
-                isCurrentUser={message.userId === user?.id}
-                onReact={reactToMessage}
-                onDelete={deleteMessage}
-                onReply={handleReply}
-                onForward={handleForward}
-              />
-            </div>
-          ))
+          messages.map((message, idx) => {
+            // Q3 Phase 14: Unread separator line
+            const showUnreadSep = idx > 0 &&
+              !message.isSeen &&
+              messages[idx - 1]?.isSeen &&
+              message.userId !== user?.id;
+            const unreadCount = messages.slice(idx).filter(m => !m.isSeen && m.userId !== user?.id).length;
+
+            return (
+              <div key={message.id}>
+                {showUnreadSep && (
+                  <div className={styles.unreadSeparator || ''} style={{
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    padding: '8px 16px', margin: '4px 0',
+                    color: '#00d4ff', fontSize: '0.75rem', fontWeight: 600,
+                  }}>
+                    <div style={{ flex: 1, height: '1px', background: 'rgba(0,212,255,0.3)' }} />
+                    <span>{unreadCount} new message{unreadCount !== 1 ? 's' : ''}</span>
+                    <div style={{ flex: 1, height: '1px', background: 'rgba(0,212,255,0.3)' }} />
+                  </div>
+                )}
+                <div
+                  id={`msg-${message.id}`}
+                  style={{
+                    opacity: visibleMessages.has(idx) ? 1 : 0,
+                    transform: visibleMessages.has(idx) ? 'translateY(0)' : 'translateY(8px)',
+                    transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    background:
+                      highlightedMessageId === message.id ? 'rgba(0, 212, 255, 0.08)' : undefined,
+                    borderRadius: highlightedMessageId === message.id ? '12px' : undefined,
+                  }}
+                >
+                  <MessageBubble
+                    message={message}
+                    isCurrentUser={message.userId === user?.id}
+                    onReact={reactToMessage}
+                    onDelete={deleteMessage}
+                    onReply={handleReply}
+                    onForward={handleForward}
+                  />
+                  {/* Q3: Reply count indicator */}
+                  {message.threadReplyCount && message.threadReplyCount > 0 && (
+                    <div style={{
+                      fontSize: '0.7rem', color: '#00d4ff', padding: '2px 48px',
+                      cursor: 'pointer', fontWeight: 600,
+                    }}>
+                      💬 {message.threadReplyCount} repl{message.threadReplyCount !== 1 ? 'ies' : 'y'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })
         )}
 
         {/* Typing Indicator */}
@@ -609,6 +640,27 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
           </button>
         </div>
       )}
+
+      {/* Q3 Phase 14: Compose bar extras */}
+      <div style={{ display: 'flex', gap: '4px', padding: '0 8px', alignItems: 'center' }}>
+        <button
+          onClick={() => {
+            const recipientId = participants?.[0]?.userId;
+            if (recipientId && user?.id) {
+              // Send a contact card as a message
+              sendMessage(`📇 Shared contact card — /profile/${user.id}`, undefined, undefined);
+            }
+          }}
+          title="Share Contact Card"
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            fontSize: '1.1rem', padding: '4px 8px', borderRadius: '8px',
+            color: 'var(--text-secondary, #8b9dc3)',
+          }}
+        >
+          📇
+        </button>
+      </div>
 
       {/* Input */}
       <MessageInput

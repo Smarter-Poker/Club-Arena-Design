@@ -644,26 +644,12 @@ export class HeadlessTableEngine {
 
           // State verification between hands (StateVerifier emits bus events internally)
           try {
-            // Adjust expected chip total for rake deducted this hand
+            // Deduct rake from the expected chip total before verifying
             // Without this, every raked hand would false-positive as a chip conservation violation
+            // because post-hand stacks = pre-hand stacks - rake
             const handRake = (event as any).rake ?? 0;
             if (handRake > 0) {
-              // Re-record the expected total minus rake so verifier doesn't false-positive
-              stateVerifier.recordInitialChipTotal(
-                this.tableId,
-                players.map((p) => ({
-                  user_id: p.user_id,
-                  username: p.username || '',
-                  stack: p.stack,
-                  seat: 0,
-                  bet: 0,
-                  cards: [],
-                  is_folded: false,
-                  is_all_in: false,
-                  is_sitting_out: false,
-                  totalInvested: 0,
-                })) as any
-              );
+              stateVerifier.deductRake(this.tableId, handRake);
             }
 
             const verifyResult = stateVerifier.verify({

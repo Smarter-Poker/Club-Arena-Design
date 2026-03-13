@@ -265,7 +265,7 @@ export default function BonusPage() {
       </section>
 
       {/* Special Bonuses */}
-      {specialBonuses.length > 0 && (
+      {specialBonuses.length > 0 ? (
         <section className="bonus-section">
           <h3>Special Bonuses</h3>
           <div className="special-list">
@@ -299,6 +299,13 @@ export default function BonusPage() {
               </div>
             ))}
           </div>
+        </section>
+      ) : (
+        <section className="bonus-section" style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+          <h3>Special Bonuses</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+            No special bonuses available right now. Check back later for exclusive rewards!
+          </p>
         </section>
       )}
     </div>

@@ -62,6 +62,18 @@ class StateVerifierClass {
   }
 
   /**
+   * Deduct rake from the expected chip total for a table.
+   * Called after a hand completes so chip conservation check accounts for rake.
+   * Without this, every raked hand would false-positive as a chip conservation violation.
+   */
+  deductRake(tableId: string, rakeAmount: number): void {
+    const current = this.chipTotals.get(tableId);
+    if (current !== undefined && rakeAmount > 0) {
+      this.chipTotals.set(tableId, current - rakeAmount);
+    }
+  }
+
+  /**
    * Full integrity verification of current game state.
    * Returns all detected violations. Call between hands or during dealing pauses.
    */
