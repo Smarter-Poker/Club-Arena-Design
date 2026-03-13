@@ -3573,6 +3573,7 @@ export default function TablePage({
               tableId: tableId!,
               playerId: userId!,
               action: 'fold',
+              amount: 0,
             });
           } else if (preAction === 'check') {
             // Only check if can check (no bet to call)
@@ -3586,6 +3587,7 @@ export default function TablePage({
                 tableId: tableId!,
                 playerId: userId!,
                 action: 'check',
+                amount: 0,
               });
             } else {
               masterBus.emit('PRE_ACTION_INVALIDATED', {
@@ -3600,6 +3602,7 @@ export default function TablePage({
               tableId: tableId!,
               playerId: userId!,
               action: 'call',
+              amount: 0,
             });
           }
           // Clear the pre-action after executing

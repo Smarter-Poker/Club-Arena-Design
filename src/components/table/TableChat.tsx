@@ -234,9 +234,65 @@ export function TableChat({
         });
       }
     });
+
+    const unsubPreAction = masterBus.subscribe('PRE_ACTION_EXECUTED', (event: any) => {
+      const data = event?.payload;
+      if (data && (!tableId || data.tableId === tableId)) {
+        const actionText =
+          data.action === 'fold'
+            ? 'auto-folded'
+            : data.action === 'check'
+              ? 'auto-checked'
+              : 'auto-called';
+
+        setBusMessages((prev) => {
+          const sysMsg: ChatMessage = {
+            id: `sys-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            type: 'SYSTEM',
+            content: `Player ${data.playerId.substring(0, 4)} ${actionText}`,
+            timestamp: new Date(),
+          };
+          return [...prev, sysMsg].slice(-50);
+        });
+      }
+    });
+
+    const unsubStraddle = masterBus.subscribe('STRADDLE_TOGGLED', (event: any) => {
+      const data = event?.payload;
+      if (data && (!tableId || data.tableId === tableId)) {
+        setBusMessages((prev) => {
+          const sysMsg: ChatMessage = {
+            id: `sys-straddle-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            type: 'SYSTEM',
+            content: `Player ${data.playerId.substring(0, 4)} turned ${data.enabled ? 'ON' : 'OFF'} Auto-Straddle`,
+            timestamp: new Date(),
+          };
+          return [...prev, sysMsg].slice(-50);
+        });
+      }
+    });
+
+    const unsubTimeBank = masterBus.subscribe('TIME_BANK_ACTIVATED', (event: any) => {
+      const data = event?.payload;
+      if (data && (!tableId || data.tableId === tableId)) {
+        setBusMessages((prev) => {
+          const sysMsg: ChatMessage = {
+            id: `sys-timebank-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            type: 'SYSTEM',
+            content: `Player ${data.playerId.substring(0, 4)} activated Time Bank (+${data.addedSeconds}s)`,
+            timestamp: new Date(),
+          };
+          return [...prev, sysMsg].slice(-50);
+        });
+      }
+    });
+
     return () => {
       unsubChat();
       unsubReaction();
+      unsubPreAction();
+      unsubStraddle();
+      unsubTimeBank();
     };
   }, [myPlayerId, tableId]);
 
