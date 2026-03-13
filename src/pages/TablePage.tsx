@@ -22,6 +22,7 @@ import type { BoardStage } from '../components/table/CommunityCards';
 import { useTableWebSocket } from '../services/TableWebSocket';
 import { supabase, subscribeToHandState, broadcastHandState } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
+import { playerStatusService } from '../services/PlayerStatusService';
 import { avatarService } from '../services/AvatarService';
 import PlayerNotesPanel from '../components/gameplay/PlayerNotesPanel';
 import HandReplay from '../components/replay/HandReplay';
@@ -1135,6 +1136,9 @@ export default function TablePage({
         // Notify system
         masterBus.emit('TABLE_LEFT', { tableId, seat: tableState.heroSeat });
         masterBus.emit('SESSION_ENDED', { tableId, userId });
+
+        // Q3: Clear "Playing At" status when leaving table
+        playerStatusService.clearPlayingAt(userId);
 
         // Show session summary instead of navigating immediately
         // P/L = chips returned to wallet minus total chips invested at table

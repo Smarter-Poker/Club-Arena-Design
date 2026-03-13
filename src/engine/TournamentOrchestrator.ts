@@ -460,8 +460,42 @@ export class TournamentOrchestrator {
       const moves = tableBalancer.calculateMoves(balancerTables);
       if (moves.length === 0) return;
 
+      console.log(`[TournamentOrchestrator] Rebalancing ${tournamentId}: ${moves.length} moves`);
+
+      // Execute each move in Supabase: vacate old seat, insert at new seat
+      for (const move of moves) {
+        try {
+          // Mark old seat as vacated
+          await supabase
+            .from('table_seats')
+            .update({ left_at: new Date().toISOString() })
+            .eq('table_id', move.fromTableId)
+            .eq('user_id', move.playerId)
+            .is('left_at', null);
+
+          // Get current stack for the player
+          const playerData = balancerTables
+            .find((t) => t.tableId === move.fromTableId)
+            ?.players.find((p) => p.userId === move.playerId);
+
+          // Insert at new seat
+          await supabase.from('table_seats').insert({
+            table_id: move.toTableId,
+            user_id: move.playerId,
+            seat_number: move.toSeat,
+            stack: playerData?.stack || 0,
+            joined_at: new Date().toISOString(),
+          });
+        } catch (moveErr) {
+          console.error(
+            `[TournamentOrchestrator] Failed to move ${move.playerId}: ${move.fromTableId} → ${move.toTableId}`,
+            moveErr
+          );
+        }
+      }
+
       console.log(
-        `[TournamentOrchestrator] Rebalancing ${tournamentId}: ${moves.length} moves`
+        `[TournamentOrchestrator] Rebalance complete for ${tournamentId}: ${moves.length} players moved`
       );
     } catch (err) {
       console.error(`[TournamentOrchestrator] Rebalance error for ${tournamentId}:`, err);

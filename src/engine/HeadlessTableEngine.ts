@@ -627,7 +627,7 @@ export class HeadlessTableEngine {
 
           // State verification between hands
           try {
-            stateVerifier.verify({
+            const verifyResult = stateVerifier.verify({
               tableId: this.tableId,
               handNumber: this.handCount,
               players: players as any,
@@ -635,6 +635,22 @@ export class HeadlessTableEngine {
               pot: 0,
               stage: 'showdown',
             });
+            if (!verifyResult.valid && verifyResult.violations.length > 0) {
+              console.error(
+                `[HeadlessTableEngine:${this.tableId}] STATE INTEGRITY VIOLATION hand #${this.handCount}:`,
+                verifyResult.violations
+              );
+              masterBus.emit('STATE_INTEGRITY_VIOLATION', {
+                tableId: this.tableId,
+                handNumber: this.handCount,
+                violationCount: verifyResult.violations.length,
+                violations: verifyResult.violations.map((v: any) => ({
+                  type: v.type || 'UNKNOWN',
+                  message: v.message || v.description || String(v),
+                  severity: v.severity || 'error',
+                })),
+              });
+            }
           } catch (verifyErr) {
             console.warn(`[HeadlessTableEngine:${this.tableId}] StateVerifier error:`, verifyErr);
           }
