@@ -69,14 +69,14 @@ export async function bootServices(options?: {
     }
   }
 
-  // 3. Auto-Rebuy Service — monitors horse stacks across all tables
-  try {
-    AutoRebuyService.start();
-    result.autoRebuy = true;
-    console.debug('[ServiceBootstrap] ✓ AutoRebuyService started');
-  } catch (err: unknown) {
-    console.error('[ServiceBootstrap] ✗ AutoRebuyService failed:', err);
-  }
+  // 3. Auto-Rebuy Service — DISABLED ON FRONTEND (Now runs on Node.js Server to prevent DB overload)
+  // try {
+  //   AutoRebuyService.start();
+  //   result.autoRebuy = true;
+  //   console.debug('[ServiceBootstrap] ✓ AutoRebuyService started');
+  // } catch (err: unknown) {
+  //   console.error('[ServiceBootstrap] ✗ AutoRebuyService failed:', err);
+  // }
 
   // 4. Financial Cron — reconciliation, suspension checks, audit trail
   try {
@@ -114,7 +114,6 @@ export async function bootServices(options?: {
 export function shutdownServices(): void {
   OfflineQueueService.dispose();
   SettlementCronService.stop();
-  AutoRebuyService.stop();
   FinancialCronService.stop();
   booted = false;
   console.debug('[ServiceBootstrap] Services shut down');
