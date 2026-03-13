@@ -956,18 +956,15 @@ function HomePageInner() {
         // Find Shark Club by club_id = 25450
         const { data: club } = await supabase
           .from('clubs')
-          .select('id')
+          .select('id, member_count')
           .eq('club_id', 25450)
           .maybeSingle();
 
         if (!club || !isMounted) return;
         setSharkClubId(club.id);
 
-        // 1. Real member count from club_members table
-        const { count: memberCount } = await supabase
-          .from('club_members')
-          .select('user_id, profiles!inner(id)', { count: 'exact', head: true })
-          .eq('club_id', club.id);
+        // 1. Real member count from clubs table (bypasses RLS on club_members)
+        const memberCount = club.member_count || 0;
 
         // 2. Real active players: count occupied seats across ALL tables (platform-wide)
         let activePlayers = 0;
@@ -981,7 +978,7 @@ function HomePageInner() {
         if (!isMounted) return;
         const clubLevel = 1;
         setSharkClubStats({
-          totalMembers: memberCount || 0,
+          totalMembers: memberCount,
           clubLevel,
           activePlayers,
         });
