@@ -121,9 +121,15 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   const handleNotificationClick = async (notif: Notification) => {
     // Mark as read
     if (!notif.isRead) {
-      await supabase.from('notifications').update({ read: true }).eq('id', notif.id);
-
-      setNotifications((prev) => prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n)));
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', notif.id);
+      if (!error) {
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
+        );
+      }
     }
 
     // Navigate if action URL
@@ -134,19 +140,27 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   };
 
   const handleMarkAllRead = async () => {
-    await supabase
+    const { error } = await supabase
       .from('notifications')
       .update({ read: true })
       .eq('user_id', userId)
       .eq('read', false);
 
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    if (!error) {
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    }
   };
 
   const handleClearAll = async () => {
-    await supabase.from('notifications').delete().eq('user_id', userId).eq('read', true);
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('user_id', userId)
+      .eq('read', true);
 
-    setNotifications((prev) => prev.filter((n) => !n.isRead));
+    if (!error) {
+      setNotifications((prev) => prev.filter((n) => !n.isRead));
+    }
   };
 
   const getTypeIcon = (type: string) => {

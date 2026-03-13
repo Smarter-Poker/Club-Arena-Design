@@ -2874,8 +2874,10 @@ export default function TablePage({
             // Feed SessionStatsService for trajectory graph + VPIP/PFR analytics
             const heroWon = userId ? winnerInfo.playerIds.some((pid) => pid === userId) : false;
             // Determine VPIP/PFR from hand actions (hero voluntarily put chips in preflop / raised preflop)
+            // handActionsRef stores { seat, action, amount, street } — match by seat number
+            const heroSeatNum = tableStateRef.current.heroSeat;
             const heroActions = handActionsRef.current.filter(
-              (a: any) => a.playerId === userId && a.street === 'preflop'
+              (a: any) => a.seat === heroSeatNum && a.street === 'preflop'
             );
             const heroVPIP = heroActions.some((a: any) =>
               ['call', 'raise', 'bet'].includes(a.action)

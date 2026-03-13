@@ -219,9 +219,7 @@ class TournamentTimerServiceClass {
     try {
       const { data: entries } = await supabase
         .from('tournament_players')
-        .select(
-          'user_id, username, chips'
-        )
+        .select('user_id, username, chips')
         .eq('tournament_id', tournamentId)
         .eq('status', 'playing');
 
@@ -234,7 +232,7 @@ class TournamentTimerServiceClass {
         .from('tournaments')
         .select('id, name, prize_pool, max_players, final_table_triggered')
         .eq('id', tournamentId)
-        .single();
+        .maybeSingle();
 
       if (!tournament) return;
 
