@@ -229,16 +229,23 @@ export const SeatSlot = memo(
     // Animated stack change — flash green/red when stack changes
     const [stackDelta, setStackDelta] = useState<number>(0);
     const prevStackRef = React.useRef<number>(player?.stack ?? 0);
+    const wasSeatedRef = React.useRef<boolean>(!!player); // Track if player was already present
     useEffect(() => {
-      if (!player) return;
+      if (!player) {
+        wasSeatedRef.current = false; // Player left — reset for next occupant
+        return;
+      }
       const diff = player.stack - prevStackRef.current;
-      if (diff !== 0) {
+      // Only animate if player was already seated (not initial sit-down)
+      if (diff !== 0 && wasSeatedRef.current) {
         setStackDelta(diff);
         const t = setTimeout(() => setStackDelta(0), 2000);
-        prevStackRef.current = player.stack; // Update ref BEFORE returning cleanup
+        prevStackRef.current = player.stack;
+        wasSeatedRef.current = true;
         return () => clearTimeout(t);
       }
       prevStackRef.current = player.stack;
+      wasSeatedRef.current = true; // Mark as seated after first render
     }, [player?.stack]);
 
     // Winner pop animation — brief scale bounce when isWinner transitions to true

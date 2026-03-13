@@ -243,7 +243,7 @@ class CashoutServiceClass {
           .select('user_id')
           .eq('id', agentId)
           .maybeSingle();
-        
+
         if (agentData?.user_id) {
           // Log the wallet transaction for the agent receiving the chips
           await WalletService.logTransaction(
@@ -354,7 +354,8 @@ class CashoutServiceClass {
       )
       .eq('agent_id', agentId)
       .eq('status', 'pending')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(100);
 
     if (clubId) {
       query = query.eq('club_id', clubId);
@@ -384,7 +385,8 @@ class CashoutServiceClass {
             `
       )
       .eq('player_id', playerId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(100);
 
     if (clubId) {
       query = query.eq('club_id', clubId);

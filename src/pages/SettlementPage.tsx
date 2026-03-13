@@ -298,7 +298,6 @@ export default function SettlementPage() {
             direction: c.netRevenue >= 0 ? 'COLLECT_FROM_UNION' : 'PAY_TO_UNION',
             status: c.status === 'finalized' ? 'processed' : 'pending',
           }));
-          setClubWires(wires);
 
           // Map agent settlements to payouts
           const payouts: AgentPayout[] = settlements.agentSettlements.map((a) => ({

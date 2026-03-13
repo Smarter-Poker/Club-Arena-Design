@@ -83,6 +83,7 @@ export default function CreateUnionPage() {
         setOwnsClub((count || 0) > 0);
       } catch (e) {
         console.error('Failed to check club ownership:', e);
+        toast.error('Failed to verify club ownership');
         setOwnsClub(false);
       } finally {
         setCheckingClubs(false);

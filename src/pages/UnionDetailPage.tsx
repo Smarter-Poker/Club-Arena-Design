@@ -246,6 +246,7 @@ export default function UnionDetailPage() {
         }
       } catch (err) {
         console.error('[UnionDetailPage] Error loading data:', err);
+        toast.error('Failed to load union data');
       } finally {
         if (isMounted) setLoading(false);
       }

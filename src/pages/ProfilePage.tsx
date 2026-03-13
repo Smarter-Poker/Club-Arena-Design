@@ -26,6 +26,7 @@ import CircularGauge from '../components/common/CircularGauge';
 import DiamondRainEffect from '../components/effects/DiamondRainEffect';
 import MissionsPanel, { Mission } from '../components/gamification/MissionsPanel';
 import GamificationLeaderboard from '../components/gamification/GamificationLeaderboard';
+import PlayerActivityFeed from '../components/social/PlayerActivityFeed';
 import { dailyChallengeService, type UserDailyChallenge } from '../services/DailyChallengeService';
 import { useSwipeTabs } from '../hooks/useSwipeTabs';
 import { useToast } from '../components/common/Toast';
@@ -886,6 +887,13 @@ export default function ProfilePage() {
       <section className={styles.contentSection}>
         <GamificationLeaderboard />
       </section>
+
+      {/* Player Activity Feed */}
+      {user?.id && (
+        <section className={styles.contentSection}>
+          <PlayerActivityFeed userId={user.id} />
+        </section>
+      )}
 
       {/* Achievement Showcase — always visible */}
       {achievements.filter((a) => a.unlockedAt).length > 0 && (

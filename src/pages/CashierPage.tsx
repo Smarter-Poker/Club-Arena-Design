@@ -320,7 +320,8 @@ export default function CashierPage() {
                 `
         )
         .eq('club_id', clubId)
-        .neq('user_id', user.id);
+        .neq('user_id', user.id)
+        .limit(500);
 
       // Filter based on role hierarchy
       if (userRole === 'owner' || isUnionOwner) {

@@ -149,6 +149,7 @@ export default function AnalyticsDashboard() {
       }
     } catch (err) {
       console.error('[AnalyticsDashboard] Error loading position stats:', err);
+      toast.error('Failed to load position stats');
     }
   }, [timeRange]);
 
@@ -172,14 +173,19 @@ export default function AnalyticsDashboard() {
       }
     } catch (err) {
       console.error('[AnalyticsDashboard] Error loading VIP ledger:', err);
+      toast.error('Failed to load VIP ledger');
     }
   }, [timeRange]);
 
   const loadAggregates = useCallback(async () => {
     try {
-      let handQuery = supabase.from('player_position_stats').select('hands_played');
-      let vipQuery = supabase.from('vip_points_ledger').select('amount').gt('amount', 0);
-      let playerQuery = supabase.from('player_position_stats').select('user_id');
+      let handQuery = supabase.from('player_position_stats').select('hands_played').limit(5000);
+      let vipQuery = supabase
+        .from('vip_points_ledger')
+        .select('amount')
+        .gt('amount', 0)
+        .limit(5000);
+      let playerQuery = supabase.from('player_position_stats').select('user_id').limit(5000);
 
       const cutoff = getTimeRangeCutoff(timeRange);
       if (cutoff) {
@@ -222,6 +228,7 @@ export default function AnalyticsDashboard() {
       }
     } catch (err) {
       console.error('[AnalyticsDashboard] Error loading aggregates:', err);
+      toast.error('Failed to load analytics data');
     }
   }, [timeRange]);
 

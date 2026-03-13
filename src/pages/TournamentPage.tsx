@@ -330,6 +330,7 @@ export default function TournamentPage() {
       }
     } catch (e) {
       console.error(e);
+      toast.error('Failed to join tournament table');
     }
   };
 
