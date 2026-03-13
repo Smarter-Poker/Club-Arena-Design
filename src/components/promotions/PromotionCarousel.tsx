@@ -87,8 +87,10 @@ export default function PromotionCarousel({ clubId, onPromoClick }: PromotionCar
 
   if (loading || promos.length === 0) return null;
 
-  const promo = promos[activeIndex];
-  const gradient = GRADIENT_PALETTE[activeIndex % GRADIENT_PALETTE.length];
+  // Bounds-check activeIndex to prevent stale index after promos array shrinks
+  const safeIndex = activeIndex >= promos.length ? 0 : activeIndex;
+  const promo = promos[safeIndex];
+  const gradient = GRADIENT_PALETTE[safeIndex % GRADIENT_PALETTE.length];
   const icon = TYPE_ICONS[promo.type] || '🎁';
 
   const getTimeRemaining = (): string => {
@@ -97,7 +99,9 @@ export default function PromotionCarousel({ clubId, onPromoClick }: PromotionCar
     const days = Math.floor(diff / 86_400_000);
     const hours = Math.floor((diff % 86_400_000) / 3_600_000);
     if (days > 0) return `${days}d ${hours}h left`;
-    return `${hours}h left`;
+    if (hours > 0) return `${hours}h left`;
+    const mins = Math.floor((diff % 3_600_000) / 60_000);
+    return mins > 0 ? `${mins}m left` : 'Ending soon';
   };
 
   return (
@@ -127,7 +131,7 @@ export default function PromotionCarousel({ clubId, onPromoClick }: PromotionCar
           {promos.map((_, i) => (
             <button
               key={i}
-              className={`pc-dot ${i === activeIndex ? 'pc-dot-active' : ''}`}
+              className={`pc-dot ${i === safeIndex ? 'pc-dot-active' : ''}`}
               onClick={() => goTo(i)}
               aria-label={`Promotion ${i + 1}`}
             />

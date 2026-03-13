@@ -38,6 +38,7 @@ export default function PromotionsList({ userId, clubId }: PromotionsListProps) 
   const [claims, setClaims] = useState<PromotionClaim[]>([]);
   const [tab, setTab] = useState<TabFilter>('active');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [selectedPromo, setSelectedPromo] = useState<Promotion | null>(null);
   const isMounted = useRef(true);
 
@@ -50,6 +51,7 @@ export default function PromotionsList({ userId, clubId }: PromotionsListProps) 
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setError(false);
     try {
       const [promos, userClaims] = await Promise.all([
         promotionService.getPromotions(clubId, tab),
@@ -61,6 +63,7 @@ export default function PromotionsList({ userId, clubId }: PromotionsListProps) 
       }
     } catch (err) {
       console.error('[PromotionsList] load error:', err);
+      if (isMounted.current) setError(true);
     }
     if (isMounted.current) setLoading(false);
   }, [userId, clubId, tab]);
@@ -116,7 +119,14 @@ export default function PromotionsList({ userId, clubId }: PromotionsListProps) 
         </div>
       </div>
 
-      {promotions.length === 0 ? (
+      {error ? (
+        <div className="pl-empty">
+          Failed to load promotions.{' '}
+          <button className="pl-retry" onClick={loadData}>
+            Retry
+          </button>
+        </div>
+      ) : promotions.length === 0 ? (
         <div className="pl-empty">No {tab} promotions at the moment</div>
       ) : (
         <div className="pl-grid">

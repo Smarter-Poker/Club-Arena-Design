@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { sessionStatsService, type SessionStats } from '../../services/SessionStatsService';
 import { masterBus } from '../../core/MasterBus';
 import './SessionHUD.css';
@@ -42,15 +42,18 @@ export const SessionHUD: React.FC<SessionHUDProps> = ({
   const [sessionDuration, setSessionDuration] = useState('0m');
   const [sessionStartTime] = useState(() => Date.now());
 
+  // Capture initialStack only on first mount — do NOT let stack updates restart session
+  const initialStackRef = useRef(initialStack);
+
   // ── Initialize session tracking ──
   useEffect(() => {
-    sessionStatsService.startSession(tableId, userId, initialStack, bigBlind);
+    sessionStatsService.startSession(tableId, userId, initialStackRef.current, bigBlind);
     setStats(sessionStatsService.getStats(tableId));
 
     return () => {
       sessionStatsService.endSession(tableId);
     };
-  }, [tableId, userId, initialStack, bigBlind]);
+  }, [tableId, userId, bigBlind]); // initialStack intentionally omitted — captured in ref
 
   // ── Listen for stats updates ──
   useEffect(() => {

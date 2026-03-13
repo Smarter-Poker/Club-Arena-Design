@@ -739,43 +739,35 @@ class TournamentService {
       }
     }
 
-    // Re-read fresh tournament data to avoid stale read-then-write race condition
-    const { data: freshTournament } = await supabase
-      .from('tournaments')
-      .select('current_players, guaranteed_prize')
-      .eq('id', tournamentId)
-      .maybeSingle();
-    // Use fresh DB count (not stale registrations.length) for accurate player tracking
-    const freshPlayerCount =
-      (freshTournament?.current_players ?? tournament.current_players ?? 0) + 1;
-    const entriesPrize = buyIn * freshPlayerCount;
-    const freshGuarantee = freshTournament?.guaranteed_prize ?? tournament.guaranteed_prize;
-    const newPrizePool = freshGuarantee ? Math.max(entriesPrize, freshGuarantee) : entriesPrize;
-    const { error: countError } = await supabase
-      .from('tournaments')
-      .update({
-        current_players: freshPlayerCount,
-        prize_pool: newPrizePool,
-      })
-      .eq('id', tournamentId);
+    // Authoritative recount: prevents race if two registrations happen simultaneously
+    const { count: regCount, error: regCountErr } = await supabase
+      .from('tournament_players')
+      .select('*', { count: 'exact', head: true })
+      .eq('tournament_id', tournamentId)
+      .in('status', ['registered', 'playing']);
 
-    if (countError) {
-      console.error(
-        '[TournamentService] Failed to increment registration count, retrying:',
-        countError
-      );
-      // Retry once — this is important for accurate player count
-      const { error: retryErr } = await supabase
+    if (regCountErr) {
+      console.error('[TournamentService] Registration recount failed:', regCountErr);
+    } else {
+      const freshPlayerCount = regCount ?? 0;
+      const entriesPrize = buyIn * freshPlayerCount;
+      const freshGuarantee = tournament.guaranteed_prize;
+      const newPrizePool = freshGuarantee ? Math.max(entriesPrize, freshGuarantee) : entriesPrize;
+      const { error: countError } = await supabase
         .from('tournaments')
         .update({
           current_players: freshPlayerCount,
           prize_pool: newPrizePool,
         })
         .eq('id', tournamentId);
-      if (retryErr) {
-        console.error('[TournamentService] WARN: Registration count retry also failed:', retryErr);
+
+      if (countError) {
+        console.error('[TournamentService] Failed to update registration count:', countError);
       }
     }
+
+    // Compute fresh count for SNG auto-start check below
+    const freshPlayerCount = regCount ?? (tournament.current_players ?? 0) + 1;
 
     // ── SNG AUTO-START: if tournament is full, trigger immediate start ──
     if (
@@ -890,7 +882,9 @@ class TournamentService {
                 .eq('id', openTable.id);
 
               if (tableErr)
-                console.error(`[TournamentService] Late reg table count update failed: ${tableErr.message}`);
+                console.error(
+                  `[TournamentService] Late reg table count update failed: ${tableErr.message}`
+                );
             }
           }
         } else {
@@ -985,7 +979,9 @@ class TournamentService {
       const newPlayerCount = activeCount ?? 0;
       const entriesPrize2 = (tournament.buy_in_amount || 0) * newPlayerCount;
       const freshGuarantee2 = tournament.guaranteed_prize;
-      const newPrizePool = freshGuarantee2 ? Math.max(entriesPrize2, freshGuarantee2) : entriesPrize2;
+      const newPrizePool = freshGuarantee2
+        ? Math.max(entriesPrize2, freshGuarantee2)
+        : entriesPrize2;
       const { error: countError } = await supabase
         .from('tournaments')
         .update({

@@ -266,7 +266,8 @@ export async function getClubMembers(clubId: string): Promise<ClubMember[]> {
     `
     )
     .eq('club_id', clubId)
-    .order('reputation_xp', { ascending: false });
+    .order('reputation_xp', { ascending: false })
+    .limit(500);
 
   if (error) {
     console.error('[ClubsService] Get club members failed:', error);

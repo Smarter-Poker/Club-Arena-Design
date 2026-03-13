@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   promotionService,
   type Promotion,
@@ -34,6 +34,14 @@ export default function PromotionDetail({
   const [loadingLb, setLoadingLb] = useState(false);
   const toast = useToast();
   const popupRef = useRef<HTMLDivElement>(null);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   // Close on outside click
   useEffect(() => {
@@ -46,30 +54,38 @@ export default function PromotionDetail({
     return () => document.removeEventListener('mousedown', handler);
   }, [onClose]);
 
-  // Load leaderboard for leaderboard-type promotions
+  // Load leaderboard for leaderboard-type promotions — keyed by promotion.id
+  // to prevent re-fetch when parent re-renders with same promotion
+  const loadLeaderboard = useCallback(async (promoId: string) => {
+    setLoadingLb(true);
+    try {
+      const entries = await promotionService.getLeaderboard(promoId, 10);
+      if (isMounted.current) setLeaderboard(entries);
+    } catch (err) {
+      console.error('[PromotionDetail] leaderboard error:', err);
+    }
+    if (isMounted.current) setLoadingLb(false);
+  }, []);
+
   useEffect(() => {
     if (promotion.type !== 'leaderboard') return;
-    setLoadingLb(true);
-    promotionService
-      .getLeaderboard(promotion.id, 10)
-      .then((entries) => setLeaderboard(entries))
-      .catch((err) => console.error('[PromotionDetail] leaderboard error:', err))
-      .finally(() => setLoadingLb(false));
-  }, [promotion]);
+    loadLeaderboard(promotion.id);
+  }, [promotion.id, promotion.type, loadLeaderboard]);
 
   const handleClaim = async () => {
     if (isClaimed || claiming) return;
     setClaiming(true);
     try {
       await promotionService.claimPromotion(promotion.id, userId);
+      if (!isMounted.current) return;
       masterBus.emit('BALANCE_UPDATED', { source: 'promotion_claim', userId });
       toast.success('Promotion claimed!');
       onClaimed();
     } catch (err: any) {
       console.error('[PromotionDetail] claim error:', err);
-      toast.error(err.message || 'Failed to claim promotion');
+      if (isMounted.current) toast.error(err.message || 'Failed to claim promotion');
     }
-    setClaiming(false);
+    if (isMounted.current) setClaiming(false);
   };
 
   const isActive = (() => {
@@ -88,7 +104,8 @@ export default function PromotionDetail({
     const hours = Math.floor((diff % 86_400_000) / 3_600_000);
     if (days > 0) return `${days}d ${hours}h remaining`;
     if (hours > 0) return `${hours}h remaining`;
-    return `${Math.floor((diff % 3_600_000) / 60_000)}m remaining`;
+    const mins = Math.floor((diff % 3_600_000) / 60_000);
+    return mins > 0 ? `${mins}m remaining` : 'Ending soon';
   };
 
   return (
