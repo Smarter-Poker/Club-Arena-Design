@@ -63,6 +63,7 @@ export default function ClubDashboard() {
     getLocalStorage('ca_dashboard_range', 'week')
   );
   const [visiblePlayers, setVisiblePlayers] = useState<Set<number>>(new Set());
+  const [isRecalculating, setIsRecalculating] = useState(false);
   useEffect(() => {
     setLocalStorage('ca_dashboard_tab', activeTab);
   }, [activeTab]);
@@ -199,6 +200,29 @@ export default function ClubDashboard() {
     };
   }, []);
 
+  const handleRecalculateLevel = async () => {
+    if (!clubId || isRecalculating) return;
+    setIsRecalculating(true);
+    try {
+      const { column: clubCol, value: clubVal } = resolveClubIdFilter(clubId);
+      let resolvedId = clubId;
+      if (clubCol === 'club_id') {
+        const { data } = await supabase.from('clubs').select('id').eq('club_id', clubVal).single();
+        if (data) resolvedId = data.id;
+      }
+
+      const { error } = await supabase.rpc('recompute_club_levels', { p_club_id: resolvedId });
+      if (error) throw error;
+      toast.success('Club Level Recalculated Successfully!');
+      loadDashboardData();
+    } catch (err: any) {
+      console.error('Recalculate error:', err);
+      toast.error(err.message || 'Failed to recalculate level.');
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
+
   const loadDashboardData = async () => {
     if (!clubId) return;
     setLoading(true);
@@ -226,6 +250,19 @@ export default function ClubDashboard() {
           .from('tables')
           .select('*', { count: 'exact', head: true })
           .eq('club_id', resolvedId);
+
+        // Get user role
+        if (user) {
+          const { data: memberData } = await supabase
+            .from('club_members')
+            .select('role')
+            .eq('club_id', resolvedId)
+            .eq('user_id', user.id)
+            .maybeSingle();
+          if (memberData) {
+            setUserRole(memberData.role || 'member');
+          }
+        }
 
         setClub({
           id: clubData.id,
@@ -346,6 +383,21 @@ export default function ClubDashboard() {
           <Link to={`/clubs/${clubId}/settings`} className={styles.actionBtn}>
             Settings
           </Link>
+          {(userRole === 'owner' || userRole === 'admin') && (
+            <button
+              onClick={handleRecalculateLevel}
+              className={styles.actionBtn}
+              style={{
+                backgroundColor: 'var(--accent-blue)',
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+              disabled={isRecalculating}
+            >
+              {isRecalculating ? '🔄 Processing...' : '🔄 Recalculate Level'}
+            </button>
+          )}
         </div>
       </header>
 

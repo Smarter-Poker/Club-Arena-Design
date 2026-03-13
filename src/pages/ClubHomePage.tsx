@@ -496,13 +496,13 @@ export default function ClubHomePage() {
         : 0;
 
       const levelInfo = getClubLevel({
-        memberCount: clubData.member_count || 0,
-        activeTables,
-        tournamentsHosted,
-        totalHandsPlayed: clubData.total_hands_played || 0,
-        totalRakeGenerated: clubData.total_rake_generated || 0,
-        isInUnion: !!unionId,
-        clubAgeDays,
+        level: clubData.level || 1,
+        playerCount: clubData.member_count || 0,
+        hierarchyUnits: clubData.hierarchy_units_rounded_up || 0,
+        playerThresholdCurrent: clubData.player_threshold_current || 0,
+        playerThresholdNext: clubData.player_threshold_next || 0,
+        hierarchyThresholdCurrent: clubData.hierarchy_threshold_current || 0,
+        hierarchyThresholdNext: clubData.hierarchy_threshold_next || 0,
       });
       if (getIsMounted && !getIsMounted()) return;
       setClubLevel(levelInfo);

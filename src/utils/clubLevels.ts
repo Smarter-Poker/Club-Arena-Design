@@ -1,163 +1,160 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * CLUB LEVELS SYSTEM
+ * CLUB LEVELS SYSTEM (1-50 PokerBros Style)
  * ═══════════════════════════════════════════════════════════════════════════════
- * Calculates a club's level based on multiple growth factors:
- *   - Member count (biggest weight — community is king)
- *   - Active tables (shows engagement)
- *   - Tournaments hosted (activity breadth)
- *   - Total hands played (historical volume)
- *   - Rake generated (economic health)
- *   - Union membership (collaboration bonus)
- *
- * Levels: 1–100, grouped into tiers:
- *   1–10   Bronze Club
- *   11–25  Silver Club
- *   26–45  Gold Club
- *   46–65  Platinum Club
- *   66–85  Diamond Club
- *   86–100 Elite Club
+ * Calculates a club's level based strictly on Database metrics derived from the Postgres RPC.
+ * The system considers:
+ *   - Player Count Thresholds
+ *   - Hierarchy Units Thresholds (Admin/Manager = 1.0, Agent/SubAgent = 0.25)
+ * The Club Level is strictly calculated server-side to prevent real-time downgrades.
+ * The UI translates the current state integers into Progress Percentages.
  */
+
+export type ClubTier =
+  | 'starter'
+  | 'small'
+  | 'growing'
+  | 'established'
+  | 'large'
+  | 'regional'
+  | 'major'
+  | 'network'
+  | 'enterprise'
+  | 'elite';
 
 export interface ClubLevelInfo {
   level: number;
   tier: ClubTier;
   tierLabel: string;
-  points: number;
-  pointsForCurrentLevel: number;
-  pointsForNextLevel: number;
   progressPercent: number;
   color: string;
   gradient: string;
 }
 
-export type ClubTier = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'elite';
-
 export interface ClubLevelInput {
-  memberCount: number;
-  activeTables: number;
-  tournamentsHosted: number;
+  level?: number;
+  playerCount?: number;
+  hierarchyUnits?: number;
+  playerThresholdCurrent?: number;
+  playerThresholdNext?: number;
+  hierarchyThresholdCurrent?: number;
+  hierarchyThresholdNext?: number;
+  // Old fields for backward compatibility, optionally ignore
+  memberCount?: number;
+  activeTables?: number;
+  tournamentsHosted?: number;
   totalHandsPlayed?: number;
   totalRakeGenerated?: number;
   isInUnion?: boolean;
   clubAgeDays?: number;
 }
 
-// Points thresholds per level — exponential curve
-// Level 1 = 0 pts, Level 2 = 100 pts, scaling up
-function pointsForLevel(level: number): number {
-  if (level <= 1) return 0;
-  // Quadratic-ish curve: each level costs more
-  return Math.floor(50 * Math.pow(level, 1.8));
-}
+// 1-5   = Starter
+// 6-10  = Small Club
+// 11-15 = Growing Club
+// 16-20 = Established
+// 21-25 = Large Club
+// 26-30 = Regional Operator
+// 31-35 = Major Operator
+// 36-40 = Network-Grade Club
+// 41-45 = Enterprise Club
+// 46-50 = Elite Network Operator
 
-function levelFromPoints(pts: number): number {
-  let level = 1;
-  while (pointsForLevel(level + 1) <= pts && level < 100) {
-    level++;
-  }
-  return level;
-}
-
-function getTier(level: number): ClubTier {
-  if (level >= 86) return 'elite';
-  if (level >= 66) return 'diamond';
-  if (level >= 46) return 'platinum';
-  if (level >= 26) return 'gold';
-  if (level >= 11) return 'silver';
-  return 'bronze';
+export function getTierForLevel(level: number): ClubTier {
+  if (level >= 46) return 'elite';
+  if (level >= 41) return 'enterprise';
+  if (level >= 36) return 'network';
+  if (level >= 31) return 'major';
+  if (level >= 26) return 'regional';
+  if (level >= 21) return 'large';
+  if (level >= 16) return 'established';
+  if (level >= 11) return 'growing';
+  if (level >= 6) return 'small';
+  return 'starter';
 }
 
 const TIER_LABELS: Record<ClubTier, string> = {
-  bronze: 'Bronze Club',
-  silver: 'Silver Club',
-  gold: 'Gold Club',
-  platinum: 'Platinum Club',
-  diamond: 'Diamond Club',
-  elite: 'Elite Club',
+  starter: 'Starter',
+  small: 'Small Club',
+  growing: 'Growing Club',
+  established: 'Established',
+  large: 'Large Club',
+  regional: 'Regional Operator',
+  major: 'Major Operator',
+  network: 'Network-Grade Club',
+  enterprise: 'Enterprise Club',
+  elite: 'Elite Network Operator',
 };
 
 const TIER_COLORS: Record<ClubTier, string> = {
-  bronze: '#CD7F32',
-  silver: '#C0C0C0',
-  gold: '#FFD700',
-  platinum: '#E5E4E2',
-  diamond: '#B9F2FF',
-  elite: '#FF4500',
+  starter: '#CD7F32', // Bronze
+  small: '#C0C0C0', // Silver
+  growing: '#87CEEB', // Sky Blue
+  established: '#4682B4', // Steel Blue
+  large: '#FFD700', // Gold
+  regional: '#FFA500', // Orange
+  major: '#FF4500', // Red Orange
+  network: '#8A2BE2', // Blue Violet
+  enterprise: '#E5E4E2', // Platinum
+  elite: '#00CED1', // Diamond/Cyan
 };
 
 const TIER_GRADIENTS: Record<ClubTier, string> = {
-  bronze: 'linear-gradient(135deg, #CD7F32 0%, #8B4513 100%)',
-  silver: 'linear-gradient(135deg, #C0C0C0 0%, #808080 100%)',
-  gold: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
-  platinum: 'linear-gradient(135deg, #E5E4E2 0%, #A9A9A9 100%)',
-  diamond: 'linear-gradient(135deg, #B9F2FF 0%, #00CED1 100%)',
-  elite: 'linear-gradient(135deg, #FF4500 0%, #FF0000 50%, #FFD700 100%)',
+  starter: 'linear-gradient(135deg, #CD7F32 0%, #8B4513 100%)',
+  small: 'linear-gradient(135deg, #C0C0C0 0%, #808080 100%)',
+  growing: 'linear-gradient(135deg, #87CEEB 0%, #4682B4 100%)',
+  established: 'linear-gradient(135deg, #4682B4 0%, #000080 100%)',
+  large: 'linear-gradient(135deg, #FFD700 0%, #B8860B 100%)',
+  regional: 'linear-gradient(135deg, #FFA500 0%, #FF8C00 100%)',
+  major: 'linear-gradient(135deg, #FF4500 0%, #8B0000 100%)',
+  network: 'linear-gradient(135deg, #8A2BE2 0%, #4B0082 100%)',
+  enterprise: 'linear-gradient(135deg, #E5E4E2 0%, #A9A9A9 100%)',
+  elite: 'linear-gradient(135deg, #B9F2FF 0%, #00CED1 100%)',
 };
 
-/**
- * Calculate total club points from input metrics.
- * Each factor contributes weighted points:
- *   Members:      10 pts each (uncapped)
- *   Active tables: 50 pts each
- *   Tournaments:  30 pts each
- *   Hands played: 0.01 pts each (volume reward)
- *   Rake:         0.1 pts per unit generated
- *   Union bonus:  +15% multiplier
- *   Age bonus:    +1 pt per day (loyalty reward, max 365)
- */
-export function calculateClubPoints(input: ClubLevelInput): number {
-  let pts = 0;
+export function getClubLevel(input: ClubLevelInput): ClubLevelInfo {
+  // If we receive the new database columns, map them
+  const currentLvl = input.level || 1;
+  const pCount = Math.max(input.playerCount || 0, input.memberCount || 0);
 
-  // Members — strongest signal
-  pts += (input.memberCount || 0) * 10;
+  // Calculate Progress Percent mathematically
+  let progressPercent = 0;
 
-  // Active tables — engagement
-  pts += (input.activeTables || 0) * 50;
+  // Try to use DB thresholds
+  if (input.playerThresholdNext && input.hierarchyThresholdNext) {
+    const pT_curr = input.playerThresholdCurrent || 1;
+    const pT_next = input.playerThresholdNext || 1;
+    const hT_curr = input.hierarchyThresholdCurrent || 1;
+    const hT_next = input.hierarchyThresholdNext || 1;
 
-  // Tournaments hosted — breadth
-  pts += (input.tournamentsHosted || 0) * 30;
+    const h_units = input.hierarchyUnits || 0;
 
-  // Hands played — historical volume
-  pts += Math.floor((input.totalHandsPlayed || 0) * 0.01);
+    let p_prog = 0;
+    if (pT_next > pT_curr) {
+      p_prog = ((pCount - pT_curr) / (pT_next - pT_curr)) * 100;
+    }
 
-  // Rake generated — economic health
-  pts += Math.floor((input.totalRakeGenerated || 0) * 0.1);
+    let h_prog = 0;
+    if (hT_next > hT_curr) {
+      h_prog = ((h_units - hT_curr) / (hT_next - hT_curr)) * 100;
+    }
 
-  // Club age bonus (capped at 365 days)
-  const ageDays = Math.min(input.clubAgeDays || 0, 365);
-  pts += ageDays;
-
-  // Union membership bonus — 15% boost
-  if (input.isInUnion) {
-    pts = Math.floor(pts * 1.15);
+    progressPercent = Math.max(0, Math.min(100, Math.floor(Math.max(p_prog, h_prog))));
+  } else {
+    // Fallback if thresholds aren't available yet
+    // Provide a small artificial progress if we don't know the exact math boundaries yet
+    progressPercent = Math.min(100, pCount % 30);
   }
 
-  return pts;
-}
+  // Max Level Cap
+  if (currentLvl >= 50) progressPercent = 100;
 
-/**
- * Get complete club level info from raw metrics.
- */
-export function getClubLevel(input: ClubLevelInput): ClubLevelInfo {
-  const pts = calculateClubPoints(input);
-  const level = levelFromPoints(pts);
-  const tier = getTier(level);
-
-  const currentLevelPts = pointsForLevel(level);
-  const nextLevelPts = level < 100 ? pointsForLevel(level + 1) : pointsForLevel(100);
-  const ptsIntoLevel = pts - currentLevelPts;
-  const ptsNeeded = nextLevelPts - currentLevelPts;
-  const progressPercent =
-    ptsNeeded > 0 ? Math.min(Math.floor((ptsIntoLevel / ptsNeeded) * 100), 100) : 100;
+  const tier = getTierForLevel(currentLvl);
 
   return {
-    level,
+    level: currentLvl,
     tier,
     tierLabel: TIER_LABELS[tier],
-    points: pts,
-    pointsForCurrentLevel: currentLevelPts,
-    pointsForNextLevel: nextLevelPts,
     progressPercent,
     color: TIER_COLORS[tier],
     gradient: TIER_GRADIENTS[tier],
