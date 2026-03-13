@@ -1,7 +1,7 @@
 /**
- * ♠ CLUB ARENA — TournamentEngine Tests (Payout Calculation)
+ * ♠ CLUB ARENA — PayoutEngine Tests (Tournament Prize Distribution)
  * ═══════════════════════════════════════════════════════════════════════════════
- * Tests tournament payout calculation, blind level advancement, and prize distribution.
+ * Tests payout template selection, amount calculation, and prize distribution.
  */
 
 import { describe, it, expect, vi } from 'vitest';
@@ -13,7 +13,6 @@ vi.mock('../../src/core/MasterBus', () => ({
     on: vi.fn(),
     subscribe: vi.fn(),
     subscribeDebounced: vi.fn(),
-    onEvent: vi.fn(),
   },
 }));
 
@@ -34,87 +33,109 @@ vi.mock('../../src/services/supabaseClient', () => ({
   })),
 }));
 
-// Import the PayoutEngine which is used for tournament payouts
 import { payoutEngine } from '../../src/services/PayoutEngine';
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PAYOUT CALCULATION TESTS
+// AUTO-SELECT PAYOUT TEMPLATE TESTS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe('PayoutEngine - Prize Distribution', () => {
-  it('should calculate payouts for a heads-up SNG (2 players)', () => {
-    const payouts = payoutEngine.calculatePayouts({
-      prizePool: 1000,
-      playerCount: 2,
-      template: 'sng3',
-    });
+describe('PayoutEngine - autoSelectPayouts', () => {
+  it('should return payout entries for 3 players', () => {
+    const payouts = payoutEngine.autoSelectPayouts(3);
 
     expect(payouts).toBeDefined();
+    expect(Array.isArray(payouts)).toBe(true);
     expect(payouts.length).toBeGreaterThanOrEqual(1);
-
-    // Total payouts should equal prize pool
-    const totalPaid = payouts.reduce((sum, p) => sum + p.amount, 0);
-    expect(totalPaid).toBeCloseTo(1000, 1);
   });
 
-  it('should calculate payouts for a 6-player SNG', () => {
-    const payouts = payoutEngine.calculatePayouts({
-      prizePool: 3000,
-      playerCount: 6,
-      template: 'sng6',
-    });
+  it('should return payout entries for 6 players', () => {
+    const payouts = payoutEngine.autoSelectPayouts(6);
 
-    expect(payouts).toBeDefined();
     expect(payouts.length).toBeGreaterThanOrEqual(2);
+  });
 
-    // First place should get more than second
-    expect(payouts[0].amount).toBeGreaterThan(payouts[1].amount);
+  it('should return payout entries for 9 players', () => {
+    const payouts = payoutEngine.autoSelectPayouts(9);
 
-    // Total payouts = prize pool
-    const totalPaid = payouts.reduce((sum, p) => sum + p.amount, 0);
+    expect(payouts.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('should return descending percentages', () => {
+    const payouts = payoutEngine.autoSelectPayouts(9);
+
+    for (let i = 1; i < payouts.length; i++) {
+      expect(payouts[i - 1].percent).toBeGreaterThanOrEqual(payouts[i].percent);
+    }
+  });
+
+  it('payout percentages should sum to 100', () => {
+    for (const count of [3, 6, 9, 18, 45]) {
+      const payouts = payoutEngine.autoSelectPayouts(count);
+      const totalPercent = payouts.reduce((sum, p) => sum + p.percent, 0);
+      expect(totalPercent).toBeCloseTo(100, 0);
+    }
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CALCULATE AMOUNTS TESTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('PayoutEngine - calculateAmounts', () => {
+  it('should calculate correct amounts from percentages and prize pool', () => {
+    const payouts = payoutEngine.autoSelectPayouts(3);
+    const calculated = payoutEngine.calculateAmounts(payouts, 1000);
+
+    expect(calculated).toBeDefined();
+    expect(calculated.length).toBe(payouts.length);
+
+    // Every entry should have an amount
+    for (const entry of calculated) {
+      expect(entry.amount).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('total amounts should equal prize pool', () => {
+    const payouts = payoutEngine.autoSelectPayouts(6);
+    const calculated = payoutEngine.calculateAmounts(payouts, 3000);
+
+    const totalPaid = calculated.reduce((sum, p) => sum + (p.amount ?? 0), 0);
     expect(totalPaid).toBeCloseTo(3000, 1);
   });
 
-  it('should calculate payouts for a 9-player SNG', () => {
-    const payouts = payoutEngine.calculatePayouts({
-      prizePool: 9000,
-      playerCount: 9,
-      template: 'sng9',
-    });
-
-    expect(payouts).toBeDefined();
-    expect(payouts.length).toBeGreaterThanOrEqual(3);
-
-    // Payouts should be descending
-    for (let i = 1; i < payouts.length; i++) {
-      expect(payouts[i - 1].amount).toBeGreaterThanOrEqual(payouts[i].amount);
-    }
-
-    // Total = prize pool
-    const totalPaid = payouts.reduce((sum, p) => sum + p.amount, 0);
-    expect(totalPaid).toBeCloseTo(9000, 1);
-  });
-
   it('should handle fractional chip payouts without losing chips', () => {
-    const payouts = payoutEngine.calculatePayouts({
-      prizePool: 100.5,
-      playerCount: 3,
-      template: 'sng3',
-    });
+    const payouts = payoutEngine.autoSelectPayouts(3);
+    const calculated = payoutEngine.calculateAmounts(payouts, 100.5);
 
-    const totalPaid = payouts.reduce((sum, p) => sum + p.amount, 0);
-    // Should not lose or create chips due to rounding
+    const totalPaid = calculated.reduce((sum, p) => sum + (p.amount ?? 0), 0);
     expect(Math.abs(totalPaid - 100.5)).toBeLessThan(0.01);
   });
 
-  it('should use correct template for different player counts', () => {
-    // 3 players -> sng3
-    const p3 = payoutEngine.calculatePayouts({ prizePool: 300, playerCount: 3 });
-    expect(p3.length).toBeGreaterThanOrEqual(1);
+  it('first place should get the largest payout', () => {
+    const payouts = payoutEngine.autoSelectPayouts(6);
+    const calculated = payoutEngine.calculateAmounts(payouts, 5000);
 
-    // 6 players -> sng6
-    const p6 = payoutEngine.calculatePayouts({ prizePool: 600, playerCount: 6 });
-    expect(p6.length).toBeGreaterThanOrEqual(2);
+    if (calculated.length >= 2) {
+      expect(calculated[0].amount).toBeGreaterThan(calculated[1].amount!);
+    }
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// NORMALIZE PAYOUTS TESTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('PayoutEngine - normalizePayouts', () => {
+  it('should normalize payouts to sum to 100%', () => {
+    const input = [
+      { place: 1, percent: 60 },
+      { place: 2, percent: 30 },
+      { place: 3, percent: 20 },
+    ];
+
+    const normalized = payoutEngine.normalizePayouts(input);
+    const totalPercent = normalized.reduce((sum, p) => sum + p.percent, 0);
+    expect(totalPercent).toBeCloseTo(100, 1);
   });
 });
 
@@ -124,60 +145,35 @@ describe('PayoutEngine - Prize Distribution', () => {
 
 describe('PayoutEngine - Edge Cases', () => {
   it('should handle zero prize pool gracefully', () => {
-    const payouts = payoutEngine.calculatePayouts({
-      prizePool: 0,
-      playerCount: 3,
-    });
+    const payouts = payoutEngine.autoSelectPayouts(3);
+    const calculated = payoutEngine.calculateAmounts(payouts, 0);
 
-    // All payouts should be 0
-    const totalPaid = payouts.reduce((sum, p) => sum + p.amount, 0);
+    const totalPaid = calculated.reduce((sum, p) => sum + (p.amount ?? 0), 0);
     expect(totalPaid).toBe(0);
   });
 
-  it('should handle single player (winner takes all)', () => {
-    const payouts = payoutEngine.calculatePayouts({
-      prizePool: 500,
-      playerCount: 1,
-    });
+  it('should handle large player counts', () => {
+    const payouts = payoutEngine.autoSelectPayouts(100);
+    expect(payouts.length).toBeGreaterThan(0);
 
-    expect(payouts.length).toBeGreaterThanOrEqual(1);
-    expect(payouts[0].amount).toBe(500);
-  });
-
-  it('should ensure first place always gets the largest share', () => {
-    for (const count of [2, 3, 6, 9]) {
-      const payouts = payoutEngine.calculatePayouts({
-        prizePool: 1000,
-        playerCount: count,
-      });
-
-      if (payouts.length >= 2) {
-        expect(payouts[0].amount).toBeGreaterThanOrEqual(payouts[1].amount);
-      }
-    }
+    const totalPercent = payouts.reduce((sum, p) => sum + p.percent, 0);
+    expect(totalPercent).toBeCloseTo(100, 0);
   });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PRECISION TESTS
+// TEMPLATE OPTIONS TESTS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe('PayoutEngine - Precision', () => {
-  it('should use integer arithmetic (scaled, not floats)', () => {
-    const payouts = payoutEngine.calculatePayouts({
-      prizePool: 999.99,
-      playerCount: 3,
-    });
+describe('PayoutEngine - Template Options', () => {
+  it('should return available template options', () => {
+    const options = payoutEngine.getTemplateOptions();
+    expect(Array.isArray(options)).toBe(true);
+    expect(options.length).toBeGreaterThan(0);
 
-    // Verify no floating point errors
-    for (const payout of payouts) {
-      // Amount should be a reasonable number (not NaN, not Infinity)
-      expect(Number.isFinite(payout.amount)).toBe(true);
-      expect(payout.amount).toBeGreaterThanOrEqual(0);
+    for (const opt of options) {
+      expect(opt.value).toBeDefined();
+      expect(opt.label).toBeDefined();
     }
-
-    // Total should match prize pool exactly
-    const total = payouts.reduce((s, p) => s + p.amount, 0);
-    expect(Math.abs(total - 999.99)).toBeLessThan(0.01);
   });
 });

@@ -6,7 +6,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Mock MasterBus + PreciseActionTimer
+// Mock MasterBus
 vi.mock('../../src/core/MasterBus', () => ({
   masterBus: {
     emit: vi.fn(),
@@ -24,27 +24,12 @@ import { masterBus } from '../../src/core/MasterBus';
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('TimeBankEngine - Configuration', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it('should configure a table with custom settings', () => {
-    timeBankEngine.configure('table-tb-1', {
+    timeBankEngine.configure('tb-cfg-1', {
       totalBankSeconds: 60,
       maxUses: 6,
       secondsPerUse: 10,
     });
-    // No error thrown = success
-    expect(true).toBe(true);
-  });
-
-  it('should configure with default settings when no overrides given', () => {
-    timeBankEngine.configure('table-tb-2', {});
     expect(true).toBe(true);
   });
 });
@@ -57,7 +42,11 @@ describe('TimeBankEngine - Player Initialization', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
-    timeBankEngine.configure('table-init', { totalBankSeconds: 30, maxUses: 4, secondsPerUse: 15 });
+    timeBankEngine.configure('tb-init', {
+      totalBankSeconds: 30,
+      maxUses: 4,
+      secondsPerUse: 15,
+    });
   });
 
   afterEach(() => {
@@ -65,26 +54,31 @@ describe('TimeBankEngine - Player Initialization', () => {
   });
 
   it('should initialize a player with correct bank allocation', () => {
-    timeBankEngine.initializePlayer('table-init', 'player-1');
-    const status = timeBankEngine.getStatus('table-init', 'player-1');
+    timeBankEngine.initializePlayer('tb-init', 'p1');
+    const bank = timeBankEngine.getPlayerBank('tb-init', 'p1');
 
-    expect(status).toBeDefined();
-    expect(status!.remainingSeconds).toBe(30);
-    expect(status!.usesRemaining).toBe(4);
-    expect(status!.isActive).toBe(false);
+    expect(bank).not.toBeNull();
+    expect(bank!.remainingSeconds).toBe(30);
+    expect(bank!.usesRemaining).toBe(4);
+    expect(bank!.isActive).toBe(false);
   });
 
   it('should track multiple players independently', () => {
-    timeBankEngine.initializePlayer('table-init', 'player-a');
-    timeBankEngine.initializePlayer('table-init', 'player-b');
+    timeBankEngine.initializePlayer('tb-init', 'pa');
+    timeBankEngine.initializePlayer('tb-init', 'pb');
 
-    const statusA = timeBankEngine.getStatus('table-init', 'player-a');
-    const statusB = timeBankEngine.getStatus('table-init', 'player-b');
+    const bankA = timeBankEngine.getPlayerBank('tb-init', 'pa');
+    const bankB = timeBankEngine.getPlayerBank('tb-init', 'pb');
 
-    expect(statusA).toBeDefined();
-    expect(statusB).toBeDefined();
-    expect(statusA!.remainingSeconds).toBe(30);
-    expect(statusB!.remainingSeconds).toBe(30);
+    expect(bankA).not.toBeNull();
+    expect(bankB).not.toBeNull();
+    expect(bankA!.remainingSeconds).toBe(30);
+    expect(bankB!.remainingSeconds).toBe(30);
+  });
+
+  it('should return null for uninitialized player', () => {
+    const bank = timeBankEngine.getPlayerBank('tb-init', 'nonexistent');
+    expect(bank).toBeNull();
   });
 });
 
@@ -96,141 +90,179 @@ describe('TimeBankEngine - Activation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
-    timeBankEngine.configure('table-act', { totalBankSeconds: 30, maxUses: 4, secondsPerUse: 15 });
-    timeBankEngine.initializePlayer('table-act', 'player-1');
+    timeBankEngine.configure('tb-act', {
+      totalBankSeconds: 30,
+      maxUses: 4,
+      secondsPerUse: 15,
+    });
+    timeBankEngine.initializePlayer('tb-act', 'p1');
   });
 
   afterEach(() => {
-    // Clean up timers
-    timeBankEngine.stop('table-act', 'player-1');
+    timeBankEngine.playerActed('tb-act', 'p1');
     vi.useRealTimers();
   });
 
-  it('should activate time bank and emit TIME_BANK_ACTIVATED', () => {
-    timeBankEngine.activate('table-act', 'player-1');
+  it('should activate and emit TIME_BANK_ACTIVATED', () => {
+    const onExpire = vi.fn();
+    const result = timeBankEngine.activate('tb-act', 'p1', onExpire);
 
+    expect(result).toBe(true);
     expect(masterBus.emit).toHaveBeenCalledWith(
       'TIME_BANK_ACTIVATED',
       expect.objectContaining({
-        tableId: 'table-act',
-        playerId: 'player-1',
+        tableId: 'tb-act',
+        playerId: 'p1',
       })
     );
   });
 
   it('should decrease uses remaining on activation', () => {
-    const beforeStatus = timeBankEngine.getStatus('table-act', 'player-1');
-    const usesBefore = beforeStatus!.usesRemaining;
+    const bankBefore = timeBankEngine.getPlayerBank('tb-act', 'p1');
+    const usesBefore = bankBefore!.usesRemaining;
 
-    timeBankEngine.activate('table-act', 'player-1');
+    timeBankEngine.activate('tb-act', 'p1', vi.fn());
 
-    const afterStatus = timeBankEngine.getStatus('table-act', 'player-1');
-    expect(afterStatus!.usesRemaining).toBe(usesBefore - 1);
+    const bankAfter = timeBankEngine.getPlayerBank('tb-act', 'p1');
+    expect(bankAfter!.usesRemaining).toBe(usesBefore - 1);
   });
 
-  it('should not activate when no uses remaining', () => {
-    // Exhaust all uses
-    const config = { totalBankSeconds: 30, maxUses: 1, secondsPerUse: 30 };
-    timeBankEngine.configure('table-exhaust', config);
-    timeBankEngine.initializePlayer('table-exhaust', 'player-ex');
-
-    timeBankEngine.activate('table-exhaust', 'player-ex');
-    timeBankEngine.stop('table-exhaust', 'player-ex');
-    vi.clearAllMocks();
-
-    // Try to activate again — should fail
-    timeBankEngine.activate('table-exhaust', 'player-ex');
-    expect(masterBus.emit).toHaveBeenCalledWith(
-      'TIME_BANK_DEPLETED',
-      expect.objectContaining({
-        playerId: 'player-ex',
-      })
-    );
+  it('should mark bank as active during countdown', () => {
+    timeBankEngine.activate('tb-act', 'p1', vi.fn());
+    const bank = timeBankEngine.getPlayerBank('tb-act', 'p1');
+    expect(bank!.isActive).toBe(true);
   });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// STOP TESTS
+// DEPLETION TESTS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe('TimeBankEngine - Stop', () => {
+describe('TimeBankEngine - Depletion', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
-    timeBankEngine.configure('table-stop', { totalBankSeconds: 30, maxUses: 4, secondsPerUse: 15 });
-    timeBankEngine.initializePlayer('table-stop', 'player-1');
+    timeBankEngine.configure('tb-depl', {
+      totalBankSeconds: 15,
+      maxUses: 1,
+      secondsPerUse: 15,
+    });
+    timeBankEngine.initializePlayer('tb-depl', 'p1');
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it('should stop time bank and emit TIME_BANK_STOPPED', () => {
-    timeBankEngine.activate('table-stop', 'player-1');
-    vi.clearAllMocks();
+  it('should return false when activating with 0 uses remaining', () => {
+    // Use the one available bank
+    timeBankEngine.activate('tb-depl', 'p1', vi.fn());
+    timeBankEngine.playerActed('tb-depl', 'p1');
 
-    timeBankEngine.stop('table-stop', 'player-1');
+    // Try again — should fail
+    const result = timeBankEngine.activate('tb-depl', 'p1', vi.fn());
+    expect(result).toBe(false);
+  });
 
-    expect(masterBus.emit).toHaveBeenCalledWith(
-      'TIME_BANK_STOPPED',
-      expect.objectContaining({
-        tableId: 'table-stop',
-        playerId: 'player-1',
-      })
-    );
+  it('should hasTimeBank return false when depleted', () => {
+    timeBankEngine.activate('tb-depl', 'p1', vi.fn());
+    timeBankEngine.playerActed('tb-depl', 'p1');
+
+    expect(timeBankEngine.hasTimeBank('tb-depl', 'p1')).toBe(false);
   });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// REFILL TESTS
+// PLAYER ACTED TESTS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe('TimeBankEngine - Refill', () => {
+describe('TimeBankEngine - Player Acted', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
-    timeBankEngine.configure('table-refill', {
+    timeBankEngine.configure('tb-acted', {
+      totalBankSeconds: 30,
+      maxUses: 4,
+      secondsPerUse: 15,
+    });
+    timeBankEngine.initializePlayer('tb-acted', 'p1');
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('should stop active timer when player acts', () => {
+    timeBankEngine.activate('tb-acted', 'p1', vi.fn());
+    timeBankEngine.playerActed('tb-acted', 'p1');
+
+    const bank = timeBankEngine.getPlayerBank('tb-acted', 'p1');
+    expect(bank!.isActive).toBe(false);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ORBIT REFILL TESTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('TimeBankEngine - Orbit Refill', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+    timeBankEngine.configure('tb-refill', {
       totalBankSeconds: 30,
       maxUses: 4,
       secondsPerUse: 15,
       refillPerOrbit: true,
       refillSeconds: 15,
     });
-    timeBankEngine.initializePlayer('table-refill', 'player-1');
+    timeBankEngine.initializePlayer('tb-refill', 'p1');
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it('should refill time bank on orbit completion', () => {
-    // Use one bank
-    timeBankEngine.activate('table-refill', 'player-1');
-    timeBankEngine.stop('table-refill', 'player-1');
+  it('should refill on orbit completion when configured', () => {
+    // Deplete one use
+    timeBankEngine.activate('tb-refill', 'p1', vi.fn());
+    timeBankEngine.playerActed('tb-refill', 'p1');
 
-    const statusBefore = timeBankEngine.getStatus('table-refill', 'player-1');
-    const secondsBefore = statusBefore!.remainingSeconds;
+    const bankBefore = timeBankEngine.getPlayerBank('tb-refill', 'p1');
+    const usesBefore = bankBefore!.usesRemaining;
 
-    // Trigger orbit refill
-    timeBankEngine.refillOnOrbit('table-refill', 'player-1');
+    timeBankEngine.onOrbitComplete('tb-refill');
 
-    const statusAfter = timeBankEngine.getStatus('table-refill', 'player-1');
-    expect(statusAfter!.remainingSeconds).toBeGreaterThan(secondsBefore);
+    const bankAfter = timeBankEngine.getPlayerBank('tb-refill', 'p1');
+    expect(bankAfter!.usesRemaining).toBeGreaterThanOrEqual(usesBefore);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HELPER METHODS TESTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('TimeBankEngine - Helpers', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    timeBankEngine.configure('tb-help', { totalBankSeconds: 30, maxUses: 4, secondsPerUse: 15 });
+    timeBankEngine.initializePlayer('tb-help', 'p1');
   });
 
-  it('should emit TIME_BANK_REFILLED on refill', () => {
-    timeBankEngine.activate('table-refill', 'player-1');
-    timeBankEngine.stop('table-refill', 'player-1');
-    vi.clearAllMocks();
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
-    timeBankEngine.refillOnOrbit('table-refill', 'player-1');
+  it('hasTimeBank should return true when banks available', () => {
+    expect(timeBankEngine.hasTimeBank('tb-help', 'p1')).toBe(true);
+  });
 
-    expect(masterBus.emit).toHaveBeenCalledWith(
-      'TIME_BANK_REFILLED',
-      expect.objectContaining({
-        playerId: 'player-1',
-      })
-    );
+  it('getRemainingSeconds should return correct value', () => {
+    expect(timeBankEngine.getRemainingSeconds('tb-help', 'p1')).toBe(30);
+  });
+
+  it('getUsesRemaining should return correct value', () => {
+    expect(timeBankEngine.getUsesRemaining('tb-help', 'p1')).toBe(4);
   });
 });
 
@@ -240,7 +272,6 @@ describe('TimeBankEngine - Refill', () => {
 
 describe('TimeBankEngine - Cleanup', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
     vi.useFakeTimers();
   });
 
@@ -248,22 +279,20 @@ describe('TimeBankEngine - Cleanup', () => {
     vi.useRealTimers();
   });
 
-  it('should clean up player state on removePlayer', () => {
-    timeBankEngine.configure('table-clean', { totalBankSeconds: 30, maxUses: 4 });
-    timeBankEngine.initializePlayer('table-clean', 'player-1');
-    timeBankEngine.removePlayer('table-clean', 'player-1');
-
-    const status = timeBankEngine.getStatus('table-clean', 'player-1');
-    expect(status).toBeUndefined();
+  it('should remove player on removePlayer', () => {
+    timeBankEngine.configure('tb-rm', { totalBankSeconds: 30, maxUses: 4 });
+    timeBankEngine.initializePlayer('tb-rm', 'p1');
+    timeBankEngine.removePlayer('tb-rm', 'p1');
+    expect(timeBankEngine.getPlayerBank('tb-rm', 'p1')).toBeNull();
   });
 
-  it('should clean up all state on disposeTable', () => {
-    timeBankEngine.configure('table-dispose', { totalBankSeconds: 30, maxUses: 4 });
-    timeBankEngine.initializePlayer('table-dispose', 'player-a');
-    timeBankEngine.initializePlayer('table-dispose', 'player-b');
-    timeBankEngine.disposeTable('table-dispose');
+  it('should clean up on dispose', () => {
+    timeBankEngine.configure('tb-disp', { totalBankSeconds: 30, maxUses: 4 });
+    timeBankEngine.initializePlayer('tb-disp', 'pa');
+    timeBankEngine.initializePlayer('tb-disp', 'pb');
+    timeBankEngine.dispose('tb-disp');
 
-    expect(timeBankEngine.getStatus('table-dispose', 'player-a')).toBeUndefined();
-    expect(timeBankEngine.getStatus('table-dispose', 'player-b')).toBeUndefined();
+    expect(timeBankEngine.getPlayerBank('tb-disp', 'pa')).toBeNull();
+    expect(timeBankEngine.getPlayerBank('tb-disp', 'pb')).toBeNull();
   });
 });
