@@ -20,6 +20,7 @@ import DailyLoginReward from '../components/gamification/DailyLoginReward';
 import LuckyDrawWheel from '../components/gamification/LuckyDrawWheel';
 import { bonusService } from '../services/BonusService';
 import { useToast } from '../components/common/Toast';
+import { masterBus } from '../core/MasterBus';
 
 type GameFilter = 'all' | 'nlh' | 'plo' | 'ofc' | 'tournaments' | 'favorites';
 
@@ -97,6 +98,15 @@ export default function LobbyPage() {
     bonusService.canSpinToday(user.id).then((eligible) => {
       if (isMounted.current) setCanSpin(eligible);
     });
+
+    // Listen for balance updates (e.g., from wheel spins or daily claims) to force profile refresh
+    const unsubBalance = masterBus.subscribe('BALANCE_UPDATED', () => {
+      masterBus.emit('PROFILE_UPDATED', { userId: user.id || '', updates: {} });
+    });
+
+    return () => {
+      unsubBalance();
+    };
   }, [user?.id]);
 
   // UNION-FIRST: Check if user belongs to a union and redirect to union lobby

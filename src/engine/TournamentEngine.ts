@@ -997,6 +997,7 @@ export class TournamentEngine {
       setTimeout(async () => {
         try {
           await chan.unsubscribe();
+          this.supabase.removeChannel(chan);
         } catch {
           /* best effort */
         }

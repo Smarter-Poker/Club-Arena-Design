@@ -177,6 +177,7 @@ export type BusEventType =
   | 'DIAMOND_SPENT'
   // Gamification engagement events (Session Build)
   | 'SETTLEMENT_RECEIPT_COPIED'
+  | 'CHALLENGE_PROGRESS_UPDATED'
   | 'MISSION_CLAIMED'
   | 'DAILY_REWARD_CLAIMED'
   | 'WHEEL_SPIN_RESULT'
@@ -509,6 +510,7 @@ export interface BusPayloadMap {
   DIAMOND_SPENT: { amount: number; item: string; category: string };
   // Gamification engagement events (Session Build)
   SETTLEMENT_RECEIPT_COPIED: { receiptId: string };
+  CHALLENGE_PROGRESS_UPDATED: Record<string, unknown>;
   MISSION_CLAIMED: { missionId: string; tier: string; rewardType: string; rewardAmount: number };
   DAILY_REWARD_CLAIMED: { amount: number; rewardType: string; streakDay: number };
   WHEEL_SPIN_RESULT: { segmentId: string; amount: number; type: string };
@@ -851,7 +853,12 @@ class MasterBusCore {
     if (handlers) {
       handlers.forEach((handler) => {
         try {
-          handler(event as BusEvent);
+          const result = handler(event as BusEvent) as any;
+          if (result instanceof Promise) {
+            result.catch((e: any) => {
+              console.error(`[BUS ASYNC ERROR] Handler failed for ${type}:`, e);
+            });
+          }
         } catch (e) {
           console.error(`[BUS ERROR] Handler failed for ${type}:`, e);
         }

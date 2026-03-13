@@ -334,6 +334,7 @@ export default function ClubHomePage() {
 
       if (clubError || !clubData) {
         console.error('Failed to load club:', clubError);
+        toast.error('Failed to load club details');
         if (!getIsMounted || getIsMounted()) setLoading(false);
         return;
       }
@@ -519,8 +520,9 @@ export default function ClubHomePage() {
       } catch {
         // BBJ table doesn't exist yet — show 0
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading club data:', error);
+      toast.error(error.message || 'Failed to load club data');
     } finally {
       if (!getIsMounted || getIsMounted()) setLoading(false);
     }

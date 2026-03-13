@@ -25,8 +25,9 @@ import FinancialAchievementBadge from '../components/gamification/FinancialAchie
 import CircularGauge from '../components/common/CircularGauge';
 import DiamondRainEffect from '../components/effects/DiamondRainEffect';
 import MissionsPanel, { Mission } from '../components/gamification/MissionsPanel';
-import { dailyChallengeService } from '../services/DailyChallengeService';
+import { dailyChallengeService, type UserDailyChallenge } from '../services/DailyChallengeService';
 import { useSwipeTabs } from '../hooks/useSwipeTabs';
+import { useToast } from '../components/common/Toast';
 import styles from './ProfilePage.module.css';
 
 // #5: Lazy-load Recharts (387KB) — only imported when History tab is opened
@@ -202,6 +203,7 @@ export default function ProfilePage() {
     };
   }, []);
 
+  const toast = useToast();
   const { user: storeUser } = useUserStore();
   const [activeTab, setActiveTab] = useState<'stats' | 'achievements' | 'history' | 'social'>(
     'stats'
@@ -316,20 +318,27 @@ export default function ProfilePage() {
           setAchievements([]);
         }
 
-        // Load daily missions
+        // Load all gamified missions (Daily, Weekly, Monthly)
         try {
-          const userMissions = await dailyChallengeService.getTodaysChallenges(authUser.id);
+          const [daily, weekly, monthly] = await Promise.all([
+            dailyChallengeService.getTodaysChallenges(authUser.id),
+            dailyChallengeService.getWeeklyChallenges(authUser.id),
+            dailyChallengeService.getMonthlyChallenges(authUser.id),
+          ]);
+
+          const allMissions = [...daily, ...weekly, ...monthly];
+
           setMissions(
-            userMissions.map((mc) => ({
+            allMissions.map((mc) => ({
               id: mc.id,
-              tier: 'daily',
+              tier: ('tier' in mc ? mc.tier : 'daily') as 'daily' | 'weekly' | 'monthly',
               title: mc.challenge.name,
               description: mc.challenge.description,
               icon: mc.challenge.icon,
               current: mc.progress,
               target: mc.challenge.requirement,
               rewardAmount: mc.challenge.chipReward,
-              rewardType: 'chips',
+              rewardType: 'chips' as const,
               completed: mc.completed,
               claimed: mc.claimed,
             }))
@@ -360,8 +369,9 @@ export default function ProfilePage() {
             displayName: profile.display_name,
           });
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('[PROFILE] Load failed:', err);
+        toast.error(err.message || 'Failed to load profile data');
       } finally {
         setIsLoading(false);
       }
@@ -521,6 +531,43 @@ export default function ProfilePage() {
         .catch(() => {});
     });
 
+    // Auto-refresh missions when progress is updated in-game
+    const unsubChallengeProgress = masterBus.subscribe('CHALLENGE_PROGRESS_UPDATED', () => {
+      if (!isMounted) return;
+      supabase.auth
+        .getUser()
+        .then(({ data: { user: authUser } }) => {
+          if (authUser && isMounted) {
+            Promise.all([
+              dailyChallengeService.getTodaysChallenges(authUser.id),
+              dailyChallengeService.getWeeklyChallenges(authUser.id),
+              dailyChallengeService.getMonthlyChallenges(authUser.id),
+            ])
+              .then(([daily, weekly, monthly]) => {
+                if (!isMounted) return;
+                const allMissions = [...daily, ...weekly, ...monthly];
+                setMissions(
+                  allMissions.map((mc) => ({
+                    id: mc.id,
+                    tier: ('tier' in mc ? mc.tier : 'daily') as 'daily' | 'weekly' | 'monthly',
+                    title: mc.challenge.name,
+                    description: mc.challenge.description,
+                    icon: mc.challenge.icon,
+                    current: mc.progress,
+                    target: mc.challenge.requirement,
+                    rewardAmount: mc.challenge.chipReward,
+                    rewardType: 'chips' as const,
+                    completed: mc.completed,
+                    claimed: mc.claimed,
+                  }))
+                );
+              })
+              .catch(() => {});
+          }
+        })
+        .catch(() => {});
+    });
+
     return () => {
       isMounted = false;
       unsubProfile();
@@ -529,6 +576,7 @@ export default function ProfilePage() {
       unsubDailyReward();
       unsubMissionClaim();
       unsubWheelSpin();
+      unsubChallengeProgress();
     };
   }, []);
 
@@ -816,9 +864,10 @@ export default function ProfilePage() {
                   prev.map((m) => (m.id === missionId ? { ...m, claimed: true } : m))
                 );
               }
+              toast.success('Mission reward claimed!');
             } catch (err: any) {
               console.error('Failed to claim mission:', err);
-              // Fallback to error handling if needed, button remains active on failure
+              toast.error(err.message || 'Failed to claim mission reward');
             }
           }}
         />

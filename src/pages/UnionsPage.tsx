@@ -97,8 +97,9 @@ export default function UnionsPage() {
         setUnions(data);
         setLoading(false);
       })
-      .catch((err) => {
+      .catch((err: any) => {
         console.error('[UnionsPage] Failed to load unions:', err);
+        toast.error(err.message || 'Failed to load unions');
         setLoading(false);
       });
   };

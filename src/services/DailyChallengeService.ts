@@ -545,11 +545,27 @@ class DailyChallengeServiceClass {
     return shuffled.slice(0, count);
   }
 
+  private selectChallenges(pool: DailyChallenge[], count: number): DailyChallenge[] {
+    const shuffled = [...pool].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+  }
+
   /**
    * Get today's date key (YYYY-MM-DD)
    */
   private getTodayKey(): string {
     return new Date().toISOString().split('T')[0];
+  }
+
+  private getWeekKey(): string {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() - d.getUTCDay() + 1); // Monday
+    return `W${d.toISOString().split('T')[0]}`;
+  }
+
+  private getMonthKey(): string {
+    const d = new Date();
+    return `M${d.getUTCFullYear()}-${d.getUTCMonth() + 1}`;
   }
 
   /**
@@ -577,15 +593,17 @@ class DailyChallengeServiceClass {
    * Map database row to typed object
    */
   private mapToUserChallenge(row: any): UserDailyChallenge {
-    const challenge = CHALLENGE_POOL.find((c) => c.id === row.challenge_id) || {
-      id: row.challenge_id,
-      name: 'Unknown',
-      description: '',
-      type: 'hands_played' as ChallengeType,
-      requirement: 0,
-      chipReward: 0,
-      icon: '❓',
-    };
+    const challenge = CHALLENGE_POOL.find((c) => c.id === row.challenge_id) ||
+      WEEKLY_CHALLENGE_POOL.find((c) => c.id === row.challenge_id) ||
+      MONTHLY_CHALLENGE_POOL.find((c) => c.id === row.challenge_id) || {
+        id: row.challenge_id,
+        name: 'Unknown',
+        description: '',
+        type: 'hands_played' as ChallengeType,
+        requirement: 0,
+        chipReward: 0,
+        icon: '❓',
+      };
 
     return {
       id: row.id,

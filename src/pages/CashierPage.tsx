@@ -369,8 +369,9 @@ export default function CashierPage() {
       if (isMounted.current) {
         setRecipients(list);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load recipients:', err);
+      toast.error(err.message || 'Failed to load eligible recipients');
     }
     if (isMounted.current) setLoadingRecipients(false);
   };
