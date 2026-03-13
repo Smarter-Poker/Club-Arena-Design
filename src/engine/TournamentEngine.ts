@@ -120,9 +120,9 @@ function resolvePayoutStructure(raw: unknown, playerCount: number): PayoutEntry[
   // Normalize: ensure every entry has 'place' (DB may use 'position' instead)
   const normalize = (arr: Array<Record<string, unknown>>): PayoutEntry[] =>
     arr.map((p) => ({
-      place: p.place || p.position || 0,
-      position: p.position || p.place || 0,
-      percentage: p.percentage || 0,
+      place: (p.place as number) || (p.position as number) || 0,
+      position: (p.position as number) || (p.place as number) || 0,
+      percentage: (p.percentage as number) || 0,
     }));
 
   if (Array.isArray(raw)) return normalize(raw);
