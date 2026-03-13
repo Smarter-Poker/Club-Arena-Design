@@ -80,7 +80,7 @@ export default function PromotionsList({ userId, clubId }: PromotionsListProps) 
     if (days > 0) return `${days}d ${hours}h left`;
     if (hours > 0) return `${hours}h left`;
     const mins = Math.floor((diff % 3_600_000) / 60_000);
-    return `${mins}m left`;
+    return mins > 0 ? `${mins}m left` : 'Ending soon';
   };
 
   const isClaimedByUser = (promoId: string) => claims.some((c) => c.promotionId === promoId);

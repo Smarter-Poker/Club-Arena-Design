@@ -2,10 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
 import { useNavigate } from 'react-router-dom';
-import NotificationGrouper, {
-  Notification as GrouperNotif,
-  NotificationCategory,
-} from './NotificationGrouper';
+import NotificationGrouper, { type NotificationCategory } from './NotificationGrouper';
 import './NotificationCenter.css';
 
 interface Notification {
@@ -32,7 +29,6 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
   const isMounted = useRef(true);
   const animationTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -203,11 +199,6 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     const days = Math.floor(hours / 24);
     return `${days}d ago`;
   };
-
-  const filteredNotifications =
-    filter === 'unread' ? notifications.filter((n) => !n.isRead) : notifications;
-
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   if (!isOpen) return null;
 
