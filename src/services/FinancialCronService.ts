@@ -79,9 +79,12 @@ export const FinancialCronService = {
       'h'
     );
 
-    // Run immediately, then on interval
-    this.runReconciliation();
-    this.runSuspensionCheck();
+    // Delay first run by 30s — avoids noisy failures during app startup
+    // when database connections may not be fully established
+    setTimeout(() => {
+      this.runReconciliation();
+      this.runSuspensionCheck();
+    }, 30_000);
 
     this._reconciliationTimer = setInterval(
       () => this.runReconciliation(),
