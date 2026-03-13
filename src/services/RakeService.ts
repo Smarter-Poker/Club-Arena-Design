@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import { BBJService } from './BBJService';
 import { retryAsync } from '../utils/retryAsync';
 import { resolveClubUUID } from '../utils/clubIdResolver';
+import { rakebackEngine } from '../engine/RakebackEngine';
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
@@ -385,6 +386,27 @@ export const RakeService = {
       calculation.cappedRake,
       players
     );
+
+    // STEP 3.5: Record per-player contributions for rakeback engine
+    if (calculation.cappedRake > 0 && attributions.length > 0 && clubId) {
+      try {
+        const totalContributions = players
+          .filter((p) => !p.isSittingOut && p.hasCards)
+          .reduce((sum, p) => sum + (p.potContribution || 0), 0);
+        const contributions = new Map<string, number>();
+        for (const p of players.filter((pl) => !pl.isSittingOut && pl.hasCards)) {
+          contributions.set(p.userId, p.potContribution || 0);
+        }
+        rakebackEngine.recordHandRake(
+          clubId,
+          calculation.cappedRake,
+          totalContributions,
+          contributions
+        );
+      } catch (rbErr) {
+        console.warn('[RakeService] RakebackEngine recording failed:', rbErr);
+      }
+    }
 
     // STEP 4: Queue commission credits
     let commissionsQueued = false;
