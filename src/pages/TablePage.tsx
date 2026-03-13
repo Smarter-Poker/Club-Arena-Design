@@ -66,6 +66,7 @@ import type {
   HandHistoryAction,
   HandHistoryStreet,
 } from '../components/table/HandHistoryPanel';
+import { timeBankEngine } from '../engine/TimeBankEngine';
 import { usePlayerStats } from '../hooks/usePlayerStats';
 import { useTableSettings } from '../hooks/useTableSettings';
 import { useTableTimer } from '../hooks/useTableTimer';
@@ -431,8 +432,67 @@ export default function TablePage({
 
   const [raiseAmount, setRaiseAmount] = useState(20);
   const [showRaiseSlider, setShowRaiseSlider] = useState(false);
-  const [actionTimeRemaining, setActionTimeRemaining] = useState(15);
   const [preAction, setPreAction] = useState<'fold' | 'check' | 'callAny' | null>(null);
+
+  // Time Bank State
+  const [showTimeBank, setShowTimeBank] = useState(false);
+  const [timeBankActive, setTimeBankActive] = useState(false);
+  const [timeBanksRemaining, setTimeBanksRemaining] = useState(4);
+  const [timeBankTimeRemaining, setTimeBankTimeRemaining] = useState(15);
+
+  // Unified Table Timer Engine (Phase M)
+  const isHeroTurnContext =
+    tableState.currentPlayerSeat === tableState.heroSeat && tableState.isHandInProgress;
+
+  const handleTimerAutoFold = useCallback(() => {
+    if (handControllerRef.current) {
+      try {
+        const foldResult = handControllerRef.current.performAction(tableState.heroSeat, 'fold');
+        if (foldResult !== false) {
+          sendAction('fold', { seat: tableState.heroSeat, autoFold: true });
+          soundService.playFold();
+
+          // Real-time broadcast
+          broadcastLocalHandState();
+          if (tableId) submitAction(tableId, userId || 'guest', 'fold').catch(() => {});
+        } else {
+          console.warn('[AutoFold] performAction returned false — fold may not have executed');
+        }
+      } catch (err) {
+        console.error('[AutoFold] Error during auto-fold:', err);
+      }
+    }
+  }, [tableState.heroSeat, tableId, userId, broadcastLocalHandState, sendAction]);
+
+  const { timeRemaining: actionTimeRemaining, resetTimer } = useTableTimer({
+    isHeroTurn: isHeroTurnContext && !timeBankActive,
+    isSoundEnabled,
+    onTimeout: () => {
+      // Auto-activate time bank if available
+      if (tableId && userId && timeBankEngine.hasTimeBank(tableId, userId)) {
+        const didActivate = timeBankEngine.onPrimaryTimerExpired(
+          tableId,
+          userId,
+          handleTimerAutoFold
+        );
+        if (!didActivate) {
+          handleTimerAutoFold();
+        }
+      } else {
+        handleTimerAutoFold();
+      }
+    },
+    initialTime: 15,
+  });
+
+  // Handle immediate UI Activation when button is clicked
+  const handleActivateTimeBank = useCallback(() => {
+    if (!tableId || !userId) return;
+    const activated = timeBankEngine.activate(tableId, userId, handleTimerAutoFold);
+    if (activated) {
+      soundService.playChips();
+    }
+  }, [tableId, userId, handleTimerAutoFold]);
 
   // Phase L: Deep Audit — Wire React state to MasterBus for cross-component telemetry
   useEffect(() => {
