@@ -1,0 +1,139 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════
+ *  PROMOTION CAROUSEL — Auto-rotating active promotions banner for lobby
+ * ═══════════════════════════════════════════════════════════════════════════════
+ */
+
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { promotionService, type Promotion } from '../../services/PromotionService';
+import './PromotionCarousel.css';
+
+interface PromotionCarouselProps {
+  clubId?: string;
+  onPromoClick?: (promotion: Promotion) => void;
+}
+
+const GRADIENT_PALETTE = [
+  'linear-gradient(135deg, #7c3aed, #db2777)',
+  'linear-gradient(135deg, #2563eb, #06b6d4)',
+  'linear-gradient(135deg, #059669, #34d399)',
+  'linear-gradient(135deg, #d97706, #f59e0b)',
+  'linear-gradient(135deg, #dc2626, #f87171)',
+];
+
+const TYPE_ICONS: Record<string, string> = {
+  bonus: '🎁',
+  freeroll: '🎟️',
+  leaderboard: '🏆',
+  rakeback: '💰',
+  special: '⭐',
+  deposit_match: '💳',
+  refer_friend: '👥',
+};
+
+export default function PromotionCarousel({ clubId, onPromoClick }: PromotionCarouselProps) {
+  const [promos, setPromos] = useState<Promotion[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const isMounted = useRef(true);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await promotionService.getPromotions(clubId, 'active');
+        if (isMounted.current) setPromos(data);
+      } catch (err) {
+        console.error('[PromotionCarousel] load error:', err);
+      }
+      if (isMounted.current) setLoading(false);
+    })();
+  }, [clubId]);
+
+  // Auto-rotate every 6 seconds
+  useEffect(() => {
+    if (promos.length <= 1) return;
+    timerRef.current = setInterval(() => {
+      if (isMounted.current) {
+        setActiveIndex((prev) => (prev + 1) % promos.length);
+      }
+    }, 6000);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [promos.length]);
+
+  const goTo = useCallback(
+    (index: number) => {
+      setActiveIndex(index);
+      // Reset timer
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        if (isMounted.current) {
+          setActiveIndex((prev) => (prev + 1) % promos.length);
+        }
+      }, 6000);
+    },
+    [promos.length]
+  );
+
+  if (loading || promos.length === 0) return null;
+
+  const promo = promos[activeIndex];
+  const gradient = GRADIENT_PALETTE[activeIndex % GRADIENT_PALETTE.length];
+  const icon = TYPE_ICONS[promo.type] || '🎁';
+
+  const getTimeRemaining = (): string => {
+    const diff = new Date(promo.endDate).getTime() - Date.now();
+    if (diff <= 0) return 'Expired';
+    const days = Math.floor(diff / 86_400_000);
+    const hours = Math.floor((diff % 86_400_000) / 3_600_000);
+    if (days > 0) return `${days}d ${hours}h left`;
+    return `${hours}h left`;
+  };
+
+  return (
+    <div className="pc-container">
+      <button
+        className="pc-banner"
+        style={{ background: gradient }}
+        onClick={() => onPromoClick?.(promo)}
+      >
+        <div className="pc-icon">{icon}</div>
+        <div className="pc-content">
+          <span className="pc-type">{promo.type.replace(/_/g, ' ')}</span>
+          <h4 className="pc-title">{promo.title}</h4>
+          <p className="pc-desc">{promo.description}</p>
+        </div>
+        <div className="pc-meta">
+          {promo.prizePool && promo.prizePool > 0 && (
+            <span className="pc-prize">💰 {promo.prizePool.toLocaleString()}</span>
+          )}
+          <span className="pc-time">⏰ {getTimeRemaining()}</span>
+        </div>
+      </button>
+
+      {/* Dot indicators */}
+      {promos.length > 1 && (
+        <div className="pc-dots">
+          {promos.map((_, i) => (
+            <button
+              key={i}
+              className={`pc-dot ${i === activeIndex ? 'pc-dot-active' : ''}`}
+              onClick={() => goTo(i)}
+              aria-label={`Promotion ${i + 1}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

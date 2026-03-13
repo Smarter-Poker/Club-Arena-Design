@@ -120,6 +120,8 @@ import { TableErrorBoundary } from '../components/common/TableErrorBoundary';
 import { FinalTableOverlay } from '../components/tournament/FinalTableOverlay';
 import { HeadsUpOverlay } from '../components/tournament/HeadsUpOverlay';
 import { EmotePanel } from '../components/table/EmotePanel';
+import { SessionTrajectoryMini } from '../components/table/SessionTrajectoryMini';
+import { AchievementNotification } from '../components/gamification/AchievementNotification';
 // Phase 8-9 Premium Components
 import { QuickActionsBar } from '../components/table/QuickActionsBar';
 import { SpectatorOverlay } from '../components/table/SpectatorOverlay';
@@ -638,6 +640,14 @@ export default function TablePage({
   // Tip Dealer state
   const [showTipDealer, setShowTipDealer] = useState(false);
   const [showEmotePanel, setShowEmotePanel] = useState(false);
+  const [unlockedAchievement, setUnlockedAchievement] = useState<{
+    id: string;
+    name: string;
+    description: string;
+    icon: string;
+    rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+    diamondReward?: number;
+  } | null>(null);
 
   // Straddle state
   const [isStraddleEnabled, setIsStraddleEnabled] = useState(false);
@@ -704,6 +714,10 @@ export default function TablePage({
       if (isAutoRebuy) {
         autoRebuyCountRef.current += 1;
         toast.success(`Auto-rebought ${amount} chips.`);
+      }
+      // Feed SessionStatsService for trajectory graph on rebuy/top-up
+      if (tableId) {
+        sessionStatsService.recordRebuy(tableId, amount);
       }
       // Update hero's table stack in local state AND sync to DB
       setTableState((prev) => {
@@ -2870,6 +2884,40 @@ export default function TablePage({
             if (tableId) {
               sessionStatsService.recordHand(tableId, heroEndStack, heroWon, heroVPIP, heroPFR);
             }
+
+            // Fire achievement checks (fire-and-forget, non-blocking)
+            if (userId && userId !== 'guest') {
+              achievementTriggerService
+                .onHandComplete(userId, {
+                  won: heroWon,
+                  potSize: event.pot || 0,
+                  showdown: true,
+                })
+                .then((result) => {
+                  if (result.triggeredAchievements.length > 0) {
+                    const ach = result.triggeredAchievements[0];
+                    setUnlockedAchievement({
+                      id: ach.id,
+                      name: ach.name,
+                      description: ach.description || '',
+                      icon: ach.icon || '🏆',
+                      rarity: (ach.rarity as any) || 'common',
+                      diamondReward: ach.chipReward,
+                    });
+                    // Broadcast for other components
+                    masterBus.emit('ACHIEVEMENT_UNLOCKED', {
+                      userId: userId!,
+                      achievementId: ach.id,
+                      name: ach.name,
+                      icon: ach.icon || '🏆',
+                      rarity: (ach.rarity as any) || 'common',
+                      description: ach.description || '',
+                      diamondReward: ach.chipReward,
+                    });
+                  }
+                })
+                .catch((err) => console.warn('[Achievements] Check failed:', err));
+            }
           }
 
           // Delayed cleanup: clear board and cards after 3 seconds, then start next hand
@@ -3807,6 +3855,16 @@ export default function TablePage({
                   </TableErrorBoundary>
                 )}
 
+                {/* Session Trajectory Sparkline (cash games) */}
+                {!tableState.isTournament && tableId && userId !== 'guest' && (
+                  <TableErrorBoundary componentName="SessionTrajectoryMini">
+                    <SessionTrajectoryMini
+                      tableId={tableId}
+                      bigBlind={Number(tableState.blinds.split('/')[1]) || 2}
+                    />
+                  </TableErrorBoundary>
+                )}
+
                 {/* Connection Quality HUD */}
                 {tableId && userId !== 'guest' && (
                   <TableErrorBoundary componentName="ConnectionHUD">
@@ -4388,6 +4446,12 @@ export default function TablePage({
         }}
       />
 
+      {/* Achievement Unlock Notification */}
+      <AchievementNotification
+        achievement={unlockedAchievement}
+        onDismiss={() => setUnlockedAchievement(null)}
+      />
+
       {/* Tip Dealer Modal */}
       <TipDealer
         isOpen={showTipDealer}
@@ -4893,6 +4957,11 @@ export default function TablePage({
             autoRebuyCountRef.current = 0;
             sessionStartRef.current = Date.now();
             setShowSessionSummary(false);
+
+            // End SessionStatsService session — persists to Supabase session_history
+            if (tableId) {
+              sessionStatsService.endSession(tableId);
+            }
 
             // Notify system
             masterBus.emit('SESSION_SUMMARY_DISMISSED', { tableId: tableId ?? '' });

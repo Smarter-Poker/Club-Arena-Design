@@ -48,6 +48,9 @@ export type BusEventType =
   | 'WAITLIST_POSITION_CHANGED'
   | 'SESSION_SUMMARY_DISMISSED'
   | 'TABLE_EMOTE'
+  | 'ACHIEVEMENT_UNLOCKED'
+  | 'MISSION_PROGRESS'
+  | 'STREAK_UPDATE'
   // Phase 5: Daily challenge game events
   | 'HAND_COMPLETED'
   | 'HAND_WON'
@@ -204,6 +207,17 @@ export interface BusPayloadMap {
   WAITLIST_POSITION_CHANGED: { tableId: string; position: number; tableName: string };
   SESSION_SUMMARY_DISMISSED: { tableId: string };
   TABLE_EMOTE: { tableId: string; userId: string; emoteId: string };
+  ACHIEVEMENT_UNLOCKED: {
+    userId: string;
+    achievementId: string;
+    name: string;
+    icon: string;
+    rarity: string;
+    description: string;
+    diamondReward?: number;
+  };
+  MISSION_PROGRESS: { userId: string; missionId: string; progress: number; target: number };
+  STREAK_UPDATE: { userId: string; streakCount: number; multiplier: number };
   // Gameplay events — strict payload types (#7)
   HAND_WON: { handId: string; winners: string[]; pot: number };
   HAND_COMPLETED: { handId: string; tableId: string };
