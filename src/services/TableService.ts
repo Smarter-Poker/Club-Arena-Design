@@ -24,7 +24,8 @@ class TableService {
       .eq('club_id', clubId)
       .eq('is_deleted', false)
       .neq('status', 'closed')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(200);
 
     if (error) {
       console.error('[TableService] Error fetching club tables:', error);
@@ -583,7 +584,7 @@ class TableService {
    */
   async getTableStats(tableId: string) {
     const [rakeData, handData] = await Promise.all([
-      supabase.from('rake_history').select('rake_amount').eq('table_id', tableId),
+      supabase.from('rake_history').select('rake_amount').eq('table_id', tableId).limit(10000),
       supabase
         .from('hand_history')
         .select('id', { count: 'exact', head: true })

@@ -118,7 +118,8 @@ export const MembershipService = {
             `
       )
       .eq('club_id', clubId)
-      .order('joined_at', { ascending: false });
+      .order('joined_at', { ascending: false })
+      .limit(5000);
 
     if (error) throw error;
 
@@ -275,7 +276,8 @@ export const MembershipService = {
       .eq('club_id', clubId)
       .in('status', ['active', 'approved'])
       .in('role', ['member', 'guest'])
-      .order('joined_at', { ascending: false });
+      .order('joined_at', { ascending: false })
+      .limit(500);
 
     if (error) throw error;
 
