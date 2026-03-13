@@ -20,6 +20,7 @@
 
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -98,6 +99,7 @@ export const MembershipService = {
    * Get all members of a club
    */
   async getClubMembers(clubId: string): Promise<ClubMembership[]> {
+    const resolvedId = await resolveClubUUID(clubId);
     const { data, error } = await supabase
       .from('club_members')
       .select(
@@ -117,7 +119,7 @@ export const MembershipService = {
                 )
             `
       )
-      .eq('club_id', clubId)
+      .eq('club_id', resolvedId)
       .order('joined_at', { ascending: false })
       .limit(5000);
 
@@ -142,10 +144,11 @@ export const MembershipService = {
    * Get a user's membership in a specific club
    */
   async getMembership(clubId: string, userId: string): Promise<ClubMembership | null> {
+    const resolvedId = await resolveClubUUID(clubId);
     const { data, error } = await supabase
       .from('club_members')
       .select('*')
-      .eq('club_id', clubId)
+      .eq('club_id', resolvedId)
       .eq('user_id', userId)
       .maybeSingle();
 
@@ -257,6 +260,7 @@ export const MembershipService = {
    * Get members eligible for promotion to agent
    */
   async getEligibleForPromotion(clubId: string): Promise<ClubMembership[]> {
+    const resolvedId = await resolveClubUUID(clubId);
     const { data, error } = await supabase
       .from('club_members')
       .select(
@@ -273,7 +277,7 @@ export const MembershipService = {
                 )
             `
       )
-      .eq('club_id', clubId)
+      .eq('club_id', resolvedId)
       .in('status', ['active', 'approved'])
       .in('role', ['member', 'guest'])
       .order('joined_at', { ascending: false })
@@ -391,21 +395,22 @@ export const MembershipService = {
   async getMemberCounts(
     clubId: string
   ): Promise<{ total: number; active: number; pending: number; online: number }> {
+    const resolvedId = await resolveClubUUID(clubId);
     const { count: total } = await supabase
       .from('club_members')
       .select('*', { count: 'exact', head: true })
-      .eq('club_id', clubId);
+      .eq('club_id', resolvedId);
 
     const { count: active } = await supabase
       .from('club_members')
       .select('*', { count: 'exact', head: true })
-      .eq('club_id', clubId)
+      .eq('club_id', resolvedId)
       .in('status', ['active', 'approved']);
 
     const { count: pending } = await supabase
       .from('club_members')
       .select('*', { count: 'exact', head: true })
-      .eq('club_id', clubId)
+      .eq('club_id', resolvedId)
       .eq('status', 'pending');
 
     // Estimate online count — creating a channel just to check presenceState()

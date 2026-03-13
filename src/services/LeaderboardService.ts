@@ -12,6 +12,7 @@
 import { supabase } from '../lib/supabase';
 import { VIP_GOLD_LIMITS } from './VIPService';
 import { retryAsync } from '../utils/retryAsync';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -113,7 +114,7 @@ export const LeaderboardService = {
         .select(
           'user_id, hands_played, total_winnings, total_losses, total_rake, vpip, pfr, tournaments_played, tournaments_won'
         )
-        .eq('club_id', clubId)
+        .eq('club_id', await resolveClubUUID(clubId))
         .order(orderCol, { ascending: false })
         .limit(limit);
 
@@ -262,7 +263,7 @@ export const LeaderboardService = {
     let query = supabase.from('player_stats').select('*').eq('user_id', userId);
 
     if (clubId) {
-      query = query.eq('club_id', clubId);
+      query = query.eq('club_id', await resolveClubUUID(clubId));
     }
 
     const { data, error } = await query.maybeSingle();
@@ -357,7 +358,7 @@ export const LeaderboardService = {
         .select(
           'user_id, total_winnings, total_losses, hands_played, vpip, pfr, tournaments_played, tournaments_won'
         )
-        .eq('club_id', clubId)
+        .eq('club_id', await resolveClubUUID(clubId))
         .order(orderCol, { ascending: false })
         .limit(5000);
 

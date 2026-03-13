@@ -297,10 +297,6 @@ class DisconnectEngineClass {
     const state = this.playerStates.get(key);
     if (!state) return;
 
-    // Clear any existing timer
-    if (state.timeoutTimer) clearTimeout(state.timeoutTimer);
-    state.timeoutTimer = undefined;
-
     masterBus.emit('DISCONNECT_TIMER_STARTED', {
       tableId,
       playerId,
@@ -332,7 +328,6 @@ class DisconnectEngineClass {
 
     if (state && reason === 'timeout') {
       state.consecutiveTimeouts++;
-      state.timeoutTimer = undefined;
 
       // Auto sit-out after too many consecutive timeouts
       if (state.consecutiveTimeouts >= config.maxConsecutiveTimeouts) {

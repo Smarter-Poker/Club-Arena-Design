@@ -196,6 +196,28 @@ export default function FriendsPage() {
             });
           }
         });
+
+        // Q3: Fetch playing-at status for friend enrichment
+        try {
+          const friendIds = Array.from(uniqueMap.keys());
+          const { data: statusData } = await supabase
+            .from('profiles')
+            .select('id, current_table, status_text')
+            .in('id', friendIds);
+
+          if (statusData) {
+            statusData.forEach((s: any) => {
+              const friend = uniqueMap.get(s.id);
+              if (friend) {
+                friend.current_table = s.current_table || undefined;
+                friend.status_text = s.status_text || undefined;
+              }
+            });
+          }
+        } catch (err) {
+          console.warn('[FriendsPage] Failed to fetch player status:', err);
+        }
+
         setFriends(Array.from(uniqueMap.values()));
       } else {
         setFriends([]);

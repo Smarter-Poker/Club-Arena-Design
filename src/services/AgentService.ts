@@ -15,6 +15,7 @@ import { WalletService } from './WalletService';
 import { ChipFlowService } from './ChipFlowService';
 import { masterBus } from '../core/MasterBus';
 import { retryAsync } from '../utils/retryAsync';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -102,6 +103,7 @@ class AgentServiceClass {
    * Get all agents for a club
    */
   async getAgents(clubId: string): Promise<Agent[]> {
+    const resolvedId = await resolveClubUUID(clubId);
     const { data, error } = await supabase
       .from('agents')
       .select(
@@ -120,7 +122,7 @@ class AgentServiceClass {
                 )
             `
       )
-      .eq('club_id', clubId)
+      .eq('club_id', resolvedId)
       .order('joined_at', { ascending: false })
       .limit(500);
 
@@ -427,7 +429,7 @@ class AgentServiceClass {
       .from('agents')
       .select('id')
       .eq('user_id', userId)
-      .eq('club_id', clubId)
+      .eq('club_id', await resolveClubUUID(clubId))
       .maybeSingle();
 
     if (existingAgent) {
@@ -489,11 +491,12 @@ class AgentServiceClass {
     }
 
     // 2. Verify this user is an agent in the specified club
+    const resolvedClubId = await resolveClubUUID(clubId);
     const { data: agentRecord } = await supabase
       .from('agents')
       .select('id, user_id')
       .eq('user_id', agentProfile.id)
-      .eq('club_id', clubId)
+      .eq('club_id', resolvedClubId)
       .maybeSingle();
 
     if (!agentRecord) {
@@ -505,7 +508,7 @@ class AgentServiceClass {
       .from('club_members')
       .update({ agent_id: agentProfile.id })
       .eq('user_id', playerId)
-      .eq('club_id', clubId);
+      .eq('club_id', resolvedClubId);
 
     if (error) {
       console.error(
@@ -543,11 +546,12 @@ class AgentServiceClass {
     clubId: string
   ): Promise<boolean> {
     // Verify agent exists in this club
+    const resolvedClubId = await resolveClubUUID(clubId);
     const { data: agentRecord } = await supabase
       .from('agents')
       .select('id, total_players, active_player_count')
       .eq('user_id', agentUserId)
-      .eq('club_id', clubId)
+      .eq('club_id', resolvedClubId)
       .maybeSingle();
 
     if (!agentRecord) {
@@ -560,7 +564,7 @@ class AgentServiceClass {
       .from('club_members')
       .update({ agent_id: agentUserId })
       .eq('user_id', playerId)
-      .eq('club_id', clubId);
+      .eq('club_id', resolvedClubId);
 
     if (error) {
       console.error(`[AgentService] Failed to assign player:`, error);
