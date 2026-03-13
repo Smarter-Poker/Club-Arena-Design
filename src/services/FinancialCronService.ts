@@ -50,6 +50,7 @@ export interface SuspensionCheckResult {
 export const FinancialCronService = {
   _reconciliationTimer: null as ReturnType<typeof setInterval> | null,
   _suspensionTimer: null as ReturnType<typeof setInterval> | null,
+  _startupTimer: null as ReturnType<typeof setTimeout> | null,
   _isRunning: false,
   _lastReconciliation: null as ReconciliationResult | null,
   _lastSuspensionCheck: null as SuspensionCheckResult | null,
@@ -81,7 +82,7 @@ export const FinancialCronService = {
 
     // Delay first run by 30s — avoids noisy failures during app startup
     // when database connections may not be fully established
-    setTimeout(() => {
+    this._startupTimer = setTimeout(() => {
       this.runReconciliation();
       this.runSuspensionCheck();
     }, 30_000);
@@ -102,8 +103,10 @@ export const FinancialCronService = {
    * Stop all cron jobs
    */
   stop(): void {
+    if (this._startupTimer) clearTimeout(this._startupTimer);
     if (this._reconciliationTimer) clearInterval(this._reconciliationTimer);
     if (this._suspensionTimer) clearInterval(this._suspensionTimer);
+    this._startupTimer = null;
     this._reconciliationTimer = null;
     this._suspensionTimer = null;
     this._isRunning = false;

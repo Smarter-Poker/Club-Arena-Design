@@ -312,23 +312,20 @@ class DisconnectEngineClass {
       timeoutSeconds: config.disconnectTimeoutSeconds,
     });
 
-    // Use preciseActionTimer for drift-immune deadline tracking
+    // Register deadline in preciseActionTimer for drift-immune remaining-time queries
     const durationMs = config.disconnectTimeoutSeconds * 1000;
-    preciseActionTimer.startTimer(tableId, `disconnect:${playerId}`, durationMs, () => {
+    preciseActionTimer.startTimer(tableId, `disconnect:${playerId}`, durationMs);
+
+    // Use setTimeout for actual execution (preciseActionTimer only tracks deadlines)
+    state.timeoutTimer = setTimeout(() => {
       // Check if player reconnected during the countdown
       if (state.isConnected) return;
-      this.executeAutoAction(tableId, playerId, canCheck, 'timeout');
-    });
 
-    // Keep a reference for cleanup (fallback setTimeout as safety net)
-    state.timeoutTimer = setTimeout(() => {
-      // Safety: if preciseActionTimer callback failed, execute here
-      if (state.isConnected) return;
-      const remaining = preciseActionTimer.getRemainingMs(tableId, `disconnect:${playerId}`);
-      if (remaining <= 0) {
-        this.executeAutoAction(tableId, playerId, canCheck, 'timeout');
-      }
-    }, durationMs + 1000); // +1s grace for safety
+      // Clean up the deadline tracker
+      preciseActionTimer.cancelTimer(tableId, `disconnect:${playerId}`);
+
+      this.executeAutoAction(tableId, playerId, canCheck, 'timeout');
+    }, durationMs);
   }
 
   private executeAutoAction(
