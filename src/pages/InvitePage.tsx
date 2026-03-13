@@ -14,6 +14,7 @@ import './InvitePage.css';
 import { retryAsync } from '../utils/retryAsync';
 import { resolveClubIdFilter } from '../utils/clubIdResolver';
 import PageSkeleton from '../components/common/PageSkeleton';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 const inviteStepAnimationStyle = {
   opacity: 0,
@@ -36,6 +37,7 @@ export default function InvitePage() {
   const [searchParams] = useSearchParams();
   const inviteCode = searchParams.get('code');
   const { user } = useAuthUser();
+  useVisibilityRefresh(() => loadClubInfo());
 
   const [club, setClub] = useState<ClubInfo | null>(null);
   const [loading, setLoading] = useState(true);

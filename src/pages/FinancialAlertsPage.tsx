@@ -13,9 +13,11 @@ import { FinancialAlertService, FinancialAlert } from '../services/FinancialAler
 import { useAuthUser } from '../hooks/useAuthUser';
 import './FinancialAlertsPage.css';
 import PageSkeleton from '../components/common/PageSkeleton';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 export default function FinancialAlertsPage() {
   const { user } = useAuthUser();
+  useVisibilityRefresh(() => loadAlerts());
   const [alerts, setAlerts] = useState<FinancialAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [resolving, setResolving] = useState<string | null>(null);

@@ -19,6 +19,7 @@ import { masterBus } from '../core/MasterBus';
 import { useToast } from '../components/common/Toast';
 import './NotificationCenter.css';
 import PageSkeleton from '../components/common/PageSkeleton';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 interface Notification {
   id: string;
@@ -45,6 +46,7 @@ export default function NotificationCenter() {
   const navigate = useNavigate();
   const { user } = useAuthUser();
   const toast = useToast();
+  useVisibilityRefresh(() => loadNotifications());
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
