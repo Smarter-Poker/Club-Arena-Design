@@ -186,13 +186,16 @@ export default function FinancialAdminHub() {
         /* table may not exist */
       }
 
-      // Count financial alerts from local storage (alerts are stored in FinancialAlertService memory)
+      // Count unresolved financial alerts from Supabase
       let totalAlerts = 0;
       try {
-        const stored = localStorage.getItem('financial_alerts');
-        if (stored) totalAlerts = JSON.parse(stored).length;
+        const { count: alertCount } = await supabase
+          .from('financial_alerts')
+          .select('*', { count: 'exact', head: true })
+          .eq('resolved', false);
+        totalAlerts = alertCount || 0;
       } catch {
-        /* no alerts */
+        /* table may not exist */
       }
 
       setStats({ totalAlerts, openDisputes, rateChanges, healthChecks, lastCheckPassed });

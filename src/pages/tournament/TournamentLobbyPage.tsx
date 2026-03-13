@@ -54,7 +54,7 @@ export default function TournamentLobbyPage() {
   const toast = useToast();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<TournamentStatus>('all');
+  const [statusFilter, setStatusFilter] = useState<TournamentStatus>('upcoming');
   const [typeFilter, setTypeFilter] = useState<TournamentTypeFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleTournaments, setVisibleTournaments] = useState<Set<string>>(new Set());

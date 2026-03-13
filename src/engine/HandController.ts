@@ -20,6 +20,7 @@ import {
   type RakeConfig,
 } from './PokerEngine';
 import type { Card, HandStage, SeatPlayer, ActionType, GameVariant } from '../types/database.types';
+import { engineTelemetry } from './EngineTelemetry';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -126,6 +127,9 @@ export class HandController {
       sawFlop: false,
     };
   }
+
+  // Telemetry: track hand start time
+  private handStartedAt: number = Date.now();
 
   // To prevent double RIT triggering
   private isWaitingForRIT = false;
@@ -680,6 +684,13 @@ export class HandController {
       rake,
       pot: this.state.pot,
     });
+    // Telemetry: record hand timing
+    engineTelemetry.recordHandTiming(
+      this.config.tableId,
+      0, // deal time (not separately tracked yet)
+      0, // eval time (not separately tracked yet)
+      Date.now() - this.handStartedAt
+    );
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -742,6 +753,10 @@ export class HandController {
         rake: 0,
         pot: this.state.pot,
       });
+      // Telemetry: record hand timing (no showdown)
+      engineTelemetry.recordHandTiming(
+        this.config.tableId, 0, 0, Date.now() - this.handStartedAt
+      );
       return;
     }
 
@@ -784,6 +799,10 @@ export class HandController {
       rake,
       pot: this.state.pot,
     });
+    // Telemetry: record hand timing
+    engineTelemetry.recordHandTiming(
+      this.config.tableId, 0, 0, Date.now() - this.handStartedAt
+    );
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

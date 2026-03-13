@@ -41,7 +41,6 @@ export default function DisputeManagementPage() {
   const [adjustmentType, setAdjustmentType] = useState<'credit' | 'debit' | 'none'>('none');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const isMounted = useRef(true);
-  useVisibilityRefresh(() => loadDisputes());
 
   useEffect(() => {
     return () => {
@@ -50,16 +49,24 @@ export default function DisputeManagementPage() {
   }, []);
 
   const loadDisputes = useCallback(async () => {
-    if (!clubId) return;
     setLoading(true);
     try {
-      const data = await DisputeService.getClubDisputes(clubId);
-      if (isMounted.current) setDisputes(data);
+      if (clubId) {
+        // Club-scoped: load disputes for this club
+        const data = await DisputeService.getClubDisputes(clubId);
+        if (isMounted.current) setDisputes(data);
+      } else if (user?.id) {
+        // Global route (/disputes): load user's own disputes
+        const data = await DisputeService.getMyDisputes(user.id);
+        if (isMounted.current) setDisputes(data);
+      }
     } catch (err) {
       console.error('[Disputes] Load failed:', err);
     }
     if (isMounted.current) setLoading(false);
-  }, [clubId]);
+  }, [clubId, user?.id]);
+
+  useVisibilityRefresh(() => loadDisputes());
 
   useEffect(() => {
     loadDisputes();
@@ -67,7 +74,7 @@ export default function DisputeManagementPage() {
 
   // Real-time subscription
   useEffect(() => {
-    if (!clubId) return;
+    if (!clubId) return; // RT subscription only for club-scoped route
     const channelKey = `disputes-${clubId}`;
     const channel = masterBus.getOrCreateChannel(channelKey);
     channel

@@ -124,8 +124,8 @@ export default function ClubHomePage() {
   const [wallet, setWallet] = useState<WalletBalances>({ gold: 0, diamonds: 0 });
   const [jackpotAmount, setJackpotAmount] = useState(0);
   const [activeFilter, setActiveFilter] = useState<GameFilter>('ALL');
-  const [cashSubFilter, setCashSubFilter] = useState<CashSubFilter>('all');
-  const [tournamentSubFilter, setTournamentSubFilter] = useState<TournamentSubFilter>('all');
+  const [cashSubFilter, setCashSubFilter] = useState<CashSubFilter>('live');
+  const [tournamentSubFilter, setTournamentSubFilter] = useState<TournamentSubFilter>('running');
   const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<'owner' | 'admin' | 'agent' | 'member'>('member');
@@ -831,9 +831,9 @@ export default function ClubHomePage() {
             onClick={() => {
               haptic.selection();
               setActiveFilter(filter);
-              // Reset sub-filters when switching game type
-              setCashSubFilter('all');
-              setTournamentSubFilter('all');
+              // Reset sub-filters when switching game type (default to active games)
+              setCashSubFilter('live');
+              setTournamentSubFilter('running');
             }}
           >
             {filter}

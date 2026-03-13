@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { TournamentEngine } from './TournamentEngine';
+import { tableBalancer, type BalancerTable } from './TableBalancer';
 
 /**
  * TOURNAMENT ORCHESTRATOR
@@ -411,6 +412,59 @@ export class TournamentOrchestrator {
       }
     } catch (err) {
       console.error('[TournamentOrchestrator] Error checking notification hooks:', err);
+    }
+  }
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // TABLE BALANCING — Post-elimination rebalance check
+  // ═══════════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Check if tournament tables need rebalancing after an elimination.
+   * Called by TournamentEngine elimination handler.
+   */
+  async checkRebalance(tournamentId: string): Promise<void> {
+    try {
+      const { data: tables, error } = await supabase
+        .from('tournament_tables')
+        .select('id, table_number, max_players')
+        .eq('tournament_id', tournamentId)
+        .eq('status', 'active');
+
+      if (error || !tables || tables.length < 2) return;
+
+      // Fetch seated player counts per table
+      const balancerTables: BalancerTable[] = [];
+      for (const table of tables) {
+        const { data: seats } = await supabase
+          .from('table_seats')
+          .select('user_id, stack, seat_number')
+          .eq('table_id', table.id)
+          .is('left_at', null);
+
+        if (seats) {
+          balancerTables.push({
+            tableId: table.id,
+            playerCount: seats.length,
+            maxSeats: table.max_players || 9,
+            players: seats.map((s) => ({
+              userId: s.user_id,
+              stack: s.stack || 0,
+              seat: s.seat_number || 1,
+            })),
+          });
+        }
+      }
+
+      if (!tableBalancer.shouldRebalance(balancerTables)) return;
+
+      const moves = tableBalancer.calculateMoves(balancerTables);
+      if (moves.length === 0) return;
+
+      console.log(
+        `[TournamentOrchestrator] Rebalancing ${tournamentId}: ${moves.length} moves`
+      );
+    } catch (err) {
+      console.error(`[TournamentOrchestrator] Rebalance error for ${tournamentId}:`, err);
     }
   }
 }
