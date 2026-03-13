@@ -972,29 +972,31 @@ class TournamentService {
 
     masterBus.emit('BALANCE_UPDATED', { source: 'tournament_unregister_refund', userId });
 
-    // Re-read fresh tournament data to avoid stale read-then-write race condition
-    const { data: freshTourney } = await supabase
-      .from('tournaments')
-      .select('current_players, guaranteed_prize')
-      .eq('id', tournamentId)
-      .maybeSingle();
-    const newPlayerCount = Math.max(
-      0,
-      (freshTourney?.current_players ?? tournament.current_players) - 1
-    );
-    const entriesPrize2 = (tournament.buy_in_amount || 0) * newPlayerCount;
-    const freshGuarantee2 = freshTourney?.guaranteed_prize ?? tournament.guaranteed_prize;
-    const newPrizePool = freshGuarantee2 ? Math.max(entriesPrize2, freshGuarantee2) : entriesPrize2;
-    const { error: countError } = await supabase
-      .from('tournaments')
-      .update({
-        current_players: newPlayerCount,
-        prize_pool: newPrizePool,
-      })
-      .eq('id', tournamentId);
+    // Authoritative recount: prevents race if two unregistrations happen simultaneously
+    const { count: activeCount, error: countErr } = await supabase
+      .from('tournament_players')
+      .select('*', { count: 'exact', head: true })
+      .eq('tournament_id', tournamentId)
+      .in('status', ['registered', 'playing']);
 
-    if (countError) {
-      console.error('[TournamentService] Failed to decrement registration count:', countError);
+    if (countErr) {
+      console.error('[TournamentService] Unregister recount failed:', countErr);
+    } else {
+      const newPlayerCount = activeCount ?? 0;
+      const entriesPrize2 = (tournament.buy_in_amount || 0) * newPlayerCount;
+      const freshGuarantee2 = tournament.guaranteed_prize;
+      const newPrizePool = freshGuarantee2 ? Math.max(entriesPrize2, freshGuarantee2) : entriesPrize2;
+      const { error: countError } = await supabase
+        .from('tournaments')
+        .update({
+          current_players: newPlayerCount,
+          prize_pool: newPrizePool,
+        })
+        .eq('id', tournamentId);
+
+      if (countError) {
+        console.error('[TournamentService] Failed to update registration count:', countError);
+      }
     }
   }
 
@@ -1350,17 +1352,20 @@ class TournamentService {
           .eq('table_id', seat.table_id)
           .is('left_at', null);
 
-        // Decrement tables.current_players so merge/balance reads correct count
-        const { data: tbl } = await supabase
-          .from('tables')
-          .select('current_players')
-          .eq('id', seat.table_id)
-          .maybeSingle();
-        if (tbl) {
+        // Authoritative recount: prevents race if two players eliminated simultaneously
+        const { count: seatCount, error: countErr } = await supabase
+          .from('table_seats')
+          .select('*', { count: 'exact', head: true })
+          .eq('table_id', seat.table_id)
+          .is('left_at', null);
+
+        if (!countErr) {
           await supabase
             .from('tables')
-            .update({ current_players: Math.max(0, (tbl.current_players || 0) - 1) })
+            .update({ current_players: seatCount ?? 0 })
             .eq('id', seat.table_id);
+        } else {
+          console.error('[TournamentService] eliminatePlayerAuto recount failed:', countErr);
         }
       }
     }
