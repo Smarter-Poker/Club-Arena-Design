@@ -127,7 +127,7 @@ export default function RakebackPage() {
     };
   }, [user?.id]);
 
-  // Bus listener: reload when balance changes from other pages (e.g. settlement payout)
+  // Bus listeners: reload when balance changes or settlements complete
   useEffect(() => {
     if (!user?.id) return;
     const unsubBalance = masterBus.subscribeDebounced(
@@ -137,7 +137,17 @@ export default function RakebackPage() {
       },
       500
     );
-    return unsubBalance;
+    const unsubSettlement = masterBus.subscribeDebounced(
+      'SETTLEMENT_COMPLETED',
+      () => {
+        loadRakebackDataRef.current();
+      },
+      1000
+    );
+    return () => {
+      unsubBalance();
+      unsubSettlement();
+    };
   }, [user?.id]);
 
   // Stagger period rows
