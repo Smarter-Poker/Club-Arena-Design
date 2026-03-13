@@ -133,7 +133,7 @@ export async function loadSeatedPlayers(tableId: string) {
   const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
 
   return seats
-    .filter((seat) => seat.stack > 0 && profileMap.has(seat.user_id))
+    .filter((seat) => profileMap.has(seat.user_id))
     .map((seat) => {
       const profile = profileMap.get(seat.user_id)!;
       return {
