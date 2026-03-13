@@ -871,12 +871,17 @@ class TournamentService {
               );
             }
 
-            // Increment table player count
+            // Update table player count via authoritative recount (prevents race condition
+            // if two late registrations happen simultaneously reading the same stale count)
+            const { count: lateRegCount } = await supabase
+              .from('table_seats')
+              .select('*', { count: 'exact', head: true })
+              .eq('table_id', openTable.id)
+              .is('left_at', null);
+
             const { error: tableErr } = await supabase
               .from('tables')
-              .update({
-                current_players: openTable.current_players + 1,
-              })
+              .update({ current_players: lateRegCount || 0 })
               .eq('id', openTable.id);
 
             if (tableErr)

@@ -348,8 +348,9 @@ export default function ProfilePage() {
               }))
             );
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error('[PROFILE] Failed to load missions:', err);
+          toast.error('Failed to load daily missions');
         }
 
         // Load transaction history for profit graph

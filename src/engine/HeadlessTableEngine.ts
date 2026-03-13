@@ -1438,11 +1438,14 @@ export class HeadlessTableEngine {
       try {
         // Use the FULLY ATOMIC cashout RPC to prevent double-spend if the node crashes
         // right after crediting the wallet but before updating the seat left_at timestamp.
-        const { data: returnedChips, error: cashoutError } = await this.supabaseClient.rpc('atomic_table_cashout', {
-          p_user_id: seat.user_id,
-          p_table_id: this.tableId,
-          p_seat_number: seat.seat_number,
-        });
+        const { data: returnedChips, error: cashoutError } = await this.supabaseClient.rpc(
+          'atomic_table_cashout',
+          {
+            p_user_id: seat.user_id,
+            p_table_id: this.tableId,
+            p_seat_number: seat.seat_number,
+          }
+        );
 
         if (cashoutError) {
           console.error(
@@ -1454,11 +1457,11 @@ export class HeadlessTableEngine {
 
         // Emit bus event so the player's UI updates immediately
         if (typeof window === 'undefined') {
-           // Inside backend engine, rely on global masterBus (assumed to be imported or available)
-           // But actually this is 'HeadlessTableEngine', wait, let's just use WalletService or whatever is appropriate if we want to.
-           // Actually, since this is backend, we might not have 'masterBus'. Looking at autorebuy, it doesn't emit 'BALANCE_UPDATED', WalletService does.
-           // Since we bypassed WalletService.unlockFromTable, we should emit if we can. But HeadlessTableEngine doesn't import masterBus directly.
-           // Let's just log it. 
+          // Inside backend engine, rely on global masterBus (assumed to be imported or available)
+          // But actually this is 'HeadlessTableEngine', wait, let's just use WalletService or whatever is appropriate if we want to.
+          // Actually, since this is backend, we might not have 'masterBus'. Looking at autorebuy, it doesn't emit 'BALANCE_UPDATED', WalletService does.
+          // Since we bypassed WalletService.unlockFromTable, we should emit if we can. But HeadlessTableEngine doesn't import masterBus directly.
+          // Let's just log it.
         }
 
         console.log(
@@ -1469,19 +1472,17 @@ export class HeadlessTableEngine {
         // Try to log in chip_transactions for club accounting (fire-and-forget)
         if (clubId && returnedChips > 0) {
           // Fire-and-forget (Supabase JS client executes when not awaited but then/catch causes TS issues)
-          // Actually, we must `then()` or await it to execute in older supabase-js versions, 
+          // Actually, we must `then()` or await it to execute in older supabase-js versions,
           // but we can wrap it in an immediately invoked async function.
           const logChipRx = async () => {
             try {
-              await this.supabaseClient
-                .from('chip_transactions')
-                .insert({
-                  club_id: clubId,
-                  from_user_id: seat.user_id,
-                  amount: returnedChips,
-                  transaction_type: 'cashout',
-                  notes: `Cash-out from table (leave_pending after hand) ${this.tableId}`,
-                });
+              await this.supabaseClient.from('chip_transactions').insert({
+                club_id: clubId,
+                from_user_id: seat.user_id,
+                amount: returnedChips,
+                transaction_type: 'cashout',
+                notes: `Cash-out from table (leave_pending after hand) ${this.tableId}`,
+              });
             } catch (e) {
               // silent
             }
@@ -1535,6 +1536,13 @@ export class HeadlessTableEngine {
         .from('tables')
         .update({ current_players: count || 0 })
         .eq('id', this.tableId);
+
+      // Emit bus event so lobby/UI updates the table player count in real-time
+      masterBus.emit('TABLE_UPDATED', {
+        tableId: this.tableId,
+        current_players: count || 0,
+        source: 'horse_left',
+      });
     }
   }
 

@@ -315,8 +315,9 @@ export default function ClubHomePage() {
           ) + 1;
         setPlayerNumber(pNum.toString());
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('[ClubHomePage] loadUserProfile error:', err);
+      // Non-critical — profile data is supplementary; toast as warning
     }
   };
 

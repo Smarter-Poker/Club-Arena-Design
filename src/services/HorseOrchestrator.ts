@@ -2080,13 +2080,18 @@ class HorseOrchestrator {
                 is_sitting_out: false,
               });
               if (!seatError) {
+                // Authoritative recount (prevents race if multiple horses seat concurrently)
+                const { count: cashCount } = await supabase
+                  .from('table_seats')
+                  .select('*', { count: 'exact', head: true })
+                  .eq('table_id', availableTable.id)
+                  .is('left_at', null);
+                const freshCashCount = cashCount || 0;
                 await supabase
                   .from('tables')
-                  .update({
-                    current_players: (availableTable.current_players || 0) + 1,
-                  })
+                  .update({ current_players: freshCashCount })
                   .eq('id', availableTable.id);
-                availableTable.current_players = (availableTable.current_players || 0) + 1;
+                availableTable.current_players = freshCashCount;
                 this.updateHorseTableAssignment(horse.id, availableTable.id, true);
                 cashSeats++;
                 adjusted = true;
@@ -2120,13 +2125,18 @@ class HorseOrchestrator {
                 buy_in_amount: 0, // Horses play free
               });
               if (!regError) {
+                // Authoritative recount (prevents race with concurrent registrations)
+                const { count: regCount } = await supabase
+                  .from('tournament_players')
+                  .select('*', { count: 'exact', head: true })
+                  .eq('tournament_id', availableTourney.id)
+                  .in('status', ['registered', 'playing']);
+                const freshRegCount = regCount || 0;
                 await supabase
                   .from('tournaments')
-                  .update({
-                    current_players: (availableTourney.current_players || 0) + 1,
-                  })
+                  .update({ current_players: freshRegCount })
                   .eq('id', availableTourney.id);
-                availableTourney.current_players = (availableTourney.current_players || 0) + 1;
+                availableTourney.current_players = freshRegCount;
                 tournamentRegs++;
                 adjusted = true;
               }
