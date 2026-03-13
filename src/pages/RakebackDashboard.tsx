@@ -102,6 +102,7 @@ export default function RakebackDashboard() {
         .limit(20);
 
       const totalRakebackEarned = (rakebackData || []).reduce((s, r) => s + (r.amount || 0), 0);
+      if (!isMounted.current) return;
       setRecentPayouts(rakebackData || []);
 
       // Determine tier

@@ -123,6 +123,7 @@ export default function FinancialAlertsPage() {
       setAlerts((prev) => prev.filter((a) => a.id !== alertId));
     } catch (err) {
       console.error('[FinancialAlerts] Failed to resolve alert:', err);
+      toast.error('Failed to resolve alert');
     }
     setResolving(null);
   };

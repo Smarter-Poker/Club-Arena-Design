@@ -76,6 +76,7 @@ export default function CreditAdminPanel() {
       }
     } catch (err) {
       console.error('[CreditAdmin] Load failed:', err);
+      if (isMounted.current) toast.error('Failed to load agents');
     }
     if (isMounted.current) setLoading(false);
 
