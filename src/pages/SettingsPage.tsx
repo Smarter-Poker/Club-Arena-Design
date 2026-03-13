@@ -280,6 +280,30 @@ export default function SettingsPage() {
     };
   }, []);
 
+  // Bus listeners: re-read settings from localStorage when profile/settings change externally
+  useEffect(() => {
+    const reloadSettings = () => {
+      const saved = localStorage.getItem('club-arena-settings');
+      if (saved) {
+        try {
+          setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(saved) });
+        } catch {
+          /* parse error */
+        }
+      }
+    };
+    const unsub1 = masterBus.subscribe('SETTINGS_UPDATED', reloadSettings);
+    const unsub2 = masterBus.subscribe('PROFILE_UPDATED', () => {
+      supabase.auth.getUser().then(({ data }) => {
+        if (data?.user?.email) setUserEmail(data.user.email);
+      });
+    });
+    return () => {
+      unsub1();
+      unsub2();
+    };
+  }, []);
+
   // Account Actions
   const handleChangeEmail = async () => {
     if (!newEmail || !newEmail.includes('@')) return;

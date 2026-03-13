@@ -12,6 +12,7 @@ import { masterBus } from '../core/MasterBus';
 import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 interface AgentCredit {
   id: string;
@@ -276,9 +277,7 @@ export default function CreditAdminPanel() {
         Agents
       </div>
       {loading && agents.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>
-          Loading agents...
-        </div>
+        <PageSkeleton variant="list" />
       ) : agents.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>
           No agents found
