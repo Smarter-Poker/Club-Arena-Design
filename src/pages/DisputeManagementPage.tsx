@@ -151,17 +151,18 @@ export default function DisputeManagementPage() {
     }
   };
 
-  const filtered = (activeTab === 'all' ? disputes : disputes.filter((d) => d.status === activeTab))
-    .filter((d) => {
-      if (!searchQuery.trim()) return true;
-      const q = searchQuery.toLowerCase();
-      return (
-        d.submitterName.toLowerCase().includes(q) ||
-        d.reason.toLowerCase().includes(q) ||
-        d.targetType.toLowerCase().includes(q) ||
-        d.amount.toString().includes(q)
-      );
-    });
+  const filtered = (
+    activeTab === 'all' ? disputes : disputes.filter((d) => d.status === activeTab)
+  ).filter((d) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      d.submitterName.toLowerCase().includes(q) ||
+      d.reason.toLowerCase().includes(q) ||
+      d.targetType.toLowerCase().includes(q) ||
+      d.amount.toString().includes(q)
+    );
+  });
 
   /** Returns SLA time remaining as a human-readable string (e.g., "18h left") */
   const getSlaRemaining = (createdAt: string): { text: string; urgent: boolean } | null => {
@@ -284,21 +285,24 @@ export default function DisputeManagementPage() {
                     hour: '2-digit',
                     minute: '2-digit',
                   })}
-                  {(dispute.status === 'open' || dispute.status === 'under_review') && (() => {
-                    const sla = getSlaRemaining(dispute.createdAt);
-                    if (!sla) return null;
-                    return (
-                      <span style={{
-                        display: 'block',
-                        fontSize: '0.65rem',
-                        marginTop: '2px',
-                        color: sla.urgent ? '#ff3b30' : 'rgba(255,255,255,0.4)',
-                        fontWeight: sla.urgent ? 700 : 400,
-                      }}>
-                        ⏱️ {sla.text}
-                      </span>
-                    );
-                  })()}
+                  {(dispute.status === 'open' || dispute.status === 'under_review') &&
+                    (() => {
+                      const sla = getSlaRemaining(dispute.createdAt);
+                      if (!sla) return null;
+                      return (
+                        <span
+                          style={{
+                            display: 'block',
+                            fontSize: '0.65rem',
+                            marginTop: '2px',
+                            color: sla.urgent ? '#ff3b30' : 'rgba(255,255,255,0.4)',
+                            fontWeight: sla.urgent ? 700 : 400,
+                          }}
+                        >
+                          ⏱️ {sla.text}
+                        </span>
+                      );
+                    })()}
                 </div>
               </div>
 
