@@ -13,6 +13,8 @@ import type { UserProfile, ProfileStats } from '../services/ProfileService';
 import { friendSuggestionService } from '../services/FriendSuggestionService';
 import { blockService } from '../services/BlockService';
 import { messagingService } from '../services/MessagingService';
+import { playerStatusService } from '../services/PlayerStatusService';
+import type { PlayerStatus } from '../services/PlayerStatusService';
 import { useAuthUser } from '../hooks/useAuthUser';
 import { useToast } from '../components/common/Toast';
 import { supabase } from '../lib/supabase';
@@ -56,6 +58,7 @@ export default function PublicProfilePage() {
   const [loading, setLoading] = useState(true);
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [playerStatus, setPlayerStatus] = useState<PlayerStatus | null>(null);
 
   const loadProfile = useCallback(async () => {
     if (!userId || !user?.id) return;
@@ -68,12 +71,13 @@ export default function PublicProfilePage() {
 
     setLoading(true);
     try {
-      const [profileData, statsData, mutuals, blocked, friendship] = await Promise.all([
+      const [profileData, statsData, mutuals, blocked, friendship, status] = await Promise.all([
         profileService.getPublicProfile(userId),
         profileService.getStats(userId),
         friendSuggestionService.getMutualFriends(user.id, userId),
         blockService.isBlocked(user.id, userId),
         checkFriendship(user.id, userId),
+        playerStatusService.getPlayerStatus(userId),
       ]);
 
       setProfile(profileData);
@@ -81,6 +85,7 @@ export default function PublicProfilePage() {
       setMutualFriends(mutuals);
       setIsBlocked(blocked);
       setFriendStatus(friendship);
+      setPlayerStatus(status);
     } catch (err) {
       console.error('[PublicProfile] Load error:', err);
       toast.error('Failed to load profile');
@@ -279,6 +284,21 @@ export default function PublicProfilePage() {
             <span className="level-badge">Level {profile.level}</span>
             <span className="member-since">Member since {memberSince}</span>
           </div>
+
+          {/* Q3: Playing-At & Status */}
+          {playerStatus?.playingAt && (
+            <div
+              className="playing-at-badge"
+              onClick={() =>
+                playerStatus.playingAtTableId && navigate(`/table/${playerStatus.playingAtTableId}`)
+              }
+            >
+              🎯 Playing at <strong>{playerStatus.playingAt}</strong>
+            </div>
+          )}
+          {playerStatus?.statusText && (
+            <p className="player-status-text">{playerStatus.statusText}</p>
+          )}
         </div>
       </div>
 
@@ -331,6 +351,16 @@ export default function PublicProfilePage() {
             </button>
             <button className="action-btn block-btn" onClick={() => setShowBlockModal(true)}>
               🚫
+            </button>
+            <button
+              className="action-btn share-btn"
+              onClick={() => {
+                const link = playerStatusService.generateProfileLink(userId!);
+                navigator.clipboard.writeText(link);
+                toast.success('Profile link copied!');
+              }}
+            >
+              📤 Share
             </button>
           </>
         )}

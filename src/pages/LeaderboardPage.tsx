@@ -628,6 +628,17 @@ export default function LeaderboardPage() {
                 </div>
               </div>
             ))}
+
+            {/* Motivational CTA when leaderboard is sparse */}
+            {entries.length < 10 && (
+              <div className="lb-motivational-cta">
+                <div className="lb-motivational-icon">🎯</div>
+                <div className="lb-motivational-text">
+                  <strong>Keep climbing!</strong>
+                  <span>Play more hands to move up the rankings and unlock bragging rights.</span>
+                </div>
+              </div>
+            )}
           </>
         ) : activeTab === 'tournaments' && tournamentStats.length > 0 ? (
           <>
