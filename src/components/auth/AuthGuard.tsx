@@ -206,17 +206,24 @@ export function AuthGuard({ children }: AuthGuardProps) {
   return <>{children}</>;
 }
 
-/**
- * Inverse guard - redirects authenticated users away from auth page
- */
 export function GuestGuard({ children }: AuthGuardProps) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const dncStatus = useUserStore.getState().isAuthenticated;
+
+  const [isLoading, setIsLoading] = useState(!dncStatus);
+  const [isAuthenticated, setIsAuthenticated] = useState(dncStatus);
 
   useEffect(() => {
     let cancelled = false;
 
     async function checkAuth() {
+      if (useUserStore.getState().isAuthenticated) {
+        if (!cancelled) {
+          setIsAuthenticated(true);
+          setIsLoading(false);
+        }
+        return;
+      }
+
       // Fast path from localStorage
       if (hasLocalSession()) {
         if (!cancelled) {

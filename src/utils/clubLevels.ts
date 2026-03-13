@@ -122,12 +122,12 @@ export function getClubLevel(input: ClubLevelInput): ClubLevelInfo {
 
   // Try to use DB thresholds
   if (input.playerThresholdNext && input.hierarchyThresholdNext) {
-    const pT_curr = input.playerThresholdCurrent || 1;
-    const pT_next = input.playerThresholdNext || 1;
-    const hT_curr = input.hierarchyThresholdCurrent || 1;
-    const hT_next = input.hierarchyThresholdNext || 1;
+    const pT_curr = input.playerThresholdCurrent ?? 0;
+    const pT_next = input.playerThresholdNext ?? 1;
+    const hT_curr = input.hierarchyThresholdCurrent ?? 0;
+    const hT_next = input.hierarchyThresholdNext ?? 1;
 
-    const h_units = input.hierarchyUnits || 0;
+    const h_units = input.hierarchyUnits ?? 0;
 
     let p_prog = 0;
     if (pT_next > pT_curr) {
