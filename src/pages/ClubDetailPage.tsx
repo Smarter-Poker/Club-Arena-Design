@@ -320,7 +320,7 @@ import DailyChallengesWidget from '../components/rewards/DailyChallengesWidget';
 import ClubBottomNav from '../components/club/ClubBottomNav';
 import ConfirmModal from '../components/common/ConfirmModal';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
-import { resolveClubIdFilter } from '../utils/clubIdResolver';
+import { resolveClubIdFilter, resolveClubUUID } from '../utils/clubIdResolver';
 
 export default function ClubDetailPage() {
   const { clubId } = useParams();
@@ -1529,10 +1529,11 @@ export default function ClubDetailPage() {
               toast.error('Failed to delete table');
               // Force reload to restore accurate state
               if (clubId) {
+                const resolvedId = await resolveClubUUID(clubId);
                 const { data } = await supabase
                   .from('tables')
                   .select('*')
-                  .eq('club_id', clubId)
+                  .eq('club_id', resolvedId)
                   .eq('is_deleted', false)
                   .order('created_at', { ascending: false });
                 if (data) setTables(data);
