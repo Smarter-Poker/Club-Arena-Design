@@ -291,7 +291,8 @@ export const SettlementService = {
       .from('agent_settlements')
       .select('*')
       .eq('period_id', periodId)
-      .eq('status', 'approved');
+      .eq('status', 'approved')
+      .limit(5000);
 
     let agentsPaid = 0;
     let totalDisbursed = 0;
@@ -372,7 +373,8 @@ export const SettlementService = {
       .from('player_weekly_snapshots')
       .select('*')
       .eq('period_id', periodId)
-      .gt('rakeback_earned', 0);
+      .gt('rakeback_earned', 0)
+      .limit(10000);
 
     let playersWithRakeback = 0;
     for (const snapshot of playerSnapshots || []) {

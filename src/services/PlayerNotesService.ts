@@ -122,7 +122,8 @@ class PlayerNotesServiceClass {
     const { data, error } = await supabase
       .from('player_notes')
       .select('target_user_id, note, color, tags, hands_played, last_seen')
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .limit(2000);
 
     const notes = new Map<string, PlayerNote>();
 
