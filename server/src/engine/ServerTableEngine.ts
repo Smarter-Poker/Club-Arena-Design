@@ -54,6 +54,11 @@ export class ServerTableEngine {
   private seatedPlayers: SeatedPlayer[] = [];
   private dealerSeatIndex: number = 0;
   private consecutiveErrors: number = 0;
+
+  // Bankroll Management: Track how many times a horse has re-bought at this table.
+  // Max is 2 rebuys (meaning 3 total buy-ins). If they bust a 3rd time, they leave.
+  private horseRebuys: Map<string, number> = new Map();
+
   // Per-hand tracking
   private currentHandWentToFlop: boolean = false;
   private currentHandPotSize: number = 0;
@@ -299,6 +304,17 @@ export class ServerTableEngine {
         await this.refreshBlinds();
 
         const activePlayers = this.seatedPlayers.filter((p) => p.stack > 0);
+
+        // Clean up rebuy map (Garbage Collection for horses no longer sitting here)
+        const currentHorseIds = new Set(
+          this.seatedPlayers.filter((p) => p.is_horse).map((p) => p.user_id)
+        );
+        for (const [horseId] of this.horseRebuys.entries()) {
+          if (!currentHorseIds.has(horseId)) {
+            this.horseRebuys.delete(horseId);
+          }
+        }
+
         if (activePlayers.length < 2) {
           await this.sleep(3000);
           continue;
@@ -709,6 +725,18 @@ export class ServerTableEngine {
     if (!this.isTournamentTable()) {
       const bustHorses = players.filter((p) => p.is_horse && p.stack === 0);
       for (const horse of bustHorses) {
+        const currentRebuys = this.horseRebuys.get(horse.user_id) || 0;
+
+        // Stop-Loss Bankroll logic: if they have rebought twice already (lost 3 buy-ins total), they leave
+        if (currentRebuys >= 2) {
+          await markSeatAsLeft(this.tableId, horse.user_id);
+          this.horseRebuys.delete(horse.user_id);
+          console.log(
+            `[ServerTableEngine:${this.tableId}] Stop-Loss: Horse ${horse.username} lost 3 buy-ins and has been removed.`
+          );
+          continue;
+        }
+
         const rebuyAmount = this.tableInfo?.big_blind ? this.tableInfo.big_blind * 100 : 200;
         const success = await autoRebuyHorse(
           this.tableId,
@@ -718,11 +746,13 @@ export class ServerTableEngine {
         );
         if (success) {
           horse.stack = rebuyAmount;
+          this.horseRebuys.set(horse.user_id, currentRebuys + 1);
           console.log(
-            `[ServerTableEngine:${this.tableId}] Auto-rebuy: ${horse.username} -> ${rebuyAmount} chips`
+            `[ServerTableEngine:${this.tableId}] Auto-rebuy: ${horse.username} -> ${rebuyAmount} chips (Rebuy #${currentRebuys + 1})`
           );
         } else {
           await markSeatAsLeft(this.tableId, horse.user_id);
+          this.horseRebuys.delete(horse.user_id);
           console.log(
             `[ServerTableEngine:${this.tableId}] Horse ${horse.username} left — insufficient funds`
           );
@@ -760,6 +790,7 @@ export class ServerTableEngine {
 
       for (const horse of cashedOutHorses) {
         await markSeatAsLeft(this.tableId, horse.user_id);
+        this.horseRebuys.delete(horse.user_id);
         console.log(
           `[ServerTableEngine:${this.tableId}] Bankroll Management: Horse ${horse.username} hit profit target (${Math.floor(horse.stack)} chips) and cashed out before posting the Big Blind.`
         );
