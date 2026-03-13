@@ -94,7 +94,8 @@ class CreditRequestServiceClass {
       .from('credit_requests')
       .select('*')
       .eq('approver_id', approverId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(200);
 
     if (error) throw error;
     return (data || []).map(this.mapRequest);
@@ -108,7 +109,8 @@ class CreditRequestServiceClass {
       .from('credit_requests')
       .select('*')
       .eq('requester_id', requesterId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(200);
 
     if (error) throw error;
     return (data || []).map(this.mapRequest);

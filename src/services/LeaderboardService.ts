@@ -358,7 +358,8 @@ export const LeaderboardService = {
           'user_id, total_winnings, total_losses, hands_played, vpip, pfr, tournaments_played, tournaments_won'
         )
         .eq('club_id', clubId)
-        .order(orderCol, { ascending: false });
+        .order(orderCol, { ascending: false })
+        .limit(5000);
 
       if (error || !allStats) {
         console.error('LeaderboardService.getUserRank error:', error);
