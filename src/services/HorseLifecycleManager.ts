@@ -345,14 +345,23 @@ class HorseLifecycleManagerCore {
    */
   async resetHorse(horseId: string): Promise<boolean> {
     try {
-      // Step 1: Clear any stale seat records
+      // Step 1: Find which tables this horse is currently seated at
+      const { data: activeSeats } = await supabase
+        .from('table_seats')
+        .select('table_id')
+        .eq('user_id', horseId)
+        .is('left_at', null);
+
+      const affectedTableIds = new Set(activeSeats?.map((s) => s.table_id) || []);
+
+      // Step 2: Clear any stale seat records
       await supabase
         .from('table_seats')
         .update({ left_at: new Date().toISOString() })
         .eq('user_id', horseId)
         .is('left_at', null);
 
-      // Step 2: Update profile status to available
+      // Step 3: Update profile status to available
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ horse_status: 'available', updated_at: new Date().toISOString() })
@@ -361,6 +370,26 @@ class HorseLifecycleManagerCore {
       if (updateError) {
         console.error('[LifecycleManager] Failed to reset horse ' + horseId + ':', updateError);
         return false;
+      }
+
+      // Step 4: Recount current_players for each affected table
+      for (const tableId of affectedTableIds) {
+        try {
+          const { count, error: countErr } = await supabase
+            .from('table_seats')
+            .select('*', { count: 'exact', head: true })
+            .eq('table_id', tableId)
+            .is('left_at', null);
+
+          if (!countErr) {
+            await supabase
+              .from('tables')
+              .update({ current_players: count ?? 0 })
+              .eq('id', tableId);
+          }
+        } catch {
+          /* non-critical */
+        }
       }
 
       console.debug('[LifecycleManager] Reset horse ' + horseId + ' to available');
