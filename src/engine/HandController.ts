@@ -662,16 +662,16 @@ export class HandController {
       amount: totalDistribution > 0 ? (d.amount / totalDistribution) * totalWinnings : 0,
     }));
 
-    // Integer-cent truncation logic to prevent floating point mismatch
-    const totalCents = Math.trunc(totalWinnings * 100);
-    const winCents = adjustedWinners.map((w) => Math.trunc(w.amount * 100));
-    let remainder = totalCents - winCents.reduce((s, c) => s + c, 0);
-    for (let i = 0; i < winCents.length && remainder > 0; i++) {
-      winCents[i]++;
+    // Integer (×100) truncation to prevent floating point mismatch
+    const totalScaled = Math.trunc(totalWinnings * 100);
+    const winScaled = adjustedWinners.map((w) => Math.trunc(w.amount * 100));
+    let remainder = totalScaled - winScaled.reduce((s, c) => s + c, 0);
+    for (let i = 0; i < winScaled.length && remainder > 0; i++) {
+      winScaled[i]++;
       remainder--;
     }
     adjustedWinners.forEach((w, i) => {
-      w.amount = winCents[i] / 100;
+      w.amount = winScaled[i] / 100;
       // Add to stacks
       const player = this.state.players.find((p) => p.user_id === w.userId);
       if (player) player.stack += w.amount;
@@ -738,11 +738,11 @@ export class HandController {
       // Return pot to remaining active players proportionally
       const remainingPlayers = this.state.players.filter((p) => !p.is_folded && !p.is_sitting_out);
       if (remainingPlayers.length > 0) {
-        const potCents = Math.trunc(this.state.pot * 100);
-        const shareCents = Math.trunc(potCents / remainingPlayers.length);
-        const leftoverCents = potCents - shareCents * remainingPlayers.length;
+        const potScaled = Math.trunc(this.state.pot * 100);
+        const shareScaled = Math.trunc(potScaled / remainingPlayers.length);
+        const leftoverScaled = potScaled - shareScaled * remainingPlayers.length;
         for (let i = 0; i < remainingPlayers.length; i++) {
-          const award = shareCents + (i < leftoverCents ? 1 : 0);
+          const award = shareScaled + (i < leftoverScaled ? 1 : 0);
           remainingPlayers[i].stack += award / 100;
         }
       }
@@ -754,9 +754,7 @@ export class HandController {
         pot: this.state.pot,
       });
       // Telemetry: record hand timing (no showdown)
-      engineTelemetry.recordHandTiming(
-        this.config.tableId, 0, 0, Date.now() - this.handStartedAt
-      );
+      engineTelemetry.recordHandTiming(this.config.tableId, 0, 0, Date.now() - this.handStartedAt);
       return;
     }
 
@@ -767,18 +765,18 @@ export class HandController {
     const totalWinnings = this.state.pot - rake;
     const totalWinnerAmount = winners.reduce((sum, w) => sum + w.amount, 0);
 
-    // Integer-cents arithmetic to prevent floating-point distribution errors
-    const totalCents = Math.trunc(totalWinnings * 100);
-    const totalWinnerCents = Math.trunc(totalWinnerAmount * 100) || 1;
-    const adjustedCents = winners.map((w) =>
-      Math.trunc((Math.trunc(w.amount * 100) * totalCents) / totalWinnerCents)
+    // Integer (×100) arithmetic to prevent floating-point distribution errors
+    const totalScaled = Math.trunc(totalWinnings * 100);
+    const totalWinnerScaled = Math.trunc(totalWinnerAmount * 100) || 1;
+    const adjustedScaled = winners.map((w) =>
+      Math.trunc((Math.trunc(w.amount * 100) * totalScaled) / totalWinnerScaled)
     );
-    let remainderCents = totalCents - adjustedCents.reduce((s, a) => s + a, 0);
-    for (let i = 0; i < adjustedCents.length && remainderCents > 0; i++) {
-      adjustedCents[i]++;
-      remainderCents--;
+    let remainderScaled = totalScaled - adjustedScaled.reduce((s, a) => s + a, 0);
+    for (let i = 0; i < adjustedScaled.length && remainderScaled > 0; i++) {
+      adjustedScaled[i]++;
+      remainderScaled--;
     }
-    const adjustedAmounts = adjustedCents.map((c) => c / 100);
+    const adjustedAmounts = adjustedScaled.map((c) => c / 100);
     const adjustedWinners = winners.map((w, i) => ({
       ...w,
       amount: adjustedAmounts[i],
@@ -800,9 +798,7 @@ export class HandController {
       pot: this.state.pot,
     });
     // Telemetry: record hand timing
-    engineTelemetry.recordHandTiming(
-      this.config.tableId, 0, 0, Date.now() - this.handStartedAt
-    );
+    engineTelemetry.recordHandTiming(this.config.tableId, 0, 0, Date.now() - this.handStartedAt);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

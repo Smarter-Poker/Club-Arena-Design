@@ -500,7 +500,7 @@ export default function SettingsPage() {
       const granted = await notificationService.requestPermission();
       setPushEnabled(granted);
       if (granted) {
-        console.debug('[Settings] Push notifications enabled');
+        // Push notifications enabled successfully
         toast.success('Push notifications enabled!');
       } else {
         toast.error('Push notifications denied. Please allow in browser settings.');
