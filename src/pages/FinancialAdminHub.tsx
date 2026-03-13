@@ -12,6 +12,8 @@ import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
 import { useAuthUser } from '../hooks/useAuthUser';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
+import PageSkeleton from '../components/common/PageSkeleton';
+import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip } from 'recharts';
 
 interface HubStats {
   totalAlerts: number;
@@ -135,6 +137,7 @@ export default function FinancialAdminHub() {
     healthChecks: 0,
     lastCheckPassed: null,
   });
+  const [loading, setLoading] = useState(true);
   const [visibleCards, setVisibleCards] = useState<Set<number>>(new Set());
   const [visibleNavs, setVisibleNavs] = useState<Set<number>>(new Set());
   const [revenueData, setRevenueData] = useState<{ day: string; amount: number }[]>([]);
@@ -185,6 +188,7 @@ export default function FinancialAdminHub() {
   }, []);
 
   const loadStats = async () => {
+    setLoading(true);
     try {
       // Count open disputes
       let openDisputes = 0;
@@ -281,6 +285,7 @@ export default function FinancialAdminHub() {
     } catch (err) {
       console.error('[FinancialAdminHub] Stats load failed:', err);
     }
+    setLoading(false);
   };
 
   const kpiCards = [
@@ -313,6 +318,17 @@ export default function FinancialAdminHub() {
       glow: stats.totalAlerts > 0 ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)',
     },
   ];
+
+  if (loading && stats.healthChecks === 0 && stats.totalAlerts === 0) {
+    return (
+      <div style={{ padding: '16px', maxWidth: '900px', margin: '0 auto' }}>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '24px' }}>
+          🏦 Financial Admin Hub
+        </h1>
+        <PageSkeleton variant="financial" />
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '16px', maxWidth: '900px', margin: '0 auto', paddingBottom: '100px' }}>
@@ -392,7 +408,6 @@ export default function FinancialAdminHub() {
       {/* Revenue Sparkline */}
       {revenueData.length > 0 &&
         (() => {
-          const maxRevenue = Math.max(...revenueData.map((d) => d.amount), 1);
           const totalRevenue = revenueData.reduce((s, d) => s + d.amount, 0);
           return (
             <div
@@ -412,7 +427,20 @@ export default function FinancialAdminHub() {
                   marginBottom: '10px',
                 }}
               >
-                <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>📈 7-Day Revenue</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>📈 7-Day Revenue</span>
+                  {loading && (
+                    <span
+                      style={{
+                        fontSize: '0.7rem',
+                        color: '#10b981',
+                        animation: 'pulse 1.5s infinite',
+                      }}
+                    >
+                      Syncing...
+                    </span>
+                  )}
+                </div>
                 <span
                   style={{
                     fontSize: '0.75rem',
@@ -421,39 +449,76 @@ export default function FinancialAdminHub() {
                     fontFamily: 'monospace',
                   }}
                 >
-                  {totalRevenue.toLocaleString()} total
+                  {totalRevenue.toLocaleString()} chip{totalRevenue === 1 ? '' : 's'}
                 </span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', height: '60px' }}>
-                {revenueData.map((d) => (
-                  <div
-                    key={d.day}
-                    style={{
-                      flex: 1,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '3px',
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: '100%',
-                        height: `${Math.max(3, (d.amount / maxRevenue) * 45)}px`,
-                        background:
-                          d.amount > 0
-                            ? 'linear-gradient(180deg, #10b981, #065f46)'
-                            : 'rgba(255,255,255,0.06)',
-                        borderRadius: '2px 2px 0 0',
-                        transition: 'height 0.5s ease',
-                      }}
-                      title={`${d.day}: ${d.amount.toLocaleString()}`}
+              <div style={{ height: 180, marginTop: '20px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={revenueData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis
+                      dataKey="day"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }}
+                      dy={10}
                     />
-                    <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)' }}>
-                      {d.day.split(' ')[0]}
-                    </span>
-                  </div>
-                ))}
+                    <Tooltip
+                      content={({ active, payload, label }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div
+                              style={{
+                                background: 'rgba(13, 21, 32, 0.95)',
+                                border: '1px solid rgba(16, 185, 129, 0.3)',
+                                padding: '8px 12px',
+                                borderRadius: '8px',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                                color: '#fff',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  fontSize: '0.7rem',
+                                  color: 'rgba(255,255,255,0.6)',
+                                  marginBottom: '4px',
+                                }}
+                              >
+                                {label}
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: '1rem',
+                                  fontWeight: 800,
+                                  color: '#10b981',
+                                  fontFamily: 'monospace',
+                                }}
+                              >
+                                {Number(payload[0].value).toLocaleString()} chips
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="amount"
+                      stroke="#10b981"
+                      strokeWidth={3}
+                      fillOpacity={1}
+                      fill="url(#colorRevenue)"
+                      isAnimationActive={true}
+                      animationDuration={1500}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </div>
           );
