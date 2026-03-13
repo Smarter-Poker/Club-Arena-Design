@@ -13,6 +13,7 @@ import { useAuthUser } from '../hooks/useAuthUser';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import { useToast } from '../components/common/Toast';
 import PageSkeleton from '../components/common/PageSkeleton';
+import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface RakebackStats {
   totalRakeContributed: number;
@@ -194,63 +195,77 @@ export default function RakebackDashboard() {
           {/* Current Tier */}
           <div
             style={{
-              padding: '20px',
-              background: `linear-gradient(135deg, rgba(255,255,255,0.03), ${currentTierData.color}15)`,
-              borderRadius: '14px',
+              padding: '24px 20px',
+              background: `linear-gradient(135deg, rgba(255,255,255,0.02), ${currentTierData.color}15)`,
+              borderRadius: '16px',
               border: `1px solid ${currentTierData.color}40`,
               marginBottom: '16px',
-              textAlign: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '24px',
               ...sectionStyle(1),
             }}
           >
-            <div style={{ fontSize: '2.5rem', marginBottom: '4px' }}>{currentTierData.icon}</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: 800, color: currentTierData.color }}>
-              {stats.currentTier} Tier
-            </div>
-            <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>
-              {currentTierData.percent}% Rakeback Rate
+            {/* SVG Ring */}
+            <div style={{ position: 'relative', width: '100px', height: '100px', flexShrink: 0 }}>
+              <svg width="100" height="100" viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="42"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.06)"
+                  strokeWidth="8"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="42"
+                  fill="none"
+                  stroke={currentTierData.color}
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                  strokeDasharray={`${2 * Math.PI * 42}`}
+                  strokeDashoffset={`${2 * Math.PI * 42 * (1 - stats.tierProgress / 100)}`}
+                  style={{
+                    transform: 'rotate(-90deg)',
+                    transformOrigin: '50% 50%',
+                    transition: 'stroke-dashoffset 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                  }}
+                />
+              </svg>
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '2rem',
+                }}
+              >
+                {currentTierData.icon}
+              </div>
             </div>
 
-            {stats.nextTier && (
-              <div style={{ marginTop: '12px' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: '0.65rem',
-                    color: 'rgba(255,255,255,0.4)',
-                    marginBottom: '4px',
-                  }}
-                >
-                  <span>{stats.currentTier}</span>
-                  <span>{stats.nextTier}</span>
-                </div>
-                <div
-                  style={{
-                    width: '100%',
-                    height: '6px',
-                    background: 'rgba(255,255,255,0.06)',
-                    borderRadius: '3px',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div
-                    style={{
-                      height: '100%',
-                      background: `linear-gradient(90deg, ${currentTierData.color}, ${currentTierData.color}aa)`,
-                      width: `${stats.tierProgress}%`,
-                      borderRadius: '3px',
-                      transition: 'width 0.8s ease',
-                    }}
-                  />
-                </div>
-                <div
-                  style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', marginTop: '4px' }}
-                >
-                  {stats.tierProgress.toFixed(0)}% to next tier
-                </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: currentTierData.color }}>
+                {stats.currentTier} Tier
               </div>
-            )}
+              <div
+                style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}
+              >
+                {currentTierData.percent}% Rakeback Rate
+              </div>
+              {stats.nextTier && (
+                <div
+                  style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '8px' }}
+                >
+                  <strong style={{ color: '#fff' }}>{stats.tierProgress.toFixed(1)}%</strong> to{' '}
+                  {stats.nextTier}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Stats Grid */}
@@ -376,50 +391,95 @@ export default function RakebackDashboard() {
             ))}
           </div>
 
-          {/* Recent Payouts */}
+          {/* Recent Payouts Graph */}
           <div
             style={{
-              padding: '16px',
-              background: 'rgba(255,255,255,0.03)',
-              borderRadius: '12px',
+              padding: '20px 16px',
+              background: 'rgba(255,255,255,0.02)',
+              borderRadius: '16px',
               border: '1px solid rgba(255,255,255,0.06)',
               ...sectionStyle(4),
             }}
           >
-            <div style={{ fontSize: '0.8rem', fontWeight: 700, marginBottom: '10px' }}>
-              💸 Recent Rakeback Payouts
+            <div
+              style={{
+                fontSize: '0.9rem',
+                fontWeight: 700,
+                marginBottom: '20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <span>📈 Payout History</span>
+              <span
+                style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}
+              >
+                Last 20 payouts
+              </span>
             </div>
+
             {recentPayouts.length === 0 ? (
               <div
                 style={{
                   textAlign: 'center',
-                  padding: '20px',
+                  padding: '40px 20px',
                   color: 'rgba(255,255,255,0.3)',
-                  fontSize: '0.8rem',
+                  fontSize: '0.85rem',
                 }}
               >
-                No payouts yet — keep playing!
+                No payout history found
               </div>
             ) : (
-              recentPayouts.slice(0, 10).map((p, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    padding: '6px 0',
-                    borderBottom: '1px solid rgba(255,255,255,0.04)',
-                    fontSize: '0.8rem',
-                  }}
-                >
-                  <span style={{ color: 'rgba(255,255,255,0.5)' }}>
-                    {new Date(p.created_at).toLocaleDateString()}
-                  </span>
-                  <span style={{ color: '#10b981', fontWeight: 700, fontFamily: 'monospace' }}>
-                    +{p.amount?.toLocaleString()}
-                  </span>
-                </div>
-              ))
+              <div style={{ width: '100%', height: '180px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={[...recentPayouts].reverse().map((p) => ({
+                      date: new Date(p.created_at).toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                      }),
+                      amount: p.amount,
+                    }))}
+                  >
+                    <defs>
+                      <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis
+                      dataKey="date"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }}
+                      minTickGap={20}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: 'rgba(15,23,42,0.9)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '8px',
+                        fontSize: '0.8rem',
+                      }}
+                      itemStyle={{ color: '#10b981', fontWeight: 700 }}
+                      labelStyle={{ color: 'rgba(255,255,255,0.6)', marginBottom: '4px' }}
+                      formatter={(val: number | undefined) => [
+                        `${(val || 0).toLocaleString()} chips`,
+                        'Payout',
+                      ]}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="amount"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#colorAmount)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </div>
         </>
