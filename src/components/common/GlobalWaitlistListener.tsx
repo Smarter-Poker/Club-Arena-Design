@@ -1,13 +1,16 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- *  GLOBAL WAITLIST LISTENER — App-wide auto-seating (v2.0 — Resilient)
+ *  GLOBAL WAITLIST LISTENER — App-wide auto-seating (v3.0 — Hardened)
  * ═══════════════════════════════════════════════════════════════════════════════
  * Runs in the background (App.tsx) and listens for seat vacancies across all tables.
  * If a seat opens up and the active user is #1 on the waitlist, it auto-navigates.
  *
- * v2.0 Improvements:
- * - #3: Auto-resubscribe on Supabase Realtime disconnect
- * - #10: Emits WAITLIST_POSITION_CHANGED so the UI can show queue position
+ * v3.0 Improvements:
+ * - Exponential backoff on reconnect (1s → 2s → 4s → 8s → 16s → 30s cap)
+ * - Max retry limit (5 attempts) to prevent infinite reconnection storms
+ * - Channel factory registration with MasterBus for health-monitor auto-recovery
+ * - cleanedUp guard to prevent zombie reconnects after unmount
+ * - Removed unreliable 'system' event listener (subscribe callback handles all states)
  */
 
 import { useEffect, useRef, useCallback } from 'react';
@@ -16,25 +19,25 @@ import { supabase } from '../../lib/supabase';
 import { useAuthUser } from '../../hooks/useAuthUser';
 import { masterBus } from '../../core/MasterBus';
 import { useToast } from './Toast';
-import type { RealtimeChannel } from '@supabase/supabase-js';
 
 const WAITLIST_CHANNEL_KEY = 'global-waitlist-auto-seat';
+const MAX_RETRIES = 5;
+const BACKOFF_DELAYS = [1000, 2000, 4000, 8000, 16000, 30000]; // Exponential backoff, capped at 30s
 
 export default function GlobalWaitlistListener() {
   const { user } = useAuthUser();
   const navigate = useNavigate();
   const toast = useToast();
-  const channelRef = useRef<RealtimeChannel | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryCountRef = useRef(0);
+  const cleanedUpRef = useRef(false);
 
   // ─── Core subscription logic (extracted for reuse on reconnect) ───
   const setupChannel = useCallback(() => {
-    if (!user?.id) return null;
+    if (!user?.id || cleanedUpRef.current) return;
 
-    // Prevent duplicate channels
-    if (channelRef.current) {
-      masterBus.removeRegisteredChannel(WAITLIST_CHANNEL_KEY);
-    }
+    // Clean up any prior channel before creating a new one
+    masterBus.removeRegisteredChannel(WAITLIST_CHANNEL_KEY);
 
     const channel = masterBus.getOrCreateChannel(WAITLIST_CHANNEL_KEY);
     channel.on(
@@ -66,7 +69,7 @@ export default function GlobalWaitlistListener() {
             }, 3000);
           }
 
-          // #10: Emit position change for any waitlist entry
+          // Emit position change for any waitlist entry
           if (data) {
             masterBus.emit('WAITLIST_POSITION_CHANGED', {
               tableId: vacatedTableId,
@@ -80,40 +83,52 @@ export default function GlobalWaitlistListener() {
       }
     );
 
-    // #3: System event listener for disconnect recovery
-    channel.on('system' as any, {} as any, (status: any) => {
-      if (status === 'disconnected' || status?.event === 'disconnected') {
-        console.warn('[GlobalWaitlistListener] Realtime disconnected — scheduling reconnect...');
-        // Auto-reconnect after 3 seconds
-        if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = setTimeout(() => {
-          console.log('[GlobalWaitlistListener] Attempting reconnect...');
-          channelRef.current = setupChannel();
-        }, 3000);
-      }
-    });
-
     channel.subscribe((status) => {
+      if (cleanedUpRef.current) return;
+
       if (status === 'SUBSCRIBED') {
         console.log('[GlobalWaitlistListener] Connected and listening');
+        retryCountRef.current = 0; // Reset on success
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        console.warn('[GlobalWaitlistListener] Channel error/timeout — scheduling reconnect...');
+        if (retryCountRef.current >= MAX_RETRIES) {
+          console.warn(
+            `[GlobalWaitlistListener] Max retries (${MAX_RETRIES}) reached — giving up. Will rely on MasterBus health monitor for recovery.`
+          );
+          return;
+        }
+
+        const delay = BACKOFF_DELAYS[Math.min(retryCountRef.current, BACKOFF_DELAYS.length - 1)];
+        console.warn(
+          `[GlobalWaitlistListener] ${status} — retry ${retryCountRef.current + 1}/${MAX_RETRIES} in ${delay}ms`
+        );
+        retryCountRef.current++;
+
         if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = setTimeout(() => {
-          channelRef.current = setupChannel();
-        }, 5000);
+          if (!cleanedUpRef.current) {
+            setupChannel();
+          }
+        }, delay);
       }
     });
-
-    channelRef.current = channel;
-    return channel;
   }, [user?.id, navigate, toast]);
 
   useEffect(() => {
-    const channel = setupChannel();
+    cleanedUpRef.current = false;
+    retryCountRef.current = 0;
+
+    // Register channel factory so MasterBus health monitor can auto-recover
+    masterBus.registerChannelFactory(WAITLIST_CHANNEL_KEY, () => {
+      retryCountRef.current = 0; // Reset retries on health-monitor recovery
+      setupChannel();
+    });
+
+    setupChannel();
 
     return () => {
-      if (channel) masterBus.removeRegisteredChannel(WAITLIST_CHANNEL_KEY);
+      cleanedUpRef.current = true;
+      masterBus.removeRegisteredChannel(WAITLIST_CHANNEL_KEY);
+      masterBus.removeChannelFactory(WAITLIST_CHANNEL_KEY);
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
     };
   }, [setupChannel]);

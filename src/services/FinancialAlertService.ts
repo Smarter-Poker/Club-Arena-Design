@@ -150,6 +150,7 @@ export const FinancialAlertService = {
 
     if (error) {
       console.error('[FinancialAlert] Failed to resolve alert:', alertId, error);
+      throw error;
     }
   },
 
