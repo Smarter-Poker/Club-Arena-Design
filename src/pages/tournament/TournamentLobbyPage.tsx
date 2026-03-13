@@ -165,10 +165,16 @@ export default function TournamentLobbyPage() {
       loadTournamentsRef.current();
     });
 
+    // Refresh profile/wallet when balance changes (e.g., after register/unregister)
+    const unsubBalance = masterBus.subscribe('BALANCE_UPDATED', () => {
+      masterBus.emit('PROFILE_UPDATED', { userId: user?.id || '', updates: {} });
+    });
+
     return () => {
       masterBus.removeRegisteredChannel(channelKey);
       unsubElim();
       unsubMerge();
+      unsubBalance();
     };
   }, [clubId]);
 

@@ -697,6 +697,11 @@ export default function TablePage({
       await WalletService.lockForBuyIn(userId, tableId, amount);
       setAccountBalance((prev) => Math.max(0, prev - amount));
       totalBuyInRef.current += amount; // Track for session P/L
+
+      if (isAutoRebuy) {
+        autoRebuyCountRef.current += 1;
+        toast.success(`Auto-rebought ${amount} chips.`);
+      }
       // Update hero's table stack in local state AND sync to DB
       setTableState((prev) => {
         const updatedPlayers = [...prev.players];
@@ -736,9 +741,16 @@ export default function TablePage({
       masterBus.emit('CHIPS_ADDED', { tableId, userId, amount, newStack: newStack });
     } catch (error) {
       console.error('Failed to add chips:', error);
-      // Surface error to user — alert as fallback since toast not always available
       const msg = error instanceof Error ? error.message : 'Failed to add chips';
-      if (typeof window !== 'undefined') toast.error(msg);
+
+      if (isAutoRebuy) {
+        // Most likely insufficient funds — disable auto-rebuy to prevent repeated failures
+        toast.error(`Auto-rebuy failed: ${msg}. Auto-rebuy disabled.`);
+        updateSetting('autoRebuy', false);
+      } else {
+        // Surface error to user
+        if (typeof window !== 'undefined') toast.error(msg);
+      }
     }
   };
 
