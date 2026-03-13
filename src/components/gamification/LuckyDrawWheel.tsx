@@ -37,7 +37,7 @@ const DEFAULT_SEGMENTS: WheelSegment[] = [
   { id: '5', label: '5', icon: '💎', color: '#e91e63', amount: 5, type: 'diamonds' },
   { id: '6', label: '200', icon: '🪙', color: '#ffd700', amount: 200, type: 'chips' },
   { id: '7', label: '50', icon: '💎', color: '#00bcd4', amount: 50, type: 'diamonds' },
-  { id: '8', label: '2x', icon: '⭐', color: '#9c27b0', amount: 2, type: 'bonus' },
+  { id: '8', label: '500', icon: '🏆', color: '#9c27b0', amount: 500, type: 'chips' },
 ];
 
 export default function LuckyDrawWheel({

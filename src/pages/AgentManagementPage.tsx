@@ -134,11 +134,12 @@ export default function AgentManagementPage() {
   useEffect(() => {
     if (agents.length === 0) return;
     setVisibleAgents(new Set());
-    agents.forEach((agent, index) => {
+    const timers = agents.map((agent, index) =>
       setTimeout(() => {
         setVisibleAgents((prev) => new Set(prev).add(agent.id));
-      }, index * 60);
-    });
+      }, index * 60)
+    );
+    return () => timers.forEach((t) => clearTimeout(t));
   }, [agents]);
 
   // Load available members when modal opens

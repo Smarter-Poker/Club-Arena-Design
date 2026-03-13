@@ -39,10 +39,15 @@ export function useGlobalBalanceSync() {
       }
     };
 
-    // Sub to local intra-app balance updates
-    const unsubscribeLocal = masterBus.subscribe('BALANCE_UPDATED', () => {
-      fetchTrueBalance();
-    });
+    // Sub to local intra-app balance updates (debounced to collapse rapid-fire emissions
+    // from bulk operations like BBJ payout or settlement into a single Supabase fetch)
+    const unsubscribeLocal = masterBus.subscribeDebounced(
+      'BALANCE_UPDATED',
+      () => {
+        fetchTrueBalance();
+      },
+      200
+    );
 
     // Sub to remote Supabase DB changes for cross-tab or server-initiated updates
     const channel = supabase

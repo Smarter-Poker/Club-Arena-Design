@@ -470,14 +470,23 @@ export const HydraService = {
       .maybeSingle();
 
     if (tableClubData?.club_id) {
-      // Fire and forget: logging
-      supabase.from('chip_transactions').insert({
-        club_id: tableClubData.club_id,
-        to_user_id: horseId,
-        amount: stack,
-        transaction_type: 'buy_in',
-        notes: `Horse buy-in at table ${tableId}`,
-      });
+      // Non-blocking audit trail — log errors but never fail the main operation
+      supabase
+        .from('chip_transactions')
+        .insert({
+          club_id: tableClubData.club_id,
+          to_user_id: horseId,
+          amount: stack,
+          transaction_type: 'buy_in',
+          notes: `Horse buy-in at table ${tableId}`,
+        })
+        .then(({ error: txErr }) => {
+          if (txErr)
+            console.warn(
+              `[HydraService] chip_transactions buy-in log failed for horse ${horseId}:`,
+              txErr.message
+            );
+        });
     }
 
     // Update horse status to seated
@@ -576,14 +585,23 @@ export const HydraService = {
         .maybeSingle();
 
       if (tableClubData?.club_id) {
-        // Fire and forget: logging
-        supabase.from('chip_transactions').insert({
-          club_id: tableClubData.club_id,
-          from_user_id: horseId,
-          amount: returnedChips,
-          transaction_type: 'cashout',
-          notes: `Horse cash-out from table ${tableId}`,
-        });
+        // Non-blocking audit trail — log errors but never fail the main operation
+        supabase
+          .from('chip_transactions')
+          .insert({
+            club_id: tableClubData.club_id,
+            from_user_id: horseId,
+            amount: returnedChips,
+            transaction_type: 'cashout',
+            notes: `Horse cash-out from table ${tableId}`,
+          })
+          .then(({ error: txErr }) => {
+            if (txErr)
+              console.warn(
+                `[HydraService] chip_transactions cashout log failed for horse ${horseId}:`,
+                txErr.message
+              );
+          });
       }
     }
 

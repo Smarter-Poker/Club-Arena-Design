@@ -232,7 +232,7 @@ export const SeatSlot = memo(
     useEffect(() => {
       if (!player) return;
       const diff = player.stack - prevStackRef.current;
-      if (diff !== 0 && prevStackRef.current > 0) {
+      if (diff !== 0) {
         setStackDelta(diff);
         const t = setTimeout(() => setStackDelta(0), 2000);
         prevStackRef.current = player.stack; // Update ref BEFORE returning cleanup

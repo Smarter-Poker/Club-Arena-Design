@@ -439,6 +439,7 @@ export default function TablePage({
   const peakStackRef = useRef(0);
   const sessionPLRef = useRef(0);
   const totalBuyInRef = useRef(0); // Track total chips invested for accurate session P/L
+  const autoRebuyCountRef = useRef(0); // Cap auto-rebuys per session
   const [waitListPlayers, setWaitListPlayers] = useState<
     Array<{
       playerId: string;
@@ -665,12 +666,24 @@ export default function TablePage({
     }
   };
 
+  const MAX_AUTO_REBUYS_PER_SESSION = 5;
+
   // Handle cashier add chips (deducts from wallet, adds to table stack)
-  const handleAddChips = async (amount: number) => {
+  // Supports auto-rebuy with limits and specific error messaging
+  const handleAddChips = async (amount: number, isAutoRebuy = false) => {
     if (!userId || userId === 'guest' || !tableId) {
       console.error('Cannot add chips: not authenticated');
       return;
     }
+
+    if (isAutoRebuy) {
+      if (autoRebuyCountRef.current >= MAX_AUTO_REBUYS_PER_SESSION) {
+        toast.error('Session auto-rebuy limit reached (5). Auto-rebuy disabled.');
+        updateSetting('autoRebuy', false);
+        return;
+      }
+    }
+
     try {
       await WalletService.lockForBuyIn(userId, tableId, amount);
       setAccountBalance((prev) => Math.max(0, prev - amount));
@@ -2864,7 +2877,7 @@ export default function TablePage({
                   // Fire-and-forget: attempt auto-rebuy asynchronously
                   // handleAddChips checks wallet balance, syncs to Supabase, emits bus
                   workerTimeout(() => {
-                    handleAddChips(heroRebuyAmount).catch((err: unknown) => {
+                    handleAddChips(heroRebuyAmount, true).catch((err: unknown) => {
                       console.warn('[AutoRebuy] Hero auto-rebuy failed:', err);
                     });
                   }, 200); // Small delay to let state settle
