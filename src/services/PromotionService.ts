@@ -388,15 +388,19 @@ class PromotionServiceClass {
       return 0;
     }
 
-    // Log transaction for audit trail
-    await WalletService.logTransaction(
-      userId,
-      'PROMO',
-      finalBonus,
-      'credit',
-      'promotion',
-      `Deposit bonus: ${promo.title}`
-    );
+    // Log transaction for audit trail (non-blocking: bonus already credited)
+    try {
+      await WalletService.logTransaction(
+        userId,
+        'PROMO',
+        finalBonus,
+        'credit',
+        'promotion',
+        `Deposit bonus: ${promo.title}`
+      );
+    } catch (logErr) {
+      console.error('[PromotionService] Deposit bonus audit log failed:', logErr);
+    }
     masterBus.emit('BALANCE_UPDATED', { source: 'promotion_deposit_bonus', userId });
 
     return finalBonus;
@@ -444,15 +448,19 @@ class PromotionServiceClass {
       return;
     }
 
-    // Log transaction for audit trail
-    await WalletService.logTransaction(
-      referrer.id,
-      'PROMO',
-      referralBonus,
-      'credit',
-      'promotion',
-      'Referral bonus reward'
-    );
+    // Log transaction for audit trail (non-blocking: bonus already credited)
+    try {
+      await WalletService.logTransaction(
+        referrer.id,
+        'PROMO',
+        referralBonus,
+        'credit',
+        'promotion',
+        'Referral bonus reward'
+      );
+    } catch (logErr) {
+      console.error('[PromotionService] Referral audit log failed:', logErr);
+    }
     masterBus.emit('BALANCE_UPDATED', { source: 'promotion_referral_bonus', userId: referrer.id });
 
     // Record the referral

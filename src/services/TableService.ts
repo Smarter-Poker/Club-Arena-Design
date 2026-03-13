@@ -303,17 +303,12 @@ class TableService {
       }
 
       // If this is a tournament table, update tournament_players status
-      const { data: tblInfo } = await supabase
-        .from('tables')
-        .select('tournament_id')
-        .eq('id', tableId)
-        .maybeSingle();
-
-      if (tblInfo?.tournament_id) {
+      // (tableData already has tournament_id from the query at L258 — no second query needed)
+      if (tableData?.tournament_id) {
         await supabase
           .from('tournament_players')
           .update({ status: 'eliminated', chips: 0 })
-          .eq('tournament_id', tblInfo.tournament_id)
+          .eq('tournament_id', tableData.tournament_id)
           .eq('user_id', userId);
       }
 

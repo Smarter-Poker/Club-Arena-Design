@@ -193,7 +193,7 @@ export const CreditService = {
     if (fetchError || !request) throw fetchError || new Error('Credit request not found');
 
     // Update request
-    await supabase
+    const { error: reqUpdateErr } = await supabase
       .from('credit_limit_requests')
       .update({
         status,
@@ -202,12 +202,16 @@ export const CreditService = {
       })
       .eq('id', requestId);
 
+    if (reqUpdateErr) throw new Error(`Failed to update credit request: ${reqUpdateErr.message}`);
+
     // If approved, update credit limit
     if (approved) {
-      await supabase
+      const { error: limitErr } = await supabase
         .from('agents')
         .update({ credit_limit: request.requested_limit })
         .eq('id', request.agent_id);
+
+      if (limitErr) throw new Error(`Failed to update credit limit: ${limitErr.message}`);
     }
 
     return true;
@@ -504,7 +508,7 @@ export const CreditService = {
    * Suspend agent for overdue debt
    */
   async suspendAgent(agentId: string, reason: string): Promise<boolean> {
-    await supabase
+    const { error } = await supabase
       .from('agents')
       .update({
         status: 'suspended',
@@ -513,6 +517,7 @@ export const CreditService = {
       })
       .eq('id', agentId);
 
+    if (error) throw new Error(`Failed to suspend agent: ${error.message}`);
     return true;
   },
 
@@ -530,7 +535,7 @@ export const CreditService = {
       throw new Error('Cannot reinstate: overdue invoices exist');
     }
 
-    await supabase
+    const { error } = await supabase
       .from('agents')
       .update({
         status: 'active',
@@ -538,6 +543,8 @@ export const CreditService = {
         suspended_at: null,
       })
       .eq('id', agentId);
+
+    if (error) throw new Error(`Failed to reinstate agent: ${error.message}`);
 
     return true;
   },

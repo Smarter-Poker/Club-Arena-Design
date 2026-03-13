@@ -122,6 +122,9 @@ import { HeadsUpOverlay } from '../components/tournament/HeadsUpOverlay';
 import { EmotePanel } from '../components/table/EmotePanel';
 import { SessionTrajectoryMini } from '../components/table/SessionTrajectoryMini';
 import { AchievementNotification } from '../components/gamification/AchievementNotification';
+import { StreakBadge } from '../components/table/StreakBadge';
+import { EmoteBroadcast } from '../components/table/EmoteBroadcast';
+import { soundManager } from '../services/SoundManager';
 // Phase 8-9 Premium Components
 import { QuickActionsBar } from '../components/table/QuickActionsBar';
 import { SpectatorOverlay } from '../components/table/SpectatorOverlay';
@@ -640,14 +643,21 @@ export default function TablePage({
   // Tip Dealer state
   const [showTipDealer, setShowTipDealer] = useState(false);
   const [showEmotePanel, setShowEmotePanel] = useState(false);
-  const [unlockedAchievement, setUnlockedAchievement] = useState<{
+  // Enhancement #1: Multi-achievement queue — shows all unlocked achievements sequentially
+  type AchievementDisplay = {
     id: string;
     name: string;
     description: string;
     icon: string;
     rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
     diamondReward?: number;
-  } | null>(null);
+  };
+  const achievementQueueRef = useRef<AchievementDisplay[]>([]);
+  const [unlockedAchievement, setUnlockedAchievement] = useState<AchievementDisplay | null>(null);
+
+  // Enhancement #3: Win streak tracking
+  const winStreakRef = useRef(0);
+  const [winStreak, setWinStreak] = useState(0);
 
   // Straddle state
   const [isStraddleEnabled, setIsStraddleEnabled] = useState(false);
@@ -2859,6 +2869,7 @@ export default function TablePage({
               const bb = parseFloat(tableState.blinds.split('/')[1]) || 2;
               if ((event.pot || 0) > bb * 10) {
                 setShowConfetti(true);
+                soundManager.playBigWin();
               }
             }
             // Use event.pot (authoritative HC value) — currentState.pot is already 0
@@ -2887,6 +2898,19 @@ export default function TablePage({
               sessionStatsService.recordHand(tableId, heroEndStack, heroWon, heroVPIP, heroPFR);
             }
 
+            // Enhancement #3: Win streak tracking
+            if (heroWon) {
+              winStreakRef.current++;
+              setWinStreak(winStreakRef.current);
+              // Enhancement #7: Sound on streak milestones (3, 5, 7, 10+)
+              if ([3, 5, 7, 10].includes(winStreakRef.current) || winStreakRef.current > 10) {
+                soundManager.playStreak();
+              }
+            } else {
+              winStreakRef.current = 0;
+              setWinStreak(0);
+            }
+
             // Fire achievement checks (fire-and-forget, non-blocking)
             if (userId && userId !== 'guest') {
               achievementTriggerService
@@ -2897,25 +2921,33 @@ export default function TablePage({
                 })
                 .then((result) => {
                   if (result.triggeredAchievements.length > 0) {
-                    const ach = result.triggeredAchievements[0];
-                    setUnlockedAchievement({
+                    // Enhancement #1: Queue ALL achievements for sequential display
+                    const newAchievements = result.triggeredAchievements.map((ach) => ({
                       id: ach.id,
                       name: ach.name,
                       description: ach.description || '',
                       icon: ach.icon || '🏆',
                       rarity: (ach.rarity as any) || 'common',
                       diamondReward: ach.chipReward,
-                    });
-                    // Broadcast for other components
-                    masterBus.emit('ACHIEVEMENT_UNLOCKED', {
-                      userId: userId!,
-                      achievementId: ach.id,
-                      name: ach.name,
-                      icon: ach.icon || '🏆',
-                      rarity: (ach.rarity as any) || 'common',
-                      description: ach.description || '',
-                      diamondReward: ach.chipReward,
-                    });
+                    }));
+                    achievementQueueRef.current.push(...newAchievements);
+                    // Show first if nothing currently displayed
+                    if (!unlockedAchievement) {
+                      setUnlockedAchievement(achievementQueueRef.current.shift()!);
+                      soundManager.playAchievement();
+                    }
+                    // Broadcast each for other components
+                    for (const ach of result.triggeredAchievements) {
+                      masterBus.emit('ACHIEVEMENT_UNLOCKED', {
+                        userId: userId!,
+                        achievementId: ach.id,
+                        name: ach.name,
+                        icon: ach.icon || '🏆',
+                        rarity: (ach.rarity as any) || 'common',
+                        description: ach.description || '',
+                        diamondReward: ach.chipReward,
+                      });
+                    }
                   }
                 })
                 .catch((err) => console.warn('[Achievements] Check failed:', err));
@@ -3842,7 +3874,11 @@ export default function TablePage({
                 {/* Session Timer */}
                 <SessionTimer
                   breakInterval={60}
-                  onBreakSuggested={() => console.debug('Break suggested')}
+                  onBreakSuggested={() =>
+                    toast.info(
+                      "🧘 Time for a break! You've been playing for a while. Stretch, hydrate, and come back fresh."
+                    )
+                  }
                 />
 
                 {/* Session Stats HUD (cash games) */}
@@ -4444,14 +4480,26 @@ export default function TablePage({
         onClose={() => setShowEmotePanel(false)}
         onEmote={(emoteId) => {
           masterBus.emit('TABLE_EMOTE', { tableId: tableId ?? '', userId: userId ?? '', emoteId });
+          soundManager.playEmote();
           setShowEmotePanel(false);
         }}
       />
 
+      {/* Enhancement #2: Cross-player emote broadcast */}
+      {tableId && (
+        <TableErrorBoundary componentName="EmoteBroadcast">
+          <EmoteBroadcast tableId={tableId} />
+        </TableErrorBoundary>
+      )}
+
       {/* Achievement Unlock Notification */}
       <AchievementNotification
         achievement={unlockedAchievement}
-        onDismiss={() => setUnlockedAchievement(null)}
+        onDismiss={() => {
+          // Enhancement #1: Cycle to next queued achievement, or clear
+          const next = achievementQueueRef.current.shift();
+          setUnlockedAchievement(next || null);
+        }}
       />
 
       {/* Tip Dealer Modal */}

@@ -1158,12 +1158,26 @@ class TournamentService {
       const player = shuffled[i];
       const tableAssign = tableSeats[i % numTables];
 
-      await supabase.from('table_seats').insert({
+      const { error: seatInsertErr } = await supabase.from('table_seats').insert({
         table_id: tableAssign.tableId,
         seat_number: tableAssign.nextSeat,
         user_id: player.user_id,
         stack: tournament.starting_chips,
       });
+
+      if (seatInsertErr) {
+        console.error(
+          `[TournamentService] Failed to seat player ${player.user_id.slice(0, 8)} at table ${tableAssign.tableId.slice(0, 8)} seat ${tableAssign.nextSeat}:`,
+          seatInsertErr.message
+        );
+        // Roll back: keep player as registered so they can be seated on retry
+        await supabase
+          .from('tournament_players')
+          .update({ status: 'registered', table_id: null })
+          .eq('tournament_id', tournamentId)
+          .eq('user_id', player.user_id);
+        continue; // Skip this seat, don't increment nextSeat
+      }
 
       // Write table_id to tournament_players so TournamentDetails "Enter Table" button works
       await supabase
@@ -1773,19 +1787,14 @@ class TournamentService {
    * Balance tables in a multi-table tournament
    */
   async balanceTables(tournamentId: string): Promise<{ movesMade: number }> {
-    const { data, error } = await retryAsync(async () => {
-      const result = await supabase.rpc('balance_tournament_tables', {
-        p_tournament_id: tournamentId,
-      });
-      return result;
-    }, 2);
-
-    if (error) {
-      console.error('Table balancing error:', error);
-      return { movesMade: 0 };
-    }
-
-    return { movesMade: data || 0 };
+    // NOTE: The balance_tournament_tables SQL RPC is currently a placeholder (no-op).
+    // Real table balancing is handled by TournamentEngine.mergeTable() in-memory.
+    // This function is kept for API compatibility but logs a warning for visibility.
+    console.warn(
+      `[TournamentService] balanceTables(${tournamentId.slice(0, 8)}) called — ` +
+        `SQL RPC is a placeholder. Actual balancing is handled by TournamentEngine.mergeTable().`
+    );
+    return { movesMade: 0 };
   }
 
   /**

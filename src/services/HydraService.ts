@@ -490,7 +490,12 @@ export const HydraService = {
     }
 
     // Update horse status to seated
-    await supabase.from('profiles').update({ horse_status: 'seated' }).eq('id', horseId);
+    const { error: statusErr } = await supabase
+      .from('profiles')
+      .update({ horse_status: 'seated' })
+      .eq('id', horseId);
+    if (statusErr)
+      console.error(`[HydraService] Failed to set horse ${horseId} status to seated:`, statusErr);
 
     return {
       id: horseData.id,
@@ -526,7 +531,12 @@ export const HydraService = {
     }
 
     // Mark horse as leaving
-    await supabase.from('profiles').update({ horse_status: 'leaving' }).eq('id', horseId);
+    const { error: statusErr } = await supabase
+      .from('profiles')
+      .update({ horse_status: 'leaving' })
+      .eq('id', horseId);
+    if (statusErr)
+      console.error(`[HydraService] Failed to set horse ${horseId} status to leaving:`, statusErr);
   },
 
   /**
@@ -606,7 +616,15 @@ export const HydraService = {
     }
 
     // 4. Set horse back to available
-    await supabase.from('profiles').update({ horse_status: 'available' }).eq('id', horseId);
+    const { error: statusErr } = await supabase
+      .from('profiles')
+      .update({ horse_status: 'available' })
+      .eq('id', horseId);
+    if (statusErr)
+      console.error(
+        `[HydraService] Failed to set horse ${horseId} status to available:`,
+        statusErr
+      );
 
     return true;
   },
