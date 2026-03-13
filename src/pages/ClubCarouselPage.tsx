@@ -19,6 +19,7 @@ import { useToast } from '../components/common/Toast';
 import IntroVideo from '../components/IntroVideo';
 import './ClubCarouselPage.css';
 import PageSkeleton from '../components/common/PageSkeleton';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 interface UserClub {
   id: string;
@@ -65,6 +66,9 @@ const getFrameForClub = (clubId: number): string => {
 export default function ClubCarouselPage() {
   const navigate = useNavigate();
   const { user } = useAuthUser();
+  useVisibilityRefresh(() => {
+    if (user?.id) loadUserData();
+  });
   const toast = useToast();
 
   const [clubs, setClubs] = useState<UserClub[]>([]);

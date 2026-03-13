@@ -20,6 +20,7 @@ import haptic from '../services/HapticService';
 import { MetalFrame, MetalButton, MetalInput, MetalCard } from '../components/metal-ui';
 import ClubDiscovery from '../components/clubs/ClubDiscovery';
 import styles from './ClubsPage.module.css';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 type Tab = 'discover' | 'my-clubs' | 'create';
 
@@ -46,6 +47,7 @@ const INTRO_SHOWN_KEY = 'club_arena_intro_shown';
 export default function ClubsPage() {
   const navigate = useNavigate();
   const toast = useToast();
+  useVisibilityRefresh(() => loadMyClubs());
   const [activeTab, setActiveTab] = useState<Tab>('my-clubs');
   const [joinClubId, setJoinClubId] = useState('');
   const [isJoining, setIsJoining] = useState(false);

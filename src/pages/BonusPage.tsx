@@ -12,6 +12,7 @@ import { useToast } from '../components/common/Toast';
 import { haptic } from '../services/HapticService';
 import './BonusPage.css';
 import { retryAsync } from '../utils/retryAsync';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 interface DailyBonus {
   day: number;
@@ -31,6 +32,9 @@ interface SpecialBonus {
 export default function BonusPage() {
   const navigate = useNavigate();
   const { user } = useAuthUser();
+  useVisibilityRefresh(() => {
+    if (user?.id) loadBonuses();
+  });
 
   const [dailyBonuses, setDailyBonuses] = useState<DailyBonus[]>([]);
   const [currentDay, setCurrentDay] = useState(1);

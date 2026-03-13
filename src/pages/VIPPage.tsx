@@ -23,10 +23,14 @@ import { VIPActivityHistory, VIPActivity } from '../components/vip/VIPActivityHi
 import { useToast } from '../components/common/Toast';
 import './VIPPage.css';
 import PageSkeleton from '../components/common/PageSkeleton';
+import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
 export default function VIPPage() {
   const { user } = useAuthUser();
   const toast = useToast();
+  useVisibilityRefresh(() => {
+    if (user?.id) loadVIPStatus();
+  });
 
   const [isVIP, setIsVIP] = useState(false);
   const [diamonds, setDiamonds] = useState(0);
