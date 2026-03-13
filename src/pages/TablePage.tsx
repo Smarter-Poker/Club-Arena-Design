@@ -1965,12 +1965,64 @@ export default function TablePage({
       }));
     });
 
+    // PRE_ACTION_SET: Update local pre-action state
+    const unsubPreAction = masterBus.subscribe('PRE_ACTION_SET', (event) => {
+      const payload = (event as any)?.payload || event;
+      if (payload.tableId !== tableId || payload.playerId !== userId) return;
+      setPreAction(payload.action);
+    });
+
+    // INSURANCE_OFFERED: Show insurance modal to the hero
+    const unsubInsurance = masterBus.subscribe('INSURANCE_OFFERED', (event) => {
+      const payload = (event as any)?.payload || event;
+      if (payload.tableId !== tableId || payload.playerId !== userId) return;
+      setInsuranceOffer(payload.offer);
+      setShowInsurance(true);
+    });
+
+    // TIME_BANK_ACTIVATED: Show time bank UI
+    const unsubTimeBank = masterBus.subscribe('TIME_BANK_ACTIVATED', (event) => {
+      const payload = (event as any)?.payload || event;
+      if (payload.tableId !== tableId || payload.playerId !== userId) return;
+      setTimeBankActive(true);
+      setTimeBankTimeRemaining(payload.timeAdded || 30);
+    });
+
+    // STRADDLE_TOGGLED: Update straddle toggle UI
+    const unsubStraddle = masterBus.subscribe('STRADDLE_TOGGLED', (event) => {
+      const payload = (event as any)?.payload || event;
+      if (payload.tableId !== tableId || payload.playerId !== userId) return;
+      setIsStraddleEnabled(payload.enabled);
+    });
+
+    // RAKEBACK_DISTRIBUTED: Show toast when rakeback hits wallet
+    const unsubRakeback = masterBus.subscribe('RAKEBACK_DISTRIBUTED', (event) => {
+      const payload = (event as any)?.payload || event;
+      if (payload.distributions && payload.distributions[userId]) {
+        toast?.success?.(`Received +$${payload.distributions[userId].toFixed(2)} rakeback!`);
+      }
+    });
+
+    // TABLE_BALANCE_EXECUTED: Show toast if table was rebalanced
+    const unsubBalance = masterBus.subscribe('TABLE_BALANCE_EXECUTED', (event) => {
+      const payload = (event as any)?.payload || event;
+      if (payload.moves?.some((m: any) => m.playerId === userId)) {
+        toast?.info?.('You were moved to balance the tables.');
+      }
+    });
+
     return () => {
       unsubRejected();
       unsubTimerStart();
       unsubTimerExpired();
       unsubIntegrity();
       unsubSession();
+      unsubPreAction();
+      unsubInsurance();
+      unsubTimeBank();
+      unsubStraddle();
+      unsubRakeback();
+      unsubBalance();
     };
   }, [tableId, userId]);
 
