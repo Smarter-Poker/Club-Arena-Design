@@ -28,7 +28,7 @@ import { ChipFlowService } from '../services/ChipFlowService';
 import { cashoutService } from '../services/CashoutService';
 import { supabase } from '../lib/supabase';
 import ClubBottomNav from '../components/club/ClubBottomNav';
-import ConfirmModal from '../components/common/ConfirmModal';
+
 import { MetalFrame, MetalButton, MetalInput, MetalCard } from '../components/metal-ui';
 import { useVIPStatus } from '../hooks/useVIP';
 import { useToast } from '../components/common/Toast';
