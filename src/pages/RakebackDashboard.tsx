@@ -5,7 +5,7 @@
  *  Shows the player their current rakeback tier, pending rakeback, and history.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
@@ -49,6 +49,13 @@ export default function RakebackDashboard() {
   const [recentPayouts, setRecentPayouts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [visibleSections, setVisibleSections] = useState<Set<number>>(new Set());
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   useVisibilityRefresh(() => loadData());
 
@@ -127,6 +134,7 @@ export default function RakebackDashboard() {
         .eq('user_id', user.id)
         .eq('category', 'rake');
 
+      if (!isMounted.current) return;
       setStats({
         totalRakeContributed,
         totalRakebackEarned,
@@ -137,10 +145,11 @@ export default function RakebackDashboard() {
         handsPlayed: handsPlayed || 0,
       });
     } catch (err) {
+      if (!isMounted.current) return;
       console.error('[RakebackDashboard] Load failed:', err);
       toast.error('Failed to load rakeback data');
     }
-    setLoading(false);
+    if (isMounted.current) setLoading(false);
   };
 
   const currentTierData = TIERS.find((t) => t.name === stats.currentTier) || TIERS[0];

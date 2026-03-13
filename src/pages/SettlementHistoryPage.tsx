@@ -5,7 +5,7 @@
  *  Shows past settlement cycles with trend comparison.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
@@ -33,6 +33,13 @@ export default function SettlementHistoryPage() {
   const [cycles, setCycles] = useState<SettlementCycle[]>([]);
   const [loading, setLoading] = useState(true);
   const [visibleRows, setVisibleRows] = useState<Set<number>>(new Set());
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   useVisibilityRefresh(() => loadHistory());
 
@@ -63,6 +70,7 @@ export default function SettlementHistoryPage() {
         .limit(50);
 
       if (data) {
+        if (!isMounted.current) return;
         const mapped: SettlementCycle[] = data.map((s: any) => ({
           id: s.id,
           periodId: s.period_id || 'N/A',
@@ -75,14 +83,17 @@ export default function SettlementHistoryPage() {
         }));
         setCycles(mapped);
         mapped.forEach((_, i) => {
-          setTimeout(() => setVisibleRows((prev) => new Set(prev).add(i)), i * 50);
+          setTimeout(() => {
+            if (isMounted.current) setVisibleRows((prev) => new Set(prev).add(i));
+          }, i * 50);
         });
       }
     } catch (err) {
+      if (!isMounted.current) return;
       console.error('[SettlementHistory] Load failed:', err);
       toast.error('Failed to load settlement history');
     }
-    setLoading(false);
+    if (isMounted.current) setLoading(false);
   };
 
   const totalRakeAllTime = cycles.reduce((s, c) => s + c.totalRake, 0);

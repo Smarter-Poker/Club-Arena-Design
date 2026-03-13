@@ -100,7 +100,7 @@ describe('DisconnectEngine - Disconnect Detection', () => {
       'PLAYER_DISCONNECTED',
       expect.objectContaining({
         tableId: 'dc-disc',
-        playerId: 'p1',
+        userId: 'p1',
       })
     );
   });

@@ -82,23 +82,25 @@ describe('StateVerifier - Chip Conservation', () => {
     expect(result.violations).toHaveLength(0);
   });
 
-  it('should pass when chips are in pot (stacks + pot = initial)', () => {
+  it('should pass when chips are in bets (stacks + bets = initial)', () => {
     const players = makePlayers([100, 100]);
     stateVerifier.recordInitialChipTotal('table-2', players);
 
-    // Create players with reduced stacks, pot holds the difference
+    // Create verify players where chips moved from stacks to bets
     const verifyPlayers = makePlayers([90, 80]);
+    verifyPlayers[0].bet = 10; // 100 - 90 = 10 in bet
+    verifyPlayers[1].bet = 20; // 100 - 80 = 20 in bet
 
     const result = stateVerifier.verify({
       tableId: 'table-2',
       handNumber: 1,
       players: verifyPlayers,
       communityCards: [],
-      pot: 30, // 100+100 - 90-80 = 30 in pot
+      pot: 30, // pot is informational, not used in conservation check
       stage: 'preflop',
     });
 
-    // Chip conservation: stacks(170) + pot(30) = 200 = initial(200)
+    // Chip conservation: stacks(90+80) + bets(10+20) = 200 = initial(200)
     expect(result.valid).toBe(true);
   });
 
