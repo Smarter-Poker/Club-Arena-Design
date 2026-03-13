@@ -67,7 +67,7 @@ export default function HandReplayerPage() {
 
   // Set document title for this page
   useEffect(() => {
-    document.title = 'Hand Replay | Smarter.Poker';
+    document.title = 'Hand Replay | Club Arena';
     // Note: OG meta tags should be set server-side for proper social sharing
   }, [hand]);
 
@@ -389,9 +389,9 @@ export default function HandReplayerPage() {
           📤 Share
         </button>
 
-        {/* Smarter.Poker branding */}
+        {/* Club Arena branding */}
         <div className="replayer-branding">
-          <span>♠ Smarter.Poker</span>
+          <span>♠ Club Arena</span>
         </div>
       </div>
     </>

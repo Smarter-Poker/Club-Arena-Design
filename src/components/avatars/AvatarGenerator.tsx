@@ -1,6 +1,6 @@
 /**
- * ♠ CLUB ARENA — AI Avatar Generator
- * Uses AI to generate custom poker avatars
+ * ♠ CLUB ARENA — Avatar Generator
+ * Uses to generate custom poker avatars
  */
 
 import React, { useState } from 'react';
@@ -47,7 +47,7 @@ export const AvatarGenerator: React.FC<{
     setGeneratedImages([]);
 
     try {
-      // Call your AI avatar generation endpoint
+      // Call your avatar generation endpoint
       const response = await fetch('/api/generate-avatar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -112,7 +112,7 @@ export const AvatarGenerator: React.FC<{
   return (
     <div className="avatar-generator">
       <div className="generator-header">
-        <h2>🎨 AI Avatar Generator</h2>
+        <h2>🎨 Avatar Generator</h2>
         {onClose && (
           <button className="close-btn" onClick={onClose}>
             ✕

@@ -53,8 +53,8 @@ export default function ClubArenaWelcomeModal({ isOpen, onAccept }: ClubArenaWel
           <div className={styles.disclaimer}>
             <p>
               <strong>
-                Smarter.Poker is an online social gaming platform and does not provide any
-                real-money service.
+                Club Arena is an online social gaming platform and does not provide any real-money
+                service.
               </strong>
             </p>
           </div>
@@ -77,12 +77,12 @@ export default function ClubArenaWelcomeModal({ isOpen, onAccept }: ClubArenaWel
                 You will abide by all <strong>local, state, and national laws</strong>.
               </li>
               <li>
-                Smarter.Poker is <strong>not responsible</strong> for any interactions or
-                arrangements between club members.
+                Club Arena is <strong>not responsible</strong> for any interactions or arrangements
+                between club members.
               </li>
               <li>
                 Club owners and operators are <strong>independent</strong> and not affiliated with
-                or endorsed by Smarter.Poker.
+                or endorsed by Club Arena.
               </li>
             </ul>
           </div>

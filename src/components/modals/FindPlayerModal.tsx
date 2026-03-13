@@ -234,7 +234,7 @@ export default function FindPlayerModal({ isOpen, onClose }: FindPlayerModalProp
             {notFound && (
               <div className={styles.notFoundMessage}>
                 <span className={styles.notFoundIcon}></span>
-                <p>Player is not currently playing on Smarter.Poker</p>
+                <p>Player is not currently playing on Club Arena</p>
               </div>
             )}
 

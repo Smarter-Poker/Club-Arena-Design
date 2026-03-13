@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * VIP Model:
- * - Gold VIP = Included with Smarter.Poker monthly membership (external)
+ * - Gold VIP = Included with Club Arena monthly membership (external)
  * - Non-VIP = Pay diamonds per-use for each feature
  * - VIP users can buy more if they run out of monthly limits
  */
@@ -109,7 +109,7 @@ export const FEATURE_PRICING: Record<
 class VIPServiceClass {
   /**
    * Check if user has VIP (Gold) membership
-   * VIP status comes from Smarter.Poker subscription (stored in profiles or external check)
+   * VIP status comes from Club Arena subscription (stored in profiles or external check)
    */
   async checkVIPStatus(userId: string): Promise<VIPStatus> {
     const { data, error } = await supabase

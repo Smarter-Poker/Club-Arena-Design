@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  * Uses the sci-fi themed modal frame with:
  * - Club name input
- * - Logo upload or AI generation buttons
+ * - Logo upload or generation buttons
  * - Terms acceptance checkbox
  * - CREATE button
  */
@@ -395,7 +395,7 @@ export default function CreateClubModal({ isOpen, onClose, onSuccess }: CreateCl
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// AI Logo Generator Modal — Powered by OpenAI DALL-E
+// Logo Generator Modal — Powered by OpenAI DALL-E
 // ═══════════════════════════════════════════════════════════════════════════════
 
 interface LogoGeneratorModalProps {
@@ -404,7 +404,7 @@ interface LogoGeneratorModalProps {
   clubName?: string;
 }
 
-// AI Logo style presets
+// Logo style presets
 const LOGO_PRESETS = [
   { id: 'shark', icon: '🦈', name: 'Shark', theme: 'shark', style: 'aggressive' as const },
   { id: 'dragon', icon: '🐉', name: 'Dragon', theme: 'dragon', style: 'classic' as const },
@@ -543,7 +543,7 @@ function LogoGeneratorModal({ onSelect, onClose, clubName = '' }: LogoGeneratorM
               <div style={{ fontSize: '48px', marginBottom: '20px' }}>⏳</div>
               <div>GENERATING LOGO...</div>
               <div style={{ fontSize: '14px', marginTop: '10px', opacity: 0.7 }}>
-                Powered by Smarter.Poker
+                Powered by Club Arena
               </div>
             </div>
           </div>

@@ -1,6 +1,6 @@
 /**
  * ♠ CLUB ARENA — Player Stats Dashboard
- * VPIP, PFR, Aggression Factor, Graphs, AI Analysis
+ * VPIP, PFR, Aggression Factor, Graphs, Analysis
  */
 
 import React, { useState, useEffect } from 'react';
@@ -289,7 +289,7 @@ export const PlayerStatsDashboard: React.FC<{ playerId?: string }> = ({ playerId
               </p>
             </div>
           </div>
-          <button className="btn-analyze">🧠 Get AI Analysis</button>
+          <button className="btn-analyze">🧠 Get Analysis</button>
         </div>
       )}
 

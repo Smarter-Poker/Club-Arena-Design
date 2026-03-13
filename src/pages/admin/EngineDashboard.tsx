@@ -122,7 +122,7 @@ export default function EngineDashboard() {
     <div className="engine-dashboard">
       <header className="engine-header">
         <h1>⚙️ Global Matrix Orchestrator</h1>
-        <p>Master Control Panel for the Smarter.Poker Cash Game & Hydra Engines</p>
+        <p>Master Control Panel for the Club Arena Cash Game & Hydra Engines</p>
         <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
           <Link
             to="/analytics"

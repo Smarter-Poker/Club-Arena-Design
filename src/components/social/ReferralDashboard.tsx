@@ -70,11 +70,11 @@ export default function ReferralDashboard({ userId }: ReferralDashboardProps) {
   };
 
   const handleShare = async () => {
-    const shareText = `Join me on Smarter.Poker! Use my referral code ${stats.code} to get 250 bonus chips! https://smarter.poker`;
+    const shareText = `Join me on Club Arena! Use my referral code ${stats.code} to get 250 bonus chips! https://smarter.poker`;
     try {
       if (navigator.share) {
         await navigator.share({
-          title: 'Join Smarter.Poker',
+          title: 'Join Club Arena',
           text: shareText,
           url: 'https://smarter.poker',
         });

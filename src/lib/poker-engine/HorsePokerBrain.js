@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * This is a stub file. Replace with the full HorsePokerBrain implementation
- * (397KB, 8148 lines) to activate the complete AI decision engine with:
+ * (397KB, 8148 lines) to activate the complete decision engine with:
  *   - 32 anti-exploit modules
  *   - PioSolver GTO integration
  *   - Personality archetypes & skill tiers

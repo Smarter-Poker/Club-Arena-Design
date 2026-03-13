@@ -6,7 +6,7 @@
  * Hierarchical permission system for Club Arena.
  *
  * HIERARCHY (Highest to Lowest):
- * 1. PLATFORM_ADMIN — Smarter.Poker super admins (full system access)
+ * 1. PLATFORM_ADMIN — Club Arena super admins (full system access)
  * 2. UNION_ADMIN — Union owners (manage union + all member clubs)
  * 3. CLUB_OWNER — Club owners (manage their club, agents, players)
  * 4. AGENT — Club agents (manage their downline players)

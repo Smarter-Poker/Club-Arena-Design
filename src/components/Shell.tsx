@@ -246,7 +246,7 @@ function ShellContent() {
 
       {/* Footer */}
       <footer className="shell-footer">
-        <p>Club Engine 2026 - Smarter.Poker</p>
+        <p>Club Engine 2026 - Club Arena</p>
       </footer>
 
       {/* Global In-App Alerts */}

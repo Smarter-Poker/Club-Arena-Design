@@ -3,7 +3,7 @@
  * CLUB HOME PAGE — PokerBros-Style Club Dashboard
  * ═══════════════════════════════════════════════════════════════════════════════
  * Main page after entering a club. Shows:
- * - Modified Smarter.Poker header (No Search, Settings = Club Settings)
+ * - Modified Club Arena header (No Search, Settings = Club Settings)
  * - Club card with avatar, name, ID, member count
  * - Wallet display (Gold + Diamond chips)
  * - Bad Beat Jackpot display

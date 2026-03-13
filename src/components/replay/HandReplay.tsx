@@ -227,12 +227,12 @@ export default function HandReplay({
 
   const handleShare = async () => {
     const shareUrl = `https://smarter.poker/replay/${handData?.id}`;
-    const shareText = `Check out this hand I played on Smarter.Poker! #PlayPoker`;
+    const shareText = `Check out this hand I played on Club Arena! #PlayPoker`;
 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Smarter.Poker Hand Replay',
+          title: 'Club Arena Hand Replay',
           text: shareText,
           url: shareUrl,
         });

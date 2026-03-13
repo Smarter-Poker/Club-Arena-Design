@@ -1,5 +1,5 @@
 /**
- * GameController — Hand flow management & Horse AI wiring
+ * GameController — Hand flow management & Horse wiring
  * STUB: Replace with full implementation (19 callsites for HorsePokerBrain)
  *
  * CAUTION: This file will have 19 callsites wiring HorsePokerBrain when complete:

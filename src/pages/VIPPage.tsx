@@ -300,7 +300,7 @@ export default function VIPPage() {
               >
                 Diamond Member
               </span>
-              <span className="vip-card-expiry">Included with Smarter.Poker</span>
+              <span className="vip-card-expiry">Included with Club Arena</span>
             </div>
             <button className="vip-extend-btn" onClick={() => setShowInfoModal(true)}>
               View Benefits

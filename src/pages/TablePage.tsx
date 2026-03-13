@@ -357,7 +357,7 @@ export default function TablePage({
   const navigate = useNavigate();
   const toast = useToast();
 
-  // Prevent Chrome from throttling this tab (keeps horse AI timers alive)
+  // Prevent Chrome from throttling this tab (keeps horse timers alive)
   useTabKeepAlive();
 
   // Get current user

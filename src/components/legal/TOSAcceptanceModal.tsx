@@ -103,8 +103,8 @@ export default function TOSAcceptanceModal({ onAccept }: TOSAcceptanceModalProps
 
           <h3>7. Intellectual Property</h3>
           <p>
-            All content, features, and functionality of the Service are owned by Smarter.Poker and
-            are protected by copyright, trademark, and other intellectual property laws.
+            All content, features, and functionality of the Service are owned by Club Arena and are
+            protected by copyright, trademark, and other intellectual property laws.
           </p>
 
           <h3>8. Disclaimer of Warranties</h3>
@@ -128,7 +128,7 @@ export default function TOSAcceptanceModal({ onAccept }: TOSAcceptanceModalProps
           <h3>11. Governing Law</h3>
           <p>
             These Terms shall be governed by and construed in accordance with the laws of the
-            jurisdiction in which Smarter.Poker operates.
+            jurisdiction in which Club Arena operates.
           </p>
 
           <h3>12. Contact</h3>

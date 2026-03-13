@@ -3,7 +3,7 @@
  *  SMARTER.POKER HEADER — Premium App Header
  * ═══════════════════════════════════════════════════════════════════════════════
  * Standard header used across all non-playing pages
- * Shows: Hub button, Smarter.Poker branding, Diamonds, Icons
+ * Shows: Hub button, Club Arena branding, Diamonds, Icons
  */
 
 import { useNavigate } from 'react-router-dom';

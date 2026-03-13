@@ -154,7 +154,7 @@ export default function ShareableHighlight({
 
       {/* Branding footer */}
       <div className="highlight-footer">
-        <span className="branding">♠ Smarter.Poker</span>
+        <span className="branding">♠ Club Arena</span>
       </div>
     </div>
   );

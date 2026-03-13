@@ -667,7 +667,7 @@ export default function AchievementsPage() {
                 <button
                   onClick={async () => {
                     const ach = selectedAchievement;
-                    const shareText = `I just unlocked "${ach.name}" on Smarter.Poker! ${ach.description}`;
+                    const shareText = `I just unlocked "${ach.name}" on Club Arena! ${ach.description}`;
                     try {
                       if (navigator.share) {
                         await navigator.share({

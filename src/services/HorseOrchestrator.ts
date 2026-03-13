@@ -2350,7 +2350,7 @@ class HorseOrchestrator {
 
       if (!staleHorses || staleHorses.length === 0) return 0;
 
-      // Load available horse personas
+      // Load available player profiles
       const { data: availableHorses } = await supabase
         .from('profiles')
         .select('id, display_name, avatar_url')
@@ -2399,7 +2399,7 @@ class HorseOrchestrator {
       }
 
       if (rotated > 0) {
-        console.debug(`[Orchestrator] Persona rotation: swapped ${rotated} horse personas`);
+        console.debug(`[Orchestrator] Persona rotation: swapped ${rotated} player profiles`);
       }
     } catch (err: any) {
       this.logError(`dynamicPersonaRotation error: ${err.message}`);

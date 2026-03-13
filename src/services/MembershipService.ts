@@ -6,7 +6,7 @@
  * Real Supabase integration — no demo mode
  *
  * ROLE HIERARCHY (Descending Authority):
- * 1. PLATFORM_ADMIN  → God mode (Smarter.Poker staff)
+ * 1. PLATFORM_ADMIN  → God mode (Club Arena staff)
  * 2. UNION_LEAD      → Union owner, full union authority
  * 3. UNION_ADMIN     → Delegated union management
  * 4. CLUB_OWNER      → Club creator with full club authority

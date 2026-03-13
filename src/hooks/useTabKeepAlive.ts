@@ -4,7 +4,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * Chrome aggressively throttles setTimeout/setInterval in background tabs,
- * stretching timers to ~1 minute intervals. This kills horse AI decision-making
+ * stretching timers to ~1 minute intervals. This kills horse decision-making
  * which relies on setTimeout(thinkTime).
  *
  * Two techniques used together:

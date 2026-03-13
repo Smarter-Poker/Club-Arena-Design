@@ -73,21 +73,21 @@ export default function ClubPromotionRulesModal({
         <div className={styles.content} ref={scrollRef} onScroll={handleScroll}>
           {/* Preamble */}
           <p className={styles.preamble}>
-            For the purposes of these Club Promotion Rules, Smarter.Poker shall mean Smarter Poker
-            LLC, its partners, parent companies, subsidiaries, licensees, licensors and affiliates
-            (also collectively referred to herein as "Company", "we", "our" or "us").
+            For the purposes of these Club Promotion Rules, Club Arena shall mean Smarter Poker LLC,
+            its partners, parent companies, subsidiaries, licensees, licensors and affiliates (also
+            collectively referred to herein as "Company", "we", "our" or "us").
           </p>
 
           <p className={styles.preamble}>
-            All Smarter.Poker product content, including but not limited to logos, trademarks,
-            videos, software, and online products, are copyrighted materials and protected by
-            applicable copyright and/or trademark law. Without express written permission from
-            Smarter Poker LLC, you shall never copy, modify, reproduce, translate, or tailor
-            products, or create new products or derivative works using the products in any written,
-            visual, or audio form, or by any means, whether electronic or mechanical. Any such
-            activity constitutes an infringement of Smarter Poker LLC copyrights, trademarks, or
-            proprietary property, is strictly prohibited by us, and may result in legal action and
-            termination of your account with Smarter.Poker.
+            All Club Arena product content, including but not limited to logos, trademarks, videos,
+            software, and online products, are copyrighted materials and protected by applicable
+            copyright and/or trademark law. Without express written permission from Smarter Poker
+            LLC, you shall never copy, modify, reproduce, translate, or tailor products, or create
+            new products or derivative works using the products in any written, visual, or audio
+            form, or by any means, whether electronic or mechanical. Any such activity constitutes
+            an infringement of Smarter Poker LLC copyrights, trademarks, or proprietary property, is
+            strictly prohibited by us, and may result in legal action and termination of your
+            account with Club Arena.
           </p>
 
           {/* General Rules */}
@@ -99,7 +99,7 @@ export default function ClubPromotionRulesModal({
           </p>
           <p>
             We may amend these Club Promotion Rules at any time and you agree to be subject to them.
-            If you do not wish to be subject to these Club Promotion Rules, any Smarter.Poker
+            If you do not wish to be subject to these Club Promotion Rules, any Club Arena
             Fanpages/Club Fanpages/Agency Pages/Clubs or any similar sites must be deleted.
           </p>
 
@@ -115,7 +115,7 @@ export default function ClubPromotionRulesModal({
           {/* Section 2 */}
           <h3>2. Suspensions and Termination</h3>
           <p>
-            Any and all suspensions or terminations are in the sole discretion of Smarter.Poker. Any
+            Any and all suspensions or terminations are in the sole discretion of Club Arena. Any
             attempt to circumvent a termination or suspension through any means, including but not
             limited to using other accounts or identities, domains, or webpages, will result in
             suspension or termination.
@@ -124,7 +124,7 @@ export default function ClubPromotionRulesModal({
           {/* Section 3 */}
           <h3>3. Violence, Threats and Other Expressly Prohibited Conduct</h3>
           <p>
-            Smarter.Poker expressly prohibits acts and threats of violence. Any accounts, pages, or
+            Club Arena expressly prohibits acts and threats of violence. Any accounts, pages, or
             clubs containing such content are not allowed and will be suspended (until remedied at
             our direction) or terminated. We also prohibit hateful conduct, which includes content
             or activity that promotes, encourages, or facilitates discrimination, denigration,
@@ -152,17 +152,17 @@ export default function ClubPromotionRulesModal({
           <h3>5. Identification and Impersonation</h3>
           <p>
             You are prohibited from misrepresenting yourself. This includes impersonating an
-            individual or an organization or your association with an organization (including
-            Smarter.Poker). Any attempt to misrepresent yourself as associated with Smarter.Poker
-            will result in adverse action, including suspension or termination of your account, in
-            our sole discretion.
+            individual or an organization or your association with an organization (including Club
+            Arena). Any attempt to misrepresent yourself as associated with Club Arena will result
+            in adverse action, including suspension or termination of your account, in our sole
+            discretion.
           </p>
 
           {/* Section 6 */}
           <h3>6. Other Prohibited Conduct</h3>
           <p>
             You may not engage in any activity that disrupts, interrupts, harms or otherwise
-            violates the integrity of Smarter.Poker's services or another user's use or enjoyment of
+            violates the integrity of Club Arena's services or another user's use or enjoyment of
             our services. This includes defrauding others, spreading misinformation, and tampering
             with or defacing websites or social media pages (including posting inappropriate
             content). We also prohibit content that is obscene or sexually explicit and content that
@@ -189,52 +189,52 @@ export default function ClubPromotionRulesModal({
 
           {/* Brand Usage Section */}
           <h3 className={styles.highlightHeader}>
-            Use of Official Smarter.Poker Logos and Brand Elements
+            Use of Official Club Arena Logos and Brand Elements
           </h3>
           <p className={styles.highlight}>
-            1. You may not use any official Smarter.Poker logos and/or brand elements on your
+            1. You may not use any official Club Arena logos and/or brand elements on your
             Fanpage/Club Fanpage/Agency Page/Club on promotional materials in a way that implies
-            that Smarter.Poker is endorsing your promotional activities or is directly involved in
-            the Fanpage/Club Fanpage/Agency Page/Club that you promote.
+            that Club Arena is endorsing your promotional activities or is directly involved in the
+            Fanpage/Club Fanpage/Agency Page/Club that you promote.
           </p>
           <p>
             2. In promoting your own Fanpage/Club Page please make sure that your advertising
             material and other content is focused on your own brand materials such as your Club
-            logo, Fanpage logo, etc. You are specifically prohibited from using Smarter.Poker
-            elements without Smarter.Poker's permission.
+            logo, Fanpage logo, etc. You are specifically prohibited from using Club Arena elements
+            without Club Arena's permission.
           </p>
           <p>
-            3. It is permissible to add the Smarter.Poker logo and download link to the footer of a
+            3. It is permissible to add the Club Arena logo and download link to the footer of a
             page, but only if you include the following disclaimers:
           </p>
           <p className={styles.disclaimer}>
             <strong>
-              Smarter.Poker is an online social gaming platform and does not provide any real-money
+              Club Arena is an online social gaming platform and does not provide any real-money
               service.
             </strong>
           </p>
           <p className={styles.disclaimer}>
             <strong>
-              Smarter.Poker is not a sponsor of or in any way involved with this promotional
-              activity, nor does Smarter.Poker endorse it.
+              Club Arena is not a sponsor of or in any way involved with this promotional activity,
+              nor does Club Arena endorse it.
             </strong>
           </p>
           <p className={styles.highlight}>
-            4. It is specifically forbidden to promote, directly or indirectly, in any manner,
-            Smarter.Poker as a real money application. Smarter.Poker reserves the right to suspend
-            or terminate your account at our sole discretion if we believe you are in violation of
-            this prohibition.
+            4. It is specifically forbidden to promote, directly or indirectly, in any manner, Club
+            Arena as a real money application. Club Arena reserves the right to suspend or terminate
+            your account at our sole discretion if we believe you are in violation of this
+            prohibition.
           </p>
           <p>
-            5. Club Owners, Managers and Agents must clarify when promoting their Club that
-            Smarter.Poker does not in any way involve itself with the operation of the Club/Union.
+            5. Club Owners, Managers and Agents must clarify when promoting their Club that Club
+            Arena does not in any way involve itself with the operation of the Club/Union.
           </p>
 
           {/* Fair Usage */}
-          <h3>Fair Usage of Smarter.Poker Brand Elements</h3>
+          <h3>Fair Usage of Club Arena Brand Elements</h3>
           <p>
-            1. Subject to the Club Promotion Rules, fair use allows you to use some Smarter.Poker
-            brand elements on your Page.{' '}
+            1. Subject to the Club Promotion Rules, fair use allows you to use some Club Arena brand
+            elements on your Page.{' '}
             <strong>
               Examples of uses that likely fall under fair use, provided the uses comply with these
               Club Promotion Rules:
@@ -242,10 +242,10 @@ export default function ClubPromotionRulesModal({
           </p>
           <ul>
             <li>
-              A. Your Fanpage/Club Fanpage/Agency Page/Club discusses Smarter.Poker's new features
-              or discusses Club activities that use Smarter.Poker to organize friendly games. Such
-              pages must include proper disclaimers (see above, Use of Official Smarter.Poker Logos
-              and Brand Elements, section 3).
+              A. Your Fanpage/Club Fanpage/Agency Page/Club discusses Club Arena's new features or
+              discusses Club activities that use Club Arena to organize friendly games. Such pages
+              must include proper disclaimers (see above, Use of Official Club Arena Logos and Brand
+              Elements, section 3).
             </li>
             <li>B. You are sharing screenshots of your own gameplay with your friends.</li>
           </ul>
@@ -254,10 +254,10 @@ export default function ClubPromotionRulesModal({
           </p>
           <ul>
             <li>
-              A. Use that is misleading to visitors as to your affiliation with Smarter.Poker,
-              Smarter Poker LLC or any other brands provided by our Company
+              A. Use that is misleading to visitors as to your affiliation with Club Arena, Smarter
+              Poker LLC or any other brands provided by our Company
             </li>
-            <li>B. Using Smarter.Poker brand elements to promote your Club/Agency</li>
+            <li>B. Using Club Arena brand elements to promote your Club/Agency</li>
             <li>C. Use that encourages violating our Terms of Service or these Rules</li>
           </ul>
           <p>
@@ -277,27 +277,27 @@ export default function ClubPromotionRulesModal({
           </p>
           <p>
             <strong>2. Domain Names:</strong> Do not use domain names that closely imitate official
-            Smarter.Poker domains. Make it clear and easily recognizable that your business is in no
-            way affiliated with Smarter.Poker.
+            Club Arena domains. Make it clear and easily recognizable that your business is in no
+            way affiliated with Club Arena.
           </p>
 
           {/* Legal Notice */}
           <h3 className={styles.highlightHeader}>Legal Notice and Disclaimer</h3>
           <p>
-            1. As stated in <strong>Use of Official Smarter.Poker Logos and Brand Elements</strong>,
+            1. As stated in <strong>Use of Official Club Arena Logos and Brand Elements</strong>,
             section 3, you must incorporate the following disclaimers in all of your Fanpage's/Club
             Fanpage's/Agency Page's/Club's publicity materials:
           </p>
           <p className={styles.disclaimer}>
             <strong>
-              Smarter.Poker is an online social gaming platform and does not provide any real money
+              Club Arena is an online social gaming platform and does not provide any real money
               service.
             </strong>
           </p>
           <p className={styles.disclaimer}>
             <strong>
-              Smarter.Poker is not a sponsor of or in any way involved with this promotional
-              activity, nor does Smarter.Poker endorse it.
+              Club Arena is not a sponsor of or in any way involved with this promotional activity,
+              nor does Club Arena endorse it.
             </strong>
           </p>
           <p>
@@ -307,7 +307,7 @@ export default function ClubPromotionRulesModal({
           </p>
           <p>
             3. If we become aware that any website, social media page, "app" or other media or
-            online site is breaching the terms of the Smarter.Poker Club Promotion Rules, we reserve
+            online site is breaching the terms of the Club Arena Club Promotion Rules, we reserve
             the right to take action to the fullest extent possible. Believing that these Club
             Promotion Rules are being violated, we may take any and all actions possible in our sole
             discretion, including, but not limited to, suspending and removing the responsible

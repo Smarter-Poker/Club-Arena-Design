@@ -65,7 +65,7 @@ export default function AppLayout() {
       {/* Footer - Hide when in iframe */}
       {!isInIframe && (
         <footer className={styles.footer}>
-          <p>Club Engine 2026 - Smarter.Poker</p>
+          <p>Club Engine 2026 - Club Arena</p>
         </footer>
       )}
     </div>

@@ -1,10 +1,10 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- *  HORSE BRAIN ADAPTER — Bridge between HeadlessTableEngine and Horse AI Brain
+ *  HORSE BRAIN ADAPTER — Bridge between HeadlessTableEngine and Horse Brain
  * ═══════════════════════════════════════════════════════════════════════════════
  *
  * This adapter provides a unified interface for horse decisions:
- * - Tries HorsePokerBrain (the full 8148-line AI brain) first
+ * - Tries HorsePokerBrain (the full 8148-line brain) first
  * - Falls back to HorseLogic (the simpler built-in brain) if Brain isn't loaded
  * - Handles format translation between engine state ↔ brain state
  * - Manages brain lifecycle (loading, warming caches, feeding results)

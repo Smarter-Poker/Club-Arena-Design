@@ -7,7 +7,7 @@
  * - Loads table config, seated players, and horses
  * - Manages HandController lifecycle
  * - Wires persistence service for each hand
- * - Executes horse AI decisions with proper think-time delays
+ * - Executes horse decisions with proper think-time delays
  * - Auto-rebuys busted horses
  * - Tracks hand count for monitoring
  *
@@ -95,7 +95,7 @@ export class HeadlessTableEngine {
   // Initial stacks captured BEFORE hand starts — used for accurate chip delta calculation
   private currentHandInitialStacks: Map<string, number> = new Map();
   // Showdown results captured for BBJ trigger checking
-   
+
   private currentHandShowdownResults: any[] = [];
   // Stack sync promise — awaited before loading seats for next hand
   private stackSyncPromise: Promise<void> | null = null;
@@ -124,7 +124,7 @@ export class HeadlessTableEngine {
 
     this.running = true;
     try {
-      // Initialize Horse AI Brain (loads HorsePokerBrain.js if available, else uses HorseLogic)
+      // Initialize Horse Brain (loads HorsePokerBrain.js if available, else uses HorseLogic)
       await HorseBrainAdapter.initialize();
 
       // Load table configuration from database
@@ -181,7 +181,7 @@ export class HeadlessTableEngine {
       this.handController = null;
     }
 
-    // Clean up pending horse AI timers (prevents memory leak)
+    // Clean up pending horse timers (prevents memory leak)
     for (const timerId of this.pendingTimerIds) {
       cancelWorkerTimeout(timerId);
     }
@@ -614,7 +614,7 @@ export class HeadlessTableEngine {
           `[HeadlessTableEngine:${this.tableId}] Hand ${handNumber} timed out after 120s`
         );
         this.handInvalidated = true; // Mark hand as invalidated
-        // Clean up pending horse AI timers on timeout
+        // Clean up pending horse timers on timeout
         for (const timerId of this.pendingTimerIds) {
           cancelWorkerTimeout(timerId);
         }
@@ -634,7 +634,7 @@ export class HeadlessTableEngine {
           clearTimeout(handCompleteTimeout);
           this.handInvalidated = true; // Mark hand complete, invalidate pending timers
           this.handController = null;
-          // Clean up pending horse AI timers for this hand
+          // Clean up pending horse timers for this hand
           for (const timerId of this.pendingTimerIds) {
             cancelWorkerTimeout(timerId);
           }
@@ -869,7 +869,6 @@ export class HeadlessTableEngine {
             let unsubAccept: (() => void) | null = null;
             let unsubDecline: (() => void) | null = null;
 
-             
             const onAccept = (eventData: any) => {
               const data = eventData.payload;
               if (data && data.handId === handId) {
@@ -878,7 +877,6 @@ export class HeadlessTableEngine {
               }
             };
 
-             
             const onDecline = (eventData: any) => {
               const data = eventData.payload;
               if (data && data.handId === handId) {
@@ -1097,7 +1095,7 @@ export class HeadlessTableEngine {
           );
         }
 
-        // Feed hand result to Horse AI Brain's 32 anti-exploit modules
+        // Feed hand result to Horse Brain's 32 anti-exploit modules
         // Capture state BEFORE handController is nullified (may already be null after invalidation)
         const brainState = this.handController?.getState() ?? null;
         if (HorseBrainAdapter.isBrainAvailable() && brainState) {
@@ -1207,7 +1205,7 @@ export class HeadlessTableEngine {
       bigBlind: this.tableInfo?.big_blind || 2,
     };
 
-    // ── Get decision from Horse AI Brain (falls back to HorseLogic if brain not loaded) ──
+    // ── Get decision from Horse Brain (falls back to HorseLogic if brain not loaded) ──
     const gameType = this.isTournamentTable() ? 'tournament' : 'cash';
     const handControllerRef = this.handController;
 
@@ -1527,7 +1525,7 @@ export class HeadlessTableEngine {
           })
           .then(() => {}); // Silent — RLS may block anon writes
 
-        // Track rebuy in Horse AI Brain
+        // Track rebuy in Horse Brain
         HorseBrainAdapter.recordRebuy(this.tableId, horse.user_id, rebuyAmount);
       } catch (err: unknown) {
         console.error(

@@ -226,6 +226,8 @@
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   cursor: default;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .wallet-card-premium:hover {
@@ -234,11 +236,16 @@
 
 /* Business Wallet — Royal Gold */
 .wallet-card-premium.business {
-  background: linear-gradient(145deg, #1a1a0f 0%, #0f1510 60%, #141209 100%);
-  border: 1px solid rgba(255, 215, 0, 0.2);
+  background: linear-gradient(
+    145deg,
+    rgba(26, 26, 15, 0.7) 0%,
+    rgba(15, 21, 16, 0.8) 60%,
+    rgba(20, 18, 9, 0.9) 100%
+  );
+  border: 1px solid rgba(255, 215, 0, 0.25);
   box-shadow:
-    0 4px 24px rgba(255, 215, 0, 0.08),
-    inset 0 1px 0 rgba(255, 215, 0, 0.08);
+    0 8px 32px rgba(255, 215, 0, 0.1),
+    inset 0 1px 0 rgba(255, 215, 0, 0.15);
 }
 
 .wallet-card-premium.business::before {
@@ -255,11 +262,16 @@
 
 /* Player Wallet — Emerald Green */
 .wallet-card-premium.player {
-  background: linear-gradient(145deg, #0f1a14 0%, #0b150f 60%, #0d1a10 100%);
-  border: 1px solid rgba(0, 200, 83, 0.2);
+  background: linear-gradient(
+    145deg,
+    rgba(15, 26, 20, 0.7) 0%,
+    rgba(11, 21, 15, 0.8) 60%,
+    rgba(13, 26, 16, 0.9) 100%
+  );
+  border: 1px solid rgba(0, 200, 83, 0.25);
   box-shadow:
-    0 4px 24px rgba(0, 200, 83, 0.08),
-    inset 0 1px 0 rgba(0, 200, 83, 0.08);
+    0 8px 32px rgba(0, 200, 83, 0.1),
+    inset 0 1px 0 rgba(0, 200, 83, 0.15);
 }
 
 .wallet-card-premium.player::before {
@@ -276,11 +288,16 @@
 
 /* Promo Wallet — Electric Blue */
 .wallet-card-premium.promo {
-  background: linear-gradient(145deg, #0f141a 0%, #0b1018 60%, #0d121f 100%);
-  border: 1px solid rgba(66, 133, 244, 0.2);
+  background: linear-gradient(
+    145deg,
+    rgba(15, 20, 26, 0.7) 0%,
+    rgba(11, 16, 24, 0.8) 60%,
+    rgba(13, 18, 31, 0.9) 100%
+  );
+  border: 1px solid rgba(66, 133, 244, 0.25);
   box-shadow:
-    0 4px 24px rgba(66, 133, 244, 0.08),
-    inset 0 1px 0 rgba(66, 133, 244, 0.08);
+    0 8px 32px rgba(66, 133, 244, 0.1),
+    inset 0 1px 0 rgba(66, 133, 244, 0.15);
 }
 
 .wallet-card-premium.promo::before {

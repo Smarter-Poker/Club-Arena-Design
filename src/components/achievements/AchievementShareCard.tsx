@@ -104,7 +104,7 @@ export const AchievementShareCard: React.FC<AchievementShareCardProps> = ({
     // Branding
     ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
     ctx.font = 'bold 11px system-ui, sans-serif';
-    ctx.fillText('♠ Club Arena by Smarter.Poker', 300, 310);
+    ctx.fillText('♠ Club Arena by Club Arena', 300, 310);
 
     return canvas;
   }, [icon, name, description, rarity, unlockedAt, colors]);
