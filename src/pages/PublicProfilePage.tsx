@@ -105,6 +105,11 @@ export default function PublicProfilePage() {
         checkFriendship(user.id, userId).then(setFriendStatus);
       }
     });
+    const unsubFriendSent = masterBus.subscribe('FRIEND_REQUEST_SENT', (event) => {
+      if (event.payload?.toUserId === userId) {
+        setFriendStatus('pending_sent');
+      }
+    });
     const unsubBlock = masterBus.subscribe('USER_BLOCKED', (event) => {
       if (event.payload?.blockedUserId === userId) {
         setIsBlocked(true);
@@ -115,10 +120,18 @@ export default function PublicProfilePage() {
         setIsBlocked(false);
       }
     });
+    // Q3 Phase 10: Refresh player status when profile is updated
+    const unsubProfile = masterBus.subscribe('PROFILE_UPDATED', (event) => {
+      if (event.payload?.userId === userId) {
+        playerStatusService.getPlayerStatus(userId).then(setPlayerStatus);
+      }
+    });
     return () => {
       unsubFriend();
+      unsubFriendSent();
       unsubBlock();
       unsubUnblock();
+      unsubProfile();
     };
   }, [userId, user?.id]);
 

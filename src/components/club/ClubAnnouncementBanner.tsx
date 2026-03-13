@@ -69,6 +69,7 @@ export default function ClubAnnouncementBanner({
         setLoading(true);
         try {
             const now = new Date().toISOString();
+            const resolvedId = await resolveClubUUID(clubId);
             const { data, error } = await supabase
                 .from('club_announcements')
                 .select(`
@@ -81,7 +82,7 @@ export default function ClubAnnouncementBanner({
                     created_by,
                     profiles(display_name)
                 `)
-                .eq('club_id', clubId)
+                .eq('club_id', resolvedId)
                 .eq('is_active', true)
                 .or(`expires_at.is.null,expires_at.gt.${now}`)
                 .order('created_at', { ascending: false })

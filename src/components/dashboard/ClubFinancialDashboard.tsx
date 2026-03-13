@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
 import { useAuthUser } from '../../hooks/useAuthUser';
 import { useToast } from '../common/Toast';
+import { resolveClubUUID } from '../../utils/clubIdResolver';
 import {
   AreaChart,
   Area,
@@ -120,10 +121,11 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
 
   const fetchDiamondBalance = async () => {
     try {
+      const resolvedId = await resolveClubUUID(clubId);
       const { data, error } = await supabase
         .from('club_diamond_wallets')
         .select('balance')
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .maybeSingle();
 
       if (error) {
@@ -142,10 +144,11 @@ export const ClubFinancialDashboard: React.FC<FinancialDashboardProps> = ({ club
       startDate.setDate(startDate.getDate() - 6);
       startDate.setHours(0, 0, 0, 0);
 
+      const resolvedId = await resolveClubUUID(clubId);
       const { data: records, error } = await supabase
         .from('rake_records')
         .select('rake_amount, created_at')
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .gte('created_at', startDate.toISOString())
         .limit(10000);
 

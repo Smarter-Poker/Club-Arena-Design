@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../common/Toast';
+import { resolveClubUUID } from '../../utils/clubIdResolver';
 import './ClubAnnouncementsList.css';
 
 interface ClubAnnouncementsListProps {
@@ -45,10 +46,11 @@ export function ClubAnnouncementsList({ clubId, isAdmin, limit = 10 }: ClubAnnou
   const loadAnnouncements = async () => {
     setLoading(true);
     try {
+      const resolvedId = await resolveClubUUID(clubId);
       const { data, error } = await supabase
         .from('club_announcements')
         .select('*, author:profiles!author_id(username)')
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .order('is_pinned', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(limit);

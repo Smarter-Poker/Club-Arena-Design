@@ -44,6 +44,7 @@ class PlayerStatusServiceClass {
     }
 
     this.currentStatus = this.currentStatus ? { ...this.currentStatus, statusText: text } : null;
+    masterBus.emit('PROFILE_UPDATED', { userId, updates: { status_text: text } as Record<string, unknown> });
   }
 
   /**
@@ -70,6 +71,7 @@ class PlayerStatusServiceClass {
     this.currentStatus = this.currentStatus
       ? { ...this.currentStatus, playingAt: tableName, playingAtTableId: tableId }
       : null;
+    masterBus.emit('PROFILE_UPDATED', { userId, updates: { current_table: tableName, current_table_id: tableId } as Record<string, unknown> });
   }
 
   /**

@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { resolveClubUUID } from '../../utils/clubIdResolver';
 import styles from './ClubStatsCards.module.css';
 
 interface ClubStats {
@@ -43,11 +44,14 @@ export default function ClubStatsCards({ clubId }: ClubStatsCardsProps) {
   const loadStats = async () => {
     setLoading(true);
     try {
+      // Resolve integer clubId to UUID for FK queries
+      const resolvedId = await resolveClubUUID(clubId);
+
       // Get member count (all non-banned members, exclude horses)
       const { count: memberCount } = await supabase
         .from('club_members')
         .select('user_id, profiles!inner(id)', { count: 'exact', head: true })
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .eq('profiles.is_horse', false)
         .not('status', 'in', '("banned","suspended")');
 
@@ -55,7 +59,7 @@ export default function ClubStatsCards({ clubId }: ClubStatsCardsProps) {
       const { count: tableCount } = await supabase
         .from('tables')
         .select('id', { count: 'exact', head: true })
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .in('status', ['running', 'waiting', 'active']);
 
       // Get today's stats
@@ -69,7 +73,7 @@ export default function ClubStatsCards({ clubId }: ClubStatsCardsProps) {
       const { data: todayStats } = await supabase
         .from('club_daily_stats')
         .select('hands_played, rake_collected')
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .gte('date', today.toISOString())
         .maybeSingle();
 
@@ -83,7 +87,7 @@ export default function ClubStatsCards({ clubId }: ClubStatsCardsProps) {
       const { count: onlineCount } = await supabase
         .from('club_members')
         .select('user_id', { count: 'exact', head: true })
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .gte('last_active', fifteenMinAgo);
 
       // Get weekly growth (compare to last week)
@@ -91,7 +95,7 @@ export default function ClubStatsCards({ clubId }: ClubStatsCardsProps) {
       const { count: newMembers } = await supabase
         .from('club_members')
         .select('user_id', { count: 'exact', head: true })
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .gte('created_at', weekAgo.toISOString());
 
       setStats({
