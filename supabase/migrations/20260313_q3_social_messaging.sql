@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS scheduled_messages (
   sender_id UUID NOT NULL REFERENCES auth.users(id),
   content TEXT NOT NULL,
   send_at TIMESTAMPTZ NOT NULL,
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'cancelled')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'cancelled', 'failed')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   sent_at TIMESTAMPTZ DEFAULT NULL
 );
