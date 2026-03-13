@@ -448,18 +448,22 @@ export const HydraService = {
     );
 
     if (rpcErr) {
-      console.error(
-        `[HydraService] atomic_table_buyin FAILED for horse ${horseId}:`,
-        rpcErr.message
-      );
+      console.error(`[HydraService] atomic_table_buyin FAILED for horse ${horseId}:`, rpcErr.message);
       return null;
     }
 
-    console.debug(
-      `[HydraService] atomic_table_buyin SUCCESS for horse ${horseId} at seat ${availableSeat}`
-    );
+    console.debug(`[HydraService] atomic_table_buyin SUCCESS for horse ${horseId} at seat ${availableSeat}`);
 
-    // Transaction logging is handled inside atomic_table_buyin RPC via log_wallet_transaction
+    // Log buy-in transaction via centralized WalletService RPC
+    await WalletService.logTransaction(
+      horseId,
+      'PLAYER',
+      stack,
+      'debit',
+      'buyin',
+      `Horse buy-in ${stack} chips at ${bigBlind}BB table`,
+      tableId
+    );
     masterBus.emit('BALANCE_UPDATED', { source: 'hydra_seat_horse', userId: horseId });
 
     // Try to log in chip_transactions for club accounting (non-blocking)
@@ -468,34 +472,20 @@ export const HydraService = {
       .select('club_id')
       .eq('id', tableId)
       .maybeSingle();
-
+      
     if (tableClubData?.club_id) {
-      // Non-blocking audit trail — log errors but never fail the main operation
-      supabase
-        .from('chip_transactions')
-        .insert({
-          club_id: tableClubData.club_id,
-          to_user_id: horseId,
-          amount: stack,
-          transaction_type: 'buy_in',
-          notes: `Horse buy-in at table ${tableId}`,
-        })
-        .then(({ error: txErr }) => {
-          if (txErr)
-            console.warn(
-              `[HydraService] chip_transactions buy-in log failed for horse ${horseId}:`,
-              txErr.message
-            );
-        });
+      // Fire and forget: logging
+      supabase.from('chip_transactions').insert({
+        club_id: tableClubData.club_id,
+        to_user_id: horseId,
+        amount: stack,
+        transaction_type: 'buy_in',
+        notes: `Horse buy-in at table ${tableId}`,
+      });
     }
 
     // Update horse status to seated
-    const { error: statusErr } = await supabase
-      .from('profiles')
-      .update({ horse_status: 'seated' })
-      .eq('id', horseId);
-    if (statusErr)
-      console.error(`[HydraService] Failed to set horse ${horseId} status to seated:`, statusErr);
+    await supabase.from('profiles').update({ horse_status: 'seated' }).eq('id', horseId);
 
     return {
       id: horseData.id,
@@ -531,12 +521,7 @@ export const HydraService = {
     }
 
     // Mark horse as leaving
-    const { error: statusErr } = await supabase
-      .from('profiles')
-      .update({ horse_status: 'leaving' })
-      .eq('id', horseId);
-    if (statusErr)
-      console.error(`[HydraService] Failed to set horse ${horseId} status to leaving:`, statusErr);
+    await supabase.from('profiles').update({ horse_status: 'leaving' }).eq('id', horseId);
   },
 
   /**
@@ -579,12 +564,21 @@ export const HydraService = {
 
     const returnedChips = rpcAmount || 0;
 
-    // Log cash-out: handled inside atomic_table_cashout RPC via log_wallet_transaction
+    // Log cash-out transaction via centralized WalletService RPC if there were chips returned
     if (returnedChips > 0) {
       console.debug(
         `[HydraService] Credited ${returnedChips} chips to horse ${horseId} Player Wallet`
       );
 
+      await WalletService.logTransaction(
+        horseId,
+        'PLAYER',
+        returnedChips,
+        'credit',
+        'cashout',
+        `Horse cash-out ${returnedChips} chips from table`,
+        tableId
+      );
       masterBus.emit('BALANCE_UPDATED', { source: 'hydra_remove_horse', userId: horseId });
 
       // Try to log in chip_transactions for club accounting
@@ -595,36 +589,19 @@ export const HydraService = {
         .maybeSingle();
 
       if (tableClubData?.club_id) {
-        // Non-blocking audit trail — log errors but never fail the main operation
-        supabase
-          .from('chip_transactions')
-          .insert({
-            club_id: tableClubData.club_id,
-            from_user_id: horseId,
-            amount: returnedChips,
-            transaction_type: 'cashout',
-            notes: `Horse cash-out from table ${tableId}`,
-          })
-          .then(({ error: txErr }) => {
-            if (txErr)
-              console.warn(
-                `[HydraService] chip_transactions cashout log failed for horse ${horseId}:`,
-                txErr.message
-              );
-          });
+        // Fire and forget: logging
+        supabase.from('chip_transactions').insert({
+          club_id: tableClubData.club_id,
+          from_user_id: horseId,
+          amount: returnedChips,
+          transaction_type: 'cashout',
+          notes: `Horse cash-out from table ${tableId}`,
+        });
       }
     }
 
     // 4. Set horse back to available
-    const { error: statusErr } = await supabase
-      .from('profiles')
-      .update({ horse_status: 'available' })
-      .eq('id', horseId);
-    if (statusErr)
-      console.error(
-        `[HydraService] Failed to set horse ${horseId} status to available:`,
-        statusErr
-      );
+    await supabase.from('profiles').update({ horse_status: 'available' }).eq('id', horseId);
 
     return true;
   },

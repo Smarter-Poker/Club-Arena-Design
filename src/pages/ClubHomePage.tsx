@@ -345,6 +345,9 @@ export default function ClubHomePage() {
       if (getIsMounted && !getIsMounted()) return;
       setClub(clubData);
 
+      // Use resolved UUID for all downstream FK queries
+      const resolvedId = clubData.id;
+
       // Check if current user is owner
       const {
         data: { user: authUser },
@@ -354,10 +357,11 @@ export default function ClubHomePage() {
         setIsOwner(clubData.owner_id === authUser.id);
 
         // Load user's wallet and role for this club
+        // resolvedId is the UUID from clubs query — clubId from URL may be integer
         const { data: memberData } = await supabase
           .from('club_members')
           .select('chip_balance, role')
-          .eq('club_id', clubId)
+          .eq('club_id', resolvedId)
           .eq('user_id', authUser.id)
           .maybeSingle();
 
@@ -382,12 +386,12 @@ export default function ClubHomePage() {
 
       // Check if this club is inside a union
       let unionId: string | null = null;
-      let unionClubIds: string[] = [clubId];
+      let unionClubIds: string[] = [resolvedId];
       try {
         const { data: ucRow, error: ucErr } = await supabase
           .from('union_clubs')
           .select('union_id')
-          .eq('club_id', clubId)
+          .eq('club_id', resolvedId)
           .limit(1)
           .maybeSingle();
         if (!ucErr && ucRow) {

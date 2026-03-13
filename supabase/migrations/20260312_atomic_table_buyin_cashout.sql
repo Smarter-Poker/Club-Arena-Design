@@ -21,7 +21,6 @@ CREATE OR REPLACE FUNCTION atomic_table_buyin(
     p_auto_rebuy BOOLEAN DEFAULT FALSE
 ) RETURNS VOID
 LANGUAGE plpgsql SECURITY DEFINER
-SET search_path = public
 AS $$
 BEGIN
     -- A. Deduct from Player Wallet
@@ -41,10 +40,11 @@ BEGIN
     INSERT INTO table_seats (table_id, seat_number, user_id, stack, status, auto_rebuy)
     VALUES (p_table_id, p_seat_number, p_user_id, p_amount, 'active', p_auto_rebuy);
 
-    -- D. Log transaction via canonical log_wallet_transaction function
-    PERFORM log_wallet_transaction(
-        p_user_id, 'PLAYER', -p_amount, 'debit', 'buyin',
-        'Cash game buy-in at table', p_table_id, NULL, NULL
+    -- D. Log transaction
+    INSERT INTO wallet_transactions (
+        user_id, type, amount, category, description, reference_id
+    ) VALUES (
+        p_user_id, 'debit', -p_amount, 'buyin', 'Cash game buy-in at table', p_table_id
     );
 
     -- E. Increment active player count atomically
@@ -65,7 +65,6 @@ CREATE OR REPLACE FUNCTION atomic_table_cashout(
     p_seat_number INT
 ) RETURNS NUMERIC
 LANGUAGE plpgsql SECURITY DEFINER
-SET search_path = public
 AS $$
 DECLARE
     v_stack NUMERIC;
@@ -90,10 +89,11 @@ BEGIN
         ON CONFLICT (user_id, wallet_type) 
         DO UPDATE SET balance = wallets.balance + v_stack, updated_at = NOW();
 
-        -- Log transaction via canonical function
-        PERFORM log_wallet_transaction(
-            p_user_id, 'PLAYER', v_stack, 'credit', 'cashout',
-            'Cash-out from table', p_table_id, NULL, NULL
+        -- Log transaction
+        INSERT INTO wallet_transactions (
+            user_id, type, amount, category, description, reference_id
+        ) VALUES (
+            p_user_id, 'credit', v_stack, 'cashout', 'Cash-out from table', p_table_id
         );
     END IF;
 
@@ -121,7 +121,6 @@ CREATE OR REPLACE FUNCTION atomic_table_rebuy(
     p_amount NUMERIC
 ) RETURNS VOID
 LANGUAGE plpgsql SECURITY DEFINER
-SET search_path = public
 AS $$
 DECLARE
     v_seat_exists BOOLEAN;
@@ -150,10 +149,11 @@ BEGIN
     SET stack = stack + p_amount
     WHERE table_id = p_table_id AND user_id = p_user_id AND left_at IS NULL;
 
-    -- D. Log transaction via canonical function
-    PERFORM log_wallet_transaction(
-        p_user_id, 'PLAYER', -p_amount, 'debit', 'rebuy',
-        'Auto-rebuy topup at table', p_table_id, NULL, NULL
+    -- D. Log transaction
+    INSERT INTO wallet_transactions (
+        user_id, type, amount, category, description, reference_id
+    ) VALUES (
+        p_user_id, 'debit', -p_amount, 'rebuy', 'Auto-rebuy topup at table', p_table_id
     );
 
 END;

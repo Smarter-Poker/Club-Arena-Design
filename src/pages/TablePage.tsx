@@ -112,19 +112,12 @@ import { monteCarloEquity } from '../engine/MonteCarloEquity';
 import './TablePage.css';
 import SessionSummary from '../components/table/SessionSummary';
 import { SessionHUD } from '../components/table/SessionHUD';
-import { sessionStatsService } from '../services/SessionStatsService';
 import { BombPotOverlay } from '../components/table/BombPotOverlay';
 import { ConnectionHUD } from '../components/table/ConnectionHUD';
 import { QuickChatPresets } from '../components/table/QuickChatPresets';
 import { TableErrorBoundary } from '../components/common/TableErrorBoundary';
 import { FinalTableOverlay } from '../components/tournament/FinalTableOverlay';
 import { HeadsUpOverlay } from '../components/tournament/HeadsUpOverlay';
-import { EmotePanel } from '../components/table/EmotePanel';
-import { SessionTrajectoryMini } from '../components/table/SessionTrajectoryMini';
-import { AchievementNotification } from '../components/gamification/AchievementNotification';
-import { StreakBadge } from '../components/table/StreakBadge';
-import { EmoteBroadcast } from '../components/table/EmoteBroadcast';
-import { soundManager } from '../services/SoundManager';
 // Phase 8-9 Premium Components
 import { QuickActionsBar } from '../components/table/QuickActionsBar';
 import { SpectatorOverlay } from '../components/table/SpectatorOverlay';
@@ -364,25 +357,19 @@ export default function TablePage({
 
   useEffect(() => {
     async function initUser() {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (user) {
-          if (isMounted.current) setUserId(user.id);
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('display_name, username')
-            .eq('id', user.id)
-            .maybeSingle();
-          if (isMounted.current)
-            setUsername(profile?.display_name || profile?.username || 'Player');
-        }
-      } catch (err) {
-        console.error('Failed to init user:', err);
-      } finally {
-        if (isMounted.current) setIsLoading(false);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        if (isMounted.current) setUserId(user.id);
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('display_name, username')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (isMounted.current) setUsername(profile?.display_name || profile?.username || 'Player');
       }
+      if (isMounted.current) setIsLoading(false);
     }
     initUser();
 
@@ -448,12 +435,10 @@ export default function TablePage({
   const [showSessionSummary, setShowSessionSummary] = useState(false);
   const sessionStartRef = useRef(Date.now());
   const handsPlayedRef = useRef(0);
-  const handsWonRef = useRef(0);
   const biggestPotRef = useRef(0);
   const peakStackRef = useRef(0);
   const sessionPLRef = useRef(0);
   const totalBuyInRef = useRef(0); // Track total chips invested for accurate session P/L
-  const autoRebuyCountRef = useRef(0); // Cap auto-rebuys per session
   const [waitListPlayers, setWaitListPlayers] = useState<
     Array<{
       playerId: string;
@@ -571,9 +556,8 @@ export default function TablePage({
         // Process insurance payment via WalletService
         const premium = coverageAmount * 0.1; // 10% premium
         await WalletService.processInsurance(userId, tableId, `hand-${Date.now()}`, premium);
-      } catch (error: any) {
+      } catch (error) {
         console.error('Insurance processing failed:', error);
-        toast.error(error.message || 'Failed to process insurance');
       }
     }
     setShowInsurance(false);
@@ -616,12 +600,12 @@ export default function TablePage({
   const handleRITAccept = () => {
     setShowRIT(false);
     // Broadcast RIT acceptance to WebSocket
-    sendAction('rit_accept', { seat: tableState.heroSeat }).catch(console.error);
+    sendAction('rit_accept', { seat: tableState.heroSeat });
   };
 
   const handleRITDecline = () => {
     setShowRIT(false);
-    sendAction('rit_decline', { seat: tableState.heroSeat }).catch(console.error);
+    sendAction('rit_decline', { seat: tableState.heroSeat });
   };
 
   // Animations — extracted to useTableAnimations hook
@@ -642,22 +626,6 @@ export default function TablePage({
 
   // Tip Dealer state
   const [showTipDealer, setShowTipDealer] = useState(false);
-  const [showEmotePanel, setShowEmotePanel] = useState(false);
-  // Enhancement #1: Multi-achievement queue — shows all unlocked achievements sequentially
-  type AchievementDisplay = {
-    id: string;
-    name: string;
-    description: string;
-    icon: string;
-    rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
-    diamondReward?: number;
-  };
-  const achievementQueueRef = useRef<AchievementDisplay[]>([]);
-  const [unlockedAchievement, setUnlockedAchievement] = useState<AchievementDisplay | null>(null);
-
-  // Enhancement #3: Win streak tracking
-  const winStreakRef = useRef(0);
-  const [winStreak, setWinStreak] = useState(0);
 
   // Straddle state
   const [isStraddleEnabled, setIsStraddleEnabled] = useState(false);
@@ -669,9 +637,8 @@ export default function TablePage({
     if (userId && tableId) {
       try {
         await WalletService.processDealerTip(userId, tableId, amount);
-      } catch (error: any) {
+      } catch (error) {
         console.error('Tip processing failed:', error);
-        toast.error(error.message || 'Failed to send tip');
       }
     }
     setShowTipDealer(false);
@@ -698,37 +665,16 @@ export default function TablePage({
     }
   };
 
-  const MAX_AUTO_REBUYS_PER_SESSION = 5;
-
   // Handle cashier add chips (deducts from wallet, adds to table stack)
-  // Supports auto-rebuy with limits and specific error messaging
-  const handleAddChips = async (amount: number, isAutoRebuy = false) => {
+  const handleAddChips = async (amount: number) => {
     if (!userId || userId === 'guest' || !tableId) {
       console.error('Cannot add chips: not authenticated');
       return;
     }
-
-    if (isAutoRebuy) {
-      if (autoRebuyCountRef.current >= MAX_AUTO_REBUYS_PER_SESSION) {
-        toast.error('Session auto-rebuy limit reached (5). Auto-rebuy disabled.');
-        updateSetting('autoRebuy', false);
-        return;
-      }
-    }
-
     try {
       await WalletService.lockForBuyIn(userId, tableId, amount);
       setAccountBalance((prev) => Math.max(0, prev - amount));
       totalBuyInRef.current += amount; // Track for session P/L
-
-      if (isAutoRebuy) {
-        autoRebuyCountRef.current += 1;
-        toast.success(`Auto-rebought ${amount} chips.`);
-      }
-      // Feed SessionStatsService for trajectory graph on rebuy/top-up
-      if (tableId) {
-        sessionStatsService.recordRebuy(tableId, amount);
-      }
       // Update hero's table stack in local state AND sync to DB
       setTableState((prev) => {
         const updatedPlayers = [...prev.players];
@@ -742,9 +688,8 @@ export default function TablePage({
         return { ...prev, players: updatedPlayers };
       });
       // Sync stack to Supabase table_seats (with retry for resilience)
-      // Use tableStateRef.current (not closure-captured tableState) for fresh values
-      const tsCurrent = tableStateRef.current;
-      const currentStack = tsCurrent.players[tsCurrent.heroSeat - 1]?.stack || 0;
+      // Compute the NEW stack directly — tableState hasn't updated yet (setState is async)
+      const currentStack = tableState.players[tableState.heroSeat - 1]?.stack || 0;
       const newStack = currentStack + amount;
       retryAsync(
         async () =>
@@ -752,7 +697,7 @@ export default function TablePage({
             .from('table_seats')
             .update({ stack: newStack })
             .eq('table_id', tableId)
-            .eq('seat_number', tsCurrent.heroSeat)
+            .eq('seat_number', tableState.heroSeat)
             .is('left_at', null),
         2,
         500
@@ -768,16 +713,9 @@ export default function TablePage({
       masterBus.emit('CHIPS_ADDED', { tableId, userId, amount, newStack: newStack });
     } catch (error) {
       console.error('Failed to add chips:', error);
+      // Surface error to user — alert as fallback since toast not always available
       const msg = error instanceof Error ? error.message : 'Failed to add chips';
-
-      if (isAutoRebuy) {
-        // Most likely insufficient funds — disable auto-rebuy to prevent repeated failures
-        toast.error(`Auto-rebuy failed: ${msg}. Auto-rebuy disabled.`);
-        updateSetting('autoRebuy', false);
-      } else {
-        // Surface error to user
-        if (typeof window !== 'undefined') toast.error(msg);
-      }
+      if (typeof window !== 'undefined') toast.error(msg);
     }
   };
 
@@ -803,9 +741,8 @@ export default function TablePage({
         return { ...prev, players: updatedPlayers };
       });
       // Sync stack to Supabase table_seats (with retry for resilience)
-      // Use tableStateRef.current (not closure-captured tableState) for fresh values
-      const tsCurrent = tableStateRef.current;
-      const currentStack = tsCurrent.players[tsCurrent.heroSeat - 1]?.stack || 0;
+      // Compute the NEW stack directly — tableState hasn't updated yet (setState is async)
+      const currentStack = tableState.players[tableState.heroSeat - 1]?.stack || 0;
       const newStack = Math.max(0, currentStack - amount);
       retryAsync(
         async () =>
@@ -813,7 +750,7 @@ export default function TablePage({
             .from('table_seats')
             .update({ stack: newStack })
             .eq('table_id', tableId)
-            .eq('seat_number', tsCurrent.heroSeat)
+            .eq('seat_number', tableState.heroSeat)
             .is('left_at', null),
         2,
         500
@@ -829,8 +766,6 @@ export default function TablePage({
       masterBus.emit('CHIPS_WITHDRAWN', { tableId, userId, amount, newStack: newStack });
     } catch (error) {
       console.error('Failed to withdraw chips:', error);
-      const msg = error instanceof Error ? error.message : 'Failed to withdraw chips';
-      toast.error(msg);
     }
   };
 
@@ -926,19 +861,8 @@ export default function TablePage({
     }>
   >([]);
 
-  // Sound settings state — initialize from persisted settings
-  const [isSoundEnabled, setIsSoundEnabled] = useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem('club-arena-table-settings');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return parsed.isSoundEnabled !== undefined ? parsed.isSoundEnabled : true;
-      }
-    } catch {
-      /* ignore parse errors */
-    }
-    return true;
-  });
+  // Sound settings state
+  const [isSoundEnabled, setIsSoundEnabled] = useState(true);
 
   // Play turn alert when it's hero's turn
   const playTurnAlert = () => {
@@ -970,13 +894,6 @@ export default function TablePage({
   useEffect(() => {
     userSettingsRef.current = userSettings;
   }, [userSettings]);
-
-  // Sync persisted sound settings to SoundService on mount
-  useEffect(() => {
-    soundService.setMasterVolume(userSettings.soundVolume / 100);
-    soundService.setEnabled(userSettings.isSoundEnabled);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only on mount
 
   // Hand history state — load from localStorage for session continuity
   const [handHistory, setHandHistory] = useState<HandRecord[]>(() => {
@@ -1326,20 +1243,9 @@ export default function TablePage({
       )
       .subscribe();
 
-    // Fallback: If page reloads mid-hand and misses the INSERT event,
-    // fetch the most recent hand's cards after a brief hydration delay.
-    // We delay because isHandInProgress is false on initial mount and only
-    // becomes true after the hand_state broadcast is received.
-    const fallbackTimer = setTimeout(async () => {
-      // After hydration, check if a hand is in progress
+    // Fallback: Check active hand if page reloads mid-hand and misses the INSERT event
+    const fetchExistingHand = async () => {
       if (!tableStateRef.current.isHandInProgress) return;
-
-      // Check if hero already has cards (delivered via postgres_changes)
-      const heroHasCards = tableStateRef.current.players.some(
-        (p) => p && p.id === userId && p.holeCards && p.holeCards.length > 0
-      );
-      if (heroHasCards) return;
-
       const { data } = await supabase
         .from('table_hole_cards')
         .select('cards')
@@ -1384,14 +1290,12 @@ export default function TablePage({
           return { ...prev, players: updatedPlayers };
         });
       }
-    }, 1500); // Wait 1.5s for hand_state broadcast to arrive and hydrate isHandInProgress
+    };
+    fetchExistingHand();
 
-    const channelKey = `table-cards-secure-${tableId}-${userId}`;
     return () => {
-      // Component unmount cleanup — remove from registry to prevent stale channel reuse
-      clearTimeout(fallbackTimer);
+      // Component unmount cleanup
       channel.unsubscribe().catch(() => {});
-      masterBus.removeRegisteredChannel(channelKey);
     };
   }, [tableId, userId]);
 
@@ -1408,21 +1312,9 @@ export default function TablePage({
       const currentBet = (handState.current_bet as number) || 0;
       const currentPlayer = handState.current_player as string | null;
       const dealerSeat = (handState.dealer_seat as number) || 0;
-      const handNumber = (handState.hand_number as number) ?? -1;
 
       setTableState((prev) => {
         const updatedPlayers = [...prev.players];
-
-        // Detect new hand: if hand_number changed, clear all stale holeCards/showCards
-        // to prevent previous hand's cards flashing before new cards arrive
-        const isNewHand = handNumber !== (prev as any)._lastHandNumber && handNumber >= 0;
-        if (isNewHand) {
-          for (let i = 0; i < updatedPlayers.length; i++) {
-            if (updatedPlayers[i]) {
-              updatedPlayers[i] = { ...updatedPlayers[i], holeCards: [], showCards: false } as any;
-            }
-          }
-        }
 
         // Merge server player data with existing UI state
         for (const sp of serverPlayers) {
@@ -1438,30 +1330,7 @@ export default function TablePage({
             name: sp.username || existing?.name || `Seat ${sp.seat}`,
             stack: sp.stack,
             bet: sp.bet || 0,
-            // At showdown, server sends all players' cards — use them.
-            // During active play, hero cards come via secure postgres_changes channel;
-            // opponents' cards are null (scrubbed by server).
-            holeCards: (() => {
-              if (stage === 'showdown' && sp.cards && sp.cards.length > 0) {
-                // Showdown: server reveals cards for all players
-                const suitMap: Record<string, 'h' | 'd' | 'c' | 's'> = {
-                  hearts: 'h',
-                  diamonds: 'd',
-                  clubs: 'c',
-                  spades: 's',
-                };
-                return sp.cards.map((c: any) => ({
-                  rank: c.rank,
-                  suit: suitMap[c.suit] || (c.suit as any),
-                }));
-              }
-              if (isHero) {
-                // During active play, hero cards come from secure channel
-                return sp.cards || existing?.holeCards || [];
-              }
-              // During active play, opponents' cards stay hidden
-              return existing?.holeCards || [];
-            })(),
+            holeCards: isHero ? sp.cards || existing?.holeCards || [] : existing?.holeCards || [],
             status: sp.is_folded
               ? 'folded'
               : sp.is_all_in
@@ -1470,22 +1339,7 @@ export default function TablePage({
                   ? 'sitting_out'
                   : 'active',
             isHero,
-            // Show cards for hero always, and for all non-folded players at showdown (if they have cards)
-            // Apply autoMuck preferences for the hero at showdown
-            showCards: (() => {
-              if (isHero) {
-                // At showdown, check autoMuck prefs for hero
-                if (stage === 'showdown' && sp.cards && sp.cards.length > 0) {
-                  // We can't determine winner/loser from broadcast alone,
-                  // so autoMuck for hero losers is handled by the separate SHOWDOWN event.
-                  // Here we just show hero cards by default.
-                  return true;
-                }
-                return true; // Hero always sees their own cards
-              }
-              // Non-hero: show at showdown if they have cards and aren't folded
-              return stage === 'showdown' && sp.cards && sp.cards.length > 0 && !sp.is_folded;
-            })(),
+            showCards: isHero,
           } as any;
         }
 
@@ -1522,8 +1376,7 @@ export default function TablePage({
           currentPlayerSeat,
           dealerSeat,
           isHandInProgress: stage !== 'preflop' || pot > 0,
-          _lastHandNumber: handNumber,
-        } as any;
+        };
       });
     });
 
@@ -1586,8 +1439,7 @@ export default function TablePage({
               .from('tournament_players')
               .select('user_id, current_bounty')
               .eq('tournament_id', table.tournament_id)
-              .gt('current_bounty', 0)
-              .limit(500);
+              .gt('current_bounty', 0);
 
             const bMap: Record<string, number> = {};
             if (bountyData) {
@@ -1897,9 +1749,7 @@ export default function TablePage({
         }
       }
     }
-    loadTableInfo().catch((err) => {
-      console.error('[TablePage] loadTableInfo failed:', err);
-    });
+    loadTableInfo();
   }, [tableId, userId]);
 
   // Join/leave multiplayer room
@@ -2865,16 +2715,6 @@ export default function TablePage({
 
             // ── Session Tracking: update refs for end-of-session summary ──
             handsPlayedRef.current += 1;
-            // Track wins — check if hero is in the winners list
-            if (userId && winnerInfo.playerIds.some((pid) => pid === userId)) {
-              handsWonRef.current += 1;
-              // Trigger confetti on big wins (pot > 10x BB)
-              const bb = parseFloat(tableState.blinds.split('/')[1]) || 2;
-              if ((event.pot || 0) > bb * 10) {
-                setShowConfetti(true);
-                soundManager.playBigWin();
-              }
-            }
             // Use event.pot (authoritative HC value) — currentState.pot is already 0
             // because WINNERS handler sets pot: 0 before HAND_COMPLETE fires
             const handPotForSession = event.pot || 0;
@@ -2884,84 +2724,10 @@ export default function TablePage({
             if (heroEndStack > peakStackRef.current) {
               peakStackRef.current = heroEndStack;
             }
-
-            // Feed SessionStatsService for trajectory graph + VPIP/PFR analytics
-            const heroWon = userId ? winnerInfo.playerIds.some((pid) => pid === userId) : false;
-            // Determine VPIP/PFR from hand actions (hero voluntarily put chips in preflop / raised preflop)
-            // handActionsRef stores { seat, action, amount, street } — match by seat number
-            const heroSeatNum = tableStateRef.current.heroSeat;
-            const heroActions = handActionsRef.current.filter(
-              (a: any) => a.seat === heroSeatNum && a.street === 'preflop'
-            );
-            const heroVPIP = heroActions.some((a: any) =>
-              ['call', 'raise', 'bet'].includes(a.action)
-            );
-            const heroPFR = heroActions.some((a: any) => a.action === 'raise');
-            if (tableId) {
-              sessionStatsService.recordHand(tableId, heroEndStack, heroWon, heroVPIP, heroPFR);
-            }
-
-            // Enhancement #3: Win streak tracking
-            if (heroWon) {
-              winStreakRef.current++;
-              setWinStreak(winStreakRef.current);
-              // Enhancement #7: Sound on streak milestones (3, 5, 7, 10+)
-              if ([3, 5, 7, 10].includes(winStreakRef.current) || winStreakRef.current > 10) {
-                soundManager.playStreak();
-              }
-            } else {
-              winStreakRef.current = 0;
-              setWinStreak(0);
-            }
-
-            // Fire achievement checks (fire-and-forget, non-blocking)
-            if (userId && userId !== 'guest') {
-              achievementTriggerService
-                .onHandComplete(userId, {
-                  won: heroWon,
-                  potSize: event.pot || 0,
-                  showdown: true,
-                })
-                .then((result) => {
-                  if (result.triggeredAchievements.length > 0) {
-                    // Enhancement #1: Queue ALL achievements for sequential display
-                    const newAchievements = result.triggeredAchievements.map((ach) => ({
-                      id: ach.id,
-                      name: ach.name,
-                      description: ach.description || '',
-                      icon: ach.icon || '🏆',
-                      rarity: (ach.rarity as any) || 'common',
-                      diamondReward: ach.chipReward,
-                    }));
-                    achievementQueueRef.current.push(...newAchievements);
-                    // Show first if nothing currently displayed
-                    if (!unlockedAchievement) {
-                      setUnlockedAchievement(achievementQueueRef.current.shift()!);
-                      soundManager.playAchievement();
-                    }
-                    // Broadcast each for other components
-                    for (const ach of result.triggeredAchievements) {
-                      masterBus.emit('ACHIEVEMENT_UNLOCKED', {
-                        userId: userId!,
-                        achievementId: ach.id,
-                        name: ach.name,
-                        icon: ach.icon || '🏆',
-                        rarity: (ach.rarity as any) || 'common',
-                        description: ach.description || '',
-                        diamondReward: ach.chipReward,
-                      });
-                    }
-                  }
-                })
-                .catch((err) => console.warn('[Achievements] Check failed:', err));
-            }
           }
 
           // Delayed cleanup: clear board and cards after 3 seconds, then start next hand
           workerTimeout(() => {
-            // Increment hand number for next hand — prevents _lastHandNumber stale card detection
-            // from seeing the same hand_number and skipping card clears
-            handNumberRef.current += 1;
             // Clear ALL locks to allow next hand
             handInProgressRef.current = false;
             handControllerRef.current = null;
@@ -2998,26 +2764,6 @@ export default function TablePage({
                 players: clearedPlayers,
               };
             });
-            // ─── Hero Auto-Rebuy ─────────────────────────────────────────────
-            // If hero busted and autoRebuy is enabled, automatically add chips
-            {
-              const tsCur = tableStateRef.current;
-              if (userSettingsRef.current.autoRebuy && tsCur.heroSeat > 0) {
-                const heroAfterHand = tsCur.players[tsCur.heroSeat - 1];
-                if (heroAfterHand && heroAfterHand.isHero && heroAfterHand.stack <= 0) {
-                  const bbMatchRebuy = tsCur.blinds.match(/\/(\d+\.?\d*)/);
-                  const bbRebuy = bbMatchRebuy ? parseFloat(bbMatchRebuy[1]) : 0.5;
-                  const heroRebuyAmount = bbRebuy * 100; // 100 BB standard rebuy
-                  // Fire-and-forget: attempt auto-rebuy asynchronously
-                  // handleAddChips checks wallet balance, syncs to Supabase, emits bus
-                  workerTimeout(() => {
-                    handleAddChips(heroRebuyAmount, true).catch((err: unknown) => {
-                      console.warn('[AutoRebuy] Hero auto-rebuy failed:', err);
-                    });
-                  }, 200); // Small delay to let state settle
-                }
-              }
-            }
             // Start next hand IMPERATIVELY (not via useEffect)
             workerTimeout(() => startNextHandRef.current(), 500);
           }, 3000);
@@ -3216,7 +2962,6 @@ export default function TablePage({
     const currentSeatPlayer = state.players?.find((p: any) => p.seat === state.currentPlayerSeat);
     broadcastHandState(tableId, {
       table_id: tableId,
-      hand_number: handNumberRef.current,
       pot: state.pot ?? 0,
       community_cards: state.communityCards ?? [],
       current_bet: state.currentBet ?? 0,
@@ -3229,9 +2974,7 @@ export default function TablePage({
         username: p.username,
         stack: p.stack,
         bet: p.bet ?? 0,
-        // SECURITY: Only reveal cards at showdown for non-folded players.
-        // During active play, cards are delivered via secure postgres_changes channel.
-        cards: state.stage === 'showdown' && !p.is_folded ? (p.cards ?? null) : null,
+        cards: p.cards ?? [],
         is_folded: p.is_folded ?? false,
         is_all_in: p.is_all_in ?? false,
         is_sitting_out: p.is_sitting_out ?? false,
@@ -3380,9 +3123,8 @@ export default function TablePage({
       broadcastLocalHandState();
       // SECONDARY: Fire-and-forget server call
       if (tableId) submitAction(tableId, userId, 'raise', clampedRaise).catch(() => {});
-    } catch (err: any) {
+    } catch (err) {
       console.warn('[TablePage] Raise error:', err);
-      toast.error(err.message || 'Failed to place bet. Please try again.');
     }
   };
 
@@ -3553,9 +3295,8 @@ export default function TablePage({
           joinedAt: new Date(e.joinedAt),
         }))
       );
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to load waitlist:', error);
-      toast.error(error.message || 'Failed to load waitlist');
     }
   }, [tableId]);
 
@@ -3636,9 +3377,7 @@ export default function TablePage({
                 'fold'
               );
               if (foldResult !== false) {
-                sendAction('fold', { seat: tableState.heroSeat, autoFold: true }).catch(
-                  console.error
-                );
+                sendAction('fold', { seat: tableState.heroSeat, autoFold: true });
                 soundService.playFold();
               } else {
                 console.warn(
@@ -3877,11 +3616,7 @@ export default function TablePage({
                 {/* Session Timer */}
                 <SessionTimer
                   breakInterval={60}
-                  onBreakSuggested={() =>
-                    toast.info(
-                      "🧘 Time for a break! You've been playing for a while. Stretch, hydrate, and come back fresh."
-                    )
-                  }
+                  onBreakSuggested={() => console.debug('Break suggested')}
                 />
 
                 {/* Session Stats HUD (cash games) */}
@@ -3895,19 +3630,6 @@ export default function TablePage({
                     />
                   </TableErrorBoundary>
                 )}
-
-                {/* Session Trajectory Sparkline (cash games) */}
-                {!tableState.isTournament && tableId && userId !== 'guest' && (
-                  <TableErrorBoundary componentName="SessionTrajectoryMini">
-                    <SessionTrajectoryMini
-                      tableId={tableId}
-                      bigBlind={Number(tableState.blinds.split('/')[1]) || 2}
-                    />
-                  </TableErrorBoundary>
-                )}
-
-                {/* Enhancement #3: Win Streak Badge */}
-                {winStreak >= 2 && <StreakBadge streak={winStreak} />}
 
                 {/* Connection Quality HUD */}
                 {tableId && userId !== 'guest' && (
@@ -3960,7 +3682,6 @@ export default function TablePage({
                   hudStats={player && !player.isHero ? getPlayerHUDStats(player.id) : null}
                   showHUD={userSettings.showHUD && !!player && !player.isHero}
                   deckStyle={userSettings.fourColorDeck ? '4color' : '2color'}
-                  cardBack={userSettings.cardBack || 'black'}
                   showStackInBB={userSettings.showStackInBB}
                   playerStyle={
                     userSettings.showHUD && player && !player.isHero
@@ -4055,41 +3776,14 @@ export default function TablePage({
               isChatVisible={!isChatCollapsed}
               isHandStrengthVisible={userSettings.showHUD}
               isStatsVisible={userSettings.showHUD}
-              isAutoRebuyEnabled={userSettings.autoRebuy}
+              isAutoRebuyEnabled={false}
               onToggleSound={() => setIsSoundEnabled((prev) => !prev)}
               onToggleChat={() => setIsChatCollapsed((prev) => !prev)}
               onToggleHandStrength={() => updateSetting('showHUD', !userSettings.showHUD)}
               onToggleStats={() => updateSetting('showHUD', !userSettings.showHUD)}
-              onToggleAutoRebuy={() => updateSetting('autoRebuy', !userSettings.autoRebuy)}
+              onToggleAutoRebuy={() => {}}
               onOpenSettings={() => setShowSettings(true)}
             />
-
-            {/* Emote button */}
-            <button
-              className="emote-trigger-btn"
-              onClick={() => setShowEmotePanel(true)}
-              title="Send reaction"
-              style={{
-                position: 'absolute',
-                bottom: 90,
-                right: 12,
-                width: 40,
-                height: 40,
-                borderRadius: '50%',
-                background: 'rgba(255,255,255,0.1)',
-                border: '1px solid rgba(255,255,255,0.2)',
-                color: '#fff',
-                fontSize: 20,
-                cursor: 'pointer',
-                zIndex: 20,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backdropFilter: 'blur(8px)',
-              }}
-            >
-              😀
-            </button>
 
             {tableState.currentPlayerSeat === tableState.heroSeat && tableState.isHandInProgress
               ? (() => {
@@ -4119,7 +3813,6 @@ export default function TablePage({
                         isMyTurn={true}
                         showPotOdds={userSettings.showPotOdds}
                         confirmAllIn={userSettings.confirmAllIn}
-                        showBetSizePresets={userSettings.showBetSizePresets}
                       />
                     </>
                   );
@@ -4371,11 +4064,9 @@ export default function TablePage({
         onClose={() => setShowSitOut(false)}
         onReturn={() => setShowSitOut(false)}
         onLeaveTable={() => navigate('/')}
-        onAutoPostChange={(enabled) => updateSetting('autoPostBlinds', enabled)}
         timeRemaining={sitOutTimeRemaining}
         maxSitOutTime={300}
         tableName={tableState.tableName}
-        autoPostBlinds={userSettings.autoPostBlinds}
       />
 
       {/* Wait List Modal */}
@@ -4472,41 +4163,8 @@ export default function TablePage({
         onEventComplete={handleThrowComplete}
       />
 
-      {/* Win Confetti — fires on big wins (pot > 10x BB) */}
-      <ConfettiCanvas
-        active={showConfetti}
-        duration={3500}
-        count={55}
-        onComplete={() => setShowConfetti(false)}
-      />
-
-      {/* Emote Panel — table reactions */}
-      <EmotePanel
-        isOpen={showEmotePanel}
-        onClose={() => setShowEmotePanel(false)}
-        onEmote={(emoteId) => {
-          masterBus.emit('TABLE_EMOTE', { tableId: tableId ?? '', userId: userId ?? '', emoteId });
-          soundManager.playEmote();
-          setShowEmotePanel(false);
-        }}
-      />
-
-      {/* Enhancement #2: Cross-player emote broadcast */}
-      {tableId && (
-        <TableErrorBoundary componentName="EmoteBroadcast">
-          <EmoteBroadcast tableId={tableId} />
-        </TableErrorBoundary>
-      )}
-
-      {/* Achievement Unlock Notification */}
-      <AchievementNotification
-        achievement={unlockedAchievement}
-        onDismiss={() => {
-          // Enhancement #1: Cycle to next queued achievement, or clear
-          const next = achievementQueueRef.current.shift();
-          setUnlockedAchievement(next || null);
-        }}
-      />
+      {/* Win Confetti — disabled (cheesy and annoying on repeated wins) */}
+      {/* <ConfettiCanvas active={showConfetti} duration={3500} count={55} onComplete={() => setShowConfetti(false)} /> */}
 
       {/* Tip Dealer Modal */}
       <TipDealer
@@ -4650,13 +4308,13 @@ export default function TablePage({
                   amount
                 );
               }
-            } else if (userId && userId !== 'guest' && tableId && selectedSeat) {
+              } else if (userId && userId !== 'guest' && tableId && selectedSeat) {
               try {
                 console.debug('[BuyIn] Calling atomic_table_buyin:', {
                   userId,
                   tableId,
                   amount,
-                  selectedSeat,
+                  selectedSeat
                 });
 
                 // Execute FULLY ATOMIC buy-in and seat insertion
@@ -4667,11 +4325,11 @@ export default function TablePage({
                       p_table_id: tableId,
                       p_seat_number: selectedSeat,
                       p_amount: amount,
-                      p_auto_rebuy: autoRebuy || false,
+                      p_auto_rebuy: autoRebuy || false
                     }),
                   3
                 );
-
+                
                 if (rpcErr) {
                   console.error('[BuyIn] atomic_table_buyin FAILED:', rpcErr);
                   throw new Error('Failed to buy-in: ' + rpcErr.message);
@@ -4698,12 +4356,12 @@ export default function TablePage({
                 HydraService.onRealPlayerJoined(tableId, userId);
 
                 // Broadcast seat update to other clients
-                sendAction('player_seated', {
+                await sendAction('player_seated', {
                   seat: selectedSeat,
                   userId,
                   stack: amount,
                   autoRebuy,
-                }).catch(console.error);
+                });
 
                 // Update RoomService presence state so the user is globally seen as seated
                 roomService.joinRoom(tableId, userId, username || 'Player', selectedSeat, amount);
@@ -4820,7 +4478,7 @@ export default function TablePage({
           autoMuckWinners: userSettings.autoMuckWinners,
           autoPostBlinds: userSettings.autoPostBlinds,
           soundEnabled: isSoundEnabled,
-          soundVolume: userSettings.soundVolume,
+          soundVolume: 70,
           showHandStrength: userSettings.showHUD,
           showPotOdds: userSettings.showPotOdds,
           animationSpeed:
@@ -4831,7 +4489,7 @@ export default function TablePage({
                 : 'normal',
           fourColorDeck: userSettings.fourColorDeck,
           showStackInBB: userSettings.showStackInBB,
-          showBetSizePresets: userSettings.showBetSizePresets,
+          showBetSizePresets: true,
           confirmAllIn: userSettings.confirmAllIn,
           sitOutNextHand: sitOutNextHand,
         }}
@@ -4872,13 +4530,6 @@ export default function TablePage({
           }
           if (settingsUpdate.autoPostBlinds !== undefined) {
             updateSetting('autoPostBlinds', settingsUpdate.autoPostBlinds);
-          }
-          if (settingsUpdate.soundVolume !== undefined) {
-            updateSetting('soundVolume', settingsUpdate.soundVolume);
-            soundService.setMasterVolume(settingsUpdate.soundVolume / 100);
-          }
-          if (settingsUpdate.showBetSizePresets !== undefined) {
-            updateSetting('showBetSizePresets', settingsUpdate.showBetSizePresets);
           }
         }}
       />
@@ -4997,27 +4648,17 @@ export default function TablePage({
         <SessionSummary
           duration={Math.floor((Date.now() - sessionStartRef.current) / 1000)}
           handsPlayed={handsPlayedRef.current}
-          handsWon={handsWonRef.current}
-          totalRebuys={autoRebuyCountRef.current}
           profitLoss={sessionPLRef.current}
           biggestPot={biggestPotRef.current}
           peakStack={peakStackRef.current}
           onClose={() => {
             // #6: Reset all session tracking refs to prevent stale data on re-seat
             handsPlayedRef.current = 0;
-            handsWonRef.current = 0;
             biggestPotRef.current = 0;
             peakStackRef.current = 0;
             sessionPLRef.current = 0;
-            totalBuyInRef.current = 0;
-            autoRebuyCountRef.current = 0;
             sessionStartRef.current = Date.now();
             setShowSessionSummary(false);
-
-            // End SessionStatsService session — persists to Supabase session_history
-            if (tableId) {
-              sessionStatsService.endSession(tableId);
-            }
 
             // Notify system
             masterBus.emit('SESSION_SUMMARY_DISMISSED', { tableId: tableId ?? '' });

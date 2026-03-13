@@ -296,48 +296,6 @@ function ordinal(n: number): string {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class TournamentService {
-  /**
-   * Determine table capacity for a tournament based on its type/variant.
-   * Mirrors TournamentEngine.getTableCapacity() to keep both code paths in sync.
-   */
-  private static getTableCapacityForTournament(tournament: {
-    tournament_type?: string | null;
-    variant?: string | null;
-    max_players?: number | null;
-  }): number {
-    const type = (tournament.tournament_type || '').toUpperCase();
-    const variant = (tournament.variant || '').toLowerCase();
-    const mp = tournament.max_players;
-
-    // Explicit 2-max / Heads Up (variant='hu' OR max_players=2)
-    if (variant === 'hu' || mp === 2) return 2;
-    // Explicit 3-max / Spin & Go
-    if (type === 'SPIN' || variant === 'spin') return 3;
-    // SNG: use max_players directly as table capacity (2, 3, 6, or 9)
-    if (type === 'SNG' && mp && mp >= 2 && mp <= 9) return mp;
-
-    // Standard 9-max
-    return 9;
-  }
-
-  /**
-   * Map tournament game_type (NLH, PLO4, etc.) to the DB game_variant column value.
-   * Mirrors TournamentEngine.mapGameVariant() to keep both code paths in sync.
-   */
-  private static mapGameVariant(gameType?: string | null): string {
-    const map: Record<string, string> = {
-      NLH: 'nlh',
-      PLO: 'plo4',
-      PLO4: 'plo4',
-      PLO5: 'plo5',
-      PLO6: 'plo6',
-      PLO8: 'plo8',
-      OFC_PINEAPPLE: 'ofc_pineapple',
-      SHORT_DECK: 'short_deck',
-    };
-    return map[gameType?.toUpperCase() || ''] || 'nlh';
-  }
-
   // ─────────────────────────────────────────────────────────────────────────────
   // Tournament CRUD
   // ─────────────────────────────────────────────────────────────────────────────
@@ -351,8 +309,7 @@ class TournamentService {
       .from('tournaments')
       .select('*')
       .eq('club_id', clubId)
-      .order('created_at', { ascending: false })
-      .limit(200);
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('[TournamentService] Error fetching tournaments:', error);
@@ -376,8 +333,7 @@ class TournamentService {
           .eq('union_id', unionClub.union_id)
           .eq('is_xmtt', true)
           .neq('club_id', clubId) // Avoid duplicates (host club already included above)
-          .order('created_at', { ascending: false })
-          .limit(200);
+          .order('created_at', { ascending: false });
 
         xmttTournaments = xmttData || [];
       }
@@ -739,35 +695,43 @@ class TournamentService {
       }
     }
 
-    // Authoritative recount: prevents race if two registrations happen simultaneously
-    const { count: regCount, error: regCountErr } = await supabase
-      .from('tournament_players')
-      .select('*', { count: 'exact', head: true })
-      .eq('tournament_id', tournamentId)
-      .in('status', ['registered', 'playing']);
+    // Re-read fresh tournament data to avoid stale read-then-write race condition
+    const { data: freshTournament } = await supabase
+      .from('tournaments')
+      .select('current_players, guaranteed_prize')
+      .eq('id', tournamentId)
+      .maybeSingle();
+    // Use fresh DB count (not stale registrations.length) for accurate player tracking
+    const freshPlayerCount =
+      (freshTournament?.current_players ?? tournament.current_players ?? 0) + 1;
+    const entriesPrize = buyIn * freshPlayerCount;
+    const freshGuarantee = freshTournament?.guaranteed_prize ?? tournament.guaranteed_prize;
+    const newPrizePool = freshGuarantee ? Math.max(entriesPrize, freshGuarantee) : entriesPrize;
+    const { error: countError } = await supabase
+      .from('tournaments')
+      .update({
+        current_players: freshPlayerCount,
+        prize_pool: newPrizePool,
+      })
+      .eq('id', tournamentId);
 
-    if (regCountErr) {
-      console.error('[TournamentService] Registration recount failed:', regCountErr);
-    } else {
-      const freshPlayerCount = regCount ?? 0;
-      const entriesPrize = buyIn * freshPlayerCount;
-      const freshGuarantee = tournament.guaranteed_prize;
-      const newPrizePool = freshGuarantee ? Math.max(entriesPrize, freshGuarantee) : entriesPrize;
-      const { error: countError } = await supabase
+    if (countError) {
+      console.error(
+        '[TournamentService] Failed to increment registration count, retrying:',
+        countError
+      );
+      // Retry once — this is important for accurate player count
+      const { error: retryErr } = await supabase
         .from('tournaments')
         .update({
           current_players: freshPlayerCount,
           prize_pool: newPrizePool,
         })
         .eq('id', tournamentId);
-
-      if (countError) {
-        console.error('[TournamentService] Failed to update registration count:', countError);
+      if (retryErr) {
+        console.error('[TournamentService] WARN: Registration count retry also failed:', retryErr);
       }
     }
-
-    // Compute fresh count for SNG auto-start check below
-    const freshPlayerCount = regCount ?? (tournament.current_players ?? 0) + 1;
 
     // ── SNG AUTO-START: if tournament is full, trigger immediate start ──
     if (
@@ -803,7 +767,7 @@ class TournamentService {
           .from('tables')
           .select('id, max_players, current_players')
           .eq('tournament_id', tournamentId)
-          .in('status', ['active', 'RUNNING']);
+          .in('status', ['active', 'running']);
 
         const openTable = (tables || []).find((t) => t.current_players < t.max_players);
         if (openTable) {
@@ -865,27 +829,16 @@ class TournamentService {
               );
             }
 
-            // Update table player count via authoritative recount (prevents race condition
-            // if two late registrations happen simultaneously reading the same stale count)
-            const { count: lateRegCount, error: countErr } = await supabase
-              .from('table_seats')
-              .select('*', { count: 'exact', head: true })
-              .eq('table_id', openTable.id)
-              .is('left_at', null);
+            // Increment table player count
+            const { error: tableErr } = await supabase
+              .from('tables')
+              .update({
+                current_players: openTable.current_players + 1,
+              })
+              .eq('id', openTable.id);
 
-            if (countErr) {
-              console.error(`[TournamentService] Late reg recount failed: ${countErr.message}`);
-            } else {
-              const { error: tableErr } = await supabase
-                .from('tables')
-                .update({ current_players: lateRegCount ?? 0 })
-                .eq('id', openTable.id);
-
-              if (tableErr)
-                console.error(
-                  `[TournamentService] Late reg table count update failed: ${tableErr.message}`
-                );
-            }
+            if (tableErr)
+              console.error(`[TournamentService] Late reg table count failed: ${tableErr.message}`);
           }
         } else {
           console.warn(
@@ -940,59 +893,93 @@ class TournamentService {
       throw new Error('Cannot unregister: You have already been seated at an active table.');
     }
 
+    // Delete registration FIRST as an atomic Compare-And-Swap to prevent double-refund
+    // or race conditions with TournamentEngine.seatAlternates()
+    const { data: deletedRows, error: deleteError } = await supabase
+      .from('tournament_players')
+      .delete()
+      .eq('tournament_id', tournamentId)
+      .eq('user_id', userId)
+      .eq('status', 'registered') // Lock constraint
+      .select('id');
+
+    if (deleteError) {
+      console.error('[TournamentService] Failed to delete registration:', deleteError);
+      throw new Error('Failed to unregister — please try again');
+    }
+
+    if (!deletedRows || deletedRows.length === 0) {
+      // The row is either gone or has changed status (e.g. to 'playing')
+      throw new Error('Unregister failed: You may have just been seated at a table.');
+    }
+
+    // Calculate refund amount (buy-in + fee — exact penny values from DB, NO rounding)
     const buyInAmount = tournament.buy_in_amount || 0;
     const refundAmount = buyInAmount + (tournament.buy_in_fee || 0);
 
-    // Call atomic RPC to safely unregister AND refund in one step
-    const { data: unregistered, error: unregError } = await retryAsync(
+    // Refund to Player Wallet — only AFTER successful deletion
+    const { error: refundError } = await retryAsync(
       () =>
-        supabase.rpc('atomic_tournament_unregister', {
-          p_tournament_id: tournamentId,
+        supabase.rpc('credit_player_wallet', {
           p_user_id: userId,
-          p_refund_amount: refundAmount,
+          p_amount: refundAmount,
         }),
       3
     );
 
-    if (unregError || !unregistered) {
-      console.error(
-        '[TournamentService] Atomic unregister failed:',
-        unregError?.message || 'Player already playing'
-      );
-      throw new Error(
-        unregError?.message || 'Unregister failed: You may have just been seated at a table.'
-      );
+    if (refundError) {
+      console.error('[TournamentService] Refund to Player Wallet failed:', refundError);
+      // Re-register the player since refund failed (rollback)
+      const { error: rollbackErr } = await supabase.from('tournament_players').insert({
+        tournament_id: tournamentId,
+        user_id: userId,
+        username: existingReg?.username || 'Unknown',
+        status: 'registered',
+        chips: 0,
+      });
+      if (rollbackErr) {
+        console.error('[TournamentService] CRITICAL: Rollback re-insert ALSO failed:', rollbackErr);
+      }
+      throw new Error('Refund failed — registration restored');
     }
 
+    // Log refund transaction
+    await WalletService.logTransaction(
+      userId,
+      'PLAYER',
+      refundAmount,
+      'credit',
+      'refund',
+      `Tournament unregister refund: ${tournament.name}`,
+      undefined,
+      undefined,
+      tournamentId
+    );
     masterBus.emit('BALANCE_UPDATED', { source: 'tournament_unregister_refund', userId });
 
-    // Authoritative recount: prevents race if two unregistrations happen simultaneously
-    const { count: activeCount, error: countErr } = await supabase
-      .from('tournament_players')
-      .select('*', { count: 'exact', head: true })
-      .eq('tournament_id', tournamentId)
-      .in('status', ['registered', 'playing']);
+    // Re-read fresh tournament data to avoid stale read-then-write race condition
+    const { data: freshTourney } = await supabase
+      .from('tournaments')
+      .select('current_players, guaranteed_prize')
+      .eq('id', tournamentId)
+      .maybeSingle();
+    const newPlayerCount = Math.max(
+      0,
+      (freshTourney?.current_players ?? tournament.current_players) - 1
+    );
+    const entriesPrize2 = (tournament.buy_in_amount || 0) * newPlayerCount;
+    const freshGuarantee2 = freshTourney?.guaranteed_prize ?? tournament.guaranteed_prize;
+    const newPrizePool = freshGuarantee2 ? Math.max(entriesPrize2, freshGuarantee2) : entriesPrize2;
+    const { error: countError } = await supabase
+      .from('tournaments')
+      .update({
+        current_players: newPlayerCount,
+        prize_pool: newPrizePool,
+      })
+      .eq('id', tournamentId);
 
-    if (countErr) {
-      console.error('[TournamentService] Unregister recount failed:', countErr);
-    } else {
-      const newPlayerCount = activeCount ?? 0;
-      const entriesPrize2 = (tournament.buy_in_amount || 0) * newPlayerCount;
-      const freshGuarantee2 = tournament.guaranteed_prize;
-      const newPrizePool = freshGuarantee2
-        ? Math.max(entriesPrize2, freshGuarantee2)
-        : entriesPrize2;
-      const { error: countError } = await supabase
-        .from('tournaments')
-        .update({
-          current_players: newPlayerCount,
-          prize_pool: newPrizePool,
-        })
-        .eq('id', tournamentId);
-
-      if (countError) {
-        console.error('[TournamentService] Failed to update registration count:', countError);
-      }
+    if (countError) {
+      console.error('[TournamentService] Failed to decrement registration count:', countError);
     }
   }
 
@@ -1021,13 +1008,6 @@ class TournamentService {
       throw new Error('Cannot cancel — tournament has 3 or more players registered');
     }
 
-    // Fetch the players BEFORE cancellation so we can emit balance updates
-    // (the RPC will delete these rows)
-    const { data: players } = await supabase
-      .from('tournament_players')
-      .select('user_id')
-      .eq('tournament_id', tournamentId);
-
     // Execute atomic cancellation and refund (prevents partial refunds on server crash)
     const { data: cancelResult, error: cancelError } = await retryAsync(
       () =>
@@ -1047,7 +1027,12 @@ class TournamentService {
     const refunded = cancelResult?.total_refunded || 0;
     const playersRefunded = cancelResult?.refunded_count || 0;
 
-    // Emit balance updates to the players we fetched earlier
+    // Fetch the players to emit balance updates (RPC already refunded DB)
+    const { data: players } = await supabase
+      .from('tournament_players')
+      .select('user_id')
+      .eq('tournament_id', tournamentId);
+
     if (players && players.length > 0) {
       players.forEach((p) => {
         masterBus.emit('BALANCE_UPDATED', {
@@ -1056,6 +1041,14 @@ class TournamentService {
         });
       });
     }
+    await supabase
+      .from('tournaments')
+      .update({
+        status: 'CANCELLED',
+        cancelled_at: new Date().toISOString(),
+        prize_pool: 0,
+      })
+      .eq('id', tournamentId);
 
     console.debug(
       `[TournamentService] Cancelled tournament ${tournament.name}: refunded ${playersRefunded} players, ${refunded} chips`
@@ -1094,29 +1087,22 @@ class TournamentService {
 
     if (!players || players.length === 0) throw new Error('No players registered');
 
-    // Auto-cancel if fewer than the minimum players required for this variant
-    // SNG/Spin: need a full table to start (table capacity = min)
-    // MTT/Bounty: use tournament's configured min_players (defaults to 2 absolute floor)
-    const type = (tournament.tournament_type || '').toUpperCase();
-    const isSngOrSpin = type === 'SNG' || type === 'SPIN';
-    const minPlayers = isSngOrSpin
-      ? TournamentService.getTableCapacityForTournament(tournament)
-      : Math.max(2, tournament.min_players || 2);
-    if (players.length < minPlayers) {
+    // Auto-cancel if fewer than 3 players — minimum for a valid tournament
+    if (players.length < 3) {
       console.debug(
-        `[TournamentService] Auto-cancelling tournament ${tournament.name}: only ${players.length} players (minimum ${minPlayers} required for this variant)`
+        `[TournamentService] Auto-cancelling tournament ${tournament.name}: only ${players.length} players (minimum 3 required)`
       );
       await this.cancelTournament(
         tournamentId,
-        `Only ${players.length} player(s) registered — minimum ${minPlayers} required`
+        `Only ${players.length} player(s) registered — minimum 3 required`
       );
       throw new Error(
-        `Tournament cancelled: only ${players.length} player(s) registered (minimum ${minPlayers} required)`
+        `Tournament cancelled: only ${players.length} player(s) registered (minimum 3 required)`
       );
     }
 
-    // 2. Create Tables (dynamic capacity based on tournament variant)
-    const playersPerTable = TournamentService.getTableCapacityForTournament(tournament);
+    // 2. Create Tables
+    const playersPerTable = 9;
     const numTables = Math.ceil(players.length / playersPerTable);
     const createdTables: any[] = [];
 
@@ -1128,15 +1114,13 @@ class TournamentService {
           tournament_id: tournament.id,
           name: `${tournament.name} - Table ${i + 1}`,
           game_type: 'tournament',
-          game_variant: TournamentService.mapGameVariant(tournament.game_type),
+          game_variant: 'nlh',
           stakes: 'Tournament',
           small_blind: tournament.blind_structure[0].smallBlind,
           big_blind: tournament.blind_structure[0].bigBlind,
-          ante: tournament.blind_structure[0].ante || 0,
           min_buy_in: 0,
           max_buy_in: 0,
-          max_players: playersPerTable,
-          current_players: 0,
+          max_players: 9,
           status: 'RUNNING',
           settings: { auto_muck: true, time_bank_seconds: 30 },
         })
@@ -1158,41 +1142,13 @@ class TournamentService {
       const player = shuffled[i];
       const tableAssign = tableSeats[i % numTables];
 
-      const { error: seatInsertErr } = await supabase.from('table_seats').insert({
+      await supabase.from('table_seats').insert({
         table_id: tableAssign.tableId,
         seat_number: tableAssign.nextSeat,
         user_id: player.user_id,
         stack: tournament.starting_chips,
       });
-
-      if (seatInsertErr) {
-        console.error(
-          `[TournamentService] Failed to seat player ${player.user_id.slice(0, 8)} at table ${tableAssign.tableId.slice(0, 8)} seat ${tableAssign.nextSeat}:`,
-          seatInsertErr.message
-        );
-        // Roll back: keep player as registered so they can be seated on retry
-        await supabase
-          .from('tournament_players')
-          .update({ status: 'registered', table_id: null })
-          .eq('tournament_id', tournamentId)
-          .eq('user_id', player.user_id);
-        continue; // Skip this seat, don't increment nextSeat
-      }
-
-      // Write table_id to tournament_players so TournamentDetails "Enter Table" button works
-      await supabase
-        .from('tournament_players')
-        .update({ table_id: tableAssign.tableId })
-        .eq('tournament_id', tournamentId)
-        .eq('user_id', player.user_id);
-
       tableAssign.nextSeat++;
-    }
-
-    // Update tables.current_players in DB for accurate merge/balance checks
-    for (const ts of tableSeats) {
-      const seatedCount = ts.nextSeat - 1; // nextSeat was incremented after each seat
-      await supabase.from('tables').update({ current_players: seatedCount }).eq('id', ts.tableId);
     }
 
     // 4. Update Tournament
@@ -1272,29 +1228,36 @@ class TournamentService {
 
     // Credit prize to Player Wallet
     if (prize > 0) {
-      // Credit prize to Player Wallet ATOMICALLY with log
+      // Credit prize to Player Wallet (not club_members — wallets are separate)
       const { error: prizeError } = await retryAsync(
         () =>
-          supabase.rpc('atomic_credit_wallet_and_log', {
+          supabase.rpc('credit_player_wallet', {
             p_user_id: userId,
             p_amount: prize,
-            p_category: 'prize',
-            p_description: `Tournament prize: ${ordinal(position)} place — ${tournament.name}`,
-            p_table_id: null,
-            p_hand_id: null,
-            p_related_entity_id: tournamentId,
           }),
         3
       );
 
       if (prizeError) {
         console.error(
-          `[TournamentService] CRITICAL: Prize atomic credit to Player Wallet failed:`,
+          `[TournamentService] CRITICAL: Prize credit to Player Wallet failed:`,
           prizeError
         );
         throw new Error(`Failed to credit ${ordinal(position)} place prize of ${prize}`);
       }
 
+      // Log prize payout transaction
+      await WalletService.logTransaction(
+        userId,
+        'PLAYER',
+        prize,
+        'credit',
+        'prize',
+        `Tournament prize: ${ordinal(position)} place — ${tournament.name}`,
+        undefined,
+        undefined,
+        tournamentId
+      );
       masterBus.emit('BALANCE_UPDATED', { source: 'tournament_prize', userId });
     }
 
@@ -1361,22 +1324,6 @@ class TournamentService {
           .eq('user_id', userId)
           .eq('table_id', seat.table_id)
           .is('left_at', null);
-
-        // Authoritative recount: prevents race if two players eliminated simultaneously
-        const { count: seatCount, error: countErr } = await supabase
-          .from('table_seats')
-          .select('*', { count: 'exact', head: true })
-          .eq('table_id', seat.table_id)
-          .is('left_at', null);
-
-        if (!countErr) {
-          await supabase
-            .from('tables')
-            .update({ current_players: seatCount ?? 0 })
-            .eq('id', seat.table_id);
-        } else {
-          console.error('[TournamentService] eliminatePlayerAuto recount failed:', countErr);
-        }
       }
     }
   }
@@ -1523,6 +1470,8 @@ class TournamentService {
       );
     }
 
+    masterBus.emit('BALANCE_UPDATED', { source: 'tournament_rebuy', userId });
+
     // Process rebuy via ATOMIC RPC
     // (This RPC handles the wallet deduction and logging natively. It rolls back automatically on failure.)
     const { data, error } = await retryAsync(
@@ -1540,11 +1489,10 @@ class TournamentService {
 
     if (error) {
       console.error('[TournamentService] Rebuy RPC failed. No chips were deducted:', error);
+      // Reverse the UI balance optimistic update
+      masterBus.emit('BALANCE_UPDATED', { source: 'tournament_rebuy_rollback', userId });
       throw error;
     }
-
-    // Emit AFTER confirmed deduction — never before the RPC
-    masterBus.emit('BALANCE_UPDATED', { source: 'tournament_rebuy', userId });
 
     // Recalculate prize pool: rebuy cost goes to pool
     await this.recalculatePrizePool(tournamentId);
@@ -1636,6 +1584,8 @@ class TournamentService {
       );
     }
 
+    masterBus.emit('BALANCE_UPDATED', { source: 'tournament_addon', userId });
+
     // Process addon via ATOMIC RPC
     // (This handles wallet deduction, logging, and rollback natively)
     const { data, error } = await retryAsync(
@@ -1653,11 +1603,10 @@ class TournamentService {
 
     if (error) {
       console.error('[TournamentService] Add-on process failed. No chips were deducted:', error);
+      // Reverse the UI balance optimistic update
+      masterBus.emit('BALANCE_UPDATED', { source: 'tournament_addon_rollback', userId });
       throw error;
     }
-
-    // Emit AFTER confirmed deduction — never before the RPC
-    masterBus.emit('BALANCE_UPDATED', { source: 'tournament_addon', userId });
 
     // Recalculate prize pool: add-on cost goes to pool
     await this.recalculatePrizePool(tournamentId);
@@ -1787,14 +1736,19 @@ class TournamentService {
    * Balance tables in a multi-table tournament
    */
   async balanceTables(tournamentId: string): Promise<{ movesMade: number }> {
-    // NOTE: The balance_tournament_tables SQL RPC is currently a placeholder (no-op).
-    // Real table balancing is handled by TournamentEngine.mergeTable() in-memory.
-    // This function is kept for API compatibility but logs a warning for visibility.
-    console.warn(
-      `[TournamentService] balanceTables(${tournamentId.slice(0, 8)}) called — ` +
-        `SQL RPC is a placeholder. Actual balancing is handled by TournamentEngine.mergeTable().`
-    );
-    return { movesMade: 0 };
+    const { data, error } = await retryAsync(async () => {
+      const result = await supabase.rpc('balance_tournament_tables', {
+        p_tournament_id: tournamentId,
+      });
+      return result;
+    }, 2);
+
+    if (error) {
+      console.error('Table balancing error:', error);
+      return { movesMade: 0 };
+    }
+
+    return { movesMade: data || 0 };
   }
 
   /**
@@ -1822,7 +1776,6 @@ class TournamentService {
    * Merge tables when player count drops
    */
   async checkTableMerge(tournamentId: string): Promise<{ tableMerged: boolean }> {
-    const tournament = await this.getTournament(tournamentId);
     const { data: tables } = await supabase
       .from('tables')
       .select('id, current_players')
@@ -1834,9 +1787,7 @@ class TournamentService {
 
     // Get total remaining players
     const totalPlayers = tables.reduce((sum, t) => sum + t.current_players, 0);
-    const playersPerTable = tournament
-      ? TournamentService.getTableCapacityForTournament(tournament)
-      : 9;
+    const playersPerTable = 9;
     const neededTables = Math.ceil(totalPlayers / playersPerTable);
 
     if (tables.length > neededTables) {
@@ -1847,10 +1798,7 @@ class TournamentService {
       await this.balanceTables(tournamentId);
 
       // Close the broken table
-      await supabase
-        .from('tables')
-        .update({ status: 'closed', current_players: 0 })
-        .eq('id', tableToBreak.id);
+      await supabase.from('tables').update({ status: 'closed' }).eq('id', tableToBreak.id);
 
       return { tableMerged: true };
     }
@@ -1859,22 +1807,16 @@ class TournamentService {
   }
 
   /**
-   * Create final table (consolidate to 1 table when remaining players fit a single table)
+   * Create final table (consolidate to 1 table when 9 or fewer players remain)
    */
   async createFinalTable(tournamentId: string): Promise<{ finalTableId: string | null }> {
-    // Fetch tournament first to determine dynamic capacity
-    const tournament = await this.getTournament(tournamentId);
-    if (!tournament) return { finalTableId: null };
-
-    const finalTableCapacity = TournamentService.getTableCapacityForTournament(tournament);
-
     const { count } = await supabase
       .from('tournament_players')
       .select('*', { count: 'exact' })
       .eq('tournament_id', tournamentId)
       .eq('status', 'playing');
 
-    if (!count || count > finalTableCapacity) return { finalTableId: null };
+    if (!count || count > 9) return { finalTableId: null };
 
     // Get or create final table (look for a table named "Final Table")
     let { data: finalTable } = await supabase
@@ -1887,6 +1829,9 @@ class TournamentService {
       .maybeSingle();
 
     if (!finalTable) {
+      const tournament = await this.getTournament(tournamentId);
+      if (!tournament) return { finalTableId: null };
+
       const { data: newTable } = await supabase
         .from('tables')
         .insert({
@@ -1894,15 +1839,13 @@ class TournamentService {
           tournament_id: tournamentId,
           name: `${tournament.name} - Final Table`,
           game_type: 'tournament',
-          game_variant: TournamentService.mapGameVariant(tournament.game_type),
+          game_variant: 'nlh',
           stakes: 'Final Table',
           small_blind: tournament.blind_structure[0].smallBlind,
           big_blind: tournament.blind_structure[0].bigBlind,
-          ante: tournament.blind_structure[0].ante || 0,
           min_buy_in: 0,
           max_buy_in: 0,
-          max_players: finalTableCapacity,
-          current_players: 0,
+          max_players: 9,
           status: 'RUNNING',
           settings: { auto_muck: true, time_bank_seconds: 45 },
         })
