@@ -6,7 +6,7 @@
  *  with a proper transfer modal, and adds bus listeners for real-time updates.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
@@ -48,6 +48,13 @@ export default function AgentPortalPage() {
   const [transferAmount, setTransferAmount] = useState('');
   const [isTransferring, setIsTransferring] = useState(false);
   const [visibleSections, setVisibleSections] = useState<Set<number>>(new Set());
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   useVisibilityRefresh(() => loadData());
 
@@ -75,7 +82,7 @@ export default function AgentPortalPage() {
     if (!user?.id) return;
     setLoading(true);
     await Promise.all([loadWallet(), loadCommissionHistory()]);
-    setLoading(false);
+    if (isMounted.current) setLoading(false);
   };
 
   const loadWallet = async () => {
@@ -97,6 +104,7 @@ export default function AgentPortalPage() {
         /* no debt */
       }
 
+      if (!isMounted.current) return;
       setWallet({
         agentBal: data.agent_wallet_balance || 0,
         playerBal: data.player_wallet_balance || 0,
@@ -127,9 +135,10 @@ export default function AgentPortalPage() {
           const day = new Date(d.created_at).toLocaleDateString('en-US', { weekday: 'short' });
           grouped[day] = (grouped[day] || 0) + (d.amount || 0);
         });
-        setCommissionData(days.map((d) => ({ name: d, commissions: grouped[d] || 0 })));
+        if (isMounted.current)
+          setCommissionData(days.map((d) => ({ name: d, commissions: grouped[d] || 0 })));
       } else {
-        setCommissionData(days.map((d) => ({ name: d, commissions: 0 })));
+        if (isMounted.current) setCommissionData(days.map((d) => ({ name: d, commissions: 0 })));
       }
     } catch {
       /* silent */

@@ -42,6 +42,7 @@ interface MessageBubbleProps {
   showAvatar?: boolean;
   onReact?: (messageId: string, emoji: string) => void;
   onDelete?: (messageId: string) => void;
+  onEdit?: (messageId: string, newContent: string) => void;
   onReply?: (messageId: string) => void;
   onForward?: (messageId: string) => void;
   onViewThread?: (messageId: string) => void;
@@ -53,6 +54,7 @@ export default function MessageBubble({
   showAvatar = true,
   onReact,
   onDelete,
+  onEdit,
   onReply,
   onForward,
   onViewThread,
@@ -60,6 +62,8 @@ export default function MessageBubble({
   const [showMenu, setShowMenu] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [showLightbox, setShowLightbox] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(message.content);
 
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 50);
@@ -113,6 +117,28 @@ export default function MessageBubble({
     onForward?.(message.id);
     setShowMenu(false);
   };
+
+  const handleStartEdit = () => {
+    setEditText(message.content);
+    setIsEditing(true);
+    setShowMenu(false);
+  };
+
+  const handleSaveEdit = () => {
+    if (editText.trim() && editText.trim() !== message.content) {
+      onEdit?.(message.id, editText.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditText(message.content);
+    setIsEditing(false);
+  };
+
+  // Can edit within 5-minute window
+  const canEdit =
+    isCurrentUser && onEdit && Date.now() - new Date(message.createdAt).getTime() < 5 * 60 * 1000;
 
   const handleLongPress = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -194,6 +220,63 @@ export default function MessageBubble({
                   Tap to view profile
                 </span>
               </div>
+            ) : isEditing ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
+                <textarea
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  autoFocus
+                  rows={2}
+                  style={{
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(0,212,255,0.3)',
+                    borderRadius: '8px',
+                    color: '#fff',
+                    padding: '6px 8px',
+                    fontSize: '0.85rem',
+                    resize: 'none',
+                    outline: 'none',
+                    width: '100%',
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSaveEdit();
+                    }
+                    if (e.key === 'Escape') handleCancelEdit();
+                  }}
+                />
+                <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={handleCancelEdit}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'rgba(255,255,255,0.5)',
+                      fontSize: '0.7rem',
+                      cursor: 'pointer',
+                      padding: '2px 6px',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveEdit}
+                    style={{
+                      background: 'rgba(0,212,255,0.2)',
+                      border: '1px solid rgba(0,212,255,0.3)',
+                      borderRadius: '6px',
+                      color: '#00d4ff',
+                      fontSize: '0.7rem',
+                      cursor: 'pointer',
+                      padding: '2px 8px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
             ) : (
               <p className={styles.text}>{linkifyText(message.content)}</p>
             ))}
@@ -255,6 +338,11 @@ export default function MessageBubble({
               <button className={styles.menuItem} onClick={handleForward}>
                 ↪ Forward
               </button>
+              {isCurrentUser && canEdit && (
+                <button className={styles.menuItem} onClick={handleStartEdit}>
+                  ✏️ Edit
+                </button>
+              )}
               {isCurrentUser && (
                 <button className={`${styles.menuItem} ${styles.danger}`} onClick={handleDelete}>
                   Delete

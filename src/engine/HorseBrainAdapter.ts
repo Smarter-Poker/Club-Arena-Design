@@ -113,7 +113,7 @@ interface HorsePokerBrainModule {
     config: BrainTableConfig
   ) => Promise<BrainDecision>;
   processHandResult: (handData: HandResultData, bb: number) => Promise<void>;
-  evaluateSessions: (gameController: any, tableManager: any) => Promise<void>;
+  evaluateSessions: (gameController: unknown, tableManager: unknown) => Promise<void>;
   recordSitDown: (tableId: string, horseId: string, buyIn: number) => void;
   recordRebuy: (tableId: string, horseId: string, amount: number) => void;
   clearTableSessions: (tableId: string) => void;
@@ -258,7 +258,7 @@ class HorseBrainAdapterClass {
     enginePlayer: SeatPlayer,
     gameState: {
       players: SeatPlayer[];
-      communityCards: any[];
+      communityCards: unknown[];
       pot: number;
       currentBet: number;
       minRaise: number;
@@ -375,7 +375,7 @@ class HorseBrainAdapterClass {
   /**
    * Evaluate sessions between hands (cashout/tilt/rebuy decisions)
    */
-  async evaluateSessions(gameController: any, tableManager: any): Promise<void> {
+  async evaluateSessions(gameController: unknown, tableManager: unknown): Promise<void> {
     if (!this.brain) return;
     try {
       await this.brain.evaluateSessions(gameController, tableManager);
@@ -459,7 +459,8 @@ class HorseBrainAdapterClass {
   private translateToBrainState(
     tableId: string,
     enginePlayer: SeatPlayer,
-    gameState: any,
+
+    gameState: any, // Complex engine state object — typing would cascade across adapter boundary
     gameType: 'cash' | 'tournament'
   ): BrainEngineState {
     const positionMap: Record<number, string> = {};
@@ -476,7 +477,7 @@ class HorseBrainAdapterClass {
       tableId,
       players: gameState.players.map((p: SeatPlayer) => ({
         id: p.user_id,
-        holeCards: (p.cards || []).map((c: any) => ({
+        holeCards: (p.cards || []).map((c: { rank: string; suit: string }) => ({
           rank: typeof c.rank === 'number' ? c.rank : this.parseRank(c.rank),
           suit: typeof c.suit === 'number' ? c.suit : this.parseSuit(c.suit),
         })),
@@ -485,7 +486,7 @@ class HorseBrainAdapterClass {
         folded: p.is_folded || false,
         invested: p.bet || 0,
       })),
-      communityCards: (gameState.communityCards || []).map((c: any) => ({
+      communityCards: (gameState.communityCards || []).map((c: { rank: string; suit: string }) => ({
         rank: typeof c.rank === 'number' ? c.rank : this.parseRank(c.rank),
         suit: typeof c.suit === 'number' ? c.suit : this.parseSuit(c.suit),
       })),
@@ -501,6 +502,7 @@ class HorseBrainAdapterClass {
   /**
    * Build legal actions array from current game state
    */
+
   private buildLegalActions(enginePlayer: SeatPlayer, gameState: any): BrainLegalAction[] {
     const toCall = Math.max(0, gameState.currentBet - (enginePlayer.bet || 0));
     const actions: BrainLegalAction[] = [];

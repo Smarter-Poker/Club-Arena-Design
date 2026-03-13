@@ -5,7 +5,7 @@
  *  Admin page for setting/adjusting agent credit limits with full audit trail.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
@@ -35,6 +35,13 @@ export default function CreditAdminPanel() {
   const [saving, setSaving] = useState(false);
   const [auditLog, setAuditLog] = useState<any[]>([]);
   const [visibleRows, setVisibleRows] = useState<Set<number>>(new Set());
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   useVisibilityRefresh(() => loadAgents());
 
@@ -50,6 +57,7 @@ export default function CreditAdminPanel() {
         .limit(100);
 
       if (data) {
+        if (!isMounted.current) return;
         const mapped: AgentCredit[] = data.map((a: any) => ({
           id: a.id,
           displayName: a.profiles?.display_name || a.profiles?.username || a.id.substring(0, 8),
@@ -61,13 +69,15 @@ export default function CreditAdminPanel() {
         setAgents(mapped);
         // Stagger rows
         mapped.forEach((_, i) => {
-          setTimeout(() => setVisibleRows((prev) => new Set(prev).add(i)), i * 40);
+          setTimeout(() => {
+            if (isMounted.current) setVisibleRows((prev) => new Set(prev).add(i));
+          }, i * 40);
         });
       }
     } catch (err) {
       console.error('[CreditAdmin] Load failed:', err);
     }
-    setLoading(false);
+    if (isMounted.current) setLoading(false);
 
     // Load audit log
     try {
@@ -77,7 +87,7 @@ export default function CreditAdminPanel() {
         .eq('rate_type', 'credit_limit')
         .order('created_at', { ascending: false })
         .limit(20);
-      setAuditLog(auditData || []);
+      if (isMounted.current) setAuditLog(auditData || []);
     } catch {
       /* table may not exist */
     }

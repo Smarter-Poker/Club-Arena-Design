@@ -9,6 +9,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { masterBus } from '../../core/MasterBus';
 import { useAuthUser } from '../../hooks/useAuthUser';
+import { messagingService } from '../../services/MessagingService';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
 import { PlayerAvatar } from '../avatars/PlayerAvatar';
@@ -228,6 +229,7 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
           content: text.trim(),
           image_url: imageUrl || null,
           audio_url: audioUrl || null,
+          reply_to_message_id: replyingToId || null,
         })
         .select()
         .maybeSingle();
@@ -315,12 +317,36 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
     setReplyingToMessage(null);
   };
 
-  // React to message
+  // React to message — optimistic local update + background sync
   const reactToMessage = async (messageId: string, emoji: string) => {
     if (!user?.id) return;
 
+    // Optimistic: update local state immediately
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id !== messageId) return m;
+        const newReactions = { ...m.reactions };
+        const isToggleOff = m.myReaction === emoji;
+        if (isToggleOff) {
+          // Remove my reaction
+          newReactions[emoji] = Math.max(0, (newReactions[emoji] || 1) - 1);
+          if (newReactions[emoji] === 0) delete newReactions[emoji];
+          return { ...m, reactions: newReactions, myReaction: undefined };
+        } else {
+          // Remove old reaction if any
+          if (m.myReaction && newReactions[m.myReaction]) {
+            newReactions[m.myReaction] = Math.max(0, newReactions[m.myReaction] - 1);
+            if (newReactions[m.myReaction] === 0) delete newReactions[m.myReaction];
+          }
+          // Add new reaction
+          newReactions[emoji] = (newReactions[emoji] || 0) + 1;
+          return { ...m, reactions: newReactions, myReaction: emoji };
+        }
+      })
+    );
+
+    // Background sync with Supabase
     try {
-      // Toggle reaction
       const { data: existing } = await supabase
         .from('message_reactions')
         .select('id, reaction')
@@ -330,34 +356,24 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
 
       if (existing) {
         if (existing.reaction === emoji) {
-          // Remove reaction
-          const { error: delErr } = await supabase
-            .from('message_reactions')
-            .delete()
-            .eq('id', existing.id);
-          if (delErr) throw delErr;
+          await supabase.from('message_reactions').delete().eq('id', existing.id);
         } else {
-          // Change reaction
-          const { error: updErr } = await supabase
+          await supabase
             .from('message_reactions')
             .update({ reaction: emoji })
             .eq('id', existing.id);
-          if (updErr) throw updErr;
         }
       } else {
-        // Add reaction
-        const { error: insErr } = await supabase.from('message_reactions').insert({
+        await supabase.from('message_reactions').insert({
           message_id: messageId,
           user_id: user.id,
           reaction: emoji,
         });
-        if (insErr) throw insErr;
       }
-
-      // Refresh messages
-      loadMessages(true);
     } catch (error) {
-      console.error('Failed to react:', error);
+      // Rollback on error — refetch from server
+      console.error('Failed to sync reaction:', error);
+      loadMessages(true);
     }
   };
 
@@ -371,10 +387,24 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
         .eq('sender_id', user?.id);
       if (error) throw error;
       setMessages((prev) => prev.filter((m) => m.id !== messageId));
-      // Emit bus event for cross-tab sync
       masterBus.emit('MESSAGE_DELETED', { messageId });
     } catch (error) {
       console.error('Failed to delete:', error);
+    }
+  };
+
+  // Edit message (calls service method with 5-min window enforcement)
+  const editMessage = async (messageId: string, newContent: string) => {
+    if (!user?.id) return;
+    try {
+      const success = await messagingService.editMessage(messageId, user.id, newContent);
+      if (success) {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === messageId ? { ...m, content: newContent, isEdited: true } : m))
+        );
+      }
+    } catch (error) {
+      console.error('Failed to edit:', error);
     }
   };
 
@@ -659,6 +689,7 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
                       isCurrentUser={message.userId === user?.id}
                       onReact={reactToMessage}
                       onDelete={deleteMessage}
+                      onEdit={editMessage}
                       onReply={handleReply}
                       onForward={handleForward}
                     />

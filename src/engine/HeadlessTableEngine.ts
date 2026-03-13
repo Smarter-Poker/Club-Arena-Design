@@ -95,6 +95,7 @@ export class HeadlessTableEngine {
   // Initial stacks captured BEFORE hand starts — used for accurate chip delta calculation
   private currentHandInitialStacks: Map<string, number> = new Map();
   // Showdown results captured for BBJ trigger checking
+   
   private currentHandShowdownResults: any[] = [];
   // Stack sync promise — awaited before loading seats for next hand
   private stackSyncPromise: Promise<void> | null = null;
@@ -526,7 +527,7 @@ export class HeadlessTableEngine {
         playerStacks
       );
       if (straddleResult.posted) {
-        straddles = straddleResult.straddles.map((s: any) => ({
+        straddles = straddleResult.straddles.map((s) => ({
           seat: s.seatNumber,
           amount: s.amount,
         }));
@@ -768,7 +769,9 @@ export class HeadlessTableEngine {
     const state = this.handController.getState();
 
     // Resolve current player seat number to user_id
-    const currentSeatPlayer = state.players.find((p: any) => p.seat === state.currentPlayerSeat);
+    const currentSeatPlayer = state.players.find(
+      (p: { seat: number }) => p.seat === state.currentPlayerSeat
+    );
 
     broadcastHandState(this.tableId, {
       table_id: this.tableId,
@@ -779,7 +782,7 @@ export class HeadlessTableEngine {
       current_player: currentSeatPlayer?.user_id ?? null,
       dealer_seat: state.dealerSeat ?? this.currentHandDealerSeat,
       stage: state.stage ?? 'preflop',
-      players: (state.players ?? []).map((p: any) => ({
+      players: (state.players ?? []).map((p) => ({
         seat: p.seat,
         user_id: p.user_id,
         username: p.username,
@@ -823,7 +826,7 @@ export class HeadlessTableEngine {
         // Broadcast the pending state so UI can show the offer
         this.broadcastCurrentState();
 
-        const activeIds = event.activePlayers.map((p: any) => p.user_id);
+        const activeIds = event.activePlayers.map((p: { user_id: string }) => p.user_id);
         const offeredBy = activeIds[0];
         const offeredTo = activeIds[1];
         const handId = `${this.tableId}-${this.handCount}`;
@@ -832,7 +835,7 @@ export class HeadlessTableEngine {
         (async () => {
           // Insurance offering (cash games only, before RIT flow)
           if (insuranceEngine.isEnabled(this.tableId) && activeIds.length >= 2) {
-            const allInPlayers = event.activePlayers.map((p: any) => ({
+            const allInPlayers = event.activePlayers.map((p: SeatPlayer) => ({
               playerId: p.user_id,
               holeCards: p.cards || [],
             }));
@@ -866,6 +869,7 @@ export class HeadlessTableEngine {
             let unsubAccept: (() => void) | null = null;
             let unsubDecline: (() => void) | null = null;
 
+             
             const onAccept = (eventData: any) => {
               const data = eventData.payload;
               if (data && data.handId === handId) {
@@ -874,6 +878,7 @@ export class HeadlessTableEngine {
               }
             };
 
+             
             const onDecline = (eventData: any) => {
               const data = eventData.payload;
               if (data && data.handId === handId) {
@@ -1001,7 +1006,7 @@ export class HeadlessTableEngine {
       case 'WINNERS':
         // Capture winner IDs from the event for Horse Brain processing
         this.currentHandWinnerIds = (event.winners || []).map(
-          (w: any) => w.userId || w.user_id || ''
+          (w: { userId?: string; user_id?: string }) => w.userId || w.user_id || ''
         );
         // Capture final pot size for rake calculation
         if (this.handController) {
@@ -1105,7 +1110,9 @@ export class HeadlessTableEngine {
             this.currentHandPotSize,
             players.map((p) => {
               // Calculate actual chip delta from pre-hand stacks vs final stacks
-              const enginePlayer = brainState?.players.find((ep: any) => ep.user_id === p.user_id);
+              const enginePlayer = brainState?.players.find(
+                (ep: { user_id: string }) => ep.user_id === p.user_id
+              );
               // Use captured pre-hand stacks (p.stack was mutated by WINNERS event)
               const initialStack = this.currentHandInitialStacks.get(p.user_id) ?? p.stack;
               const finalStack = enginePlayer?.stack ?? p.stack;
@@ -1303,7 +1310,7 @@ export class HeadlessTableEngine {
   ): Promise<void> {
     try {
       // Map seat number to position name
-      const totalPlayers = state.players.filter((p: any) => !p.is_folded).length;
+      const totalPlayers = state.players.filter((p: { is_folded: boolean }) => !p.is_folded).length;
       const positionMap: Record<number, string> = {
         1: 'SB',
         2: 'BB',
@@ -1320,7 +1327,9 @@ export class HeadlessTableEngine {
       const potType = maxBet > bb * 6 ? '3bet' : maxBet > bb ? 'srp' : 'limp';
 
       // Build board string
-      const board = (state.communityCards || []).map((c: any) => `${c.rank}${c.suit}`);
+      const board = (state.communityCards || []).map(
+        (c: { rank: string; suit: string }) => `${c.rank}${c.suit}`
+      );
 
       const actionFacing =
         state.currentBet > 0 && state.pot > 0
@@ -1706,6 +1715,7 @@ export class HeadlessTableEngine {
       });
 
       if (result.calculation.cappedRake > 0) {
+        // Rake collected — no additional action needed (waterfall handles distribution)
       }
     } catch (err: unknown) {
       console.error(
@@ -1844,7 +1854,7 @@ export class HeadlessTableEngine {
   // PRIVATE: RAKE CONFIG
   // ═════════════════════════════════════════════════════════════════════════════
 
-  private getRakeConfig(sb: number, bb: number): any {
+  private getRakeConfig(sb: number, bb: number) {
     // Use RakeService for single source of truth on rake tiers
     const tier = RakeService.getTier(sb, bb);
     return { percent: 10, cap: tier.maxAmount, noFlop: true };
@@ -1869,7 +1879,7 @@ export class HeadlessTableEngine {
     if (!userId) return;
     if (!players.some((p) => p.user_id === userId && !p.is_horse)) return;
 
-    const winners: Array<{ userId?: string; user_id?: string; pot?: number; hand?: any }> =
+    const winners: Array<{ userId?: string; user_id?: string; pot?: number; hand?: unknown }> =
       (event as any).winners || [];
     const userWon = winners.some((w) => (w.userId || w.user_id) === userId);
     if (!userWon) return;
@@ -1897,7 +1907,7 @@ export class HeadlessTableEngine {
 
     // ALL_IN_WON — check if user was all-in
     const state = this.handController?.getState();
-    const userEngine = state?.players?.find((p: any) => p.user_id === userId);
+    const userEngine = state?.players?.find((p: { user_id: string }) => p.user_id === userId);
     if (userEngine?.is_all_in) {
       masterBus.emit('ALL_IN_WON', { handId, playerId: userId, pot: totalPot });
     }
@@ -1905,7 +1915,7 @@ export class HeadlessTableEngine {
     // FLUSH_WIN — check showdown results for flush
     if (this.currentHandShowdownResults.length > 0) {
       const userResult = this.currentHandShowdownResults.find(
-        (r: any) => (r.userId || r.user_id) === userId
+        (r: { userId?: string; user_id?: string }) => (r.userId || r.user_id) === userId
       );
       const handName = (userResult?.handName || userResult?.hand_name || '').toLowerCase();
       if (handName.includes('flush') && !handName.includes('straight')) {

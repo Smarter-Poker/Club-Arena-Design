@@ -96,7 +96,7 @@ interface TournamentPlayer {
 // BLIND STRUCTURE RESOLVER
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function resolveBlindStructure(raw: any): BlindLevel[] {
+function resolveBlindStructure(raw: unknown): BlindLevel[] {
   if (Array.isArray(raw) && raw.length > 0) return raw;
   if (typeof raw === 'string') {
     try {
@@ -116,9 +116,9 @@ function resolveBlindStructure(raw: any): BlindLevel[] {
   return BLIND_STRUCTURES.regular;
 }
 
-function resolvePayoutStructure(raw: any, playerCount: number): PayoutEntry[] {
+function resolvePayoutStructure(raw: unknown, playerCount: number): PayoutEntry[] {
   // Normalize: ensure every entry has 'place' (DB may use 'position' instead)
-  const normalize = (arr: any[]): PayoutEntry[] =>
+  const normalize = (arr: Array<Record<string, unknown>>): PayoutEntry[] =>
     arr.map((p) => ({
       place: p.place || p.position || 0,
       position: p.position || p.place || 0,
@@ -691,7 +691,7 @@ export class TournamentEngine {
       );
       return;
     }
-    const seatInserts: any[] = [];
+    const seatInserts: Array<Record<string, unknown>> = [];
     for (let i = 0; i < activePlayers.length; i++) {
       const tableIdx = i % this.tables.length;
       const table = this.tables[tableIdx];
@@ -1291,7 +1291,7 @@ export class TournamentEngine {
     if (!this.running || !this.tournamentInfo) return;
 
     // Update local player map + batch DB updates
-    const upsertPayload: any[] = [];
+    const upsertPayload: Array<Record<string, unknown>> = [];
 
     for (const { user_id, stack } of playerStacks) {
       const player = this.players.get(user_id);
