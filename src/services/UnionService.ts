@@ -98,7 +98,8 @@ class UnionServiceClass {
     const { data, error } = await supabase
       .from('unions')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(100);
 
     if (error) throw error;
 
@@ -365,7 +366,8 @@ class UnionServiceClass {
             `
       )
       .eq('union_id', unionId)
-      .order('joined_at', { ascending: false });
+      .order('joined_at', { ascending: false })
+      .limit(200);
 
     if (error) throw error;
 
@@ -392,7 +394,8 @@ class UnionServiceClass {
             .from('rake_transactions')
             .select('amount')
             .eq('club_id', uc.club_id)
-            .gte('created_at', oneWeekAgo);
+            .gte('created_at', oneWeekAgo)
+            .limit(5000);
           weeklyRake = (rakeData || []).reduce((sum, r) => sum + Number(r.amount || 0), 0);
         } catch {
           // Silently ignore rake query errors
