@@ -228,11 +228,57 @@ class GameServer {
         .neq('horse_status', 'available');
       console.log('[GameServer] Reset stuck horses to available');
 
-      // 2. DELETE ALL table_seats (clean slate — the unique constraint on
-      //    (table_id, seat_number) prevents re-seating if old rows exist)
-      //    HorseFleetManager will re-seat horses at all tables
+      // 2. SAFE CLEANUP: Cash out ALL active seats before deleting
+      //    This prevents chip loss when the server restarts while players are seated
+      const { data: activeSeats } = await supabase
+        .from('table_seats')
+        .select('user_id, table_id, seat_number, stack')
+        .is('left_at', null);
+
+      if (activeSeats && activeSeats.length > 0) {
+        let cashedOut = 0;
+        for (const seat of activeSeats) {
+          if (seat.stack > 0) {
+            const { error: cashoutErr } = await supabase.rpc('atomic_table_cashout', {
+              p_user_id: seat.user_id,
+              p_table_id: seat.table_id,
+              p_seat_number: seat.seat_number,
+            });
+            if (cashoutErr) {
+              // Fallback: directly credit wallet if atomic cashout fails
+              await supabase.rpc('credit_player_wallet', {
+                p_user_id: seat.user_id,
+                p_amount: seat.stack,
+              });
+              // Force-close the seat
+              await supabase
+                .from('table_seats')
+                .update({ left_at: new Date().toISOString() })
+                .eq('table_id', seat.table_id)
+                .eq('user_id', seat.user_id)
+                .eq('seat_number', seat.seat_number)
+                .is('left_at', null);
+            }
+            cashedOut++;
+          } else {
+            // stack is 0, just mark as left
+            await supabase
+              .from('table_seats')
+              .update({ left_at: new Date().toISOString() })
+              .eq('table_id', seat.table_id)
+              .eq('user_id', seat.user_id)
+              .eq('seat_number', seat.seat_number)
+              .is('left_at', null);
+          }
+        }
+        if (cashedOut > 0) {
+          console.log(`[GameServer] Safely cashed out ${cashedOut} seated players before cleanup`);
+        }
+      }
+
+      // Now delete all table_seats (they should all have left_at set now)
       await supabase.from('table_seats').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      console.log('[GameServer] Deleted all table seats');
+      console.log('[GameServer] Deleted all table seats (after safe cashout)');
 
       // 3. Reset all cash table player counts to 0
       await supabase
