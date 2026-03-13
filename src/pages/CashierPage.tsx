@@ -930,6 +930,62 @@ export default function CashierPage() {
         ))}
       </div>
 
+      {/* Financial Quick Links — visible to owners/admins/agents */}
+      {canSend && clubId && (
+        <div style={{
+          display: 'flex',
+          gap: '8px',
+          flexWrap: 'wrap',
+          margin: '8px 0 12px',
+        }}>
+          <a
+            href={`/clubs/${clubId}/disputes`}
+            style={{
+              padding: '5px 10px',
+              background: 'rgba(245,158,11,0.1)',
+              border: '1px solid rgba(245,158,11,0.25)',
+              borderRadius: '6px',
+              color: '#f59e0b',
+              fontSize: '0.7rem',
+              fontWeight: 600,
+              textDecoration: 'none',
+            }}
+          >
+            ⚠️ Disputes
+          </a>
+          <a
+            href="/financial-alerts"
+            style={{
+              padding: '5px 10px',
+              background: 'rgba(239,68,68,0.1)',
+              border: '1px solid rgba(239,68,68,0.25)',
+              borderRadius: '6px',
+              color: '#ef4444',
+              fontSize: '0.7rem',
+              fontWeight: 600,
+              textDecoration: 'none',
+            }}
+          >
+            🚨 Alerts
+          </a>
+          <a
+            href={`/clubs/${clubId}/financials`}
+            style={{
+              padding: '5px 10px',
+              background: 'rgba(24,119,242,0.1)',
+              border: '1px solid rgba(24,119,242,0.25)',
+              borderRadius: '6px',
+              color: '#1877f2',
+              fontSize: '0.7rem',
+              fontWeight: 600,
+              textDecoration: 'none',
+            }}
+          >
+            💰 Financials
+          </a>
+        </div>
+      )}
+
       {/* ═══ SEND CHIPS ═══ */}
       {action === 'send' && (
         <MetalFrame title="SEND CHIPS" variant="form" size="md">

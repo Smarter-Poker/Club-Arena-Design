@@ -166,7 +166,7 @@ export function CashGameCard({ table, isAdmin, onDelete }: CashCardProps) {
                     to { opacity: 1; transform: translateY(0); }
                 }
             `}</style>
-            <Link to={`/table/${table.id}`} className={`dgc dgc--${variant.css}`}>
+            <Link to={`/table/${table.id}`} className={`dgc dgc--${variant.css}${hasPlayers ? ' dgc--live' : ''}`}>
                 {/* Ambient glow */}
                 <div className="dgc__glow" />
 

@@ -208,7 +208,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  justify-content: center;
+  justify-content: space-between;
   padding: 0.5rem 1rem;
   font-size: 0.75rem;
   color: #6a7a8a;
@@ -234,6 +234,94 @@
     opacity: 0.5;
     box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
   }
+}
+
+/* Q3: Do Not Disturb Controls */
+.dnd-toggle {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #8a9aaa;
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dnd-toggle:hover {
+  border-color: rgba(0, 212, 255, 0.4);
+  color: #00d4ff;
+}
+
+.dnd-toggle.dnd-active {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.5);
+  color: #a78bfa;
+}
+
+.dnd-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: rgba(139, 92, 246, 0.08);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.dnd-label {
+  font-size: 0.75rem;
+  color: #a78bfa;
+  white-space: nowrap;
+}
+
+.dnd-options {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.dnd-option {
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 6px;
+  color: #c4b5fd;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dnd-option:hover {
+  background: rgba(139, 92, 246, 0.3);
+  color: #fff;
+}
+
+.dnd-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(99, 102, 241, 0.1));
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+  font-size: 0.8rem;
+  color: #c4b5fd;
+}
+
+.dnd-clear {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dnd-clear:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────

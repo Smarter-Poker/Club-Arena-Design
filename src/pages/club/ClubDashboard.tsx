@@ -370,8 +370,17 @@ export default function ClubDashboard() {
           <Link to={`/clubs/${clubId}/create-table`} className={styles.actionBtn}>
             ➕ New Table
           </Link>
+          <Link to={`/clubs/${clubId}/financials`} className={styles.actionBtn}>
+            💰 Financials
+          </Link>
+          <Link to={`/clubs/${clubId}/disputes`} className={styles.actionBtn}>
+            ⚠️ Disputes
+          </Link>
           <Link to={`/clubs/${clubId}/announcements`} className={styles.actionBtn}>
             Announce
+          </Link>
+          <Link to={`/financial-health`} className={styles.actionBtn}>
+            🩺 Health
           </Link>
           <Link to={`/clubs/${clubId}/settings`} className={styles.actionBtn}>
             Settings

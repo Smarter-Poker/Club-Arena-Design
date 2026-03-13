@@ -140,7 +140,7 @@ export function parseCard(str: string): Card {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// HAND EVALUATOR
+// HAND EVALUATOR (Performance Optimized)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export interface EvaluatedHand {
@@ -148,6 +148,63 @@ export interface EvaluatedHand {
   name: string;
   cards: Card[]; // Best 5 cards
   kickers: number[];
+}
+
+// ── LRU Evaluation Cache ──
+// Caches recent hand evaluations to avoid redundant computation,
+// especially beneficial for Monte Carlo equity simulations.
+
+class EvalLRUCache {
+  private cache: Map<string, EvaluatedHand> = new Map();
+  private maxSize: number;
+
+  constructor(maxSize: number = 4096) {
+    this.maxSize = maxSize;
+  }
+
+  get(key: string): EvaluatedHand | undefined {
+    const val = this.cache.get(key);
+    if (val) {
+      // Move to end (most recently used)
+      this.cache.delete(key);
+      this.cache.set(key, val);
+    }
+    return val;
+  }
+
+  set(key: string, value: EvaluatedHand): void {
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    } else if (this.cache.size >= this.maxSize) {
+      // Evict oldest entry
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey !== undefined) this.cache.delete(firstKey);
+    }
+    this.cache.set(key, value);
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+
+  get size(): number {
+    return this.cache.size;
+  }
+}
+
+const evalCache = new EvalLRUCache(4096);
+
+/** Generate a canonical cache key from cards */
+function cardKey(cards: Card[]): string {
+  return cards
+    .map(c => `${c.rank}${c.suit[0]}`)
+    .sort()
+    .join(',');
+}
+
+/** Clear the evaluation cache (call when testing or resetting) */
+export function clearEvalCache(): void {
+  evalCache.clear();
 }
 
 export function evaluateHand(holeCards: Card[], communityCards: Card[]): EvaluatedHand {
@@ -162,6 +219,11 @@ export function evaluateHand(holeCards: Card[], communityCards: Card[]): Evaluat
       kickers: [],
     };
   }
+
+  // ── Cache lookup ──
+  const cacheKey = cardKey(allCards);
+  const cached = evalCache.get(cacheKey);
+  if (cached) return cached;
 
   // Generate all 5-card combinations
   const combinations = getCombinations(allCards, 5);
@@ -184,6 +246,9 @@ export function evaluateHand(holeCards: Card[], communityCards: Card[]): Evaluat
       kickers: [],
     };
   }
+
+  // ── Cache result ──
+  evalCache.set(cacheKey, bestHand);
 
   return bestHand;
 }

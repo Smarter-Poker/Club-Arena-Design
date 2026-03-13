@@ -184,11 +184,18 @@ class PlayerStatusServiceClass {
 
     const content = `📇 Shared a contact: @${card.username}\n${card.link}`;
 
+    // Destructure 'type' from card to avoid duplication in metadata,
+    // as metadata will have its own 'type' property.
+    const { type: _, ...cardData } = card;
+
     const { error } = await supabase.from('messages').insert({
       conversation_id: conversationId,
       sender_id: senderId,
       content,
-      metadata: { type: 'contact_card', ...card },
+      metadata: {
+        type: 'contact_card', // Explicit type for the message metadata
+        ...cardData, // All other properties from the card
+      },
     });
 
     if (error) {

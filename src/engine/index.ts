@@ -104,3 +104,38 @@ export {
 
 // Horse Brain Adapter
 export { HorseBrainAdapter, type RebuyStrategy } from './HorseBrainAdapter';
+
+// Server Action Validator
+export {
+  serverActionValidator,
+  type ActionRequest,
+  type ValidationContext,
+  type ValidationResult,
+  type ValidatedActionType,
+} from './ServerActionValidator';
+
+// Atomic Stack Service
+export {
+  atomicStackService,
+  type StackVersion,
+  type StackSettlement,
+  type AtomicResult,
+  type BatchSettlementResult,
+} from './AtomicStackService';
+
+// Precise Action Timer
+export {
+  preciseActionTimer,
+  type ActionDeadline,
+} from './PreciseActionTimer';
+
+// State Verifier
+export {
+  stateVerifier,
+  type VerificationContext,
+  type VerificationResult,
+  type IntegrityViolation,
+} from './StateVerifier';
+
+// Evaluator Cache Control
+export { clearEvalCache } from './PokerEngine';

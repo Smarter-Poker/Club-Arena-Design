@@ -2,7 +2,7 @@
  *  NOTIFICATIONS PAGE — With Real-Time Updates
  */
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { masterBus } from '../core/MasterBus';
@@ -12,6 +12,7 @@ import { PremiumSFX } from '../services/PremiumSFX';
 import { haptic } from '../services/HapticService';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import { useSwipeAction } from '../hooks/useSwipeAction';
+import { notificationService } from '../services/NotificationService';
 import './NotificationsPage.css';
 
 type NotifCategory = 'all' | 'games' | 'social' | 'achievements' | 'system';
@@ -58,6 +59,23 @@ export default function NotificationsPage() {
   const [visibleNotifications, setVisibleNotifications] = useState(new Set<number>());
   const [activeCategory, setActiveCategory] = useState<NotifCategory>('all');
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Q3: DND state
+  const [dndActive, setDndActive] = useState(() => notificationService.isDndActive());
+  const [showDndPicker, setShowDndPicker] = useState(false);
+
+  const handleDndToggle = useCallback((minutes: number) => {
+    notificationService.setDnd(minutes);
+    setDndActive(true);
+    setShowDndPicker(false);
+    toast.success(`🌙 Do Not Disturb for ${minutes}m`);
+  }, [toast]);
+
+  const handleDndClear = useCallback(() => {
+    notificationService.clearDnd();
+    setDndActive(false);
+    toast.success('Notifications resumed');
+  }, [toast]);
 
   useEffect(() => {
     let isMounted = true;
@@ -277,11 +295,46 @@ export default function NotificationsPage() {
 
   return (
     <div className="notifications-page">
-      {/* Real-time indicator */}
+      {/* Real-time indicator + DND toggle */}
       <div className="realtime-indicator">
-        <span className="live-dot"></span>
-        <span>Live updates</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span className="live-dot"></span>
+          <span>Live updates</span>
+        </div>
+        <button
+          className={`dnd-toggle ${dndActive ? 'dnd-active' : ''}`}
+          onClick={() => dndActive ? handleDndClear() : setShowDndPicker(!showDndPicker)}
+          title={dndActive ? `DND active (${notificationService.getDndRemaining()}m left)` : 'Do Not Disturb'}
+        >
+          {dndActive ? '🌙 DND On' : '🔔'}
+        </button>
       </div>
+
+      {/* Q3: DND Duration Picker */}
+      {showDndPicker && (
+        <div className="dnd-picker">
+          <span className="dnd-label">Mute notifications for:</span>
+          <div className="dnd-options">
+            {[15, 30, 60, 120, 480].map((mins) => (
+              <button
+                key={mins}
+                className="dnd-option"
+                onClick={() => handleDndToggle(mins)}
+              >
+                {mins < 60 ? `${mins}m` : `${mins / 60}h`}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Q3: DND Active Banner */}
+      {dndActive && (
+        <div className="dnd-banner">
+          🌙 Do Not Disturb — {notificationService.getDndRemaining()}m remaining
+          <button className="dnd-clear" onClick={handleDndClear}>Resume</button>
+        </div>
+      )}
 
       {/* Category Filter — Pill Chips (Initiative 11) */}
       <div className="notif-category-tabs nf-chip-bar">

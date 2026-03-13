@@ -232,6 +232,16 @@ export type BusEventType =
   | 'HAND_REPLAY_LOADED'
   | 'HAND_REPLAY_STEP'
   | 'HAND_REPLAY_COMPLETE'
+  // Atomic stack & validation events
+  | 'STACK_RACE_DETECTED'
+  | 'STACK_SETTLEMENT'
+  | 'ACTION_REJECTED'
+  // Phase 8: Precise Action Timer events
+  | 'ACTION_TIMER_STARTED'
+  | 'ACTION_TIMER_EXTENDED'
+  | 'ACTION_TIMER_EXPIRED'
+  // Phase 8: State Verifier events
+  | 'STATE_INTEGRITY_VIOLATION'
   // Session lifecycle
   | 'SESSION_ENDED'
   // Table creation event
@@ -706,6 +716,16 @@ export interface BusPayloadMap {
     snapshot: any;
   };
   HAND_REPLAY_COMPLETE: { handId: string };
+  // Atomic stack & validation events
+  STACK_RACE_DETECTED: { tableId: string; userId: string; operation: string; expectedVersion: number; actualVersion: number };
+  STACK_SETTLEMENT: { tableId: string; playerCount: number; totalMoved: number };
+  ACTION_REJECTED: { tableId: string; playerId: string; code: string; reason: string; timestamp: number };
+  // Precise Action Timer
+  ACTION_TIMER_STARTED: { tableId: string; playerId: string; durationMs: number; deadline: number };
+  ACTION_TIMER_EXTENDED: { tableId: string; playerId: string; additionalMs: number; newDeadline: number };
+  ACTION_TIMER_EXPIRED: { tableId: string; playerId: string; driftMs: number };
+  // State Verifier
+  STATE_INTEGRITY_VIOLATION: { tableId: string; handNumber: number; violationCount: number; violations: Array<{ type: string; message: string; severity: string }> };
   // Session lifecycle
   SESSION_ENDED: { tableId: string; sessionId?: string; userId?: string };
   // Table creation

@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase'
 import { masterBus } from '../../core/MasterBus';
+import { resolveClubIdFilter } from '../../utils/clubIdResolver';
 import styles from './ClubActivityFeed.module.css';
 
 export type ActivityType = 'member_join' | 'member_leave' | 'table_start' | 'table_end' |
@@ -49,6 +50,19 @@ export default function ClubActivityFeed({
     const loadActivities = async () => {
         setLoading(true);
         try {
+            // Resolve club UUID — clubId prop may be integer from URL params
+            const { column: cCol, value: cVal } = resolveClubIdFilter(clubId);
+            let resolvedUuid = clubId;
+            if (cCol === 'club_id') {
+                // Need to look up the actual UUID first
+                const { data: clubRow } = await supabase
+                    .from('clubs')
+                    .select('id')
+                    .eq(cCol, cVal)
+                    .maybeSingle();
+                if (clubRow) resolvedUuid = clubRow.id;
+            }
+
             const { data, error } = await supabase
                 .from('club_activity')
                 .select(`
@@ -60,7 +74,7 @@ export default function ClubActivityFeed({
                     user_id,
                     profiles(display_name, avatar_url)
                 `)
-                .eq('club_id', clubId)
+                .eq('club_id', resolvedUuid)
                 .order('created_at', { ascending: false })
                 .limit(limit);
 
