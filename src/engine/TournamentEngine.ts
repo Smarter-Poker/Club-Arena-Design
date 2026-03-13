@@ -1594,7 +1594,7 @@ export class TournamentEngine {
     );
     if (!payoutEntry) return 0;
 
-    // Exact penny precision — convert to cents first to avoid floating point errors
+    // Exact precision — scale ×100 first to avoid floating point errors
     // prize = pool * (percentage / 100), then truncate to 2 decimal places
     const prizeRaw = (this.tournamentInfo.prize_pool * payoutEntry.percentage) / 100;
     return Math.trunc(prizeRaw * 100) / 100;

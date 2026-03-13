@@ -197,7 +197,7 @@ const evalCache = new EvalLRUCache(4096);
 /** Generate a canonical cache key from cards */
 function cardKey(cards: Card[]): string {
   return cards
-    .map(c => `${c.rank}${c.suit[0]}`)
+    .map((c) => `${c.rank}${c.suit[0]}`)
     .sort()
     .join(',');
 }
@@ -814,10 +814,10 @@ export function determineWinners(
     const qualifyingLowPlayers = eligible.filter((ph) => ph.lowHand !== null);
 
     if (isHiLo && qualifyingLowPlayers.length > 0) {
-      const potCents = Math.trunc(pot.amount * 100);
-      const loCents = Math.trunc(potCents / 2);
-      loPotAmount = loCents / 100;
-      hiPotAmount = (potCents - loCents) / 100;
+      const potScaled = Math.trunc(pot.amount * 100);
+      const loScaled = Math.trunc(potScaled / 2);
+      loPotAmount = loScaled / 100;
+      hiPotAmount = (potScaled - loScaled) / 100;
     }
 
     // ─── HIGH HALF ───
@@ -859,16 +859,16 @@ function distributePot(
   type: 'High' | 'Low'
 ) {
   if (roundWinners.length === 0 || amount <= 0) return;
-  const totalCents = Math.trunc(amount * 100);
-  const shareCents = Math.trunc(totalCents / roundWinners.length);
-  const remainderCents = totalCents % roundWinners.length;
+  const totalScaled = Math.trunc(amount * 100);
+  const shareScaled = Math.trunc(totalScaled / roundWinners.length);
+  const remainderScaled = totalScaled % roundWinners.length;
 
   // Sort winners by seat position (lowest seat first = closest to left of dealer)
   const sortedWinners = [...roundWinners].sort((a, b) => a.player.seat - b.player.seat);
 
   sortedWinners.forEach((pw, i) => {
     const existing = globalWinners.find((w) => w.userId === pw.player.user_id);
-    const winAmt = (shareCents + (i < remainderCents ? 1 : 0)) / 100;
+    const winAmt = (shareScaled + (i < remainderScaled ? 1 : 0)) / 100;
 
     if (existing) {
       existing.amount += winAmt;

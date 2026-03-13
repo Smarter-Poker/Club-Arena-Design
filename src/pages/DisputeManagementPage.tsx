@@ -216,7 +216,16 @@ export default function DisputeManagementPage() {
             <div key={dispute.id} className={`dispute-card status-${dispute.status}`}>
               <div
                 className="dispute-card-header"
-                onClick={() => setExpandedId(expandedId === dispute.id ? null : dispute.id)}
+                onClick={() => {
+                  const newId = expandedId === dispute.id ? null : dispute.id;
+                  setExpandedId(newId);
+                  // Reset form state when switching cards to prevent stale data carry-over
+                  if (newId !== expandedId) {
+                    setResolutionText('');
+                    setAdjustmentAmount('');
+                    setAdjustmentType('none');
+                  }
+                }}
               >
                 <div className="dispute-meta">
                   {getStatusBadge(dispute.status)}
