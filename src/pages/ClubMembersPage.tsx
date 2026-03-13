@@ -15,6 +15,7 @@ import ClubBottomNav from '../components/club/ClubBottomNav';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import './ClubMembersPage.css';
 import { retryAsync } from '../utils/retryAsync';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    TYPES
@@ -189,11 +190,13 @@ function PlayerActionModal({
       const currentUser = useUserStore.getState().user;
       if (!currentUser?.id) throw new Error('Not authenticated');
 
+      const resolvedClubId = await resolveClubUUID(clubId);
+
       // Try RPC first (atomic with audit logging), fall back to direct updates
       const { data: rpcResult, error: rpcError } = await retryAsync(
         () =>
           supabase.rpc('promote_member', {
-            p_club_id: clubId,
+            p_club_id: resolvedClubId,
             p_target_user_id: member.user_id,
             p_new_role: newRole,
             p_promoted_by: currentUser.id,
@@ -221,7 +224,7 @@ function PlayerActionModal({
           const { data: existingAgent } = await supabase
             .from('agents')
             .select('id')
-            .eq('club_id', clubId)
+            .eq('club_id', resolvedClubId)
             .eq('user_id', member.user_id)
             .maybeSingle();
 
@@ -233,7 +236,7 @@ function PlayerActionModal({
             if (agentUpdateErr) throw agentUpdateErr;
           } else {
             const { error: agentInsertErr } = await supabase.from('agents').insert({
-              club_id: clubId,
+              club_id: resolvedClubId,
               user_id: member.user_id,
               role: newRole,
               status: 'active',
@@ -248,7 +251,7 @@ function PlayerActionModal({
           const { error: suspendErr } = await supabase
             .from('agents')
             .update({ status: 'suspended' })
-            .eq('club_id', clubId)
+            .eq('club_id', resolvedClubId)
             .eq('user_id', member.user_id);
           if (suspendErr) throw suspendErr;
         }
@@ -423,6 +426,8 @@ export default function ClubMembersPage() {
       if (!clubId) return;
       if (!getIsMounted || getIsMounted()) setLoading(true);
       try {
+        const resolvedId = await resolveClubUUID(clubId);
+
         const { data, error } = await supabase
           .from('club_members')
           .select(
@@ -439,7 +444,7 @@ export default function ClubMembersPage() {
                     )
                 `
           )
-          .eq('club_id', clubId)
+          .eq('club_id', resolvedId)
           .eq('profiles.is_horse', false)
           .not('status', 'in', '("banned","suspended")')
           .limit(5000);
@@ -466,7 +471,7 @@ export default function ClubMembersPage() {
             const { data: memberData } = await supabase
               .from('club_members')
               .select('role')
-              .eq('club_id', clubId)
+              .eq('club_id', resolvedId)
               .eq('user_id', user.id)
               .maybeSingle();
 

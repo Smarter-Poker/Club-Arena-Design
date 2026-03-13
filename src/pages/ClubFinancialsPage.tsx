@@ -16,6 +16,7 @@ import PageSkeleton from '../components/common/PageSkeleton';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 import { FinancialExportService } from '../services/FinancialExportService';
 import './ClubFinancialsPage.css';
+import { resolveClubUUID } from '../utils/clubIdResolver';
 
 interface FinancialSummary {
   period: string;
@@ -177,6 +178,8 @@ export default function ClubFinancialsPage() {
     if (!clubId) return;
     setLoading(true);
     try {
+      const resolvedId = await resolveClubUUID(clubId);
+
       // Calculate date range based on period
       const now = new Date();
       let startDate: Date;
@@ -195,7 +198,7 @@ export default function ClubFinancialsPage() {
       const { data: rakeData } = await supabase
         .from('rake_history')
         .select('rake_amount, pot_amount, collected_at')
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .gte('collected_at', startDate.toISOString())
         .order('collected_at', { ascending: true })
         .limit(5000);
@@ -254,7 +257,7 @@ export default function ClubFinancialsPage() {
       const { data: recentRake } = await supabase
         .from('rake_history')
         .select('id, rake_amount, pot_amount, hand_number, collected_at')
-        .eq('club_id', clubId)
+        .eq('club_id', resolvedId)
         .gte('collected_at', startDate.toISOString())
         .order('collected_at', { ascending: false })
         .limit(20);
