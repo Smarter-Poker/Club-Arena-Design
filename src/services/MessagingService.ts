@@ -1166,6 +1166,153 @@ class MessagingServiceClass {
     // Return a Google Charts QR API URL for now (no library needed)
     return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(profileUrl)}`;
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Q3 PHASE 10: MESSAGE EDIT / DELETE / PIN
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /** Edit a message (5-minute window, sender only) */
+  async editMessage(messageId: string, senderId: string, newContent: string): Promise<boolean> {
+    try {
+      // Fetch the message to check ownership and age
+      const { data: msg, error: fetchErr } = await supabase
+        .from('messages')
+        .select('sender_id, created_at')
+        .eq('id', messageId)
+        .maybeSingle();
+
+      if (fetchErr || !msg) {
+        console.error('[MessagingService] editMessage: message not found', fetchErr);
+        return false;
+      }
+
+      if (msg.sender_id !== senderId) {
+        console.warn('[MessagingService] editMessage: not the sender');
+        return false;
+      }
+
+      // 5-minute edit window
+      const createdAt = new Date(msg.created_at).getTime();
+      const fiveMinMs = 5 * 60 * 1000;
+      if (Date.now() - createdAt > fiveMinMs) {
+        console.warn('[MessagingService] editMessage: edit window expired');
+        return false;
+      }
+
+      const { error } = await supabase
+        .from('messages')
+        .update({
+          content: newContent,
+          edited_at: new Date().toISOString(),
+        })
+        .eq('id', messageId)
+        .eq('sender_id', senderId);
+
+      if (error) {
+        console.error('[MessagingService] editMessage error:', error);
+        return false;
+      }
+
+      masterBus.emit('MESSAGE_SENT', {
+        message: { id: messageId, content: newContent, edited: true },
+        conversationId: '',
+      });
+      return true;
+    } catch (err) {
+      console.error('[MessagingService] editMessage exception:', err);
+      return false;
+    }
+  }
+
+  /** Delete a message (sender can hard-delete, others soft-delete for self) */
+  async deleteMessage(messageId: string, userId: string): Promise<boolean> {
+    try {
+      // Check if sender
+      const { data: msg } = await supabase
+        .from('messages')
+        .select('sender_id')
+        .eq('id', messageId)
+        .maybeSingle();
+
+      if (!msg) return false;
+
+      if (msg.sender_id === userId) {
+        // Sender: hard delete (or mark as deleted)
+        const { error } = await supabase
+          .from('messages')
+          .update({ content: '🗑️ This message was deleted', deleted_at: new Date().toISOString() })
+          .eq('id', messageId);
+        if (error) {
+          console.error('[MessagingService] deleteMessage error:', error);
+          return false;
+        }
+      } else {
+        // Non-sender: hide for self — store in hidden_messages
+        const { error } = await supabase
+          .from('hidden_messages')
+          .upsert({ user_id: userId, message_id: messageId });
+        if (error) {
+          console.error('[MessagingService] hideMessage error:', error);
+          return false;
+        }
+      }
+      return true;
+    } catch (err) {
+      console.error('[MessagingService] deleteMessage exception:', err);
+      return false;
+    }
+  }
+
+  /** Pin a message in a conversation (admin action) */
+  async pinMessage(conversationId: string, messageId: string): Promise<boolean> {
+    try {
+      const { error } = await supabase.from('pinned_messages').upsert({
+        conversation_id: conversationId,
+        message_id: messageId,
+        pinned_at: new Date().toISOString(),
+      });
+      if (error) {
+        console.error('[MessagingService] pinMessage error:', error);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error('[MessagingService] pinMessage exception:', err);
+      return false;
+    }
+  }
+
+  /** Unpin a message */
+  async unpinMessage(_conversationId: string, messageId: string): Promise<boolean> {
+    try {
+      const { error } = await supabase.from('pinned_messages').delete().eq('message_id', messageId);
+      if (error) {
+        console.error('[MessagingService] unpinMessage error:', error);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error('[MessagingService] unpinMessage exception:', err);
+      return false;
+    }
+  }
+
+  /** Get pinned messages for a conversation */
+  async getPinnedMessages(conversationId: string): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('pinned_messages')
+        .select('*, messages(*)')
+        .eq('conversation_id', conversationId)
+        .order('pinned_at', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data || [];
+    } catch (err) {
+      console.error('[MessagingService] getPinnedMessages error:', err);
+      return [];
+    }
+  }
 }
 
 // Reaction type
