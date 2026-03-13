@@ -19,6 +19,7 @@ import IntroVideo from '../components/IntroVideo';
 import haptic from '../services/HapticService';
 import { MetalFrame, MetalButton, MetalInput, MetalCard } from '../components/metal-ui';
 import ClubDiscovery from '../components/clubs/ClubDiscovery';
+import { getClubLevel } from '../utils/clubLevels';
 import styles from './ClubsPage.module.css';
 import { useVisibilityRefresh } from '../hooks/useVisibilityRefresh';
 
@@ -32,6 +33,15 @@ interface Club {
   is_owner?: boolean;
   online_count?: number;
   table_count?: number;
+  level?: number;
+  player_level?: number;
+  hierarchy_level?: number;
+  hierarchy_units?: number;
+  hierarchy_units_rounded_up?: number;
+  player_threshold_current?: number;
+  player_threshold_next?: number;
+  hierarchy_threshold_current?: number;
+  hierarchy_threshold_next?: number;
 }
 
 interface Membership {
@@ -325,140 +335,177 @@ export default function ClubsPage() {
                 </div>
               ) : myClubs.length > 0 ? (
                 <div className={styles.clubsGrid}>
-                  {myClubs.map((membership, index) => (
-                    <div
-                      key={membership.id}
-                      style={{
-                        opacity: visibleClubCards.has(index) ? 1 : 0,
-                        transform: visibleClubCards.has(index)
-                          ? 'translateY(0)'
-                          : 'translateY(8px)',
-                        transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                      }}
-                    >
-                      <MetalCard size="md" glow>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                          {/* Club Header */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  {myClubs.map((membership, index) => {
+                    const levelInfo = getClubLevel({
+                      level: membership.club.level || 1,
+                      playerCount: membership.club.member_count || 0,
+                      hierarchyUnits: membership.club.hierarchy_units_rounded_up || 0,
+                      playerThresholdCurrent: membership.club.player_threshold_current || 0,
+                      playerThresholdNext: membership.club.player_threshold_next || 0,
+                      hierarchyThresholdCurrent: membership.club.hierarchy_threshold_current || 0,
+                      hierarchyThresholdNext: membership.club.hierarchy_threshold_next || 0,
+                    });
+
+                    return (
+                      <div
+                        key={membership.id}
+                        style={{
+                          opacity: visibleClubCards.has(index) ? 1 : 0,
+                          transform: visibleClubCards.has(index)
+                            ? 'translateY(0)'
+                            : 'translateY(8px)',
+                          transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        }}
+                      >
+                        <MetalCard size="md" glow>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {/* Club Header */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div
+                                style={{
+                                  width: '50px',
+                                  height: '50px',
+                                  fontSize: '24px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  background: 'linear-gradient(135deg, #1a2a3a 0%, #0d1520 100%)',
+                                  border: '1px solid #2a3a4a',
+                                  borderRadius: '10px',
+                                }}
+                              ></div>
+                              <div style={{ flex: 1 }}>
+                                <h3
+                                  style={{
+                                    margin: 0,
+                                    fontSize: '1.1rem',
+                                    color: '#fff',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                  }}
+                                >
+                                  {membership.club.name}
+                                  {levelInfo && (
+                                    <span
+                                      style={{
+                                        fontSize: '0.65rem',
+                                        padding: '2px 8px',
+                                        borderRadius: '12px',
+                                        background: levelInfo.gradient,
+                                        color: '#fff',
+                                        fontWeight: 700,
+                                        letterSpacing: '0.5px',
+                                        textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                                      }}
+                                    >
+                                      Lv.{levelInfo.level}
+                                    </span>
+                                  )}
+                                </h3>
+                                <span
+                                  style={{
+                                    fontSize: '0.75rem',
+                                    fontFamily: 'monospace',
+                                    color: '#6a7a8a',
+                                  }}
+                                >
+                                  ID: {membership.club.club_id}
+                                </span>
+                              </div>
+                              {membership.role === 'owner' && (
+                                <span
+                                  style={{
+                                    fontSize: '0.7rem',
+                                    fontWeight: 600,
+                                    color: '#ffd700',
+                                    padding: '4px 10px',
+                                    background: 'rgba(255, 215, 0, 0.15)',
+                                    border: '1px solid rgba(255, 215, 0, 0.4)',
+                                    borderRadius: '20px',
+                                  }}
+                                >
+                                  OWNER
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Stats Row */}
                             <div
                               style={{
-                                width: '50px',
-                                height: '50px',
-                                fontSize: '24px',
                                 display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                background: 'linear-gradient(135deg, #1a2a3a 0%, #0d1520 100%)',
-                                border: '1px solid #2a3a4a',
-                                borderRadius: '10px',
+                                justifyContent: 'space-around',
+                                padding: '12px 0',
+                                borderTop: '1px solid rgba(255,255,255,0.1)',
+                                borderBottom: '1px solid rgba(255,255,255,0.1)',
                               }}
-                            ></div>
-                            <div style={{ flex: 1 }}>
-                              <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff' }}>
-                                {membership.club.name}
-                              </h3>
-                              <span
-                                style={{
-                                  fontSize: '0.75rem',
-                                  fontFamily: 'monospace',
-                                  color: '#6a7a8a',
-                                }}
-                              >
-                                ID: {membership.club.club_id}
-                              </span>
+                            >
+                              <div style={{ textAlign: 'center' }}>
+                                <div
+                                  style={{ fontSize: '1.25rem', fontWeight: 700, color: '#00d4ff' }}
+                                >
+                                  {membership.club.member_count || 0}
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: '0.65rem',
+                                    color: '#6a7a8a',
+                                    textTransform: 'uppercase',
+                                  }}
+                                >
+                                  Members
+                                </div>
+                              </div>
+                              <div style={{ textAlign: 'center' }}>
+                                <div
+                                  style={{ fontSize: '1.25rem', fontWeight: 700, color: '#00d4ff' }}
+                                >
+                                  {membership.club.online_count || 0}
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: '0.65rem',
+                                    color: '#6a7a8a',
+                                    textTransform: 'uppercase',
+                                  }}
+                                >
+                                  Online
+                                </div>
+                              </div>
+                              <div style={{ textAlign: 'center' }}>
+                                <div
+                                  style={{ fontSize: '1.25rem', fontWeight: 700, color: '#00d4ff' }}
+                                >
+                                  {membership.club.table_count || 0}
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: '0.65rem',
+                                    color: '#6a7a8a',
+                                    textTransform: 'uppercase',
+                                  }}
+                                >
+                                  Tables
+                                </div>
+                              </div>
                             </div>
-                            {membership.role === 'owner' && (
-                              <span
-                                style={{
-                                  fontSize: '0.7rem',
-                                  fontWeight: 600,
-                                  color: '#ffd700',
-                                  padding: '4px 10px',
-                                  background: 'rgba(255, 215, 0, 0.15)',
-                                  border: '1px solid rgba(255, 215, 0, 0.4)',
-                                  borderRadius: '20px',
-                                }}
-                              >
-                                OWNER
-                              </span>
-                            )}
-                          </div>
 
-                          {/* Stats Row */}
-                          <div
-                            style={{
-                              display: 'flex',
-                              justifyContent: 'space-around',
-                              padding: '12px 0',
-                              borderTop: '1px solid rgba(255,255,255,0.1)',
-                              borderBottom: '1px solid rgba(255,255,255,0.1)',
-                            }}
-                          >
-                            <div style={{ textAlign: 'center' }}>
-                              <div
-                                style={{ fontSize: '1.25rem', fontWeight: 700, color: '#00d4ff' }}
-                              >
-                                {membership.club.member_count || 0}
-                              </div>
-                              <div
-                                style={{
-                                  fontSize: '0.65rem',
-                                  color: '#6a7a8a',
-                                  textTransform: 'uppercase',
-                                }}
-                              >
-                                Members
-                              </div>
-                            </div>
-                            <div style={{ textAlign: 'center' }}>
-                              <div
-                                style={{ fontSize: '1.25rem', fontWeight: 700, color: '#00d4ff' }}
-                              >
-                                {membership.club.online_count || 0}
-                              </div>
-                              <div
-                                style={{
-                                  fontSize: '0.65rem',
-                                  color: '#6a7a8a',
-                                  textTransform: 'uppercase',
-                                }}
-                              >
-                                Online
-                              </div>
-                            </div>
-                            <div style={{ textAlign: 'center' }}>
-                              <div
-                                style={{ fontSize: '1.25rem', fontWeight: 700, color: '#00d4ff' }}
-                              >
-                                {membership.club.table_count || 0}
-                              </div>
-                              <div
-                                style={{
-                                  fontSize: '0.65rem',
-                                  color: '#6a7a8a',
-                                  textTransform: 'uppercase',
-                                }}
-                              >
-                                Tables
-                              </div>
-                            </div>
+                            {/* Enter Button */}
+                            <MetalButton
+                              variant="primary"
+                              fullWidth
+                              onClick={() => {
+                                haptic.success();
+                                navigate(`/clubs/${membership.club.id}`);
+                              }}
+                            >
+                              ENTER CLUB
+                            </MetalButton>
                           </div>
-
-                          {/* Enter Button */}
-                          <MetalButton
-                            variant="primary"
-                            fullWidth
-                            onClick={() => {
-                              haptic.success();
-                              navigate(`/clubs/${membership.club.id}`);
-                            }}
-                          >
-                            ENTER CLUB
-                          </MetalButton>
-                        </div>
-                      </MetalCard>
-                    </div>
-                  ))}
+                        </MetalCard>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <NoClubsEmpty onCreate={() => setActiveTab('create')} />

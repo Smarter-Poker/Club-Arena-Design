@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ClubsService } from '../../services/ClubsService';
 import { masterBus } from '../../core/MasterBus';
+import { getClubLevel } from '../../utils/clubLevels';
 import './ClubDiscovery.css';
 
 interface Club {
@@ -21,6 +22,7 @@ interface Club {
   tags: string[];
   isPrivate: boolean;
   rating: number;
+  levelInfo?: any;
 }
 
 interface ClubDiscoveryProps {
@@ -90,6 +92,15 @@ export const ClubDiscovery: React.FC<ClubDiscoveryProps> = ({ onJoinRequest, onV
         tags: c.tags || (c.game_type ? [c.game_type] : ['Texas Holdem']),
         isPrivate: c.requires_approval || !c.is_public,
         rating: c.average_rating || c.rating || 0,
+        levelInfo: getClubLevel({
+          level: c.level || 1,
+          playerCount: c.member_count || 0,
+          hierarchyUnits: c.hierarchy_units_rounded_up || 0,
+          playerThresholdCurrent: c.player_threshold_current || 0,
+          playerThresholdNext: c.player_threshold_next || 0,
+          hierarchyThresholdCurrent: c.hierarchy_threshold_current || 0,
+          hierarchyThresholdNext: c.hierarchy_threshold_next || 0,
+        }),
       }));
 
       // Apply stake filter client-side
@@ -287,7 +298,24 @@ export const ClubDiscovery: React.FC<ClubDiscoveryProps> = ({ onJoinRequest, onV
                   )}
                 </div>
                 <div className="club-meta">
-                  <h3>{club.name}</h3>
+                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {club.name}
+                    {club.levelInfo && (
+                      <span
+                        style={{
+                          fontSize: '0.6rem',
+                          padding: '2px 6px',
+                          borderRadius: '10px',
+                          background: club.levelInfo.gradient,
+                          color: '#fff',
+                          fontWeight: 700,
+                          textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                        }}
+                      >
+                        Lv.{club.levelInfo.level}
+                      </span>
+                    )}
+                  </h3>
                   {club.isPrivate && <span className="private-badge">🔒</span>}
                 </div>
               </div>

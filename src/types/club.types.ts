@@ -24,6 +24,18 @@ export interface Club {
   requires_approval: boolean;
   member_count: number;
   total_chips: number;
+
+  // 50-Level System Capacity Metrics
+  level?: number;
+  player_level?: number;
+  hierarchy_level?: number;
+  hierarchy_units?: number;
+  hierarchy_units_rounded_up?: number;
+  player_threshold_current?: number;
+  player_threshold_next?: number;
+  hierarchy_threshold_current?: number;
+  hierarchy_threshold_next?: number;
+
   union_id?: string;
   settings: ClubSettings;
   created_at: string;
